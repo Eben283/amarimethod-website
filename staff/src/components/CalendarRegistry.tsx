@@ -162,7 +162,7 @@ export default function CalendarRegistry({ onViewSchedule }: { onViewSchedule: (
               {projection.configured
                 ? `${projection.reconciliation?.summary.appointments || 0} appointments reconstructed from ${projection.coverage?.observationsRead || 0} observations; ${projection.reconciliation?.summary.conflicts || 0} conflicts and ${projection.reconciliation?.summary.historyGaps || 0} history gaps.`
                 : 'Shadow storage is not available yet.'}
-              {' '}The live schedule remains provider-backed. Runtime booking currently enforces {projection.bufferPolicy.runtimeAppOwnedMinutes} minutes of turnover while older calendar evidence records {projection.bufferPolicy.olderDocumentedMinutes}; owned booking writes stay blocked until that is resolved.
+              {' '}The live schedule remains provider-backed. {projection.bufferPolicy.runtimeAppOwnedMinutes}-minute turnover is confirmed; the older {projection.bufferPolicy.historicalDocumentedMinutes}-minute references are historical only. Owned booking writes remain blocked while the appointment history is reconciled.
             </p>
           ) : <p>{projectionError || 'Appointment shadow evidence is unavailable.'} The live schedule remains provider-backed.</p>}
         </div>

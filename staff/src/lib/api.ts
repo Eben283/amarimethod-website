@@ -185,10 +185,10 @@ export interface AppointmentProjectionReadiness {
     issues: Array<{ code: string; providerAppointmentId?: string }>;
   };
   bufferPolicy: {
-    state: 'conflict';
+    state: 'confirmed';
     runtimeAppOwnedMinutes: 20;
-    olderDocumentedMinutes: 10;
-    blocksWriteAuthority: true;
+    historicalDocumentedMinutes: 10;
+    blocksWriteAuthority: false;
     note: string;
   };
 }

@@ -22,7 +22,7 @@ describe("staff appointment readiness", () => {
     requireStaffAuth.mockResolvedValue({ payload: { role: "staff" } });
     global.fetch.mockResolvedValue({ ok: true, status: 200, json: async () => ({
       configured: true, shadowOnly: true, state: "attention", liveScheduleFallback: true,
-      bufferPolicy: { state: "conflict", runtimeAppOwnedMinutes: 20, olderDocumentedMinutes: 10 },
+      bufferPolicy: { state: "confirmed", runtimeAppOwnedMinutes: 20, historicalDocumentedMinutes: 10 },
     }) });
     const response = await onRequestGet(context());
     expect(response.status).toBe(200);

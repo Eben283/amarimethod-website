@@ -173,18 +173,22 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
   };
 }
 
-/** Explicit cutover blocker; this intentionally does not resolve the policy. */
+/**
+ * The operator-confirmed policy is deliberately distinct from history
+ * reconciliation. A historical ten-minute reference stays visible as evidence,
+ * but it is not allowed to override the current 20-minute runtime policy.
+ */
 export function appointmentBufferReadiness() {
   return {
-    state: "conflict",
+    state: "confirmed",
     runtimeAppOwnedMinutes: 20,
-    olderDocumentedMinutes: 10,
-    blocksWriteAuthority: true,
+    historicalDocumentedMinutes: 10,
+    blocksWriteAuthority: false,
     evidence: [
       "functions/lib/booking-slot-policy.js",
       "ops/memory/project_native_booking.md",
       "ops/memory/ghl_calendars_source_of_truth.md",
     ],
-    note: "Runtime booking enforces 20 minutes while older booking/calendar evidence records 10 minutes for main 50-minute sessions. Resolve and verify before owned booking writes.",
+    note: "20-minute turnover is confirmed. The 10-minute booking/calendar references are historical evidence only; appointment-history reconciliation remains a separate write-authority gate.",
   };
 }
