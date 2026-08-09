@@ -42,13 +42,13 @@ function validCents(value) {
   return Number.isSafeInteger(value) && value > 0 && value <= MAX_AMOUNT_CENTS;
 }
 
-function knownFields(value, allowed) {
+function knownFields(value, allowed, subject = "cart") {
   for (const key of Object.keys(value || {})) {
-    if (!allowed.has(key)) throw new Error(`Unknown cart field: ${key}`);
+    if (!allowed.has(key)) throw new Error(`Unknown ${subject} field: ${key}`);
   }
 }
 
-export function normalizeCart(rawCart) {
+export function normalizeCart(rawCart, catalog = POS_CATALOG) {
   if (!Array.isArray(rawCart) || rawCart.length < 1 || rawCart.length > MAX_CART_LINES) {
     throw new Error("A sale needs between 1 and 24 cart lines");
   }
@@ -58,13 +58,15 @@ export function normalizeCart(rawCart) {
     const quantity = raw.quantity === undefined ? 1 : raw.quantity;
     if (!Number.isInteger(quantity) || quantity < 1 || quantity > 20) throw new Error("Cart quantity must be between 1 and 20");
     if (typeof raw.productKey === "string") {
-      const product = POS_CATALOG[raw.productKey];
+      const product = catalog[raw.productKey];
       if (!product) throw new Error("Unknown catalog product");
       return Object.freeze({
         kind: "catalog",
         productKey: raw.productKey,
+        productVersion: Number.isInteger(product.productVersion) ? product.productVersion : 1,
         label: product.label,
         ghlProductId: product.ghlProductId,
+        fulfillmentPolicy: product.fulfillmentPolicy || "provider-linked",
         quantity,
         unitAmountCents: product.amountCents,
         lineTotalCents: product.amountCents * quantity,
@@ -78,9 +80,11 @@ export function normalizeCart(rawCart) {
     return Object.freeze({
       kind: "custom",
       productKey: null,
+      productVersion: null,
       label,
       reason,
       ghlProductId: null,
+      fulfillmentPolicy: "none",
       quantity,
       unitAmountCents: raw.customAmountCents,
       lineTotalCents: raw.customAmountCents * quantity,
@@ -112,21 +116,20 @@ export function normalizePaymentLegs(rawLegs, totalCents) {
   if (rawLegs.length > MAX_LEGS) throw new Error("A sale can have at most 6 payment allocations");
   const legs = rawLegs.map((raw, index) => {
     if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Invalid payment allocation");
+    knownFields(raw, new Set(["method", "amountCents"]), "payment allocation");
     const method = cleanText(raw.method, 40);
     if (!POS_PAYMENT_METHODS.includes(method)) throw new Error("Unknown payment method");
     if (!validCents(raw.amountCents)) throw new Error("Payment allocation must be a whole number of cents");
-    const status = cleanText(raw.status, 40) || "planned";
-    if (!POS_LEG_STATUSES.includes(status)) throw new Error("Unknown payment leg status");
     return Object.freeze({
-      id: cleanText(raw.id, 40) || `leg-${index + 1}`,
+      id: `leg-${index + 1}`,
       method,
       amountCents: raw.amountCents,
-      status,
-      stripeCheckoutSessionId: cleanText(raw.stripeCheckoutSessionId, 120) || null,
-      stripeCheckoutUrl: cleanText(raw.stripeCheckoutUrl, 500) || null,
-      stripePaymentIntentId: cleanText(raw.stripePaymentIntentId, 120) || null,
-      cashReceivedCents: Number.isSafeInteger(raw.cashReceivedCents) ? raw.cashReceivedCents : null,
-      paidAt: cleanText(raw.paidAt, 40) || null,
+      status: "planned",
+      stripeCheckoutSessionId: null,
+      stripeCheckoutUrl: null,
+      stripePaymentIntentId: null,
+      cashReceivedCents: null,
+      paidAt: null,
     });
   });
   if (legs.length && legs.reduce((sum, leg) => sum + leg.amountCents, 0) !== totalCents) {
@@ -248,9 +251,9 @@ export function posSaleKey(id) {
   return `staff-pos:sale:${id}`;
 }
 
-export function buildPosSale({ id, client, cart, paymentLegs, reviewer, now }) {
+export function buildPosSale({ id, client, cart, paymentLegs, reviewer, now, catalog }) {
   const normalizedClient = normalizeClient(client);
-  const normalizedCart = normalizeCart(cart);
+  const normalizedCart = normalizeCart(cart, catalog);
   const totalCents = cartTotal(normalizedCart);
   const normalizedLegs = normalizePaymentLegs(paymentLegs || [], totalCents);
   const at = now || new Date().toISOString();
@@ -270,13 +273,13 @@ export function buildPosSale({ id, client, cart, paymentLegs, reviewer, now }) {
   };
 }
 
-export function updatePosSale(existing, { client, cart, paymentLegs, reviewer, now }) {
+export function updatePosSale(existing, { client, cart, paymentLegs, reviewer, now, catalog }) {
   if (!existing?.id) throw new Error("Sale not found");
   if (existing.status === "paid") throw new Error("This sale is already paid and cannot be edited");
   if ((existing.paymentLegs || []).some((leg) => leg.status === "paid")) {
     throw new Error("This sale cannot be edited after a payment has been recorded");
   }
-  const next = buildPosSale({ id: existing.id, client, cart, paymentLegs, reviewer, now });
+  const next = buildPosSale({ id: existing.id, client, cart, paymentLegs, reviewer, now, catalog });
   const at = next.updatedAt;
   // Preserve Stripe/cash settlement fields when the staff client re-saves allocations.
   const priorByKey = new Map(

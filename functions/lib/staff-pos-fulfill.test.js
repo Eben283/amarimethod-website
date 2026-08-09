@@ -6,6 +6,81 @@ describe("staff POS fulfillment claims", () => {
     vi.unstubAllGlobals();
   });
 
+  it("issues an owned receipt for a no-effect cart without calling GHL", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const receipts = new Map();
+    const db = {
+      prepare: (sql) => ({
+        bind: (...args) => ({
+          first: async () => /FROM staff_pos_receipts/i.test(sql) ? receipts.get(args[0]) || null : null,
+          sql,
+          args,
+        }),
+      }),
+      batch: async (statements) => {
+        const args = statements[0].args;
+        receipts.set(args[1], {
+          receipt_id: args[0], sale_id: args[1], contact_id: args[2], customer_name: args[3],
+          currency: "USD", total_cents: args[4], paid_at: args[5], issued_at: args[6], issued_by: args[7],
+        });
+        return statements.map(() => ({ success: true }));
+      },
+    };
+    const sale = {
+      id: "pos_ownedreceipt1",
+      status: "paid",
+      fulfillmentStatus: "pending",
+      totalCents: 4800,
+      client: { id: "contact_owned1", name: "Jordan Lee" },
+      cart: [{
+        kind: "catalog", productKey: "custom-123", productVersion: 1,
+        label: "Movement straps", quantity: 1, unitAmountCents: 4800,
+        lineTotalCents: 4800, fulfillmentPolicy: "none",
+      }],
+      paymentLegs: [{ id: "leg-1", status: "paid", paidAt: "2026-08-08T23:05:00.000Z" }],
+      version: 2,
+      audit: [],
+    };
+
+    const outcome = await fulfillPaidPosSale({ env: { ATTEND_DB: db } }, sale, { actor: "Eben" });
+
+    expect(outcome.sale).toMatchObject({
+      fulfillmentStatus: "fulfilled",
+      fulfillment: { adapter: "owned_receipt", effect: "none" },
+    });
+    expect(outcome.result).toMatchObject({ ok: true, pending: false, receiptId: expect.stringMatching(/^receipt-/) });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
+  it("rejects a mixed fulfillment-policy cart without calling GHL", async () => {
+    const fetchSpy = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+    const sale = {
+      id: "pos_mixedpolicy1",
+      status: "paid",
+      fulfillmentStatus: "pending",
+      totalCents: 304800,
+      client: { id: "contact_mixed1", name: "Jordan Lee" },
+      cart: [
+        { fulfillmentPolicy: "none", lineTotalCents: 4800 },
+        { fulfillmentPolicy: "provider-linked", lineTotalCents: 300000 },
+      ],
+      paymentLegs: [{ id: "leg-1", status: "paid" }],
+    };
+
+    const outcome = await fulfillPaidPosSale({
+      env: { ATTEND_DB: {}, STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED: "true" },
+    }, sale);
+
+    expect(outcome.result).toMatchObject({
+      ok: false,
+      pending: true,
+      reason: "mixed_fulfillment_policy",
+    });
+    expect(fetchSpy).not.toHaveBeenCalled();
+  });
+
   it("keeps a paid sale pending and performs no GHL work while the invoice bridge is disabled", async () => {
     const fetchSpy = vi.fn();
     vi.stubGlobal("fetch", fetchSpy);

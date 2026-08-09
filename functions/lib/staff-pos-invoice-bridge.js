@@ -49,7 +49,10 @@ export function assessPosInvoiceSupport(cart = []) {
   }
 
   for (const line of cart) {
-    if (line?.kind === "custom" || !line?.ghlProductId) continue;
+    if (line?.fulfillmentPolicy === "none" || line?.kind === "custom" || !line?.ghlProductId) {
+      reasons.push("An owned no-effect product must use the owned receipt path, not a GHL invoice");
+      continue;
+    }
     const product = GHL_PRODUCTS[line.ghlProductId];
     if (!product) {
       reasons.push(`Unknown GHL catalog product ${line.ghlProductId}`);

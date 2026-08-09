@@ -4,6 +4,7 @@ import {
   getOwedStatus,
   getContactDetail,
   getPosSale,
+  getStaffProducts,
   getStripeSavedCards,
   recordPosCash,
   fulfillPosSale,
@@ -19,26 +20,12 @@ import {
   type PosSale,
   type PurchaseEntry,
   type StripeSavedCard,
+  type StaffProduct,
 } from "../lib/api";
 import type { ContactListItem } from "../types/staff";
 import "./PosPage.css";
 
-const CATALOG = [
-  ["12-week-practice", "12-Week Amari Practice", 540000, "Practice", "12-week · 24 sessions"],
-  ["6-week-practice", "6-Week Amari Practice", 300000, "Practice", "6-week · 12 sessions"],
-  ["8-session-series", "8-session series", 129500, "Founders Circle", "Series"],
-  ["4-session-series", "4-session series", 72000, "Founders Circle", "Series"],
-  ["single-session", "Single session", 28500, "Single sessions", "50 min · adds 1 prepaid session"],
-  ["amari-assessment", "Assessment — $29 intro", 2900, "Single sessions", "Intro · 50 min"],
-  ["follow-up", "Single follow-up", 19000, "Founders Circle", "Follow-up session"],
-  ["upgrade-4-to-8", "4 → 8-session", 57500, "Founders Circle", "Legacy continuation price"],
-  ["entrainment", "Entrainment", 9000, "Founders Circle", "Add-on"],
-  ["entrainment-20", "Entrainment — 20 min", 9000, "Upgrades", "Add-on"],
-  ["living-practice", "Living Practice", 34700, "Upgrades", "Add-on"],
-] as const;
-
-type CatalogKey = (typeof CATALOG)[number][0];
-type CatalogGroup = (typeof CATALOG)[number][3];
+type CatalogGroup = "current" | "custom" | "legacy";
 type Panel =
   | null
   | "search"
@@ -73,17 +60,17 @@ function cardLabel(card: StripeSavedCard) {
 
 const draftStorageKey = "amari_staff_pos_draft";
 
-function catalogEntry(key: string) {
-  return CATALOG.find(([k]) => k === key);
+function catalogEntry(catalog: StaffProduct[], key: string) {
+  return catalog.find((product) => product.key === key);
 }
 
-function lineUnitCents(line: PosDraftLineInput) {
-  if (line.productKey) return catalogEntry(line.productKey)?.[2] || 0;
+function lineUnitCents(line: PosDraftLineInput, catalog: StaffProduct[]) {
+  if (line.productKey) return catalogEntry(catalog, line.productKey)?.amountCents || 0;
   return line.customAmountCents || 0;
 }
 
-function lineLabel(line: PosDraftLineInput) {
-  if (line.productKey) return catalogEntry(line.productKey)?.[1] || line.productKey;
+function lineLabel(line: PosDraftLineInput, catalog: StaffProduct[]) {
+  if (line.productKey) return catalogEntry(catalog, line.productKey)?.name || line.productKey;
   return line.customLabel || "Custom sale";
 }
 
@@ -92,8 +79,8 @@ function lineKey(line: PosDraftLineInput) {
   return `custom:${line.customLabel}|${line.customReason}|${line.customAmountCents}`;
 }
 
-function calculateTotal(cart: PosDraftLineInput[]) {
-  return cart.reduce((sum, line) => sum + lineUnitCents(line) * (line.quantity || 1), 0);
+function calculateTotal(cart: PosDraftLineInput[], catalog: StaffProduct[]) {
+  return cart.reduce((sum, line) => sum + lineUnitCents(line, catalog) * (line.quantity || 1), 0);
 }
 
 function toDraftCart(sale: PosSale): PosDraftLineInput[] {
@@ -131,7 +118,9 @@ export default function PosPage() {
   const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [panel, setPanel] = useState<Panel>(null);
-  const [category, setCategory] = useState<CatalogGroup>("Founders Circle");
+  const [category, setCategory] = useState<CatalogGroup>("current");
+  const [catalog, setCatalog] = useState<StaffProduct[]>([]);
+  const [catalogReady, setCatalogReady] = useState(false);
   const [client, setClient] = useState<PosClient | null>(null);
   const [cart, setCart] = useState<PosDraftLineInput[]>([]);
   const [legs, setLegs] = useState<PosPaymentLegInput[]>([]);
@@ -143,7 +132,7 @@ export default function PosPage() {
   const [customerQuery, setCustomerQuery] = useState("");
   const [matches, setMatches] = useState<ContactListItem[]>([]);
   const [searching, setSearching] = useState(false);
-  const [productMatches, setProductMatches] = useState<typeof CATALOG[number][]>([]);
+  const [productMatches, setProductMatches] = useState<StaffProduct[]>([]);
   const [purchaseHistory, setPurchaseHistory] = useState<PurchaseEntry[] | null>(null);
   const [purchaseHistoryError, setPurchaseHistoryError] = useState("");
   const [foundersBusy, setFoundersBusy] = useState(false);
@@ -166,9 +155,14 @@ export default function PosPage() {
   const customerTimer = useRef<ReturnType<typeof setTimeout>>();
   const hydratedSale = useRef<string | null>(null);
   const hydratedContact = useRef<string | null>(null);
+  const hydratedProduct = useRef<string | null>(null);
   const explicitContactSession = useRef(false);
 
-  const total = useMemo(() => calculateTotal(cart), [cart]);
+  const sellableCatalog = useMemo(
+    () => catalog.filter((product) => product.availableInPos && (product.salesPolicy !== "legacy" || client?.isFoundersCircle)),
+    [catalog, client?.isFoundersCircle],
+  );
+  const total = useMemo(() => calculateTotal(cart, catalog), [cart, catalog]);
   const allocation = useMemo(() => legs.reduce((sum, leg) => sum + (Number(leg.amountCents) || 0), 0), [legs]);
   const unpaidCashLeg = sale?.paymentLegs?.find((leg) => leg.method === "cash" && leg.status !== "paid");
   const cashTargetCents = unpaidCashLeg?.amountCents ?? total;
@@ -176,6 +170,41 @@ export default function PosPage() {
   const primarySavedCard = savedCards[0] || null;
   const inCheckout =
     panel === "checkout" || panel === "cash" || panel === "split" || panel === "complete" || panel === "charge-confirm";
+
+  useEffect(() => {
+    let cancelled = false;
+    void getStaffProducts()
+      .then((result) => {
+        if (cancelled) return;
+        setCatalog(result.products);
+        setCatalogReady(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setCatalog([]);
+        setCatalogReady(false);
+        setNotice("Product catalog could not be verified. Existing carts remain visible, but products cannot be added.");
+      });
+    return () => { cancelled = true; };
+  }, []);
+
+  useEffect(() => {
+    const productKey = searchParams.get("product");
+    if (!catalogReady || !productKey || hydratedProduct.current === productKey) return;
+    const product = sellableCatalog.find((entry) => entry.key === productKey);
+    hydratedProduct.current = productKey;
+    if (!product) {
+      setNotice("That product is not available for a new POS cart.");
+      return;
+    }
+    setCart((current) => current.some((line) => line.productKey === productKey)
+      ? current
+      : [...current, { productKey, quantity: 1 }]);
+    setNotice(`${product.name} added to the cart.`);
+    const next = new URLSearchParams(searchParams);
+    next.delete("product");
+    setSearchParams(next, { replace: true });
+  }, [catalogReady, searchParams, sellableCatalog, setSearchParams]);
 
   useEffect(() => {
     const contactId = searchParams.get("contact");
@@ -282,7 +311,7 @@ export default function PosPage() {
     setProductMatches(
       query.length < 1
         ? []
-        : CATALOG.filter(([, label, , group]) => `${label} ${group}`.toLowerCase().includes(query)),
+        : sellableCatalog.filter((product) => `${product.name} ${product.category} ${product.description}`.toLowerCase().includes(query)),
     );
     if (searchTimer.current) clearTimeout(searchTimer.current);
     if (query.length < 2) {
@@ -299,7 +328,7 @@ export default function PosPage() {
     return () => {
       if (searchTimer.current) clearTimeout(searchTimer.current);
     };
-  }, [panel, searchQuery]);
+  }, [panel, searchQuery, sellableCatalog]);
 
   useEffect(() => {
     if (panel !== "customer" && panel !== "customer-new") return;
@@ -397,7 +426,11 @@ export default function PosPage() {
     setPanel("category");
   }
 
-  function addOrIncrementCatalog(productKey: CatalogKey) {
+  function addOrIncrementCatalog(productKey: string) {
+    if (!sellableCatalog.some((product) => product.key === productKey)) {
+      setNotice("That product is not available for this cart.");
+      return;
+    }
     setCart((current) => {
       const index = current.findIndex((line) => line.productKey === productKey);
       if (index === -1) return [...current, { productKey, quantity: 1 }];
@@ -855,7 +888,8 @@ export default function PosPage() {
         (sale.paymentLegs || []).some((leg) => Boolean(leg.stripeCheckoutUrl) && leg.status !== "paid")),
   );
 
-  const categoryProducts = CATALOG.filter(([, , , group]) => group === category);
+  const categoryProducts = sellableCatalog.filter((product) => product.salesPolicy === category);
+  const categoryLabel = category === "legacy" ? "Founding member products" : category === "custom" ? "Custom products" : "Current products";
 
   return (
     <main className="pos-shell" data-theme="dark">
@@ -898,8 +932,8 @@ export default function PosPage() {
                 <small>{client ? client.name : "Search or create"}</small>
               </button>
               <button type="button" className="pos-tile pos-tile--custom" onClick={() => setPanel("custom-sale")}>
-                <strong>Custom sale</strong>
-                <small>Name, qty, price</small>
+                <strong>One-time item</strong>
+                <small>Not saved to Products</small>
               </button>
               <button
                 type="button"
@@ -907,7 +941,7 @@ export default function PosPage() {
                 onClick={() => addOrIncrementCatalog("12-week-practice")}
               >
                 <strong>12-Week Practice</strong>
-                <small>{money(540000)}</small>
+                <small>{catalogReady ? money(catalogEntry(catalog, "12-week-practice")?.amountCents || 0) : "Loading…"}</small>
               </button>
               <button
                 type="button"
@@ -915,7 +949,7 @@ export default function PosPage() {
                 onClick={() => addOrIncrementCatalog("6-week-practice")}
               >
                 <strong>6-Week Practice</strong>
-                <small>{money(300000)}</small>
+                <small>{catalogReady ? money(catalogEntry(catalog, "6-week-practice")?.amountCents || 0) : "Loading…"}</small>
               </button>
               <button
                 type="button"
@@ -923,24 +957,31 @@ export default function PosPage() {
                 onClick={() => addOrIncrementCatalog("amari-assessment")}
               >
                 <strong>Assessment</strong>
-                <small>{money(2900)}</small>
+                <small>{catalogReady ? money(catalogEntry(catalog, "amari-assessment")?.amountCents || 0) : "Loading…"}</small>
               </button>
               <button
                 type="button"
                 className="pos-tile pos-tile--sessions"
-                onClick={() => addOrIncrementCatalog("single-session")}
+                onClick={() => navigate("/products")}
               >
-                <strong>Single session</strong>
-                <small>{money(28500)} · 50 min</small>
+                <strong>Products</strong>
+                <small>Catalog and readiness</small>
               </button>
-              <button type="button" className="pos-tile pos-tile--upgrades" onClick={() => openCategory("Upgrades")}>
-                <strong>Upgrades</strong>
-                <small>Living Practice</small>
+              <button type="button" className="pos-tile pos-tile--upgrades" onClick={() => openCategory("custom")}>
+                <strong>Custom products</strong>
+                <small>{sellableCatalog.filter((product) => product.salesPolicy === "custom").length || "None saved"}</small>
               </button>
-              <button type="button" className="pos-tile pos-tile--founders" onClick={() => openCategory("Founders Circle")}>
-                <strong>Founders Circle</strong>
-                <small>Series, follow-ups & legacy prices</small>
-              </button>
+              {client?.isFoundersCircle ? (
+                <button type="button" className="pos-tile pos-tile--founders" onClick={() => openCategory("legacy")}>
+                  <strong>Founding member</strong>
+                  <small>Legacy support products</small>
+                </button>
+              ) : (
+                <button type="button" className="pos-tile pos-tile--founders" onClick={() => setNotice("Select a Founder's Circle member to see legacy support products.")}>
+                  <strong>Legacy products</strong>
+                  <small>Select a founding member</small>
+                </button>
+              )}
             </div>
           </div>
         )}
@@ -970,13 +1011,13 @@ export default function PosPage() {
             {productMatches.length > 0 && (
               <section className="pos-result-block">
                 <p className="pos-section-label">Products</p>
-                {productMatches.map(([key, label, amount, , detail]) => (
-                  <button type="button" className="pos-result-row" key={key} onClick={() => { addOrIncrementCatalog(key); closePanel(); }}>
+                {productMatches.map((product) => (
+                  <button type="button" className="pos-result-row" key={product.key} onClick={() => { addOrIncrementCatalog(product.key); closePanel(); }}>
                     <span>
-                      <strong>{label}</strong>
-                      <small>{detail}</small>
+                      <strong>{product.name}</strong>
+                      <small>{product.description}</small>
                     </span>
-                    <b>{money(amount)}</b>
+                    <b>{money(product.amountCents)}</b>
                   </button>
                 ))}
               </section>
@@ -1005,19 +1046,20 @@ export default function PosPage() {
           <div className="pos-panel">
             <div className="pos-panel__bar">
               <button type="button" onClick={closePanel}>Back</button>
-              <strong>{category}</strong>
+              <strong>{categoryLabel}</strong>
               <span />
             </div>
             <div className="pos-product-list">
-              {categoryProducts.map(([key, label, amount, , detail]) => (
-                <button type="button" className="pos-product-row" key={key} onClick={() => addOrIncrementCatalog(key)}>
+              {categoryProducts.map((product) => (
+                <button type="button" className="pos-product-row" key={product.key} onClick={() => addOrIncrementCatalog(product.key)}>
                   <span>
-                    <strong>{label}</strong>
-                    <small>{detail}</small>
+                    <strong>{product.name}</strong>
+                    <small>{product.description}</small>
                   </span>
-                  <b>{money(amount)}</b>
+                  <b>{money(product.amountCents)}</b>
                 </button>
               ))}
+              {!categoryProducts.length ? <p className="pos-muted">No ready products in this group.</p> : null}
             </div>
           </div>
         )}
@@ -1554,7 +1596,7 @@ export default function PosPage() {
         <div className="pos-cart__lines">
           {cart.length ? (
             cart.map((line, index) => {
-              const unit = lineUnitCents(line);
+              const unit = lineUnitCents(line, catalog);
               const qty = line.quantity || 1;
               return (
                 <div className="pos-cart-line" key={`${lineKey(line)}-${index}`}>
@@ -1569,13 +1611,13 @@ export default function PosPage() {
                     <span>{qty}</span>
                   </div>
                   <div className="pos-cart-line__body">
-                    <strong>{lineLabel(line)}</strong>
+                    <strong>{lineLabel(line, catalog)}</strong>
                     <small>Qty: {qty}</small>
                     {line.customReason && line.customLabel && <small>{line.customReason}</small>}
                   </div>
                   <div className="pos-cart-line__meta">
                     <b>{money(unit * qty)}</b>
-                    <button type="button" aria-label={`Remove ${lineLabel(line)}`} onClick={() => removeLine(index)}>
+                    <button type="button" aria-label={`Remove ${lineLabel(line, catalog)}`} onClick={() => removeLine(index)}>
                       ×
                     </button>
                   </div>
