@@ -221,7 +221,15 @@ export type StaffAmariMailReadiness = {
   actor: 'Eben' | 'Garrett';
   mailbox: string;
   oauthConfigured: boolean;
+  configurationStatus: 'configured' | 'unconfigured';
+  connectionStatus: 'unconfigured' | 'absent' | 'invalid' | 'verified';
+  grantPresent: boolean;
+  grantConnected: boolean;
   grantVerified: boolean;
+  profileReady: boolean;
+  scopesReady: boolean;
+  sendAsReady: boolean;
+  credentialReady: boolean;
   deliveryEnabled: false;
   replySyncEnabled: false;
   fallbackProvider: null;

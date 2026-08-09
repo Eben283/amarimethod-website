@@ -114,15 +114,18 @@ function MailboxReadiness({ callbackState }: { callbackState: string | null }) {
 
   const configured = readiness?.oauthConfigured === true;
   const verified = readiness?.grantVerified === true;
+  const reconnectRequired = readiness?.connectionStatus === 'invalid';
   const connectionLabel = loading
     ? 'Checking connection'
     : !readiness
       ? 'Status unavailable'
       : verified
-      ? 'Google connection verified'
-      : configured
-        ? 'Not connected'
-        : 'Setup unavailable';
+        ? 'Stored grant verified'
+        : reconnectRequired
+          ? 'Reconnect required'
+          : configured
+            ? 'Not connected'
+            : 'Setup unavailable';
   const callbackMessage = callbackState === 'failed'
     ? 'Mailbox connection was not completed. Nothing was enabled.'
     : callbackState === 'connected' && verified
@@ -132,7 +135,7 @@ function MailboxReadiness({ callbackState }: { callbackState: string | null }) {
         : null;
   const route = [
     { label: 'Identity', value: readiness ? readiness.actor : loading ? 'Checking' : 'Unknown', state: readiness ? 'ready' : 'pending' },
-    { label: 'Google grant', value: verified ? 'Verified' : readiness ? configured ? 'Not connected' : 'Unavailable' : loading ? 'Checking' : 'Unknown', state: verified ? 'ready' : 'pending' },
+    { label: 'Google grant', value: verified ? 'Stored' : reconnectRequired ? 'Needs reconnect' : readiness ? configured ? 'Not connected' : 'Unavailable' : loading ? 'Checking' : 'Unknown', state: verified ? 'ready' : 'pending' },
     { label: 'Reply mirror', value: 'Off', state: 'off' },
     { label: 'Sending', value: 'Off', state: 'off' },
   ];
@@ -173,7 +176,7 @@ function MailboxReadiness({ callbackState }: { callbackState: string | null }) {
         {!loading && configured && !verified ? (
           <button type="button" onClick={connectMailbox} disabled={connecting}>
             {connecting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <Mail aria-hidden="true" />}
-            {connecting ? 'Opening Google…' : 'Connect my Amari mailbox'}
+            {connecting ? 'Opening Google…' : reconnectRequired ? 'Reconnect my Amari mailbox' : 'Connect my Amari mailbox'}
           </button>
         ) : null}
       </div>
