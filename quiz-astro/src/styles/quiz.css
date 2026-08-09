@@ -182,13 +182,16 @@
   justify-content: space-between;
   gap: 20px;
 }
-.wordmark {
-  font-family: var(--sans);
-  font-weight: 500;
-  font-size: 23px;
-  letter-spacing: -0.06em;
-  padding-left: 0;
+.quiz-wordmark {
+  display: inline-flex;
+  align-items: center;
+  width: 228px;
   color: var(--ink);
+}
+.quiz-wordmark img {
+  display: block;
+  width: 100%;
+  height: auto;
 }
 .topbar .meta {
   font-size: 11px;
@@ -634,6 +637,7 @@ footer.qfoot a:hover {
 
 @media (max-width: 720px) {
   .topbar .row { padding: 14px 20px; }
+  .quiz-wordmark { width: 190px; }
   .stage { padding: 130px 20px 80px; }
   .quiz-cover { padding: 94px 20px 24px; }
   .quiz-cover-panel { min-height: calc(100vh - 118px); padding: 30px 26px; }
