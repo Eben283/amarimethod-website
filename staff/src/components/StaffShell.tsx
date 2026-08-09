@@ -264,6 +264,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
   const compact = useCompactLayout();
   const counts = useShellCounts();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const isReferencePage = location.pathname.startsWith('/design-system');
   const [specialistsOpen, setSpecialistsOpen] = useState(() => SPECIALIST_ITEMS.some((item) => itemIsActive(item, location.pathname)));
   const railRef = useRef<HTMLElement>(null);
   const mobileHeadRef = useRef<HTMLElement>(null);
@@ -380,7 +381,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         <div className="staff-shell__content">{children}</div>
       </div>
 
-      <nav ref={dockRef} className="staff-shell__dock" aria-label="Quick Staff navigation" aria-hidden={compact && drawerOpen ? true : undefined}>
+      {!isReferencePage ? <nav ref={dockRef} className="staff-shell__dock" aria-label="Quick Staff navigation" aria-hidden={compact && drawerOpen ? true : undefined}>
         {PRIMARY_ITEMS.slice(0, 4).map((item) => {
           const active = itemIsActive(item, location.pathname);
           const { Icon } = item;
@@ -395,7 +396,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
           <span><Menu aria-hidden="true" />{counts.operations ? <CountBadge kind="operations" count={counts.operations} /> : null}</span>
           <small>More</small>
         </button>
-      </nav>
+      </nav> : null}
     </div>
   );
 }

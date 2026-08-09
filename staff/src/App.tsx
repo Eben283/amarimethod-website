@@ -112,7 +112,7 @@ function AppRoutes() {
         <Route path="pos" element={<Layout fullBleed><PosPage /></Layout>} />
         <Route path="products/*" element={<Layout><ProductsPage /></Layout>} />
         <Route path="media" element={<Layout><MediaPage /></Layout>} />
-        <Route path="design-system" element={<Layout><DesignSystemPage /></Layout>} />
+        <Route path="design-system/*" element={<Layout><DesignSystemPage /></Layout>} />
         <Route path="settings/communication" element={<Layout><CommunicationPreferencesPage /></Layout>} />
         {/* Retired route names keep their existing destinations. */}
         <Route path="triage" element={<Navigate to="/" replace />} />
