@@ -8,6 +8,7 @@ const MIGRATIONS = [
   "../migrations/0010_owned_sender_foundation.sql",
   "../migrations/0015_owned_communication_commands.sql",
   "../migrations/0016_gmail_provider_evidence.sql",
+  "../migrations/0017_gmail_sync_gap_evidence.sql",
 ];
 
 function migratedDb() {
@@ -32,6 +33,7 @@ describe("Gmail provider evidence migration", () => {
       "gmail_inbound_messages",
       "gmail_provider_events",
       "gmail_provider_submissions",
+      "gmail_sync_gap_reviews",
     ]);
 
     const columns = tables.flatMap((table) => db.prepare(`PRAGMA table_info(${table})`).all().map((row) => row.name));
@@ -54,6 +56,8 @@ describe("Gmail provider evidence migration", () => {
       "gmail_provider_events_no_update",
       "gmail_provider_submissions_no_delete",
       "gmail_provider_submissions_no_update",
+      "gmail_sync_gap_reviews_no_delete",
+      "gmail_sync_gap_reviews_no_update",
     ]));
 
     const now = "2026-08-08T18:00:00.000Z";

@@ -22,6 +22,15 @@ const INBOUND_FIELDS = new Set([
   "historyId", "receivedAt",
 ]);
 const HISTORY_FIELDS = new Set(["kind", "mailboxAddress", "historyId", "observedAt"]);
+const SYNC_GAP_FIELDS = new Set([
+  "kind", "mailboxAddress", "providerMessageId", "historyId", "reason", "observedAt",
+]);
+const SYNC_GAP_REASONS = new Map([
+  ["gmail_message_missing", "provider_message_missing"],
+  ["gmail_body_truncated", "body_truncated"],
+  ["gmail_metadata_truncated", "metadata_truncated"],
+  ["gmail_metadata_unusable", "metadata_unusable"],
+]);
 
 export class GmailEvidenceError extends Error {
   constructor(message, code = "invalid_evidence") {
@@ -205,8 +214,6 @@ async function providerOutcome(db, identity, input, now) {
       summary: { submissionRef: normalized.submissionRef, outcome: normalized.outcome }, now,
     }));
   }
-  const history = await historyStatement(db, identity, identity.grantOwner, normalized.historyId, normalized.occurredAt);
-  if (history) statements.push(history);
   try {
     await db.batch(statements);
   } catch (error) {
@@ -342,8 +349,6 @@ async function inboundMessage(db, identity, input, now) {
       summary: { fromAddress: evidence.fromAddress, gmailThreadId: evidence.gmailThreadId, inReplyTo: evidence.inReplyTo }, now,
     }));
   }
-  const history = await historyStatement(db, identity, evidence.mailboxAddress, evidence.historyId, evidence.receivedAt);
-  if (history) statements.push(history);
   try {
     await db.batch(statements);
   } catch (error) {
@@ -372,6 +377,32 @@ async function historyObservation(db, identity, input, now) {
   return { kind: "history_observation", mailboxActor: identity.mailboxActor, grantOwner: identity.grantOwner, mailboxAddress, historyId: cursor, deduped: Boolean(existing) };
 }
 
+async function syncGap(db, identity, input, now) {
+  exactFields(input, SYNC_GAP_FIELDS);
+  const mailboxAddress = emailAddress(input.mailboxAddress || identity.grantOwner, "mailboxAddress");
+  if (mailboxAddress !== identity.grantOwner) throw new GmailEvidenceError("mailboxAddress must equal grantOwner");
+  const providerMessageId = identifier(input.providerMessageId, "providerMessageId", { required: true });
+  const cursor = historyId(input.historyId, { required: true });
+  const reason = cleanText(input.reason, 80, { required: true });
+  if (SYNC_GAP_REASONS.get(input.kind) !== reason) throw new GmailEvidenceError("invalid Gmail sync gap reason");
+  const observedAt = timestamp(input.observedAt || now, "observedAt");
+  const existing = await db.prepare(
+    `SELECT id FROM gmail_sync_gap_reviews
+      WHERE grant_owner = ? AND provider_message_id = ? AND history_id = ? AND reason = ?`,
+  ).bind(identity.grantOwner, providerMessageId, cursor, reason).first();
+  const id = await deterministicId("ghg", `${identity.grantOwner}\n${providerMessageId}\n${cursor}\n${reason}`);
+  await db.prepare(
+    `INSERT OR IGNORE INTO gmail_sync_gap_reviews
+     (id, mailbox_actor, grant_owner, mailbox_address, provider_message_id, history_id, reason, observed_at, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  ).bind(id, identity.mailboxActor, identity.grantOwner, mailboxAddress, providerMessageId, cursor,
+    reason, observedAt, now).run();
+  return {
+    kind: input.kind, mailboxActor: identity.mailboxActor, grantOwner: identity.grantOwner,
+    mailboxAddress, providerMessageId, historyId: cursor, reason, deduped: Boolean(existing),
+  };
+}
+
 // `mailboxContext` is a trusted server-derived authorization context, not
 // provider evidence and never a request-body field. Routes that eventually
 // call this repository must derive it from the signed Staff identity and the
@@ -382,6 +413,7 @@ export async function recordGmailEvidence(db, mailboxContext, input, now = new D
   if (input?.kind === "provider_outcome") return providerOutcome(db, identity, input, now);
   if (input?.kind === "inbound_message") return inboundMessage(db, identity, input, now);
   if (input?.kind === "history_observation") return historyObservation(db, identity, input, now);
+  if (SYNC_GAP_REASONS.has(input?.kind)) return syncGap(db, identity, input, now);
   throw new GmailEvidenceError("unsupported Gmail evidence kind");
 }
 
@@ -405,7 +437,7 @@ export async function gmailEvidenceReadModel(db, options = {}) {
   const historyFilters = identityClauses
     .map((clause) => clause.replace("mailbox_actor", "observation.mailbox_actor").replace("grant_owner", "observation.grant_owner"));
   const historyWhere = historyFilters.length ? `WHERE ${historyFilters.join(" AND ")} AND` : "WHERE";
-  const [provider, inbound, reviews, history] = await Promise.all([
+  const [provider, inbound, reviews, history, syncGaps] = await Promise.all([
     db.prepare(`SELECT mailbox_actor, grant_owner, provider_event_id, outcome, provider_message_id,
                        gmail_thread_id, rfc_message_id, contact_id, occurred_at
                   FROM gmail_provider_events ${where}
@@ -432,6 +464,10 @@ export async function gmailEvidenceReadModel(db, options = {}) {
                    )
                  ORDER BY observation.grant_owner, observation.mailbox_address
                  LIMIT ?`).bind(...values, limit).all(),
+    db.prepare(`SELECT mailbox_actor, grant_owner, mailbox_address, provider_message_id,
+                       history_id, reason, observed_at
+                  FROM gmail_sync_gap_reviews ${where}
+                 ORDER BY datetime(observed_at) DESC, id DESC LIMIT ?`).bind(...values, limit).all(),
   ]);
   return {
     limit,
@@ -445,5 +481,6 @@ export async function gmailEvidenceReadModel(db, options = {}) {
       evidence_summary_json: undefined,
     })),
     latestHistory: history.results || [],
+    syncGaps: syncGaps.results || [],
   };
 }
