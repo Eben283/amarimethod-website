@@ -601,6 +601,46 @@ export async function mutateTask(input: TaskAction): Promise<StaffDay> {
   return fetchApi('/staff-tasks', { method: 'POST', body: JSON.stringify(input) });
 }
 
+// Amari-owned, person-specific dated follow-ups. These persist in the owned CRM
+// database and never trigger a message, booking, payment, or GHL workflow.
+export interface OwnedFollowup {
+  id: string;
+  contactId: string;
+  contactName: string;
+  title: string;
+  dueOn: string;
+  completedAt: string | null;
+  createdBy: string;
+  completedBy: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getOwnedFollowups(): Promise<{ success: boolean; followups: OwnedFollowup[] }> {
+  return fetchApi('/staff-followups');
+}
+
+export async function createOwnedFollowup(input: {
+  contactId: string;
+  title: string;
+  dueOn: string;
+}): Promise<{ success: boolean; followup: OwnedFollowup }> {
+  return fetchApi('/staff-followups', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'create', ...input }),
+  });
+}
+
+export async function setOwnedFollowupComplete(
+  id: string,
+  completed: boolean,
+): Promise<{ success: boolean; followup: OwnedFollowup }> {
+  return fetchApi('/staff-followups', {
+    method: 'POST',
+    body: JSON.stringify({ action: completed ? 'complete' : 'reopen', id }),
+  });
+}
+
 // One-tap post-call text (the "just left a voicemail" nudge). Sends the
 // staff-chosen pre-written body via GHL.
 export async function sendFollowupText(

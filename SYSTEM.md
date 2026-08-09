@@ -102,6 +102,7 @@ Last updated: 2026-08-08.
 | Field Studies suite | `staff/src/pages/FieldStudiesPage.tsx` + `FieldStudies*.css`, study forms |
 | Calendar / day-of | `TodayPage`, `CalendarRegistry`, `GarrettDay`, `AppointmentCard` |
 | Client detail CRM | `ClientDetailPage`, notes, message history |
+| Owned dated follow-ups | `staff/src/components/OwnedFollowupsPanel.tsx`, `functions/api/staff-followups.js`, `crm-mirror-worker/src/owned-followups.js` | Staff-authored reminders in CRM D1; create/complete/reopen never sends, books, charges, refunds, or writes to GHL. |
 | Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn |
 
 ### Messaging exit smoke tests

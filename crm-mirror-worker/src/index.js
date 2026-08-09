@@ -3,6 +3,7 @@ import { dashboardHtml } from "./dashboard.js";
 import { clientDeskHtml } from "./client-desk.js";
 import { dashboardSessionActor, dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import { deliveryReadiness } from "./owned-sender.js";
+import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
 import {
   activeClientOperations,
   communicationsInbox,
@@ -380,6 +381,46 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/sender/readiness") {
         return json(200, { success: true, worker: "amari-crm-mirror", ...deliveryReadiness(env) });
+      }
+      if (request.method === "GET" && url.pathname === "/owned-followups") {
+        const state = url.searchParams.get("state") || "open";
+        const limit = parseQueueLimit(url.searchParams.get("limit"));
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          followups: await listOwnedFollowups(env.CRM_DB, { state, limit }),
+        });
+      }
+      if (request.method === "POST" && url.pathname === "/owned-followups") {
+        const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
+        if (!actor) return json(400, { error: "valid staff actor required" });
+        let payload;
+        try { payload = await actionPayload(request); }
+        catch (error) { return json(400, { error: error.message }); }
+        try {
+          if (payload.action === "create") {
+            const followup = await createOwnedFollowup(env.CRM_DB, {
+              contactExternalId: payload.contactId,
+              title: payload.title,
+              dueOn: payload.dueOn,
+              actor,
+            });
+            return json(201, { success: true, followup });
+          }
+          if (payload.action === "complete" || payload.action === "reopen") {
+            const followup = await setOwnedFollowupCompletion(
+              env.CRM_DB,
+              payload.id,
+              payload.action === "complete",
+              actor,
+            );
+            return json(200, { success: true, followup });
+          }
+          return json(400, { error: "unknown follow-up action" });
+        } catch (error) {
+          const message = error instanceof Error ? error.message : String(error);
+          return json(message === "contact is not mirrored" || message === "follow-up not found" ? 404 : 400, { error: message });
+        }
       }
       if (request.method === "GET" && url.pathname === "/operations") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));

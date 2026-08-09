@@ -7,6 +7,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import OwnedFollowupsPanel from '../components/OwnedFollowupsPanel';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, addNote, updateContactField, getCallCoach, triggerCoachOne,
@@ -598,6 +599,8 @@ export default function FollowUpPage() {
           Replies could not be loaded. The outreach list is still available, but do not treat “0 to reply” as reliable. Refresh to try again.
         </div>
       )}
+
+      <OwnedFollowupsPanel onUnauthorized={logout} />
 
       {/* search — find anyone across all buckets (same idea as Outreach) */}
       <div className="relative mb-3">

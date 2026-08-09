@@ -48,6 +48,41 @@ describe("CRM mirror request validation", () => {
 });
 
 describe("CRM mirror dashboard access handoff", () => {
+  it("keeps owned dated follow-ups behind worker auth and returns only the owned record contract", async () => {
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: {
+        prepare: () => ({
+          bind: () => ({
+            all: async () => ({ results: [{
+              id: "followup_1",
+              title: "Call tomorrow",
+              due_on: "2026-08-09",
+              completed_at: null,
+              created_by: "Eben",
+              completed_by: null,
+              created_at: "2026-08-08T20:00:00.000Z",
+              updated_at: "2026-08-08T20:00:00.000Z",
+              display_name: "Surrina",
+              contact_external_id: "ghl_1",
+            }] }),
+          }),
+        }),
+      },
+    };
+    const denied = await worker.fetch(new Request("https://crm.test/owned-followups"), env);
+    expect(denied.status).toBe(401);
+
+    const response = await worker.fetch(new Request("https://crm.test/owned-followups", {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      followups: [{ id: "followup_1", contactId: "ghl_1", contactName: "Surrina", dueOn: "2026-08-09" }],
+    });
+  });
+
   it("exchanges an opaque one-time link for an HttpOnly dashboard session without exposing the bearer secret", async () => {
     const values = new Map();
     const env = {
