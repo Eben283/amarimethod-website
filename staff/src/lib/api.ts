@@ -64,6 +64,50 @@ export async function getCalendarSummary(date: string, endDate?: string): Promis
   return fetchApi(`/staff-data?${params}`);
 }
 
+export type StaffCalendarReadiness = 'ready' | 'attention' | 'legacy' | 'specialist';
+
+export interface StaffCalendarDefinition {
+  id: string;
+  key: string;
+  name: string;
+  group: 'sessions' | 'discovery' | 'studies';
+  lifecycle: 'current' | 'legacy' | 'specialist';
+  location: string;
+  durationMinutes: number | null;
+  intervalMinutes: number | null;
+  bufferMinutes: number | null;
+  bookingOwner: string;
+  paymentOwner: string;
+  appointmentStore: string;
+  remindersOwner: string;
+  publicPath?: string | null;
+  staffBookable: boolean;
+  readiness: StaffCalendarReadiness;
+  readinessNote: string;
+  timezone: string;
+}
+
+export interface StaffCalendarRegistry {
+  source: 'owned-registry';
+  timezone: string;
+  editable: false;
+  editingBoundary: string;
+  groups: Array<{ id: 'sessions' | 'discovery' | 'studies'; label: string; count: number }>;
+  calendars: StaffCalendarDefinition[];
+  workHours: {
+    timezone: string;
+    weekdays: string[];
+    openFrom: string;
+    openTo: string;
+    firstSessionStart: string;
+    lastSessionStart: string;
+  } | null;
+}
+
+export async function getStaffCalendars(): Promise<StaffCalendarRegistry> {
+  return fetchApi('/staff-calendars');
+}
+
 export type OpsSystemSummary = {
   id: string;
   label: string;

@@ -60,6 +60,7 @@ Last updated: 2026-08-08.
 | Assessment modal chrome | Native shell | `js/site-v6.js`, `css/site-v6.css` (`.assessment-booking-modal`) | Iframes native `/assessment-booking` |
 | Portal `BookingModal` | Native | `portal/src/components/BookingModal.tsx` | Prepaid → `portal-book`; no balance → Amari calendar then existing $190 payment link (`portal-pay-followup`) |
 | Staff Field Studies calendar | Native | `staff/src/pages/FieldStudiesPage.tsx` (`CalendarModal`) | Uses shared calendar; study multi-session loop is page-specific |
+| Staff Calendar workspace | Native | `staff/src/pages/TodayPage.tsx`, `staff/src/components/CalendarRegistry.tsx`, `functions/api/staff-calendars.js`, `functions/lib/staff-calendar-catalog.js` | Primary `/staff/calendar` destination: operational day/week/month schedule plus an owned, read-only registry of service timing, booking/payment ownership, and cutover readiness. No GHL destination link and no definition writes. |
 | `EmbedCalendarModal` | **Removed** | was `portal/src/components/EmbedCalendarModal.tsx` | Retired — portal QuickActions + ProgressTracker use `BookingModal` |
 | Marketing GHL iframe helper | **Legacy / unused** | `js/main.js` (`openCalendarModal`) | Dead helper; public pages use `/book/*` |
 
@@ -99,7 +100,7 @@ Last updated: 2026-08-08.
 | Name | Paths |
 |------|-------|
 | Field Studies suite | `staff/src/pages/FieldStudiesPage.tsx` + `FieldStudies*.css`, study forms |
-| Today / day-of | `TodayPage`, `GarrettDay`, `AppointmentCard` |
+| Calendar / day-of | `TodayPage`, `CalendarRegistry`, `GarrettDay`, `AppointmentCard` |
 | Client detail CRM | `ClientDetailPage`, notes, message history |
 | Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn |
 

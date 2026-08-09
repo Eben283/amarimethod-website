@@ -136,7 +136,7 @@ export default function HomePage() {
                 <span className="home-now__action">Open session record <ArrowRight aria-hidden="true" /></span>
               </button>
             ) : (
-              <button type="button" onClick={() => navigate('/today')}>
+              <button type="button" onClick={() => navigate('/calendar')}>
                 <span className="home-now__time">Clear</span>
                 <strong>No more sessions today</strong>
                 <small>Review the full day or prepare tomorrow.</small>
@@ -149,7 +149,7 @@ export default function HomePage() {
         <div className="home-day">
           <header className="home-panel-head">
             <div><p>Today</p><span>{schedule.length} {schedule.length === 1 ? 'appointment' : 'appointments'}</span></div>
-            <button type="button" onClick={() => navigate('/today')}>Full calendar <ChevronRight aria-hidden="true" /></button>
+            <button type="button" onClick={() => navigate('/calendar')}>Full calendar <ChevronRight aria-hidden="true" /></button>
           </header>
           <StateMessage loading={state.schedule.loading} error={state.schedule.error}>
             {schedule.length ? (
@@ -165,7 +165,7 @@ export default function HomePage() {
                   </li>;
                 })}
               </ol>
-            ) : <div className="home-empty">No appointments remain on today’s schedule. <button type="button" onClick={() => navigate('/today')}>Open the calendar</button></div>}
+            ) : <div className="home-empty">No appointments remain on today’s schedule. <button type="button" onClick={() => navigate('/calendar')}>Open the calendar</button></div>}
           </StateMessage>
         </div>
       </section>

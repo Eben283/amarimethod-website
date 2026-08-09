@@ -9,6 +9,7 @@ import SessionDocSheet from '../components/SessionDocSheet';
 import PayLinkSheet from '../components/PayLinkSheet';
 import MoneyMoments from '../components/MoneyMoments';
 import SharpenDeck from '../components/SharpenDeck';
+import CalendarRegistry from '../components/CalendarRegistry';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -49,6 +50,7 @@ export default function TodayPage() {
   const navigate = useNavigate();
 
   const [selectedDate, setSelectedDate] = useState(new Date());
+  const [section, setSection] = useState<'schedule' | 'services'>('schedule');
   const [view, setView] = useState<ViewMode>('week');
   const [dayAppointments, setDayAppointments] = useState<TodayAppointment[]>([]);
   const [weekData, setWeekData] = useState<Record<string, TodayAppointment[]>>({});
@@ -138,10 +140,11 @@ export default function TodayPage() {
   }, [logout]);
 
   useEffect(() => {
+    if (section !== 'schedule') return;
     if (view === 'day') loadDay(selectedDate);
     else if (view === 'week') loadWeek(selectedDate);
     else loadMonth(selectedDate);
-  }, [selectedDate, view, loadDay, loadWeek, loadMonth]);
+  }, [section, selectedDate, view, loadDay, loadWeek, loadMonth]);
 
   function navigateDate(delta: number) {
     setSelectedDate((prev) => view === 'month'
@@ -176,7 +179,17 @@ export default function TodayPage() {
   const showTodayButton = !isToday(selectedDate);
 
   return (
-    <div className="px-4 pt-6 pb-4">
+    <main className="staff-calendar-page px-4 pt-6 pb-4">
+      <header className="staff-calendar-page__head">
+        <div><span>Practice time</span><h1>Calendar</h1><p>Appointments, session work, and the booking rules behind each service.</p></div>
+      </header>
+
+      <nav className="staff-calendar-page__sections" aria-label="Calendar sections">
+        <button type="button" className={section === 'schedule' ? 'is-active' : ''} onClick={() => setSection('schedule')} aria-current={section === 'schedule' ? 'page' : undefined}>Schedule</button>
+        <button type="button" className={section === 'services' ? 'is-active' : ''} onClick={() => setSection('services')} aria-current={section === 'services' ? 'page' : undefined}>Services &amp; booking</button>
+      </nav>
+
+      {section === 'services' ? <CalendarRegistry onViewSchedule={() => setSection('schedule')} /> : <>
       {/* Today's sell moments — 8-pack opportunities hiding in today's schedule
           (renewals at last session + first-timers to pitch). */}
       <MoneyMoments />
@@ -285,7 +298,8 @@ export default function TodayPage() {
           onClose={() => setSellContactId(null)}
         />
       )}
-    </div>
+      </>}
+    </main>
   );
 }
 
