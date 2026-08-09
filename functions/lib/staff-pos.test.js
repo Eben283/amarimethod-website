@@ -86,6 +86,18 @@ describe("staff POS model", () => {
     })).toMatchObject({ totalCents: 19000, status: "draft", version: 1 });
   });
 
+  it("keeps payment settlement fields server-only", () => {
+    expect(() => normalizePaymentLegs([
+      {
+        method: "cash",
+        amountCents: 19000,
+        status: "paid",
+        cashReceivedCents: 19000,
+        paidAt: "2026-08-08T23:00:00.000Z",
+      },
+    ], 19000)).toThrow("Unknown payment allocation field");
+  });
+
   it("marks a sale paid only after every payment leg settles", () => {
     const sale = buildPosSale({
       id: "pos_abcdefgh",

@@ -13,6 +13,7 @@ import {
   MapPinned,
   Menu,
   MessageSquareText,
+  Package,
   Search,
   ShoppingBag,
   Sparkles,
@@ -58,13 +59,14 @@ const PRIMARY_ITEMS: RailItem[] = [
   { label: 'Inbox', detail: 'Member communication', to: '/client-desk', Icon: MessageSquareText, badge: 'inbox', matches: (path) => path === '/client-desk' || path === '/messages' },
   { label: 'Practice members', shortLabel: 'Members', detail: 'People and records', to: '/clients', Icon: UsersRound, matches: (path) => path === '/clients' || path.startsWith('/client/') },
   { label: 'Follow-up', detail: 'Replies and next moves', to: '/follow-up', Icon: ListChecks },
-  { label: 'Money', detail: 'Balances and payment work', to: '/balances', Icon: WalletCards, matches: (path) => path === '/balances' || path === '/revenue' || path === '/pos' },
+  { label: 'Money', detail: 'Balances and payment work', to: '/balances', Icon: WalletCards, matches: (path) => path === '/balances' || path === '/revenue' || path === '/products' || path.startsWith('/products/') || path === '/pos' },
   { label: 'Pipeline', detail: 'Care flow', to: '/pipeline', Icon: GitBranch, matches: (path) => path === '/pipeline' || path === '/funnel' },
   { label: 'Operations', detail: 'System health and cutover checks', to: '/operations', Icon: Activity, badge: 'operations' },
 ];
 
 const SPECIALIST_ITEMS: RailItem[] = [
   { label: 'Revenue', detail: 'Stripe sales record', to: '/revenue', Icon: CircleDollarSign },
+  { label: 'Products', detail: 'Offers and sale items', to: '/products', Icon: Package },
   { label: 'Staff POS', detail: 'In-person checkout', to: '/pos', Icon: ShoppingBag },
   { label: 'Funnel', detail: 'Lead flow and pace', to: '/funnel', Icon: TrendingUp },
   { label: 'Community', detail: 'Field relationships', to: '/community', Icon: MapPinned },

@@ -12,6 +12,7 @@ import {
 import { GHL_PRODUCTS } from "./ghl-products.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "./ghl-fields.js";
 import { readPosSale, writePosSale } from "./staff-pos.js";
+import { issueOwnedReceipt, ownedNoEffectCart, ownedNoEffectLine } from "./staff-pos-receipts.js";
 
 const KV_TTL_SECONDS = 90 * 86400;
 
@@ -109,8 +110,9 @@ async function claimFulfillment(context, saleId) {
 }
 
 /**
- * Fulfill a fully-paid POS sale into GHL. Idempotent on sale.id.
- * Returns { sale, result } where result explains what happened.
+ * Fulfill a fully-paid POS sale through its explicit policy. Owned no-effect
+ * carts issue an immutable receipt; provider-linked package carts use the
+ * temporary GHL invoice bridge. Returns { sale, result }.
  */
 export async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) {
   if (!sale || sale.status !== "paid") {
@@ -118,6 +120,60 @@ export async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) 
   }
   if (sale.fulfillmentStatus === "fulfilled") {
     return { sale, result: { skipped: true, reason: "already_fulfilled" } };
+  }
+  if (ownedNoEffectCart(sale.cart)) {
+    try {
+      const receipt = await issueOwnedReceipt(context.env.ATTEND_DB || null, sale, { actor });
+      const completedAt = receipt.issuedAt;
+      const completed = {
+        ...sale,
+        fulfillmentStatus: "fulfilled",
+        fulfillmentError: null,
+        fulfilledAt: completedAt,
+        fulfillment: {
+          adapter: "owned_receipt",
+          stage: "issued",
+          effect: "none",
+          receiptId: receipt.receiptId,
+          issuedAt: receipt.issuedAt,
+        },
+        updatedAt: completedAt,
+        version: (Number.isInteger(sale.version) ? sale.version : 0) + 1,
+        audit: [
+          ...(sale.audit || []),
+          {
+            at: completedAt,
+            actor,
+            action: "owned_receipt_issued",
+            detail: `Owned receipt ${receipt.receiptId} issued. No session, access, booking, automation, or GHL effect was applied.`,
+          },
+        ],
+      };
+      return {
+        sale: completed,
+        result: { ok: true, pending: false, effect: "none", receiptId: receipt.receiptId },
+      };
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      const failedAt = new Date().toISOString();
+      const failed = {
+        ...sale,
+        fulfillmentStatus: "failed",
+        fulfillmentError: message.slice(0, 300),
+        fulfillment: { adapter: "owned_receipt", stage: "failed", effect: "none" },
+        updatedAt: failedAt,
+        version: (Number.isInteger(sale.version) ? sale.version : 0) + 1,
+        audit: [...(sale.audit || []), { at: failedAt, actor, action: "owned_receipt_failed", detail: message.slice(0, 300) }],
+      };
+      return { sale: failed, result: { ok: false, pending: true, reason: "owned_receipt_failed", error: message } };
+    }
+  }
+  if ((sale.cart || []).some(ownedNoEffectLine)) {
+    const message = "Owned no-effect products cannot share a cart with session or access products";
+    return {
+      sale: { ...sale, fulfillmentStatus: "failed", fulfillmentError: message },
+      result: { ok: false, pending: true, reason: "mixed_fulfillment_policy", error: message },
+    };
   }
   if (String(sale.client?.id || "").startsWith("draft_")) {
     return { sale, result: { skipped: true, reason: "draft_client" } };

@@ -7,7 +7,7 @@ Companion docs:
 - Marketing visual language → `DESIGN.md` + `css/site-v6.css`
 - Native booking architecture → `amari-method-docs/ops/memory/project_native_booking.md`
 
-Last updated: 2026-07-30.
+Last updated: 2026-08-08.
 
 ---
 
@@ -68,6 +68,8 @@ Last updated: 2026-07-30.
 | Name | Kind | Paths | Notes |
 |------|------|-------|-------|
 | Staff POS | Native | `staff/src/pages/PosPage.tsx`, `PosPage.css` | Dark terminal; Stripe Checkout + card-on-file |
+| Staff Products | Native | `staff/src/pages/ProductsPage.tsx`, `functions/api/staff-products.js`, `functions/lib/staff-products.js`, `db/staff-commerce-schema.sql` | Staff-visible catalog; Eben may create owned reusable simple products. Custom versions are immutable D1 records and always have `fulfillment_policy='none'`. |
+| Owned simple-product receipts | Native | `functions/lib/staff-pos-receipts.js`, `db/staff-commerce-schema.sql` | Exact-sale, immutable D1 receipt snapshot. Applies no sessions, access, booking, automation, Stripe product, or GHL product/invoice effect. Mixed fulfillment-policy carts fail closed. |
 | Stripe card-on-file | Native | `functions/api/staff-stripe-cards.js`, `functions/lib/stripe-api.js`, POS charge flow | Prefer proven GHL-linked customer with reusable `pm_` |
 | PayLinkSheet | Amari UI | `staff/src/components/PayLinkSheet.tsx` | Sends payment links; keep UI |
 | Native create-checkout | Native API | `functions/api/book/create-checkout.js` | Public paid path (may still redirect to GHL payment link) |

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   chargeCustomerCard,
+  createPosCheckoutSession,
   listCustomerCards,
   resolveProvenStripeCustomer,
   stripeRequest,
@@ -247,6 +248,34 @@ describe("chargeCustomerCard", () => {
     expect(body).toContain("customer=cus_1");
     expect(fetchMock.mock.calls[0][1].headers["Idempotency-Key"]).toBe(
       "staff-pos:pos_1:leg_1:saved-card",
+    );
+  });
+});
+
+describe("createPosCheckoutSession", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("uses a deterministic Stripe idempotency key for a sale payment leg", async () => {
+    const fetchMock = vi.fn(async () => ({
+      ok: true,
+      status: 200,
+      json: async () => ({ id: "cs_1", url: "https://checkout.stripe.test/cs_1" }),
+    }));
+    vi.stubGlobal("fetch", fetchMock);
+    await createPosCheckoutSession("sk", {
+      amountCents: 9000,
+      productLabel: "Simple item",
+      saleId: "pos_1",
+      paymentLegId: "leg_1",
+      contactId: "contact_1",
+      successUrl: "https://example.com/success",
+      cancelUrl: "https://example.com/cancel",
+      legMethod: "checkout_link",
+    });
+    expect(fetchMock.mock.calls[0][1].headers["Idempotency-Key"]).toBe(
+      "staff-pos:pos_1:leg_1:checkout",
     );
   });
 });

@@ -15,6 +15,8 @@ import {
   writePosSale,
 } from "../lib/staff-pos.js";
 import { fulfillPaidPosSale } from "../lib/staff-pos-fulfill.js";
+import { ownedNoEffectCart, ownedNoEffectLine } from "../lib/staff-pos-receipts.js";
+import { listStaffProducts, posCatalogFromProducts } from "../lib/staff-products.js";
 import {
   chargeCustomerCard,
   createPosCheckoutSession,
@@ -34,8 +36,18 @@ const POS_PAYMENT_ACTIONS = new Set([
   "fulfill",
 ]);
 
-export function posPaymentActionAvailable(env, action) {
-  return !POS_PAYMENT_ACTIONS.has(action) || env?.STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED === "true";
+export function posPaymentActionAvailable(env, action, sale) {
+  if (!POS_PAYMENT_ACTIONS.has(action)) return true;
+  if (ownedNoEffectCart(sale?.cart)) return !!env?.ATTEND_DB;
+  if ((sale?.cart || []).some(ownedNoEffectLine)) return false;
+  return env?.STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED === "true";
+}
+
+function unavailablePaymentResponse(headers) {
+  return json({
+    error: "POS payments are temporarily disabled while fulfillment is being verified.",
+    code: "pos_fulfillment_not_ready",
+  }, 409, headers);
 }
 
 function saleId() {
@@ -93,7 +105,7 @@ export async function onRequestGet(context) {
   }
 }
 
-async function ensureSale(context, body, reviewer) {
+async function ensureSale(context, body, reviewer, catalog) {
   const id = typeof body.id === "string" ? body.id : "";
   if (id) {
     const existing = await readPosSale(context.env.PORTAL_KV, id);
@@ -107,6 +119,7 @@ async function ensureSale(context, body, reviewer) {
         cart: body.cart,
         paymentLegs: body.paymentLegs,
         reviewer,
+        catalog,
       });
       await writePosSale(context.env.PORTAL_KV, sale);
       return sale;
@@ -119,6 +132,7 @@ async function ensureSale(context, body, reviewer) {
     cart: body.cart,
     paymentLegs: body.paymentLegs,
     reviewer,
+    catalog,
   });
   await writePosSale(context.env.PORTAL_KV, sale);
   return sale;
@@ -285,33 +299,27 @@ export async function onRequestPost(context) {
   if (bodyError) return bodyError;
   const action = typeof body.action === "string" ? body.action : "";
   const reviewer = typeof payload?.user === "string" ? payload.user : "Staff";
-
-  // The invoice bridge is the fulfillment safety boundary. Do not let Staff
-  // collect or initiate payment while that boundary is disabled; otherwise a
-  // successful charge could be left honestly pending but operationally owed.
-  if (!posPaymentActionAvailable(context.env, action)) {
-    return json({
-      error: "POS payments are temporarily disabled while fulfillment is being verified.",
-      code: "pos_fulfillment_not_ready",
-    }, 409, headers);
-  }
+  const productList = await listStaffProducts(context.env.ATTEND_DB || null);
+  const catalog = posCatalogFromProducts(productList.products);
 
   try {
     if (action === "create") {
-      const sale = buildPosSale({ id: saleId(), client: body.client, cart: body.cart, paymentLegs: body.paymentLegs, reviewer });
+      const sale = buildPosSale({ id: saleId(), client: body.client, cart: body.cart, paymentLegs: body.paymentLegs, reviewer, catalog });
       await writePosSale(context.env.PORTAL_KV, sale);
       return json({ sale }, 201, headers);
     }
 
     if (action === "start-checkout") {
-      const sale = await ensureSale(context, body, reviewer);
+      const sale = await ensureSale(context, body, reviewer, catalog);
+      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers);
       if (!sale.paymentLegs?.length) return json({ error: "Add a payment method before checkout" }, 400, headers);
       const result = await openStripeLegs(context, sale, reviewer);
       return json(result, 200, headers);
     }
 
     if (action === "charge-saved-card") {
-      const sale = await ensureSale(context, body, reviewer);
+      const sale = await ensureSale(context, body, reviewer, catalog);
+      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers);
       if (!sale.paymentLegs?.length) return json({ error: "Add a payment method before charging" }, 400, headers);
       const result = await chargeSavedCardLeg(context, sale, reviewer, {
         paymentMethodId: body.paymentMethodId,
@@ -322,7 +330,8 @@ export async function onRequestPost(context) {
     }
 
     if (action === "record-cash") {
-      const sale = await ensureSale(context, body, reviewer);
+      const sale = await ensureSale(context, body, reviewer, catalog);
+      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers);
       const legId = typeof body.paymentLegId === "string" ? body.paymentLegId : sale.paymentLegs.find((leg) => leg.method === "cash" && leg.status !== "paid")?.id;
       if (!legId) return json({ error: "No cash payment leg found" }, 400, headers);
       const cashReceivedCents = Number(body.cashReceivedCents);
@@ -349,6 +358,7 @@ export async function onRequestPost(context) {
       const id = typeof body.id === "string" ? body.id : "";
       const existing = await readPosSale(context.env.PORTAL_KV, id);
       if (!existing) return json({ error: "Saved cart not found" }, 404, headers);
+      if (!posPaymentActionAvailable(context.env, action, existing)) return unavailablePaymentResponse(headers);
       if (existing.status !== "paid") return json({ error: "Sale must be fully paid before fulfillment" }, 400, headers);
       const { sale: fulfilled, result } = await fulfillPaidPosSale(context, existing, { actor: reviewer });
       await writePosSale(context.env.PORTAL_KV, fulfilled);
@@ -360,7 +370,7 @@ export async function onRequestPost(context) {
     if (!existing) return json({ error: "Saved cart not found" }, 404, headers);
     if (action === "save") {
       if (body.version !== undefined && body.version !== existing.version) return json({ error: "This cart changed elsewhere. Reload it before saving." }, 409, headers);
-      const sale = updatePosSale(existing, { client: body.client, cart: body.cart, paymentLegs: body.paymentLegs, reviewer });
+      const sale = updatePosSale(existing, { client: body.client, cart: body.cart, paymentLegs: body.paymentLegs, reviewer, catalog });
       await writePosSale(context.env.PORTAL_KV, sale);
       return json({ sale }, 200, headers);
     }

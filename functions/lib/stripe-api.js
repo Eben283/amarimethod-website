@@ -111,7 +111,9 @@ export async function createPosCheckoutSession(secretKey, {
   if (customerId) params.customer = customerId;
   else if (customerEmail) params.customer_email = customerEmail;
 
-  return stripeRequest(secretKey, "POST", "/checkout/sessions", params);
+  return stripeRequest(secretKey, "POST", "/checkout/sessions", params, {
+    idempotencyKey: `staff-pos:${saleId}:${paymentLegId}:checkout`,
+  });
 }
 
 function safeCardDescriptor(pm) {

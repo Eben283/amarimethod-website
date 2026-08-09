@@ -315,7 +315,7 @@ export interface PosSale {
   status: PosSaleStatus;
   version: number;
   client: PosClient;
-  cart: Array<{ kind: 'catalog' | 'custom'; productKey: string | null; label: string; reason?: string; quantity: number; unitAmountCents: number; lineTotalCents: number }>;
+  cart: Array<{ kind: 'catalog' | 'custom'; productKey: string | null; productVersion?: number | null; label: string; reason?: string; quantity: number; unitAmountCents: number; lineTotalCents: number; fulfillmentPolicy?: 'provider-linked' | 'none' }>;
   totalCents: number;
   paymentLegs: PosPaymentLeg[];
   fulfillmentStatus?: string | null;
@@ -343,6 +343,52 @@ export interface PosCheckoutOpen {
   legId: string;
   url: string;
   sessionId: string;
+}
+
+export type StaffProductPolicy = 'current' | 'legacy' | 'custom';
+export interface StaffProduct {
+  key: string;
+  version: number;
+  name: string;
+  amountCents: number;
+  currency: 'USD';
+  category: 'service' | 'practice-support' | 'retail';
+  description: string;
+  internalReason: string;
+  salesPolicy: StaffProductPolicy;
+  source: 'built-in' | 'staff-created';
+  active: boolean;
+  availableInPos: boolean;
+  readiness: 'ready' | 'needs-fulfillment';
+  readinessReason: string | null;
+  fulfillmentMode: 'linked' | 'manual';
+  fulfillmentPolicy: 'provider-linked' | 'none';
+  fulfillmentSummary: string;
+  createdAt: string | null;
+  createdBy: string | null;
+}
+
+export interface StaffProductsResponse {
+  products: StaffProduct[];
+  canCreate: boolean;
+  storage: 'owned-d1' | 'unavailable';
+  error?: string | null;
+}
+
+export async function getStaffProducts(): Promise<StaffProductsResponse> {
+  return fetchApi('/staff-products');
+}
+
+export async function createStaffProduct(input: {
+  requestId: string;
+  name: string;
+  amountCents: number;
+  category: StaffProduct['category'];
+  description: string;
+  internalReason: string;
+  availableInPos: boolean;
+}): Promise<{ product: StaffProduct }> {
+  return fetchApi('/staff-products', { method: 'POST', body: JSON.stringify(input) });
 }
 
 export async function getPosSale(id: string): Promise<{ sale: PosSale }> {

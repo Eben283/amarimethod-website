@@ -10,6 +10,22 @@ afterEach(() => {
 });
 
 describe("Staff POS GHL invoice bridge", () => {
+  it("refuses owned no-effect products so they cannot leak into GHL invoices", () => {
+    expect(assessPosInvoiceSupport([{
+      kind: "catalog",
+      productKey: "custom-123",
+      label: "Movement straps",
+      ghlProductId: null,
+      fulfillmentPolicy: "none",
+      quantity: 1,
+      unitAmountCents: 4800,
+      lineTotalCents: 4800,
+    }])).toMatchObject({
+      supported: false,
+      reasons: [expect.stringContaining("owned no-effect")],
+    });
+  });
+
   it("builds a no-send GHL invoice from immutable catalog and custom cart lines", () => {
     const request = buildPosInvoiceRequest({
       id: "pos_invoiceplan1",
@@ -91,7 +107,10 @@ describe("Staff POS GHL invoice bridge", () => {
     expect(assessPosInvoiceSupport([
       line("69986faa724ecd2343ebaa6e"),
       { kind: "custom", label: "No fulfillment", quantity: 1, unitAmountCents: 100, lineTotalCents: 100 },
-    ])).toMatchObject({ supported: true, effect: "package" });
+    ])).toMatchObject({
+      supported: false,
+      reasons: [expect.stringContaining("owned no-effect")],
+    });
 
     for (const cart of [
       [line("6a010952e41b442c862d3c01")], // additive 4→8 upgrade
@@ -106,7 +125,7 @@ describe("Staff POS GHL invoice bridge", () => {
     expect(assessPosInvoiceSupport([
       line("6a66cf0103821ea09ea13f1b"), // assessment: paid evidence, no session/access credit
       { kind: "custom", label: "No fulfillment", quantity: 1, unitAmountCents: 100, lineTotalCents: 100 },
-    ])).toMatchObject({ supported: true, effect: "none" });
+    ])).toMatchObject({ supported: false, effect: "needs_review" });
   });
 
   it("places the one supported package first so the current ledger cannot miss it", () => {
