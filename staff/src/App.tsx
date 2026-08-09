@@ -107,6 +107,7 @@ function AppRoutes() {
         <Route path="field-studies" element={<Layout fullBleed><FieldStudiesPage /></Layout>} />
         <Route path="operations" element={<Layout fullBleed><OperationsPage /></Layout>} />
         <Route path="automations" element={<Layout fullBleed><AutomationRegistryPage /></Layout>} />
+        <Route path="automations/:familyKey" element={<Layout fullBleed><AutomationRegistryPage /></Layout>} />
         <Route path="community" element={<Layout><CommunityPage /></Layout>} />
         <Route path="pos" element={<Layout fullBleed><PosPage /></Layout>} />
         <Route path="products/*" element={<Layout><ProductsPage /></Layout>} />

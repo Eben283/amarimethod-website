@@ -294,7 +294,7 @@ describe("Client Desk message rendering", () => {
     expect(rendered).toContain('id="record-workflows"');
     expect(rendered).toContain("Initial session lifecycle");
     expect(rendered).toContain("Inspect workflow");
-    expect(rendered).toContain("/staff/automations?family=initial-session-lifecycle&amp;contact=owned_person_1");
+    expect(rendered).toContain("/staff/automations/initial-session-lifecycle?contact=owned_person_1");
     expect(rendered).toContain('data-staff-handoff');
   });
 
@@ -313,7 +313,7 @@ describe("Client Desk message rendering", () => {
       automation_contact_id: "owned_person_1",
     });
     expect(attributed).toContain("View workflow");
-    expect(attributed).toContain("/staff/automations?family=initial-session-lifecycle&amp;contact=owned_person_1");
+    expect(attributed).toContain("/staff/automations/initial-session-lifecycle?contact=owned_person_1");
 
     const unattributed = helpers.timelineItem({
       activity_type: "message", channel: "sms", direction: "outbound", body: "Manual note.",

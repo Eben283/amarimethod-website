@@ -5,8 +5,8 @@ const ORIGIN = 'https://www.amarimethod.com';
 
 describe('deskNavigationRoute', () => {
   it('removes the Staff router basename exactly once for workflow inspection', () => {
-    expect(deskNavigationRoute('/staff/automations?family=quiz-nurture&contact=person_1', ORIGIN))
-      .toBe('/automations?family=quiz-nurture&contact=person_1');
+    expect(deskNavigationRoute('/staff/automations/quiz-nurture?contact=person_1', ORIGIN))
+      .toBe('/automations/quiz-nurture?contact=person_1');
   });
 
   it('preserves the existing POS handoff route', () => {
