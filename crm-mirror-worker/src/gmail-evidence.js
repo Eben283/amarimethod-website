@@ -431,7 +431,7 @@ export async function gmailEvidenceReadModel(db, options = {}) {
   const historyFilters = identityClauses
     .map((clause) => clause.replace("mailbox_actor", "observation.mailbox_actor").replace("grant_owner", "observation.grant_owner"));
   const historyWhere = historyFilters.length ? `WHERE ${historyFilters.join(" AND ")} AND` : "WHERE";
-  const [provider, inbound, reviews, history] = await Promise.all([
+  const [provider, inbound, reviews, history, syncGaps] = await Promise.all([
     db.prepare(`SELECT mailbox_actor, grant_owner, provider_event_id, outcome, provider_message_id,
                        gmail_thread_id, rfc_message_id, contact_id, occurred_at
                   FROM gmail_provider_events ${where}
@@ -458,6 +458,10 @@ export async function gmailEvidenceReadModel(db, options = {}) {
                    )
                  ORDER BY observation.grant_owner, observation.mailbox_address
                  LIMIT ?`).bind(...values, limit).all(),
+    db.prepare(`SELECT mailbox_actor, grant_owner, mailbox_address, provider_message_id,
+                       history_id, reason, observed_at
+                  FROM gmail_sync_gap_reviews ${where}
+                 ORDER BY datetime(observed_at) DESC, id DESC LIMIT ?`).bind(...values, limit).all(),
   ]);
   return {
     limit,
@@ -471,5 +475,6 @@ export async function gmailEvidenceReadModel(db, options = {}) {
       evidence_summary_json: undefined,
     })),
     latestHistory: history.results || [],
+    syncGaps: syncGaps.results || [],
   };
 }

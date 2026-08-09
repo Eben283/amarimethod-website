@@ -185,6 +185,33 @@ describe("Gmail provider evidence", () => {
     await expect(ingestGmailEvidence(db, context, evidence, now)).resolves.toMatchObject({ deduped: true });
     expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_sync_gap_reviews").get().count).toBe(1);
     expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_history_observations").get().count).toBe(0);
+
+    await ingestGmailEvidence(db, context, {
+      ...evidence,
+      providerMessageId: "deleted-message-2",
+      historyId: "900719925474099312346",
+      observedAt: "2026-08-08T19:00:00.000Z",
+    }, now);
+    await ingestGmailEvidence(db, { mailboxActor: "Garrett", grantOwner: "garrett@amarimethod.com" }, {
+      ...evidence,
+      mailboxAddress: "garrett@amarimethod.com",
+      providerMessageId: "garrett-deleted-message",
+      historyId: "900719925474099312347",
+      observedAt: "2026-08-08T20:00:00.000Z",
+    }, now);
+
+    const model = await gmailEvidenceReadModel(db, {
+      mailboxActor: "Eben", grantOwner: "eben@amarimethod.com", limit: 1,
+    });
+    expect(model.syncGaps).toEqual([{
+      mailbox_actor: "Eben",
+      grant_owner: "eben@amarimethod.com",
+      mailbox_address: "eben@amarimethod.com",
+      provider_message_id: "deleted-message-2",
+      history_id: "900719925474099312346",
+      reason: "provider_message_missing",
+      observed_at: "2026-08-08T19:00:00.000Z",
+    }]);
   });
 
   it("deduplicates identical provider evidence and rejects conflicting reuse", async () => {
