@@ -93,6 +93,7 @@ Last updated: 2026-08-08.
 | Partner auth twin | Native | `functions/api/partner-auth.js`, `partner-verify.js` | |
 | Portal chrome | Native | `PortalNav`, `portal/src/styles/portal.css` (`--cp-*`) | |
 | Staff workspace shell | Native | `staff/src/components/StaffShell.tsx`, `staff/src/styles/staff-shell.css`, `staff/src/App.tsx` | Persistent task-oriented practice rail, global member search, read-only inbox/operations badges, and compact mobile dock/drawer. Field Studies remains under Specialist Tools rather than primary CRM navigation. |
+| Staff Amari mail grant | Native OAuth foundation | `functions/api/staff-amari-mail-auth.js`, `functions/api/staff-amari-mail-callback.js`, `functions/lib/amari-mail-oauth.js`, `crm-mirror-worker/src/gmail.js` | Signed Eben/Garrett Staff identity can authorize only its own exact `@amarimethod.com` mailbox. OAuth state is signed and one-time; tokens and verified status are isolated per actor. Readiness is visible, but delivery, composer, inbound reply sync, and fallback sending remain disabled. |
 | site-v6 marketing system | Native | `css/site-v6.css`, `js/site-v6.js`, `DESIGN.md` | |
 
 ### Staff ops surfaces (owned — don't replace with GHL screens)
