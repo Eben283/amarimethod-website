@@ -217,6 +217,32 @@ export async function getOpsSystemsBoard(): Promise<OpsSystemsBoard> {
   return fetchApi('/ops/systems');
 }
 
+export type StaffAmariMailReadiness = {
+  actor: 'Eben' | 'Garrett';
+  mailbox: string;
+  oauthConfigured: boolean;
+  grantVerified: boolean;
+  deliveryEnabled: false;
+  replySyncEnabled: false;
+  fallbackProvider: null;
+  blockers: string[];
+};
+
+export async function getStaffAmariMailReadiness(): Promise<StaffAmariMailReadiness> {
+  return fetchApi('/staff-amari-mail-auth');
+}
+
+export async function startStaffAmariMailAuthorization(): Promise<{ authorizationUrl: string; deliveryEnabled: false }> {
+  try {
+    return await fetchApi('/staff-amari-mail-auth', { method: 'POST' });
+  } catch (error) {
+    if (error instanceof ApiError && error.status === 503) {
+      throw new Error('Amari mail authorization is not configured');
+    }
+    throw error;
+  }
+}
+
 export async function searchContacts(query: string): Promise<import('../types/staff').ContactListItem[]> {
   return fetchApi(`/staff-contacts?query=${encodeURIComponent(query)}`);
 }
