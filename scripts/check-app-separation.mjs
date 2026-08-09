@@ -15,6 +15,12 @@ if (!/base:\s*['"]\/parking\/['"]/.test(parkingConfig) || !/outDir:\s*['"]\.\.\/
 if (!redirects.includes("/parking/* /parking/index.html 200")) {
   throw new Error("Parking needs its own SPA fallback.");
 }
+
+for (const route of ["/staff/automations", "/staff/settings/communication"]) {
+  if (!redirects.includes(`${route} /staff/ 200`)) {
+    throw new Error(`${route} must resolve through the Staff SPA entrypoint`);
+  }
+}
 if (!parkingPage.includes("Parking checklist") || !parkingPage.includes("getCurrentParking")) {
   throw new Error("Parking must own the static card and parking checklist.");
 }
