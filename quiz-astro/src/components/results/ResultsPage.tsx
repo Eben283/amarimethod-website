@@ -105,7 +105,7 @@ const EDITORIAL_STYLES = `
 }
 [data-results] .hero-sub em{font-style:normal;color:var(--ink)}
 [data-results] .hero-meta{
-  margin-top:34px;display:grid;grid-template-columns:1fr 1fr;gap:1px;
+  margin-top:34px;display:grid;grid-template-columns:1fr;gap:1px;
   background:var(--line);border:1px solid var(--line);border-radius:3px;overflow:hidden;
   max-width:none;
 }
@@ -224,41 +224,16 @@ const EDITORIAL_STYLES = `
 [data-results] .chain-foot a{color:var(--ink);border-bottom:1px solid var(--line-strong)}
 [data-results] .chain-foot a:hover{color:var(--rust);border-color:var(--rust)}
 
-/* ── EXAMINER / NOTE ─────────────────────────────────────────────── */
-[data-results] .examiner,[data-results] .note{
-  margin-top:48px;border-top:1px solid var(--line);padding:40px 0 8px;border-bottom:none;
+/* ── ASSESSMENT EXPLANATION ──────────────────────────────────────── */
+[data-results] .assessment-note{
+  margin-top:48px;border-top:1px solid var(--line);padding:40px 0 8px;
 }
-[data-results] .examiner-grid{
-  display:grid;grid-template-columns:auto 1fr;gap:28px;align-items:start;padding-left:0;
+[data-results] .assessment-note h2{
+  margin-top:16px;font-size:clamp(1.9rem,3.8vw,2.7rem);max-width:18ch;
 }
-[data-results] .examiner-id{display:flex;flex-direction:column;gap:10px;padding-top:0}
-@media (max-width:760px){
-  [data-results] .examiner-grid{grid-template-columns:1fr;gap:20px}
+[data-results] .assessment-note p{
+  margin-top:16px;font-size:1.12rem;line-height:1.58;max-width:54ch;color:var(--ink);
 }
-[data-results] .examiner-avatar{
-  width:48px;height:48px;border-radius:50%;background:var(--ink);
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--display);color:#fff;font-size:22px;font-style:normal;font-weight:500;
-}
-[data-results] .examiner-id .who{
-  font-family:var(--display);font-size:1.2rem;line-height:1.25;color:var(--ink);font-weight:500;
-}
-[data-results] .examiner-id .who b{font-weight:500}
-[data-results] .examiner-id .role{
-  font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.16em;
-  text-transform:uppercase;color:var(--body);
-}
-[data-results] .examiner-body{display:flex;flex-direction:column;gap:18px}
-[data-results] .examiner-body p{
-  font-family:var(--display);font-size:1.35rem;line-height:1.4;color:var(--ink);
-  font-style:normal;font-weight:400;max-width:40ch;
-}
-[data-results] .examiner-body p em{font-style:normal;color:var(--ink)}
-[data-results] .examiner-body .signoff{
-  font-family:var(--sans);font-style:normal;font-size:12px;font-weight:600;
-  letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-top:4px;
-}
-
 /* ── OFFER CARD ──────────────────────────────────────────────────── */
 [data-results] .offer{
   margin-top:0;border:1px solid var(--line-strong);border-radius:4px;overflow:hidden;
@@ -495,14 +470,6 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
     : shareState === 'error'    ? 'Something went wrong'
     : 'Share your result';
 
-  // Recovery reading text label (used in hero meta)
-  const recoveryScore = scores.recoveryPotential;
-  const recoveryWord =
-    recoveryScore >= 75 ? 'High'
-    : recoveryScore >= 60 ? 'Good'
-    : recoveryScore >= 45 ? 'Moderate'
-    : 'Limited';
-
   return (
     <div data-results>
       <style dangerouslySetInnerHTML={{ __html: EDITORIAL_STYLES }} />
@@ -527,12 +494,10 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       </div>
 
       {/* 2 — Hero finding */}
-      <ResultsHero
-        firstName={firstName}
-        patternSignature={patternSignature}
-        scores={scores}
-        recoveryWord={recoveryWord}
-      />
+        <ResultsHero
+          firstName={firstName}
+          patternSignature={patternSignature}
+        />
 
       {/* Share strip */}
       <div className="share-strip">
@@ -556,24 +521,13 @@ const ResultsPage = ({ firstName, patternSignature, scores, insights }: ResultsP
       {/* 3, 4, 5 — Condition story (why-3-up + protocol video + chain) */}
       {conditionContent ? <ConditionStory content={conditionContent} /> : null}
 
-      {/* 6 — Examiner's note */}
-      <section className="examiner doc">
-        <div className="examiner-grid">
-          <div className="examiner-id">
-            <div className="examiner-avatar" aria-hidden="true">G</div>
-            <div className="role">From Garrett</div>
-            <div className="who"><b>Garrett Hewstan</b><br />Founder, Amari Method</div>
-          </div>
-          <div className="examiner-body">
-            <p>
-              What stood out in your answers: {patternSignature.toLowerCase()}. Your body may be organizing around the issue in a way that keeps the same areas working too hard. That pattern is something we can explore directly in the room.
-            </p>
-            <p>
-              The next step is simple: start with one $29 Assessment. You will move, breathe, and experience hands-on guided movement directly—then decide whether a longer Amari practice is right for you.
-            </p>
-            <p className="signoff">— Garrett</p>
-          </div>
-        </div>
+      {/* 6 — Assessment explanation. This is not presented as a personal note. */}
+      <section className="assessment-note doc">
+        <span className="eyebrow">The Assessment</span>
+        <h2>Experience the work directly.</h2>
+        <p>
+          Garrett works with what is present in your body that day. You move, breathe, and receive hands-on guidance through a precise physical setup—then decide whether a longer Amari practice is right for you.
+        </p>
       </section>
 
       {/* 7 — Offer card */}
