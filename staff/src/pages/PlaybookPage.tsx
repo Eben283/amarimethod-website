@@ -128,10 +128,20 @@ function PlaybookContent({ md }: { md: string }) {
   );
 }
 
-type Tab = 'discovery' | 'partner' | 'therapist' | 'positioning';
+export type PlaybookTab = 'discovery' | 'partner' | 'therapist' | 'positioning';
 
-export default function PlaybookPage() {
-  const [tab, setTab] = useState<Tab>('discovery');
+export default function PlaybookPage({
+  embedded = false,
+  activeTab,
+  onTabChange,
+}: {
+  embedded?: boolean;
+  activeTab?: PlaybookTab;
+  onTabChange?: (tab: PlaybookTab) => void;
+}) {
+  const [internalTab, setInternalTab] = useState<PlaybookTab>('discovery');
+  const tab = activeTab ?? internalTab;
+  const chooseTab = onTabChange ?? setInternalTab;
 
   const tabClass = (active: boolean) =>
     `flex-1 py-2.5 px-3 text-sm font-medium rounded-md transition-colors min-h-[40px] ${
@@ -141,19 +151,19 @@ export default function PlaybookPage() {
     }`;
 
   return (
-    <div className="px-4 pt-4 pb-8 max-w-2xl mx-auto">
-      <div className="sticky top-0 -mx-4 px-4 py-2 bg-amari-light-sand/95 backdrop-blur z-10 mb-3">
+    <div className={embedded ? 'training-playbooks' : 'px-4 pt-4 pb-8 max-w-2xl mx-auto'}>
+      <div className={embedded ? 'training-playbooks__tabs' : 'sticky top-0 -mx-4 px-4 py-2 bg-amari-light-sand/95 backdrop-blur z-10 mb-3'}>
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-1 p-1 bg-amari-border/30 rounded-lg">
-          <button onClick={() => setTab('discovery')} className={tabClass(tab === 'discovery')}>
+          <button onClick={() => chooseTab('discovery')} className={tabClass(tab === 'discovery')}>
             Discovery Call
           </button>
-          <button onClick={() => setTab('partner')} className={tabClass(tab === 'partner')}>
+          <button onClick={() => chooseTab('partner')} className={tabClass(tab === 'partner')}>
             Partner Call
           </button>
-          <button onClick={() => setTab('therapist')} className={tabClass(tab === 'therapist')}>
+          <button onClick={() => chooseTab('therapist')} className={tabClass(tab === 'therapist')}>
             Therapist Call
           </button>
-          <button onClick={() => setTab('positioning')} className={tabClass(tab === 'positioning')}>
+          <button onClick={() => chooseTab('positioning')} className={tabClass(tab === 'positioning')}>
             Positioning V2
           </button>
         </div>

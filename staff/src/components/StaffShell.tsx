@@ -1,11 +1,11 @@
 import {
   Activity,
-  BookOpen,
   CalendarDays,
   ChevronDown,
   CircleDollarSign,
   ClipboardPlus,
   GitBranch,
+  GraduationCap,
   House,
   ListChecks,
   Loader2,
@@ -84,7 +84,7 @@ const SPECIALIST_ITEMS: RailItem[] = [
   { label: 'Design system', detail: 'Brand and collateral reference', to: '/design-system', Icon: Palette },
   { label: 'Funnel', detail: 'Lead flow and pace', to: '/funnel', Icon: TrendingUp },
   { label: 'Community', detail: 'Field relationships', to: '/community', Icon: MapPinned },
-  { label: 'Playbooks', detail: 'Practice reference', to: '/playbook', Icon: BookOpen },
+  { label: 'Training', detail: 'Sharpen, scripts and playbooks', to: '/training', Icon: GraduationCap },
   { label: 'Ask Amari', detail: 'Chief of Staff', to: '/cos', Icon: Sparkles },
   { label: 'Field Studies', detail: 'Specialist study records', to: '/field-studies', Icon: ClipboardPlus },
 ];

@@ -6,7 +6,7 @@ import {
   ChevronRight,
   CircleDollarSign,
   ClipboardPlus,
-  FileText,
+  GraduationCap,
   Kanban,
   Loader2,
   MapPinned,
@@ -253,7 +253,7 @@ export default function HomePage() {
             { label: 'Funnel', detail: 'Lead flow and pace', Icon: TrendingUp, to: '/funnel' },
             { label: 'Pipeline', detail: 'Current care flow', Icon: Kanban, to: '/pipeline' },
             { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos' },
-            { label: 'Playbooks', detail: 'Practice reference', Icon: BookOpen, to: '/playbook' },
+            { label: 'Training', detail: 'Sharpen, scripts and playbooks', Icon: GraduationCap, to: '/training' },
             { label: 'Design system', detail: 'Brand and collateral reference', Icon: Palette, to: '/design-system' },
             { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
             { label: 'Operations', detail: 'System health and cutover checks', Icon: Activity, to: '/operations' },
@@ -266,8 +266,6 @@ export default function HomePage() {
         <div>
           <a href="/field-signup" target="_blank" rel="noreferrer"><ClipboardPlus aria-hidden="true" /><span><strong>Study session links</strong><small>Public signup directory</small></span></a>
           <a href="/staff/resources/booking-rules.html" target="_blank" rel="noreferrer"><CalendarDays aria-hidden="true" /><span><strong>Booking rules</strong><small>Durations, buffers, and starts</small></span></a>
-          <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /><span><strong>Sales scripts</strong><small>Staff PDF reference</small></span></a>
-          <a href="https://github.com/Eben283/amari-method-docs/blob/main/amari/content/current-amari-positioning.md" target="_blank" rel="noreferrer"><BookOpen aria-hidden="true" /><span><strong>Current Amari Positioning</strong><small>Canonical source</small></span></a>
         </div>
       </details>
     </main>
