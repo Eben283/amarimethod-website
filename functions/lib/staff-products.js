@@ -1,5 +1,6 @@
 import { POS_CATALOG } from "./staff-pos.js";
 import { assessPosInvoiceSupport } from "./staff-pos-invoice-bridge.js";
+import { DRAW_DOWN_PRODUCT_IDS, GHL_PRODUCTS, PURCHASE_CREDIT_MAP } from "./ghl-products.js";
 
 const MAX_NAME = 120;
 const MAX_DESCRIPTION = 280;
@@ -63,6 +64,54 @@ function builtInProducts() {
   });
 }
 
+function purchaseBehavior(productId) {
+  if (DRAW_DOWN_PRODUCT_IDS.has(productId)) return "draw-down";
+  if (Object.prototype.hasOwnProperty.call(PURCHASE_CREDIT_MAP, productId)) return "credit";
+  return "no-credit";
+}
+
+function referenceFulfillmentSummary(productId, product) {
+  const behavior = purchaseBehavior(productId);
+  const sessionEffect = behavior === "draw-down"
+    ? "Uses an existing session credit when booked"
+    : behavior === "credit"
+      ? `${product.sessions} session credit${product.sessions === 1 ? "" : "s"} on purchase`
+      : "No session credit on purchase";
+  return product.livingPractice ? `${sessionEffect} · Living Practice access` : sessionEffect;
+}
+
+function productDefinitionCoverage(builtIns, customCount) {
+  const staffByProviderId = new Map(builtIns.map((product) => [product.ghlProductId, product]));
+  const definitions = Object.entries(GHL_PRODUCTS).map(([providerId, definition]) => {
+    const staffProduct = staffByProviderId.get(providerId);
+    return {
+      name: definition.name,
+      classification: definition.classification,
+      sessions: definition.sessions,
+      livingPractice: !!definition.livingPractice,
+      packagePurchase: !!definition.isPackagePurchase,
+      purchaseBehavior: purchaseBehavior(providerId),
+      staffSaleState: staffProduct?.readiness || "reference-only",
+      amountCents: staffProduct?.amountCents ?? null,
+      currency: staffProduct?.currency ?? null,
+      salesPolicy: staffProduct?.salesPolicy || "reference",
+      fulfillmentSummary: staffProduct?.fulfillmentSummary || referenceFulfillmentSummary(providerId, definition),
+    };
+  });
+  const staffCatalog = definitions.filter((definition) => definition.staffSaleState !== "reference-only").length;
+  return {
+    source: "code-known-reference",
+    liveProviderVerified: false,
+    counts: {
+      knownDefinitions: definitions.length,
+      staffCatalog,
+      referenceOnly: definitions.length - staffCatalog,
+      customProducts: customCount,
+    },
+    definitions,
+  };
+}
+
 function mapCustomRow(row) {
   return {
     key: row.id,
@@ -115,8 +164,9 @@ export async function listStaffProducts(db) {
       error = cause instanceof Error ? cause.message : String(cause);
     }
   }
+  const builtIns = builtInProducts();
   return {
-    products: [...builtInProducts(), ...custom].sort((a, b) => {
+    products: [...builtIns, ...custom].sort((a, b) => {
       const policyOrder = { current: 0, legacy: 1, custom: 2 };
       return (policyOrder[a.salesPolicy] ?? 3) - (policyOrder[b.salesPolicy] ?? 3)
         || a.name.localeCompare(b.name);
@@ -124,6 +174,7 @@ export async function listStaffProducts(db) {
     canCreate: configured,
     storage: configured ? "owned-d1" : "unavailable",
     error,
+    coverage: productDefinitionCoverage(builtIns, configured ? custom.length : null),
   };
 }
 

@@ -574,8 +574,35 @@ export interface StaffProduct {
   createdBy: string | null;
 }
 
+export interface StaffProductDefinition {
+  name: string;
+  classification: string;
+  sessions: number;
+  livingPractice: boolean;
+  packagePurchase: boolean;
+  purchaseBehavior: 'credit' | 'draw-down' | 'no-credit';
+  staffSaleState: 'ready' | 'needs-fulfillment' | 'reference-only';
+  amountCents: number | null;
+  currency: 'USD' | null;
+  salesPolicy: StaffProductPolicy | 'reference';
+  fulfillmentSummary: string;
+}
+
+export interface StaffProductCoverage {
+  source: 'code-known-reference';
+  liveProviderVerified: false;
+  counts: {
+    knownDefinitions: number;
+    staffCatalog: number;
+    referenceOnly: number;
+    customProducts: number | null;
+  };
+  definitions: StaffProductDefinition[];
+}
+
 export interface StaffProductsResponse {
   products: StaffProduct[];
+  coverage: StaffProductCoverage;
   canCreate: boolean;
   storage: 'owned-d1' | 'unavailable';
   error?: string | null;

@@ -1,9 +1,11 @@
 import {
   AlertTriangle,
   ArrowRight,
+  BookOpenCheck,
   Check,
   ChevronDown,
   Loader2,
+  LockKeyhole,
   PackagePlus,
   Plus,
   ReceiptText,
@@ -17,6 +19,8 @@ import {
   createStaffProduct,
   getStaffProducts,
   type StaffProduct,
+  type StaffProductCoverage,
+  type StaffProductDefinition,
   type StaffProductPolicy,
 } from '../lib/api';
 import './ProductsPage.css';
@@ -97,6 +101,67 @@ function ProductGroup({ policy, products, collapsed = false }: { policy: StaffPr
   );
 }
 
+function behaviorLabel(definition: StaffProductDefinition) {
+  if (definition.purchaseBehavior === 'draw-down') return 'Uses an existing session credit';
+  if (definition.purchaseBehavior === 'credit') return `${definition.sessions} session credit${definition.sessions === 1 ? '' : 's'} on purchase`;
+  return 'No session credit on purchase';
+}
+
+function ProductCoverage({ coverage }: { coverage: StaffProductCoverage }) {
+  const definitions = useMemo(() => [...coverage.definitions].sort((a, b) => {
+    const stateOrder = { 'reference-only': 0, 'needs-fulfillment': 1, ready: 2 };
+    return stateOrder[a.staffSaleState] - stateOrder[b.staffSaleState] || a.name.localeCompare(b.name);
+  }), [coverage.definitions]);
+
+  return (
+    <section className="staff-product-coverage" aria-labelledby="product-coverage-title">
+      <header>
+        <BookOpenCheck aria-hidden="true" />
+        <div>
+          <span>Cutover map · code-known reference</span>
+          <h2 id="product-coverage-title">All code-known product definitions are accounted for</h2>
+          <p>This is the definition set known to Amari code. It has not been checked against a live provider catalog.</p>
+        </div>
+      </header>
+
+      <div className="staff-product-coverage__totals" aria-label="Product definition coverage">
+        <div><strong>{coverage.counts.knownDefinitions}</strong><span>Known definitions</span></div>
+        <i aria-hidden="true" />
+        <div className="is-staff"><strong>{coverage.counts.staffCatalog}</strong><span>Mapped into Staff</span></div>
+        <div className="is-reference"><strong>{coverage.counts.referenceOnly}</strong><span>Reference only</span></div>
+        <div className="is-custom"><strong>{coverage.counts.customProducts ?? '—'}</strong><span>Owned custom</span></div>
+      </div>
+
+      <details className="staff-product-coverage__ledger" open>
+        <summary>
+          <span><LockKeyhole aria-hidden="true" /> Inspect the code-known definition ledger</span>
+          <span>{coverage.counts.knownDefinitions} definitions <ChevronDown aria-hidden="true" /></span>
+        </summary>
+        <div className="staff-product-coverage__rows">
+          {definitions.map((definition) => (
+            <article key={definition.name} className={`staff-product-definition staff-product-definition--${definition.staffSaleState}`}>
+              <div className="staff-product-definition__identity">
+                <span>{definition.staffSaleState === 'reference-only' ? 'Reference only' : definition.staffSaleState === 'ready' ? 'Mapped · ready' : 'Mapped · repair required'}</span>
+                <h3>{definition.name}</h3>
+                <p>{definition.fulfillmentSummary}</p>
+              </div>
+              <div className="staff-product-definition__behavior">
+                <span>{behaviorLabel(definition)}</span>
+                {definition.livingPractice ? <span>Living Practice access</span> : null}
+                {definition.packagePurchase ? <span>Package purchase</span> : null}
+              </div>
+              <div className="staff-product-definition__price">
+                {definition.amountCents === null ? <span>No Staff price</span> : <strong>{money.format(definition.amountCents / 100)}</strong>}
+                {definition.staffSaleState === 'reference-only' ? <small>No POS action</small> : <small>Current Staff catalog price</small>}
+              </div>
+            </article>
+          ))}
+        </div>
+      </details>
+    </section>
+  );
+}
+
 function NewProductSheet({ onSaved }: { onSaved: (product: StaffProduct) => void }) {
   const navigate = useNavigate();
   const [name, setName] = useState('');
@@ -169,6 +234,7 @@ export default function ProductsPage() {
   const navigate = useNavigate();
   const location = useLocation();
   const [products, setProducts] = useState<StaffProduct[]>([]);
+  const [coverage, setCoverage] = useState<StaffProductCoverage | null>(null);
   const [canCreate, setCanCreate] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -180,6 +246,7 @@ export default function ProductsPage() {
     try {
       const result = await getStaffProducts();
       setProducts(result.products);
+      setCoverage(result.coverage || null);
       setCanCreate(result.canCreate);
       if (result.storage === 'unavailable') setError('Custom-product storage is not ready. The built-in catalog is still visible.');
     } catch {
@@ -214,10 +281,21 @@ export default function ProductsPage() {
           <ProductGroup policy="current" products={groups.current} />
           <ProductGroup policy="custom" products={groups.custom} />
           <ProductGroup policy="legacy" products={groups.legacy} collapsed />
+          {coverage ? <ProductCoverage coverage={coverage} /> : null}
         </div>
       )}
       {!canCreate && !loading ? <p className="staff-products-owner-note">Eben controls catalog creation. Both staff members can view products and use ready items in POS.</p> : null}
-      {newProductOpen && canCreate ? <NewProductSheet onSaved={(product) => { setProducts((current) => [...current, product]); setNotice('Custom product saved.'); }} /> : null}
+      {newProductOpen && canCreate ? <NewProductSheet onSaved={(product) => {
+        setProducts((current) => [...current, product]);
+        setCoverage((current) => current ? {
+          ...current,
+          counts: {
+            ...current.counts,
+            customProducts: current.counts.customProducts === null ? null : current.counts.customProducts + 1,
+          },
+        } : null);
+        setNotice('Custom product saved.');
+      }} /> : null}
     </main>
   );
 }
