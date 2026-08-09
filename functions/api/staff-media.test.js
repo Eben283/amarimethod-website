@@ -47,6 +47,15 @@ describe("Staff Media APIs", () => {
     expect(await response.json()).toMatchObject({ folders: [], assets: [], uploadReady: false, storage: "owned-d1-r2" });
   });
 
+  it("keeps the fixed public-site import staff-authenticated", async () => {
+    const response = await mediaApi.onRequestPost(context(new Request("https://www.amarimethod.com/api/staff-media", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: "import_site_assets", offset: 0 }),
+    })));
+    expect(response.status).toBe(401);
+  });
+
   it("requires both owned metadata and object storage before accepting bytes", async () => {
     const response = await uploadApi.onRequestPost(context(request("https://www.amarimethod.com/api/staff-media-upload", {
       method: "POST",

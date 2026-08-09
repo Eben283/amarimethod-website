@@ -15,6 +15,7 @@ import {
   RefreshCw,
   Search,
   ShoppingBag,
+  Palette,
   Sparkles,
   TrendingUp,
   TriangleAlert,
@@ -252,6 +253,7 @@ export default function HomePage() {
             { label: 'Pipeline', detail: 'Current care flow', Icon: Kanban, to: '/pipeline' },
             { label: 'Ask Amari', detail: 'Chief of Staff', Icon: Sparkles, to: '/cos' },
             { label: 'Playbooks', detail: 'Practice reference', Icon: BookOpen, to: '/playbook' },
+            { label: 'Design system', detail: 'Brand and collateral reference', Icon: Palette, to: '/design-system' },
             { label: 'Community', detail: 'Field relationships', Icon: MapPinned, to: '/community' },
             { label: 'Operations', detail: 'System health and cutover checks', Icon: Activity, to: '/operations' },
           ].map(({ label, detail, Icon, to }) => <button key={label} type="button" onClick={() => navigate(to)}><Icon aria-hidden="true" /><span><strong>{label}</strong><small>{detail}</small></span><ChevronRight aria-hidden="true" /></button>)}
