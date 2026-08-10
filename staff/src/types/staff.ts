@@ -280,7 +280,7 @@ export interface AutomationCutoverTreeNode {
 }
 
 export interface AutomationCutoverTree {
-  status: 'draft_evidence_map';
+  status: 'draft_evidence_map' | 'live_workflow';
   title: string;
   summary: string;
   nodes: AutomationCutoverTreeNode[];

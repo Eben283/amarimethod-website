@@ -25,7 +25,7 @@ const d = (name) => record(name, "draft");
 // the one retained rollback, and the separate no-show gap without implying that virtual
 // reminders or a future no-show recovery are part of this live path.
 const ASSESSMENT_CUTOVER_TREE = Object.freeze({
-  status: "draft_evidence_map",
+  status: "live_workflow",
   title: "Initial / Assessment — in-person workflow",
   summary: "Confirmed bookings are sent by Amari. Cancellation stops the remaining reminders. The separate no-show recovery is visible below as a gap, not part of this live flow.",
   nodes: Object.freeze([

@@ -24,7 +24,7 @@ describe("owned automation registry", () => {
     ]);
     for (const definition of definitions) {
       expect(definition.definitionVersion).toBe(
-        ["reminder:initial-in-person", "reminder:initial-virtual"].includes(definition.id) ? 2 : 1,
+        definition.id === "reminder:initial-in-person" ? 3 : definition.id === "reminder:initial-virtual" ? 2 : 1,
       );
       expect(definition.name).toBeTruthy();
       expect(definition.mode).toBe("shadow");
@@ -68,18 +68,18 @@ describe("owned automation registry", () => {
     expect(definition.messagePreview.notices).toHaveLength(6);
   });
 
-  it("reconciles the next initial-session subset without turning on delivery", () => {
+  it("records the live in-person cutover while keeping virtual delivery inactive", () => {
     const inPerson = findAutomationDefinition("reminder", "initial-in-person");
     const virtual = findAutomationDefinition("reminder", "initial-virtual");
 
     expect(inPerson).toEqual(expect.objectContaining({
-      definitionVersion: 2,
-      trigger: { calendarIds: ["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"], statuses: ["confirmed"], modifiedBy: ["user", "customer"] },
+      definitionVersion: 3,
+      trigger: expect.objectContaining({ calendarIds: ["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"], statuses: ["confirmed"], modifiedBy: ["user", "customer"] }),
       messagePreview: expect.objectContaining({ status: "source_verified_read_only", notices: expect.any(Array) }),
       cutoverReadiness: expect.objectContaining({
-        status: "not_eligible",
+        status: "active",
         requirements: expect.arrayContaining([
-          expect.objectContaining({ code: "assessment_no_show_recovery_shadow_pending", status: "review" }),
+          expect.objectContaining({ code: "assessment_no_show_separate_gap", status: "review" }),
         ]),
       }),
     }));

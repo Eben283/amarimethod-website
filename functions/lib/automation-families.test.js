@@ -65,7 +65,7 @@ describe("provider-neutral automation families", () => {
         expect.objectContaining({ stepIndex: 1, at: "enroll", type: "email", template: "confirmation" }),
       ]),
       messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
-      cutoverReadiness: expect.objectContaining({ status: "not_eligible" }),
+      cutoverReadiness: expect.objectContaining({ status: "active" }),
     }));
     expect(family.evidence.gaps.map((gap) => gap.code)).toEqual(expect.arrayContaining([
       "external_canvas_history_not_imported",
@@ -75,9 +75,9 @@ describe("provider-neutral automation families", () => {
 
   it("keeps the first cutover tree source-backed and visibly preserves the Assessment no-show gap", () => {
     const tree = automationFamily("initial-session-reminders").cutoverTree;
-    expect(tree).toEqual(expect.objectContaining({ status: "draft_evidence_map", title: "Assessment booking lifecycle" }));
+    expect(tree).toEqual(expect.objectContaining({ status: "live_workflow", title: "Initial / Assessment — in-person workflow" }));
     expect(tree.nodes).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "confirmed", state: "verified_ghl", evidence: "Initial in-person Session Welcome / reminder email flow" }),
+      expect.objectContaining({ id: "confirmed", state: "verified_ghl", evidence: "Initial in-person Session Welcome / reminder email flow (Draft)" }),
       expect.objectContaining({ id: "noshow", state: "gap", evidence: "No Show Email SMS series trigger inventory" }),
       expect.objectContaining({ id: "noshow-shadow", state: "owned_shadow", evidence: "assessment-no-show definition v1" }),
     ]));
