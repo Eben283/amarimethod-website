@@ -33,7 +33,7 @@ const BookingCTA = ({ buildBookingUrl }: BookingCTAProps) => {
             <div className="offer-price-num">$29</div>
             <div className="offer-price-lbl">Private, in-person Assessment</div>
             <p className="offer-price-meta">
-              Start with a direct experience of the work. There is no obligation to continue.
+              Start with an Assessment and experience the work in person.
             </p>
           </div>
 
