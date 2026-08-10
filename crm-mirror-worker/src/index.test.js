@@ -247,7 +247,10 @@ describe("CRM mirror dashboard access handoff", () => {
     const desk = await worker.fetch(new Request("https://crm.test/client-desk", {
       headers: { Cookie: deskHandoff.headers.get("Set-Cookie") },
     }), env);
-    expect(desk.headers.get("Content-Security-Policy")).toContain("https://amarimethod-website.pages.dev");
+    const framePolicy = desk.headers.get("Content-Security-Policy");
+    expect(framePolicy).toContain("https://amarimethod.com");
+    expect(framePolicy).toContain("https://www.amarimethod.com");
+    expect(framePolicy).toContain("https://amarimethod-website.pages.dev");
   });
 
   it("keeps sender readiness behind staff authentication", async () => {
