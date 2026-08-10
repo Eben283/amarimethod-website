@@ -1,0 +1,22 @@
+.automation-tree-node > article { height: auto; }
+
+.automation-tree-node.is-owned_live > article {
+  border-color: #78a99a;
+  background: #f4fbf7;
+}
+
+.automation-tree-node.is-owned_live header span {
+  background: #d7eee2;
+  color: #266b50;
+}
+
+.automation-cutover-scope-note {
+  margin: -4px 0 16px;
+  padding: 11px 13px;
+  border-left: 3px solid #5d9681;
+  border-radius: 0 8px 8px 0;
+  background: #f1f8f4;
+  color: #486a61;
+  font-size: 13px;
+  line-height: 1.45;
+}

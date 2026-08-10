@@ -32,6 +32,7 @@ import type {
 } from '../types/staff';
 import './AutomationRegistryPage.css';
 import './AutomationCutoverTree.css';
+import './AutomationCutoverTreeFix.css';
 import './AutomationHealthPilot.css';
 
 const LIFECYCLES: Array<{ key: AutomationFamily['lifecycle'] | 'all'; label: string }> = [
@@ -273,15 +274,15 @@ function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamil
         <div>
           <span><Activity size={14} /> Automation health · first path</span>
           <h2>Can we see what is actually covered?</h2>
-          <p>This is the first health card, for the Assessment booking path. It shows the owner and proof before any customer-facing cutover is switched on.</p>
+          <p>This is the first health card, for the in-person booking path. It shows the current owner, proof, rollback, and the one remaining separate gap.</p>
         </div>
         <button type="button" onClick={() => onOpen(family.key)}>Open evidence tree <ChevronRight size={15} /></button>
       </header>
       <div className="automation-health-pilot-grid">
         <article className="is-current">
           <span>Current state</span>
-          <strong>Needs verification</strong>
-          <p>GHL owns the live reminder path. The owned version is a shadow only; it cannot send yet.</p>
+          <strong>{ownedLive.length ? 'Live in Amari' : 'Needs verification'}</strong>
+          <p>{ownedLive.length ? 'Amari owns the in-person reminder path. The former GHL workflow is retained in Draft as rollback.' : 'GHL owns the live reminder path. The owned version is a shadow only; it cannot send yet.'}</p>
         </article>
         <article className="is-owned">
           <span>Known owners</span>
@@ -294,7 +295,7 @@ function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamil
           <p>{gaps[0]?.detail || 'No gap is recorded for this path.'}</p>
         </article>
       </div>
-      <footer><b>What turns this green:</b> one safely observed booking, cancellation, and no-show/rebooking path with recorded evidence.</footer>
+      <footer><b>Next evidence:</b> read back the first ordinary booking and cancellation. The no-show/rebooking gap is separate from this live reminder flow.</footer>
     </section>
   );
 }
@@ -315,6 +316,24 @@ function FamilyDetail({
   focused: boolean;
 }) {
   const family = detail.family;
+  const isInPersonCutover = family.key === 'initial-session-reminders';
+  const displayedDefinitions = isInPersonCutover
+    ? family.ownedDefinitions.filter((definition) => definition.key === 'initial-in-person')
+    : family.ownedDefinitions;
+  const displayedSourceRecords = isInPersonCutover
+    ? family.sourceRecords.filter((record) => [
+      'Initial in-person Session Welcome / reminder email flow',
+      'Initial Session In-Person — Pipeline Update',
+      'remove from workflow in person booking',
+    ].includes(record.name))
+    : family.sourceRecords;
+  const displayedEvidenceGaps = isInPersonCutover
+    ? detail.evidence.gaps.filter((gap) => ![
+      'external_canvas_history_not_imported',
+      'source_record_metadata_only',
+      'owned_delivery_templates_not_loaded',
+    ].includes(gap.code))
+    : detail.evidence.gaps;
   return (
     <>
       <div className="automation-family-title">
@@ -331,7 +350,7 @@ function FamilyDetail({
           <a href="#workflow-definition">How it works</a>
           {person && <a href="#person-run-evidence">This person’s evidence</a>}
           <a href="#source-record-evidence">Source records</a>
-          <a href="#workflow-evidence-limits">Evidence limits</a>
+          {displayedEvidenceGaps.length > 0 && <a href="#workflow-evidence-limits">Evidence limits</a>}
         </nav>
       )}
 
@@ -345,11 +364,13 @@ function FamilyDetail({
         {family.implementationUnits.map((unit) => <span key={unit}>{IMPLEMENTATION_LABELS[unit] || humanize(unit)}</span>)}
       </div>
 
+      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>This view is intentionally scoped to the live in-person cutover.</strong> Virtual reminders are not shown here; they remain on their separate, not-yet-moved path.</p>}
+
       {family.cutoverTree && <CutoverTree tree={family.cutoverTree} />}
 
       <section className="automation-detail-section" id="workflow-definition">
-        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>Owned definitions</h3><p>Exact trigger, step timing, type, branch structure, and template key from code.</p></div><b>{family.ownedDefinitions.length}</b></div>
-        {family.ownedDefinitions.length ? family.ownedDefinitions.map((definition) => (
+        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>Owned definition</h3><p>Exact trigger, step timing, type, branch structure, and template key from code.</p></div><b>{displayedDefinitions.length}</b></div>
+        {displayedDefinitions.length ? displayedDefinitions.map((definition) => (
           <article className="automation-definition-card" key={definition.id}>
             <header><span>{humanize(definition.engine)}</span><strong>{definition.name}</strong><em>v{definition.definitionVersion} · {definition.mode}</em></header>
             <div className="automation-definition-grid">
@@ -424,16 +445,16 @@ function FamilyDetail({
       </section>
 
       <section className="automation-detail-section" id="source-record-evidence">
-        <div className="automation-section-heading"><Workflow size={17} /><div><h3>Source record evidence</h3><p>Exact names and dated publication status; canvas history is not imported.</p></div><b>{family.sourceRecords.length}</b></div>
+        <div className="automation-section-heading"><Workflow size={17} /><div><h3>Source record evidence</h3><p>Exact names and dated publication status; canvas history is not imported.</p></div><b>{displayedSourceRecords.length}</b></div>
         <div className="automation-source-list">
-          {family.sourceRecords.map((record) => <div key={record.name}><span className={record.status}>{record.status}</span><strong>{record.name}</strong></div>)}
+          {displayedSourceRecords.map((record) => <div key={record.name}><span className={record.status}>{record.status}</span><strong>{record.name}</strong></div>)}
         </div>
       </section>
 
-      <section className="automation-detail-section" id="workflow-evidence-limits">
+      {displayedEvidenceGaps.length > 0 && <section className="automation-detail-section" id="workflow-evidence-limits">
         <div className="automation-section-heading"><AlertTriangle size={17} /><div><h3>Evidence limits</h3><p>These labels prevent false certainty during cutover.</p></div></div>
-        <ul className="automation-gap-list">{detail.evidence.gaps.map((gap) => <li key={gap.code}><strong>{humanize(gap.code)}</strong><span>{gap.label}</span></li>)}</ul>
-      </section>
+        <ul className="automation-gap-list">{displayedEvidenceGaps.map((gap) => <li key={gap.code}><strong>{humanize(gap.code)}</strong><span>{gap.label}</span></li>)}</ul>
+      </section>}
     </>
   );
 }
@@ -461,7 +482,7 @@ function CutoverTree({ tree }: { tree: AutomationCutoverTree }) {
   return (
     <section className="automation-cutover-tree" aria-label={`${tree.title} evidence tree`}>
       <header>
-        <div><span>Draft evidence tree</span><h3>{tree.title}</h3><p>{tree.summary}</p></div>
+        <div><span>Live workflow tree</span><h3>{tree.title}</h3><p>{tree.summary}</p></div>
         <i>Only backed connections appear</i>
       </header>
       <ul className="automation-tree-root">{renderChildren(null)}</ul>

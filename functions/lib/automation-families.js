@@ -21,14 +21,15 @@ const record = (name, status) => Object.freeze({
 const p = (name) => record(name, "published");
 const d = (name) => record(name, "draft");
 
-// This is a deliberately small, typed first cutover map. It is source evidence for the Staff
-// projection below, not an executable workflow and not a claim that the owned nodes are live.
+// This is the focused, in-person cutover map shown in Staff. It documents the live owner,
+// the one retained rollback, and the separate no-show gap without implying that virtual
+// reminders or a future no-show recovery are part of this live path.
 const ASSESSMENT_CUTOVER_TREE = Object.freeze({
   status: "draft_evidence_map",
-  title: "Assessment booking lifecycle",
-  summary: "Only source-backed nodes and connections are shown. A missing path stays visible as a gap.",
+  title: "Initial / Assessment — in-person workflow",
+  summary: "Confirmed bookings are sent by Amari. Cancellation stops the remaining reminders. The separate no-show recovery is visible below as a gap, not part of this live flow.",
   nodes: Object.freeze([
-    Object.freeze({ id: "assessment-event", parentId: null, label: "Assessment appointment changes", state: "verified_ghl", evidence: "Amari Assessment — In Person calendar", detail: "The current public $29 Assessment calendar is the shared event source." }),
+    Object.freeze({ id: "assessment-event", parentId: null, label: "In-person appointment changes", state: "verified_ghl", evidence: "Initial Session — In Person + Amari Assessment — In Person calendars", detail: "Both in-person calendars enter this same reminder lifecycle." }),
     Object.freeze({ id: "confirmed", parentId: "assessment-event", label: "Confirmed", state: "verified_ghl", evidence: "Initial in-person Session Welcome / reminder email flow (Draft)", detail: "GHL remains as the intact rollback workflow; it is no longer the live sender." }),
     Object.freeze({ id: "confirmed-shadow", parentId: "confirmed", label: "Owned in-person lifecycle", state: "owned_live", evidence: "initial-in-person definition v3 + Appointment Events Webhook", detail: "The owned six-step lifecycle is live for Initial In-Person and Assessment confirmed bookings." }),
     Object.freeze({ id: "owned-internal-email", parentId: "confirmed-shadow", label: "Garrett booking email", state: "owned_live", evidence: "initial-in-person booked-internal step", detail: "Owned delivery is live." }),
