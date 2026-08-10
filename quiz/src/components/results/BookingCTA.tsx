@@ -178,7 +178,7 @@ const BookingCTA = ({ patternSignature: _ }: BookingCTAProps) => {
             <span>Schedule Free 15-Min Discovery Call<span className="arrow">→</span></span>
           </a>
           <p className="text-sm text-amari-text-light mt-3 font-sans">
-            You'll get straight answers to your questions.
+            You'll have time for your questions.
           </p>
         </div>
 
