@@ -250,6 +250,7 @@ export interface AutomationFamily {
   name: string;
   lifecycle: 'platform' | 'acquisition' | 'sessions' | 'commerce' | 'partners' | 'studies' | 'archive';
   kind: 'operational' | 'evidence_only';
+  operatingState: 'in_person_live' | 'not_live';
   purpose: string;
   implementationUnits: string[];
   ownedDefinitionIds: string[];

@@ -37,6 +37,8 @@
 .automation-registry-page.is-focused{background:var(--staff-paper)}
 .automation-registry-hero h1,.automation-family-title h2,.automation-person-head h2{color:var(--staff-ink);font-family:'IBM Plex Sans',system-ui,sans-serif;font-weight:650}
 .automation-registry-kicker,.automation-registry-page :where(small,em,time,dt),.automation-family-kind,.automation-store-state,.automation-implementation-strip span,.automation-family-card-top em,.automation-family-card-top i,.automation-section-heading p,.automation-definition-card h4,.automation-definition-card pre,.automation-message-header span,.automation-message-preview footer,.automation-event>span,.automation-inspector-nav a,.automation-back-link,.automation-cutover-readiness :where(p,strong,em,span){font-size:12px!important;line-height:1.45}
+
+.automation-family-card-top>span{display:flex;align-items:center;gap:6px}.automation-live-badge{display:inline-flex;align-items:center;border:1px solid #87bca4;border-radius:999px;background:#e2f3e9;color:#246849;padding:2px 6px;font-size:8px;font-weight:900;letter-spacing:.07em;line-height:1.25;text-transform:uppercase;white-space:nowrap}
 .automation-registry-kicker,.automation-family-card small,.automation-family-title p,.automation-person-head p,.automation-section-heading p,.automation-message-preview footer,.automation-event time{color:var(--staff-muted)}
 .automation-registry-stats,.automation-family-browser,.automation-family-detail,.automation-person-inspector,.automation-definition-card,.automation-enrollment-card,.automation-message-preview{border-color:var(--staff-line);border-radius:6px;background:var(--staff-sheet);box-shadow:none}
 .automation-registry-workspace.is-focused .automation-family-detail{border-color:var(--staff-line);box-shadow:none}

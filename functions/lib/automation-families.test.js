@@ -44,6 +44,7 @@ describe("provider-neutral automation families", () => {
     ]));
     expect(automationFamily("initial-session-reminders")).toEqual(expect.objectContaining({
       lifecycle: "sessions",
+      operatingState: "in_person_live",
       implementationUnits: ["reminder-confirmation", "pipeline-helper"],
     }));
   });

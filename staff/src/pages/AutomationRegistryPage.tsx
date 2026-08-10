@@ -215,7 +215,7 @@ export default function AutomationRegistryPage() {
             <div className="automation-family-list">
               {operationalFamilies.map((family) => (
                 <button type="button" key={family.key} className={`automation-family-card${selectedFamilyKey === family.key ? ' is-selected' : ''}`} onClick={() => selectFamily(family.key)}>
-                  <span className="automation-family-card-top"><em>{family.lifecycle}</em><i>{family.counts.ownedDefinitions ? `${family.counts.ownedDefinitions} owned` : 'source only'}</i></span>
+                  <span className="automation-family-card-top"><em>{family.lifecycle}</em><span>{family.operatingState === 'in_person_live' && <b className="automation-live-badge">In-person live</b>}<i>{family.counts.ownedDefinitions ? `${family.counts.ownedDefinitions} owned` : 'source only'}</i></span></span>
                   <strong>{family.name}</strong>
                   <small>{family.counts.sourceRecords} source record{family.counts.sourceRecords === 1 ? '' : 's'} · {family.implementationUnits.map((unit) => IMPLEMENTATION_LABELS[unit] || unit).join(' + ')}</small>
                   <ChevronRight size={16} aria-hidden="true" />
