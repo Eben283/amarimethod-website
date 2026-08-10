@@ -29,8 +29,8 @@ const FIELD_IDS = {
 //   sessions_remaining = prepaid package balance ("when do I need to act?")
 //     Excludes everything above PLUS entrainments (billed separately) AND
 //     partner-initials (comp perk) — neither draws from a prepaid package.
-const NON_JOURNEY_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
-const NON_PACKAGE_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
+const NON_JOURNEY_PATTERNS = /assessment|discovery call|15-minute|15 minute|consultation/i;
+const NON_PACKAGE_PATTERNS = /assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
 // Back-compat alias — older code refs may exist; keep the name pointing at
 // the package predicate (the historical meaning).
 const NON_SESSION_PATTERNS = NON_PACKAGE_PATTERNS;

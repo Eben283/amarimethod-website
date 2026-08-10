@@ -28,6 +28,7 @@ function relativeDate(iso: string | null): string {
 
 function seriesLabel(seriesType: string): string {
   const map: Record<string, string> = {
+    '24-session': '12-Week Practice',
     '4-session': '4-series',
     '8-session': '8-series',
     Single: 'Single',

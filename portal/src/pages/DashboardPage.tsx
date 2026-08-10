@@ -68,7 +68,7 @@ export default function DashboardPage() {
   // Phone-style appointments (discovery, consultation) don't count toward
   // "had an initial session" — they're pre-session phone chats. Mirrors
   // NON_JOURNEY in portal-data.js + ProgressTracker.tsx.
-  const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+  const NON_JOURNEY = /assessment|discovery call|15-minute|15 minute|consultation/i;
   const isJourneyAppt = (a: { title?: string; appointmentType?: string }) =>
     !NON_JOURNEY.test(`${a.title || ''} ${a.appointmentType || ''}`);
   const completedAppointments = appointments.filter(a =>

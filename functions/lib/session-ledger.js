@@ -68,6 +68,7 @@ export const NON_SERIES_CALENDAR_IDS = new Set([
   "aVE54Qf4lrbYTB0zFqXy", // Ambassador Prospect Discovery Call
   "lfsnaiGiLNL2z12pLKDP", // Partner Initial Session (free perk for partners)
   "uUDFD0ZQEWtzGLS9aLq7", // Initial Session — Paid at Partner (partner POS, no order in GHL)
+  "EM6vB2mq7EAdGCbUb3j1", // Amari Assessment (paid entry appointment, not a practice session)
 ]);
 
 const ATTENDED_STATUSES = new Set(["showed", "completed"]);
@@ -120,6 +121,9 @@ export function classifyOrder(order) {
   // Fallback: name-pattern matching (payment_link orders where sourceName
   // carries the package title and no productId lookup hit).
   // Check upgrade BEFORE series — "Upgrade to 4-Session" must not match 4-series.
+  if (/12.?week|24.?session|amari practice/i.test(name)) {
+    return { type: "24-practice", sessions: 24, name, amount };
+  }
   if (/upgrade/i.test(name)) {
     // $1,070 = upgrade to 8-session (adds 7 to existing 1 initial)
     // $495   = upgrade to 4-session (adds 3 to existing 1 initial)
@@ -202,7 +206,12 @@ export function classifyInvoice(invoice) {
 }
 
 export function determineSeriesType(classifications) {
-  // Most authoritative: explicit series purchases. The 4→8 upgrade lands the
+  // Most authoritative: explicit practice purchases. The 24-session practice
+  // is a separate current offering, so it takes precedence over legacy series
+  // purchases in a client's historical record.
+  const has24 = classifications.some((c) => c.type === "24-practice");
+  if (has24) return "24-session";
+  // The 4→8 upgrade lands the
   // client on the 8-session series, so it must count toward has8 (not has4).
   const has8 = classifications.some((c) => c.type === "8-series" || c.type === "8-upgrade" || c.type === "4-to-8-upgrade");
   if (has8) return "8-session";

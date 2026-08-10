@@ -6,7 +6,7 @@ interface Props {
 }
 
 export default function SessionStats({ seriesType, sessionsCompleted, sessionsRemaining, tags }: Props) {
-  const totalSessions = seriesType === '8-session' ? 8 : seriesType === '4-session' ? 4 : 0;
+  const totalSessions = seriesType === '24-session' ? 24 : seriesType === '8-session' ? 8 : seriesType === '4-session' ? 4 : 0;
   const currentSeriesCompleted = totalSessions > 0 ? Math.max(0, totalSessions - sessionsRemaining) : 0;
   const progressPct = totalSessions > 0 ? Math.min(100, (currentSeriesCompleted / totalSessions) * 100) : 0;
 

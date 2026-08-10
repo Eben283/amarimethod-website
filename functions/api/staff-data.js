@@ -202,7 +202,7 @@ export async function onRequestGet(context) {
             // session-fields contract (was: ledger.attended which is
             // package-only). Matches portal-data.js semantic so the staff
             // app shows the same number the client sees.
-            const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+            const NON_JOURNEY = /assessment|discovery call|15-minute|15 minute|consultation/i;
             const nowMs = Date.now();
             sessionsCompleted = appointments.filter((a) => {
               const status = (a.appointmentStatus || a.status || "").toLowerCase();

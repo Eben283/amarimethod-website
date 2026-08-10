@@ -575,7 +575,7 @@ async function lookupContact(context, name) {
   const seriesType = ledger.display?.seriesType ?? "none";
 
   // Categorize appointments
-  const discoveryPatterns = /discovery call|15-minute|15 minute|consultation|pain assessment/i;
+  const discoveryPatterns = /discovery call|15-minute|15 minute|consultation|assessment/i;
   const sessions = [];
   const discoveryCalls = [];
 

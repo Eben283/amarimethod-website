@@ -21,7 +21,6 @@ export default function ClientsPage() {
     }
 
     if (!query.trim()) {
-      setContacts([]);
       setHasSearched(false);
       return;
     }

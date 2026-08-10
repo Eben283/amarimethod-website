@@ -5,6 +5,8 @@ const PID = {
   // package purchases (SET sessions_remaining)
   fourSeries: '69986faa724ecd2343ebaa6e',
   eightSeries: '69987357c839790426996114',
+  practice24: '6a66cde7ef7b07f122ad46fb',
+  assessment: '6a66cf0103821ea09ea13f1b',
   // à-la-carte standalone follow-up ($190) — SHOULD credit +1 (ADD)
   singleFollowupSession: '6998ace59dfde469ecb2aab6',
   retiredFollowup: '67f57171b6b1019c7b0233cc',
@@ -27,6 +29,20 @@ describe('PRODUCT_MAP — purchase crediting', () => {
   it('credits package series with the right session counts', () => {
     expect(PRODUCT_MAP[PID.fourSeries].sessionsToAdd).toBe(4);
     expect(PRODUCT_MAP[PID.eightSeries].sessionsToAdd).toBe(8);
+    expect(PRODUCT_MAP[PID.practice24]).toMatchObject({
+      sessionsToAdd: 24,
+      seriesType: '24-session',
+      livingPractice: true,
+    });
+  });
+
+  it('books the paid assessment without changing a session balance', () => {
+    expect(PRODUCT_MAP[PID.assessment]).toMatchObject({
+      isAssessmentBooking: true,
+      sessionsToAdd: 0,
+      calendarId: 'EM6vB2mq7EAdGCbUb3j1',
+      durationMinutes: 40,
+    });
   });
 
   // The trap: a future "add the missing follow-up IDs" change would inflate

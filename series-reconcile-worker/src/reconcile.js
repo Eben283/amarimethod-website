@@ -16,6 +16,13 @@ const WORKFLOW_CODES = {
   "6998739230cc6054f9bba62d": "C1b", // Upgrade: Initial → 4
   "699873d6990b71ebc1fa26b4": "C2b", // Upgrade: Initial → 8
   "6a010952e41b442c862d3c01": "C2c", // Upgrade: 4 → 8
+  "6a66cde7ef7b07f122ad46fb": "12-week practice", // The 12-Week Amari Practice
+};
+
+const SERIES_RANK = {
+  "4-session": 1,
+  "8-session": 2,
+  "24-session": 3,
 };
 
 export const PACKAGE_PRODUCTS = Object.fromEntries(
@@ -88,7 +95,7 @@ export function isReconcileAlreadyApplied({ currentSeriesType, currentPortal, cu
   const seriesMatches = currentSeriesType === pkg.seriesType;
   const lpOk = !pkg.livingPractice || currentLP;
   const seriesIsAdvanced =
-    pkg.seriesType === "4-session" && currentSeriesType === "8-session";
+    (SERIES_RANK[currentSeriesType] || 0) > (SERIES_RANK[pkg.seriesType] || 0);
   return (
     seriesIsAdvanced ||
     (seriesMatches && currentPortal && lpOk && remainingWasWritten(currentRemaining))
@@ -141,7 +148,7 @@ export async function reconcileOrder(env, orderDetail) {
   // but the contact is on an 8-pack from a later upgrade) → the order was
   // processed then overwritten.
   const seriesIsAdvanced =
-    pkg.seriesType === "4-session" && currentSeriesType === "8-session";
+    (SERIES_RANK[currentSeriesType] || 0) > (SERIES_RANK[pkg.seriesType] || 0);
 
   // #3 (2026-06-07): the already-applied check now ALSO requires
   // sessions_remaining to have been written — a partial failure that set

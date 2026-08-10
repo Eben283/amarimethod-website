@@ -32,651 +32,858 @@
     gtag('config', 'G-DGQM32BMYZ');
   </script>
 
-  <link rel="stylesheet" href="css/style-v5.css?v=17">
+  <link rel="stylesheet" href="css/style-v5.css?v=37">
   <style>
-    /* ===== Partner App Shell ===== */
+    /* ===== Partner App — editorial dashboard (rebuilt 2026-05-17) ===== */
     body {
-      background: var(--bg-primary);
+      background: var(--pa-paper, #F7F2E8);
+      min-height: 100vh;
+      min-height: 100dvh;
+      margin: 0;
+    }
+
+    :root {
+      --pa-paper: #F7F2E8;
+      --pa-paper-2: #F0E9D8;
+      --pa-paper-3: #EBE2CC;
+      --pa-ink: #1F1D1A;
+      --pa-ink-2: #3A3733;
+      --pa-mute: #7A746B;
+      --pa-line: #E0D7C2;
+      --pa-line-2: #CCC1A8;
+      --pa-accent: #C56B4E;
+      --pa-accent-soft: #F5DDD2;
+      --pa-err: #A1402B;
+      --pa-ok: #3F7A4F;
+      --pa-warn: #B58836;
+    }
+
+    /* Full-bleed screen — no card chrome */
+    .app-shell {
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 0;
+      padding-bottom: env(safe-area-inset-bottom);
+      background: var(--pa-paper);
       min-height: 100vh;
       min-height: 100dvh;
     }
 
-    .app-shell {
-      max-width: 420px;
-      margin: 0 auto;
-      padding: 2rem 1.25rem;
-      padding-top: max(2rem, env(safe-area-inset-top));
-      padding-bottom: max(2rem, env(safe-area-inset-bottom));
-    }
-
+    /* Top bar */
     .app-header {
-      text-align: center;
-      margin-bottom: 1.5rem;
-    }
-    .app-header img {
-      width: 48px;
-      height: 48px;
-      border-radius: 12px;
-      margin-bottom: 0.75rem;
-    }
-    .app-greeting {
-      font-family: var(--font-serif-primary);
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--color-text);
-      margin-bottom: 0.25rem;
-    }
-    .app-subtext {
-      font-size: 0.9rem;
-      color: var(--color-text-secondary);
-    }
-
-    /* Section labels */
-    .section-label {
-      font-size: 0.7rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.08em;
-      color: var(--color-text-secondary);
-      margin-bottom: 0.75rem;
-    }
-
-    /* ===== Earnings Card ===== */
-    .earnings-card {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 14px;
-      padding: 1.25rem;
-      margin-bottom: 1.75rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
-      display: none;
-    }
-    .earnings-card.loaded { display: block; }
-    .earnings-top {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-    }
-    .earnings-amount {
-      font-family: var(--font-serif-primary);
-      font-size: 2rem;
-      font-weight: 700;
-      color: var(--color-text);
-      line-height: 1;
-    }
-    .earnings-label {
-      font-size: 0.75rem;
-      font-weight: 500;
-      color: var(--color-text-secondary);
-      margin-top: 0.15rem;
-    }
-    .earnings-breakdown {
-      font-size: 0.8rem;
-      color: var(--color-text-secondary);
-      text-align: right;
-      line-height: 1.4;
-    }
-    .earnings-breakdown strong {
-      color: var(--color-text);
-      font-weight: 600;
-    }
-    /* Progress bar toward milestone */
-    .earnings-progress {
-      margin-top: 0.25rem;
-    }
-    .earnings-progress-label {
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.7rem;
-      font-weight: 500;
-      color: var(--color-text-secondary);
-      margin-bottom: 0.35rem;
-    }
-    .earnings-progress-bar {
-      height: 6px;
-      background: rgba(37,37,37,0.08);
-      border-radius: 3px;
-      overflow: hidden;
-    }
-    .earnings-progress-fill {
-      height: 100%;
-      background: #EBA584;
-      border-radius: 3px;
-      transition: width 0.6s ease;
-    }
-    .earnings-milestone-msg {
-      font-size: 0.75rem;
-      color: #c47a55;
-      font-weight: 500;
-      margin-top: 0.5rem;
-      text-align: center;
-      display: none;
-    }
-    .earnings-milestone-msg.show { display: block; }
-
-    /* ===== Dual-path CTA cards ===== */
-    .cta-cards {
-      display: flex;
-      flex-direction: column;
-      gap: 0.75rem;
-      margin-bottom: 1.75rem;
-    }
-    .cta-card {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.85rem;
-      padding: 1rem 1.15rem;
-      border-radius: 12px;
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      cursor: pointer;
-      text-decoration: none;
-      color: var(--color-text);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      -webkit-tap-highlight-color: transparent;
-    }
-    .cta-card:hover {
-      border-color: #e0dace;
-      box-shadow: 0 4px 12px rgba(37,37,37,0.06);
-    }
-    .cta-card-primary {
-      border-color: #EBA584;
-      background: linear-gradient(135deg, rgba(235,165,132,0.04), var(--bg-card));
-    }
-    .cta-card-primary:hover {
-      border-color: #d89474;
-      box-shadow: 0 4px 12px rgba(235,165,132,0.12);
-    }
-    .cta-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 11px;
       display: flex;
       align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      color: #252525;
+      gap: 10px;
+      padding: 14px 20px;
+      padding-top: max(14px, env(safe-area-inset-top));
+      border-bottom: 1px solid var(--pa-line);
+      background: var(--pa-paper);
+      position: sticky;
+      top: 0;
+      z-index: 5;
     }
-    .cta-icon-warm {
-      background: rgba(235,165,132,0.15);
-      color: #b87a56;
-    }
-    .cta-icon-dark {
-      background: var(--bg-secondary, #F6F3E9);
-    }
-    .cta-icon svg {
+    .app-header img {
       width: 22px;
       height: 22px;
-    }
-    .cta-label {
-      font-family: var(--font-serif-primary);
-      font-weight: 700;
-      font-size: 0.9375rem;
-      line-height: 1.3;
-      color: var(--color-text);
-    }
-    .cta-desc {
-      font-size: 0.75rem;
-      color: var(--color-text-secondary);
-      margin-top: 0.1rem;
-      font-weight: 400;
-    }
-    .cta-earn-tag {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 700;
-      color: #c47a55;
-      background: rgba(235,165,132,0.12);
-      padding: 0.15rem 0.5rem;
-      border-radius: 4px;
-      margin-top: 0.35rem;
+      border-radius: 50%;
+      margin: 0;
     }
 
-    /* ===== Inline forms ===== */
+    /* Greeting */
+    .app-greeting {
+      padding: 26px 20px 4px;
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 38px;
+      font-weight: 400;
+      letter-spacing: -0.025em;
+      line-height: 1.05;
+      color: var(--pa-ink);
+      text-wrap: balance;
+      margin: 0;
+    }
+    .app-subtext {
+      padding: 4px 20px 22px;
+      font-size: 14px;
+      color: var(--pa-mute);
+    }
+
+    /* Section label — small caps + dash */
+    .section-label {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 28px 20px 12px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--pa-mute);
+      font-weight: 500;
+    }
+    .section-label::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--pa-line-2);
+    }
+
+    /* ===== Earnings hero ===== */
+    .earnings-card {
+      margin: 0 20px;
+      padding: 22px 20px;
+      background: var(--pa-paper-2);
+      border: 1px solid var(--pa-line);
+      position: relative;
+      overflow: hidden;
+    }
+    .earnings-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 2px;
+      width: 64px;
+      background: var(--pa-accent);
+    }
+    .earnings-top {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 20px;
+      align-items: end;
+    }
+    .earnings-amount {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-weight: 300;
+      letter-spacing: -0.035em;
+      line-height: 0.95;
+      color: var(--pa-ink);
+      font-size: 56px;
+      display: block;
+    }
+    .earnings-paid {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 15px;
+      font-style: italic;
+      color: var(--pa-ok);
+      margin-top: 6px;
+    }
+    .earnings-label {
+      margin-top: 6px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--pa-mute);
+      font-weight: 500;
+    }
+    .earnings-breakdown {
+      text-align: right;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      padding-bottom: 2px;
+    }
+    .earnings-breakdown > div {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 2px;
+    }
+    .earnings-breakdown strong {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-weight: 400;
+      font-size: 22px;
+      letter-spacing: -0.01em;
+      line-height: 1;
+      color: var(--pa-ink);
+      display: block;
+    }
+    .earnings-breakdown div::after {
+      content: attr(data-label);
+      font-size: 10.5px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--pa-mute);
+      font-weight: 500;
+    }
+    .earnings-nudge {
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--pa-line-2);
+      font-size: 14px;
+      color: var(--pa-ink-2);
+      line-height: 1.5;
+      max-width: 34ch;
+    }
+
+    /* ===== Action stack ===== */
+    .cta-card {
+      display: grid;
+      align-items: center;
+      gap: 14px;
+      width: 100%;
+      text-align: left;
+      border: 0;
+      font: inherit;
+      cursor: pointer;
+      transition: background 0.15s, border-color 0.15s, transform 0.08s;
+    }
+    .cta-card-primary {
+      grid-template-columns: auto 1fr auto;
+      padding: 18px 18px;
+      background: var(--pa-ink);
+      color: var(--pa-paper);
+      min-height: 64px;
+    }
+    .cta-card-primary:hover { background: #2c2924; }
+    .cta-card-primary:active { background: var(--pa-accent); transform: translateY(1px); }
+    .cta-card-secondary {
+      grid-template-columns: 1fr auto;
+      padding: 14px 18px;
+      background: var(--pa-paper);
+      border: 1px solid var(--pa-line-2);
+      color: var(--pa-ink);
+      min-height: 56px;
+    }
+    .cta-card-secondary:hover { border-color: var(--pa-ink-2); background: var(--pa-paper-2); }
+    .cta-card-secondary:active { background: var(--pa-paper-3); transform: translateY(1px); }
+
+    .cta-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: rgba(247, 242, 232, 0.08);
+      color: var(--pa-accent-soft);
+      font-size: 22px;
+      font-weight: 300;
+      line-height: 1;
+      flex: 0 0 auto;
+    }
+    .cta-card > div:not(.cta-icon):not(.cta-earn-tag) {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      min-width: 0;
+    }
+    .cta-label {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      line-height: 1.15;
+    }
+    .cta-card-secondary .cta-label {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 14.5px;
+      font-weight: 500;
+      color: var(--pa-ink);
+    }
+    .cta-desc {
+      font-size: 12.5px;
+      line-height: 1.4;
+      color: #C9BEA9;
+    }
+    .cta-card-secondary .cta-desc { color: var(--pa-mute); font-size: 12px; }
+    .cta-earn-tag {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 16px;
+      font-weight: 400;
+      font-style: italic;
+      color: var(--pa-accent-soft);
+      white-space: nowrap;
+      padding: 6px 12px;
+      border: 1px solid rgba(245, 221, 210, 0.32);
+      border-radius: 999px;
+      letter-spacing: -0.005em;
+    }
+    .cta-card-secondary .cta-earn-tag {
+      font-size: 16px;
+      color: var(--pa-accent);
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+    }
+
+    .action-stack {
+      margin: 16px 20px 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    /* ===== Share link ===== */
+    .app-share-section {
+      margin: 26px 20px 0;
+    }
+    .app-share-section h3 {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      color: var(--pa-ink);
+      margin: 0 0 8px;
+    }
+    .app-share-section p {
+      font-size: 13px;
+      color: var(--pa-mute);
+      line-height: 1.5;
+      margin: 0 0 10px;
+    }
+    .share-link-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      align-items: stretch;
+      border: 1px dashed var(--pa-line-2);
+      background: var(--pa-paper);
+      min-height: 48px;
+    }
+    .share-link-input {
+      padding: 14px 14px;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 14px;
+      color: var(--pa-ink);
+      background: transparent;
+      border: 0;
+      outline: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      min-width: 0;
+    }
+    .share-link-copy {
+      padding: 0 20px;
+      border: 0;
+      border-left: 1px dashed var(--pa-line-2);
+      font: inherit;
+      font-size: 12.5px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--pa-ink);
+      background: transparent;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      min-width: 90px;
+      min-height: 48px;
+    }
+    .share-link-copy:hover { background: var(--pa-ink); color: var(--pa-paper); }
+    .share-link-copy:active { background: var(--pa-accent); color: var(--pa-paper); }
+
+    /* ===== Already-sold link ===== */
+    .sold-link-row {
+      text-align: center;
+      margin-top: 12px;
+    }
+    #btn-sold {
+      background: none;
+      border: 0;
+      font: inherit;
+      font-size: 13px;
+      color: var(--pa-ink-2);
+      cursor: pointer;
+      text-decoration: underline;
+      text-decoration-color: var(--pa-line-2);
+      padding: 8px 0;
+      min-height: 36px;
+    }
+    #btn-sold:hover { color: var(--pa-accent); text-decoration-color: var(--pa-accent); }
+
+    /* ===== Inline forms (Refer / Sold) ===== */
     .inline-form {
       display: none;
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+      margin: 16px 20px 0;
+      padding: 20px 20px;
+      background: var(--pa-paper);
+      border: 1px solid var(--pa-line);
     }
     .inline-form.active { display: block; }
     .inline-form h3 {
-      font-family: var(--font-serif-primary);
-      font-size: 1.15rem;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 20px;
+      font-weight: 400;
+      letter-spacing: -0.01em;
+      color: var(--pa-ink);
+      margin: 0 0 6px;
     }
-    .inline-form .form-subtitle {
-      font-size: 0.8rem;
-      color: var(--color-text-secondary);
-      margin-bottom: 1rem;
-      line-height: 1.4;
+    .form-subtitle {
+      font-size: 13px;
+      color: var(--pa-mute);
+      line-height: 1.45;
+      margin-bottom: 16px;
     }
     .inline-form .field {
-      margin-bottom: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
     }
     .inline-form label {
-      display: block;
-      font-size: 0.85rem;
+      font-size: 13px;
       font-weight: 500;
-      margin-bottom: 0.35rem;
-      color: var(--color-text);
+      color: var(--pa-ink-2);
     }
     .inline-form input {
-      width: 100%;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      font-size: 1rem;
-      background: var(--bg-primary);
-      color: var(--color-text);
-      box-sizing: border-box;
+      font: inherit;
+      font-size: 16px;
+      padding: 13px 14px;
+      background: var(--pa-paper);
+      border: 1px solid var(--pa-line-2);
+      color: var(--pa-ink);
+      outline: 0;
+      transition: border-color 0.15s;
+      border-radius: 0;
+      -webkit-appearance: none;
+      appearance: none;
+      min-height: 48px;
+      font-family: 'DM Sans', system-ui, sans-serif;
     }
-    .inline-form input:focus {
-      outline: none;
-      border-color: #5E8C8A;
-      box-shadow: 0 0 0 2px rgba(94, 140, 138, 0.2);
-    }
-    .inline-form .form-error {
-      color: #dc2626;
-      font-size: 0.85rem;
-      margin-bottom: 0.75rem;
+    .inline-form input::placeholder { color: var(--pa-mute); opacity: 0.6; }
+    .inline-form input:focus { border-color: var(--pa-ink); }
+    .form-error {
       display: none;
+      font-size: 13px;
+      color: var(--pa-err);
+      line-height: 1.45;
+      margin-bottom: 10px;
     }
-    .inline-form .submit-btn {
+    .submit-btn {
       width: 100%;
-      padding: 0.85rem;
-      border: none;
-      border-radius: 8px;
-      background: #252525;
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 16px 22px;
+      background: var(--pa-ink);
+      color: var(--pa-paper);
+      border: 0;
+      font: inherit;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
       cursor: pointer;
-      transition: background 0.15s ease;
+      min-height: 52px;
+      transition: background 0.15s, transform 0.08s;
     }
-    .inline-form .submit-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
-    .submit-btn-warm {
-      background: #c47a55 !important;
-    }
+    .submit-btn:hover:not(:disabled) { background: #2c2924; }
+    .submit-btn:active:not(:disabled) { background: var(--pa-accent); transform: translateY(1px); }
+    .submit-btn:disabled { background: var(--pa-ink-2); cursor: default; opacity: 0.85; }
+    .submit-btn-warm { background: var(--pa-accent); }
+    .submit-btn-warm:hover:not(:disabled) { background: #b15c41; }
 
-    /* Success state */
+    /* ===== Success state ===== */
     .inline-success {
       display: none;
+      margin: 16px 20px 0;
+      padding: 32px 20px;
+      background: var(--pa-paper);
+      border: 1px solid var(--pa-line);
       text-align: center;
-      padding: 1.5rem;
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      margin-bottom: 1.5rem;
     }
     .inline-success.active { display: block; }
-    .inline-success .check {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: rgba(94, 140, 138, 0.12);
+    .inline-success .check,
+    .success-glyph {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-style: italic;
+      font-size: 56px;
+      line-height: 1;
+      color: var(--pa-accent);
+      margin-bottom: 12px;
+    }
+    .success-meta {
+      margin: 18px auto 4px;
+      max-width: 300px;
+      text-align: left;
+      border-top: 1px solid var(--pa-line);
+      border-bottom: 1px solid var(--pa-line);
+    }
+    .success-meta-row {
       display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 0.75rem;
-      font-size: 1.5rem;
-      color: #5E8C8A;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+      padding: 11px 4px;
+      border-bottom: 1px solid var(--pa-line);
+    }
+    .success-meta-row:last-child { border-bottom: 0; }
+    .success-meta-row span {
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      color: var(--pa-mute);
+      font-weight: 500;
+    }
+    .success-meta-row b {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--pa-ink);
+      text-align: right;
+    }
+    .success-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 22px;
+    }
+    .success-actions button {
+      width: 100%;
     }
     .inline-success h3 {
-      font-family: var(--font-serif-primary);
-      font-weight: 700;
-      margin-bottom: 0.5rem;
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 26px;
+      font-weight: 400;
+      letter-spacing: -0.015em;
+      line-height: 1.15;
+      color: var(--pa-ink);
+      margin: 0 0 8px;
+      text-wrap: balance;
     }
     .inline-success p {
-      font-size: 0.9rem;
-      color: var(--color-text-secondary);
-      margin-bottom: 1rem;
+      font-size: 14.5px;
+      color: var(--pa-ink-2);
+      line-height: 1.55;
+      max-width: 36ch;
+      margin: 0 auto 18px;
     }
-    .inline-success button {
-      background: none;
-      border: 1px solid var(--color-border);
-      padding: 0.6rem 1.25rem;
-      border-radius: 8px;
-      font-size: 0.9rem;
+    .success-timeline {
+      margin: 18px auto 22px;
+      max-width: 280px;
+      text-align: left;
+      border-top: 1px solid var(--pa-line);
+      border-bottom: 1px solid var(--pa-line);
+    }
+    .success-timeline-step {
+      padding: 10px 4px;
+      font-size: 13px;
+      color: var(--pa-ink-2);
+      border-bottom: 1px solid var(--pa-line);
+      line-height: 1.4;
+    }
+    .success-timeline-step:last-child { border-bottom: 0; }
+    .success-timeline-step strong { color: var(--pa-ink); font-weight: 500; }
+    #btn-another {
+      margin-top: 4px;
+      padding: 14px 18px;
+      background: transparent;
+      color: var(--pa-ink);
+      border: 1px solid var(--pa-line-2);
+      font: inherit;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
-      color: var(--color-text);
+      min-height: 48px;
+      transition: border-color 0.15s, background 0.15s, transform 0.08s;
     }
+    #btn-another:hover { border-color: var(--pa-ink-2); background: var(--pa-paper-2); }
+    #btn-another:active { background: var(--pa-paper-3); transform: translateY(1px); }
 
-    /* ===== Share link section ===== */
-    .app-share-section {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.75rem;
-    }
-    .app-share-section h3 {
-      font-family: var(--font-serif-primary);
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 0.25rem;
-    }
-    .share-link-row {
-      display: flex;
-      gap: 0.5rem;
-    }
-    .share-link-input {
-      flex: 1;
-      padding: 0.65rem 0.75rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      font-size: 0.85rem;
-      background: var(--bg-primary);
-      color: var(--color-text);
-      cursor: text;
-    }
-    .share-link-copy {
-      padding: 0.65rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      background: var(--bg-card);
-      font-size: 0.85rem;
-      font-weight: 600;
-      cursor: pointer;
-      white-space: nowrap;
-      transition: background 0.15s ease;
-    }
-    .share-link-copy:active {
-      background: var(--bg-secondary);
-    }
-
-    /* ===== What to Say (always visible) ===== */
+    /* ===== Reference card (collapsible "What to Say") ===== */
     .pitch-card {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.75rem;
+      margin: 22px 20px 0;
+      background: var(--pa-paper);
+      border: 1px solid var(--pa-line);
     }
-    .pitch-card h3 {
-      font-family: var(--font-serif-primary);
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 1rem;
+    .pitch-card-summary {
+      width: 100%;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 16px 18px;
+      text-align: left;
+      min-height: 64px;
+      background: transparent;
+      border: 0;
+      font: inherit;
+      cursor: pointer;
+      transition: background 0.15s;
     }
-    .pitch-card h3 svg {
-      width: 18px;
-      height: 18px;
-      color: var(--color-text-secondary);
+    .pitch-card-summary:hover { background: var(--pa-paper-2); }
+    .pitch-card-summary:active { background: var(--pa-paper-3); }
+    .pitch-card-summary-l {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      min-width: 0;
     }
+    .pitch-card-glyph {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-style: italic;
+      font-size: 22px;
+      color: var(--pa-accent);
+      line-height: 1;
+      width: 24px;
+      text-align: center;
+      flex: 0 0 auto;
+    }
+    .pitch-card-summary h3 {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      line-height: 1.2;
+      color: var(--pa-ink);
+      margin: 0;
+    }
+    .pitch-card-summary-sub {
+      display: block;
+      font-size: 12.5px;
+      color: var(--pa-mute);
+      margin-top: 2px;
+      line-height: 1.4;
+    }
+    .pitch-card-chev {
+      font-size: 18px;
+      color: var(--pa-ink-2);
+      transition: transform 0.2s;
+      line-height: 1;
+      flex: 0 0 auto;
+      width: 24px;
+      text-align: center;
+    }
+    .pitch-card.is-open .pitch-card-chev { transform: rotate(180deg); }
+    .pitch-card-body {
+      display: none;
+      border-top: 1px solid var(--pa-line);
+    }
+    .pitch-card.is-open .pitch-card-body { display: block; }
     .pitch-section {
-      margin-bottom: 1rem;
+      padding: 20px 20px;
+      border-bottom: 1px solid var(--pa-line);
     }
-    .pitch-section:last-child { margin-bottom: 0; }
+    .pitch-section:last-child { border-bottom: 0; }
     .pitch-section-title {
-      font-size: 0.65rem;
-      font-weight: 700;
+      font-size: 10.5px;
+      letter-spacing: 0.22em;
       text-transform: uppercase;
-      letter-spacing: 0.07em;
-      color: var(--color-text-secondary);
-      margin-bottom: 0.5rem;
+      color: var(--pa-accent);
+      font-weight: 500;
+      margin-bottom: 12px;
     }
     .pitch-quote {
-      font-size: 0.9rem;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 15px;
       line-height: 1.55;
-      color: var(--color-text);
-      background: var(--bg-secondary, #F6F3E9);
-      border-radius: 8px;
-      padding: 0.85rem 1rem;
+      color: var(--pa-ink);
+      padding-left: 14px;
+      border-left: 2px solid var(--pa-accent);
+      margin: 0;
+      text-wrap: pretty;
     }
     .pitch-quote em {
-      font-style: normal;
-      font-weight: 600;
+      font-style: italic;
+      color: var(--pa-accent);
+      font-weight: 500;
     }
+    .pitch-video-btn {
+      margin-top: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      background: var(--pa-paper-2);
+      border: 1px solid var(--pa-line-2);
+      font: inherit;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--pa-ink);
+      cursor: pointer;
+      min-height: 44px;
+      transition: background 0.15s, border-color 0.15s, color 0.15s;
+    }
+    .pitch-video-btn:hover { background: var(--pa-ink); color: var(--pa-paper); border-color: var(--pa-ink); }
+    .pitch-video-btn:active { background: var(--pa-accent); border-color: var(--pa-accent); color: var(--pa-paper); }
+    .pitch-video-btn svg { width: 14px; height: 14px; }
+
+    /* Objections */
     .objection-list {
       list-style: none;
       padding: 0;
       margin: 0;
       display: flex;
       flex-direction: column;
-      gap: 0.6rem;
+      gap: 14px;
     }
     .objection-list li {
-      font-size: 0.875rem;
-      line-height: 1.45;
-      color: var(--color-text);
-      padding-left: 1.1rem;
-      position: relative;
-    }
-    .objection-list li::before {
-      content: '\2014';
-      position: absolute;
-      left: 0;
-      color: var(--color-text-secondary);
-      font-size: 0.8rem;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 12px;
+      align-items: start;
     }
     .objection-list li strong {
-      font-weight: 600;
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-style: italic;
+      font-size: 14px;
+      color: var(--pa-accent);
+      font-weight: 500;
+      padding: 3px 10px;
+      background: var(--pa-accent-soft);
+      background: color-mix(in oklab, var(--pa-accent-soft) 65%, transparent);
+      border: 1px solid var(--pa-accent-soft);
+      white-space: nowrap;
+      align-self: start;
+      line-height: 1.3;
+      border-radius: 2px;
     }
+    .objection-list li > span {
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 14.5px;
+      line-height: 1.5;
+      color: var(--pa-ink-2);
+      text-wrap: pretty;
+    }
+    .objection-list li em {
+      font-style: italic;
+      color: var(--pa-accent);
+      font-weight: 500;
+    }
+
+    /* Trust signals — 3-column number grid */
     .trust-items {
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border: 1px solid var(--pa-line);
     }
     .trust-item {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.5rem;
-      font-size: 0.875rem;
-      color: var(--color-text);
-      line-height: 1.4;
-    }
-    .trust-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #EBA584;
-      flex-shrink: 0;
-      margin-top: 0.45rem;
-    }
-
-    /* ===== Action buttons (secondary tools) ===== */
-    .app-actions {
+      padding: 14px 12px;
       display: flex;
       flex-direction: column;
-      gap: 0.75rem;
-      margin-bottom: 1.75rem;
+      gap: 4px;
+      border-right: 1px solid var(--pa-line);
+      background: var(--pa-paper-2);
     }
-    .app-action-btn {
-      display: flex;
-      align-items: flex-start;
-      gap: 0.85rem;
-      padding: 1rem 1.15rem;
-      border-radius: 12px;
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      cursor: pointer;
-      text-decoration: none;
-      color: var(--color-text);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-      -webkit-tap-highlight-color: transparent;
+    .trust-item:last-child { border-right: 0; }
+    .trust-dot { display: none; }
+    .trust-item-num {
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 26px;
+      font-weight: 300;
+      letter-spacing: -0.02em;
+      line-height: 1;
+      color: var(--pa-ink);
     }
-    .app-action-btn:hover {
-      border-color: #e0dace;
-      box-shadow: 0 4px 12px rgba(37,37,37,0.06);
-    }
-    .app-action-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-shrink: 0;
-      background: var(--bg-secondary, #F6F3E9);
-      color: #252525;
-    }
-    .app-action-icon svg {
-      width: 20px;
-      height: 20px;
-    }
-    .app-action-label {
-      font-family: var(--font-serif-primary);
-      font-weight: 700;
-      font-size: 0.9375rem;
-      line-height: 1.3;
-      color: var(--color-text);
-    }
-    .app-action-desc {
-      font-size: 0.75rem;
-      color: var(--color-text-secondary);
-      margin-top: 0.1rem;
+    .trust-item-num em {
+      font-style: italic;
+      color: var(--pa-accent);
       font-weight: 400;
     }
-
-    /* ===== Earnings Nudge (zero-state) ===== */
-    .earnings-nudge {
-      text-align: center;
-      font-size: 0.85rem;
-      color: var(--color-text-secondary, #888);
-      margin-top: 0.5rem;
+    .trust-item-sub {
+      font-size: 11.5px;
+      color: var(--pa-mute);
+      line-height: 1.35;
     }
 
-    /* ===== Post-Submit Timeline ===== */
-    .success-timeline {
-      margin-top: 1.25rem;
-      padding-top: 1rem;
-      border-top: 1px solid var(--color-border, #e8e4da);
+    /* What they're buying — dt/dd spec list */
+    .spec-list {
       display: flex;
       flex-direction: column;
-      gap: 0.5rem;
+      border-top: 1px solid var(--pa-line);
+      margin: 0;
+      padding: 0;
+      list-style: none;
     }
-    .success-timeline-step {
-      font-size: 0.82rem;
-      color: var(--color-text-secondary, #666);
-      padding-left: 1.25rem;
-      position: relative;
+    .spec-list li {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 16px;
+      align-items: baseline;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--pa-line);
     }
-    .success-timeline-step::before {
-      content: '';
-      position: absolute;
-      left: 0;
-      top: 0.45em;
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: var(--amari-accent-warm, #EBA584);
-    }
-    .success-timeline-step strong {
-      color: var(--color-text, #252525);
-    }
-
-    /* ===== Pitch Video Button ===== */
-    .pitch-video-btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 0.4rem;
-      margin-top: 0;
-      padding: 0.4rem 0.75rem;
-      border-radius: 8px;
-      border: 1px solid var(--color-border, #e8e4da);
-      background: var(--bg-secondary, #F6F3E9);
-      cursor: pointer;
-      font-size: 0.8rem;
-      color: var(--color-text, #252525);
+    .spec-list li:last-child { border-bottom: 0; }
+    .spec-list .spec-k {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--pa-mute);
       font-weight: 500;
-      transition: border-color 0.2s ease, background 0.2s ease;
-      -webkit-tap-highlight-color: transparent;
+      min-width: 80px;
     }
-    .pitch-video-btn:hover {
-      border-color: #d5d0c4;
-      background: #eeead9;
+    .spec-list .spec-v {
+      font-size: 14px;
+      color: var(--pa-ink);
+      text-align: right;
+      line-height: 1.35;
     }
-    .pitch-video-btn svg {
-      width: 14px;
-      height: 14px;
-      flex-shrink: 0;
+    .spec-list .spec-v em {
+      font-style: italic;
+      color: var(--pa-accent);
+      font-weight: 500;
     }
 
-    /* ===== Referral History ===== */
+    /* ===== Referral history ===== */
     .referral-history {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.25rem;
-      margin-bottom: 1.75rem;
-      display: none;
+      margin: 22px 20px 0;
+      border: 1px solid var(--pa-line);
+      background: var(--pa-paper);
     }
-    .referral-history.loaded { display: block; }
     .referral-history h3 {
-      font-family: var(--font-serif-primary);
-      font-size: 1rem;
-      font-weight: 700;
-      margin-bottom: 0.75rem;
-    }
-    .referral-item {
       display: flex;
-      align-items: center;
       justify-content: space-between;
-      padding: 0.65rem 0;
-      border-bottom: 1px solid var(--color-border);
-      font-size: 0.9rem;
+      align-items: baseline;
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--pa-line);
+      font-family: var(--pa-display, 'Bona Nova', Georgia, serif);
+      font-size: 18px;
+      font-weight: 400;
+      letter-spacing: -0.005em;
+      color: var(--pa-ink);
+      margin: 0;
     }
-    .referral-item:last-child { border-bottom: none; }
+    #referral-list { display: block; }
+    .referral-item {
+      display: grid;
+      grid-template-columns: auto 1fr auto;
+      gap: 14px;
+      align-items: center;
+      padding: 14px 20px;
+      border-bottom: 1px solid var(--pa-line);
+      min-height: 64px;
+    }
+    .referral-item:last-child { border-bottom: 0; }
+    .referral-item::before {
+      content: "";
+      display: block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--pa-line-2);
+      flex: 0 0 auto;
+    }
+    .referral-item.has-booked::before { background: var(--pa-ok); }
+    .referral-item.has-paid::before { background: var(--pa-ok); }
+    .referral-item.has-expired::before { background: var(--pa-line-2); box-shadow: inset 0 0 0 1.5px var(--pa-mute); background: transparent; }
     .referral-left {
       display: flex;
       flex-direction: column;
+      gap: 2px;
+      min-width: 0;
     }
     .referral-name {
+      font-size: 15px;
       font-weight: 500;
-      color: var(--color-text);
+      color: var(--pa-ink);
+      line-height: 1.2;
     }
     .referral-earning {
-      font-size: 0.75rem;
-      color: var(--color-text-secondary);
-      margin-top: 0.1rem;
+      font-size: 12.5px;
+      color: var(--pa-mute);
+      line-height: 1.3;
     }
     .referral-status {
-      font-size: 0.75rem;
-      font-weight: 600;
-      padding: 0.2rem 0.6rem;
-      border-radius: 20px;
-      text-transform: capitalize;
-    }
-    .status-referred {
-      background: rgba(37, 37, 37, 0.08);
-      color: #666;
-    }
-    .status-booked {
-      background: rgba(235, 165, 132, 0.15);
-      color: #c47a55;
-    }
-    .status-paid {
-      background: rgba(76, 175, 80, 0.12);
-      color: #2e7d32;
-    }
-    .status-expired {
-      background: rgba(37, 37, 37, 0.06);
-      color: #999;
-      text-decoration: line-through;
-    }
-    .referral-type-label {
-      font-size: 0.65rem;
-      color: var(--color-text-secondary);
+      font-size: 10.5px;
+      letter-spacing: 0.16em;
       text-transform: uppercase;
-      letter-spacing: 0.04em;
+      color: var(--pa-mute);
+      font-weight: 500;
+      white-space: nowrap;
     }
+    .referral-status.status-booked { color: var(--pa-ok); }
+    .referral-status.status-paid { color: var(--pa-ok); }
+    .referral-status.status-referred { color: var(--pa-mute); }
+    .referral-status.status-expired { color: var(--pa-mute); text-decoration: line-through; text-decoration-thickness: 1px; }
     .referral-empty {
-      font-size: 0.85rem;
-      color: var(--color-text-secondary);
+      padding: 28px 24px;
       text-align: center;
-      padding: 1rem 0;
+      font-size: 13px;
+      color: var(--pa-mute);
+      line-height: 1.45;
     }
 
     /* Video modal */
@@ -812,118 +1019,161 @@
     }
 
     /* ===== Login Screen ===== */
+    /* ===== Editorial sign-in (replaced 2026-05-17) ===== */
     .login-screen {
       display: none;
-      text-align: center;
-      padding-top: 15vh;
+      max-width: 420px;
+      margin: 0 auto;
+      padding: 12vh 24px 48px;
+      text-align: left;
     }
     .login-screen.active { display: block; }
-    .login-screen img {
-      width: 56px;
-      height: 56px;
-      border-radius: 14px;
-      margin-bottom: 1.25rem;
-    }
+    .login-screen > img { display: none; } /* hide old logo — header has brand */
     .login-screen h1 {
       font-family: var(--font-serif-primary);
-      font-size: 1.5rem;
-      font-weight: 700;
+      font-weight: 400;
+      font-size: clamp(32px, 7.2vw, 44px);
+      letter-spacing: -0.025em;
+      line-height: 1.05;
       color: var(--color-text);
-      margin-bottom: 0.5rem;
+      margin: 0 0 28px;
+      text-wrap: balance;
     }
-    .login-screen .login-subtitle {
-      font-size: 0.9rem;
-      color: var(--color-text-secondary);
-      margin-bottom: 2rem;
+    .login-screen h1 em {
+      font-style: italic;
+      color: var(--color-accent-warm);
+      font-weight: 400;
     }
+    .login-screen .login-subtitle { display: none; } /* headline carries it */
+
     .login-card {
-      background: var(--bg-card);
-      border: 1px solid var(--color-border);
-      border-radius: 12px;
-      padding: 1.5rem;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
-      text-align: left;
+      background: transparent;
+      border: 0;
+      border-radius: 0;
+      padding: 0;
+      box-shadow: none;
     }
     .login-card label {
       display: block;
-      font-size: 0.85rem;
+      font-size: 13px;
       font-weight: 500;
-      margin-bottom: 0.35rem;
-      color: var(--color-text);
+      letter-spacing: 0.01em;
+      color: var(--color-text-secondary);
+      margin-bottom: 8px;
     }
     .login-card input[type="email"] {
       width: 100%;
-      padding: 0.75rem 1rem;
-      border: 1px solid var(--color-border);
-      border-radius: 8px;
-      font-size: 1rem;
-      background: var(--bg-primary);
+      padding: 10px 2px;
+      background: transparent;
+      border: 0;
+      border-bottom: 1.5px solid var(--color-text);
+      border-radius: 0;
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 17px;
+      font-weight: 400;
       color: var(--color-text);
       box-sizing: border-box;
-      margin-bottom: 1rem;
+      margin-bottom: 20px;
+      transition: border-color 0.2s;
+    }
+    .login-card input[type="email"]::placeholder {
+      font-family: var(--font-serif-primary);
+      font-style: italic;
+      color: var(--color-text-muted);
+      opacity: 0.6;
     }
     .login-card input[type="email"]:focus {
       outline: none;
-      border-color: #5E8C8A;
-      box-shadow: 0 0 0 2px rgba(94, 140, 138, 0.2);
+      border-color: var(--color-accent-warm);
+      box-shadow: none;
+    }
+    .login-card input[type="email"][aria-invalid="true"] {
+      border-color: var(--color-accent-warm);
     }
     .login-card .login-btn {
       width: 100%;
-      padding: 0.85rem;
-      border: none;
-      border-radius: 8px;
-      background: #252525;
-      color: #fff;
-      font-size: 1rem;
-      font-weight: 600;
+      padding: 16px 22px;
+      border: 0;
+      border-radius: 0;
+      background: var(--color-text);
+      color: var(--bg-primary);
+      font-family: 'DM Sans', system-ui, sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      letter-spacing: -0.005em;
       cursor: pointer;
+      transition: background 0.2s;
     }
-    .login-card .login-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
-    }
+    .login-card .login-btn:hover:not(:disabled) { background: var(--color-accent-warm); }
+    .login-card .login-btn:disabled { opacity: 0.65; cursor: default; }
     .login-error {
-      color: #dc2626;
-      font-size: 0.85rem;
-      margin-bottom: 0.75rem;
+      color: var(--color-accent-warm);
+      font-size: 13px;
+      line-height: 1.5;
+      margin: -12px 0 16px;
       display: none;
     }
     .login-resend {
       margin-top: 12px;
-      font-size: 0.8rem;
-      text-align: center;
-      color: #888;
+      font-size: 13px;
+      color: var(--color-text-muted);
     }
     .login-resend a {
-      color: #333;
-      text-decoration: underline;
+      color: var(--color-text-secondary);
+      border-bottom: 1px solid var(--color-border-dark);
+      padding-bottom: 1px;
+      text-decoration: none;
       cursor: pointer;
+      transition: color 0.2s, border-color 0.2s;
     }
+    .login-resend a:hover { color: var(--color-accent-warm); border-color: var(--color-accent-warm); }
     .login-success {
       display: none;
-      text-align: center;
-      padding: 1rem 0;
+      text-align: left;
+      padding: 0;
     }
-    .login-success .check-circle {
-      width: 48px;
-      height: 48px;
-      border-radius: 50%;
-      background: rgba(94, 140, 138, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 0.75rem;
-      font-size: 1.5rem;
-      color: #5E8C8A;
-    }
+    .login-success .check-circle { display: none; } /* drop the icon — editorial copy carries it */
     .login-success h3 {
       font-family: var(--font-serif-primary);
-      font-weight: 700;
-      margin-bottom: 0.5rem;
+      font-weight: 400;
+      font-size: clamp(22px, 5.4vw, 28px);
+      letter-spacing: -0.01em;
+      line-height: 1.2;
+      color: var(--color-text);
+      margin-bottom: 12px;
+      text-wrap: balance;
+    }
+    .login-success h3 em {
+      font-style: italic;
+      color: var(--color-accent-warm);
+      font-weight: 400;
     }
     .login-success p {
-      font-size: 0.9rem;
+      font-size: 14px;
+      line-height: 1.55;
       color: var(--color-text-secondary);
+      margin-bottom: 4px;
+    }
+    .login-success p.muted {
+      font-size: 13px;
+      color: var(--color-text-muted);
+    }
+    .login-apply {
+      margin-top: 24px;
+      font-size: 14px;
+      color: var(--color-text-muted);
+    }
+    .login-apply a {
+      color: var(--color-text-secondary);
+      border-bottom: 1px solid var(--color-border-dark);
+      padding-bottom: 1px;
+      text-decoration: none;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .login-apply a:hover { color: var(--color-accent-warm); border-color: var(--color-accent-warm); }
+    @media (max-width: 520px) {
+      .login-screen { padding: 8vh 20px 32px; }
+      .login-card input[type="email"] { font-size: 16px; }
     }
 
     /* Dashboard wrapper */
@@ -968,199 +1218,239 @@
 
   <!-- ===== LOGIN SCREEN ===== -->
   <div class="login-screen" id="login-screen">
-    <img src="/apple-touch-icon.png" alt="Amari Method">
-    <h1>Partner Toolkit</h1>
-    <p class="login-subtitle">Log in to access your referral tools and track your earnings.</p>
+    <h1>Partner <em>sign-in.</em></h1>
 
     <div class="login-card">
-      <form id="login-form">
-        <label for="login-email">Email address</label>
-        <input type="email" id="login-email" placeholder="you@example.com" required>
-        <div class="login-error" id="login-error"></div>
-        <button type="submit" class="login-btn" id="login-btn">Send Login Link</button>
+      <form id="login-form" autocomplete="on" novalidate>
+        <label for="login-email">Email</label>
+        <input
+          type="email"
+          id="login-email"
+          name="email"
+          placeholder="you@yourpractice.com"
+          required
+          autocomplete="email"
+          autofocus
+          aria-describedby="login-error"
+        >
+        <div class="login-error" id="login-error" role="alert"></div>
+        <button type="submit" class="login-btn" id="login-btn">Send sign-in link &nbsp;&rarr;</button>
       </form>
 
-      <div class="login-success" id="login-success">
-        <div class="check-circle">&#10003;</div>
-        <h3>Check Your Email</h3>
-        <p>We sent a login link to your email. Click it to access your toolkit.</p>
+      <div class="login-success" id="login-success" role="status" aria-live="polite">
+        <h3>Check your inbox <em>&mdash; we sent a link.</em></h3>
+        <p>The link is good for 10 minutes.</p>
+        <p class="muted">Don&rsquo;t see it? Check your spam folder.</p>
         <div class="login-resend" id="login-resend"></div>
       </div>
+
+      <p class="login-apply" id="login-apply">New partner? <a href="/partner">Apply here</a></p>
     </div>
   </div>
 
   <!-- ===== DASHBOARD SCREEN ===== -->
   <div class="dashboard-screen" id="dashboard-screen">
 
-  <!-- Header -->
+  <!-- Top bar -->
   <div class="app-header">
     <img src="/apple-touch-icon.png" alt="Amari Method">
-    <div class="app-greeting" id="greeting">Hey there</div>
-    <div class="app-subtext">Your partner toolkit</div>
+    <span style="font-family:var(--pa-display,'Bona Nova',Georgia,serif);font-size:16px;letter-spacing:-0.005em;color:var(--pa-ink);">Amari Method</span>
   </div>
 
-  <!-- 1. EARNINGS CARD (Loss Aversion + Activation Energy) -->
-  <div class="earnings-card" id="earnings-card">
+  <h1 class="app-greeting" id="greeting">Hey, <em style="font-style:italic;color:var(--pa-accent);">there</em>.</h1>
+  <p class="app-subtext">Your partner toolkit.</p>
+
+  <!-- 1. EARNINGS HERO -->
+  <section class="earnings-card" id="earnings-card">
     <div class="earnings-top">
       <div>
-        <div class="earnings-amount" id="earnings-amount">$0</div>
-        <div class="earnings-paid" id="earnings-paid" style="display:none; font-size:0.85rem; color:#2e7d32; margin-top:2px;"></div>
-        <div class="earnings-label">earned from referrals</div>
+        <span class="earnings-amount" id="earnings-amount">$0</span>
+        <div class="earnings-paid" id="earnings-paid" style="display:none;"></div>
+        <div class="earnings-label">Earned from referrals</div>
       </div>
       <div class="earnings-breakdown" id="earnings-breakdown">
-        <div><strong id="stat-booked">0</strong> booked</div>
-        <div><strong id="stat-total">0</strong> referred</div>
+        <div data-label="Booked"><strong id="stat-booked">0</strong></div>
+        <div data-label="Referred"><strong id="stat-total">0</strong></div>
       </div>
     </div>
-    <div class="earnings-nudge" id="earnings-nudge">
-      Your first referral earns $50 cash &mdash; just a name and phone number.
+    <p class="earnings-nudge" id="earnings-nudge">
+      Your first referral earns <em style="font-style:italic;color:var(--pa-accent);">$50 cash</em> &mdash; just a name and a phone number.
+    </p>
+  </section>
+
+  <!-- 2. ACTION STACK — Refer primary + Sold secondary -->
+  <div class="action-stack">
+    <button class="cta-card cta-card-primary" id="btn-refer" type="button">
+      <span class="cta-icon">+</span>
+      <div>
+        <span class="cta-label">Refer a client</span>
+        <span class="cta-desc">Submit their name and number. We handle the rest.</span>
+      </div>
+      <span class="cta-earn-tag">+$50</span>
+    </button>
+
+    <button class="cta-card cta-card-secondary" id="btn-sold" type="button">
+      <div>
+        <span class="cta-label">Sold a session?</span>
+        <span class="cta-desc">Log it &mdash; full $225 payout.</span>
+      </div>
+      <span class="cta-earn-tag">$225</span>
+    </button>
+  </div>
+
+  <!-- Refer form (hidden, shown when "Refer a client" tapped) -->
+  <div class="inline-form" id="refer-form-panel">
+    <h3>Refer a client</h3>
+    <div class="form-subtitle">Just a name and number. We'll reach out, handle booking, and you earn $50 when they show up.</div>
+    <form id="refer-form" novalidate>
+      <div class="field">
+        <label for="refer-name">Client first name</label>
+        <input type="text" id="refer-name" name="clientFirstName" autocomplete="given-name" required>
+      </div>
+      <div class="field">
+        <label for="refer-phone">Client phone</label>
+        <input type="tel" id="refer-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20">
+      </div>
+      <div class="form-error" id="refer-error"></div>
+      <button type="submit" class="submit-btn" id="refer-submit-btn">Submit referral</button>
+    </form>
+  </div>
+
+  <!-- Sold form (hidden, shown when "Sold a session?" tapped) -->
+  <div class="inline-form" id="sold-form-panel">
+    <h3>Client info</h3>
+    <div class="form-subtitle">Submit your client's details so Dr. Garrett can send the intake and get them booked.</div>
+    <form id="sold-form" novalidate>
+      <div class="field">
+        <label for="sold-name">Client first name</label>
+        <input type="text" id="sold-name" name="clientFirstName" autocomplete="given-name" required>
+      </div>
+      <div class="field">
+        <label for="sold-phone">Client phone</label>
+        <input type="tel" id="sold-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20">
+      </div>
+      <div class="field">
+        <label for="sold-email">Client email <span style="font-weight:400;color:var(--pa-mute);">(optional)</span></label>
+        <input type="email" id="sold-email" name="clientEmail" autocomplete="email" placeholder="client@example.com">
+      </div>
+      <div class="form-error" id="sold-error"></div>
+      <button type="submit" class="submit-btn" id="sold-submit-btn">Submit client</button>
+    </form>
+  </div>
+
+  <!-- Shared success state — content swaps per type (refer / sold) -->
+  <div class="inline-success" id="referral-success">
+    <div class="success-glyph" id="success-glyph">&#x2726;</div>
+    <h3 id="success-heading">Got it.</h3>
+    <p id="success-message">We'll reach out and take it from here.</p>
+
+    <div class="success-meta" id="success-meta" style="display:none;">
+      <div class="success-meta-row">
+        <span id="success-meta-k1">Sent to</span>
+        <b id="success-meta-v1">&mdash;</b>
+      </div>
+      <div class="success-meta-row">
+        <span id="success-meta-k2">Submitted</span>
+        <b id="success-meta-v2">&mdash;</b>
+      </div>
+    </div>
+
+    <div class="success-actions">
+      <button type="button" id="btn-another">Submit another</button>
     </div>
   </div>
 
-  <!-- SHARE LINK (Activation Energy: lowest-effort action first) -->
-  <div class="app-share-section" id="share-panel">
-    <h3>Share Your Link</h3>
-    <p style="font-size: 0.85rem; color: var(--color-text-secondary); margin-bottom: 0.75rem; line-height:1.4;">
-      Text this to anyone with pain. When they book through your link, you earn $50.
-    </p>
+  <!-- 3. SHARE LINK -->
+  <section class="app-share-section" id="share-panel">
+    <h3>Share your link</h3>
+    <p>Text this to anyone you know with pain. When they book through your link, you earn $50.</p>
     <div class="share-link-row">
       <input type="text" class="share-link-input" id="share-link" readonly>
       <button type="button" class="share-link-copy" id="btn-copy">Copy</button>
     </div>
-  </div>
+  </section>
 
-  <!-- 2. PRIMARY CTA — Refer (Default Effect: one clear action) -->
-  <div class="section-label">Submit a Referral</div>
-  <button class="cta-card cta-card-primary" id="btn-refer" type="button" style="width:100%;">
-    <div class="cta-icon cta-icon-warm">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/>
-        <circle cx="9" cy="7" r="4"/>
-        <line x1="19" y1="8" x2="19" y2="14"/>
-        <line x1="22" y1="11" x2="16" y2="11"/>
-      </svg>
-    </div>
-    <div>
-      <div class="cta-label">Refer a Client</div>
-      <div class="cta-desc">Submit their name and number. We handle the rest.</div>
-      <div class="cta-earn-tag">You earn $50 when they book</div>
-    </div>
-  </button>
-  <div style="text-align:center; margin-top:0.5rem;">
-    <button id="btn-sold" type="button" style="background:none; border:none; font-size:0.92rem; color:var(--color-text-secondary,#888); cursor:pointer; text-decoration:underline; padding:0.5rem 0;">Already sold a session? Log it here ($225)</button>
-  </div>
-
-  <!-- Refer form (hidden, shown when "Refer a Client" tapped) -->
-  <div class="inline-form" id="refer-form-panel">
-    <h3>Refer a Client</h3>
-    <div class="form-subtitle">Just a name and number. We'll reach out, handle booking, and you earn $50 when they show up.</div>
-    <form id="refer-form">
-      <div class="field">
-        <label for="refer-name">Client First Name</label>
-        <input type="text" id="refer-name" name="clientFirstName" autocomplete="given-name" required>
-      </div>
-      <div class="field">
-        <label for="refer-phone">Client Phone</label>
-        <input type="tel" id="refer-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20" title="At least 10 digits">
-      </div>
-      <div class="form-error" id="refer-error"></div>
-      <button type="submit" class="submit-btn submit-btn-warm" id="refer-submit-btn">Submit Referral</button>
-    </form>
-  </div>
-
-  <!-- Sold form (hidden, shown when "I Sold a Session" tapped) -->
-  <div class="inline-form" id="sold-form-panel">
-    <h3>Client Info</h3>
-    <div class="form-subtitle">Submit your client's details so Dr. Garrett can send the intake and get them booked.</div>
-    <form id="sold-form">
-      <div class="field">
-        <label for="sold-name">Client First Name</label>
-        <input type="text" id="sold-name" name="clientFirstName" autocomplete="given-name" required>
-      </div>
-      <div class="field">
-        <label for="sold-phone">Client Phone</label>
-        <input type="tel" id="sold-phone" name="clientPhone" inputmode="tel" autocomplete="tel" required minlength="10" maxlength="20" title="At least 10 digits">
-      </div>
-      <div class="field">
-        <label for="sold-email">Client Email <span style="font-weight:400; color:var(--color-text-secondary);">(optional)</span></label>
-        <input type="email" id="sold-email" name="clientEmail" autocomplete="email" placeholder="client@example.com">
-      </div>
-      <div class="form-error" id="sold-error"></div>
-      <button type="submit" class="submit-btn" id="sold-submit-btn">Submit Client</button>
-    </form>
-  </div>
-
-  <!-- Shared success state -->
-  <div class="inline-success" id="referral-success">
-    <div class="check">&#10003;</div>
-    <h3 id="success-heading">Got It!</h3>
-    <p id="success-message">We'll reach out and take it from here.</p>
-    <div class="success-timeline" id="success-timeline">
-      <div class="success-timeline-step"><strong>Now:</strong> Dr. Garrett gets notified</div>
-      <div class="success-timeline-step"><strong>Within 24h:</strong> We reach out to your referral</div>
-      <div class="success-timeline-step"><strong>When they book:</strong> Status updates here automatically</div>
-    </div>
-    <button type="button" id="btn-another">Submit Another</button>
-  </div>
-
-  <!-- (Share link moved above CTAs) -->
-
-  <!-- 4. WHAT TO SAY (always visible — not collapsed) -->
+  <!-- 4. WHAT TO SAY (collapsible reference) -->
   <div class="section-label">Reference</div>
-  <div class="pitch-card">
-    <h3>
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-      </svg>
-      What to Say
-    </h3>
+  <section class="pitch-card" id="pitch-card">
+    <button type="button" class="pitch-card-summary" id="pitch-card-toggle" aria-expanded="false">
+      <span class="pitch-card-summary-l">
+        <span class="pitch-card-glyph">&para;</span>
+        <span>
+          <h3>What to say</h3>
+          <span class="pitch-card-summary-sub">Pitch, objections, and trust signals</span>
+        </span>
+      </span>
+      <span class="pitch-card-chev">&#x25BE;</span>
+    </button>
 
-    <div class="pitch-section">
-      <div class="pitch-section-title">30-Second Pitch</div>
-      <div class="pitch-quote">
-        "Exercise-based pain relief. You're in pain because something's working too hard and something else isn't working hard enough. Dr. Garrett finds the exact imbalance and teaches you exercises to fix it. <em>Most people feel a difference in the first session.</em>"
+    <div class="pitch-card-body">
+      <div class="pitch-section">
+        <div class="pitch-section-title">30-second pitch</div>
+        <p class="pitch-quote">
+          "When pain sticks around, it's usually because the body is out of balance &mdash; one part working too hard, another part not enough. Dr. Garrett finds where you're out of balance and teaches you the protocols to rebalance. <em>Most people feel a shift in their first session.</em>"
+        </p>
+        <button class="pitch-video-btn" id="btn-video" type="button">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="5 3 19 12 5 21 5 3"/>
+          </svg>
+          Preview &amp; share the 60-second video
+        </button>
       </div>
-      <div style="margin-top:0.75rem; font-size:0.82rem; color:var(--color-text-secondary,#888); margin-bottom:0.35rem;">Send them this — it explains the Amari Method in 60 seconds:</div>
-      <button class="pitch-video-btn" id="btn-video" type="button">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:18px;height:18px;vertical-align:middle;margin-right:0.4rem;">
-          <polygon points="5 3 19 12 5 21 5 3"/>
-        </svg>
-        Preview &amp; share the 60-second video
-      </button>
-    </div>
 
-    <div class="pitch-section">
-      <div class="pitch-section-title">If They Push Back</div>
-      <ul class="objection-list">
-        <li><strong>vs. Chiro:</strong> "Chiro adjusts the bones but doesn't retrain the muscles pulling them back out. This trains the muscles."</li>
-        <li><strong>vs. PT:</strong> "PT gives generic exercises for a category. This finds your specific pattern."</li>
-        <li><strong>vs. "I've tried everything":</strong> "Those treatments address the symptom. This finds the pattern underneath it."</li>
-      </ul>
-    </div>
+      <div class="pitch-section">
+        <div class="pitch-section-title">If they push back</div>
+        <ul class="objection-list">
+          <li>
+            <strong>vs. Chiro</strong>
+            <span>Chiro adjusts the joints. The muscles around them keep pulling them back out of alignment. <em>Dr. Garrett teaches you how to retrain the muscles.</em></span>
+          </li>
+          <li>
+            <strong>vs. PT</strong>
+            <span>PT gives you general exercises for a diagnosis. <em>Dr. Garrett finds your specific imbalance and teaches you the protocols for it.</em></span>
+          </li>
+          <li>
+            <strong>"Tried it all"</strong>
+            <span>Most of those treat the spot where it hurts. <em>Dr. Garrett works on the imbalance underneath.</em></span>
+          </li>
+        </ul>
+      </div>
 
-    <div class="pitch-section">
-      <div class="pitch-section-title">Trust Signals</div>
-      <div class="trust-items">
-        <div class="trust-item"><div class="trust-dot"></div><span>4.9/5 from 200+ clients</span></div>
-        <div class="trust-item"><div class="trust-dot"></div><span>Most people feel a difference in their first session</span></div>
-        <div class="trust-item"><div class="trust-dot"></div><span>Satisfaction guarantee &mdash; if you don't feel a shift, he keeps working at no charge</span></div>
+      <div class="pitch-section">
+        <div class="pitch-section-title">Trust signals</div>
+        <div class="trust-items">
+          <div class="trust-item">
+            <span class="trust-item-num"><em>4.9</em>/5</span>
+            <span class="trust-item-sub">Client rating</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-item-num"><em>1st</em></span>
+            <span class="trust-item-sub">Session shift, for most</span>
+          </div>
+          <div class="trust-item">
+            <span class="trust-item-num"><em>100<small>%</small></em></span>
+            <span class="trust-item-sub">Satisfaction guarantee</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="pitch-section">
+        <div class="pitch-section-title">What they're buying</div>
+        <ul class="spec-list">
+          <li><span class="spec-k">Session</span><span class="spec-v">60 min one-on-one with Dr. Garrett</span></li>
+          <li><span class="spec-k">Price</span><span class="spec-v"><em>$225</em></span></li>
+          <li><span class="spec-k">Format</span><span class="spec-v">In-person or virtual</span></li>
+          <li><span class="spec-k">Payment</span><span class="spec-v">HSA / FSA accepted</span></li>
+          <li><span class="spec-k">Includes</span><span class="spec-v">Assessment, hands-on work, and protocols they take home</span></li>
+        </ul>
       </div>
     </div>
+  </section>
 
-    <div class="pitch-section">
-      <div class="pitch-section-title">What They're Buying</div>
-      <ul class="objection-list">
-        <li>60 min with Dr. Garrett &mdash; $225</li>
-        <li>In-person or virtual</li>
-        <li>HSA/FSA accepted</li>
-        <li>Assessment + hands-on work + take-home exercises</li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 6. REFERRAL HISTORY (per-referral earnings + status) -->
+  <!-- 5. REFERRAL HISTORY -->
+  <div class="section-label">Your activity</div>
   <div class="referral-history" id="referral-history">
-    <h3>Your Referrals</h3>
+    <h3>Your referrals</h3>
     <div id="referral-list"></div>
   </div>
 
@@ -1184,7 +1474,7 @@
     </div>
   </div>
 
-  <!-- 7. INSTALL BANNER (bottom — out of prime position) -->
+  <!-- 6. INSTALL BANNER -->
   <div class="install-banner" id="install-banner">
     <div class="install-banner-header">
       <h3>Add to Home Screen</h3>
@@ -1222,12 +1512,13 @@
 
   <!-- Footer -->
   <div class="app-footer">
-    <a href="https://www.amarimethod.com" target="_blank">amarimethod.com</a>
+    <a href="https://www.amarimethod.com">amarimethod.com</a>
     <span style="margin: 0 0.5rem;">|</span>
     <a href="#" id="btn-logout">Log out</a>
   </div>
 
   </div><!-- /.dashboard-screen -->
+
 
 </div>
 
@@ -1299,7 +1590,7 @@
       if (remaining <= 0) {
         clearInterval(interval);
         btn.disabled = false;
-        btn.textContent = 'Send Login Link';
+        btn.innerHTML = 'Send sign-in link &nbsp;&rarr;';
       } else {
         btn.textContent = 'Wait ' + remaining + 's';
       }
@@ -1319,6 +1610,10 @@
           successDiv.style.display = 'none';
           resendDiv.textContent = '';
           form.style.display = '';
+          var applyLine = document.getElementById('login-apply');
+          if (applyLine) applyLine.style.display = '';
+          var emailInput = document.getElementById('login-email');
+          if (emailInput) emailInput.focus();
         });
       } else {
         resendDiv.textContent = 'Resend in ' + remaining + 's';
@@ -1333,13 +1628,19 @@
     var loginBtn = document.getElementById('login-btn');
     var errorDiv = document.getElementById('login-error');
     var successDiv = document.getElementById('login-success');
+    var applyLine = document.getElementById('login-apply');
     var email = emailInput.value.trim().toLowerCase();
 
-    if (!email) return;
+    if (!email) {
+      emailInput.setAttribute('aria-invalid', 'true');
+      emailInput.focus();
+      return;
+    }
 
     loginBtn.disabled = true;
-    loginBtn.textContent = 'Sending...';
+    loginBtn.textContent = 'Sending…';
     errorDiv.style.display = 'none';
+    emailInput.removeAttribute('aria-invalid');
 
     try {
       var res = await fetch('/api/partner-auth', {
@@ -1356,17 +1657,26 @@
       var form = e.target;
       form.style.display = 'none';
       successDiv.style.display = 'block';
+      if (applyLine) applyLine.style.display = 'none';
       startResendCooldown(document.getElementById('login-resend'), form, successDiv, 60);
     } catch (err) {
       errorDiv.textContent = err.message;
       errorDiv.style.display = 'block';
+      emailInput.setAttribute('aria-invalid', 'true');
       if (res && res.status === 429) {
         startBtnCooldown(loginBtn, 60);
       } else {
         loginBtn.disabled = false;
-        loginBtn.textContent = 'Send Login Link';
+        loginBtn.innerHTML = 'Send sign-in link &nbsp;&rarr;';
       }
     }
+  });
+
+  // Clear error state as soon as user edits the field
+  document.getElementById('login-email').addEventListener('input', function () {
+    this.removeAttribute('aria-invalid');
+    var errorDiv = document.getElementById('login-error');
+    if (errorDiv) errorDiv.style.display = 'none';
   });
 
   // ── Logout ──
@@ -1379,7 +1689,10 @@
     document.getElementById('login-success').style.display = 'none';
     document.getElementById('login-error').style.display = 'none';
     document.getElementById('login-btn').disabled = false;
-    document.getElementById('login-btn').textContent = 'Send Login Link';
+    document.getElementById('login-btn').innerHTML = 'Send sign-in link &nbsp;&rarr;';
+    var applyLine = document.getElementById('login-apply');
+    if (applyLine) applyLine.style.display = '';
+    document.getElementById('login-email').removeAttribute('aria-invalid');
   });
 
   // ── Magic link token verification ──
@@ -1508,7 +1821,11 @@
           }
 
           var item = document.createElement('div');
-          item.className = 'referral-item';
+          var modClass = '';
+          if (statusClass === 'status-paid') modClass = ' has-paid';
+          else if (statusClass === 'status-expired') modClass = ' has-expired';
+          else if (statusClass === 'status-booked') modClass = ' has-booked';
+          item.className = 'referral-item' + modClass;
 
           var left = document.createElement('div');
           left.className = 'referral-left';
@@ -1547,6 +1864,17 @@
       // Dashboard load failed — show what we have
     }
   }
+
+  // ── Pitch card (What to say) collapse toggle ──
+  (function () {
+    var card = document.getElementById('pitch-card');
+    var toggle = document.getElementById('pitch-card-toggle');
+    if (!card || !toggle) return;
+    toggle.addEventListener('click', function () {
+      var isOpen = card.classList.toggle('is-open');
+      toggle.setAttribute('aria-expanded', String(isOpen));
+    });
+  })();
 
   // ── Video button ──
   var videoModal = document.getElementById('video-modal');
@@ -1679,18 +2007,46 @@
 
         lastFormType = type;
         var clientName = payload.clientFirstName;
+        var nameHtml = '<em style="font-style:italic;color:var(--pa-accent);">' + clientName + '</em>';
 
-        var timelineEl = document.getElementById('success-timeline');
+        var glyphEl = document.getElementById('success-glyph');
+        var headingEl = document.getElementById('success-heading');
+        var messageEl = document.getElementById('success-message');
+        var metaEl = document.getElementById('success-meta');
+        var metaK1 = document.getElementById('success-meta-k1');
+        var metaV1 = document.getElementById('success-meta-v1');
+        var metaK2 = document.getElementById('success-meta-k2');
+        var metaV2 = document.getElementById('success-meta-v2');
+        var anotherBtn = document.getElementById('btn-another');
+
+        // Submitted timestamp — "May 17, 3:24 PM" style
+        var now = new Date();
+        var submittedAt = now.toLocaleString(undefined, {
+          month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
+        });
+
         if (type === 'refer') {
-          document.getElementById('success-heading').textContent = 'Referral Submitted!';
-          document.getElementById('success-message').textContent =
-            "We'll reach out to " + clientName + ". You earn $50 when they book.";
-          if (timelineEl) timelineEl.style.display = '';
+          glyphEl.textContent = '✦'; // ✦
+          headingEl.innerHTML = "We've got " + nameHtml + " from here.";
+          messageEl.textContent =
+            "We'll reach out within 24 hours and let you know when they book. Your $50 lands on the next payout.";
+          metaK1.textContent = 'Sent to';
+          metaV1.textContent = payload.clientPhone;
+          metaK2.textContent = 'Submitted';
+          metaV2.textContent = submittedAt;
+          metaEl.style.display = '';
+          if (anotherBtn) anotherBtn.textContent = 'Refer another';
         } else {
-          document.getElementById('success-heading').textContent = 'Got It!';
-          document.getElementById('success-message').textContent =
-            "We'll get " + clientName + " set up with Dr. Garrett.";
-          if (timelineEl) timelineEl.style.display = 'none';
+          glyphEl.innerHTML = '&#x2295;'; // ⊕
+          headingEl.textContent = 'Logged.';
+          messageEl.textContent =
+            "$225 lands on your next payout. We'll confirm the session with " + clientName + " and put it on the calendar.";
+          metaK1.textContent = 'Client';
+          metaV1.textContent = clientName;
+          metaK2.textContent = 'Submitted';
+          metaV2.textContent = submittedAt;
+          metaEl.style.display = '';
+          if (anotherBtn) anotherBtn.textContent = 'Log another';
         }
 
         closeAllForms();

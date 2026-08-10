@@ -15,6 +15,7 @@ interface ProgressTrackerProps {
 // with a label "X of Y used". Keeps the visual proportional in re-up cases.
 const MAX_DOTS = 12;
 const PACK_LABEL: Record<string, string> = {
+  '24-session': '12-Week Amari Practice',
   '4-session': '4-pack',
   '8-session': '8-pack',
   Single: 'sessions',
@@ -123,7 +124,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
   // assessment) do NOT count per Eben's 2026-06-03 rule. Mirrors the
   // NON_JOURNEY regex in functions/api/portal-data.js + staff-mark-attended.js.
   // appointmentType is calendarName server-side (portal-data.js:265).
-  const NON_JOURNEY = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+  const NON_JOURNEY = /assessment|discovery call|15-minute|15 minute|consultation/i;
   const isJourneyAppt = (a: { title?: string; appointmentType?: string }) =>
     !NON_JOURNEY.test(`${a.title || ''} ${a.appointmentType || ''}`);
   const lifetimeCompleted = allAppointments.filter(a =>
@@ -150,6 +151,7 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
 
   const dashboardState = getDashboardState(client, lifetimeCount);
   const packLabel = PACK_LABEL[client.seriesType] || 'pack';
+  const isCurrentPractice = client.seriesType === '24-session';
   // Dot rendering: show packageSize dots up to MAX_DOTS. Filled = used,
   // empty = remaining. If packageSize > MAX_DOTS we proportionally scale.
   const totalDots = Math.min(client.packageSize, MAX_DOTS);
@@ -301,15 +303,21 @@ export default function ProgressTracker({ client, upcomingAppointments, allAppoi
             <h2 className="cp-journey-title">
               <em>{lifetimeCount}</em> session{lifetimeCount === 1 ? '' : 's'} with the Amari Method.
             </h2>
-            <p className="cp-journey-next">Keep the momentum going — pick a package to continue.</p>
-            <div className="cp-dash-cta cp-dash-cta-stack">
-              <a href="/book/8-session-series" className="cp-btn cp-btn-primary">
-                <span>Continue with 8 more sessions</span><span className="cp-arrow">→</span>
-              </a>
-              <a href="/book/4-session-series" className="cp-btn cp-btn-ghost">
-                <span>Or try a 4-session pack</span>
-              </a>
-            </div>
+            <p className="cp-journey-next">
+              {isCurrentPractice
+                ? 'Reach out to Garrett to talk about what comes next.'
+                : 'Keep the momentum going — pick a package to continue.'}
+            </p>
+            {!isCurrentPractice && (
+              <div className="cp-dash-cta cp-dash-cta-stack">
+                <a href="/book/8-session-series" className="cp-btn cp-btn-primary">
+                  <span>Continue with 8 more sessions</span><span className="cp-arrow">→</span>
+                </a>
+                <a href="/book/4-session-series" className="cp-btn cp-btn-ghost">
+                  <span>Or try a 4-session pack</span>
+                </a>
+              </div>
+            )}
           </div>
         )}
 

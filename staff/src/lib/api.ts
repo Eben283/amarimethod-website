@@ -191,6 +191,7 @@ export async function sendToolkit(contactId: string): Promise<{ success: boolean
 }
 
 export type PayLinkProduct =
+  | '12-week-amari-practice'
   | 'initial-in-person'
   | 'initial-virtual'
   | '4-session-series'

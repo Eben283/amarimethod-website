@@ -36,6 +36,7 @@ const ALLOWED_BOOKINGS = {
     title: "Amari Method Initial Session — In Person",
     durationMinutes: 60,
     pmaTag: "agreed-pma-v2026-04-17",
+    requiresPracticeAgreement: true,
     sessionTag: "booked-initial-in-person",
     paymentLinkUrl:
       "https://link.amarimethod.com/payment-link/6a00f7c1c959774531bed6b6",
@@ -47,9 +48,22 @@ const ALLOWED_BOOKINGS = {
     title: "Amari Method Initial Session — Virtual",
     durationMinutes: 60,
     pmaTag: "agreed-pma-v2026-04-17",
+    requiresPracticeAgreement: true,
     sessionTag: "booked-initial-virtual",
     paymentLinkUrl:
       "https://link.amarimethod.com/payment-link/6a00f80c1d5a394a682e3fcb",
+  },
+  amari_assessment: {
+    calendarId: "EM6vB2mq7EAdGCbUb3j1",
+    productId: "6a66cf0103821ea09ea13f1b",
+    price: 29,
+    title: "Amari Assessment — In Person",
+    durationMinutes: 40,
+    pmaTag: null,
+    requiresBookingPolicy: true,
+    sessionTag: "booked-amari-assessment",
+    paymentLinkUrl:
+      "https://link.amarimethod.com/payment-link/6a66cf107b99151a540409b3",
   },
   // Free 15-min phone call. No Stripe payment link — we book the GHL
   // appointment directly in this handler and redirect to /book/success.
@@ -116,11 +130,15 @@ function validateBody(b) {
   if (booking.calendarId !== b.calendarId) {
     return "Calendar does not match sessionType";
   }
-  // PMA + Missed Appointment Policy agreement is only required for paid
-  // bookings. Discovery call is free and has no PMA gate.
+  // Initial sessions use the practice agreement. The assessment instead has
+  // its own booking / cancellation policy; its copy is supplied by the
+  // assessment page rather than silently treating a $29 visit as membership.
   // agreeCommunications is always optional.
-  if (!booking.isFreeBooking && !b.agreePolicies) {
+  if (booking.requiresPracticeAgreement && !b.agreePolicies) {
     return "Missed Appointment Policy + Practice Membership Agreement must be agreed to";
+  }
+  if (booking.requiresBookingPolicy && !b.agreeBookingPolicy) {
+    return "Assessment booking policy must be agreed to";
   }
   return null;
 }
@@ -248,6 +266,7 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
   }
 
   const isFree = !!booking.isFreeBooking;
+  const isAssessment = !!booking.requiresBookingPolicy;
   const noteBody = [
     isFree
       ? `Native booking flow — discovery call booked directly`
@@ -257,9 +276,11 @@ async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booki
     `Requested slot: ${payload.startTime} (${payload.timezone})`,
     isFree
       ? `Free booking: no payment or PMA gate`
-      : `Agreement version: ${payload.agreementVersion || "unspecified"}`,
+      : isAssessment
+        ? `Assessment booking policy: yes (clickwrap)`
+        : `Agreement version: ${payload.agreementVersion || "unspecified"}`,
     `Communications consent: ${payload.agreeCommunications ? "yes" : "no (optional, declined)"}`,
-    ...(isFree
+    ...(isFree || isAssessment
       ? []
       : [
           `Practice Member Agreement: yes (clickwrap)`,

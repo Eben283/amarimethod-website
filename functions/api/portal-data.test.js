@@ -121,6 +121,10 @@ describe('computeHasLivingPractice', () => {
     expect(computeHasLivingPractice('false', [], '8-session')).toBe(true);
   });
 
+  it('returns true when seriesType is "24-session" regardless of lpRaw', () => {
+    expect(computeHasLivingPractice(null, [], '24-session')).toBe(true);
+  });
+
   it('returns false when none of the three conditions apply', () => {
     expect(computeHasLivingPractice(null, [], 'none')).toBe(false);
   });

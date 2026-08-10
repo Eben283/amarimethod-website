@@ -42,7 +42,7 @@ const FIELD_IDS = {
 // briefing the lifetime number is "real bodywork the client has done",
 // regardless of how it was billed (entrainment = $90 separate, partner-init
 // = comp). The package math (sessions_remaining) is what tracks billing.
-const NON_JOURNEY_PATTERNS = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+const NON_JOURNEY_PATTERNS = /assessment|discovery call|15-minute|15 minute|consultation/i;
 const LIFETIME_STATUSES = new Set(["completed", "showed", "confirmed"]);
 
 const MANUAL_EDIT_DEBOUNCE_MS = 5 * 60 * 1000; // 5 minutes
@@ -87,7 +87,7 @@ function computeLifetimeCount(appointments) {
 
 // Package size lookup. Keep in sync with the values written by
 // reconcile.js when an order is detected. "none" means no series → 0.
-const PACKAGE_SIZE = { "8-session": 8, "4-session": 4, "none": 0 };
+const PACKAGE_SIZE = { "24-session": 24, "8-session": 8, "4-session": 4, "none": 0 };
 
 /**
  * Read-only contact-counts lookup. Returns ledger-derived session truth
@@ -99,8 +99,8 @@ const PACKAGE_SIZE = { "8-session": 8, "4-session": 4, "none": 0 };
  *   {
  *     status: "ok" | "low-confidence" | "errored",
  *     contactId, contactName,
- *     seriesType: "8-session" | "4-session" | "none",
- *     packageSize: 8 | 4 | 0,
+ *     seriesType: "24-session" | "8-session" | "4-session" | "none",
+ *     packageSize: 24 | 8 | 4 | 0,
  *     sessionsRemaining: int,        // ledger truth — package balance
  *     sessionsCompleted: int,        // lifetime visits (per 5/29 contract)
  *     pkgCompleted: int,             // packageSize - sessionsRemaining (0 if no pack)
@@ -138,7 +138,7 @@ export async function getContactCounts(env, contactId, fieldDefs = {}) {
     const lifetimeCount = computeLifetimeCount(appointments);
 
     const seriesRaw = readField(contact, FIELD_IDS.series_type);
-    const seriesType = (seriesRaw && (seriesRaw === "8-session" || seriesRaw === "4-session")) ? seriesRaw : "none";
+    const seriesType = (seriesRaw && (seriesRaw === "24-session" || seriesRaw === "8-session" || seriesRaw === "4-session")) ? seriesRaw : "none";
     const packageSize = PACKAGE_SIZE[seriesType] || 0;
 
     // sessionsRemaining: if locked, prefer the manually-pinned GHL field

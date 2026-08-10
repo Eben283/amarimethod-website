@@ -41,6 +41,7 @@ interface Action {
 
 function getSeriesActions(client: ClientData): Action[] {
   const { seriesType, sessionsCompleted, sessionsRemaining, isPartner } = client;
+  if (seriesType === '24-session') return [];
   const hasActiveSeries = seriesType !== 'none' && sessionsRemaining > 0;
   const seriesFinished = seriesType !== 'none' && sessionsRemaining === 0;
 

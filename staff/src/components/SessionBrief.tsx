@@ -4,7 +4,7 @@ interface Props {
   client: ContactDetail;
 }
 
-const NON_SESSION = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+const NON_SESSION = /assessment|discovery call|15-minute|15 minute|consultation/i;
 
 /** Completed in-person sessions (excludes discovery/assessment calls), newest first. */
 export function completedSessions(client: ContactDetail) {

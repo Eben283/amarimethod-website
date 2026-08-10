@@ -17,7 +17,14 @@
 // Classification types that represent a series package purchase. The invoice
 // webhook only runs its field-setting automation for these; the ledger uses
 // them to compute the "earliest active package purchase date" cutoff.
-export const PACKAGE_TYPES = new Set(["4-series", "8-series", "4-upgrade", "8-upgrade", "4-to-8-upgrade"]);
+export const PACKAGE_TYPES = new Set([
+  "4-series",
+  "8-series",
+  "4-upgrade",
+  "8-upgrade",
+  "4-to-8-upgrade",
+  "24-practice",
+]);
 
 export const GHL_PRODUCTS = {
   // ── Series purchases (full package up-front) ──
@@ -37,6 +44,15 @@ export const GHL_PRODUCTS = {
     seriesType: "4-session",
     sessionsRemaining: 4,
     livingPractice: false,
+    isPackagePurchase: true,
+  },
+  "6a66cde7ef7b07f122ad46fb": {
+    name: "The 12-Week Amari Practice",
+    classification: "24-practice",
+    sessions: 24,
+    seriesType: "24-session",
+    sessionsRemaining: 24,
+    livingPractice: true,
     isPackagePurchase: true,
   },
 
@@ -125,6 +141,12 @@ export const GHL_PRODUCTS = {
     sessions: 0, // standalone video program
     isPackagePurchase: false,
   },
+  "6a66cf0103821ea09ea13f1b": {
+    name: "Amari Assessment",
+    classification: "assessment",
+    sessions: 0,
+    isPackagePurchase: false,
+  },
 };
 
 // Convenience: derived map for the session-ledger's classifyInvoice function.
@@ -172,6 +194,11 @@ export const PRICE_IDS = {
   "67b1299f080422451447bdd0": ["67b1299f0804221b3947bdd4"], // Pre Purchased (draw-down)
   "69c5d29c4019ce8e80e2513b": ["69c5d29c5b50e82344c2d6ec"], // Entrainment
   "6998d7f2606fa79c54fa3ff5": ["6998d7f2606fa7edc0fa3ffa"], // Living Practice
+  // The new Amari products are keyed by productId until GHL exposes their
+  // price IDs in a completed order. productIdForAnyId still resolves the
+  // product IDs, which is what the current payment-link order payload sends.
+  "6a66cde7ef7b07f122ad46fb": [], // The 12-Week Amari Practice
+  "6a66cf0103821ea09ea13f1b": [], // Amari Assessment
 };
 
 // Follow-up productIds that are DRAW-DOWNS — booked against an existing package,

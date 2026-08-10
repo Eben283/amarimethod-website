@@ -49,11 +49,13 @@ export function isChecked(raw) {
   return ["true","yes","1"].includes(String(raw).toLowerCase());
 }
 
-// 8-session series always includes Living Practice — don't require the field to be set
+// The legacy 8-session series and the current 24-session Amari Practice always
+// include Living Practice — don't require the field to be set explicitly.
 export function computeHasLivingPractice(lpRaw, tags, seriesType) {
   return isChecked(lpRaw) ||
     (tags || []).includes("living-practice-access") ||
-    seriesType === "8-session";
+    seriesType === "8-session" ||
+    seriesType === "24-session";
 }
 
 // Lifetime "completed" count: appointments that effectively ran, minus
@@ -69,7 +71,7 @@ export function countLifetimeCompleted(appointments, nowMs) {
     const startMs = new Date(a.startTime || a.start_time || 0).getTime();
     if (!Number.isFinite(startMs) || startMs >= nowMs) return false;
     const title = `${a.title || ""} ${a.calendarName || ""}`;
-    return !/pain assessment|discovery call|15-minute|15 minute|consultation/i.test(title);
+    return !/assessment|discovery call|15-minute|15 minute|consultation/i.test(title);
   }).length;
 }
 

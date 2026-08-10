@@ -39,6 +39,9 @@ describe('determineSeriesType', () => {
     expect(determineSeriesType([{ type: '8-series' }])).toBe('8-session');
     expect(determineSeriesType([{ type: '8-upgrade' }])).toBe('8-session');
   });
+  it('24-session practice takes precedence over legacy series history', () => {
+    expect(determineSeriesType([{ type: '8-series' }, { type: '24-practice' }])).toBe('24-session');
+  });
 });
 
 // ── Fixture helpers ─────────────────────────────────────────────────────────
@@ -80,6 +83,8 @@ const PID = {
   prePurchased: '67b1299f080422451447bdd0',
   entrainment: '69c5d29c4019ce8e80e2513b',
   livingPractice: '6998d7f2606fa79c54fa3ff5',
+  practice24: '6a66cde7ef7b07f122ad46fb',
+  assessment: '6a66cf0103821ea09ea13f1b',
   // Retired (not in ACTIVE_PRODUCTS)
   retiredFollowup: '67f57171b6b1019c7b0233cc',
   retiredFollowupCalendars: '690b6b4d7ca9fb527702f2ec',
@@ -116,6 +121,11 @@ describe('classifyOrder', () => {
   it('classifies 8-session series', () => {
     expect(classifyOrder(order({ sourceName: '8-Session Series', amount: 1295 })))
       .toMatchObject({ type: '8-series', sessions: 8 });
+  });
+
+  it('classifies the 12-Week Amari Practice', () => {
+    expect(classifyOrder(order({ sourceName: 'The 12-Week Amari Practice', amount: 5500 })))
+      .toMatchObject({ type: '24-practice', sessions: 24 });
   });
 
   it('classifies upgrade to 4-session by amount', () => {
@@ -322,13 +332,15 @@ describe('classifyInvoice', () => {
 // ── ACTIVE_PRODUCTS sanity ──────────────────────────────────────────────────
 
 describe('ACTIVE_PRODUCTS map', () => {
-  it('contains the 13 currently-sold products', () => {
-    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(13);
+  it('contains the 15 currently-sold products', () => {
+    expect(Object.keys(ACTIVE_PRODUCTS).length).toBe(15);
   });
 
   it('contains the canonical 8-Session and 4-Session Series IDs', () => {
     expect(ACTIVE_PRODUCTS[PID.eightSeries]).toEqual({ type: '8-series', sessions: 8 });
     expect(ACTIVE_PRODUCTS[PID.fourSeries]).toEqual({ type: '4-series', sessions: 4 });
+    expect(ACTIVE_PRODUCTS[PID.practice24]).toEqual({ type: '24-practice', sessions: 24 });
+    expect(ACTIVE_PRODUCTS[PID.assessment]).toEqual({ type: 'assessment', sessions: 0 });
   });
 });
 
@@ -363,6 +375,22 @@ describe('deriveLedger — clean cases', () => {
     expect(result.attended).toBe(0);
     expect(result.remaining).toBe(8);
     expect(result.seriesType).toBe('8-session');
+  });
+
+  it('24-session practice with two attended appointments → remaining 22', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [order({ sourceName: 'The 12-Week Amari Practice', amount: 5500 })],
+      appointments: [
+        appt({ calendarId: CAL.initial }),
+        appt({ calendarId: CAL.followup }),
+      ],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result.purchased).toBe(24);
+    expect(result.attended).toBe(2);
+    expect(result.remaining).toBe(22);
+    expect(result.seriesType).toBe('24-session');
   });
 
   it('upgrade path: initial + upgrade order = 4 purchased', () => {

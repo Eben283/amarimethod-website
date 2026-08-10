@@ -428,7 +428,7 @@ export async function onRequestGet(context) {
     // excluded entrainments). Matches portal-data.js + staff-data.js.
     // The portal-derived ledger.attended is still useful — exposed as
     // attendedAgainstPackage below.
-    const NON_JOURNEY_LIFETIME = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+    const NON_JOURNEY_LIFETIME = /assessment|discovery call|15-minute|15 minute|consultation/i;
     const nowMsLifetime = Date.now();
     const derivedSessionsCompleted = rawAppointments.filter((a) => {
       const status = (a.appointmentStatus || a.status || "").toLowerCase();

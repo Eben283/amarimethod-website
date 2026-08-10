@@ -6,7 +6,7 @@ interface Props {
   onTap: () => void;
 }
 
-const FREE_SESSION_PATTERN = /discovery call|pain assessment|15-minute|15 minute|consultation|partner/i;
+const FREE_SESSION_PATTERN = /discovery call|15-minute|15 minute|consultation|partner/i;
 
 // Per-session payment pill (Today view). Mirrors ClientDetailPage's PAYMENT_PILL.
 const PAYMENT_PILL_TW: Record<string, { label: string; cls: string }> = {
@@ -24,6 +24,7 @@ function isFreeSession(appointment: TodayAppointment): boolean {
 function sessionTypeLabel(calendarName: string): string {
   if (!calendarName) return '';
   // Shorten common calendar names for display
+  if (/assessment/i.test(calendarName)) return 'Assessment';
   if (/discovery call/i.test(calendarName)) return 'Discovery';
   if (/initial/i.test(calendarName)) return 'Initial';
   if (/follow.?up/i.test(calendarName)) return 'Follow-up';

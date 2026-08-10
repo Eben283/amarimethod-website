@@ -13,6 +13,11 @@ const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const BASE_URL = "https://link.amarimethod.com";
 
 const PRODUCTS = {
+  "12-week-amari-practice": {
+    name: "The 12-Week Amari Practice",
+    price: "$5,400",
+    path: "/payment-link/6a66ce547b99151a540409b0",
+  },
   "initial-in-person": {
     name: "Initial Session (in-person)",
     price: "$225",

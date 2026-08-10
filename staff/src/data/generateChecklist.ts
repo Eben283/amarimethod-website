@@ -15,7 +15,7 @@ interface SessionContext {
   sessionsRemaining: number;
 }
 
-const NON_SESSION = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
+const NON_SESSION = /assessment|discovery call|15-minute|15 minute|consultation/i;
 
 export function generateChecklist(client: ContactDetail): ChecklistTemplate | null {
   const isPartner = client.tags.includes('affiliate-partner');

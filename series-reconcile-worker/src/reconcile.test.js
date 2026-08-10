@@ -104,4 +104,8 @@ describe('isReconcileAlreadyApplied (#3 — partial-failure detection, over-cred
   it('already-applied via seriesIsAdvanced (4-pack order, contact on 8-session) even with remaining unwritten', () => {
     expect(isReconcileAlreadyApplied({ currentSeriesType: '8-session', currentPortal: false, currentLP: false, currentRemaining: null, pkg: fourPack })).toBe(true);
   });
+
+  it('does not let a delayed legacy order overwrite a later 24-session practice', () => {
+    expect(isReconcileAlreadyApplied({ currentSeriesType: '24-session', currentPortal: false, currentLP: false, currentRemaining: null, pkg: eightPack })).toBe(true);
+  });
 });

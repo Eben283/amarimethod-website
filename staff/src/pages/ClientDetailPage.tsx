@@ -274,7 +274,7 @@ export default function ClientDetailPage() {
   const roleWord = isPartner ? 'Referral partner' : client.seriesType !== 'none' ? `${client.seriesType.replace('-session', '')}-session client` : 'Client';
 
   // session progress numbers (same math as SessionStats)
-  const totalSessions = client.seriesType === '8-session' ? 8 : client.seriesType === '4-session' ? 4 : 0;
+  const totalSessions = client.seriesType === '24-session' ? 24 : client.seriesType === '8-session' ? 8 : client.seriesType === '4-session' ? 4 : 0;
   const currentSeriesCompleted = totalSessions > 0 ? Math.max(0, totalSessions - client.sessionsRemaining) : 0;
   const progressPct = totalSessions > 0 ? Math.min(100, (currentSeriesCompleted / totalSessions) * 100) : 0;
   const packageLabel = client.seriesType === 'none' ? '—' : client.seriesType.replace('-session', '');
@@ -399,11 +399,12 @@ export default function ClientDetailPage() {
           <div>
             <button className={`sa-paytrigger${payOpen ? ' open' : ''}`} onClick={() => setPayOpen((v) => !v)}>
               <span className="ic"><Send size={17} /></span>
-              <span className="tx"><b>Send pay link</b><span>8-pack, 4-pack, initial & more</span></span>
+              <span className="tx"><b>Send pay link</b><span>12-Week Practice, sessions, and legacy products</span></span>
               <span className="cv"><ChevronRight size={18} /></span>
             </button>
             <div className={`sa-collapse${payOpen ? ' open' : ''}`}>
               <div className="sa-collapse-in">
+                {renderPayRow('12-week-amari-practice', 'The 12-Week Amari Practice', '$5,400')}
                 {renderPayRow('8-session-series', '8-Pack', '$1,295')}
                 {renderPayRow('4-session-series', '4-Pack', '$720')}
                 {renderPayRow('initial-in-person', 'Initial — In Person', '$225')}
