@@ -99,6 +99,16 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain(".workspace { grid-template-columns:1fr; }");
   });
 
+  it("uses a mobile contact-list to selected-thread flow", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain(".workspace.has-selection .inbox { display:none; }");
+    expect(html).toContain(".workspace:not(.has-selection) .conversation");
+    expect(html).toContain('class="mobile-back"');
+    expect(html).toContain("workspace.classList.add('has-selection')");
+    expect(html).toContain("workspace.classList.remove('has-selection')");
+    expect(html).toContain('const bindMobileBack');
+  });
+
   it("keeps consent auditing out of the Client Desk interface", () => {
     const html = clientDeskHtml();
     expect(html).not.toContain("Contactability review");

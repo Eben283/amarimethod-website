@@ -190,7 +190,7 @@ export default function HomePage() {
 
           <StateMessage loading={state.conversations.loading} error={state.conversations.error}>
             {replies.map((reply) => (
-              <button key={reply.id} type="button" className="home-attention__item" onClick={() => navigate('/client-desk')}>
+              <button key={reply.id} type="button" className="home-attention__item" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(reply.contactId)}`)}>
                 <MessageCircleMore aria-hidden="true" />
                 <span><strong>{reply.contactName || reply.email || reply.phone}</strong><small>{reply.lastMessagePreview || 'New message'} · {relativeTime(reply.lastMessageDate)}</small></span>
                 <i aria-label="Needs reply" />

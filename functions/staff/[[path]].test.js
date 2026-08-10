@@ -3,7 +3,7 @@ import { onRequest } from './[[path]].js';
 
 function contextFor(pathname, assetResponse = new Response('<div id="root"></div>', {
   status: 200,
-  headers: { 'Content-Type': 'text/html' },
+  headers: { 'Content-Type': 'text/html', 'Cache-Control': 'public, max-age=3600' },
 })) {
   const fetch = vi.fn(async () => assetResponse);
   const next = vi.fn(async () => new Response('next'));
@@ -26,6 +26,7 @@ describe('Staff SPA routing', () => {
 
     expect(response.status).toBe(200);
     expect(response.headers.get('Content-Type')).toBe('text/html; charset=utf-8');
+    expect(response.headers.get('Cache-Control')).toBe('private, no-store');
     expect(await response.text()).toContain('<div id="root"></div>');
     expect(fetch).toHaveBeenCalledOnce();
     expect(new URL(fetch.mock.calls[0][0]).pathname).toBe('/staff/index.html');

@@ -18,6 +18,7 @@ import type {
   PartnerProspect, PartnerLastSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
 import { withoutNeedsReply } from '../lib/outreach-scope';
+import { resolveDataReadState } from '../lib/data-read-state';
 
 // ── OUTREACH SURFACE ──────────────────────────────────────────────────────────
 // New-client acquisition only: prospective referral partners and other people
@@ -427,6 +428,7 @@ export default function FollowUpPage() {
     converted: derived.filter((r) => r.d.kind === 'converted').length,
     total: derived.length,
   }), [needsReplyIds, prospectActNow, derived, setAside]);
+  const readState = resolveDataReadState({ loading, error, hasData: prospects.length > 0 });
 
   // Search across ALL prospects (any bucket), like the Outreach search.
   const searchItems = useMemo<ProspectItem[]>(() => {
@@ -504,13 +506,17 @@ export default function FollowUpPage() {
         <div>
           <h1 className="text-xl font-semibold text-amari-charcoal">Outreach</h1>
           <p className="text-xs text-amari-text-muted">
-            {loading ? 'Loading prospects…' : `${counts.act} to reach out · ${counts.waiting} cooling off · ${counts.total} prospects tracked`}
+            {readState === 'loading'
+              ? 'Loading prospects…'
+              : readState === 'unavailable'
+                ? 'Current outreach queue unavailable'
+                : `${counts.act} to reach out · ${counts.waiting} cooling off · ${counts.total} prospects tracked${readState === 'partial' ? ' · last loaded data' : ''}`}
           </p>
         </div>
         <div className="flex items-center gap-2">
           {!loading && (
             <span className={`text-[11px] ${agoColorClass(freshness.generatedAt)}`}>
-              {freshness.generatedAt ? `updated ${relTime(freshness.generatedAt)}` : 'no data yet'}
+              {readState === 'unavailable' ? 'unavailable' : freshness.generatedAt ? `updated ${relTime(freshness.generatedAt)}` : 'not yet verified'}
             </span>
           )}
           <button
@@ -591,13 +597,20 @@ export default function FollowUpPage() {
         )}
       </div>
 
-      {error && (
+      {error && readState === 'partial' && (
         <div className="mb-4 flex items-center gap-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">
-          <AlertCircle className="h-4 w-4 shrink-0" /> {error}
+          <AlertCircle className="h-4 w-4 shrink-0" /> Refresh failed. Showing the last loaded prospect list. {error}
         </div>
       )}
 
-      {query.trim() ? (
+      {readState === 'unavailable' ? (
+        <div className="staff-card border-l-4 border-l-red-500 py-8 text-center" role="alert">
+          <AlertCircle className="mx-auto mb-3 h-6 w-6 text-red-600" aria-hidden="true" />
+          <h2 className="text-base font-semibold text-amari-charcoal">Outreach could not be verified</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-amari-text-muted">No empty queue is being shown. Refresh before deciding that no prospects need attention.</p>
+          <button type="button" onClick={load} className="staff-btn-secondary mt-4 text-sm">Try again</button>
+        </div>
+      ) : query.trim() ? (
         searchItems.length === 0 ? (
           <Empty icon={Search} title="No matches" sub={`Nobody matches "${query.trim()}".`} />
         ) : (

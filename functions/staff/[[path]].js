@@ -18,6 +18,10 @@ export async function onRequest(context) {
 
     const headers = new Headers(response.headers);
     headers.set('Content-Type', 'text/html; charset=utf-8');
+    // The shell names immutable hashed assets. Caching the shell itself can
+    // strand Staff on an older route map after a release, so every protected
+    // browser route must revalidate this tiny document.
+    headers.set('Cache-Control', 'private, no-store');
     return new Response(response.body, { status: 200, headers });
   } catch {
     return context.next();

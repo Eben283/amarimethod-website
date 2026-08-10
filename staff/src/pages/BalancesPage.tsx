@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { getBalances, getOwedList, getOwedStatus, ApiError, type OwedRow } from '../lib/api';
 import type { BalanceRow } from '../types/staff';
 import LedgerWarning from '../components/LedgerWarning';
+import { resolveDataReadState } from '../lib/data-read-state';
 
 type SortKey = 'remaining' | 'recent' | 'name';
 
@@ -156,6 +157,12 @@ export default function BalancesPage() {
   }, []);
 
   const owing = useMemo(() => owedRows.filter((r) => r.status === 'owed'), [owedRows]);
+  const visibleOwing = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return owing;
+    return owing.filter((row) => [row.name, row.contactId]
+      .some((value) => value && String(value).toLowerCase().includes(normalized)));
+  }, [owing, query]);
 
   const visibleRows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -184,6 +191,7 @@ export default function BalancesPage() {
   }, [rows, query, sort]);
 
   const lowConfidenceCount = rows.filter((r) => r.confidence === 'low').length;
+  const readState = resolveDataReadState({ loading: isLoading, error: error || null, hasData: rows.length > 0 });
 
   return (
     <div className="px-4 pt-6 pb-4">
@@ -192,7 +200,7 @@ export default function BalancesPage() {
         <div className="flex items-center gap-2">
           {!isLoading && (
             <span className={`text-[11px] ${agoColorClass(generatedAt)}`}>
-              {generatedAt ? `updated ${agoLabel(generatedAt)}` : 'no data yet'}
+              {readState === 'unavailable' ? 'unavailable' : generatedAt ? `updated ${agoLabel(generatedAt)}` : 'not yet verified'}
             </span>
           )}
           <button
@@ -210,11 +218,11 @@ export default function BalancesPage() {
       <div className="staff-card mb-4 flex items-center justify-between">
         <div>
           <p className="staff-mlabel">Prepaid practice members</p>
-          <p className="text-2xl font-serif text-amari-charcoal">{rows.length}</p>
+          <p className="text-2xl font-serif text-amari-charcoal">{readState === 'unavailable' ? '—' : rows.length}</p>
         </div>
         <div className="text-right">
           <p className="staff-mlabel">Sessions owed</p>
-          <p className="text-2xl font-serif text-amari-accent-warm">{totalRemaining}</p>
+          <p className="text-2xl font-serif text-amari-accent-warm">{readState === 'unavailable' ? '—' : totalRemaining}</p>
         </div>
       </div>
 
@@ -225,7 +233,7 @@ export default function BalancesPage() {
           {owedLoading ? (
             <Loader2 className="w-4 h-4 animate-spin text-amari-text-muted" />
           ) : !owedError && owedRows.length > 0 ? (
-            <span className="text-[11px] text-amari-text-muted">{owing.length} of {owedRows.length} practice members</span>
+            <span className="text-[11px] text-amari-text-muted">{visibleOwing.length} of {owedRows.length} practice members</span>
           ) : null}
         </div>
         {owedLoading ? (
@@ -234,11 +242,11 @@ export default function BalancesPage() {
           <p className="text-xs text-amber-700">Couldn't check payments right now — try refreshing.</p>
         ) : owedRows.length === 0 ? (
           <p className="text-xs text-amari-text-muted">No recent practice members to check.</p>
-        ) : owing.length === 0 ? (
-          <p className="text-xs text-amari-text-muted">All {owedRows.length} recent practice members are paid up.</p>
+        ) : visibleOwing.length === 0 ? (
+          <p className="text-xs text-amari-text-muted">{query ? 'No unpaid matches for this search.' : `All ${owedRows.length} recent practice members are paid up.`}</p>
         ) : (
           <div className="space-y-1">
-            {owing.map((r) => (
+            {visibleOwing.map((r) => (
               <button
                 key={r.contactId}
                 onClick={() => navigate(`/client/${r.contactId}`)}
@@ -301,8 +309,11 @@ export default function BalancesPage() {
           <Loader2 className="w-8 h-8 text-amari-charcoal animate-spin" />
         </div>
       ) : error ? (
-        <div className="staff-card text-center py-8">
-          <p className="text-red-500 text-sm mb-3">{error}</p>
+        <div className="staff-card border-l-4 border-l-red-500 text-center py-8" role="alert">
+          <AlertTriangle className="mx-auto mb-3 h-6 w-6 text-red-600" aria-hidden="true" />
+          <h2 className="text-base font-semibold text-amari-charcoal">Balance ledger unavailable</h2>
+          <p className="mx-auto mt-2 max-w-md text-sm text-amari-text-muted">No zero balance is being claimed. The payment check above is independent and may still show partial evidence.</p>
+          <p className="text-red-600 text-xs mt-2 mb-3">{error}</p>
           <button onClick={() => load(true)} className="staff-btn-secondary text-sm">
             Try Again
           </button>

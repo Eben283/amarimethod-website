@@ -17,9 +17,10 @@
   --mono:'IBM Plex Mono', ui-monospace, monospace;
   background:var(--paper); color:var(--ink); font-family:var(--sans);
   -webkit-font-smoothing:antialiased; line-height:1.5;
-  font-size:16px; min-height:100%;
+  font-size:16px; min-height:100%; width:100%; max-width:100%; overflow-x:clip;
 }
 .sa *{box-sizing:border-box; margin:0; padding:0;}
+.sa-head,.sa-body{min-width:0; max-width:100%;}
 .sa button{font:inherit; cursor:pointer; color:inherit; background:none; border:none;}
 .sa a{color:inherit; text-decoration:none;}
 
@@ -417,6 +418,9 @@
      the member identity band from consuming most of the remaining viewport. */
   .sa-head{position:static; padding:16px 18px;}
   .sa-id-name{font-size:28px;}
+  .sa-head-top,.sa-id,.sa-contact{min-width:0;}
+  .sa-contact{flex-wrap:wrap;}
+  .sa-contact a{min-width:0; max-width:100%; overflow-wrap:anywhere;}
   .sa-context{grid-template-columns:repeat(3,minmax(0,1fr));}
   .sa-context>span:nth-child(4),.sa-context>span:nth-child(5){border-top:1px solid var(--line);}
   .sa-context>span:nth-child(4){border-left:0;}
@@ -435,7 +439,7 @@
   .sa-surface-switch{max-width:none;}
   .sa-surface-switch small{display:none;}
   .sa-surface-switch>a{justify-content:center;}
-  .sa-context{display:flex; overflow-x:auto; margin-right:-16px; padding-right:16px; scrollbar-width:none;}
+  .sa-context{display:flex; width:100%; max-width:100%; overflow-x:auto; padding-right:16px; scrollbar-width:none;}
   .sa-context::-webkit-scrollbar{display:none;}
   .sa-context>span{flex:0 0 150px;}
   .sa-context>span:nth-child(4),.sa-context>span:nth-child(5){border-top:0;}

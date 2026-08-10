@@ -97,4 +97,29 @@ describe('Staff legibility contract', () => {
     expect(home).not.toContain('Find the person and email');
     expect(home).not.toContain('home-incident-path');
   });
+
+  it('contains the member workspace inside a phone viewport', () => {
+    const member = css('styles/session-a.css');
+    expect(member).toContain('max-width:100%; overflow-x:clip');
+    expect(member).not.toContain('margin-right:-16px');
+    expect(member).toContain('.sa-head,.sa-body{min-width:0; max-width:100%;}');
+  });
+
+  it('opens an attention reply on the selected person', () => {
+    const home = css('pages/HomePage.tsx');
+    expect(home).toContain("`/client-desk?contact=${encodeURIComponent(reply.contactId)}`");
+  });
+
+  it('keeps specialist study execution out of the administrative Member Record', () => {
+    const record = css('pages/ClientDetailPage.tsx');
+    expect(record).not.toContain('StudyCapturePanel');
+    expect(record).not.toContain('Specialist study record');
+  });
+
+  it('gives Calendar icon controls names', () => {
+    const calendar = css('pages/TodayPage.tsx');
+    expect(calendar).toContain('aria-label="Refresh calendar"');
+    expect(calendar).toContain('aria-label="Previous period"');
+    expect(calendar).toContain('aria-label="Next period"');
+  });
 });

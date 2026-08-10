@@ -24,6 +24,14 @@
 /index.html
   Cache-Control: public, max-age=3600, must-revalidate
 
+# Staff's HTML shell points to immutable hashed assets. Never cache the shell:
+# a one-hour HTML cache can otherwise resurrect retired routes after deploy.
+/staff/
+  Cache-Control: private, no-store
+
+/staff/index.html
+  Cache-Control: private, no-store
+
 /* Performance and Security Headers */
 /*
   X-Content-Type-Options: nosniff

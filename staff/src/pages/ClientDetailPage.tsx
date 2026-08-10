@@ -11,16 +11,15 @@ import { getContactAutomationEvidence, getContactDetail, markAttended, sendToolk
 import { automationDrilldownPath } from '../lib/automation-navigation';
 import { memberWorkspacePath, type MemberWorkspaceSurface } from '../lib/member-workspace';
 import { buildGoogleReviewRequest } from '../lib/review-request';
+import { canMarkCurrentVisit, selectCurrentVisit } from '../lib/current-visit';
 import type { ContactAutomationEvidence, ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
 import AddNoteModal from '../components/AddNoteModal';
 import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
 import LedgerWarning from '../components/LedgerWarning';
-import StudyCapturePanel from '../components/StudyCapturePanel';
 import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
-import { studyFromTags } from '../data/studies';
 import { isEditableStaffNote, isSystemNote } from '../../../shared/staff-note-policy.js';
 import '../styles/session-a.css';
 
@@ -381,7 +380,6 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
   const fullName = [client.firstName, client.lastName].filter(Boolean).join(' ') || 'Unknown';
   const isPartner = client.tags.includes('affiliate-partner');
   const isFoundersCircle = client.isFoundersCircle || client.tags.some((t) => t.toLowerCase() === 'founders-circle');
-  const study = studyFromTags(client.tags);
   const roleWord = isPartner
     ? 'Referral partner'
     : isFoundersCircle
@@ -424,9 +422,7 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
   const sessionAppointment = appointmentId
     ? client.appointments.find((appointment) => appointment.id === appointmentId)
     : undefined;
-  const currentVisit = sessionAppointment || nextAppointment || client.appointments
-    .filter((appointment) => appointment.status !== 'cancelled')
-    .sort((a, b) => new Date(b.startTime).getTime() - new Date(a.startTime).getTime())[0];
+  const currentVisit = selectCurrentVisit(client.appointments, appointmentId, now);
   const canRequestReview = Boolean(sessionAppointment && client.phone);
 
   // A client has agreed to the practice-member agreement via EITHER flow:
@@ -440,11 +436,8 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
   const alreadySigned = client.agreementSigned ?? SIGNED_TAGS.some((t) => client.tags.includes(t));
   const quiz = client.quizResults;
   const visibleNotes = client.notes.filter((note) => !isSystemNote(note.body));
-  const currentVisitDate = currentVisit ? new Date(currentVisit.startTime) : null;
   const currentVisitAttended = currentVisit ? currentVisit.status === 'showed' || currentVisit.status === 'completed' : false;
-  const currentVisitCanMark = Boolean(currentVisit && currentVisitDate
-    && currentVisitDate.getTime() <= Date.now() + 2 * 60 * 60 * 1000
-    && !currentVisitAttended && currentVisit.status !== 'cancelled');
+  const currentVisitCanMark = canMarkCurrentVisit(currentVisit, Boolean(sessionAppointment), now);
   const currentVisitIsGift = Boolean(currentVisit
     && (/partner initial/i.test(currentVisit.calendarName || '') || /partner initial/i.test(currentVisit.title || '')));
   const currentVisitChoosingPayment = Boolean(currentVisit && payingApptId === currentVisit.id);
@@ -888,13 +881,6 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
         </>}
 
         {!isSession && <>
-        {study && (
-          <section className="sa-specialist">
-            <div className="sa-specialist-label">Specialist study record</div>
-            <StudyCapturePanel contactId={client.id} study={study} />
-          </section>
-        )}
-
         <div id="appointments" className="sa-anchor" aria-hidden="true" />
         <div className="sa-group"><span className="gm" /><span className="gt">Appointments</span><span className="gs">Past and future visits in one record</span><span className="gl" /></div>
 

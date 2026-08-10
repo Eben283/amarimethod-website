@@ -231,6 +231,7 @@ export default function TodayPage() {
           <button
             onClick={reloadSelectedDate}
             disabled={isLoading}
+            aria-label="Refresh calendar"
             className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[36px] min-h-[36px] flex items-center justify-center"
           >
             <RefreshCw className={`w-4 h-4 text-amari-text-muted ${isLoading ? 'animate-spin' : ''}`} />
@@ -240,13 +241,13 @@ export default function TodayPage() {
 
       {/* Date navigation */}
       <div className="flex items-center justify-between mb-5">
-        <button onClick={() => navigateDate(-1)} className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[44px] min-h-[44px] flex items-center justify-center">
+        <button onClick={() => navigateDate(-1)} aria-label="Previous period" className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronLeft className="w-5 h-5 text-amari-text-muted" />
         </button>
         <div className="text-center">
           <h1 className="text-lg font-serif text-amari-charcoal">{dateLabel}</h1>
         </div>
-        <button onClick={() => navigateDate(1)} className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[44px] min-h-[44px] flex items-center justify-center">
+        <button onClick={() => navigateDate(1)} aria-label="Next period" className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronRight className="w-5 h-5 text-amari-text-muted" />
         </button>
       </div>

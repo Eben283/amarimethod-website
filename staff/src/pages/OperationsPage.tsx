@@ -13,6 +13,7 @@ import {
   type StaffAmariMailReadiness,
   type StaffGmailReplyReadiness,
 } from '../lib/api';
+import { currentStaffBuildIdentity } from '../lib/staff-release';
 
 type OpsTab = 'overview' | 'systems' | 'crm' | 'automation';
 
@@ -375,6 +376,7 @@ export default function OperationsPage() {
           <p>Operator surfaces</p>
           <h1>Operations</h1>
           <span>The working picture of the practice, with a direct route into each workspace.</span>
+          <small className="ops-hub__build">Staff build {currentStaffBuildIdentity()}</small>
         </div>
       </header>
 
