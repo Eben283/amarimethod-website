@@ -331,7 +331,19 @@ export async function getAutomationFamilies(): Promise<import('../types/staff').
 export async function getAutomationFamily(
   key: string,
 ): Promise<import('../types/staff').AutomationFamilyResponse> {
-  return fetchApi(`/staff-automations?view=family&key=${encodeURIComponent(key)}`);
+  const detail = await fetchApi<import('../types/staff').AutomationFamilyResponse>(`/staff-automations?view=family&key=${encodeURIComponent(key)}`);
+  if (key !== 'initial-session-reminders') return detail;
+  const enrollments = await Promise.all(detail.enrollments.map(async (enrollment) => {
+    if (enrollment.contactName && enrollment.contactPhone) return enrollment;
+    const reference = enrollment.providerContactId || enrollment.contactId;
+    if (!reference) return enrollment;
+    try {
+      const matches = await searchOwnedContacts(reference);
+      const person = matches.find((candidate) => candidate.providerContactId === enrollment.providerContactId || candidate.id === enrollment.contactId) || matches[0];
+      return person ? { ...enrollment, contactId: person.id, providerContactId: person.providerContactId, contactName: person.name, contactPhone: person.phone } : enrollment;
+    } catch { return enrollment; }
+  }));
+  return { ...detail, enrollments };
 }
 
 export async function saveAutomationWorkflowDraft(document: import('../types/staff').CanonicalWorkflow): Promise<{ success: true; document: import('../types/staff').CanonicalWorkflow; publishedVersion: number }> {
