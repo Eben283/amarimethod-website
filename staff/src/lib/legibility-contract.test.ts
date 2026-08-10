@@ -116,6 +116,14 @@ describe('Staff legibility contract', () => {
     expect(record).not.toContain('Specialist study record');
   });
 
+  it('does not expose legacy founding-member payment links from a member record', () => {
+    const record = css('pages/ClientDetailPage.tsx');
+    for (const retired of ['8-session-series', '4-session-series', 'upgrade-initial-to-4', 'upgrade-initial-to-8', 'upgrade-4-to-8']) {
+      expect(record).not.toContain(retired);
+    }
+    expect(record).toContain('Founding-member purchases are handled directly by Eben or Garrett.');
+  });
+
   it('gives Calendar icon controls names', () => {
     const calendar = css('pages/TodayPage.tsx');
     expect(calendar).toContain('aria-label="Refresh calendar"');
