@@ -131,8 +131,12 @@ describe("owned automation registry", () => {
   it("does not claim delivery when transport evidence is absent", () => {
     expect(eventEvidence({ action: "send", outcome: "sent", channel: "email", message_ref: null }).gaps.map((gap) => gap.code)).toEqual([
       "message_reference_missing",
-      "delivery_outcome_not_recorded",
+      "email_final_delivery_unavailable",
     ]);
+    expect(eventEvidence({ action: "send", outcome: "sent", channel: "sms", message_ref: "sms_1" }).gaps.map((gap) => gap.code)).toEqual([
+      "delivery_outcome_pending",
+    ]);
+    expect(eventEvidence({ action: "send", outcome: "sent", channel: "sms", message_ref: "sms_1" }, { terminalOutcome: "delivered" }).gaps).toEqual([]);
     expect(eventEvidence({ action: "send", outcome: "delivered", channel: "email", message_ref: "msg_1" }).gaps).toEqual([]);
   });
 

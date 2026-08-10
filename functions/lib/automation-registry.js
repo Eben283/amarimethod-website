@@ -22,7 +22,7 @@ const PRE_REGISTRY_HISTORY_GAP = Object.freeze({
 
 const DELIVERY_GAP = Object.freeze({
   code: "delivery_receipt_coverage_partial",
-  label: "A send event reports the outcome recorded by the owned engine; delivery is not assumed without a recorded delivery outcome or message reference.",
+  label: "SMS delivery is reconciled from GHL by exact message reference. Gmail proves provider acceptance only; affirmative delivery and mailbox-bounce ingestion are not currently available.",
 });
 
 const DB_UNAVAILABLE_GAP = Object.freeze({
@@ -249,7 +249,7 @@ export function registryEvidence({ executionStoreConfigured }) {
   };
 }
 
-export function eventEvidence(event) {
+export function eventEvidence(event, { terminalOutcome = null } = {}) {
   const gaps = [];
   if (["reminder", "nurture"].includes(event.engine) && event.flow_key) {
     const current = DEFINITIONS.find((definition) => definition.engine === event.engine && definition.key === event.flow_key);
@@ -271,11 +271,18 @@ export function eventEvidence(event) {
       label: "No transport message reference was recorded for this event.",
     });
   }
-  if (event.action === "send" && !["delivered", "bounced", "failed"].includes(event.outcome)) {
-    gaps.push({
-      code: "delivery_outcome_not_recorded",
-      label: "This event does not prove final delivery.",
-    });
+  if (event.action === "send" && !["delivered", "bounced", "failed"].includes(event.outcome) && !terminalOutcome) {
+    if (event.channel === "email") {
+      gaps.push({
+        code: "email_final_delivery_unavailable",
+        label: "Gmail accepted this message. Gmail does not provide an affirmative recipient-delivery receipt, and this workflow does not currently ingest mailbox bounce evidence.",
+      });
+    } else {
+      gaps.push({
+        code: "delivery_outcome_pending",
+        label: "The provider accepted this message, but its terminal delivery status has not been recorded yet.",
+      });
+    }
   }
   return { source: "owned_d1_append_only_log", gaps };
 }

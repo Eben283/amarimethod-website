@@ -21,7 +21,7 @@ export async function runtimeStatus(env, flowKey) {
   const flow = canonical ? asExecutableWorkflow(canonical) : FLOWS.find((candidate) => candidate.flowKey === flowKey);
   if (!flow) return null;
 
-  const [result, eventResult] = await Promise.all([env.REMINDER_DB.prepare(
+  const [result, eventResult, receiptHealth] = await Promise.all([env.REMINDER_DB.prepare(
     `SELECT e.enrollment_id, e.contact_id, e.appointment_id, e.definition_version, e.start_at, e.enrolled_at, e.status,
       s.step_index, s.type, s.template, s.due_at, s.status AS step_status
      FROM reminder_enrollments e
@@ -32,7 +32,9 @@ export async function runtimeStatus(env, flowKey) {
     `SELECT id, ts, engine, flow_key, definition_version, contact_id, appointment_id,
       step_index, action, outcome, channel, message_ref, detail
      FROM automation_events WHERE engine = 'reminder' AND flow_key = ? ORDER BY ts DESC LIMIT 200`,
-  ).bind(flowKey).all()]);
+  ).bind(flowKey).all(), flowKey === "initial-in-person" && env.PORTAL_KV
+    ? env.PORTAL_KV.get("reminder:delivery-receipts:initial-in-person", "json")
+    : null]);
 
   const byEnrollment = new Map();
   for (const row of result.results || []) {
@@ -72,8 +74,13 @@ export async function runtimeStatus(env, flowKey) {
       definitionVersion: flow.definitionVersion,
       configuredMode: flow.mode,
       delivery: cutoverEnabled ? "active" : "disabled",
+      receiptCoverage: {
+        sms: "terminal_status_reconciled",
+        email: "provider_acceptance_only",
+      },
     },
     definition: canonical,
+    receiptHealth,
     versions: canonical ? await workflowVersions(env.REMINDER_DB, flowKey) : [],
     enrollments: [...byEnrollment.values()],
     events: (eventResult.results || []).map((event) => ({

@@ -175,6 +175,20 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     expect(v.events[0].evidence.gaps.map((gap) => gap.code)).toContain("message_reference_missing");
   });
 
+  it("joins an exact SMS receipt back to its send without leaving a false delivery gap", async () => {
+    const data = seed();
+    data.events.push(
+      { id: 4, ts: NOW + 1, engine: "reminder", flow_key: "initial-in-person", definition_version: 3, contact_id: "cont_1", appointment_id: "appt_1", step_index: 3, action: "send", outcome: "sent", channel: "sms", message_ref: "sms_1", detail: '{"recipient":"cont_1"}' },
+      { id: 5, ts: NOW + 2, engine: "reminder", flow_key: "initial-in-person", definition_version: 3, contact_id: "cont_1", appointment_id: "appt_1", step_index: 3, action: "delivery_status", outcome: "delivered", channel: "sms", message_ref: "sms_1", detail: '{"provider":"ghl","providerStatus":"delivered"}' },
+    );
+    const view = await contactAutomationView(fakeD1(data), "cont_1");
+    const send = view.events.find((event) => event.action === "send");
+    const receipt = view.events.find((event) => event.action === "delivery_status");
+    expect(send.displayOutcome).toBe("Accepted by SMS provider");
+    expect(send.evidence.gaps).toEqual([]);
+    expect(receipt.displayOutcome).toBe("Delivered");
+  });
+
   it("an unknown contact returns an empty view, not an error", async () => {
     const v = await contactAutomationView(db, "stranger");
     expect(v.enrollments).toHaveLength(0);

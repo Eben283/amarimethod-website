@@ -17,7 +17,27 @@ function parseDetail(raw) {
   try { return JSON.parse(raw); } catch { return { raw }; }
 }
 
-function normalizeEvent(r) {
+function displayOutcome(r) {
+  if (r.action === "send" && r.outcome === "sent") {
+    return r.channel === "email" ? "Accepted by Gmail" : "Accepted by SMS provider";
+  }
+  if (r.action === "delivery_status") {
+    if (r.outcome === "delivered") return "Delivered";
+    if (r.outcome === "bounced") return "Bounced";
+    if (r.outcome === "failed") return "Delivery failed";
+  }
+  return null;
+}
+
+function terminalOutcomes(events) {
+  return new Map(events
+    .filter((event) => event.action === "delivery_status"
+      && event.message_ref
+      && ["delivered", "bounced", "failed"].includes(event.outcome))
+    .map((event) => [event.message_ref, event.outcome]));
+}
+
+function normalizeEvent(r, outcomes = new Map()) {
   return {
     id: r.id,
     ts: r.ts,
@@ -30,12 +50,18 @@ function normalizeEvent(r) {
     stepIndex: r.step_index,
     action: r.action,
     outcome: r.outcome,
+    displayOutcome: displayOutcome(r),
     channel: r.channel,
     messageRef: r.message_ref,
     family: familyReference(r.engine, r.flow_key),
     detail: parseDetail(r.detail),
-    evidence: eventEvidence(r),
+    evidence: eventEvidence(r, { terminalOutcome: outcomes.get(r.message_ref) || null }),
   };
+}
+
+function normalizeEvents(events) {
+  const outcomes = terminalOutcomes(events);
+  return events.map((event) => normalizeEvent(event, outcomes));
 }
 
 function exactIso(value) {
@@ -187,7 +213,7 @@ export async function contactAutomationView(db, contactId, eventLimit = 200) {
     upgradeOffer: timers[0] || null,
     confirmations,
     lpOnboarding: lpSends[0] || null,
-    events: events.slice(0, eventLimit).map(normalizeEvent),
+    events: normalizeEvents(events.slice(0, eventLimit)),
     coverage: { eventLimit, eventsTruncated: events.length > eventLimit },
   };
 }
@@ -275,7 +301,7 @@ export async function automationExecutionView(db, { engine, key, enrollmentLimit
     enrollments: engine === "reminder"
       ? boundedEnrollments.map((row) => reminderEnrollment(row, stepRows))
       : boundedEnrollments.map((row) => nurtureEnrollment(row, stepRows)),
-    events: events.slice(0, eventLimit).map(normalizeEvent),
+    events: normalizeEvents(events.slice(0, eventLimit)),
     coverage: {
       enrollmentLimit,
       eventLimit,
@@ -325,7 +351,7 @@ export async function activityView(db, { sinceMs = 0, limit = 500 } = {}) {
     `SELECT * FROM automation_events WHERE ts >= ? ORDER BY ts DESC LIMIT ?`,
     sinceMs, limit,
   );
-  return res.map(normalizeEvent);
+  return normalizeEvents(res);
 }
 
 /**
@@ -338,5 +364,5 @@ export async function failuresView(db, { sinceMs = 0, limit = 100 } = {}) {
      ORDER BY ts DESC LIMIT ?`,
     sinceMs, limit,
   );
-  return res.map(normalizeEvent);
+  return normalizeEvents(res);
 }

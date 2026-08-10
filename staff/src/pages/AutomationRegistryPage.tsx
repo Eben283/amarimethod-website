@@ -87,6 +87,19 @@ function humanize(value: string | null | undefined) {
   return value ? value.replace(/[-_]/g, ' ').replace(/\b\w/g, (letter) => letter.toUpperCase()) : 'Not recorded';
 }
 
+function eventOutcome(event: { action?: string | null; outcome?: string | null; channel?: string | null; displayOutcome?: string | null }) {
+  if (event.displayOutcome) return event.displayOutcome;
+  if (event.action === 'send' && event.outcome === 'sent') {
+    return event.channel === 'email' ? 'Accepted by Gmail' : 'Accepted by SMS provider';
+  }
+  if (event.action === 'delivery_status') {
+    if (event.outcome === 'delivered') return 'Delivered';
+    if (event.outcome === 'failed') return 'Delivery failed';
+    if (event.outcome === 'bounced') return 'Bounced';
+  }
+  return humanize(event.outcome);
+}
+
 function structured(value: unknown) {
   return JSON.stringify(value, null, 2);
 }
@@ -371,6 +384,8 @@ function FamilyDetail({
 
       {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: ${detail.runtime.flow?.delivery === 'active' ? 'owned delivery active' : 'owned delivery disabled'}` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read this at ${exactTime(detail.runtime.verifiedAt)}; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim live delivery until the Worker can answer.'}</span></div>}
 
+      {isInPersonCutover && detail.runtime?.verified && <div className="automation-evidence-banner"><MessageSquareText size={17} /><span><strong>Delivery evidence is channel-specific.</strong> {detail.runtime.flow?.receiptCoverage?.sms === 'terminal_status_reconciled' ? (detail.runtime.receiptHealth?.status === 'healthy' ? `SMS receipt reconciliation was healthy at ${exactTime(detail.runtime.receiptHealth.checkedAt)} (${detail.runtime.receiptHealth.recorded} new terminal outcome${detail.runtime.receiptHealth.recorded === 1 ? '' : 's'}, ${detail.runtime.receiptHealth.pending} still pending).` : detail.runtime.receiptHealth?.status === 'degraded' ? `SMS receipt reconciliation was degraded at ${exactTime(detail.runtime.receiptHealth.checkedAt)} with ${detail.runtime.receiptHealth.errors} error${detail.runtime.receiptHealth.errors === 1 ? '' : 's'}. Delivery evidence may be incomplete.` : 'SMS receipt reconciliation is configured, but no completed sweep can currently be proven.') : 'SMS receipt coverage is unavailable from the executing Worker.'} Email shows Gmail acceptance only; Gmail does not provide an affirmative recipient-delivery receipt.</span></div>}
+
       {family.cutoverTree && !isInPersonCutover && <CutoverTree tree={family.cutoverTree} />}
 
       <section className="automation-detail-section" id="workflow-definition">
@@ -454,7 +469,7 @@ function FamilyDetail({
             {detail.enrollments.length ? detail.enrollments.map((enrollment) => <article key={enrollment.enrollmentId}><div><strong>{enrollment.contactName || 'Name unavailable'}</strong><span className={enrollment.status === 'active' ? 'active' : ''}>{enrollment.status}</span></div><dl><div><dt>Phone</dt><dd>{enrollment.contactPhone || 'Not recorded'}</dd></div><div><dt>Version</dt><dd>{enrollment.definitionVersion ? `v${enrollment.definitionVersion}` : 'Pre-version history'}</dd></div><div><dt>Current step</dt><dd>{enrollment.nextStep ? `${humanize(enrollment.nextStep.type)} · ${enrollment.nextStep.template || 'template not recorded'}` : 'No pending step'}</dd></div><div><dt>Next action</dt><dd>{enrollment.nextStep ? exactTime(enrollment.nextStep.dueAt) : 'Not scheduled'}</dd></div><div><dt>Person ID</dt><dd><code>{enrollment.contactId || 'Not recorded'}</code></dd></div><div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not recorded'}</dd></div></dl></article>) : <p className="automation-registry-empty">No enrollment is recorded by the executing Worker.</p>}
           </section>
           <section><h3><Clock3 size={16} /> Run history <b>{detail.events.length}</b></h3>
-            {detail.events.length ? detail.events.slice(0, 50).map((event, index) => <article className={['failed', 'error', 'bounced'].includes(String(event.outcome).toLowerCase()) ? 'is-failure' : ''} key={`${event.ts}-${event.messageRef || index}`}><div><strong>{humanize(event.action)}</strong><span>{humanize(event.outcome)}</span></div><time>{exactTime(event.ts)}</time><p>{event.stepIndex == null ? 'Workflow event' : `Step ${event.stepIndex + 1}`} · {event.definitionVersion ? `v${event.definitionVersion}` : 'pre-version history'}{event.channel ? ` · ${humanize(event.channel)}` : ''}</p>{event.messageRef && <small>Receipt: <code>{event.messageRef}</code></small>}</article>) : <p className="automation-registry-empty">No execution event is recorded by the executing Worker.</p>}
+            {detail.events.length ? detail.events.slice(0, 50).map((event, index) => <article className={['failed', 'error', 'bounced'].includes(String(event.outcome).toLowerCase()) ? 'is-failure' : ''} key={`${event.ts}-${event.messageRef || index}`}><div><strong>{humanize(event.action)}</strong><span>{eventOutcome(event)}</span></div><time>{exactTime(event.ts)}</time><p>{event.stepIndex == null ? 'Workflow event' : `Step ${event.stepIndex + 1}`} · {event.definitionVersion ? `v${event.definitionVersion}` : 'pre-version history'}{event.channel ? ` · ${humanize(event.channel)}` : ''}</p>{event.messageRef && <small>{event.action === 'delivery_status' ? 'Provider receipt' : 'Provider reference'}: <code>{event.messageRef}</code></small>}</article>) : <p className="automation-registry-empty">No execution event is recorded by the executing Worker.</p>}
           </section></div>}
       </section>
 
@@ -613,7 +628,7 @@ function PersonEvidence({ person, evidence, family }: { person: AutomationPerson
               <article className={failed ? 'is-failure' : unverified ? 'is-unverified' : ''} key={`${event.ts}-${event.messageRef || index}`}>
                 <div><strong>{event.family?.name || event.flowKey || humanize(event.engine)}</strong>{failed ? <AlertTriangle size={14} /> : unverified ? <CircleDot size={14} /> : <CheckCircle2 size={14} />}</div>
                 <time>{exactTime(event.ts)}</time>
-                <p>{humanize(event.action)} · {humanize(event.channel)} · <b>{humanize(event.outcome)}</b></p>
+                <p>{humanize(event.action)} · {humanize(event.channel)} · <b>{eventOutcome(event)}</b></p>
                 <small>{event.stepIndex != null ? `Step ${event.stepIndex + 1}` : 'Step not recorded'}{event.appointmentId ? ` · appointment ${event.appointmentId}` : ''}</small>
                 {event.messageRef ? <a href={`/staff/client-desk?contact=${encodeURIComponent(person.id)}`}><MessageSquareText size={13} /> Message reference <code>{event.messageRef}</code> <ArrowUpRight size={12} /></a> : <span className="automation-message-gap">No message reference recorded</span>}
                 <EvidenceGaps gaps={eventGaps} compact />

@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { enrollmentId, saveEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact } from "./store.js";
+import { enrollmentId, saveEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, loadDeliveryReceiptCandidates, appendDeliveryReceiptEvent } from "./store.js";
 
 // Stateful fake of the D1 binding — models exactly the queries store.js issues, the way
 // attendance-claim.test.js models its INSERT. prepare().bind().run()/.all().
@@ -25,6 +25,12 @@ function fakeD1() {
           return { meta: { changes: 1 } };
         }
         if (/INSERT INTO automation_events/.test(sql)) {
+          if (/WHERE NOT EXISTS/.test(sql)) {
+            const messageRef = a[10];
+            if (events.some((event) => event.action === "delivery_status" && event.message_ref === messageRef && ["delivered", "failed", "bounced"].includes(event.outcome))) {
+              return { meta: { changes: 0 } };
+            }
+          }
           const [ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail] = a;
           events.push({ ts, engine, flow_key, definition_version, contact_id, appointment_id, step_index, action, outcome, channel, message_ref, detail });
           return { meta: { changes: 1 } };
@@ -68,6 +74,14 @@ function fakeD1() {
       },
       async all() {
         const a = this._args;
+        if (/FROM automation_events sent/.test(sql)) {
+          const [flowKey, cutoffMs, limit = Number.MAX_SAFE_INTEGER, offset = 0] = a;
+          const candidates = events.filter((event) => event.engine === "reminder" && event.flow_key === flowKey && event.action === "send" && event.outcome === "sent" && event.channel === "sms" && event.message_ref && event.ts >= cutoffMs)
+            .filter((event) => !events.some((receipt) => receipt.action === "delivery_status" && receipt.message_ref === event.message_ref && ["delivered", "failed", "bounced"].includes(receipt.outcome)))
+            .sort((left, right) => left.ts - right.ts);
+          if (/COUNT\(\*\)/.test(sql)) return { results: [{ count: candidates.length }] };
+          return { results: candidates.slice(offset, offset + limit).map((event, index) => ({ id: offset + index + 1, ...event })) };
+        }
         if (/FROM reminder_steps s\s+JOIN reminder_enrollments e/.test(sql)) {
           const [nowMs, limit] = a;
           const rows = steps
@@ -193,5 +207,33 @@ describe("appendEvent", () => {
     expect(db._events[0]).toMatchObject({ outcome: "would_send", channel: "email" });
     expect(db._events[0].definition_version).toBe(1);
     expect(JSON.parse(db._events[0].detail)).toEqual({ template: "confirmation" });
+  });
+});
+
+describe("delivery receipt storage", () => {
+  it("selects only unreconciled accepted SMS events", async () => {
+    await appendEvent(db, { ts: NOW, flowKey: "initial-in-person", action: "send", outcome: "sent", channel: "sms", message_ref: "sms-1" });
+    await appendEvent(db, { ts: NOW, flowKey: "initial-in-person", action: "send", outcome: "sent", channel: "email", message_ref: "email-1" });
+    await appendEvent(db, { ts: NOW, flowKey: "initial-virtual", action: "send", outcome: "sent", channel: "sms", message_ref: "other-flow-sms" });
+    expect(await loadDeliveryReceiptCandidates(db, NOW - 1)).toEqual([
+      expect.objectContaining({ channel: "sms", message_ref: "sms-1" }),
+    ]);
+  });
+
+  it("rotates bounded pages so old pending references cannot starve newer sends", async () => {
+    for (let index = 0; index < 3; index += 1) {
+      await appendEvent(db, { ts: NOW + index, flowKey: "initial-in-person", action: "send", outcome: "sent", channel: "sms", message_ref: `sms-${index}` });
+    }
+    expect((await loadDeliveryReceiptCandidates(db, NOW - 1, 1, 0))[0].message_ref).toBe("sms-0");
+    expect((await loadDeliveryReceiptCandidates(db, NOW - 1, 1, 1))[0].message_ref).toBe("sms-1");
+    expect((await loadDeliveryReceiptCandidates(db, NOW - 1, 1, 2))[0].message_ref).toBe("sms-2");
+  });
+
+  it("appends a terminal status once and removes that send from reconciliation", async () => {
+    await appendEvent(db, { ts: NOW, flowKey: "initial-in-person", action: "send", outcome: "sent", channel: "sms", message_ref: "sms-1" });
+    const receipt = { ts: NOW + 1, flowKey: "initial-in-person", action: "delivery_status", outcome: "delivered", channel: "sms", message_ref: "sms-1", detail: { providerStatus: "delivered" } };
+    expect(await appendDeliveryReceiptEvent(db, receipt)).toBe(true);
+    expect(await appendDeliveryReceiptEvent(db, receipt)).toBe(false);
+    expect(await loadDeliveryReceiptCandidates(db, NOW - 1)).toEqual([]);
   });
 });

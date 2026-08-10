@@ -148,6 +148,74 @@ export async function appendEvent(db, r) {
     .run();
 }
 
+export async function loadDeliveryReceiptCandidates(db, cutoffMs, limit = 50, page = 0, flowKey = "initial-in-person") {
+  const countResult = await db.prepare(
+    `SELECT COUNT(*) AS count
+     FROM automation_events sent
+     WHERE sent.engine = 'reminder'
+       AND sent.flow_key = ?
+       AND sent.action = 'send'
+       AND sent.outcome = 'sent'
+       AND sent.channel = 'sms'
+       AND sent.message_ref IS NOT NULL
+       AND sent.ts >= ?
+       AND NOT EXISTS (
+         SELECT 1 FROM automation_events receipt
+         WHERE receipt.action = 'delivery_status'
+           AND receipt.message_ref = sent.message_ref
+           AND receipt.outcome IN ('delivered', 'failed', 'bounced')
+       )`,
+  ).bind(flowKey, cutoffMs).all();
+  const count = Number(countResult.results?.[0]?.count || 0);
+  if (!count) return [];
+  const offset = (Math.max(0, page) * limit) % count;
+  const result = await db.prepare(
+    `SELECT sent.id, sent.ts, sent.engine, sent.flow_key, sent.definition_version,
+            sent.contact_id, sent.appointment_id, sent.step_index, sent.action,
+            sent.outcome, sent.channel, sent.message_ref, sent.detail
+     FROM automation_events sent
+     WHERE sent.engine = 'reminder'
+       AND sent.flow_key = ?
+       AND sent.action = 'send'
+       AND sent.outcome = 'sent'
+       AND sent.channel = 'sms'
+       AND sent.message_ref IS NOT NULL
+       AND sent.ts >= ?
+       AND NOT EXISTS (
+         SELECT 1 FROM automation_events receipt
+         WHERE receipt.action = 'delivery_status'
+           AND receipt.message_ref = sent.message_ref
+           AND receipt.outcome IN ('delivered', 'failed', 'bounced')
+       )
+     ORDER BY sent.ts ASC
+     LIMIT ? OFFSET ?`,
+  ).bind(flowKey, cutoffMs, limit, offset).all();
+  return result.results || [];
+}
+
+export async function appendDeliveryReceiptEvent(db, event) {
+  const result = await db.prepare(
+    `INSERT INTO automation_events
+       (ts, engine, flow_key, definition_version, contact_id, appointment_id,
+        step_index, action, outcome, channel, message_ref, detail)
+     SELECT ?,?,?,?,?,?,?,?,?,?,?,?
+     WHERE NOT EXISTS (
+       SELECT 1 FROM automation_events
+       WHERE action = 'delivery_status'
+         AND message_ref = ?
+         AND outcome IN ('delivered', 'failed', 'bounced')
+     )`,
+  ).bind(
+    event.ts, event.engine ?? "reminder", event.flowKey ?? null,
+    event.definitionVersion ?? null, event.contactId ?? null,
+    event.appointmentId ?? null, event.stepIndex ?? null,
+    event.action, event.outcome, event.channel, event.message_ref,
+    event.detail != null ? JSON.stringify(event.detail) : null,
+    event.message_ref,
+  ).run();
+  return changesOf(result) === 1;
+}
+
 /**
  * Cancel an enrollment: mark it cancelled and cancel every still-pending step (sent/would_send
  * stay as history). Returns { cancelledSteps }.

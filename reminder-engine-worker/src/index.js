@@ -13,7 +13,9 @@
 // shadow mode — the default — touches neither.
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
-import { handleEvent, runSweep } from "./engine.js";
+import { handleEvent } from "./engine.js";
+import { runAutomationCycle } from "./automation-cycle.js";
+import { reconcileDeliveryReceipts } from "./delivery-receipts.js";
 import { handleWebhook } from "./webhook.js";
 import { handleDashboardPage, handleDashboardData } from "./dashboard.js";
 import { dashboardSessionCookie } from "./dashboard-session.js";
@@ -44,7 +46,7 @@ function requestedStaffActor(value) {
 
 export default {
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(runSweep(env, Date.now()));
+    ctx.waitUntil(runAutomationCycle(env, Date.now()));
   },
 
   async fetch(request, env) {
@@ -117,8 +119,12 @@ export default {
         return json(200, { success: true, actions });
       }
       if (request.method === "POST" && url.pathname === "/run") {
-        const counts = await runSweep(env, Date.now());
-        return json(200, { success: true, counts });
+        const cycle = await runAutomationCycle(env, Date.now());
+        return json(200, { success: true, ...cycle });
+      }
+      if (request.method === "POST" && url.pathname === "/receipts/run") {
+        const receipts = await reconcileDeliveryReceipts(env, Date.now());
+        return json(200, { success: true, receipts });
       }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "reminder-engine", now: Date.now() });
