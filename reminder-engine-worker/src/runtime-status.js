@@ -1,4 +1,5 @@
 import { FLOWS } from "./config.js";
+import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 
 function iso(value) {
   const time = typeof value === "number" ? value : Date.parse(value);
@@ -56,6 +57,7 @@ export async function runtimeStatus(env, flowKey) {
       configuredMode: flow.mode,
       delivery: cutoverEnabled ? "active" : "disabled",
     },
+    definition: flowKey === INITIAL_IN_PERSON_WORKFLOW.id ? INITIAL_IN_PERSON_WORKFLOW : null,
     enrollments: [...byEnrollment.values()],
   };
 }

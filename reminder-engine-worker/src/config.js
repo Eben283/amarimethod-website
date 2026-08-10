@@ -18,33 +18,8 @@
 //                  "start+<n>m"    → n minutes after appointment start
 //                skipIfPast: true  → if the computed time is already past at enroll, skip (don't backfire)
 
-export const INITIAL_IN_PERSON = Object.freeze({
-  name: "Initial / Assessment — In Person",
-  definitionVersion: 3,
-  flowKey: "initial-in-person",
-  // One live GHL reminder workflow covers both its legacy Initial Session calendar and the
-  // current Assessment calendar. This is the source-verified reminder scope, not a payment or
-  // pipeline definition.
-  calendarIds: Object.freeze(["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"]),
-  // The legacy Initial calendar's two triggers are actor-limited, while the Assessment trigger
-  // has no `modified_by` condition. Keep that distinction in code: a missing actor must be
-  // accepted only for the Assessment calendar, never broaden the legacy calendar.
-  enrollOn: Object.freeze({
-    statuses: Object.freeze(["confirmed"]),
-    modifiedBy: Object.freeze(["user", "customer"]),
-    modifiedByByCalendar: Object.freeze({ "EM6vB2mq7EAdGCbUb3j1": null }),
-  }),
-  cancelOn: Object.freeze(["cancelled"]),
-  mode: "shadow",
-  steps: Object.freeze([
-    { at: "enroll", type: "internal_email", template: "booked-internal", skipIfPast: false },
-    { at: "enroll", type: "email", template: "confirmation", skipIfPast: false },
-    { at: "start-1440m", type: "email", template: "day-before", skipIfPast: true },
-    { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
-    { at: "start-60m", type: "email", template: "starting-soon", skipIfPast: true },
-    { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true },
-  ]),
-});
+export { INITIAL_IN_PERSON } from "./initial-in-person-workflow.js";
+import { INITIAL_IN_PERSON } from "./initial-in-person-workflow.js";
 
 // Initial -Virtual Session Welcome / reminder email flow — virtual mirror of the in-person
 // flow (twin: initial-virtual-session-welcome-reminder-email-flow.yaml, 95%, copy captured
