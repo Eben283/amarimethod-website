@@ -184,8 +184,8 @@ export default function CalendarRegistry({ onViewSchedule }: { onViewSchedule: (
                 {projection.reconciliation.records.map((record) => (
                   <tr key={record.providerAppointmentId}>
                     <td><strong>{record.startsAt ? new Date(record.startsAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'No current time'}</strong><small>{record.providerAppointmentId}</small></td>
-                    <td><span className={`appointment-state is-${record.state}`}>{record.state.replace('-', ' ')}</span>{record.issueCodes.length ? <small>{record.issueCodes.join(', ').replaceAll('_', ' ')}</small> : null}</td>
-                    <td>{record.status.replaceAll('_', ' ')}</td>
+                    <td><span className={`appointment-state is-${record.state}`}>{record.state.replace('-', ' ')}</span>{record.issueCodes.length ? <small>{record.issueCodes.join(', ').replace(/_/g, ' ')}</small> : null}</td>
+                    <td>{record.status.replace(/_/g, ' ')}</td>
                     <td>{record.observationCount} {record.observationCount === 1 ? 'observation' : 'observations'}</td>
                   </tr>
                 ))}
