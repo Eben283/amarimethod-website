@@ -265,6 +265,7 @@ function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamil
   const nodes = family.cutoverTree!.nodes;
   const live = nodes.filter((node) => node.state === 'verified_ghl');
   const shadows = nodes.filter((node) => node.state === 'owned_shadow');
+  const ownedLive = nodes.filter((node) => node.state === 'owned_live');
   const gaps = nodes.filter((node) => node.state === 'gap');
   return (
     <section className="automation-health-pilot" aria-label="Automation health pilot">
@@ -284,7 +285,7 @@ function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamil
         </article>
         <article className="is-owned">
           <span>Known owners</span>
-          <strong>{live.length} live GHL · {shadows.length} owned shadow</strong>
+          <strong>{live.length} GHL source · {ownedLive.length} owned live · {shadows.length} owned shadow</strong>
           <p>{live.map((node) => node.label).join(' · ')}</p>
         </article>
         <article className="is-gap">
@@ -445,7 +446,7 @@ function CutoverTree({ tree }: { tree: AutomationCutoverTree }) {
     nodesByParent.set(node.parentId, nodes);
   }
   const stateLabel: Record<typeof tree.nodes[number]['state'], string> = {
-    verified_ghl: 'GHL live', owned_shadow: 'Owned shadow', proven_owned: 'Owned proven', gap: 'Gap',
+    verified_ghl: 'GHL source', owned_shadow: 'Owned shadow', owned_live: 'Owned live', proven_owned: 'Owned proven', gap: 'Gap',
   };
   const renderChildren = (parentId: string | null) => (nodesByParent.get(parentId) || []).map((node) => (
     <li className={`automation-tree-node is-${node.state}`} key={node.id}>

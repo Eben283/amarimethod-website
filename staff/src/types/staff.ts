@@ -274,7 +274,7 @@ export interface AutomationCutoverTreeNode {
   id: string;
   parentId: string | null;
   label: string;
-  state: 'verified_ghl' | 'owned_shadow' | 'proven_owned' | 'gap';
+  state: 'verified_ghl' | 'owned_shadow' | 'owned_live' | 'proven_owned' | 'gap';
   evidence: string;
   detail: string;
 }
