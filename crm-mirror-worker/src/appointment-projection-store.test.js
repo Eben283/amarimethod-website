@@ -73,7 +73,7 @@ describe("appointment projection store", () => {
       shadowOnly: true,
       state: "unavailable",
       liveScheduleFallback: true,
-      bufferPolicy: { state: "conflict", runtimeAppOwnedMinutes: 20, olderDocumentedMinutes: 10 },
+      bufferPolicy: { state: "confirmed", runtimeAppOwnedMinutes: 20, historicalDocumentedMinutes: 10 },
     });
   });
 
@@ -104,7 +104,7 @@ describe("appointment projection store", () => {
       liveScheduleFallback: true,
       coverage: { observationsRead: 1, totalObservations: 1, truncated: false },
       reconciliation: { summary: { appointments: 1, observations: 1, conflicts: 1, historyGaps: 1 } },
-      bufferPolicy: { state: "conflict" },
+      bufferPolicy: { state: "confirmed" },
     });
   });
 });

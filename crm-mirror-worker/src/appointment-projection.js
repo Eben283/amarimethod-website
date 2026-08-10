@@ -76,6 +76,59 @@ function mirrorDiff(projected, mirror) {
     .map(([projectionField]) => projectionField);
 }
 
+function issueCodesFor(issues, providerAppointmentId) {
+  return issues
+    .filter((issue) => issue.providerAppointmentId === providerAppointmentId)
+    .map((issue) => issue.code);
+}
+
+// This is the operational projection Staff needs during shadow mode. It says
+// what Amari knows about the *current* appointment without pretending that a
+// snapshot recreates provider history we never received.
+function classifyCurrentAppointments(appointments, currentAppointments, issues) {
+  const projectedById = new Map(appointments.map((appointment) => [appointment.providerAppointmentId, appointment]));
+  const currentIds = new Set(currentAppointments.map((appointment) => appointment.provider_appointment_id));
+  const records = [];
+
+  for (const mirror of currentAppointments) {
+    const providerAppointmentId = mirror.provider_appointment_id;
+    const projected = projectedById.get(providerAppointmentId);
+    const issueCodes = issueCodesFor(issues, providerAppointmentId);
+    let state = "unobserved";
+    if (projected && issueCodes.includes("shadow_current_mismatch")) state = "mismatch";
+    else if (projected && !projected.historyComplete) state = "baseline";
+    else if (projected) state = "matched";
+    records.push({
+      providerAppointmentId,
+      state,
+      historyComplete: Boolean(projected?.historyComplete),
+      status: mirror.status || projected?.status || "unknown",
+      startsAt: mirror.starts_at || projected?.startsAt || null,
+      endsAt: mirror.ends_at || projected?.endsAt || null,
+      timezone: mirror.timezone || projected?.timezone || null,
+      observationCount: projected?.transitions.length || 0,
+      issueCodes,
+    });
+  }
+
+  for (const appointment of appointments) {
+    if (currentIds.has(appointment.providerAppointmentId)) continue;
+    records.push({
+      providerAppointmentId: appointment.providerAppointmentId,
+      state: "orphaned",
+      historyComplete: appointment.historyComplete,
+      status: appointment.status,
+      startsAt: appointment.startsAt,
+      endsAt: appointment.endsAt,
+      timezone: appointment.timezone,
+      observationCount: appointment.transitions.length,
+      issueCodes: issueCodesFor(issues, appointment.providerAppointmentId),
+    });
+  }
+
+  return records.sort((left, right) => String(right.startsAt || "").localeCompare(String(left.startsAt || "")));
+}
+
 /**
  * Reconcile append-only observations with the existing current mirror.
  * Exact retries collapse; the same provider event ID with different evidence
@@ -160,6 +213,14 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
     }
   }
 
+  const records = classifyCurrentAppointments(appointments, currentAppointments, issues);
+  const stateCounts = Object.fromEntries(
+    ["matched", "baseline", "unobserved", "mismatch", "orphaned"].map((state) => [
+      state,
+      records.filter((record) => record.state === state).length,
+    ]),
+  );
+
   return {
     shadowOnly: true,
     summary: {
@@ -167,8 +228,10 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
       observations: distinct.length,
       conflicts: issues.length,
       historyGaps: issues.filter((issue) => ["missing_create", "missing_shadow_observation", "shadow_without_current_mirror"].includes(issue.code)).length,
+      stateCounts,
     },
     appointments,
+    records,
     issues,
   };
 }
@@ -176,15 +239,15 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
 /** Explicit cutover blocker; this intentionally does not resolve the policy. */
 export function appointmentBufferReadiness() {
   return {
-    state: "conflict",
+    state: "confirmed",
     runtimeAppOwnedMinutes: 20,
-    olderDocumentedMinutes: 10,
-    blocksWriteAuthority: true,
+    historicalDocumentedMinutes: 10,
+    blocksWriteAuthority: false,
     evidence: [
       "functions/lib/booking-slot-policy.js",
       "ops/memory/project_native_booking.md",
       "ops/memory/ghl_calendars_source_of_truth.md",
     ],
-    note: "Runtime booking enforces 20 minutes while older booking/calendar evidence records 10 minutes for main 50-minute sessions. Resolve and verify before owned booking writes.",
+    note: "20-minute turnover is confirmed. The 10-minute booking/calendar references are historical evidence only; appointment-history reconciliation remains a separate write-authority gate.",
   };
 }

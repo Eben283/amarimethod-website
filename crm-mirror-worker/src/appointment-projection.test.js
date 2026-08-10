@@ -93,6 +93,9 @@ describe("owned appointment projection", () => {
       "provider_event_collision",
       "shadow_current_mismatch",
     ]);
+    expect(result.records).toEqual([
+      expect.objectContaining({ providerAppointmentId: "appointment-1", state: "mismatch", observationCount: 2 }),
+    ]);
   });
 
   it("reports a missing create as a gap instead of inventing history", () => {
@@ -109,16 +112,38 @@ describe("owned appointment projection", () => {
 describe("appointment buffer readiness evidence", () => {
   it("does not silently choose between the runtime 20-minute rule and older 10-minute evidence", () => {
     expect(appointmentBufferReadiness()).toEqual({
-      state: "conflict",
+      state: "confirmed",
       runtimeAppOwnedMinutes: 20,
-      olderDocumentedMinutes: 10,
-      blocksWriteAuthority: true,
+      historicalDocumentedMinutes: 10,
+      blocksWriteAuthority: false,
       evidence: [
         "functions/lib/booking-slot-policy.js",
         "ops/memory/project_native_booking.md",
         "ops/memory/ghl_calendars_source_of_truth.md",
       ],
-      note: "Runtime booking enforces 20 minutes while older booking/calendar evidence records 10 minutes for main 50-minute sessions. Resolve and verify before owned booking writes.",
+      note: "20-minute turnover is confirmed. The 10-minute booking/calendar references are historical evidence only; appointment-history reconciliation remains a separate write-authority gate.",
     });
+  });
+
+  it("classifies every current appointment without treating a snapshot as its original booking", () => {
+    const result = reconcileAppointmentProjection({
+      events: [event({ provider_event_type: "sync_initial", source_kind: "snapshot" })],
+      currentAppointments: [
+        {
+          provider_appointment_id: "appointment-1", provider_calendar_id: "calendar-1", provider_status_raw: "confirmed",
+          status: "confirmed", starts_at: "2026-08-10T17:00:00.000Z", ends_at: "2026-08-10T17:50:00.000Z", timezone: "America/Los_Angeles",
+        },
+        {
+          provider_appointment_id: "appointment-2", provider_calendar_id: "calendar-1", provider_status_raw: "confirmed",
+          status: "confirmed", starts_at: "2026-08-11T17:00:00.000Z", ends_at: "2026-08-11T17:50:00.000Z", timezone: "America/Los_Angeles",
+        },
+      ],
+    });
+
+    expect(result.records).toEqual(expect.arrayContaining([
+      expect.objectContaining({ providerAppointmentId: "appointment-1", state: "baseline", historyComplete: false }),
+      expect.objectContaining({ providerAppointmentId: "appointment-2", state: "unobserved", observationCount: 0 }),
+    ]));
+    expect(result.summary.stateCounts).toMatchObject({ baseline: 1, unobserved: 1, matched: 0, mismatch: 0, orphaned: 0 });
   });
 });

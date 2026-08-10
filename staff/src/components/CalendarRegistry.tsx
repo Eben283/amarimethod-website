@@ -162,11 +162,38 @@ export default function CalendarRegistry({ onViewSchedule }: { onViewSchedule: (
               {projection.configured
                 ? `${projection.reconciliation?.summary.appointments || 0} appointments reconstructed from ${projection.coverage?.observationsRead || 0} observations; ${projection.reconciliation?.summary.conflicts || 0} conflicts and ${projection.reconciliation?.summary.historyGaps || 0} history gaps.`
                 : 'Shadow storage is not available yet.'}
-              {' '}The live schedule remains provider-backed. Runtime booking currently enforces {projection.bufferPolicy.runtimeAppOwnedMinutes} minutes of turnover while older calendar evidence records {projection.bufferPolicy.olderDocumentedMinutes}; owned booking writes stay blocked until that is resolved.
+              {' '}The live schedule remains provider-backed. {projection.bufferPolicy.runtimeAppOwnedMinutes}-minute turnover is confirmed; the older {projection.bufferPolicy.historicalDocumentedMinutes}-minute references are historical only. Owned booking writes remain blocked while the appointment history is reconciled.
             </p>
           ) : <p>{projectionError || 'Appointment shadow evidence is unavailable.'} The live schedule remains provider-backed.</p>}
         </div>
       </div>
+
+      {projection?.configured && projection.reconciliation ? (
+        <details className="calendar-registry-appointment-ledger">
+          <summary>
+            <span>Appointment record check</span>
+            <small>
+              {projection.reconciliation.summary.stateCounts.matched} matched · {projection.reconciliation.summary.stateCounts.baseline} baseline · {projection.reconciliation.summary.stateCounts.unobserved} not yet observed · {projection.reconciliation.summary.stateCounts.mismatch} mismatched
+            </small>
+          </summary>
+          <p>Every mirrored appointment is classified here. “Baseline” means Amari has the current provider snapshot but not the original booking event; it is visible evidence, not reconstructed history.</p>
+          <div className="calendar-registry-appointment-scroll">
+            <table>
+              <thead><tr><th>Appointment</th><th>Current state</th><th>Provider status</th><th>Observed</th></tr></thead>
+              <tbody>
+                {projection.reconciliation.records.map((record) => (
+                  <tr key={record.providerAppointmentId}>
+                    <td><strong>{record.startsAt ? new Date(record.startsAt).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }) : 'No current time'}</strong><small>{record.providerAppointmentId}</small></td>
+                    <td><span className={`appointment-state is-${record.state}`}>{record.state.replace('-', ' ')}</span>{record.issueCodes.length ? <small>{record.issueCodes.join(', ').replaceAll('_', ' ')}</small> : null}</td>
+                    <td>{record.status.replaceAll('_', ' ')}</td>
+                    <td>{record.observationCount} {record.observationCount === 1 ? 'observation' : 'observations'}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </details>
+      ) : null}
 
       <div className="calendar-registry-tools">
         <label><Search aria-hidden="true" /><span className="sr-only">Search calendars</span><input type="search" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search calendars" /></label>

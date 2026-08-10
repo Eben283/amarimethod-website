@@ -106,6 +106,19 @@
 .calendar-registry-projection.is-unavailable > svg { color: #995c4a; }
 .calendar-registry-projection strong { font-size: 12px; }
 .calendar-registry-projection p { margin: 3px 0 0; color: var(--cal-muted); font-size: 12px; line-height: 1.5; }
+.calendar-registry-appointment-ledger { margin: -6px 0 22px; border: 1px solid #d7e3df; background: #fbfdfc; }
+.calendar-registry-appointment-ledger summary { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; padding: 13px 16px; cursor: pointer; color: var(--cal-ink); font-size: 12px; font-weight: 700; }
+.calendar-registry-appointment-ledger summary small { color: var(--cal-muted); font-size: 11px; font-weight: 500; text-align: right; }
+.calendar-registry-appointment-ledger > p { margin: 0; padding: 0 16px 13px; color: var(--cal-muted); font-size: 11px; line-height: 1.5; }
+.calendar-registry-appointment-scroll { max-height: 420px; overflow: auto; border-top: 1px solid #d7e3df; }
+.calendar-registry-appointment-ledger table { width: 100%; border-collapse: collapse; font-size: 11px; text-align: left; }
+.calendar-registry-appointment-ledger th { position: sticky; top: 0; background: #edf5f2; color: var(--cal-muted); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; }
+.calendar-registry-appointment-ledger th, .calendar-registry-appointment-ledger td { padding: 10px 16px; border-bottom: 1px solid #e6eeeb; vertical-align: top; }
+.calendar-registry-appointment-ledger td small { display: block; margin-top: 3px; color: var(--cal-muted); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 9px; overflow-wrap: anywhere; }
+.appointment-state { display: inline-block; padding: 2px 6px; border-radius: 999px; background: #e4f1eb; color: #27654f; font-weight: 700; text-transform: capitalize; }
+.appointment-state.is-baseline { background: #eef0e8; color: #65704b; }
+.appointment-state.is-unobserved, .appointment-state.is-mismatch, .appointment-state.is-orphaned { background: #fff0d5; color: #815b20; }
+@media (max-width: 680px) { .calendar-registry-appointment-ledger summary { display: block; } .calendar-registry-appointment-ledger summary small { display: block; margin-top: 4px; text-align: left; } .calendar-registry-appointment-ledger th, .calendar-registry-appointment-ledger td { padding: 9px; } }
 
 .calendar-registry-tools { display: grid; grid-template-columns: minmax(220px, 1fr) auto 160px; align-items: center; gap: 12px; margin-bottom: 12px; }
 .calendar-registry-tools > label { display: grid; min-height: 44px; grid-template-columns: 18px 1fr; align-items: center; gap: 8px; padding: 0 12px; border: 1px solid var(--staff-line); border-radius: 6px; background: var(--staff-sheet); }

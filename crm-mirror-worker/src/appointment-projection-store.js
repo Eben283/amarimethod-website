@@ -135,13 +135,14 @@ export async function appointmentProjectionReadiness(db, generatedAt) {
     return {
       configured: true,
       shadowOnly: true,
-      state: bufferPolicy.blocksWriteAuthority || reconciliation.summary.conflicts ? "attention" : "ready",
+      state: reconciliation.summary.conflicts ? "attention" : "ready",
       generatedAt,
       liveScheduleFallback: true,
       coverage: { observationsRead: events.length, totalObservations, truncated },
       reconciliation: {
         shadowOnly: true,
         summary: reconciliation.summary,
+        records: reconciliation.records,
         issues: reconciliation.issues.slice(0, 100),
         issueCoverage: {
           returned: Math.min(reconciliation.issues.length, 100),

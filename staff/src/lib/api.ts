@@ -181,14 +181,31 @@ export interface AppointmentProjectionReadiness {
   reason?: string;
   coverage?: { observationsRead: number; totalObservations: number; truncated: boolean };
   reconciliation?: {
-    summary: { appointments: number; observations: number; conflicts: number; historyGaps: number };
+    summary: {
+      appointments: number;
+      observations: number;
+      conflicts: number;
+      historyGaps: number;
+      stateCounts: Record<'matched' | 'baseline' | 'unobserved' | 'mismatch' | 'orphaned', number>;
+    };
+    records: Array<{
+      providerAppointmentId: string;
+      state: 'matched' | 'baseline' | 'unobserved' | 'mismatch' | 'orphaned';
+      historyComplete: boolean;
+      status: string;
+      startsAt: string | null;
+      endsAt: string | null;
+      timezone: string | null;
+      observationCount: number;
+      issueCodes: string[];
+    }>;
     issues: Array<{ code: string; providerAppointmentId?: string }>;
   };
   bufferPolicy: {
-    state: 'conflict';
+    state: 'confirmed';
     runtimeAppOwnedMinutes: 20;
-    olderDocumentedMinutes: 10;
-    blocksWriteAuthority: true;
+    historicalDocumentedMinutes: 10;
+    blocksWriteAuthority: false;
     note: string;
   };
 }
