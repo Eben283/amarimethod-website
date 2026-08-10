@@ -30,10 +30,14 @@ const [SERIES_PID, seriesPkg] = Object.entries(INVOICE_PURCHASE_PRODUCTS).find((
 let fetchCalls;
 const putToContact = () => fetchCalls.find((c) => c.opts?.method === 'PUT' && /\/contacts\//.test(c.url));
 
-function makeContext({ invoices, secret = SECRET, kvStore = {}, body = { contact_id: 'c1', invoice_id: 'inv1' }, contact = { id: 'c1', customFields: [], tags: [] }, contactStatus = 200, attendDb = null, portalSale = null }) {
+function makeContext({ invoices, secret = SECRET, kvStore = {}, body = { contact_id: 'c1', invoice_id: 'inv1' }, contact = { id: 'c1', customFields: [], tags: [] }, verifiedContact = null, contactStatus = 200, attendDb = null, portalSale = null }) {
+  let contactReads = 0;
   ghlFetch.mockImplementation(async (_ctx, url) => {
     if (url.includes('/invoices/')) return { ok: true, json: async () => ({ invoices }) };
-    if (url.includes('/contacts/')) return { ok: contactStatus < 400, status: contactStatus, json: async () => ({ contact }) };
+    if (url.includes('/contacts/')) {
+      const selected = contactReads++ > 0 && verifiedContact ? verifiedContact : contact;
+      return { ok: contactStatus < 400, status: contactStatus, json: async () => ({ contact: selected }) };
+    }
     return { ok: true, json: async () => ({}) };
   });
   const env = {
@@ -146,6 +150,213 @@ describe('invoice-webhook — write orchestration', () => {
       expect.stringContaining('"fulfillmentStatus":"fulfilled"'),
     );
     expect(await res.json()).toMatchObject({ posSaleId: 'pos_messagequiet1', posFulfilled: true });
+  });
+
+  it('a Staff POS Single Session adds exactly one credit, preserves the series, and verifies the checkpointed target', async () => {
+    const invoice = {
+      _id: 'inv-pos-single', status: 'paid', amountPaid: 285,
+      name: 'Staff POS pos_singlecredit1',
+      termsNotes: 'Payment already collected externally. Staff POS sale pos_singlecredit1. Do not send.',
+      invoiceItems: [{ productId: '6a6b8bb7a1753b65945372f1', qty: 1 }],
+    };
+    const baseFields = [
+      { id: FIELD.sessionsRemaining, value: '2' },
+      { id: FIELD.seriesType, value: '12-week' },
+      { id: FIELD.portalAccess, value: true },
+    ];
+    const ctx = makeContext({
+      invoices: [invoice],
+      body: { contact_id: 'c1', invoice_id: 'inv-pos-single' },
+      contact: { id: 'c1', tags: [], customFields: baseFields },
+      verifiedContact: {
+        id: 'c1', tags: [],
+        customFields: baseFields.map((field) => field.id === FIELD.sessionsRemaining ? { ...field, value: '3' } : field),
+      },
+      portalSale: {
+        id: 'pos_singlecredit1', status: 'paid', fulfillmentStatus: 'pending',
+        client: { id: 'c1', name: 'Test' },
+        cart: [{
+          kind: 'catalog', productKey: 'single-session', label: 'Single Session',
+          ghlProductId: '6a6b8bb7a1753b65945372f1', fulfillmentPolicy: 'session-credit',
+          quantity: 1, unitAmountCents: 28500, lineTotalCents: 28500,
+        }],
+        fulfillment: {
+          adapter: 'ghl_invoice', stage: 'verification_pending',
+          invoice: { id: 'inv-pos-single', status: 'paid' },
+        },
+        version: 2, audit: [],
+      },
+    });
+
+    const res = await onRequestPost(ctx);
+
+    expect(res.status).toBe(200);
+    const payload = JSON.parse(putToContact().opts.body);
+    expect(payload.customFields).toEqual(expect.arrayContaining([
+      { id: FIELD.sessionsRemaining, field_value: '3' },
+      { id: FIELD.portalAccess, field_value: true },
+    ]));
+    expect(payload.customFields.some((field) => field.id === FIELD.seriesType)).toBe(false);
+    expect(await res.json()).toMatchObject({ posSaleId: 'pos_singlecredit1', posFulfilled: true, sessionsRemaining: 3 });
+    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith(
+      'staff-pos:sale:pos_singlecredit1',
+      expect.stringContaining('"sessionsRemaining":3'),
+    );
+  });
+
+  it('a duplicate Single Session event waits instead of calculating a second target before the checkpoint is visible', async () => {
+    const invoice = {
+      _id: 'inv-pos-single-pending', status: 'paid', amountPaid: 285,
+      name: 'Staff POS pos_singlepending1',
+      termsNotes: 'Payment already collected externally. Staff POS sale pos_singlepending1. Do not send.',
+      invoiceItems: [{ productId: '6a6b8bb7a1753b65945372f1', qty: 1 }],
+    };
+    const attendDb = {
+      prepare: () => ({ bind() { return this; }, run: async () => ({ meta: { changes: 0 } }) }),
+    };
+    const ctx = makeContext({
+      invoices: [invoice],
+      body: { contact_id: 'c1', invoice_id: 'inv-pos-single-pending' },
+      contact: {
+        id: 'c1', tags: [],
+        customFields: [
+          { id: FIELD.sessionsRemaining, value: '3' },
+          { id: FIELD.seriesType, value: '12-week' },
+        ],
+      },
+      attendDb,
+      portalSale: {
+        id: 'pos_singlepending1', status: 'paid', fulfillmentStatus: 'pending',
+        client: { id: 'c1', name: 'Test' },
+        cart: [{
+          kind: 'catalog', productKey: 'single-session', label: 'Single Session',
+          ghlProductId: '6a6b8bb7a1753b65945372f1', fulfillmentPolicy: 'session-credit',
+          quantity: 1, unitAmountCents: 28500, lineTotalCents: 28500,
+        }],
+        fulfillment: {
+          adapter: 'ghl_invoice', stage: 'verification_pending',
+          invoice: { id: 'inv-pos-single-pending', status: 'paid' },
+        },
+        version: 2, audit: [],
+      },
+    });
+
+    const res = await onRequestPost(ctx);
+
+    expect(res.status).toBe(202);
+    expect(await res.json()).toMatchObject({
+      pending: true,
+      retryable: true,
+      reason: 'single-session-target-not-yet-visible',
+    });
+    expect(putToContact()).toBeFalsy();
+  });
+
+  it('a duplicate Single Session event reuses the checkpointed target instead of adding again', async () => {
+    const invoice = {
+      _id: 'inv-pos-single-replay', status: 'paid', amountPaid: 285,
+      name: 'Staff POS pos_singlereplay1',
+      termsNotes: 'Payment already collected externally. Staff POS sale pos_singlereplay1. Do not send.',
+      invoiceItems: [{ productId: '6a6b8bb7a1753b65945372f1', qty: 1 }],
+    };
+    const fields = [
+      { id: FIELD.sessionsRemaining, value: '3' },
+      { id: FIELD.seriesType, value: '12-week' },
+      { id: FIELD.portalAccess, value: true },
+    ];
+    const attendDb = {
+      prepare: () => ({ bind() { return this; }, run: async () => ({ meta: { changes: 0 } }) }),
+    };
+    const ctx = makeContext({
+      invoices: [invoice],
+      body: { contact_id: 'c1', invoice_id: 'inv-pos-single-replay' },
+      contact: { id: 'c1', tags: [], customFields: fields },
+      verifiedContact: { id: 'c1', tags: [], customFields: fields },
+      attendDb,
+      portalSale: {
+        id: 'pos_singlereplay1', status: 'paid', fulfillmentStatus: 'pending',
+        client: { id: 'c1', name: 'Test' },
+        cart: [{
+          kind: 'catalog', productKey: 'single-session', label: 'Single Session',
+          ghlProductId: '6a6b8bb7a1753b65945372f1', fulfillmentPolicy: 'session-credit',
+          quantity: 1, unitAmountCents: 28500, lineTotalCents: 28500,
+        }],
+        fulfillment: {
+          adapter: 'ghl_invoice', stage: 'effect_target_checkpointed',
+          invoice: { id: 'inv-pos-single-replay', status: 'paid' },
+          effectTarget: { type: 'session_credit', sessionsRemaining: 3 },
+        },
+        version: 3, audit: [],
+      },
+    });
+
+    const res = await onRequestPost(ctx);
+
+    expect(res.status).toBe(200);
+    const payload = JSON.parse(putToContact().opts.body);
+    expect(payload.customFields).toEqual(expect.arrayContaining([
+      { id: FIELD.sessionsRemaining, field_value: '3' },
+      { id: FIELD.portalAccess, field_value: true },
+    ]));
+    expect(payload.customFields.some((field) => field.field_value === '4')).toBe(false);
+    expect(await res.json()).toMatchObject({ posFulfilled: true, sessionsRemaining: 3 });
+  });
+
+  it('a Staff POS Living Practice sale grants portal and Living Practice access without touching sessions', async () => {
+    const invoice = {
+      _id: 'inv-pos-living', status: 'paid', amountPaid: 347,
+      name: 'Staff POS pos_livingaccess1',
+      termsNotes: 'Payment already collected externally. Staff POS sale pos_livingaccess1. Do not send.',
+      invoiceItems: [{ productId: '6998d7f2606fa79c54fa3ff5', qty: 1 }],
+    };
+    const current = {
+      id: 'c1', tags: [],
+      customFields: [
+        { id: FIELD.sessionsRemaining, value: '7' },
+        { id: FIELD.seriesType, value: '12-week' },
+      ],
+    };
+    const verified = {
+      ...current,
+      customFields: [
+        ...current.customFields,
+        { id: FIELD.portalAccess, value: true },
+        { id: FIELD.livingPractice, value: true },
+      ],
+    };
+    const ctx = makeContext({
+      invoices: [invoice],
+      body: { contact_id: 'c1', invoice_id: 'inv-pos-living' },
+      contact: current,
+      verifiedContact: verified,
+      portalSale: {
+        id: 'pos_livingaccess1', status: 'paid', fulfillmentStatus: 'pending',
+        client: { id: 'c1', name: 'Test' },
+        cart: [{
+          kind: 'catalog', productKey: 'living-practice', label: 'Living Practice',
+          ghlProductId: '6998d7f2606fa79c54fa3ff5', fulfillmentPolicy: 'living-practice-access',
+          quantity: 1, unitAmountCents: 34700, lineTotalCents: 34700,
+        }],
+        fulfillment: {
+          adapter: 'ghl_invoice', stage: 'verification_pending',
+          invoice: { id: 'inv-pos-living', status: 'paid' },
+        },
+        version: 2, audit: [],
+      },
+    });
+
+    const res = await onRequestPost(ctx);
+
+    expect(res.status).toBe(200);
+    expect(JSON.parse(putToContact().opts.body).customFields).toEqual([
+      { id: FIELD.portalAccess, field_value: true },
+      { id: FIELD.livingPractice, field_value: true },
+    ]);
+    expect(await res.json()).toMatchObject({ posSaleId: 'pos_livingaccess1', posFulfilled: true });
+    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith(
+      'staff-pos:sale:pos_livingaccess1',
+      expect.stringContaining('"type":"living_practice_access"'),
+    );
   });
 
   it('no series/upgrade invoice → 200 no-op, no contact PUT', async () => {

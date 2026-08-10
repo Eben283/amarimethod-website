@@ -8,17 +8,17 @@ const MAX_CUSTOM_LABEL = 120;
 const MAX_LEGS = 6;
 
 export const POS_CATALOG = Object.freeze({
-  "amari-assessment": { label: "Amari Assessment ($29)", amountCents: 2900, ghlProductId: "6a66cf0103821ea09ea13f1b" },
+  "amari-assessment": { label: "Amari Assessment ($29)", amountCents: 2900, ghlProductId: "6a66cf0103821ea09ea13f1b", fulfillmentPolicy: "none" },
   "4-session-series": { label: "4-Session Series", amountCents: 72000, ghlProductId: "69986faa724ecd2343ebaa6e" },
   "8-session-series": { label: "8-Session Series", amountCents: 129500, ghlProductId: "69987357c839790426996114" },
   "12-week-practice": { label: "The 12-Week Amari Practice ($5,400)", amountCents: 540000, ghlProductId: "6a66cde7ef7b07f122ad46fb" },
   "6-week-practice": { label: "The 6-Week Amari Practice ($3,000)", amountCents: 300000, ghlProductId: "6a683360017263178d05d1a3" },
   "upgrade-4-to-8": { label: "Upgrade: 4-Session → 8-Session", amountCents: 57500, ghlProductId: "6a010952e41b442c862d3c01" },
   "entrainment": { label: "Entrainment", amountCents: 9000, ghlProductId: "69c5d29c4019ce8e80e2513b" },
-  "entrainment-20": { label: "Entrainment — 20 Minutes", amountCents: 9000, ghlProductId: "6a734f0cecc97342c37bdbbb" },
-  "living-practice": { label: "Living Practice", amountCents: 34700, ghlProductId: "6998d7f2606fa79c54fa3ff5" },
+  "entrainment-20": { label: "Entrainment — 20 Minutes", amountCents: 9000, ghlProductId: "6a734f0cecc97342c37bdbbb", fulfillmentPolicy: "none" },
+  "living-practice": { label: "Living Practice", amountCents: 34700, ghlProductId: "6998d7f2606fa79c54fa3ff5", fulfillmentPolicy: "living-practice-access" },
   "follow-up": { label: "Single Follow-up Session", amountCents: 19000, ghlProductId: "6998ace59dfde469ecb2aab6" },
-  "single-session": { label: "Single Session (50 min)", amountCents: 28500, ghlProductId: "6a6b8bb7a1753b65945372f1" },
+  "single-session": { label: "Single Session (50 min)", amountCents: 28500, ghlProductId: "6a6b8bb7a1753b65945372f1", fulfillmentPolicy: "session-credit" },
 });
 
 export const POS_PAYMENT_METHODS = Object.freeze(["saved-card", "manual-card", "hsa-card", "checkout-link", "cash", "other"]);

@@ -29,14 +29,21 @@ describe("staff POS model", () => {
     expect(POS_CATALOG["amari-assessment"]).toMatchObject({
       amountCents: 2900,
       ghlProductId: "6a66cf0103821ea09ea13f1b",
+      fulfillmentPolicy: "none",
     });
     expect(POS_CATALOG["single-session"]).toMatchObject({
       amountCents: 28500,
       ghlProductId: "6a6b8bb7a1753b65945372f1",
+      fulfillmentPolicy: "session-credit",
     });
     expect(POS_CATALOG["entrainment-20"]).toMatchObject({
       amountCents: 9000,
       ghlProductId: "6a734f0cecc97342c37bdbbb",
+      fulfillmentPolicy: "none",
+    });
+    expect(POS_CATALOG["living-practice"]).toMatchObject({
+      amountCents: 34700,
+      fulfillmentPolicy: "living-practice-access",
     });
     expect(POS_CATALOG["initial-in-person"]).toBeUndefined();
     expect(POS_CATALOG["initial-virtual"]).toBeUndefined();
@@ -49,6 +56,7 @@ describe("staff POS model", () => {
         unitAmountCents: 2900,
         lineTotalCents: 2900,
         ghlProductId: "6a66cf0103821ea09ea13f1b",
+        fulfillmentPolicy: "none",
       }),
     ]);
     expect(normalizeCart([{ productKey: "single-session", quantity: 1 }])).toEqual([
@@ -58,6 +66,7 @@ describe("staff POS model", () => {
         unitAmountCents: 28500,
         lineTotalCents: 28500,
         ghlProductId: "6a6b8bb7a1753b65945372f1",
+        fulfillmentPolicy: "session-credit",
       }),
     ]);
     expect(() => normalizeCart([{ productKey: "8-session-series", quantity: 1, amountCents: 1 }])).toThrow("Unknown cart field");

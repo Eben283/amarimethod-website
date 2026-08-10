@@ -34,22 +34,56 @@ export function completeVerifiedPosSale(sale, { invoice, pkg, contact, actor = "
   const checkpointId = sale.fulfillment?.invoice?.id || sale.fulfillment?.invoiceId || null;
   if (checkpointId !== invoice.id) throw new Error("GHL invoice does not match the POS checkpoint");
   const support = assessPosInvoiceSupport(sale.cart);
-  if (!support.supported || support.effect !== "package" || !support.packageProductId) {
-    throw new Error("POS sale is not a supported package fulfillment");
-  }
-  const product = GHL_PRODUCTS[support.packageProductId];
+  const productId = support.packageProductId || support.productId || null;
+  if (!support.supported || !productId) throw new Error("POS sale is not a supported fulfillment");
+  const product = GHL_PRODUCTS[productId];
   if (!product || product.classification !== pkg?.classification) {
-    throw new Error("GHL invoice package does not match the POS cart");
+    throw new Error("GHL invoice product does not match the POS cart");
   }
   const remaining = Number(contactField(contact, GHL_FIELD_IDS.sessions_remaining));
   const seriesType = String(contactField(contact, GHL_FIELD_IDS.series_type) || "");
   const portalAccess = contactField(contact, GHL_FIELD_IDS.portal_access);
   const livingPractice = contactField(contact, GHL_FIELD_IDS.living_practice_access);
-  if (remaining !== Number(pkg.sessionsRemaining) || seriesType !== pkg.seriesType || !checkedField(portalAccess)) {
-    throw new Error("GHL package fields do not match the paid POS invoice");
-  }
-  if (pkg.livingPractice && !checkedField(livingPractice)) {
-    throw new Error("GHL Living Practice access was not verified");
+  let verifiedEffect;
+  if (support.effect === "package") {
+    if (remaining !== Number(pkg.sessionsRemaining) || seriesType !== pkg.seriesType || !checkedField(portalAccess)) {
+      throw new Error("GHL package fields do not match the paid POS invoice");
+    }
+    if (pkg.livingPractice && !checkedField(livingPractice)) {
+      throw new Error("GHL Living Practice access was not verified");
+    }
+    verifiedEffect = {
+      classification: pkg.classification,
+      seriesType: pkg.seriesType,
+      sessionsRemaining: pkg.sessionsRemaining,
+      portalAccess: true,
+      livingPractice: !!pkg.livingPractice,
+    };
+  } else if (support.effect === "session_credit") {
+    const target = Number(sale.fulfillment?.effectTarget?.sessionsRemaining);
+    if (!Number.isSafeInteger(target) || target < 1 || Number(pkg.sessionsRemaining) !== target) {
+      throw new Error("Single Session target was not checkpointed before fulfillment");
+    }
+    if (remaining !== target || !checkedField(portalAccess)) {
+      throw new Error("GHL Single Session credit was not verified");
+    }
+    verifiedEffect = {
+      type: "session_credit",
+      sessionsAdded: support.sessionCredits,
+      sessionsRemaining: target,
+      portalAccess: true,
+    };
+  } else if (support.effect === "living_practice_access") {
+    if (!checkedField(portalAccess) || !checkedField(livingPractice)) {
+      throw new Error("GHL Living Practice access was not verified");
+    }
+    verifiedEffect = {
+      type: "living_practice_access",
+      portalAccess: true,
+      livingPractice: true,
+    };
+  } else {
+    throw new Error("POS sale fulfillment effect is not verifiable");
   }
 
   const at = now || new Date().toISOString();
@@ -69,13 +103,7 @@ export function completeVerifiedPosSale(sale, { invoice, pkg, contact, actor = "
         status: "paid",
         amountPaid: invoice.amountPaid,
       },
-      verifiedEffect: {
-        classification: pkg.classification,
-        seriesType: pkg.seriesType,
-        sessionsRemaining: pkg.sessionsRemaining,
-        portalAccess: true,
-        livingPractice: !!pkg.livingPractice,
-      },
+      verifiedEffect,
       verifiedAt: at,
     },
     updatedAt: at,
@@ -86,7 +114,7 @@ export function completeVerifiedPosSale(sale, { invoice, pkg, contact, actor = "
         at,
         actor,
         action: "ghl_invoice_fulfillment_verified",
-        detail: `GHL invoice ${invoice.id} and package fields verified.`,
+        detail: `GHL invoice ${invoice.id} and ${support.effect} effect verified.`,
       },
     ],
   };

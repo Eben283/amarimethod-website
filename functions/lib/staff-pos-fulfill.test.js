@@ -186,11 +186,11 @@ describe("staff POS fulfillment claims", () => {
       client: { id: "contact_claimheld1" },
       cart: [{
         kind: "catalog",
-        label: "Amari Assessment",
-        ghlProductId: "6a66cf0103821ea09ea13f1b",
+        label: "4-Session Series",
+        ghlProductId: "69986faa724ecd2343ebaa6e",
         quantity: 1,
-        unitAmountCents: 2900,
-        lineTotalCents: 2900,
+        unitAmountCents: 72000,
+        lineTotalCents: 72000,
       }],
       paymentLegs: [],
     };
@@ -234,13 +234,13 @@ describe("staff POS fulfillment claims", () => {
       client: { id: "contact_retryable1" },
       cart: [{
         kind: "catalog",
-        label: "Amari Assessment",
-        ghlProductId: "6a66cf0103821ea09ea13f1b",
+        label: "4-Session Series",
+        ghlProductId: "69986faa724ecd2343ebaa6e",
         quantity: 1,
-        unitAmountCents: 2900,
-        lineTotalCents: 2900,
+        unitAmountCents: 72000,
+        lineTotalCents: 72000,
       }],
-      totalCents: 2900,
+      totalCents: 72000,
       paymentLegs: [],
       version: 1,
       audit: [],
@@ -335,5 +335,87 @@ describe("completeVerifiedPosSale", () => {
       invoice: { id: "invoice-verified1" }, pkg,
       contact: { customFields: [] },
     })).toThrow(/fields do not match/i);
+  });
+
+  it("verifies the exact additive Single Session target without replacing an existing series", () => {
+    const singleSale = {
+      ...sale,
+      id: "pos_verifiedsingle1",
+      cart: [{
+        kind: "catalog",
+        productKey: "single-session",
+        label: "Single Session",
+        ghlProductId: "6a6b8bb7a1753b65945372f1",
+        fulfillmentPolicy: "session-credit",
+        quantity: 1,
+        unitAmountCents: 28500,
+        lineTotalCents: 28500,
+      }],
+      fulfillment: {
+        adapter: "ghl_invoice",
+        stage: "effect_target_checkpointed",
+        invoice: { id: "invoice-single1", status: "paid" },
+        effectTarget: { type: "session_credit", sessionsRemaining: 3 },
+      },
+    };
+    const contact = {
+      customFields: [
+        { id: "wrQSkx6BhXwDGIn1d0V4", value: "3" },
+        { id: "3i93lTkmuAV49s9nh0q8", value: "12-week" },
+        { id: "O0xmwyRqeNK2EA1GGGye", value: true },
+      ],
+    };
+
+    expect(completeVerifiedPosSale(singleSale, {
+      invoice: { id: "invoice-single1", amountPaid: 285 },
+      pkg: { name: "Single Session", classification: "followup", effect: "session_credit", sessionsRemaining: 3 },
+      contact,
+    })).toMatchObject({
+      fulfillmentStatus: "fulfilled",
+      fulfillment: {
+        stage: "verified",
+        verifiedEffect: { type: "session_credit", sessionsAdded: 1, sessionsRemaining: 3 },
+      },
+    });
+  });
+
+  it("verifies standalone Living Practice access without changing the session balance", () => {
+    const accessSale = {
+      ...sale,
+      id: "pos_verifiedliving1",
+      cart: [{
+        kind: "catalog",
+        productKey: "living-practice",
+        label: "Living Practice",
+        ghlProductId: "6998d7f2606fa79c54fa3ff5",
+        fulfillmentPolicy: "living-practice-access",
+        quantity: 1,
+        unitAmountCents: 34700,
+        lineTotalCents: 34700,
+      }],
+      fulfillment: {
+        adapter: "ghl_invoice",
+        stage: "verification_pending",
+        invoice: { id: "invoice-living1", status: "paid" },
+      },
+    };
+    const contact = {
+      customFields: [
+        { id: "O0xmwyRqeNK2EA1GGGye", value: true },
+        { id: "1EnVtI70jC5MTshZjWvw", value: true },
+      ],
+    };
+
+    expect(completeVerifiedPosSale(accessSale, {
+      invoice: { id: "invoice-living1", amountPaid: 347 },
+      pkg: { name: "Living Practice", classification: "living-practice", effect: "living_practice_access" },
+      contact,
+    })).toMatchObject({
+      fulfillmentStatus: "fulfilled",
+      fulfillment: {
+        stage: "verified",
+        verifiedEffect: { type: "living_practice_access", portalAccess: true, livingPractice: true },
+      },
+    });
   });
 });
