@@ -306,3 +306,122 @@ export async function manageAppointmentCommand(input) {
     throw error;
   }
 }
+
+/**
+ * Staff-owned creation path for a new appointment. The selected service is
+ * resolved server-side before this interface is called; callers never supply a
+ * provider calendar, title, duration, or status. The same internal availability
+ * calculation used by rescheduling is rechecked immediately before creation.
+ */
+export async function scheduleAppointmentCommand(input) {
+  const actor = clean(input?.actor, 40);
+  const contactId = clean(input?.contactId, 100);
+  const sessionType = clean(input?.sessionType, 64);
+  const idempotencyKey = clean(input?.idempotencyKey, 160);
+  const startTime = clean(input?.startTime, 100);
+  const timezone = clean(input?.timezone, 100) || WORK_HOURS.timezone;
+  const booking = input?.booking || null;
+  const store = input?.store;
+  const provider = input?.provider;
+  const now = Number(input?.now ?? Date.now());
+
+  if (!new Set(["Eben", "Garrett"]).has(actor)) throw new TypeError("recognized Staff actor required");
+  if (!contactId || !sessionType || !idempotencyKey) throw new TypeError("complete schedule command identity required");
+  if (!booking || !policyForCalendarId(booking.calendarId) || !clean(booking.title, 240)) {
+    throw new TypeError("server-owned booking definition required");
+  }
+  if (!store || !provider) throw new TypeError("schedule command dependencies required");
+
+  const claim = await store.claim({ actor, contactId, sessionType, startTime, idempotencyKey, booking });
+  if (claim.state === "completed") return claim.operation.result;
+  if (claim.state !== "acquired") {
+    const error = new Error(claim.state === "conflict" ? "That action key belongs to another request." : "That appointment is already being scheduled.");
+    error.code = claim.state;
+    throw error;
+  }
+
+  try {
+    const dateMatch = /^(\d{4}-\d{2}-\d{2})T/.exec(startTime);
+    const startsAt = Date.parse(startTime);
+    if (!dateMatch || !Number.isFinite(startsAt) || startsAt <= now || startsAt > now + 33 * DAY_MS) {
+      throw Object.assign(new Error("Choose a valid internal time for this appointment."), { code: "invalid_schedule_time" });
+    }
+
+    if (claim.operation.appointmentId) {
+      const existing = (await provider.listContactAppointments(contactId))
+        .find((appointment) => String(appointment?.id || "") === String(claim.operation.appointmentId)) || null;
+      if (!existing || !MANAGEABLE_STATUSES.has(normalizeStatus(existing))) {
+        throw Object.assign(new Error("The created appointment needs manual review."), {
+          code: "scheduled_appointment_unavailable",
+          manualReview: true,
+        });
+      }
+      const result = {
+        status: "completed", action: "schedule", actor, contactId,
+        appointmentId: String(existing.id), newStartTime: existing.startTime || existing.start_time,
+        appointmentStatus: normalizeStatus(existing), reminderVerification: "pending_event_evidence",
+      };
+      await store.complete(result);
+      return result;
+    }
+
+    const schedule = await provider.listSchedule(
+      Date.parse(`${dateMatch[1]}T00:00:00-08:00`) - 12 * 60 * 60 * 1000,
+      Date.parse(`${dateMatch[1]}T23:59:59-07:00`) + 12 * 60 * 60 * 1000,
+    );
+    const available = internalAvailability({
+      calendarId: booking.calendarId,
+      startDate: dateMatch[1],
+      endDate: dateMatch[1],
+      events: schedule,
+      now,
+    });
+    if (!available.some((slot) => slot.datetime === startTime)) {
+      throw Object.assign(new Error("That time is no longer open on Garrett’s schedule."), { code: "slot_unavailable" });
+    }
+
+    let created;
+    let checkpointedAppointmentId = null;
+    try {
+      created = await provider.createAppointment({
+        contactId,
+        booking,
+        startTime,
+        timezone,
+        onCreated: async (appointmentId) => {
+          await store.checkpointAppointment(String(appointmentId));
+          checkpointedAppointmentId = String(appointmentId);
+        },
+      });
+    } catch (createError) {
+      const cleanupSucceeded = Number(createError?.cleanupStatus) >= 200 && Number(createError?.cleanupStatus) < 300;
+      if (checkpointedAppointmentId && cleanupSucceeded) {
+        await store.clearAppointment?.(checkpointedAppointmentId);
+      } else if ((createError?.phase === "create" && !createError?.appointmentId) ||
+                 (createError?.appointmentId && !cleanupSucceeded)) {
+        createError.manualReview = true;
+        createError.code = createError.code || "schedule_create_unverified";
+      }
+      throw createError;
+    }
+    if (!created?.id) {
+      throw Object.assign(new Error("The calendar did not return the new appointment."), { code: "schedule_missing", manualReview: true });
+    }
+
+    const readback = (await provider.listContactAppointments(contactId))
+      .find((appointment) => String(appointment?.id || "") === String(created.id)) || null;
+    if (!readback || !MANAGEABLE_STATUSES.has(normalizeStatus(readback))) {
+      throw Object.assign(new Error("The new appointment was not confirmed by the calendar."), { code: "schedule_not_confirmed", manualReview: true });
+    }
+    const result = {
+      status: "completed", action: "schedule", actor, contactId,
+      appointmentId: String(created.id), newStartTime: startTime,
+      appointmentStatus: normalizeStatus(readback), reminderVerification: "pending_event_evidence",
+    };
+    await store.complete(result);
+    return result;
+  } catch (error) {
+    await store.fail(error, { manualReview: !!error?.manualReview });
+    throw error;
+  }
+}

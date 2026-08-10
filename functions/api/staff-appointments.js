@@ -1,6 +1,6 @@
-// Staff appointment management: internal availability, cancellation, and
-// rescheduling. Provider identity/status/calendar fields are always derived
-// server-side from the exact appointment owned by the selected contact.
+// Staff appointment management: internal availability, new scheduling,
+// rescheduling, and cancellation. Provider identity/status/calendar fields are
+// always derived server-side from the governed service or exact appointment.
 
 import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-guards.js";
 import { ghlFetch } from "../lib/ghl.js";
@@ -9,7 +9,15 @@ import { fetchGarrettScheduleEvents } from "../lib/app-owned-buffer.js";
 import { policyForCalendarId, WORK_HOURS } from "../lib/booking-slot-policy.js";
 import { createConfirmedAppointment } from "../lib/ghl-appointment-handoff.js";
 import { createAppointmentCommandStore } from "../lib/appointment-command-store.js";
-import { internalAvailability, manageAppointmentCommand } from "../lib/staff-appointment-manage.js";
+import {
+  claimBookingOperation,
+  checkpointBookingAppointment,
+  clearBookingAppointmentCheckpoint,
+  completeBookingOperation,
+  failBookingOperation,
+} from "../lib/booking-operations.js";
+import { listStaffBookTypes, resolveStaffBookType } from "../lib/staff-book-calendars.js";
+import { internalAvailability, manageAppointmentCommand, scheduleAppointmentCommand } from "../lib/staff-appointment-manage.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 
@@ -62,6 +70,36 @@ function providerFor(context, authoritativeContactId) {
     listContactAppointments: (contactId) => listAppointments(context, contactId),
     listSchedule: (start, end) => fetchGarrettScheduleEvents(context, start, end),
     cancelAppointment: (appointment) => cancelProviderAppointment(context, appointment),
+    async createAppointment({ contactId: requestedContactId, booking, startTime, timezone, onCreated }) {
+      const contactId = clean(authoritativeContactId || requestedContactId, 100);
+      if (!contactId || !booking || !policyForCalendarId(booking.calendarId)) {
+        throw new Error("The appointment is missing governed calendar identity.");
+      }
+      const contactResponse = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
+      if (!contactResponse.ok) throw new Error("Could not load the person for this appointment.");
+      const contactData = await contactResponse.json();
+      const contact = contactData.contact || contactData;
+      return createConfirmedAppointment({
+        endpoint: `${BASE}/calendars/events/appointments`,
+        request: (url, options) => ghlFetch(context, url, options),
+        onCreated,
+        payload: {
+          calendarId: booking.calendarId,
+          locationId: LOCATION_ID,
+          contactId,
+          startTime,
+          endTime: appointmentEndTime(startTime, booking.durationMinutes),
+          selectedTimezone: timezone || WORK_HOURS.timezone,
+          title: booking.title,
+          toNotify: true,
+          ignoreDateRange: false,
+          firstName: contact.firstName || contact.first_name || "",
+          lastName: contact.lastName || contact.last_name || "",
+          email: contact.email || "",
+          phone: contact.phone || "",
+        },
+      });
+    },
     async createReplacement({ original, startTime, timezone, onCreated }) {
       const contactId = clean(authoritativeContactId, 100);
       const calendarId = clean(original?.calendarId || original?.calendar_id, 100);
@@ -96,6 +134,23 @@ function providerFor(context, authoritativeContactId) {
   });
 }
 
+function scheduleStore(db, { actor, contactId, sessionType, idempotencyKey, startTime, booking }) {
+  const opKey = `staff-schedule:${actor.toLowerCase()}:${idempotencyKey}`;
+  return Object.freeze({
+    claim: () => claimBookingOperation(db, {
+      opKey,
+      kind: `staff_schedule:${sessionType}`,
+      contactId,
+      calendarId: booking.calendarId,
+      startTime,
+    }),
+    checkpointAppointment: (appointmentId) => checkpointBookingAppointment(db, opKey, appointmentId),
+    clearAppointment: (appointmentId) => clearBookingAppointmentCheckpoint(db, opKey, appointmentId),
+    complete: (result) => completeBookingOperation(db, opKey, result),
+    fail: (error, options) => failBookingOperation(db, opKey, error?.message || error, options),
+  });
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), METHODS) });
 }
@@ -120,31 +175,43 @@ export async function onRequestPost(context) {
   const action = clean(body.action, 30);
   const contactId = clean(body.contactId, 100);
   const appointmentId = clean(body.appointmentId, 100);
-  if (!contactId || !appointmentId) return json({ error: "Choose a person and appointment." }, 400, headers);
+
+  if (action === "list-types") return json({ types: listStaffBookTypes() }, 200, headers);
 
   if (action === "availability") {
     const startDate = clean(body.startDate, 10);
     const endDate = clean(body.endDate, 10);
     if (!validDate(startDate) || !validDate(endDate)) return json({ error: "Choose a valid date range." }, 400, headers);
     try {
-      const appointments = await listAppointments(context, contactId);
-      const original = exactAppointment(appointments, appointmentId);
-      if (!original) return json({ error: "Appointment not found for this person." }, 404, headers);
-      if (!["new", "confirmed"].includes(appointmentStatus(original))) {
-        return json({ error: `This appointment is already ${appointmentStatus(original) || "not manageable"}.` }, 409, headers);
+      let original = null;
+      let booking = null;
+      let calendarId = "";
+      if (appointmentId) {
+        if (!contactId) return json({ error: "Choose a person and appointment." }, 400, headers);
+        const appointments = await listAppointments(context, contactId);
+        original = exactAppointment(appointments, appointmentId);
+        if (!original) return json({ error: "Appointment not found for this person." }, 404, headers);
+        if (!["new", "confirmed"].includes(appointmentStatus(original))) {
+          return json({ error: `This appointment is already ${appointmentStatus(original) || "not manageable"}.` }, 409, headers);
+        }
+        calendarId = clean(original.calendarId || original.calendar_id, 100);
+      } else {
+        booking = resolveStaffBookType(clean(body.sessionType, 64));
+        if (!booking) return json({ error: "Choose an appointment type." }, 400, headers);
+        calendarId = booking.calendarId;
       }
-      const calendarId = clean(original.calendarId || original.calendar_id, 100);
-      if (!policyForCalendarId(calendarId)) return json({ error: "This calendar is not yet governed for Staff rescheduling." }, 409, headers);
+      if (!policyForCalendarId(calendarId)) return json({ error: "This calendar is not yet governed for Staff scheduling." }, 409, headers);
       const start = Date.parse(normalizeGhlTimestamp(`${startDate}T00:00:00`));
       const end = Date.parse(normalizeGhlTimestamp(`${endDate}T23:59:59`));
       const events = await fetchGarrettScheduleEvents(context, start, end);
       return json({
-        appointment: {
+        appointment: original ? {
           id: original.id,
           title: original.title || "Session",
           startTime: original.startTime || original.start_time,
           calendarName: original.calendarName || "",
-        },
+        } : null,
+        service: booking ? { id: clean(body.sessionType, 64), label: booking.label, durationMinutes: booking.durationMinutes } : null,
         slots: internalAvailability({ calendarId, startDate, endDate, events, excludeAppointmentId: appointmentId }),
         timezone: WORK_HOURS.timezone,
         source: "garrett_internal_schedule",
@@ -157,6 +224,50 @@ export async function onRequestPost(context) {
     }
   }
 
+  if (action === "schedule") {
+    const sessionType = clean(body.sessionType, 64);
+    const booking = resolveStaffBookType(sessionType);
+    const idempotencyKey = clean(body.idempotencyKey, 160);
+    const startTime = clean(body.startTime, 100);
+    if (!contactId) return json({ error: "Choose a person." }, 400, headers);
+    if (!booking) return json({ error: "Choose an appointment type." }, 400, headers);
+    if (idempotencyKey.length < 8) return json({ error: "A valid action key is required." }, 400, headers);
+    if (!startTime) return json({ error: "Choose a time." }, 400, headers);
+    if (!context.env.ATTEND_DB) return json({ error: "Appointment scheduling is temporarily unavailable; no calendar change was made." }, 500, headers);
+    try {
+      const result = await scheduleAppointmentCommand({
+        actor,
+        contactId,
+        sessionType,
+        booking,
+        idempotencyKey,
+        startTime,
+        timezone: WORK_HOURS.timezone,
+        store: scheduleStore(context.env.ATTEND_DB, { actor, contactId, sessionType, idempotencyKey, startTime, booking }),
+        provider: providerFor(context, contactId),
+      });
+      context.waitUntil?.(emitPathHop(context.env, {
+        pathId: "staff_appointment_manage",
+        hopId: "schedule",
+        outcome: "ok",
+        summary: "Staff scheduled appointment",
+        source: "staff-appointments",
+        contactId,
+        correlationId: idempotencyKey,
+      }));
+      return json(result, 200, headers);
+    } catch (error) {
+      console.error("[staff-appointments] schedule failed", error);
+      context.waitUntil?.(recordOpsError(context.env, "staff-appointments", "Staff appointment schedule failed", {
+        actor, action, contactId, sessionType, code: error?.code || "unknown",
+      }));
+      const status = ["in_progress", "conflict", "slot_unavailable"].includes(error?.code) ? 409
+        : error?.manualReview ? 409 : 422;
+      return json({ error: error?.message || "Appointment scheduling failed.", code: error?.code || "appointment_schedule_failed" }, status, headers);
+    }
+  }
+
+  if (!contactId || !appointmentId) return json({ error: "Choose a person and appointment." }, 400, headers);
   if (!["cancel", "reschedule"].includes(action)) return json({ error: "Choose cancel or reschedule." }, 400, headers);
   const idempotencyKey = clean(body.idempotencyKey, 160);
   if (idempotencyKey.length < 8) return json({ error: "A valid action key is required." }, 400, headers);

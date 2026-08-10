@@ -29,12 +29,37 @@
 
 .staff-calendar-page__head p { margin: 0; color: var(--staff-muted); font-size: 14px; }
 
+.staff-calendar-page__schedule {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 18px;
+  border: 1px solid #0b6266;
+  border-radius: 0;
+  background: #0b6266;
+  color: #fffefa;
+  font-weight: 750;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.staff-calendar-page__schedule svg { width: 18px; height: 18px; }
+.staff-calendar-page__schedule:hover { background: #084f53; }
+.staff-calendar-page__schedule:focus-visible { outline: 3px solid #dc9d2d; outline-offset: 3px; }
+
 .staff-calendar-page__sections {
   display: flex;
   gap: 4px;
   margin: 0 0 19px;
   padding-bottom: 8px;
   border-bottom: 1px solid var(--staff-line);
+}
+
+@media (max-width: 640px) {
+  .staff-calendar-page__head { align-items: stretch; flex-direction: column; }
+  .staff-calendar-page__schedule { width: 100%; }
 }
 
 .staff-calendar-page__sections button {

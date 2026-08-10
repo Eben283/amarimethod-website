@@ -137,7 +137,8 @@ export interface StaffAppointmentSlot {
 }
 
 export interface StaffAppointmentAvailability {
-  appointment: { id: string; title: string; startTime: string; calendarName: string };
+  appointment: { id: string; title: string; startTime: string; calendarName: string } | null;
+  service?: { id: string; label: string; durationMinutes: number } | null;
   slots: StaffAppointmentSlot[];
   timezone: string;
   source: 'garrett_internal_schedule';
@@ -147,26 +148,52 @@ export interface StaffAppointmentAvailability {
 
 export interface StaffAppointmentCommandResult {
   status: 'completed';
-  action: 'cancel' | 'reschedule';
+  action: 'schedule' | 'cancel' | 'reschedule';
   actor: 'Eben' | 'Garrett';
   appointmentId: string;
   replacementAppointmentId?: string;
   contactId: string;
-  previousStartTime: string;
+  previousStartTime?: string;
   newStartTime?: string;
   appointmentStatus: string;
   reminderVerification: 'pending_event_evidence';
 }
 
 export async function getStaffAppointmentAvailability(input: {
-  contactId: string;
-  appointmentId: string;
+  contactId?: string;
+  appointmentId?: string;
+  sessionType?: string;
   startDate: string;
   endDate: string;
 }): Promise<StaffAppointmentAvailability> {
   return fetchApi('/staff-appointments', {
     method: 'POST',
     body: JSON.stringify({ action: 'availability', ...input }),
+  });
+}
+
+export interface StaffAppointmentType {
+  id: string;
+  label: string;
+  durationMinutes: number;
+}
+
+export async function getStaffAppointmentTypes(): Promise<{ types: StaffAppointmentType[] }> {
+  return fetchApi('/staff-appointments', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'list-types' }),
+  });
+}
+
+export async function scheduleStaffAppointment(input: {
+  contactId: string;
+  sessionType: string;
+  startTime: string;
+  idempotencyKey: string;
+}): Promise<StaffAppointmentCommandResult> {
+  return fetchApi('/staff-appointments', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'schedule', ...input }),
   });
 }
 

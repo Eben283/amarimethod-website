@@ -1,11 +1,16 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { CalendarClock, Check, ChevronLeft, Loader2, TriangleAlert, X } from 'lucide-react';
+import { CalendarClock, Check, ChevronLeft, Loader2, Search, TriangleAlert, UserRound, X } from 'lucide-react';
 import {
   ApiError,
   changeStaffAppointment,
   getStaffAppointmentAvailability,
+  getStaffAppointmentTypes,
+  scheduleStaffAppointment,
+  searchOwnedContacts,
+  type OwnedContactSearchItem,
   type StaffAppointmentCommandResult,
   type StaffAppointmentSlot,
+  type StaffAppointmentType,
 } from '../lib/api';
 import { AmariMonthGrid, AmariTimeSlots } from '@amari/calendar';
 import '../../../css/amari-calendar.css';
@@ -21,14 +26,24 @@ export interface ManageableAppointment {
   status: string;
 }
 
+export interface AppointmentPerson {
+  id: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  providerContactId?: string | null;
+}
+
 interface Props {
-  appointment: ManageableAppointment;
+  appointment?: ManageableAppointment;
+  person?: AppointmentPerson;
+  initialMode?: 'schedule' | 'manage';
   onClose: () => void;
   onChanged: (result: StaffAppointmentCommandResult) => void;
   onUnauthorized?: () => void;
 }
 
-type Step = 'choose' | 'reschedule' | 'cancel' | 'success';
+type Step = 'choose' | 'person' | 'service' | 'time' | 'cancel' | 'success';
 
 function pacificDate(value: Date): string {
   return value.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
@@ -40,7 +55,8 @@ function addDays(value: Date, days: number): Date {
   return next;
 }
 
-function formatDateTime(value: string): string {
+function formatDateTime(value?: string): string {
+  if (!value) return '';
   return new Date(value).toLocaleString('en-US', {
     timeZone: 'America/Los_Angeles',
     weekday: 'short', month: 'short', day: 'numeric',
@@ -60,13 +76,24 @@ function formatTime(value: string): string {
   });
 }
 
-function actionKey(appointmentId: string, action: string): string {
+function actionKey(subjectId: string, action: string): string {
   const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-  return `${action}:${appointmentId}:${id}`;
+  return `${action}:${subjectId}:${id}`;
 }
 
-export default function ManageAppointmentSheet({ appointment, onClose, onChanged, onUnauthorized }: Props) {
-  const [step, setStep] = useState<Step>('choose');
+function providerContactId(person: AppointmentPerson | null): string {
+  return person?.providerContactId || person?.id || '';
+}
+
+export default function ManageAppointmentSheet({ appointment, person, initialMode, onClose, onChanged, onUnauthorized }: Props) {
+  const scheduling = initialMode === 'schedule' || !appointment;
+  const seededPerson = person || (appointment ? { id: appointment.contactId, name: appointment.contactName } : null);
+  const [step, setStep] = useState<Step>(() => scheduling ? (seededPerson ? 'service' : 'person') : 'choose');
+  const [selectedPerson, setSelectedPerson] = useState<AppointmentPerson | null>(seededPerson);
+  const [query, setQuery] = useState('');
+  const [matches, setMatches] = useState<OwnedContactSearchItem[]>([]);
+  const [types, setTypes] = useState<StaffAppointmentType[]>([]);
+  const [selectedType, setSelectedType] = useState<StaffAppointmentType | null>(null);
   const [slots, setSlots] = useState<StaffAppointmentSlot[]>([]);
   const [selected, setSelected] = useState<StaffAppointmentSlot | null>(null);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -75,8 +102,9 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
   const [result, setResult] = useState<StaffAppointmentCommandResult | null>(null);
-  const rescheduleKey = useRef(actionKey(appointment.id, 'reschedule'));
-  const cancelKey = useRef(actionKey(appointment.id, 'cancel'));
+  const scheduleKey = useRef(actionKey('new', 'schedule'));
+  const rescheduleKey = useRef(actionKey(appointment?.id || 'new', 'reschedule'));
+  const cancelKey = useRef(actionKey(appointment?.id || 'new', 'cancel'));
   const closeRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
@@ -88,21 +116,61 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
     return () => document.removeEventListener('keydown', escape);
   }, [onClose, saving]);
 
-  async function loadAvailability() {
-    setStep('reschedule');
+  useEffect(() => {
+    if (!scheduling) return;
+    let active = true;
+    setLoading(true);
+    getStaffAppointmentTypes()
+      .then((response) => { if (active) setTypes(response.types); })
+      .catch((caught) => {
+        if (!active) return;
+        if (caught instanceof ApiError && caught.status === 401) onUnauthorized?.();
+        setError(caught instanceof Error ? caught.message : 'Appointment types could not be loaded.');
+      })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [onUnauthorized, scheduling]);
+
+  async function findPeople() {
+    const clean = query.trim();
+    if (clean.length < 2) { setError('Enter at least two characters.'); return; }
     setLoading(true);
     setError('');
+    try {
+      setMatches(await searchOwnedContacts(clean));
+    } catch (caught) {
+      if (caught instanceof ApiError && caught.status === 401) onUnauthorized?.();
+      setError(caught instanceof Error ? caught.message : 'People could not be searched.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function resetTime() {
+    setSlots([]);
     setSelected(null);
     setSelectedDate(null);
+    setCalendarCursor(new Date());
+  }
+
+  async function loadAvailability(mode: 'schedule' | 'reschedule') {
+    if (mode === 'schedule' && (!selectedPerson || !selectedType)) return;
+    if (mode === 'reschedule' && !appointment) return;
+    setStep('time');
+    setLoading(true);
+    setError('');
+    resetTime();
     const today = new Date();
     try {
       const response = await getStaffAppointmentAvailability({
-        contactId: appointment.contactId,
-        appointmentId: appointment.id,
+        contactId: mode === 'reschedule' ? appointment?.contactId : providerContactId(selectedPerson),
+        appointmentId: mode === 'reschedule' ? appointment?.id : undefined,
+        sessionType: mode === 'schedule' ? selectedType?.id : undefined,
         startDate: pacificDate(today),
         endDate: pacificDate(addDays(today, 32)),
       });
       setSlots(response.slots);
+      if (mode === 'schedule') scheduleKey.current = actionKey(providerContactId(selectedPerson), 'schedule');
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) onUnauthorized?.();
       setError(caught instanceof Error ? caught.message : 'Garrett’s availability could not be loaded.');
@@ -111,18 +179,27 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
     }
   }
 
-  async function submit(action: 'cancel' | 'reschedule') {
-    if (action === 'reschedule' && !selected) return;
+  async function submit(action: 'schedule' | 'cancel' | 'reschedule') {
+    if ((action === 'schedule' || action === 'reschedule') && !selected) return;
+    if (action === 'schedule' && (!selectedPerson || !selectedType)) return;
+    if (action !== 'schedule' && !appointment) return;
     setSaving(true);
     setError('');
     try {
-      const completed = await changeStaffAppointment({
-        action,
-        contactId: appointment.contactId,
-        appointmentId: appointment.id,
-        idempotencyKey: action === 'cancel' ? cancelKey.current : rescheduleKey.current,
-        startTime: selected?.datetime,
-      });
+      const completed = action === 'schedule'
+        ? await scheduleStaffAppointment({
+          contactId: providerContactId(selectedPerson),
+          sessionType: selectedType!.id,
+          startTime: selected!.datetime,
+          idempotencyKey: scheduleKey.current,
+        })
+        : await changeStaffAppointment({
+          action,
+          contactId: appointment!.contactId,
+          appointmentId: appointment!.id,
+          idempotencyKey: action === 'cancel' ? cancelKey.current : rescheduleKey.current,
+          startTime: selected?.datetime,
+        });
       setResult(completed);
       setStep('success');
       onChanged(completed);
@@ -141,6 +218,12 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
   const firstMonth = Number(todayYmd.slice(0, 4)) * 12 + Number(todayYmd.slice(5, 7));
   const lastMonth = Number(rangeEndYmd.slice(0, 4)) * 12 + Number(rangeEndYmd.slice(5, 7));
   const cursorMonth = calendarCursor.getFullYear() * 12 + calendarCursor.getMonth() + 1;
+  const timeMode: 'schedule' | 'reschedule' = scheduling ? 'schedule' : 'reschedule';
+
+  function backFromTime() {
+    setError('');
+    setStep(scheduling ? 'service' : 'choose');
+  }
 
   return (
     <div className="appointment-manage" role="presentation" onMouseDown={(event) => {
@@ -148,7 +231,7 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
     }}>
       <section className="appointment-manage__sheet" role="dialog" aria-modal="true" aria-labelledby="appointment-manage-title" onKeyDown={(event) => {
         if (event.key !== 'Tab') return;
-        const controls = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), textarea:not([disabled])')];
+        const controls = [...event.currentTarget.querySelectorAll<HTMLElement>('button:not([disabled]), a[href], input:not([disabled]), select:not([disabled])')];
         if (!controls.length) return;
         const first = controls[0];
         const last = controls[controls.length - 1];
@@ -157,16 +240,22 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
       }}>
         <header className="appointment-manage__head">
           <div>
-            <span>Appointment control</span>
-            <h2 id="appointment-manage-title">{step === 'success' ? 'Calendar updated' : appointment.contactName}</h2>
+            <span>Appointment manager</span>
+            <h2 id="appointment-manage-title">{step === 'success' ? 'Calendar updated' : scheduling ? 'Schedule an appointment' : appointment?.contactName}</h2>
           </div>
-          <button ref={closeRef} type="button" onClick={onClose} disabled={saving} aria-label="Close appointment control"><X /></button>
+          <button ref={closeRef} type="button" onClick={onClose} disabled={saving} aria-label="Close appointment manager"><X /></button>
         </header>
 
-        {step !== 'success' && (
+        {appointment && step !== 'success' && (
           <div className="appointment-manage__current">
             <CalendarClock aria-hidden="true" />
             <div><b>{appointment.title}</b><span>{formatDateTime(appointment.startTime)}</span></div>
+          </div>
+        )}
+        {scheduling && selectedPerson && step !== 'person' && step !== 'success' && (
+          <div className="appointment-manage__current">
+            <UserRound aria-hidden="true" />
+            <div><b>{selectedPerson.name}</b><span>{selectedPerson.email || selectedPerson.phone || 'Practice member'}</span></div>
           </div>
         )}
 
@@ -174,9 +263,9 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
 
         {step === 'choose' && (
           <div className="appointment-manage__choices">
-            <button type="button" onClick={loadAvailability}>
+            <button type="button" onClick={() => void loadAvailability('reschedule')}>
               <b>Choose a new time</b>
-              <span>See every collision-free time in Garrett’s internal schedule.</span>
+              <span>Use the same internal calendar as new scheduling.</span>
             </button>
             <button type="button" className="is-danger" onClick={() => { setError(''); setStep('cancel'); }}>
               <b>Cancel appointment</b>
@@ -185,12 +274,54 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
           </div>
         )}
 
-        {step === 'reschedule' && (
+        {step === 'person' && (
           <div className="appointment-manage__body">
-            <button type="button" className="appointment-manage__back" onClick={() => setStep('choose')} disabled={saving}><ChevronLeft />Back</button>
+            <div className="appointment-manage__scope"><b>Who is coming?</b><span>Search the owned person record before choosing the visit.</span></div>
+            <form className="appointment-manage__search" onSubmit={(event) => { event.preventDefault(); void findPeople(); }}>
+              <label><Search aria-hidden="true" /><span className="sr-only">Search people</span><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Name, email, or phone" autoFocus /></label>
+              <button type="submit" disabled={loading}>{loading ? 'Searching…' : 'Find person'}</button>
+            </form>
+            <div className="appointment-manage__people">
+              {matches.map((match) => (
+                <button key={match.id} type="button" disabled={!match.providerContactId} onClick={() => {
+                  setSelectedPerson(match);
+                  setError('');
+                  setStep('service');
+                }}>
+                  <b>{match.name}</b><span>{match.email || match.phone || 'No contact details'}</span>
+                  {!match.providerContactId && <em>Not yet connected to calendar scheduling</em>}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {step === 'service' && (
+          <div className="appointment-manage__body">
+            {!person && <button type="button" className="appointment-manage__back" onClick={() => setStep('person')}><ChevronLeft />Change person</button>}
+            <div className="appointment-manage__scope"><b>What are they booking?</b><span>The service controls duration and the existing confirmation/reminder lifecycle.</span></div>
+            {loading && types.length === 0 ? <div className="appointment-manage__loading"><Loader2 className="appointment-manage__spin" />Loading appointment types…</div> : (
+              <div className="appointment-manage__services">
+                {types.map((type) => (
+                  <button key={type.id} type="button" className={selectedType?.id === type.id ? 'is-selected' : ''} onClick={() => { setSelectedType(type); resetTime(); }}>
+                    <b>{type.label}</b><span>{type.durationMinutes} minutes</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <footer className="appointment-manage__actions">
+              <button type="button" className="secondary" onClick={onClose}>Cancel</button>
+              <button type="button" className="primary" onClick={() => void loadAvailability('schedule')} disabled={!selectedType || loading}>Choose time</button>
+            </footer>
+          </div>
+        )}
+
+        {step === 'time' && (
+          <div className="appointment-manage__body">
+            <button type="button" className="appointment-manage__back" onClick={backFromTime} disabled={saving}><ChevronLeft />Back</button>
             <div className="appointment-manage__scope">
               <b>Garrett’s internal availability</b>
-              <span>All open 15-minute starts are shown. Public booking filters are not applied.</span>
+              <span>Every collision-free 15-minute start is shown. Public booking filters are not applied.</span>
             </div>
             {loading ? (
               <div className="appointment-manage__loading"><Loader2 className="appointment-manage__spin" />Checking the real calendar…</div>
@@ -221,11 +352,12 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
               </div>
             )}
             <footer className="appointment-manage__actions">
-              <button type="button" className="secondary" onClick={onClose} disabled={saving}>Keep current time</button>
-              <button type="button" className="primary" onClick={() => submit('reschedule')} disabled={!selected || saving}>
-                {saving ? <><Loader2 className="appointment-manage__spin" />Moving…</> : 'Move appointment'}
+              <button type="button" className="secondary" onClick={onClose} disabled={saving}>{scheduling ? 'Cancel' : 'Keep current time'}</button>
+              <button type="button" className="primary" onClick={() => void submit(timeMode)} disabled={!selected || saving}>
+                {saving ? <><Loader2 className="appointment-manage__spin" />Saving…</> : scheduling ? 'Schedule appointment' : 'Move appointment'}
               </button>
             </footer>
+            <p className="appointment-manage__lifecycle">The calendar’s existing confirmation and reminder lifecycle remains responsible for what the person receives. This does not send a separate Staff reply.</p>
           </div>
         )}
 
@@ -238,7 +370,7 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
             </div>
             <footer className="appointment-manage__actions">
               <button type="button" className="secondary" onClick={onClose} disabled={saving}>Keep appointment</button>
-              <button type="button" className="danger" onClick={() => submit('cancel')} disabled={saving}>
+              <button type="button" className="danger" onClick={() => void submit('cancel')} disabled={saving}>
                 {saving ? <><Loader2 className="appointment-manage__spin" />Cancelling…</> : 'Cancel appointment'}
               </button>
             </footer>
@@ -248,10 +380,10 @@ export default function ManageAppointmentSheet({ appointment, onClose, onChanged
         {step === 'success' && result && (
           <div className="appointment-manage__success">
             <Check aria-hidden="true" />
-            <h3>{result.action === 'cancel' ? 'Appointment cancelled' : 'Appointment moved'}</h3>
+            <h3>{result.action === 'cancel' ? 'Appointment cancelled' : result.action === 'schedule' ? 'Appointment scheduled' : 'Appointment moved'}</h3>
             <p>{result.action === 'reschedule' && result.newStartTime
               ? `${formatDateTime(result.previousStartTime)} → ${formatDateTime(result.newStartTime)}`
-              : formatDateTime(result.previousStartTime)}</p>
+              : formatDateTime(result.newStartTime || result.previousStartTime)}</p>
             <span>The provider state was read back and verified. Existing reminder and cancellation lifecycle owners were left unchanged.</span>
             <button type="button" onClick={onClose}>Done</button>
           </div>
