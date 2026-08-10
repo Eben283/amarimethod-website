@@ -128,6 +128,61 @@ export async function getCalendarSummary(date: string, endDate?: string): Promis
   return fetchApi(`/staff-data?${params}`);
 }
 
+export interface StaffAppointmentSlot {
+  date: string;
+  hour: number;
+  minute: number;
+  datetime: string;
+  source: 'garrett_internal_schedule';
+}
+
+export interface StaffAppointmentAvailability {
+  appointment: { id: string; title: string; startTime: string; calendarName: string };
+  slots: StaffAppointmentSlot[];
+  timezone: string;
+  source: 'garrett_internal_schedule';
+  publicRestrictionsApplied: false;
+  guidance: string;
+}
+
+export interface StaffAppointmentCommandResult {
+  status: 'completed';
+  action: 'cancel' | 'reschedule';
+  actor: 'Eben' | 'Garrett';
+  appointmentId: string;
+  replacementAppointmentId?: string;
+  contactId: string;
+  previousStartTime: string;
+  newStartTime?: string;
+  appointmentStatus: string;
+  reminderVerification: 'pending_event_evidence';
+}
+
+export async function getStaffAppointmentAvailability(input: {
+  contactId: string;
+  appointmentId: string;
+  startDate: string;
+  endDate: string;
+}): Promise<StaffAppointmentAvailability> {
+  return fetchApi('/staff-appointments', {
+    method: 'POST',
+    body: JSON.stringify({ action: 'availability', ...input }),
+  });
+}
+
+export async function changeStaffAppointment(input: {
+  action: 'cancel' | 'reschedule';
+  contactId: string;
+  appointmentId: string;
+  idempotencyKey: string;
+  startTime?: string;
+}): Promise<StaffAppointmentCommandResult> {
+  return fetchApi('/staff-appointments', {
+    method: 'POST',
+    body: JSON.stringify(input),
+  });
+}
+
 export type StaffCalendarReadiness = 'ready' | 'attention' | 'legacy' | 'specialist';
 
 export interface StaffCalendarDefinition {

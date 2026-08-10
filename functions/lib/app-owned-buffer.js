@@ -152,7 +152,7 @@ function practitionerEventUrl(startTime, endTime) {
 }
 
 /** Load only time/status/calendar metadata needed to enforce buffers. */
-export async function fetchAppBufferEvents(context, startTime, endTime) {
+export async function fetchGarrettScheduleEvents(context, startTime, endTime) {
   const start = Number(startTime) - 2 * 60 * 60 * 1000;
   const end = Number(endTime) + 2 * 60 * 60 * 1000;
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
@@ -162,15 +162,20 @@ export async function fetchAppBufferEvents(context, startTime, endTime) {
   if (!response.ok) throw new Error(`Buffer event lookup failed (${response.status})`);
   const data = await response.json();
   const events = data.events || data.appointments || [];
-  const appCalendarIds = new Set(APP_BUFFER_CALENDAR_IDS);
   const seen = new Set();
   return events.filter((event) => {
     const id = String(event?.id || "");
-    const calendarId = String(event?.calendarId || event?.calendar_id || "");
-    if (!id || !appCalendarIds.has(calendarId) || seen.has(id)) return false;
+    if (!id || seen.has(id)) return false;
     seen.add(id);
     return true;
   });
+}
+
+/** Public/app slot paths retain only governed Amari appointment calendars. */
+export async function fetchAppBufferEvents(context, startTime, endTime) {
+  const events = await fetchGarrettScheduleEvents(context, startTime, endTime);
+  const appCalendarIds = new Set(APP_BUFFER_CALENDAR_IDS);
+  return events.filter((event) => appCalendarIds.has(String(event?.calendarId || event?.calendar_id || "")));
 }
 
 export async function assertSlotRespectsAppBuffer(context, startTime, calendarId) {

@@ -10,6 +10,7 @@ import SessionDocSheet from '../components/SessionDocSheet';
 import PayLinkSheet from '../components/PayLinkSheet';
 import MoneyMoments from '../components/MoneyMoments';
 import CalendarRegistry from '../components/CalendarRegistry';
+import ManageAppointmentSheet, { type ManageableAppointment } from '../components/ManageAppointmentSheet';
 
 type ViewMode = 'day' | 'week' | 'month';
 
@@ -60,6 +61,7 @@ export default function TodayPage() {
   const [docContactId, setDocContactId] = useState<string | null>(null);
   const [docClientName, setDocClientName] = useState('');
   const [sellContactId, setSellContactId] = useState<string | null>(null);
+  const [manageAppointment, setManageAppointment] = useState<ManageableAppointment | null>(null);
 
   // Monotonic request id shared by loadDay/loadWeek. Rapid date paging or day↔week
   // toggling fires overlapping requests; only the latest one is allowed to commit
@@ -269,6 +271,15 @@ export default function TodayPage() {
           onTapAppointment={(appt) => navigate(memberWorkspacePath(appt.contactId, 'session', appt.id))}
           onDocSession={(appt) => { setDocContactId(appt.contactId); setDocClientName(appt.contactName); }}
           onSellLink={(appt) => setSellContactId(appt.contactId)}
+          onManage={(appt) => setManageAppointment({
+            id: appt.id,
+            contactId: appt.contactId,
+            contactName: appt.contactName,
+            title: appt.title,
+            startTime: appt.startTime,
+            endTime: appt.endTime,
+            status: appt.appointmentStatus || 'confirmed',
+          })}
         />
       ) : view === 'week' ? (
         <WeekView
@@ -294,6 +305,14 @@ export default function TodayPage() {
         <PayLinkSheet
           contactId={sellContactId}
           onClose={() => setSellContactId(null)}
+        />
+      )}
+      {manageAppointment && (
+        <ManageAppointmentSheet
+          appointment={manageAppointment}
+          onClose={() => setManageAppointment(null)}
+          onChanged={reloadSelectedDate}
+          onUnauthorized={logout}
         />
       )}
       </>}
@@ -357,12 +376,13 @@ function isSellMoment(appt: TodayAppointment): boolean {
     && appt.seriesType !== 'none';
 }
 
-function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLink }: {
+function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLink, onManage }: {
   appointments: TodayAppointment[];
   date: Date;
   onTapAppointment: (appt: TodayAppointment) => void;
   onDocSession: (appt: TodayAppointment) => void;
   onSellLink: (appt: TodayAppointment) => void;
+  onManage: (appt: TodayAppointment) => void;
 }) {
   if (appointments.length === 0) {
     return (
@@ -478,6 +498,9 @@ function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLin
             onTap={() => onTapAppointment(appt)}
             onDocSession={() => onDocSession(appt)}
             onSellLink={isSellMoment(appt) ? () => onSellLink(appt) : undefined}
+            onManage={new Date(appt.startTime) > new Date() && ['new', 'confirmed', ''].includes(appt.appointmentStatus || '')
+              ? () => onManage(appt)
+              : undefined}
           />
         ))}
       </div>

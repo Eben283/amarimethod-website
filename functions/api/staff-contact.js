@@ -93,6 +93,7 @@ export async function onRequestGet(context) {
           const pay = paymentRecords[a.id] || null;
           return {
             id: a.id,
+            calendarId: a.calendarId || a.calendar_id || "",
             title: a.title || a.calendarName || "Session",
             calendarName: calendarMap[a.calendarId] || a.calendarName || "",
             startTime: a.startTime || a.start_time,

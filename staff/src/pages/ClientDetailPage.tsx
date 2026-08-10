@@ -17,6 +17,7 @@ import AddNoteModal from '../components/AddNoteModal';
 import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
 import LedgerWarning from '../components/LedgerWarning';
+import ManageAppointmentSheet, { type ManageableAppointment } from '../components/ManageAppointmentSheet';
 import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
@@ -97,6 +98,7 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
   const [editingNote, setEditingNote] = useState<ContactNote | null>(null);
   const [markingAttended, setMarkingAttended] = useState<string | null>(null);
   const [attendedError, setAttendedError] = useState('');
+  const [manageAppointment, setManageAppointment] = useState<ManageableAppointment | null>(null);
   // Per-session payment capture: which appointment's "how was this paid?"
   // chooser is open, and the comp-note draft for it.
   const [payingApptId, setPayingApptId] = useState<string | null>(null);
@@ -905,6 +907,7 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
                 // Gifted partner sessions are always comp — one-tap mark, no "how was this paid?".
                 const isGift = /partner initial/i.test(appt.calendarName || '') || /partner initial/i.test(appt.title || '');
                 const choosing = payingApptId === appt.id;
+                const canManage = !isPast && (appt.status === 'new' || appt.status === 'confirmed');
                 return (
                   <div key={appt.id}>
                     <div className={`sa-appt-row${isPast && !canMark && !isAttended ? ' is-dim' : ''}`}>
@@ -920,28 +923,45 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
                           </span>
                         )}
                       </div>
-                      {isAttended ? (
-                        <button className="sa-att is-on" disabled><span>Attended</span><span className="sw" /></button>
-                      ) : canMark ? (
-                        <button
-                          className="sa-att"
-                          onClick={() => {
-                            // One clean tap when there's no payment decision: package-covered
-                            // (backend auto-records on-package) and gifted partner sessions (always comp).
-                            // Only pay-as-you-go opens the "how was this paid?" step.
-                            if (packageCovers) handleMarkAttended(appt);
-                            else if (isGift) handleMarkAttended(appt, { paymentStatus: 'comped', compNote: 'Partner gift' });
-                            else { setPayingApptId(appt.id); setCompNoteDraft(''); }
-                          }}
-                          disabled={isMarking}
-                        >
-                          <span>{isMarking ? 'Marking…' : 'Mark'}</span><span className="sw" />
-                        </button>
-                      ) : appt.status === 'cancelled' ? (
-                        <span className="sa-status-pill is-cancel">Cancelled</span>
-                      ) : (
-                        <span className="sa-conf">{appt.status === 'confirmed' || !isPast ? 'Confirmed' : appt.status}</span>
-                      )}
+                      <div className="sa-appt-actions">
+                        {canManage && (
+                          <button
+                            type="button"
+                            className="sa-manage-appt"
+                            onClick={() => setManageAppointment({
+                              id: appt.id,
+                              contactId: client.id,
+                              contactName: fullName,
+                              title: appt.title,
+                              startTime: appt.startTime,
+                              endTime: appt.endTime,
+                              status: appt.status,
+                            })}
+                          >Reschedule or cancel</button>
+                        )}
+                        {isAttended ? (
+                          <button className="sa-att is-on" disabled><span>Attended</span><span className="sw" /></button>
+                        ) : canMark ? (
+                          <button
+                            className="sa-att"
+                            onClick={() => {
+                              // One clean tap when there's no payment decision: package-covered
+                              // (backend auto-records on-package) and gifted partner sessions (always comp).
+                              // Only pay-as-you-go opens the "how was this paid?" step.
+                              if (packageCovers) handleMarkAttended(appt);
+                              else if (isGift) handleMarkAttended(appt, { paymentStatus: 'comped', compNote: 'Partner gift' });
+                              else { setPayingApptId(appt.id); setCompNoteDraft(''); }
+                            }}
+                            disabled={isMarking}
+                          >
+                            <span>{isMarking ? 'Marking…' : 'Mark'}</span><span className="sw" />
+                          </button>
+                        ) : appt.status === 'cancelled' ? (
+                          <span className="sa-status-pill is-cancel">Cancelled</span>
+                        ) : (
+                          <span className="sa-conf">{appt.status === 'confirmed' || !isPast ? 'Confirmed' : appt.status}</span>
+                        )}
+                      </div>
                     </div>
                     {choosing && (
                       <div style={{ margin: '6px 0 12px', padding: 12, background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 10 }}>
@@ -1080,6 +1100,14 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
           note={editingNote}
           onClose={() => setEditingNote(null)}
           onSaved={() => { setEditingNote(null); loadClient(); }}
+        />
+      )}
+      {manageAppointment && (
+        <ManageAppointmentSheet
+          appointment={manageAppointment}
+          onClose={() => setManageAppointment(null)}
+          onChanged={() => loadClient()}
+          onUnauthorized={logout}
         />
       )}
     </div>

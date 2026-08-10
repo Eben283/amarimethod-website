@@ -6,6 +6,7 @@ interface Props {
   onTap: () => void;
   onDocSession?: () => void;
   onSellLink?: () => void;
+  onManage?: () => void;
 }
 
 const FREE_SESSION_PATTERN = /discovery call|pain assessment|15-minute|15 minute|consultation|partner/i;
@@ -36,7 +37,7 @@ function sessionTypeLabel(calendarName: string): string {
   return calendarName.length > 20 ? calendarName.slice(0, 18) + '...' : calendarName;
 }
 
-export default function AppointmentCard({ appointment, onTap, onDocSession, onSellLink }: Props) {
+export default function AppointmentCard({ appointment, onTap, onDocSession, onSellLink, onManage }: Props) {
   const start = new Date(appointment.startTime);
   const end = new Date(appointment.endTime);
 
@@ -123,7 +124,7 @@ export default function AppointmentCard({ appointment, onTap, onDocSession, onSe
         <ChevronRight className="w-4 h-4 text-amari-text-muted flex-shrink-0" />
       </button>
 
-      {(onDocSession || onSellLink || (appointment.meetingLocation && !isPast)) && (
+      {(onDocSession || onSellLink || onManage || (appointment.meetingLocation && !isPast)) && (
         <div className="mt-3 pt-3 border-t border-amari-border flex items-center gap-2 justify-end">
           {appointment.meetingLocation && !isPast && (
             <a
@@ -142,6 +143,14 @@ export default function AppointmentCard({ appointment, onTap, onDocSession, onSe
               className="text-xs text-amari-pine-teal font-medium px-2 py-1 rounded hover:bg-amari-light-sand min-h-[36px]"
             >
               Send renewal link
+            </button>
+          )}
+          {onManage && (
+            <button
+              onClick={onManage}
+              className="text-xs text-amari-pine-teal font-semibold px-2 py-1 rounded border border-amari-pine-teal/40 hover:bg-amari-light-sand min-h-[36px]"
+            >
+              Reschedule or cancel
             </button>
           )}
           {onDocSession && (

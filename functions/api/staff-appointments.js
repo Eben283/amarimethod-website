@@ -1,0 +1,204 @@
+// Staff appointment management: internal availability, cancellation, and
+// rescheduling. Provider identity/status/calendar fields are always derived
+// server-side from the exact appointment owned by the selected contact.
+
+import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-guards.js";
+import { ghlFetch } from "../lib/ghl.js";
+import { appointmentEndTime, normalizeGhlTimestamp } from "../lib/datetime.js";
+import { fetchGarrettScheduleEvents } from "../lib/app-owned-buffer.js";
+import { policyForCalendarId, WORK_HOURS } from "../lib/booking-slot-policy.js";
+import { createConfirmedAppointment } from "../lib/ghl-appointment-handoff.js";
+import { createAppointmentCommandStore } from "../lib/appointment-command-store.js";
+import { internalAvailability, manageAppointmentCommand } from "../lib/staff-appointment-manage.js";
+import { emitPathHop } from "../lib/ops-path-emit.js";
+import { recordOpsError } from "../lib/ops-alert.js";
+
+const BASE = "https://services.leadconnectorhq.com";
+const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+const METHODS = "POST, OPTIONS";
+const FORBIDDEN_FIELDS = ["calendarId", "title", "appointmentStatus", "status", "replacementAppointmentId", "timezone", "actor", "user"];
+
+function json(body, status, headers) {
+  return new Response(JSON.stringify(body), { status, headers });
+}
+
+function clean(value, max = 160) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+
+function validDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+}
+
+async function listAppointments(context, contactId) {
+  const response = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}/appointments`);
+  if (!response.ok) throw Object.assign(new Error("Could not load this person’s appointments."), { status: response.status });
+  const data = await response.json();
+  return data.appointments || data.events || [];
+}
+
+function exactAppointment(appointments, appointmentId) {
+  return (appointments || []).find((item) => String(item?.id || "") === appointmentId) || null;
+}
+
+function appointmentStatus(appointment) {
+  return String(appointment?.appointmentStatus || appointment?.status || "").toLowerCase();
+}
+
+async function cancelProviderAppointment(context, appointment) {
+  const title = clean(appointment?.title, 240) || "Session";
+  const response = await ghlFetch(context, `${BASE}/calendars/events/appointments/${encodeURIComponent(appointment.id)}`, {
+    method: "PUT",
+    body: JSON.stringify({ title, appointmentStatus: "cancelled" }),
+  });
+  if (!response.ok) {
+    const detail = await response.text();
+    throw Object.assign(new Error(`Calendar cancellation failed (${response.status}).`), { status: response.status, detail });
+  }
+}
+
+function providerFor(context, authoritativeContactId) {
+  return Object.freeze({
+    listContactAppointments: (contactId) => listAppointments(context, contactId),
+    listSchedule: (start, end) => fetchGarrettScheduleEvents(context, start, end),
+    cancelAppointment: (appointment) => cancelProviderAppointment(context, appointment),
+    async createReplacement({ original, startTime, timezone, onCreated }) {
+      const contactId = clean(authoritativeContactId, 100);
+      const calendarId = clean(original?.calendarId || original?.calendar_id, 100);
+      const policy = policyForCalendarId(calendarId);
+      if (!contactId || !policy) throw new Error("The original appointment is missing governed calendar identity.");
+
+      const contactResponse = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
+      if (!contactResponse.ok) throw new Error("Could not load the person for this reschedule.");
+      const contactData = await contactResponse.json();
+      const contact = contactData.contact || contactData;
+      return createConfirmedAppointment({
+        endpoint: `${BASE}/calendars/events/appointments`,
+        request: (url, options) => ghlFetch(context, url, options),
+        onCreated,
+        payload: {
+          calendarId,
+          locationId: LOCATION_ID,
+          contactId,
+          startTime,
+          endTime: appointmentEndTime(startTime, policy.durationMinutes),
+          selectedTimezone: timezone || WORK_HOURS.timezone,
+          title: clean(original?.title, 240) || policy.label,
+          toNotify: false,
+          ignoreDateRange: false,
+          firstName: contact.firstName || contact.first_name || "",
+          lastName: contact.lastName || contact.last_name || "",
+          email: contact.email || "",
+          phone: contact.phone || "",
+        },
+      });
+    },
+  });
+}
+
+export async function onRequestOptions(context) {
+  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), METHODS) });
+}
+
+export async function onRequestPost(context) {
+  const headers = {
+    ...corsHeaders(context.request.headers.get("Origin"), METHODS),
+    "Content-Type": "application/json",
+    "Cache-Control": "private, no-store",
+  };
+  const auth = await requireStaffAuth(context, headers);
+  if (auth.error) return auth.error;
+  const actor = auth.payload?.user;
+  if (!new Set(["Eben", "Garrett"]).has(actor)) return json({ error: "Recognized Staff identity required." }, 403, headers);
+
+  const parsed = await parseJsonBody(context.request, headers);
+  if (parsed.error) return parsed.error;
+  const body = parsed.body;
+  if (FORBIDDEN_FIELDS.some((field) => Object.prototype.hasOwnProperty.call(body, field))) {
+    return json({ error: "Appointment identity and status are controlled by the server." }, 400, headers);
+  }
+  const action = clean(body.action, 30);
+  const contactId = clean(body.contactId, 100);
+  const appointmentId = clean(body.appointmentId, 100);
+  if (!contactId || !appointmentId) return json({ error: "Choose a person and appointment." }, 400, headers);
+
+  if (action === "availability") {
+    const startDate = clean(body.startDate, 10);
+    const endDate = clean(body.endDate, 10);
+    if (!validDate(startDate) || !validDate(endDate)) return json({ error: "Choose a valid date range." }, 400, headers);
+    try {
+      const appointments = await listAppointments(context, contactId);
+      const original = exactAppointment(appointments, appointmentId);
+      if (!original) return json({ error: "Appointment not found for this person." }, 404, headers);
+      if (!["new", "confirmed"].includes(appointmentStatus(original))) {
+        return json({ error: `This appointment is already ${appointmentStatus(original) || "not manageable"}.` }, 409, headers);
+      }
+      const calendarId = clean(original.calendarId || original.calendar_id, 100);
+      if (!policyForCalendarId(calendarId)) return json({ error: "This calendar is not yet governed for Staff rescheduling." }, 409, headers);
+      const start = Date.parse(normalizeGhlTimestamp(`${startDate}T00:00:00`));
+      const end = Date.parse(normalizeGhlTimestamp(`${endDate}T23:59:59`));
+      const events = await fetchGarrettScheduleEvents(context, start, end);
+      return json({
+        appointment: {
+          id: original.id,
+          title: original.title || "Session",
+          startTime: original.startTime || original.start_time,
+          calendarName: original.calendarName || "",
+        },
+        slots: internalAvailability({ calendarId, startDate, endDate, events, excludeAppointmentId: appointmentId }),
+        timezone: WORK_HOURS.timezone,
+        source: "garrett_internal_schedule",
+        publicRestrictionsApplied: false,
+        guidance: "All collision-free Staff times are shown; public booking filters are not applied.",
+      }, 200, headers);
+    } catch (error) {
+      console.error("[staff-appointments] availability failed", error);
+      return json({ error: error?.message || "Could not load Garrett’s internal availability." }, 500, headers);
+    }
+  }
+
+  if (!["cancel", "reschedule"].includes(action)) return json({ error: "Choose cancel or reschedule." }, 400, headers);
+  const idempotencyKey = clean(body.idempotencyKey, 160);
+  if (idempotencyKey.length < 8) return json({ error: "A valid action key is required." }, 400, headers);
+  const startTime = clean(body.startTime, 100);
+  if (action === "reschedule" && !startTime) return json({ error: "Choose a new time." }, 400, headers);
+
+  let store;
+  try {
+    store = createAppointmentCommandStore(context.env.ATTEND_DB || null);
+  } catch (error) {
+    return json({ error: "Appointment changes are temporarily unavailable; no calendar change was made." }, 500, headers);
+  }
+  try {
+    const result = await manageAppointmentCommand({
+      actor,
+      action,
+      contactId,
+      appointmentId,
+      idempotencyKey,
+      startTime,
+      timezone: WORK_HOURS.timezone,
+      store,
+      provider: providerFor(context, contactId),
+    });
+    context.waitUntil?.(emitPathHop(context.env, {
+      pathId: "staff_appointment_manage",
+      hopId: action,
+      outcome: "ok",
+      summary: action === "cancel" ? "Staff cancelled appointment" : "Staff rescheduled appointment",
+      source: "staff-appointments",
+      contactId,
+      correlationId: idempotencyKey,
+    }));
+    return json(result, 200, headers);
+  } catch (error) {
+    console.error("[staff-appointments] command failed", error);
+    context.waitUntil?.(recordOpsError(context.env, "staff-appointments", "Staff appointment change failed", {
+      actor, action, contactId, appointmentId, code: error?.code || "unknown",
+    }));
+    const status = error?.code === "appointment_not_found" ? 404
+      : ["in_progress", "conflict", "appointment_not_manageable", "appointment_not_future", "slot_unavailable"].includes(error?.code) ? 409
+        : error?.manualReview ? 409 : 422;
+    return json({ error: error?.message || "Appointment change failed.", code: error?.code || "appointment_change_failed" }, status, headers);
+  }
+}

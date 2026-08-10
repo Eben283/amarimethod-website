@@ -40,6 +40,7 @@ export type PaymentStatus =
 
 export interface TodayAppointment {
   id: string;
+  calendarId: string;
   contactId: string;
   contactName: string;
   startTime: string;
@@ -109,6 +110,7 @@ export interface ContactDetail {
 
 export interface ContactAppointment {
   id: string;
+  calendarId: string;
   title: string;
   calendarName: string;
   startTime: string;

@@ -234,6 +234,10 @@
 .sa-appt-row .info{flex:1; min-width:0;}
 .sa-appt-row .nm{font-size:15px; font-weight:600;}
 .sa-appt-row .mt{font-size:13px; color:var(--muted); margin-top:2px;}
+.sa-appt-actions{display:flex;align-items:center;justify-content:flex-end;gap:9px;flex-wrap:wrap}
+.sa .sa-manage-appt{min-height:38px;padding:7px 10px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);font-size:12px;font-weight:750;cursor:pointer}
+.sa .sa-manage-appt:hover{background:var(--accent-tint)}
+.sa .sa-manage-appt:focus-visible{outline:3px solid #dc9d2d;outline-offset:2px}
 .sa-conf{font-family:var(--mono); font-size:12px; letter-spacing:.07em; text-transform:uppercase;
   color:var(--accent-ink); background:var(--accent-tint); padding:6px 12px; border-radius:999px; font-weight:500;}
 .sa-status-pill{font-family:var(--mono); font-size:12px; letter-spacing:.07em; text-transform:uppercase;

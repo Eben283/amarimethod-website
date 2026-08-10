@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from "vitest";
 import { ghlFetch } from "./ghl.js";
-import { APP_BUFFER_CALENDAR_IDS, applyGarrettSchedulePreference, fetchAppBufferEvents, filterSlotsByAppBuffer, slotRespectsAppBuffer } from "./app-owned-buffer.js";
+import { APP_BUFFER_CALENDAR_IDS, applyGarrettSchedulePreference, fetchAppBufferEvents, fetchGarrettScheduleEvents, filterSlotsByAppBuffer, slotRespectsAppBuffer } from "./app-owned-buffer.js";
 
 vi.mock("./ghl.js", () => ({ ghlFetch: vi.fn() }));
 
@@ -22,6 +22,18 @@ describe("app-owned-buffer", () => {
     expect(ghlFetch.mock.calls[0][1]).toContain("userId=P5b0oSTaVYfULDjZ6YyG");
     expect(events).toEqual([{ id: "assessment", calendarId: "EM6vB2mq7EAdGCbUb3j1" }]);
     expect(APP_BUFFER_CALENDAR_IDS).toContain("EM6vB2mq7EAdGCbUb3j1");
+  });
+
+  it("keeps every Garrett event when Staff calculates true internal availability", async () => {
+    ghlFetch.mockResolvedValue(new Response(JSON.stringify({
+      events: [
+        { id: "assessment", calendarId: "EM6vB2mq7EAdGCbUb3j1" },
+        { id: "external-busy", calendarId: "not-an-amari-calendar" },
+      ],
+    }), { status: 200 }));
+
+    const events = await fetchGarrettScheduleEvents({}, Date.parse("2026-08-04T00:00:00Z"), Date.parse("2026-08-05T00:00:00Z"));
+    expect(events.map((event) => event.id)).toEqual(["assessment", "external-busy"]);
   });
 
   it("keeps a 20-minute turnover after a 50-minute session", () => {

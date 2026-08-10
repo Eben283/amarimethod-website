@@ -118,6 +118,7 @@ export async function onRequestGet(context) {
     if (summaryOnly) {
       const summaries = todayEvents.map((event) => ({
         id: event.id,
+        calendarId: event.calendarId || event.calendar_id || "",
         contactId: event.contactId || "",
         contactName: event.title || "Unknown",
         startTime: event.startTime || event.start_time,
@@ -254,6 +255,7 @@ export async function onRequestGet(context) {
 
         return {
           id: event.id,
+          calendarId: event.calendarId || event.calendar_id || "",
           contactId: contactId || "",
           contactName,
           startTime: event.startTime || event.start_time,
