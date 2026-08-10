@@ -130,15 +130,16 @@ const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
 });
 
 const INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
-  status: "not_eligible",
-  label: "Not eligible for active delivery",
-  summary: "The source contract is reconciled in code only. This definition has not yet run beside GHL on an all-DND test appointment.",
+  status: "active",
+  label: "Owned delivery is live",
+  summary: "The owned Initial / Assessment in-person lifecycle is the live sender. The former GHL workflow is retained in Draft as rollback.",
   requirements: Object.freeze([
-    Object.freeze({ code: "source_contract_reconciled", status: "proven", label: "Source contract reconciled", detail: "The retired post-session equipment email is removed; confirmed-only user/customer triggers and the shared Assessment calendar are now represented in the shadow definition." }),
-    Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove a native shadow run", detail: "Use a dedicated all-DND appointment to verify enrollment, due timing, reschedule, and cancellation without sending a message." }),
-    Object.freeze({ code: "assessment_no_show_recovery_shadow_pending", status: "review", label: "Prove Assessment no-show recovery in shadow", detail: "The owned Assessment no-show definition now models the existing three-touch series and confirmed-rebooking exit, but it has not yet run on a dedicated all-DND appointment." }),
-    Object.freeze({ code: "delivery_templates_and_adapter_not_owned", status: "blocked", label: "Deliver the exact messages from Amari", detail: "The six messages below are source-verified previews only. No owned template renderer or email/SMS sender adapter is active." }),
-    Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep the GHL reminder workflow live", detail: "Retirement needs separate approval after all gates close and owned delivery evidence agrees with the live path." }),
+    Object.freeze({ code: "source_contract_reconciled", status: "proven", label: "Source contract reconciled", detail: "The six current messages and both in-person calendars are represented in the owned lifecycle." }),
+    Object.freeze({ code: "owned_delivery_proven", status: "proven", label: "Owned delivery proven", detail: "Owned Gmail confirmation, client SMS, and Garrett SMS were each proven in controlled delivery checks." }),
+    Object.freeze({ code: "native_cancellation_proven", status: "proven", label: "Cancellation proven", detail: "A native Assessment cancellation cancelled the remaining owned future steps." }),
+    Object.freeze({ code: "first_live_run_pending", status: "review", label: "Watch the first ordinary booking", detail: "The first normal booking and cancellation after cutover should be read back in the owned run ledger." }),
+    Object.freeze({ code: "assessment_no_show_separate_gap", status: "review", label: "Assessment no-show remains separate", detail: "This reminder cutover is live; the separate Assessment no-show recovery family is still shadow-only." }),
+    Object.freeze({ code: "ghl_draft_rollback", status: "proven", label: "GHL rollback retained", detail: "The former GHL workflow is intact in Draft and can be republished if needed." }),
   ]),
 });
 
