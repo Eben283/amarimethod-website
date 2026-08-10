@@ -117,6 +117,23 @@ describe("staff-automations — views", () => {
     expect(body.events).toEqual([]);
   });
 
+  it("puts the owned person name and phone on live workflow enrollments", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url) => {
+      if (String(url).includes("reminder-engine")) return Promise.resolve(new Response(JSON.stringify({ runtime: {
+        verifiedAt: "2026-08-10T16:00:00.000Z", flow: { key: "initial-in-person", delivery: "active" },
+        definition: { id: "initial-in-person", version: 3 }, events: [],
+        enrollments: [{ enrollmentId: "enrollment_1", contactId: "ghl_1", status: "active" }],
+      } }), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify({ contacts: [{
+        id: "owned_1", provider_contact_id: "ghl_1", display_name: "Iliana Lipsett", phone_e164: "+14158602925",
+      }] }), { status: 200 }));
+    }));
+    const response = await onRequestGet(makeContext("view=family&key=initial-session-reminders", { WORKER_AUTH_SECRET: "secret" }));
+    const body = await response.json();
+    expect(body.enrollments[0]).toMatchObject({ contactId: "owned_1", providerContactId: "ghl_1", contactName: "Iliana Lipsett", contactPhone: "+14158602925" });
+    vi.unstubAllGlobals();
+  });
+
   it("partner family view presents the shadow definition and read-only message copy", async () => {
     const res = await onRequestGet(makeContext("view=family&key=partner-session-lifecycle", {}));
     const body = await res.json();

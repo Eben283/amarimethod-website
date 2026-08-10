@@ -58,7 +58,7 @@ async function reminderRuntimeEvidence(context, flowKey) {
 }
 
 async function contactIdentityForReference(context, contactReference) {
-  if (!context.env.WORKER_AUTH_SECRET) return { ownedContactId: contactReference, providerContactId: null, name: null, state: "unavailable" };
+  if (!context.env.WORKER_AUTH_SECRET) return { ownedContactId: contactReference, providerContactId: null, name: null, phone: null, state: "unavailable" };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
   try {
@@ -66,20 +66,21 @@ async function contactIdentityForReference(context, contactReference) {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal,
     });
-    if (!response.ok) return { ownedContactId: contactReference, providerContactId: null, name: null, state: "unavailable" };
+    if (!response.ok) return { ownedContactId: contactReference, providerContactId: null, name: null, phone: null, state: "unavailable" };
     const body = await response.json();
     const contact = (Array.isArray(body.contacts) ? body.contacts : [])
       .find((candidate) => String(candidate.id || "") === contactReference
         || String(candidate.provider_contact_id || "") === contactReference);
-    if (!contact) return { ownedContactId: contactReference, providerContactId: null, name: null, state: "owned_contact_not_found" };
+    if (!contact) return { ownedContactId: contactReference, providerContactId: null, name: null, phone: null, state: "owned_contact_not_found" };
     return {
       ownedContactId: String(contact.id),
       providerContactId: contact.provider_contact_id ? String(contact.provider_contact_id) : null,
-      name: [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.name || contact.email || null,
+      name: contact.display_name || [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.name || contact.email_normalized || contact.email || null,
+      phone: contact.phone_e164 || contact.phone || null,
       state: contact.provider_contact_id ? "resolved" : "owned_only",
     };
   } catch {
-    return { ownedContactId: contactReference, providerContactId: null, name: null, state: "unavailable" };
+    return { ownedContactId: contactReference, providerContactId: null, name: null, phone: null, state: "unavailable" };
   } finally {
     clearTimeout(timer);
   }
@@ -89,7 +90,7 @@ async function withOwnedPeople(context, enrollments) {
   return Promise.all((enrollments || []).map(async (enrollment) => {
     if (!enrollment.contactId) return enrollment;
     const person = await contactIdentityForReference(context, enrollment.contactId);
-    return { ...enrollment, contactId: person.ownedContactId, contactName: person.name, providerContactId: person.providerContactId };
+    return { ...enrollment, contactId: person.ownedContactId, contactName: person.name, contactPhone: person.phone, providerContactId: person.providerContactId };
   }));
 }
 

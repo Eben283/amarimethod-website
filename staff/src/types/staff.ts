@@ -156,6 +156,7 @@ export interface ContactAutomationEnrollment {
   enrollmentId: string;
   contactId?: string | null;
   contactName?: string | null;
+  contactPhone?: string | null;
   providerContactId?: string | null;
   appointmentId?: string | null;
   definitionVersion?: number | null;
