@@ -581,7 +581,7 @@ function PersonEvidence({ person, evidence, family }: { person: AutomationPerson
     <div className="automation-person-evidence">
       <header>
         <div><strong>{person.name || 'Unnamed person'} · {family.name}</strong><span>This person’s enrollment and run evidence for the workflow you opened</span></div>
-        <a href={`/staff/client/${encodeURIComponent(person.providerContactId || person.id)}#workflows`}><ArrowUpRight size={14} /> Back to person record</a>
+        <a href={`/staff/client/${encodeURIComponent(person.providerContactId || person.id)}/record#workflows`}><ArrowUpRight size={14} /> Back to person record</a>
       </header>
       {evidence.configured === false && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span>The owned execution store is not connected. Absence here is not proof that no automation ran.</span></div>}
       {evidence.coverage?.eventsTruncated && <div className="automation-evidence-banner"><AlertTriangle size={17} /><span><strong>Bounded evidence view.</strong> This shows the newest {evidence.coverage.eventLimit} run events; older events are not included below.</span></div>}

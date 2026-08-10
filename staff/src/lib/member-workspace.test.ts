@@ -32,8 +32,9 @@ describe('member workspace structure', () => {
   });
 
   it('builds stable record and session routes while preserving appointment context', () => {
-    expect(memberWorkspacePath('person/123', 'record')).toBe('/client/person%2F123');
+    expect(memberWorkspacePath('person/123', 'record')).toBe('/client/person%2F123/record');
     expect(memberWorkspacePath('person/123', 'session')).toBe('/client/person%2F123/session');
+    expect(memberWorkspacePath('person/123', 'record', 'appt 1')).toBe('/client/person%2F123/record?appointment=appt%201');
     expect(memberWorkspacePath('person/123', 'session', 'appt 1')).toBe('/client/person%2F123/session?appointment=appt%201');
   });
 });

@@ -28,6 +28,6 @@ export function memberWorkspacePath(
   appointmentId?: string | null,
 ): string {
   const root = `/client/${encodeURIComponent(contactId)}`;
-  const path = surface === 'session' ? `${root}/session` : root;
+  const path = surface === 'session' ? `${root}/session` : `${root}/record`;
   return appointmentId ? `${path}?appointment=${encodeURIComponent(appointmentId)}` : path;
 }

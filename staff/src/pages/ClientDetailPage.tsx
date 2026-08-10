@@ -82,7 +82,7 @@ function splitNoteBody(body: string): { text: string; signature: string | null }
   return { text, signature };
 }
 
-export default function ClientDetailPage({ surface = 'record' }: { surface?: MemberWorkspaceSurface }) {
+export default function ClientDetailPage({ surface = 'session' }: { surface?: MemberWorkspaceSurface }) {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const appointmentId = searchParams.get('appointment');

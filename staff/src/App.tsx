@@ -103,8 +103,9 @@ function AppRoutes() {
         <Route path="outreach" element={<Layout><FollowUpPage /></Layout>} />
         <Route path="funnel" element={<Layout><FunnelPage /></Layout>} />
         <Route path="pipeline" element={<Layout><PipelinePage /></Layout>} />
-        <Route path="client/:id" element={<Layout fullBleed><ClientDetailPage surface="record" /></Layout>} />
+        <Route path="client/:id" element={<Layout fullBleed><ClientDetailPage surface="session" /></Layout>} />
         <Route path="client/:id/session" element={<Layout fullBleed><ClientDetailPage surface="session" /></Layout>} />
+        <Route path="client/:id/record" element={<Layout fullBleed><ClientDetailPage surface="record" /></Layout>} />
         <Route path="cos" element={<Layout fullBleed><CosPage /></Layout>} />
         <Route path="field-studies" element={<Layout fullBleed><FieldStudiesPage /></Layout>} />
         <Route path="operations" element={<Layout fullBleed><OperationsPage /></Layout>} />
