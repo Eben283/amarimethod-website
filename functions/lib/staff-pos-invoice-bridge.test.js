@@ -92,11 +92,12 @@ describe("Staff POS GHL invoice bridge", () => {
     expect(JSON.stringify(request)).toContain("pos_invoiceplan1");
   });
 
-  it("refuses catalog effects the current invoice-paid path cannot fulfill safely", () => {
-    const line = (ghlProductId, quantity = 1) => ({
+  it("supports the exact Single Session and Living Practice effects while refusing unresolved catalog effects", () => {
+    const line = (ghlProductId, quantity = 1, fulfillmentPolicy = "provider-linked") => ({
       kind: "catalog",
       label: "Test item",
       ghlProductId,
+      fulfillmentPolicy,
       quantity,
       unitAmountCents: 100,
       lineTotalCents: 100 * quantity,
@@ -114,8 +115,7 @@ describe("Staff POS GHL invoice bridge", () => {
 
     for (const cart of [
       [line("6a010952e41b442c862d3c01")], // additive 4→8 upgrade
-      [line("6998ace59dfde469ecb2aab6")], // individual session credit
-      [line("6998d7f2606fa79c54fa3ff5")], // standalone Living Practice access
+      [line("6998ace59dfde469ecb2aab6")], // legacy individual session credit
       [line("69986faa724ecd2343ebaa6e", 2)], // package quantity > 1
       [line("69986faa724ecd2343ebaa6e"), line("69987357c839790426996114")],
     ]) {
@@ -126,6 +126,32 @@ describe("Staff POS GHL invoice bridge", () => {
       line("6a66cf0103821ea09ea13f1b"), // assessment: paid evidence, no session/access credit
       { kind: "custom", label: "No fulfillment", quantity: 1, unitAmountCents: 100, lineTotalCents: 100 },
     ])).toMatchObject({ supported: false, effect: "needs_review" });
+
+    expect(assessPosInvoiceSupport([
+      line("6a6b8bb7a1753b65945372f1", 1, "session-credit"),
+    ])).toMatchObject({
+      supported: true,
+      effect: "session_credit",
+      sessionCredits: 1,
+      productId: "6a6b8bb7a1753b65945372f1",
+    });
+    expect(assessPosInvoiceSupport([
+      line("6998d7f2606fa79c54fa3ff5", 1, "living-practice-access"),
+    ])).toMatchObject({
+      supported: true,
+      effect: "living_practice_access",
+      productId: "6998d7f2606fa79c54fa3ff5",
+    });
+    expect(assessPosInvoiceSupport([
+      line("6998d7f2606fa79c54fa3ff5", 2, "living-practice-access"),
+    ])).toMatchObject({ supported: false, effect: "needs_review" });
+    expect(assessPosInvoiceSupport([
+      line("69c5d29c4019ce8e80e2513b"),
+    ])).toMatchObject({
+      supported: false,
+      effect: "needs_review",
+      reasons: [expect.stringContaining("no supported Staff POS fulfillment effect")],
+    });
   });
 
   it("places the one supported package first so the current ledger cannot miss it", () => {

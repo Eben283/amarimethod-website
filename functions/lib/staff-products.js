@@ -34,11 +34,19 @@ function builtInProducts() {
   return Object.entries(POS_CATALOG).map(([key, catalog]) => {
     const meta = BUILT_IN_META[key];
     if (!meta) throw new Error(`Missing Staff product metadata for ${key}`);
-    const support = assessPosInvoiceSupport([{ kind: "catalog", ghlProductId: catalog.ghlProductId, quantity: 1 }]);
-    const ready = support.supported && support.effect === "package";
+    const fulfillmentPolicy = catalog.fulfillmentPolicy || "provider-linked";
+    const support = fulfillmentPolicy === "none"
+      ? { supported: true, effect: "none", reasons: [] }
+      : assessPosInvoiceSupport([{
+        kind: "catalog",
+        ghlProductId: catalog.ghlProductId,
+        fulfillmentPolicy,
+        quantity: 1,
+      }]);
+    const ready = support.supported;
     const readinessReasons = support.reasons.length
       ? support.reasons
-      : ["This offer needs a complete owned post-payment record path before Staff can sell it."];
+      : ["This offer needs a complete post-payment fulfillment path before Staff can sell it."];
     return Object.freeze({
       key,
       version: 1,
@@ -54,8 +62,8 @@ function builtInProducts() {
       availableInPos: ready,
       readiness: ready ? "ready" : "needs-fulfillment",
       readinessReason: ready ? null : readinessReasons.join("; "),
-      fulfillmentMode: "linked",
-      fulfillmentPolicy: "provider-linked",
+      fulfillmentMode: fulfillmentPolicy === "none" ? "owned-receipt" : "linked",
+      fulfillmentPolicy,
       fulfillmentSummary: meta.effect,
       ghlProductId: catalog.ghlProductId,
       createdAt: null,

@@ -521,7 +521,7 @@ export interface PosSale {
   status: PosSaleStatus;
   version: number;
   client: PosClient;
-  cart: Array<{ kind: 'catalog' | 'custom'; productKey: string | null; productVersion?: number | null; label: string; reason?: string; quantity: number; unitAmountCents: number; lineTotalCents: number; fulfillmentPolicy?: 'provider-linked' | 'none' }>;
+  cart: Array<{ kind: 'catalog' | 'custom'; productKey: string | null; productVersion?: number | null; label: string; reason?: string; quantity: number; unitAmountCents: number; lineTotalCents: number; fulfillmentPolicy?: 'provider-linked' | 'none' | 'session-credit' | 'living-practice-access' }>;
   totalCents: number;
   paymentLegs: PosPaymentLeg[];
   fulfillmentStatus?: string | null;
@@ -567,8 +567,8 @@ export interface StaffProduct {
   availableInPos: boolean;
   readiness: 'ready' | 'needs-fulfillment';
   readinessReason: string | null;
-  fulfillmentMode: 'linked' | 'manual';
-  fulfillmentPolicy: 'provider-linked' | 'none';
+  fulfillmentMode: 'linked' | 'manual' | 'owned-receipt';
+  fulfillmentPolicy: 'provider-linked' | 'none' | 'session-credit' | 'living-practice-access';
   fulfillmentSummary: string;
   createdAt: string | null;
   createdBy: string | null;

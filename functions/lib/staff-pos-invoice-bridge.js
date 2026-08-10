@@ -39,6 +39,7 @@ function invoiceItem(line) {
 
 export function assessPosInvoiceSupport(cart = []) {
   const packageLines = [];
+  const effectLines = [];
   const reasons = [];
   if (!Array.isArray(cart) || cart.length === 0) {
     return {
@@ -59,6 +60,26 @@ export function assessPosInvoiceSupport(cart = []) {
       continue;
     }
     const quantity = Number.isInteger(line.quantity) ? line.quantity : 0;
+    if (line.fulfillmentPolicy === "session-credit") {
+      if (line.ghlProductId !== "6a6b8bb7a1753b65945372f1") {
+        reasons.push(`${product.name} is not the Staff POS Single Session product`);
+      } else if (quantity !== 1) {
+        reasons.push("Single Session quantity must be one");
+      } else {
+        effectLines.push({ effect: "session_credit", productId: line.ghlProductId, sessionCredits: 1 });
+      }
+      continue;
+    }
+    if (line.fulfillmentPolicy === "living-practice-access") {
+      if (line.ghlProductId !== "6998d7f2606fa79c54fa3ff5") {
+        reasons.push(`${product.name} is not the standalone Living Practice product`);
+      } else if (quantity !== 1) {
+        reasons.push("Living Practice quantity must be one");
+      } else {
+        effectLines.push({ effect: "living_practice_access", productId: line.ghlProductId });
+      }
+      continue;
+    }
     if (product.classification === "living-practice") {
       reasons.push("Standalone Living Practice access is not supported by the current invoice-paid path");
       continue;
@@ -83,12 +104,25 @@ export function assessPosInvoiceSupport(cart = []) {
   if (packageLines.length > 1) {
     reasons.push("A Staff POS invoice can contain only one session package until aggregate fulfillment is proven");
   }
+  if (effectLines.length > 1 || (effectLines.length && packageLines.length)) {
+    reasons.push("A Staff POS invoice can contain only one session or access effect");
+  }
   if (reasons.length) {
     return { supported: false, effect: "needs_review", reasons };
   }
+  if (effectLines.length === 1) {
+    return { supported: true, ...effectLines[0], reasons: [] };
+  }
+  if (packageLines.length === 0) {
+    return {
+      supported: false,
+      effect: "needs_review",
+      reasons: ["The provider-linked product has no supported Staff POS fulfillment effect"],
+    };
+  }
   return {
     supported: true,
-    effect: packageLines.length === 1 ? "package" : "none",
+    effect: "package",
     packageProductId: packageLines[0]?.ghlProductId || null,
     reasons: [],
   };

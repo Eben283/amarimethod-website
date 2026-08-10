@@ -1,6 +1,7 @@
 // Cloudflare Pages Function: POST /api/ghl-invoice-webhook
 //
-// Handles GHL Invoice Paid events for series / upgrade purchases.
+// Handles GHL Invoice Paid events for series / upgrade purchases and two
+// exact Staff POS effects: Single Session credit and Living Practice access.
 // Mirrors the post-purchase automation that C1/C2/C1b/C2b perform for
 // payment_link orders — but for invoices, which those workflows can't see.
 //
@@ -29,12 +30,11 @@
 // 2. Extract contact id (and invoice id if present) from payload
 // 3. Fetch the contact's recent paid invoices from GHL
 // 4. Identify the matching invoice (by id if known, else most recent paid)
-// 5. Classify via productId → series/upgrade bucket
-// 6. If not a series/upgrade product → 200 OK, no-op
+// 5. Classify via productId → supported fulfillment effect
+// 6. If unsupported → 200 OK, no-op
 // 7. Idempotency check via KV (invoice id)
 // 8. Fetch contact → read current state
-// 9. PATCH custom fields: series_type, sessions_remaining (SET),
-//    portal_access, living_practice_access (8-pack only)
+// 9. PUT the exact idempotent custom-field effect
 // 10. Remove tags: discovery call attended, quiz submitted, ambassador-prospect
 // 11. Add tag: invoice-series-purchased (triggers downstream cleanup workflow)
 // 12. Store invoice id in KV for idempotency
@@ -58,13 +58,28 @@ const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 // could be re-credited by a later non-package invoice event (H2, 2026-06-11).
 export const KV_TTL_SECONDS = 90 * 86400;
 
-// Product allowlist — only series/upgrade purchases trigger the post-purchase
-// automation. Shape: { [productId]: { name, sessionsRemaining, seriesType, livingPractice } }
+// General invoice allowlist — only series/upgrade purchases trigger the
+// post-purchase automation. Staff POS-only effects are separately allowlisted
+// below and require the immutable Staff POS sale marker on the invoice.
 // Source of truth lives in functions/lib/ghl-products.js (GHL_PRODUCTS). Any
 // product marked isPackagePurchase: true is included here automatically.
 // Non-package products (individual follow-ups, entrainments, retired items,
 // custom line items with no productId) are a silent no-op in this webhook.
 export const INVOICE_PURCHASE_PRODUCTS = WEBHOOK_PURCHASE_MAP;
+
+const STAFF_POS_INVOICE_EFFECTS = Object.freeze({
+  "6a6b8bb7a1753b65945372f1": {
+    name: "Single Session",
+    classification: "followup",
+    effect: "session_credit",
+    sessionsToAdd: 1,
+  },
+  "6998d7f2606fa79c54fa3ff5": {
+    name: "Living Practice",
+    classification: "living-practice",
+    effect: "living_practice_access",
+  },
+});
 
 // ── GHL custom field IDs (single-sourced from lib/ghl-fields.js) ──
 const FIELD_IDS = {
@@ -120,7 +135,10 @@ export function selectSeriesInvoice(invoices, preferredInvoiceId = null) {
     for (const item of items) {
       const pid = item?.productId || null;
       const pkg = classifyInvoiceProduct(pid);
-      if (pkg) return pkg;
+      if (pkg) return { ...pkg, effect: "package" };
+      const posEffect = posSaleIdFromInvoice(inv) ? STAFF_POS_INVOICE_EFFECTS[pid] : null;
+      const quantity = Number(item?.qty ?? item?.quantity ?? 1);
+      if (posEffect && quantity === 1) return posEffect;
     }
     return null;
   };
@@ -281,15 +299,16 @@ export async function onRequestPost(context) {
 
     if (!match) {
       console.log(
-        `[ghl-invoice-webhook] No series/upgrade invoice found for contact ${sanitizedContactId} — no-op`,
+        `[ghl-invoice-webhook] No supported invoice fulfillment found for contact ${sanitizedContactId} — no-op`,
       );
       return new Response(
-        JSON.stringify({ success: true, skipped: true, reason: "not-a-series-purchase" }),
+        JSON.stringify({ success: true, skipped: true, reason: "unsupported-invoice-product" }),
         { status: 200, headers },
       );
     }
 
-    const { invoice, pkg } = match;
+    const { invoice, pkg: matchedProduct } = match;
+    const pkg = { ...matchedProduct };
     const matchedInvoiceId = invoice._id || invoice.id;
     const posSaleId = posSaleIdFromInvoice(invoice);
     console.log(
@@ -302,6 +321,7 @@ export async function onRequestPost(context) {
     const kv = context.env.PURCHASE_KV;
     const idempotencyKey = matchedInvoiceId ? `invoice:${matchedInvoiceId}` : null;
     let usedD1 = false;
+    let invoiceClaimDuplicate = false;
 
     if (idempotencyKey) {
       try {
@@ -317,8 +337,10 @@ export async function onRequestPost(context) {
               );
             }
             // POS invoices are safe to replay: their field writes are SETs,
-            // the message-trigger tag is suppressed, and replay closes a
-            // crash window between GHL fulfillment and POS sale completion.
+            // or use a previously checkpointed Single Session target. The
+            // message-trigger tag is suppressed, and replay closes a crash
+            // window between provider fulfillment and POS sale completion.
+            invoiceClaimDuplicate = true;
             console.warn(`[ghl-invoice-webhook] Replaying processed POS invoice ${matchedInvoiceId} to verify sale ${posSaleId}`);
           }
           if (claim.ok) {
@@ -342,6 +364,7 @@ export async function onRequestPost(context) {
               { status: 200, headers },
             );
           }
+          invoiceClaimDuplicate = true;
           console.warn(`[ghl-invoice-webhook] Replaying KV-processed POS invoice ${matchedInvoiceId} to verify sale ${posSaleId}`);
         }
       } catch (err) {
@@ -359,7 +382,7 @@ export async function onRequestPost(context) {
         `[ghl-invoice-webhook] Contact fetch failed: ${sanitizedContactId} (${contactRes.status})`,
       );
       context.waitUntil(recordOpsError(context.env, "ghl-invoice-webhook",
-        "Contact fetch failed after invoice — sessions_remaining NOT updated",
+        "Contact fetch failed after invoice — product effect not updated",
         { contactId: sanitizedContactId, status: contactRes.status, invoiceId: matchedInvoiceId }));
       await releaseWonD1Claim();
       return new Response(
@@ -374,14 +397,97 @@ export async function onRequestPost(context) {
       10,
     ) || 0;
 
-    // 6. Build field updates — SET (matching C1/C2/C1b/C2b semantics, 2026-03-29 restoration)
-    const fieldUpdates = [
-      { id: FIELD_IDS.sessionsRemaining, field_value: String(pkg.sessionsRemaining) },
-      { id: FIELD_IDS.seriesType, field_value: pkg.seriesType },
-      { id: FIELD_IDS.portalAccess, field_value: true },
-    ];
-    if (pkg.livingPractice) {
-      fieldUpdates.push({ id: FIELD_IDS.livingPracticeAccess, field_value: true });
+    let posSale = null;
+    if (posSaleId) {
+      if (!context.env.PORTAL_KV) throw new Error("PORTAL_KV is required to complete a Staff POS invoice");
+      posSale = await readPosSale(context.env.PORTAL_KV, posSaleId);
+      if (!posSale) throw new Error(`Staff POS sale ${posSaleId} was not found for invoice fulfillment`);
+      if (posSale.fulfillmentStatus === "fulfilled") {
+        return new Response(JSON.stringify({
+          success: true,
+          alreadyProcessed: true,
+          contactId: sanitizedContactId,
+          invoiceId: matchedInvoiceId,
+          product: pkg.name,
+          posSaleId,
+          posFulfilled: true,
+        }), { status: 200, headers });
+      }
+      if (pkg.effect === "session_credit" && invoiceClaimDuplicate) {
+        const checkpointedTarget = Number(posSale.fulfillment?.effectTarget?.sessionsRemaining);
+        if (!Number.isSafeInteger(checkpointedTarget) || checkpointedTarget < 1) {
+          return new Response(JSON.stringify({
+            success: false,
+            pending: true,
+            retryable: true,
+            reason: "single-session-target-not-yet-visible",
+            invoiceId: matchedInvoiceId,
+            posSaleId,
+          }), { status: 202, headers });
+        }
+      }
+    }
+
+    // 6. Build the exact idempotent field effect. Package and access writes are
+    // SETs. Single Session is additive only while planning: its target balance
+    // is checkpointed on the sale before the remote write, so any replay SETs
+    // the same target instead of adding a second credit.
+    let fieldUpdates;
+    if (pkg.effect === "session_credit") {
+      const checkpointedTarget = Number(posSale?.fulfillment?.effectTarget?.sessionsRemaining);
+      const target = Number.isSafeInteger(checkpointedTarget) && checkpointedTarget >= 1
+        ? checkpointedTarget
+        : currentRemaining + Number(pkg.sessionsToAdd || 0);
+      if (!Number.isSafeInteger(target) || target < 1) throw new Error("Single Session target balance is invalid");
+      pkg.sessionsRemaining = target;
+      fieldUpdates = [
+        { id: FIELD_IDS.sessionsRemaining, field_value: String(target) },
+        { id: FIELD_IDS.portalAccess, field_value: true },
+      ];
+      if (!Number.isSafeInteger(checkpointedTarget) || checkpointedTarget !== target) {
+        const checkpointAt = new Date().toISOString();
+        posSale = {
+          ...posSale,
+          fulfillmentStatus: "pending",
+          fulfillment: {
+            ...(posSale.fulfillment || {}),
+            adapter: "ghl_invoice",
+            stage: "effect_target_checkpointed",
+            invoice: {
+              ...(posSale.fulfillment?.invoice || {}),
+              id: matchedInvoiceId,
+              status: "paid",
+            },
+            effectTarget: { type: "session_credit", sessionsRemaining: target },
+          },
+          updatedAt: checkpointAt,
+          version: (Number.isInteger(posSale.version) ? posSale.version : 0) + 1,
+          audit: [
+            ...(posSale.audit || []),
+            {
+              at: checkpointAt,
+              actor: "GHL invoice webhook",
+              action: "single_session_target_checkpointed",
+              detail: `Single Session target balance ${target} checkpointed before contact write.`,
+            },
+          ],
+        };
+        await writePosSale(context.env.PORTAL_KV, posSale);
+      }
+    } else if (pkg.effect === "living_practice_access") {
+      fieldUpdates = [
+        { id: FIELD_IDS.portalAccess, field_value: true },
+        { id: FIELD_IDS.livingPracticeAccess, field_value: true },
+      ];
+    } else {
+      fieldUpdates = [
+        { id: FIELD_IDS.sessionsRemaining, field_value: String(pkg.sessionsRemaining) },
+        { id: FIELD_IDS.seriesType, field_value: pkg.seriesType },
+        { id: FIELD_IDS.portalAccess, field_value: true },
+      ];
+      if (pkg.livingPractice) {
+        fieldUpdates.push({ id: FIELD_IDS.livingPracticeAccess, field_value: true });
+      }
     }
 
     // 7. PUT updated custom fields to GHL.
@@ -406,9 +512,10 @@ export async function onRequestPost(context) {
         `[ghl-invoice-webhook] PUT failed for ${sanitizedContactId} (${updateRes.status}): ${errText}`,
       );
       context.waitUntil(recordOpsError(context.env, "ghl-invoice-webhook",
-        "GHL field update failed — invoice paid, sessions_remaining NOT updated",
+        "GHL field update failed — invoice paid, product effect not updated",
         { contactId: sanitizedContactId, status: updateRes.status, product: pkg.name,
-          invoiceId: matchedInvoiceId, attemptedRemaining: pkg.sessionsRemaining,
+          invoiceId: matchedInvoiceId, attemptedEffect: pkg.effect,
+          attemptedRemaining: pkg.sessionsRemaining,
           ghlError: String(errText).slice(0, 300) }));
       await releaseWonD1Claim();
       return new Response(
@@ -448,11 +555,8 @@ export async function onRequestPost(context) {
 
     let completedPosSale = null;
     if (posSaleId) {
-      if (!context.env.PORTAL_KV) {
-        throw new Error("PORTAL_KV is required to complete a Staff POS invoice");
-      }
       // A successful PUT response is not the proof boundary. Read the contact
-      // again and compare the exact package effects before marking the Staff
+      // again and compare the exact product effect before marking the Staff
       // sale fulfilled.
       const verifyContactResponse = await ghlFetch(
         context,
@@ -462,7 +566,7 @@ export async function onRequestPost(context) {
         throw new Error(`POS fulfillment contact readback failed (${verifyContactResponse.status})`);
       }
       const verifiedContact = (await verifyContactResponse.json()).contact;
-      const posSale = await readPosSale(context.env.PORTAL_KV, posSaleId);
+      posSale = await readPosSale(context.env.PORTAL_KV, posSaleId);
       if (!posSale) throw new Error(`Staff POS sale ${posSaleId} was not found for invoice verification`);
       completedPosSale = completeVerifiedPosSale(posSale, {
         invoice: {
@@ -513,11 +617,14 @@ export async function onRequestPost(context) {
       }
     }
 
-    console.log(
-      `[ghl-invoice-webhook] Updated ${sanitizedContactId}: ${pkg.name} — series_type=${pkg.seriesType}, sessions_remaining ${currentRemaining} → ${pkg.sessionsRemaining}, series_type was ${currentSeriesType || "none"}`,
-    );
+    const effectSummary = pkg.effect === "living_practice_access"
+      ? "portal_access=true, living_practice_access=true"
+      : pkg.effect === "session_credit"
+        ? `sessions_remaining ${currentRemaining} → ${pkg.sessionsRemaining}; series_type preserved as ${currentSeriesType || "none"}`
+        : `series_type=${pkg.seriesType}, sessions_remaining ${currentRemaining} → ${pkg.sessionsRemaining}`;
+    console.log(`[ghl-invoice-webhook] Updated ${sanitizedContactId}: ${pkg.name} — ${effectSummary}`);
 
-    try {
+    if (!posSaleId) try {
       const corr = `invoice:${matchedInvoiceId}`;
       const label = [contact?.firstName, contact?.lastName].filter(Boolean).join(" ").trim() || null;
       await emitPathHop(context.env, {
@@ -535,7 +642,7 @@ export async function onRequestPost(context) {
         pathId: "invoice_package_credit",
         hopId: "put_session_fields",
         outcome: "ok",
-        summary: `sessions_remaining ${currentRemaining} → ${pkg.sessionsRemaining}`,
+        summary: effectSummary,
         source: "ghl-invoice-webhook",
         contactId: sanitizedContactId,
         personLabel: label,
@@ -566,6 +673,7 @@ export async function onRequestPost(context) {
             contactId: sanitizedContactId,
             invoiceId: matchedInvoiceId,
             product: pkg.name,
+            effect: pkg.effect,
             sessionsRemaining: pkg.sessionsRemaining,
             processedAt: new Date().toISOString(),
           }),
@@ -584,6 +692,7 @@ export async function onRequestPost(context) {
         contactId: sanitizedContactId,
         invoiceId: matchedInvoiceId,
         product: pkg.name,
+        effect: pkg.effect,
         seriesType: pkg.seriesType,
         sessionsRemaining: pkg.sessionsRemaining,
         posSaleId,

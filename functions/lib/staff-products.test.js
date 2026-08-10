@@ -105,7 +105,7 @@ describe("owned Staff products", () => {
     });
     expect(result.coverage.definitions.find((definition) => definition.name === "Amari Assessment")).toMatchObject({
       purchaseBehavior: "no-credit",
-      staffSaleState: "needs-fulfillment",
+      staffSaleState: "ready",
       amountCents: 2900,
     });
   });
@@ -121,6 +121,30 @@ describe("owned Staff products", () => {
     });
     expect(result.products.find((product) => product.key === "4-session-series")).toMatchObject({ salesPolicy: "legacy" });
     expect(result.products.find((product) => product.key === "amari-assessment")).toMatchObject({
+      availableInPos: true,
+      readiness: "ready",
+      fulfillmentPolicy: "none",
+      readinessReason: null,
+    });
+    expect(result.products.find((product) => product.key === "entrainment-20")).toMatchObject({
+      availableInPos: true,
+      readiness: "ready",
+      fulfillmentPolicy: "none",
+      readinessReason: null,
+    });
+    expect(result.products.find((product) => product.key === "single-session")).toMatchObject({
+      availableInPos: true,
+      readiness: "ready",
+      fulfillmentPolicy: "session-credit",
+      fulfillmentSummary: "One session credit",
+    });
+    expect(result.products.find((product) => product.key === "living-practice")).toMatchObject({
+      availableInPos: true,
+      readiness: "ready",
+      fulfillmentPolicy: "living-practice-access",
+      fulfillmentSummary: "Living Practice access",
+    });
+    expect(result.products.find((product) => product.key === "entrainment")).toMatchObject({
       availableInPos: false,
       readiness: "needs-fulfillment",
     });

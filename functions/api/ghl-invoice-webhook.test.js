@@ -18,6 +18,7 @@ const PID = {
   initialInPerson: '688a1cd770362828afbf08a2',
   entrainment: '69c5d29c4019ce8e80e2513b',
   livingPractice: '6998d7f2606fa79c54fa3ff5',
+  singleSession: '6a6b8bb7a1753b65945372f1',
   retiredFollowup: '67f57171b6b1019c7b0233cc',
 };
 
@@ -197,6 +198,31 @@ describe('selectSeriesInvoice', () => {
       'mar-entrainment',
     );
     expect(result).toBe(null);
+  });
+
+  it('recognizes Single Session and Living Practice only on an exact Staff POS invoice marker', () => {
+    const marked = (id, productId, saleId) => ({
+      ...invoice({ id, productId }),
+      name: `Staff POS ${saleId}`,
+      termsNotes: `Payment already collected externally. Staff POS sale ${saleId}. Do not send.`,
+    });
+
+    expect(selectSeriesInvoice([
+      marked('inv-single', PID.singleSession, 'pos_singleeffect1'),
+    ], 'inv-single')).toMatchObject({
+      pkg: { effect: 'session_credit', sessionsToAdd: 1, classification: 'followup' },
+    });
+    expect(selectSeriesInvoice([
+      marked('inv-living', PID.livingPractice, 'pos_livingeffect1'),
+    ], 'inv-living')).toMatchObject({
+      pkg: { effect: 'living_practice_access', classification: 'living-practice' },
+    });
+    expect(selectSeriesInvoice([
+      invoice({ id: 'inv-ordinary-single', productId: PID.singleSession }),
+    ], 'inv-ordinary-single')).toBe(null);
+    expect(selectSeriesInvoice([
+      invoice({ id: 'inv-ordinary-living', productId: PID.livingPractice }),
+    ], 'inv-ordinary-living')).toBe(null);
   });
 
   // Still falls through to history when the preferred id can't be found at all
