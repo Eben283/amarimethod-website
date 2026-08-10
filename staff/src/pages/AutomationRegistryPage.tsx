@@ -366,6 +366,8 @@ function FamilyDetail({
 
       {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>This view is intentionally scoped to the live in-person cutover.</strong> Virtual reminders are not shown here; they remain on their separate, not-yet-moved path.</p>}
 
+      {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: ${detail.runtime.flow?.delivery === 'active' ? 'owned delivery active' : 'owned delivery disabled'}` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read this at ${exactTime(detail.runtime.verifiedAt)}; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim live delivery until the Worker can answer.'}</span></div>}
+
       {family.cutoverTree && <CutoverTree tree={family.cutoverTree} />}
 
       <section className="automation-detail-section" id="workflow-definition">
@@ -442,6 +444,10 @@ function FamilyDetail({
             <span><strong>{detail.events.filter((item) => ['failed', 'bounced', 'error'].includes((item.outcome || '').toLowerCase())).length}</strong><small>failures</small></span>
           </div>
         )}
+        {isInPersonCutover && detail.configured && <div className="automation-person-columns">
+          <section><h3><Workflow size={16} /> Enrolled people <b>{detail.enrollments.length}</b></h3>
+            {detail.enrollments.length ? detail.enrollments.map((enrollment) => <article key={enrollment.enrollmentId}><div><strong>{enrollment.contactName || enrollment.contactId || 'Person ID not recorded'}</strong><span className={enrollment.status === 'active' ? 'active' : ''}>{enrollment.status}</span></div><dl><div><dt>Next</dt><dd>{enrollment.nextStep ? `${humanize(enrollment.nextStep.type)} · ${enrollment.nextStep.template || 'template not recorded'}` : 'No pending step'}</dd></div><div><dt>Due</dt><dd>{enrollment.nextStep ? exactTime(enrollment.nextStep.dueAt) : 'Not scheduled'}</dd></div><div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not recorded'}</dd></div></dl></article>) : <p className="automation-registry-empty">No enrollment is recorded by the executing Worker.</p>}
+          </section></div>}
       </section>
 
       <section className="automation-detail-section" id="source-record-evidence">

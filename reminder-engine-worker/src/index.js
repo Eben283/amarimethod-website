@@ -18,6 +18,7 @@ import { handleWebhook } from "./webhook.js";
 import { handleDashboardPage, handleDashboardData } from "./dashboard.js";
 import { dashboardSessionCookie } from "./dashboard-session.js";
 import { handleGhlEvent } from "./ghl-events.js";
+import { runtimeStatus } from "./runtime-status.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
@@ -118,6 +119,12 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "reminder-engine", now: Date.now() });
+      }
+      if (request.method === "GET" && url.pathname === "/runtime-status") {
+        const flowKey = String(url.searchParams.get("flow") || "").trim();
+        const runtime = await runtimeStatus(env, flowKey);
+        if (!runtime) return json(404, { error: "unknown flow" });
+        return json(200, { success: true, runtime });
       }
       return json(404, { error: "not found" });
     } catch (err) {

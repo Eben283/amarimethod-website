@@ -126,7 +126,7 @@ describe("staff-automations — views", () => {
   });
 
   it("family view reads global execution evidence through the CRM worker when Pages has no D1 binding", async () => {
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
+    vi.stubGlobal("fetch", vi.fn().mockImplementation(() => new Response(JSON.stringify({
       success: true,
       configured: true,
       familyKey: "initial-session-reminders",

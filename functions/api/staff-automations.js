@@ -42,9 +42,23 @@ const CRM_WORKER_CONTACTS_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/c
 const CRM_WORKER_AUTOMATIONS_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/automations/people";
 const CRM_WORKER_FAMILIES_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/automations/families";
 const CRM_WORKER_TIMEOUT_MS = 10_000;
+const REMINDER_ENGINE_URL = "https://reminder-engine.eben-fa2.workers.dev";
+
+async function reminderRuntimeEvidence(context, flowKey) {
+  if (!context.env.WORKER_AUTH_SECRET) return null;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
+  try {
+    const response = await fetch(`${REMINDER_ENGINE_URL}/runtime-status?flow=${encodeURIComponent(flowKey)}`, {
+      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` }, signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    return (await response.json()).runtime || null;
+  } catch { return null; } finally { clearTimeout(timer); }
+}
 
 async function contactIdentityForReference(context, contactReference) {
-  if (!context.env.WORKER_AUTH_SECRET) return { ownedContactId: contactReference, providerContactId: null, state: "unavailable" };
+  if (!context.env.WORKER_AUTH_SECRET) return { ownedContactId: contactReference, providerContactId: null, name: null, state: "unavailable" };
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
   try {
@@ -52,22 +66,31 @@ async function contactIdentityForReference(context, contactReference) {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal,
     });
-    if (!response.ok) return { ownedContactId: contactReference, providerContactId: null, state: "unavailable" };
+    if (!response.ok) return { ownedContactId: contactReference, providerContactId: null, name: null, state: "unavailable" };
     const body = await response.json();
     const contact = (Array.isArray(body.contacts) ? body.contacts : [])
       .find((candidate) => String(candidate.id || "") === contactReference
         || String(candidate.provider_contact_id || "") === contactReference);
-    if (!contact) return { ownedContactId: contactReference, providerContactId: null, state: "owned_contact_not_found" };
+    if (!contact) return { ownedContactId: contactReference, providerContactId: null, name: null, state: "owned_contact_not_found" };
     return {
       ownedContactId: String(contact.id),
       providerContactId: contact.provider_contact_id ? String(contact.provider_contact_id) : null,
+      name: [contact.first_name, contact.last_name].filter(Boolean).join(" ") || contact.name || contact.email || null,
       state: contact.provider_contact_id ? "resolved" : "owned_only",
     };
   } catch {
-    return { ownedContactId: contactReference, providerContactId: null, state: "unavailable" };
+    return { ownedContactId: contactReference, providerContactId: null, name: null, state: "unavailable" };
   } finally {
     clearTimeout(timer);
   }
+}
+
+async function withOwnedPeople(context, enrollments) {
+  return Promise.all((enrollments || []).map(async (enrollment) => {
+    if (!enrollment.contactId) return enrollment;
+    const person = await contactIdentityForReference(context, enrollment.contactId);
+    return { ...enrollment, contactId: person.ownedContactId, contactName: person.name, providerContactId: person.providerContactId };
+  }));
 }
 
 async function workerPersonAutomationEvidence(context, ownedContactId) {
@@ -182,18 +205,25 @@ export async function onRequestGet(context) {
       if (!family) {
         return new Response(JSON.stringify({ error: "Automation family not found" }), { status: 404, headers });
       }
-      const workerExecution = !db ? await workerFamilyAutomationEvidence(context, family.key) : null;
+      const initialRuntime = family.key === "initial-session-reminders"
+        ? await reminderRuntimeEvidence(context, "initial-in-person")
+        : null;
+      const workerExecution = !db && !initialRuntime ? await workerFamilyAutomationEvidence(context, family.key) : null;
       const execution = db
         ? await automationFamilyExecutionView(db, family)
-        : workerExecution || { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
-      const executionConfigured = Boolean(db || workerExecution?.configured);
+        : initialRuntime
+          ? { enrollments: initialRuntime.enrollments || [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } }
+          : workerExecution || { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
+      const displayExecution = initialRuntime ? { ...execution, enrollments: await withOwnedPeople(context, execution.enrollments) } : execution;
+      const executionConfigured = Boolean(initialRuntime || db || workerExecution?.configured);
       const executionEvidence = registryEvidence({ executionStoreConfigured: executionConfigured });
       return new Response(JSON.stringify({
         success: true,
         configured: executionConfigured,
         registryVersion: REGISTRY_VERSION,
         family,
-        ...execution,
+        ...displayExecution,
+        runtime: initialRuntime ? { verified: true, ...initialRuntime } : { verified: false },
         evidence: {
           ...executionEvidence,
           gaps: [...family.evidence.gaps, ...executionEvidence.gaps, ...(workerExecution?.evidence?.gaps || [])],

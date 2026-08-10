@@ -153,6 +153,9 @@ export interface ContactAutomationEnrollment {
   engine: string;
   key: string;
   enrollmentId: string;
+  contactId?: string | null;
+  contactName?: string | null;
+  providerContactId?: string | null;
   appointmentId?: string | null;
   startAt?: number | null;
   enteredAt: number | null;
@@ -224,7 +227,7 @@ export interface AutomationCutoverRequirement {
 }
 
 export interface AutomationCutoverReadiness {
-  status: 'not_eligible';
+  status: 'not_eligible' | 'active' | 'unknown';
   label: string;
   summary: string;
   requirements: AutomationCutoverRequirement[];
@@ -314,6 +317,7 @@ export interface AutomationFamilyResponse {
   enrollments: ContactAutomationEnrollment[];
   events: ContactAutomationEvent[];
   coverage: { enrollmentsTruncated: boolean; eventsTruncated: boolean };
+  runtime?: { verified: boolean; verifiedAt?: string; flow?: { key: string; name: string; definitionVersion: number; configuredMode: string; delivery: 'active' | 'disabled' } };
   evidence: { gaps: AutomationEvidenceGap[] };
 }
 
