@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { INITIAL_IN_PERSON } from "./config.js";
-import { enroll, isEligible, resolveDueAt } from "./enroll.js";
+import { backfillEnrollment, enroll, isEligible, resolveDueAt } from "./enroll.js";
 
 const START = Date.parse("2026-07-20T15:00:00-07:00");
 const NOW_2D_BEFORE = Date.parse("2026-07-18T15:00:00-07:00"); // exactly 2 days before start
@@ -112,5 +112,17 @@ describe("enroll", () => {
   it("does not mutate a frozen event or flow", () => {
     const frozen = Object.freeze(evt());
     expect(() => enroll(frozen, INITIAL_IN_PERSON, NOW_2D_BEFORE)).not.toThrow();
+  });
+
+  it("backfills only future timed steps and never replays booking-time messages", () => {
+    const nowLate = START - 30 * MIN;
+    const e = backfillEnrollment(evt(), INITIAL_IN_PERSON, nowLate);
+    expect(e.steps.map((step) => step.status)).toEqual([
+      "skipped", "skipped", "skipped", "skipped", "skipped", "skipped",
+    ]);
+
+    const eEarly = backfillEnrollment(evt(), INITIAL_IN_PERSON, NOW_2D_BEFORE);
+    expect(eEarly.steps.slice(0, 2).every((step) => step.status === "skipped")).toBe(true);
+    expect(eEarly.steps.slice(2).every((step) => step.status === "pending")).toBe(true);
   });
 });

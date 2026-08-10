@@ -74,3 +74,19 @@ export function enroll(event, flow, nowMs) {
     steps,
   };
 }
+
+/**
+ * Reconstruct a reminder enrollment for a confirmed appointment that was already waiting in
+ * GHL when a cutover became live. Booking-time steps are always skipped: they belong to the
+ * former sender and must never be replayed. Timed steps retain the ordinary past-time guard.
+ */
+export function backfillEnrollment(event, flow, nowMs) {
+  const enrollment = enroll(event, flow, nowMs);
+  if (!enrollment) return null;
+  return {
+    ...enrollment,
+    steps: enrollment.steps.map((step) => (
+      step.at === "enroll" ? { ...step, status: "skipped" } : step
+    )),
+  };
+}
