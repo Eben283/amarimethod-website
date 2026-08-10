@@ -1,9 +1,10 @@
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { sendOwnedEmail } from "./gmail-test-send.js";
+import { initialInPersonNode } from "./initial-in-person-workflow.js";
+import { renderWorkflowText } from "./workflow-definition.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
-const CALENDAR_IDS = new Set(["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"]);
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 const clean = (value) => String(value || "").trim();
@@ -29,8 +30,8 @@ function customField(contact, key) {
 
 export function initialInPersonCutoverEligibility(env, flow, step, enrollment) {
   if (env?.INITIAL_IN_PERSON_CUTOVER !== "enabled") return { eligible: false, reason: "cutover-disabled" };
-  if (flow?.flowKey !== "initial-in-person" || !CALENDAR_IDS.has(enrollment?.calendarId)) return { eligible: false, reason: "not-initial-in-person" };
-  if (!["booked-internal", "confirmation", "day-before", "one-hour-sms", "starting-soon", "one-hour-internal"].includes(step?.template)) return { eligible: false, reason: "not-owned-step" };
+  if (flow?.flowKey !== "initial-in-person" || !flow?.calendarIds?.includes(enrollment?.calendarId)) return { eligible: false, reason: "not-initial-in-person" };
+  if (!initialInPersonNode(step?.template, flow.workflowDocument)) return { eligible: false, reason: "not-owned-step" };
   if (!EMAIL.test(clean(env.GARRETT_INTERNAL_EMAIL)) || !clean(env.GARRETT_INTERNAL_CONTACT_ID)) return { eligible: false, reason: "internal-recipient-not-configured" };
   return { eligible: true };
 }
@@ -42,7 +43,7 @@ async function read(env, path) {
   return response.json();
 }
 
-export async function deliverInitialInPersonStep(env, step, enrollment, services = {}) {
+export async function deliverInitialInPersonStep(env, step, enrollment, services = {}, workflow) {
   const readAppointment = services.read || read;
   const sendEmail = services.sendEmail || sendOwnedEmail;
   const sendSms = services.sendSms || ((message) => sendConversationMessage({ env }, message));
@@ -63,28 +64,20 @@ export async function deliverInitialInPersonStep(env, step, enrollment, services
     clean(appointment.rescheduleLink || appointment.reschedule_link) && `Reschedule: ${clean(appointment.rescheduleLink || appointment.reschedule_link)}`,
     clean(appointment.cancellationLink || appointment.cancellation_link) && `Cancel: ${clean(appointment.cancellationLink || appointment.cancellation_link)}`,
   ].filter(Boolean).join("\n");
+  const additionalInformation = clean(contact.additional_information) || customField(contact, "additional_information") || customField(contact, "5cEfs0e46quKY8J2HULr");
+  const values = { firstName: name, contactName: clean(contact.name) || name, calendarName: calendar, appointmentDate: when.date, appointmentTime: when.time, appointmentFull: when.full, appointmentLinks: links, location, additionalInformation };
+  const node = initialInPersonNode(step.template, workflow);
+  if (!node) return { success: false, error: "unknown owned step" };
+  const subject = renderWorkflowText(node.message.subject, values);
+  const text = renderWorkflowText(node.message.body, values);
   const email = async (to, subject, text) => {
     if (!EMAIL.test(to)) return { success: false, error: "recipient email is unavailable" };
     return sendEmail(env, { to, subject, text });
   };
-  if (step.template === "booked-internal") {
-    return { recipient: clean(env.GARRETT_INTERNAL_EMAIL), ...(await email(clean(env.GARRETT_INTERNAL_EMAIL), `${name} booked a ${calendar}`, `Hi, Big Dog,\n\n${clean(contact.name) || name} booked a ${calendar} for ${when.date} at ${when.time}.\nStudio: ${location}`)) };
+  if (node.message.channel === "email") {
+    const recipient = node.message.audience === "internal" ? clean(env.GARRETT_INTERNAL_EMAIL) : clientEmail;
+    return { recipient, ...(await email(recipient, subject, text)) };
   }
-  if (step.template === "confirmation") {
-    return { recipient: clientEmail, ...(await email(clientEmail, "You're booked — here's what to expect", `Hi ${name},\n\nYour session with Garrett is confirmed:\n${calendar}\n${when.full}\n${location}\n\nWear something comfortable you can move in. That's all you need.\n\n${links}\n\nWe look forward to seeing you.\nThe Amari Method Team`)) };
-  }
-  if (step.template === "day-before") {
-    return { recipient: clientEmail, ...(await email(clientEmail, `Your session on ${when.full}`, `Hi ${name},\n\nJust a heads up about your upcoming session:\n${calendar}\n${when.full}\n${location}\n\n${links}\n\nLooking forward to it.\nGarrett`)) };
-  }
-  if (step.template === "starting-soon") {
-    return { recipient: clientEmail, ...(await email(clientEmail, `Your session at ${when.time}`, `Hi ${name},\n\nYour Amari Method session is at ${when.time}.\n${location}\n\nSee you soon.\nGarrett`)) };
-  }
-  if (step.template === "one-hour-sms") {
-    return { recipient: enrollment.contactId, ...(await sendSms({ channel: "sms", contactId: enrollment.contactId, message: `Hi ${name}, just a friendly reminder — your appointment with Garrett is at ${when.time}. ${location}` })) };
-  }
-  if (step.template === "one-hour-internal") {
-    const additionalInformation = clean(contact.additional_information) || customField(contact, "additional_information") || customField(contact, "5cEfs0e46quKY8J2HULr");
-    return { recipient: clean(env.GARRETT_INTERNAL_CONTACT_ID), ...(await sendSms({ channel: "sms", contactId: clean(env.GARRETT_INTERNAL_CONTACT_ID), message: `${clean(contact.name) || name}'s ${calendar} appointment at ${when.time}. These were the specific issues this person wanted to address (if applicable): ${additionalInformation}` })) };
-  }
-  return { success: false, error: "unknown owned step" };
+  const recipient = node.message.audience === "internal" ? clean(env.GARRETT_INTERNAL_CONTACT_ID) : enrollment.contactId;
+  return { recipient, ...(await sendSms({ channel: "sms", contactId: recipient, message: text })) };
 }

@@ -19,6 +19,9 @@ import { handleDashboardPage, handleDashboardData } from "./dashboard.js";
 import { dashboardSessionCookie } from "./dashboard-session.js";
 import { handleGhlEvent } from "./ghl-events.js";
 import { runtimeStatus } from "./runtime-status.js";
+import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
+import { ensurePublishedWorkflow, saveDraftWorkflow, publishDraftWorkflow } from "./workflow-store.js";
+import { appendEvent } from "./store.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
@@ -125,6 +128,27 @@ export default {
         const runtime = await runtimeStatus(env, flowKey);
         if (!runtime) return json(404, { error: "unknown flow" });
         return json(200, { success: true, runtime });
+      }
+      if (request.method === "POST" && url.pathname === "/workflow-draft") {
+        const body = await request.json();
+        const current = await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW);
+        if (body?.document?.id !== current.id || body.document.version !== current.version + 1) {
+          return json(409, { error: `draft must be ${current.id} v${current.version + 1}` });
+        }
+        const document = await saveDraftWorkflow(env.REMINDER_DB, body.document);
+        return json(200, { success: true, document, publishedVersion: current.version });
+      }
+      if (request.method === "POST" && url.pathname === "/workflow-publish") {
+        const body = await request.json();
+        if (body?.workflowId !== INITIAL_IN_PERSON_WORKFLOW.id || !Number.isInteger(body?.version) || !Number.isInteger(body?.expectedPublishedVersion)) {
+          return json(400, { error: "workflowId, version, and expectedPublishedVersion are required" });
+        }
+        const document = await publishDraftWorkflow(env.REMINDER_DB, body.workflowId, body.version, body.expectedPublishedVersion);
+        await appendEvent(env.REMINDER_DB, {
+          ts: Date.now(), engine: "reminder", flowKey: document.id, definitionVersion: document.version,
+          action: "workflow_published", outcome: "published", detail: { actor: requestedStaffActor(request.headers.get("X-Staff-Actor")) },
+        });
+        return json(200, { success: true, document });
       }
       return json(404, { error: "not found" });
     } catch (err) {

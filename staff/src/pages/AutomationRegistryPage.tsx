@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import type { DragEvent } from 'react';
 import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import {
   AlertTriangle,
@@ -21,6 +22,8 @@ import {
   getAutomationFamilies,
   getAutomationFamily,
   getContactAutomationEvidence,
+  publishAutomationWorkflow,
+  saveAutomationWorkflowDraft,
   searchOwnedContacts,
 } from '../lib/api';
 import type {
@@ -318,7 +321,7 @@ function FamilyDetail({
   const family = detail.family;
   const isInPersonCutover = family.key === 'initial-session-reminders';
   const displayedDefinitions = isInPersonCutover
-    ? family.ownedDefinitions.filter((definition) => definition.key === 'initial-in-person')
+    ? []
     : family.ownedDefinitions;
   const displayedSourceRecords = isInPersonCutover
     ? family.sourceRecords.filter((record) => [
@@ -368,10 +371,12 @@ function FamilyDetail({
 
       {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: ${detail.runtime.flow?.delivery === 'active' ? 'owned delivery active' : 'owned delivery disabled'}` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read this at ${exactTime(detail.runtime.verifiedAt)}; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim live delivery until the Worker can answer.'}</span></div>}
 
-      {family.cutoverTree && <CutoverTree tree={family.cutoverTree} />}
+      {family.cutoverTree && !isInPersonCutover && <CutoverTree tree={family.cutoverTree} />}
 
       <section className="automation-detail-section" id="workflow-definition">
-        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>Owned definition</h3><p>Exact trigger, step timing, type, branch structure, and template key from code.</p></div><b>{displayedDefinitions.length}</b></div>
+        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>{isInPersonCutover ? 'Canonical executable workflow' : 'Owned definition'}</h3><p>{isInPersonCutover ? 'The executing Worker and this view read this same versioned document.' : 'Exact trigger, step timing, type, branch structure, and template key from code.'}</p></div><b>{isInPersonCutover ? (detail.runtime?.definition ? 1 : 0) : displayedDefinitions.length}</b></div>
+        {isInPersonCutover && detail.runtime?.definition && <CanonicalWorkflowView workflow={detail.runtime.definition} delivery={detail.runtime.flow?.delivery || 'disabled'} />}
+        {isInPersonCutover && !detail.runtime?.definition && <p className="automation-registry-empty">The executing Worker did not return its canonical workflow. No fallback copy is shown.</p>}
         {displayedDefinitions.length ? displayedDefinitions.map((definition) => (
           <article className="automation-definition-card" key={definition.id}>
             <header><span>{humanize(definition.engine)}</span><strong>{definition.name}</strong><em>v{definition.definitionVersion} · {definition.mode}</em></header>
@@ -425,7 +430,7 @@ function FamilyDetail({
               </section>
             )}
           </article>
-        )) : <p className="automation-registry-empty">No owned definition exists for this family yet. The source inventory below is evidence, not runnable code.</p>}
+        )) : !isInPersonCutover && <p className="automation-registry-empty">No owned definition exists for this family yet. The source inventory below is evidence, not runnable code.</p>}
       </section>
 
       <div id="person-run-evidence">
@@ -446,7 +451,10 @@ function FamilyDetail({
         )}
         {isInPersonCutover && detail.configured && <div className="automation-person-columns">
           <section><h3><Workflow size={16} /> Enrolled people <b>{detail.enrollments.length}</b></h3>
-            {detail.enrollments.length ? detail.enrollments.map((enrollment) => <article key={enrollment.enrollmentId}><div><strong>{enrollment.contactName || enrollment.contactId || 'Person ID not recorded'}</strong><span className={enrollment.status === 'active' ? 'active' : ''}>{enrollment.status}</span></div><dl><div><dt>Next</dt><dd>{enrollment.nextStep ? `${humanize(enrollment.nextStep.type)} · ${enrollment.nextStep.template || 'template not recorded'}` : 'No pending step'}</dd></div><div><dt>Due</dt><dd>{enrollment.nextStep ? exactTime(enrollment.nextStep.dueAt) : 'Not scheduled'}</dd></div><div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not recorded'}</dd></div></dl></article>) : <p className="automation-registry-empty">No enrollment is recorded by the executing Worker.</p>}
+            {detail.enrollments.length ? detail.enrollments.map((enrollment) => <article key={enrollment.enrollmentId}><div><strong>{enrollment.contactName || enrollment.contactId || 'Person ID not recorded'}</strong><span className={enrollment.status === 'active' ? 'active' : ''}>{enrollment.status}</span></div><dl><div><dt>Version</dt><dd>v{enrollment.definitionVersion || 'not recorded'}</dd></div><div><dt>Current step</dt><dd>{enrollment.nextStep ? `${humanize(enrollment.nextStep.type)} · ${enrollment.nextStep.template || 'template not recorded'}` : 'No pending step'}</dd></div><div><dt>Next action</dt><dd>{enrollment.nextStep ? exactTime(enrollment.nextStep.dueAt) : 'Not scheduled'}</dd></div><div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not recorded'}</dd></div></dl></article>) : <p className="automation-registry-empty">No enrollment is recorded by the executing Worker.</p>}
+          </section>
+          <section><h3><Clock3 size={16} /> Run history <b>{detail.events.length}</b></h3>
+            {detail.events.length ? detail.events.slice(0, 50).map((event, index) => <article className={['failed', 'error', 'bounced'].includes(String(event.outcome).toLowerCase()) ? 'is-failure' : ''} key={`${event.ts}-${event.messageRef || index}`}><div><strong>{humanize(event.action)}</strong><span>{humanize(event.outcome)}</span></div><time>{exactTime(event.ts)}</time><p>{event.stepIndex == null ? 'Workflow event' : `Step ${event.stepIndex + 1}`} · v{event.definitionVersion || 'not recorded'}{event.channel ? ` · ${humanize(event.channel)}` : ''}</p>{event.messageRef && <small>Receipt: <code>{event.messageRef}</code></small>}</article>) : <p className="automation-registry-empty">No execution event is recorded by the executing Worker.</p>}
           </section></div>}
       </section>
 
@@ -463,6 +471,71 @@ function FamilyDetail({
       </section>}
     </>
   );
+}
+
+function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../types/staff').CanonicalWorkflow; delivery: 'active' | 'disabled' }) {
+  const [draft, setDraft] = useState<import('../types/staff').CanonicalWorkflow | null>(null);
+  const [dragged, setDragged] = useState<number | null>(null);
+  const [status, setStatus] = useState('');
+  const [saving, setSaving] = useState(false);
+  const updateNode = (index: number, patch: Record<string, unknown>) => setDraft((current) => current ? ({ ...current, nodes: current.nodes.map((node, i) => i === index ? { ...node, ...patch } : node) }) : current);
+  const updateMessage = (index: number, patch: Record<string, string>) => setDraft((current) => current ? ({ ...current, nodes: current.nodes.map((node, i) => i === index ? { ...node, message: { ...node.message, ...patch } } : node) }) : current);
+  const drop = (event: DragEvent, target: number) => {
+    event.preventDefault();
+    if (dragged == null || dragged === target) return;
+    setDraft((current) => {
+      if (!current) return current;
+      const nodes = [...current.nodes];
+      const [node] = nodes.splice(dragged, 1);
+      nodes.splice(target, 0, node);
+      return { ...current, nodes };
+    });
+    setDragged(null);
+  };
+  const beginEdit = () => {
+    setStatus('Draft changes do not affect running enrollments or send messages.');
+    setDraft({ ...workflow, version: workflow.version + 1, nodes: workflow.nodes.map((node) => ({ ...node, action: { ...node.action }, message: { ...node.message } })) });
+  };
+  const save = async () => {
+    if (!draft) return;
+    setSaving(true); setStatus('Validating and saving draft…');
+    try { await saveAutomationWorkflowDraft(draft); setStatus(`Draft v${draft.version} saved. Nothing was published or sent.`); }
+    catch (error) { setStatus(error instanceof Error ? error.message : 'Draft could not be saved.'); }
+    finally { setSaving(false); }
+  };
+  const publish = async () => {
+    if (!draft) return;
+    setSaving(true); setStatus('Validating published-version lock…');
+    try {
+      await saveAutomationWorkflowDraft(draft);
+      await publishAutomationWorkflow(draft.id, draft.version, workflow.version);
+      setStatus(`Published v${draft.version}. Reloading runtime truth…`);
+      window.location.reload();
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Workflow could not be published.'); setSaving(false); }
+  };
+  return <article className="automation-definition-card automation-canonical-workflow">
+    <header><span>{delivery === 'active' ? 'Published · live' : 'Published · disabled'}</span><strong>{workflow.name}</strong><em>v{workflow.version}</em></header>
+    <div className="canonical-workflow-controls">
+      <p><strong>Published v{workflow.version} is the sender.</strong> The cards, copy, timing, and order below come from that exact document.</p>
+      {!draft ? <button type="button" onClick={beginEdit}>Edit as draft v{workflow.version + 1}</button> : <><button type="button" disabled={saving} onClick={save}>Save draft</button><button className="is-publish" type="button" disabled={saving} onClick={publish}>Publish v{draft.version}</button><button type="button" disabled={saving} onClick={() => { setDraft(null); setStatus(''); }}>Discard draft</button></>}
+      {status && <output>{status}</output>}
+    </div>
+    <div className="automation-definition-grid"><div><h4>Trigger</h4><pre>{structured(workflow.trigger)}</pre></div><div><h4>Exits</h4><pre>{structured(workflow.exits)}</pre></div></div>
+    {!draft && <div className="automation-step-list canonical-workflow-tree">{workflow.nodes.map((node, index) => <div key={node.id}><span>{index + 1}</span><p><strong>{node.label}</strong><small>{node.at} · {humanize(node.action.type)} · <code>{node.id}</code></small></p></div>)}</div>}
+    {draft && <div className="canonical-workflow-editor" aria-label={`Draft workflow version ${draft.version}`}>
+      {draft.nodes.map((node, index) => <article key={node.id} draggable onDragStart={() => setDragged(index)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, index)}>
+        <header><b>⋮⋮</b><span>{index + 1}</span><strong>{humanize(node.action.type)}</strong><code>{node.id}</code></header>
+        <label>Step name<input value={node.label} onChange={(event) => updateNode(index, { label: event.target.value })} /></label>
+        <label>Timing<input value={node.at} onChange={(event) => updateNode(index, { at: event.target.value })} /><small>Use <code>enroll</code> or <code>start-60m</code>.</small></label>
+        {node.message.from !== undefined && <label>From<input value={node.message.from} onChange={(event) => updateMessage(index, { from: event.target.value })} /></label>}
+        {node.message.subject !== undefined && <label>Subject<input value={node.message.subject} onChange={(event) => updateMessage(index, { subject: event.target.value })} /></label>}
+        <label>Exact message<textarea rows={7} value={node.message.body} onChange={(event) => updateMessage(index, { body: event.target.value })} /></label>
+      </article>)}
+    </div>}
+    <section className="automation-message-preview"><header><div><h4>Exact executable message templates</h4><p>These templates are rendered by the same node definitions shown above.</p></div><span>{workflow.nodes.length}</span></header>
+      {workflow.nodes.map((node, index) => <article key={node.id}><h5>Step {index + 1} · {humanize(node.message.audience)} {node.message.channel}</h5>{node.message.from && <p><b>From</b>{node.message.from}</p>}{node.message.subject && <p><b>Subject</b>{node.message.subject}</p>}<pre>{node.message.body}</pre></article>)}
+    </section>
+  </article>;
 }
 
 function CutoverTree({ tree }: { tree: AutomationCutoverTree }) {

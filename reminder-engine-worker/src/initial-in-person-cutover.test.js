@@ -2,7 +2,9 @@ import { describe, expect, it } from "vitest";
 import { initialInPersonCutoverEligibility, deliverInitialInPersonStep } from "./initial-in-person-cutover.js";
 
 const env = { INITIAL_IN_PERSON_CUTOVER: "enabled", GARRETT_INTERNAL_EMAIL: "garrett@amarimethod.com", GARRETT_INTERNAL_CONTACT_ID: "lYgxJtvpRzWO2UvDh9ju" };
-const flow = { flowKey: "initial-in-person" };
+import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
+
+const flow = { flowKey: "initial-in-person", calendarIds: INITIAL_IN_PERSON_WORKFLOW.trigger.calendarIds, workflowDocument: INITIAL_IN_PERSON_WORKFLOW };
 const enrollment = { calendarId: "EM6vB2mq7EAdGCbUb3j1" };
 
 describe("initialInPersonCutoverEligibility", () => {
@@ -61,6 +63,21 @@ describe("deliverInitialInPersonStep", () => {
 
     const startingSoon = await deliverInitialInPersonStep(env, { template: "starting-soon" }, enrollment, services());
     expect(startingSoon).toMatchObject({ success: true, recipient: "avery@example.test" });
+  });
+
+  it("renders the exact message from the executable workflow version", async () => {
+    let sent;
+    const workflow = {
+      ...INITIAL_IN_PERSON_WORKFLOW,
+      nodes: INITIAL_IN_PERSON_WORKFLOW.nodes.map((node) => node.id === "confirmation"
+        ? { ...node, message: { ...node.message, subject: "Canonical punctuation.", body: "Hello {{firstName}}." } }
+        : node),
+    };
+    await deliverInitialInPersonStep(env, { template: "confirmation" }, enrollment, {
+      ...services(),
+      sendEmail: async (_env, message) => { sent = message; return { success: true, messageId: "canonical" }; },
+    }, workflow);
+    expect(sent).toMatchObject({ subject: "Canonical punctuation.", text: "Hello Avery." });
   });
 
   it("sends the two SMS steps through the client and Garrett contact records", async () => {

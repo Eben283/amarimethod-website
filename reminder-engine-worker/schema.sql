@@ -63,3 +63,16 @@ BEFORE DELETE ON automation_events
 BEGIN
   SELECT RAISE(ABORT, 'automation_events is append-only');
 END;
+
+-- Canonical workflow documents. Published versions are immutable; editing always creates a draft.
+CREATE TABLE IF NOT EXISTS workflow_versions (
+  workflow_id  TEXT NOT NULL,
+  version      INTEGER NOT NULL,
+  state        TEXT NOT NULL CHECK (state IN ('draft', 'published', 'retired')),
+  document     TEXT NOT NULL,
+  created_at   INTEGER NOT NULL,
+  published_at INTEGER,
+  PRIMARY KEY (workflow_id, version)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_workflow_one_published
+ON workflow_versions (workflow_id) WHERE state = 'published';

@@ -11,7 +11,7 @@
 // shared D1 exists (AUTOMATION_DB binding), returns 200 { configured: false } so the future
 // staff tab can render an honest empty state instead of erroring.
 
-import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { requireStaffAuth, requireEbenStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 import {
   contactAutomationIdentityView,
   failuresView,
@@ -153,12 +153,30 @@ function windowHours(url, fallback) {
 }
 
 export async function onRequestOptions(context) {
-  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), "GET, OPTIONS") });
+  return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
+}
+
+export async function onRequestPost(context) {
+  const headers = { ...corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireEbenStaffAuth(context, headers);
+  if (error) return error;
+  if (!context.env.WORKER_AUTH_SECRET) return new Response(JSON.stringify({ error: "Workflow runtime is not configured" }), { status: 503, headers });
+  const body = await context.request.json().catch(() => null);
+  const view = new URL(context.request.url).searchParams.get("view");
+  const path = view === "workflow-draft" ? "/workflow-draft" : view === "workflow-publish" ? "/workflow-publish" : null;
+  if (!path || !body) return new Response(JSON.stringify({ error: "Invalid workflow operation" }), { status: 400, headers });
+  const response = await fetch(`${REMINDER_ENGINE_URL}${path}`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`, "Content-Type": "application/json", "X-Staff-Actor": String(payload?.user || "Staff") },
+    body: JSON.stringify(body),
+  });
+  const result = await response.text();
+  return new Response(result, { status: response.status, headers });
 }
 
 export async function onRequestGet(context) {
   const headers = {
-    ...corsHeaders(context.request.headers.get("Origin"), "GET, OPTIONS"),
+    ...corsHeaders(context.request.headers.get("Origin"), "GET, POST, OPTIONS"),
     "Content-Type": "application/json",
   };
 
@@ -209,10 +227,10 @@ export async function onRequestGet(context) {
         ? await reminderRuntimeEvidence(context, "initial-in-person")
         : null;
       const workerExecution = !db && !initialRuntime ? await workerFamilyAutomationEvidence(context, family.key) : null;
-      const execution = db
-        ? await automationFamilyExecutionView(db, family)
-        : initialRuntime
-          ? { enrollments: initialRuntime.enrollments || [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } }
+      const execution = initialRuntime
+        ? { enrollments: initialRuntime.enrollments || [], events: initialRuntime.events || [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } }
+        : db
+          ? await automationFamilyExecutionView(db, family)
           : workerExecution || { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
       const displayExecution = initialRuntime ? { ...execution, enrollments: await withOwnedPeople(context, execution.enrollments) } : execution;
       const executionConfigured = Boolean(initialRuntime || db || workerExecution?.configured);

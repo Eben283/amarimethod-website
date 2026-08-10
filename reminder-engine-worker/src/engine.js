@@ -4,7 +4,7 @@
 //       enroll into any matching flow, and/or cancel on a cancelOn event.
 //   runSweep(env, nowMs)           — the cron: fire (or shadow-log) every due step.
 
-import { FLOWS, flowsForCalendar } from "./config.js";
+import { FLOWS } from "./config.js";
 import { enroll } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
@@ -14,6 +14,14 @@ import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last
 import { assessmentCutoverEligibility, assessmentTestEligibility, renderAssessmentConfirmation } from "./assessment-test-delivery.js";
 import { sendOwnedEmail } from "./gmail-test-send.js";
 import { deliverInitialInPersonStep, initialInPersonCutoverEligibility } from "./initial-in-person-cutover.js";
+import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
+import { ensurePublishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
+
+async function executionFlows(env) {
+  const canonical = await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW);
+  const initial = asExecutableWorkflow(canonical);
+  return FLOWS.map((flow) => flow.flowKey === initial.flowKey ? initial : flow);
+}
 
 /**
  * React to an appointment event: enroll into flows whose enrollOn matches, cancel flows whose
@@ -25,7 +33,8 @@ export async function handleEvent(env, event, nowMs) {
   const actions = [];
   if (!event || event.recognized !== true) return { actions };
 
-  for (const flow of flowsForCalendar(event.calendarId)) {
+  const flows = (await executionFlows(env)).filter((flow) => flow.calendarIds.includes(event.calendarId));
+  for (const flow of flows) {
     if (flow.enrollOn.statuses.includes(event.type)) {
       const enrollment = enroll(event, flow, nowMs);
       if (enrollment) {
@@ -108,7 +117,7 @@ export async function handleEvent(env, event, nowMs) {
 export async function runSweep(env, nowMs, limit = 100) {
   const db = env.REMINDER_DB;
   const due = await loadDueSteps(db, nowMs, limit);
-  const flowByKey = Object.fromEntries(FLOWS.map((f) => [f.flowKey, f]));
+  const flowByKey = Object.fromEntries((await executionFlows(env)).map((f) => [f.flowKey, f]));
 
   const deps = {
     logEvent: (r) => appendEvent(db, r),
@@ -125,7 +134,7 @@ export async function runSweep(env, nowMs, limit = 100) {
       }
       const fullCutover = initialInPersonCutoverEligibility(env, flow, step, enrollment);
       if (fullCutover.eligible) {
-        const result = await deliverInitialInPersonStep(env, step, enrollment);
+        const result = await deliverInitialInPersonStep(env, step, enrollment, {}, flow.workflowDocument);
         return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
       }
       const cutover = assessmentCutoverEligibility(env, flow, step, enrollment);
@@ -140,7 +149,11 @@ export async function runSweep(env, nowMs, limit = 100) {
 
   const counts = { would_send: 0, sent: 0, failed: 0, skip: 0 };
   for (const item of due) {
-    const flow = flowByKey[item.enrollment.flowKey];
+    let flow = flowByKey[item.enrollment.flowKey];
+    if (flow?.flowKey === INITIAL_IN_PERSON_WORKFLOW.id && item.enrollment.definitionVersion !== flow.definitionVersion) {
+      const pinned = await workflowVersion(db, flow.flowKey, item.enrollment.definitionVersion);
+      if (pinned) flow = asExecutableWorkflow(pinned);
+    }
     if (!flow) continue;
     const r = await processStep({ ...item, flow }, deps, nowMs);
     counts[r.outcome] = (counts[r.outcome] || 0) + 1;

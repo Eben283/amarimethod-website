@@ -4,11 +4,12 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // and the DB is never touched; allowed → views are served.
 vi.mock("../lib/endpoint-guards.js", () => ({
   requireStaffAuth: vi.fn(),
+  requireEbenStaffAuth: vi.fn(),
   corsHeaders: () => ({}),
 }));
 
-import { onRequestGet } from "./staff-automations.js";
-import { requireStaffAuth } from "../lib/endpoint-guards.js";
+import { onRequestGet, onRequestPost } from "./staff-automations.js";
+import { requireStaffAuth, requireEbenStaffAuth } from "../lib/endpoint-guards.js";
 
 const deny = () => ({ error: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }) });
 const allow = () => ({ error: null, payload: { role: "staff" } });
@@ -20,10 +21,26 @@ function makeContext(query, env = {}) {
   };
 }
 
+function makePostContext(query, body, env = {}) {
+  return { request: new Request(`https://x.example/api/staff-automations?${query}`, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }), env };
+}
+
 // Empty-but-valid D1: every query returns no rows.
 const emptyDb = { prepare: () => ({ bind: () => ({ all: async () => ({ results: [] }) }) }) };
 
 beforeEach(() => vi.clearAllMocks());
+
+describe("staff-automations — canonical workflow writes", () => {
+  it("requires Eben and proxies a validated draft without invoking delivery", async () => {
+    requireEbenStaffAuth.mockResolvedValue({ error: null, payload: { user: "Eben", role: "staff" } });
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ success: true, document: { id: "initial-in-person", version: 4 } }), { status: 200 })));
+    const body = { document: { id: "initial-in-person", version: 4 } };
+    const response = await onRequestPost(makePostContext("view=workflow-draft", body, { WORKER_AUTH_SECRET: "secret" }));
+    expect(response.status).toBe(200);
+    expect(fetch).toHaveBeenCalledWith(expect.stringContaining("/workflow-draft"), expect.objectContaining({ method: "POST", body: JSON.stringify(body) }));
+    vi.unstubAllGlobals();
+  });
+});
 
 describe("staff-automations — auth gate", () => {
   it("an unauthenticated request gets the guard's 401 and never touches the DB", async () => {

@@ -137,6 +137,7 @@ export interface ContactAutomationEvent {
   ts: number;
   engine: string | null;
   flowKey: string | null;
+  definitionVersion?: number | null;
   contactId: string | null;
   appointmentId: string | null;
   stepIndex: number | null;
@@ -157,6 +158,7 @@ export interface ContactAutomationEnrollment {
   contactName?: string | null;
   providerContactId?: string | null;
   appointmentId?: string | null;
+  definitionVersion?: number | null;
   startAt?: number | null;
   enteredAt: number | null;
   status: string;
@@ -317,8 +319,25 @@ export interface AutomationFamilyResponse {
   enrollments: ContactAutomationEnrollment[];
   events: ContactAutomationEvent[];
   coverage: { enrollmentsTruncated: boolean; eventsTruncated: boolean };
-  runtime?: { verified: boolean; verifiedAt?: string; flow?: { key: string; name: string; definitionVersion: number; configuredMode: string; delivery: 'active' | 'disabled' } };
+  runtime?: { verified: boolean; verifiedAt?: string; flow?: { key: string; name: string; definitionVersion: number; configuredMode: string; delivery: 'active' | 'disabled' }; definition?: CanonicalWorkflow | null; versions?: Array<{ version: number; state: 'draft' | 'published' | 'retired'; created_at: number; published_at: number | null }> };
   evidence: { gaps: AutomationEvidenceGap[] };
+}
+
+export interface CanonicalWorkflow {
+  id: string;
+  name: string;
+  version: number;
+  executionMode: string;
+  trigger: Record<string, unknown>;
+  exits: Array<{ event: string; effect: string; label: string }>;
+  nodes: Array<{
+    id: string;
+    label: string;
+    at: string;
+    skipIfPast: boolean;
+    action: { type: string; template: string };
+    message: { audience: string; channel: string; from?: string; subject?: string; body: string };
+  }>;
 }
 
 export interface QuizResults {

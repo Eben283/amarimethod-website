@@ -334,6 +334,14 @@ export async function getAutomationFamily(
   return fetchApi(`/staff-automations?view=family&key=${encodeURIComponent(key)}`);
 }
 
+export async function saveAutomationWorkflowDraft(document: import('../types/staff').CanonicalWorkflow): Promise<{ success: true; document: import('../types/staff').CanonicalWorkflow; publishedVersion: number }> {
+  return fetchApi('/staff-automations?view=workflow-draft', { method: 'POST', body: JSON.stringify({ document }) });
+}
+
+export async function publishAutomationWorkflow(workflowId: string, version: number, expectedPublishedVersion: number): Promise<{ success: true; document: import('../types/staff').CanonicalWorkflow }> {
+  return fetchApi('/staff-automations?view=workflow-publish', { method: 'POST', body: JSON.stringify({ workflowId, version, expectedPublishedVersion }) });
+}
+
 export async function addNote(contactId: string, body: string): Promise<{ success: boolean }> {
   return fetchApi('/staff-note', {
     method: 'POST',

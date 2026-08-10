@@ -430,7 +430,7 @@ describe("CRM mirror dashboard access handoff", () => {
       shadowOnly: true,
       state: "unavailable",
       liveScheduleFallback: true,
-      bufferPolicy: { state: "conflict", runtimeAppOwnedMinutes: 20, olderDocumentedMinutes: 10 },
+      bufferPolicy: { state: "confirmed", runtimeAppOwnedMinutes: 20, historicalDocumentedMinutes: 10 },
     });
   });
 });
