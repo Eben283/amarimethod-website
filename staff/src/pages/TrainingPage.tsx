@@ -2,6 +2,7 @@ import {
   BookOpenText,
   ChevronRight,
   Compass,
+  FileText,
   GraduationCap,
   Palette,
   Zap,
@@ -101,8 +102,10 @@ export default function TrainingPage() {
             <button type="button" onClick={() => choosePlaybook('positioning')}>
               <GraduationCap aria-hidden="true" /><span><strong>Current Amari positioning</strong><small>Open Positioning V2 inside the teaching playbooks</small></span><ChevronRight aria-hidden="true" />
             </button>
+            <a href="/staff/resources/garrett-amari-practice-sales-worksheet.pdf" target="_blank" rel="noreferrer">
+              <FileText aria-hidden="true" /><span><strong>$5,400 Amari Practice sales worksheet</strong><small>50-minute Assessment conversation and decision worksheet</small></span><ChevronRight aria-hidden="true" />
+            </a>
           </div>
-          <p className="training-reference-note"><strong>Not included:</strong> the older bundled sales worksheet still contains a stale 40-minute Assessment reference. It stays out of Training until its source is corrected and rebuilt.</p>
         </section>
       ) : null}
     </main>

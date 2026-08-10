@@ -89,6 +89,9 @@ describe('Staff legibility contract', () => {
     expect(training).toContain('<PlaybookPage embedded activeTab={playbook} onTabChange={choosePlaybook} />');
     expect(training).toContain('Playbooks & scripts');
     expect(training).toContain('Reference');
+    expect(training).toContain('/staff/resources/garrett-amari-practice-sales-worksheet.pdf');
+    expect(training).toContain('50-minute Assessment conversation and decision worksheet');
+    expect(training).not.toContain('stale 40-minute Assessment reference');
   });
 
   it('keeps wrong-email investigation out of the daily Home workboard', () => {
