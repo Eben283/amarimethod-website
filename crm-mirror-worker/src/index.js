@@ -44,6 +44,10 @@ import { automationFamily } from "../../functions/lib/automation-families.js";
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
 const DASHBOARD_ACCESS_TTL_SECONDS = 5 * 60;
+const STAFF_PARENT_ORIGINS = new Set([
+  "https://amarimethod.com",
+  "https://www.amarimethod.com",
+]);
 const GHL_ED25519_PUBLIC_KEY = "-----BEGIN PUBLIC KEY-----\nMCowBQYDK2VwAyEAi2HR1srL4o18O8BRa7gVJY7G7bupbN3H9AwJrHCDiOg=\n-----END PUBLIC KEY-----";
 const DASHBOARD_ACCESS_WORDS = Object.freeze([
   "aloe", "amber", "apricot", "arc", "ash", "bay", "birch", "bloom", "brook", "cedar", "clay", "cove", "dawn", "dune", "elm", "fern",
@@ -266,7 +270,7 @@ export default {
       const embed = url.searchParams.get("embed") === "1";
       if (embed) destinationParams.set("embed", "1");
       const parentOrigin = url.searchParams.get("parent_origin");
-      if (embed && parentOrigin === "https://www.amarimethod.com") {
+      if (embed && STAFF_PARENT_ORIGINS.has(parentOrigin)) {
         destinationParams.set("parent_origin", parentOrigin);
       }
       const requestedContact = url.searchParams.get("contact");

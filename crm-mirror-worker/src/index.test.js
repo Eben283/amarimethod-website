@@ -231,6 +231,14 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(embedHandoff.status).toBe(302);
     expect(embedHandoff.headers.get("Location")).toBe("/?embed=1&parent_origin=https%3A%2F%2Fwww.amarimethod.com");
 
+    const mintedApexEmbed = await worker.fetch(new Request("https://crm.test/dashboard-access-link", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const apexEmbedBody = await mintedApexEmbed.json();
+    const apexEmbedHandoff = await worker.fetch(new Request(`${apexEmbedBody.url}?embed=1&parent_origin=${encodeURIComponent("https://amarimethod.com")}`), env);
+    expect(apexEmbedHandoff.status).toBe(302);
+    expect(apexEmbedHandoff.headers.get("Location")).toBe("/?embed=1&parent_origin=https%3A%2F%2Famarimethod.com");
+
     const mintedUntrustedEmbed = await worker.fetch(new Request("https://crm.test/dashboard-access-link", {
       method: "POST", headers: { Authorization: "Bearer test-secret" },
     }), env);
