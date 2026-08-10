@@ -98,4 +98,71 @@ describe("staff appointment management API", () => {
       actor: "Garrett", action: "cancel", contactId: "contact_1", appointmentId: "appt_1", store,
     }));
   });
+
+  it("lists server-owned appointment types without requiring an existing appointment", async () => {
+    vi.doMock("../lib/endpoint-guards.js", () => ({
+      requireStaffAuth: vi.fn(async () => ({ error: null, payload: { role: "staff", user: "Eben" } })),
+      corsHeaders: () => ({}),
+      parseJsonBody: vi.fn(async () => ({ body: { action: "list-types" }, error: null })),
+    }));
+
+    const { onRequestPost } = await import("./staff-appointments.js");
+    const response = await onRequestPost({
+      request: new Request("https://www.amarimethod.com/api/staff-appointments", { method: "POST" }),
+      env: {},
+    });
+    const body = await response.json();
+
+    expect(response.status).toBe(200);
+    expect(body.types).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "assessment", label: "Assessment ($29)", durationMinutes: 50 }),
+      expect.objectContaining({ id: "followup_package_in_person", durationMinutes: 50 }),
+    ]));
+  });
+
+  it("passes a new booking through the durable schedule boundary with server-owned service identity", async () => {
+    const scheduleAppointmentCommand = vi.fn(async (input) => ({
+      status: "completed", action: "schedule", actor: input.actor,
+      appointmentId: "appointment_new", contactId: input.contactId,
+      newStartTime: input.startTime, appointmentStatus: "confirmed",
+      reminderVerification: "pending_event_evidence",
+    }));
+    vi.doMock("../lib/endpoint-guards.js", () => ({
+      requireStaffAuth: vi.fn(async () => ({ error: null, payload: { role: "staff", user: "Garrett" } })),
+      corsHeaders: () => ({}),
+      parseJsonBody: vi.fn(async () => ({
+        body: {
+          action: "schedule", contactId: "contact_1", sessionType: "assessment",
+          startTime: "2026-08-12T10:15:00-07:00", idempotencyKey: "schedule-contact-1",
+        },
+        error: null,
+      })),
+    }));
+    vi.doMock("../lib/staff-appointment-manage.js", async (importOriginal) => ({
+      ...(await importOriginal()), scheduleAppointmentCommand,
+    }));
+    vi.doMock("../lib/ops-path-emit.js", () => ({ emitPathHop: vi.fn(async () => ({})) }));
+    vi.doMock("../lib/ops-alert.js", () => ({ recordOpsError: vi.fn(async () => ({})) }));
+
+    const db = { marker: "booking-operations" };
+    const { onRequestPost } = await import("./staff-appointments.js");
+    const response = await onRequestPost({
+      request: new Request("https://www.amarimethod.com/api/staff-appointments", { method: "POST" }),
+      env: { ATTEND_DB: db },
+      waitUntil: vi.fn(),
+    });
+
+    expect(response.status).toBe(200);
+    expect(scheduleAppointmentCommand).toHaveBeenCalledWith(expect.objectContaining({
+      actor: "Garrett",
+      contactId: "contact_1",
+      sessionType: "assessment",
+      startTime: "2026-08-12T10:15:00-07:00",
+      booking: expect.objectContaining({
+        calendarId: "EM6vB2mq7EAdGCbUb3j1",
+        title: "Amari Method Assessment",
+        durationMinutes: 50,
+      }),
+    }));
+  });
 });

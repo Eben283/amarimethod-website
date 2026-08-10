@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { RefreshCw, Loader2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { RefreshCw, Loader2, ChevronLeft, ChevronRight, Plus } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getCalendarSummary, getDayData, ApiError } from '../lib/api';
 import { memberWorkspacePath } from '../lib/member-workspace';
@@ -62,6 +62,7 @@ export default function TodayPage() {
   const [docClientName, setDocClientName] = useState('');
   const [sellContactId, setSellContactId] = useState<string | null>(null);
   const [manageAppointment, setManageAppointment] = useState<ManageableAppointment | null>(null);
+  const [scheduling, setScheduling] = useState(false);
 
   // Monotonic request id shared by loadDay/loadWeek. Rapid date paging or day↔week
   // toggling fires overlapping requests; only the latest one is allowed to commit
@@ -184,6 +185,7 @@ export default function TodayPage() {
     <main className="staff-calendar-page px-4 pt-6 pb-4">
       <header className="staff-calendar-page__head">
         <div><span>Practice time</span><h1>Calendar</h1><p>Appointments, session work, and the booking rules behind each service.</p></div>
+        <button type="button" className="staff-calendar-page__schedule" onClick={() => setScheduling(true)}><Plus aria-hidden="true" /> New appointment</button>
       </header>
 
       <nav className="staff-calendar-page__sections" aria-label="Calendar sections">
@@ -316,6 +318,14 @@ export default function TodayPage() {
         />
       )}
       </>}
+      {scheduling && (
+        <ManageAppointmentSheet
+          initialMode="schedule"
+          onClose={() => setScheduling(false)}
+          onChanged={reloadSelectedDate}
+          onUnauthorized={logout}
+        />
+      )}
     </main>
   );
 }

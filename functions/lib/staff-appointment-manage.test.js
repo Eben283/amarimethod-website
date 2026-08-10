@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { internalAvailability, manageAppointmentCommand } from "./staff-appointment-manage.js";
+import { internalAvailability, manageAppointmentCommand, scheduleAppointmentCommand } from "./staff-appointment-manage.js";
 
 describe("Staff appointment management", () => {
   it("shows every collision-free internal start instead of public-facing choices", () => {
@@ -239,5 +239,94 @@ describe("manageAppointmentCommand", () => {
       store, provider, now: Date.parse("2026-08-10T09:00:00-07:00"),
     })).rejects.toThrow("response had no appointment id");
     expect(manualReview).toBe(true);
+  });
+});
+
+describe("scheduleAppointmentCommand", () => {
+  it("creates and verifies a new appointment at any collision-free internal start", async () => {
+    const order = [];
+    let appointments = [];
+    const store = {
+      claim: async () => ({ state: "acquired", operation: { appointmentId: null } }),
+      checkpointAppointment: async (appointmentId) => order.push(`checkpoint:${appointmentId}`),
+      complete: async (result) => order.push(`complete:${result.appointmentId}`),
+      fail: async () => {},
+    };
+    const provider = {
+      listContactAppointments: async () => appointments,
+      listSchedule: async () => appointments,
+      createAppointment: async ({ startTime, onCreated }) => {
+        order.push("create:new_appointment");
+        const created = {
+          id: "new_appointment", contactId: "contact_1", calendarId: "EM6vB2mq7EAdGCbUb3j1",
+          title: "Amari Method Assessment", appointmentStatus: "confirmed",
+          startTime, endTime: "2026-08-12T11:05:00-07:00",
+        };
+        appointments = [created];
+        await onCreated(created.id);
+        return created;
+      },
+    };
+
+    const result = await scheduleAppointmentCommand({
+      actor: "Garrett",
+      contactId: "contact_1",
+      sessionType: "assessment",
+      booking: {
+        calendarId: "EM6vB2mq7EAdGCbUb3j1",
+        durationMinutes: 50,
+        title: "Amari Method Assessment",
+      },
+      idempotencyKey: "schedule-contact-1",
+      startTime: "2026-08-12T10:15:00-07:00",
+      timezone: "America/Los_Angeles",
+      store,
+      provider,
+      now: Date.parse("2026-08-10T09:00:00-07:00"),
+    });
+
+    expect(order).toEqual([
+      "create:new_appointment",
+      "checkpoint:new_appointment",
+      "complete:new_appointment",
+    ]);
+    expect(result).toMatchObject({
+      status: "completed",
+      action: "schedule",
+      actor: "Garrett",
+      contactId: "contact_1",
+      appointmentId: "new_appointment",
+      newStartTime: "2026-08-12T10:15:00-07:00",
+      appointmentStatus: "confirmed",
+    });
+  });
+
+  it("finishes a checkpointed schedule from provider readback without creating twice", async () => {
+    const completed = [];
+    const existing = {
+      id: "appointment_checkpointed", contactId: "contact_1", calendarId: "EM6vB2mq7EAdGCbUb3j1",
+      title: "Amari Method Assessment", appointmentStatus: "confirmed",
+      startTime: "2026-08-12T10:15:00-07:00", endTime: "2026-08-12T11:05:00-07:00",
+    };
+    const store = {
+      claim: async () => ({ state: "acquired", operation: { appointmentId: existing.id } }),
+      complete: async (result) => completed.push(result),
+      fail: async () => {},
+    };
+    const provider = {
+      listContactAppointments: async () => [existing],
+      listSchedule: async () => { throw new Error("schedule should not be read after checkpoint"); },
+      createAppointment: async () => { throw new Error("appointment should not be created twice"); },
+    };
+
+    const result = await scheduleAppointmentCommand({
+      actor: "Eben", contactId: "contact_1", sessionType: "assessment",
+      booking: { calendarId: "EM6vB2mq7EAdGCbUb3j1", durationMinutes: 50, title: "Amari Method Assessment" },
+      idempotencyKey: "schedule-checkpointed", startTime: existing.startTime,
+      store, provider, now: Date.parse("2026-08-10T09:00:00-07:00"),
+    });
+
+    expect(result.appointmentId).toBe(existing.id);
+    expect(completed).toHaveLength(1);
   });
 });

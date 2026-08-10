@@ -99,6 +99,7 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
   const [markingAttended, setMarkingAttended] = useState<string | null>(null);
   const [attendedError, setAttendedError] = useState('');
   const [manageAppointment, setManageAppointment] = useState<ManageableAppointment | null>(null);
+  const [schedulingAppointment, setSchedulingAppointment] = useState(false);
   // Per-session payment capture: which appointment's "how was this paid?"
   // chooser is open, and the comp-note draft for it.
   const [payingApptId, setPayingApptId] = useState<string | null>(null);
@@ -874,6 +875,7 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
         <section className="sa-card">
           <div className="sa-card-h">
             <span className="t">Appointments</span>
+            <button type="button" className="sa-manage-appt" onClick={() => setSchedulingAppointment(true)}><Plus size={14} /> New appointment</button>
             {owed && owed.status === 'owed' && (
               <span title={`Attended ${owed.attendedBillable}, paid for ${owed.sessionsPurchased}${owed.confidence === 'medium' ? ' — verify' : ''}`}
                 style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#fee2e2', color: '#b91c1c' }}>
@@ -1106,6 +1108,15 @@ export default function ClientDetailPage({ surface = 'record' }: { surface?: Mem
         <ManageAppointmentSheet
           appointment={manageAppointment}
           onClose={() => setManageAppointment(null)}
+          onChanged={() => loadClient()}
+          onUnauthorized={logout}
+        />
+      )}
+      {schedulingAppointment && (
+        <ManageAppointmentSheet
+          initialMode="schedule"
+          person={{ id: client.id, name: fullName, email: client.email, phone: client.phone }}
+          onClose={() => setSchedulingAppointment(false)}
           onChanged={() => loadClient()}
           onUnauthorized={logout}
         />
