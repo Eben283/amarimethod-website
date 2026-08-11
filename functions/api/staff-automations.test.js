@@ -314,7 +314,10 @@ describe("staff-automations — views", () => {
         providerContactId: "legacy_ghl_1",
         automationContactIds: ["owned_person_1", "legacy_ghl_1"],
         enrollments: [{ enrollmentId: "enrollment_1", status: "active" }],
-        events: [],
+        events: [
+          { id: "receipt_1", engine: "reminder", flowKey: "initial-in-person", definitionVersion: 3, action: "delivery_status", outcome: "delivered", channel: "sms", messageRef: "sms_1", evidence: { gaps: [] } },
+          { id: "send_1", engine: "reminder", flowKey: "initial-in-person", definitionVersion: 3, action: "send", outcome: "sent", channel: "sms", messageRef: "sms_1", evidence: { gaps: [{ code: "delivery_outcome_not_recorded", label: "This event does not prove final delivery." }] } },
+        ],
         coverage: { eventLimit: 200, eventsTruncated: false },
         evidence: { source: "owned_automation_d1", gaps: [] },
       }), { status: 200 })));
@@ -329,6 +332,10 @@ describe("staff-automations — views", () => {
     expect(body.configured).toBe(true);
     expect(body.contactId).toBe("owned_person_1");
     expect(body.enrollments).toHaveLength(1);
+    expect(body.events.find((event) => event.id === "send_1")).toEqual(expect.objectContaining({
+      displayOutcome: "Accepted by SMS provider",
+      evidence: expect.objectContaining({ gaps: [] }),
+    }));
     expect(fetch).toHaveBeenNthCalledWith(2, expect.stringContaining("/automations/people/owned_person_1"), expect.objectContaining({
       headers: { Authorization: "Bearer worker-secret" },
     }));

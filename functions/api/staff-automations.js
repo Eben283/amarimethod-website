@@ -23,6 +23,7 @@ import {
   REGISTRY_VERSION,
   automationDefinitions,
   findAutomationDefinition,
+  eventEvidence,
   registryEvidence,
 } from "../lib/automation-registry.js";
 import {
@@ -110,6 +111,33 @@ async function workerPersonAutomationEvidence(context, ownedContactId) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+function normalizeWorkerPersonEvents(events = []) {
+  const terminalByRef = new Map(events
+    .filter((event) => event.action === "delivery_status" && event.messageRef && ["delivered", "failed", "bounced"].includes(event.outcome))
+    .map((event) => [event.messageRef, event.outcome]));
+  const deliveryGapCodes = new Set(["delivery_outcome_not_recorded", "delivery_outcome_pending", "email_final_delivery_unavailable"]);
+  return events.map((event) => {
+    const raw = {
+      engine: event.engine,
+      flow_key: event.flowKey,
+      definition_version: event.definitionVersion,
+      action: event.action,
+      outcome: event.outcome,
+      channel: event.channel,
+      message_ref: event.messageRef,
+    };
+    const refreshed = eventEvidence(raw, { terminalOutcome: terminalByRef.get(event.messageRef) || null });
+    const retained = (event.evidence?.gaps || []).filter((gap) => !deliveryGapCodes.has(gap.code));
+    const gaps = [...retained, ...refreshed.gaps].filter((gap, index, all) => all.findIndex((candidate) => candidate.code === gap.code) === index);
+    const displayOutcome = event.action === "send" && event.outcome === "sent"
+      ? (event.channel === "email" ? "Accepted by Gmail" : "Accepted by SMS provider")
+      : event.action === "delivery_status" && event.outcome === "delivered"
+        ? "Delivered"
+        : event.displayOutcome;
+    return { ...event, displayOutcome, evidence: { ...(event.evidence || {}), source: refreshed.source, gaps } };
+  });
 }
 
 async function workerFamilyAutomationEvidence(context, familyKey) {
@@ -287,9 +315,10 @@ export async function onRequestGet(context) {
       if (!db) {
         const workerEvidence = await workerPersonAutomationEvidence(context, ownedContactId);
         if (workerEvidence) {
+          const normalizedWorkerEvidence = { ...workerEvidence, events: normalizeWorkerPersonEvents(workerEvidence.events) };
           const proxiedRegistryEvidence = registryEvidence({ executionStoreConfigured: Boolean(workerEvidence.configured) });
           return new Response(JSON.stringify({
-            ...workerEvidence,
+            ...normalizedWorkerEvidence,
             success: true,
             evidence: {
               ...proxiedRegistryEvidence,
