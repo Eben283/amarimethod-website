@@ -9,6 +9,8 @@ import {
   PURCHASE_CREDIT_MAP,
   PACKAGE_MAP,
   AUDIT_INCREMENT_MAP,
+  canonicalSeriesType,
+  sessionCountForSeriesType,
 } from './ghl-products.js';
 
 describe('GHL_PRODUCTS catalog', () => {
@@ -27,10 +29,13 @@ describe('GHL_PRODUCTS catalog', () => {
     }
   });
 
-  it('package-purchase entries have seriesType, sessionsRemaining, livingPractice', () => {
+  it('package-purchase entries have canonical session contracts and provider labels', () => {
     for (const p of Object.values(GHL_PRODUCTS)) {
       if (!p.isPackagePurchase) continue;
       expect(typeof p.seriesType).toBe('string');
+      expect(typeof p.canonicalSeriesType).toBe('string');
+      expect(typeof p.sessionCount).toBe('number');
+      expect(typeof p.providerSeriesType).toBe('string');
       expect(typeof p.sessionsRemaining).toBe('number');
       expect(typeof p.livingPractice).toBe('boolean');
       expect(PACKAGE_TYPES.has(p.classification)).toBe(true);
@@ -90,10 +95,12 @@ describe('WEBHOOK_PURCHASE_MAP (invoice webhook consumer)', () => {
   it('exposes the full invoice-fulfillment classification contract', () => {
     for (const entry of Object.values(WEBHOOK_PURCHASE_MAP)) {
       expect(Object.keys(entry).sort()).toEqual([
+        'canonicalSeriesType',
         'classification',
         'livingPractice',
         'name',
         'seriesType',
+        'sessionCount',
         'sessionsRemaining',
       ]);
     }
@@ -187,8 +194,8 @@ describe('PURCHASE_CREDIT_MAP (purchase webhook consumer)', () => {
     expect(PURCHASE_CREDIT_MAP[ID.upInit8]).toMatchObject({ sessionsToAdd: 7, seriesType: '8-session' });
     expect(PURCHASE_CREDIT_MAP[ID.upInit4]).toMatchObject({ sessionsToAdd: 3, seriesType: '4-session' });
     expect(PURCHASE_CREDIT_MAP[ID.up4to8]).toMatchObject({ sessionsToAdd: 4, seriesType: '8-session', livingPractice: true });
-    expect(PURCHASE_CREDIT_MAP[ID.twelveWeek]).toMatchObject({ sessionsToAdd: 24, seriesType: '12-week', livingPractice: true });
-    expect(PURCHASE_CREDIT_MAP[ID.sixWeek]).toMatchObject({ sessionsToAdd: 12, seriesType: '6-week', livingPractice: true });
+    expect(PURCHASE_CREDIT_MAP[ID.twelveWeek]).toMatchObject({ sessionsToAdd: 24, seriesType: '12-week', canonicalSeriesType: '24-session', sessionCount: 24, livingPractice: true });
+    expect(PURCHASE_CREDIT_MAP[ID.sixWeek]).toMatchObject({ sessionsToAdd: 12, seriesType: '6-week', canonicalSeriesType: '12-session', sessionCount: 12, livingPractice: true });
   });
   it('credits à-la-carte singles +1 with no series change', () => {
     expect(PURCHASE_CREDIT_MAP[ID.singleFU]).toMatchObject({ sessionsToAdd: 1, seriesType: null });
@@ -211,8 +218,8 @@ describe('PACKAGE_MAP (reconcile worker consumer)', () => {
     expect(Object.keys(PACKAGE_MAP).length).toBe(7);
     expect(PACKAGE_MAP[ID.eightSeries]).toMatchObject({ sessionsToSet: 8, seriesType: '8-session', livingPractice: true });
     expect(PACKAGE_MAP[ID.up4to8]).toMatchObject({ sessionsToSet: 4, seriesType: '8-session' });
-    expect(PACKAGE_MAP[ID.twelveWeek]).toMatchObject({ sessionsToSet: 24, seriesType: '12-week', livingPractice: true });
-    expect(PACKAGE_MAP[ID.sixWeek]).toMatchObject({ sessionsToSet: 12, seriesType: '6-week', livingPractice: true });
+    expect(PACKAGE_MAP[ID.twelveWeek]).toMatchObject({ sessionsToSet: 24, seriesType: '12-week', canonicalSeriesType: '24-session', sessionCount: 24, livingPractice: true });
+    expect(PACKAGE_MAP[ID.sixWeek]).toMatchObject({ sessionsToSet: 12, seriesType: '6-week', canonicalSeriesType: '12-session', sessionCount: 12, livingPractice: true });
   });
   it('excludes singles + draw-downs', () => {
     expect(PACKAGE_MAP[ID.singleFU]).toBeUndefined();
@@ -250,10 +257,10 @@ describe('AUDIT_INCREMENT_MAP (daily-audit consumer)', () => {
     expect(AUDIT_INCREMENT_MAP[ID.eightSeries]).toMatchObject({ increment: 8 });
     expect(AUDIT_INCREMENT_MAP[ID.eightSeriesPrice]).toMatchObject({ increment: 8 });
     expect(AUDIT_INCREMENT_MAP[ID.eightSeriesPriceOld]).toMatchObject({ increment: 8 });
-    expect(AUDIT_INCREMENT_MAP[ID.twelveWeek]).toMatchObject({ increment: 24, seriesType: '12-week' });
-    expect(AUDIT_INCREMENT_MAP[ID.twelveWeekPrice]).toMatchObject({ increment: 24, seriesType: '12-week' });
-    expect(AUDIT_INCREMENT_MAP[ID.sixWeek]).toMatchObject({ increment: 12, seriesType: '6-week' });
-    expect(AUDIT_INCREMENT_MAP[ID.sixWeekPrice]).toMatchObject({ increment: 12, seriesType: '6-week' });
+    expect(AUDIT_INCREMENT_MAP[ID.twelveWeek]).toMatchObject({ increment: 24, seriesType: '12-week', canonicalSeriesType: '24-session', sessionCount: 24 });
+    expect(AUDIT_INCREMENT_MAP[ID.twelveWeekPrice]).toMatchObject({ increment: 24, seriesType: '12-week', canonicalSeriesType: '24-session', sessionCount: 24 });
+    expect(AUDIT_INCREMENT_MAP[ID.sixWeek]).toMatchObject({ increment: 12, seriesType: '6-week', canonicalSeriesType: '12-session', sessionCount: 12 });
+    expect(AUDIT_INCREMENT_MAP[ID.sixWeekPrice]).toMatchObject({ increment: 12, seriesType: '6-week', canonicalSeriesType: '12-session', sessionCount: 12 });
   });
   it('now covers the 4→8 upgrade (the prior blind spot)', () => {
     expect(AUDIT_INCREMENT_MAP[ID.up4to8]).toMatchObject({ increment: 4, seriesType: '8-session' });
@@ -261,5 +268,14 @@ describe('AUDIT_INCREMENT_MAP (daily-audit consumer)', () => {
   it('covers the single follow-up but not draw-downs', () => {
     expect(AUDIT_INCREMENT_MAP[ID.singleFU]).toMatchObject({ increment: 1 });
     expect(AUDIT_INCREMENT_MAP[ID.fuIP]).toBeUndefined();
+  });
+});
+
+describe('provider Series Type compatibility', () => {
+  it('translates GHL duration labels into canonical session-count identities', () => {
+    expect(canonicalSeriesType('6-week')).toBe('12-session');
+    expect(canonicalSeriesType('12-week')).toBe('24-session');
+    expect(sessionCountForSeriesType('6-week')).toBe(12);
+    expect(sessionCountForSeriesType('24-session')).toBe(24);
   });
 });

@@ -6,6 +6,7 @@ import { requireOwner } from "../lib/owned-access.js";
 import { deriveLedger, hydrateOrders, classifyOrder, classifyInvoice } from "../lib/session-ledger.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
 import { getCustomField, isChecked, computeHasLivingPractice, hasFoundersCircleTag } from "../lib/portal-helpers.js";
+import { canonicalSeriesType } from "../lib/ghl-products.js";
 import { parsePacificWallClock, normalizeGhlTimestamp } from "../lib/datetime.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -190,17 +191,18 @@ export async function onRequestGet(context) {
     // when manualLock=true OR confidence="low". See session-ledger.js
     // → display block.
     const seriesType = ledger.display.seriesType;
-    // The 12-Week Amari Practice has its own portal experience. Its explicit
+    // An explicit Practice field designation has its own portal experience. Its
     // contact designation is authoritative for that presentation choice: a
     // client can be intentionally moved into the new practice before (or if)
     // their historical purchase ledger reflects the product. Keep the ledger
     // as the source for every other series type and for session math.
     const contactSeriesType = getCustomField(contact, "series_type", fieldDefs);
-    const isDesignatedTwelveWeekPractice = contactSeriesType === "12-week";
-    const portalSeriesType = isDesignatedTwelveWeekPractice ? "12-week" : seriesType;
+    const contactCanonicalSeriesType = canonicalSeriesType(contactSeriesType);
+    const isDesignatedPractice = contactCanonicalSeriesType === "12-session" || contactCanonicalSeriesType === "24-session";
+    const portalSeriesType = isDesignatedPractice ? contactCanonicalSeriesType : seriesType;
     const contactRemainingRaw = getCustomField(contact, "sessions_remaining", fieldDefs);
     const contactRemaining = parseInt(contactRemainingRaw, 10);
-    const portalSessionsRemaining = isDesignatedTwelveWeekPractice && Number.isFinite(contactRemaining) && contactRemaining >= 0
+    const portalSessionsRemaining = isDesignatedPractice && Number.isFinite(contactRemaining) && contactRemaining >= 0
       ? contactRemaining
       : ledger.display.remaining;
 
@@ -242,7 +244,7 @@ export async function onRequestGet(context) {
 
     const lpRaw = getCustomField(contact, "living_practice_access", fieldDefs);
     const paRaw = getCustomField(contact, "portal_access", fieldDefs);
-    const hasLivingPractice = computeHasLivingPractice(lpRaw, contact.tags || [], seriesType);
+    const hasLivingPractice = computeHasLivingPractice(lpRaw, contact.tags || [], portalSeriesType);
     const portalAccess = isChecked(paRaw) || (contact.tags || []).includes("portal-access");
     const isPartner = (contact.tags || []).includes("affiliate-partner");
     const isFoundersCircle = hasFoundersCircleTag(contact.tags);

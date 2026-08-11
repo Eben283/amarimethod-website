@@ -31,7 +31,7 @@ export function isChecked(raw) {
 }
 
 /**
- * Living Practice access compute. The 8-session series and 12-Week Amari
+ * Living Practice access compute. The 8-session series and Amari Practice
  * Practice include Living Practice — don't require the field to be set
  * explicitly.
  */
@@ -39,6 +39,9 @@ export function computeHasLivingPractice(lpRaw, tags, seriesType) {
   return isChecked(lpRaw) ||
     (tags || []).includes("living-practice-access") ||
     seriesType === "8-session" ||
+    seriesType === "12-session" ||
+    seriesType === "24-session" ||
+    // Compatibility while old API payloads age out.
     seriesType === "6-week" ||
     seriesType === "12-week";
 }
@@ -60,4 +63,3 @@ export function resolvePortalHome({ isFoundersCircle }) {
   if (isFoundersCircle) return "founders";
   return "practice";
 }
-

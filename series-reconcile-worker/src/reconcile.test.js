@@ -7,6 +7,7 @@ const PID = {
   eightSeries: '69987357c839790426996114',
   twelveWeek: '6a66cde7ef7b07f122ad46fb',
   twelveWeekPrice: '6a66cde7ef7b076d15ad4700',
+  sixWeek: '6a683360017263178d05d1a3',
   followupInPerson: '69aee204e80b62d627d8e922', // a single session — NOT a package
   initialInPerson: '688a1cd770362828afbf08a2', // NOT a package
 };
@@ -38,6 +39,10 @@ describe('selectPackageProduct', () => {
     expect(r).not.toBe(null);
     expect(r.productId).toBe(PID.twelveWeek);
     expect(r.pkg).toMatchObject({ sessionsToSet: 24, seriesType: '12-week', livingPractice: true });
+  });
+  it('resolves the 12-session Practice while retaining the valid GHL 6-week value', () => {
+    const r = selectPackageProduct([lineItem(PID.sixWeek, 'The 6-Week Amari Practice')]);
+    expect(r.pkg).toMatchObject({ sessionsToSet: 12, seriesType: '6-week', canonicalSeriesType: '12-session', sessionCount: 12, livingPractice: true });
   });
 
   it('returns null when no line item is a package product', () => {
@@ -111,5 +116,9 @@ describe('isReconcileAlreadyApplied (#3 — partial-failure detection, over-cred
   // to 8-session is "applied" regardless of remaining (a later upgrade overwrote it).
   it('already-applied via seriesIsAdvanced (4-pack order, contact on 8-session) even with remaining unwritten', () => {
     expect(isReconcileAlreadyApplied({ currentSeriesType: '8-session', currentPortal: false, currentLP: false, currentRemaining: null, pkg: fourPack })).toBe(true);
+  });
+  it('does not let a delayed 6-week purchase overwrite a later 12-week Practice', () => {
+    const sixWeek = { seriesType: '6-week', livingPractice: true };
+    expect(isReconcileAlreadyApplied({ currentSeriesType: '12-week', currentPortal: false, currentLP: false, currentRemaining: null, pkg: sixWeek })).toBe(true);
   });
 });

@@ -188,7 +188,7 @@ export function getPreviewData(state: PreviewState): PortalDataResponse | null {
         firstName: 'Maya',
         lastName: '',
         email: 'preview@amarimethod.com',
-        seriesType: '12-week',
+        seriesType: '24-session',
         sessionsCompleted: 8,
         sessionsRemaining: 16,
         packageSize: 24,

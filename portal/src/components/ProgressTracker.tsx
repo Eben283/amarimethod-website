@@ -19,6 +19,8 @@ interface ProgressTrackerProps {
 // with a label "X of Y used". Keeps the visual proportional in re-up cases.
 const MAX_DOTS = 12;
 const PACK_LABEL: Record<string, string> = {
+  '12-session': '6-Week Amari Practice',
+  '24-session': '12-Week Amari Practice',
   '4-session': '4-pack',
   '8-session': '8-pack',
   Single: 'sessions',

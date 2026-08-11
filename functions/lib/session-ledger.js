@@ -17,7 +17,7 @@ import { ghlFetch } from "./ghl.js";
 // Import straight from the lib helper (not ../api/portal-data.js) — a lib file
 // reaching back into an api route created a circular import.
 import { getCustomField } from "./portal-helpers.js";
-import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES, productIdForAnyId } from "./ghl-products.js";
+import { LEDGER_PRODUCT_MAP, PACKAGE_TYPES, productIdForAnyId, canonicalSeriesType } from "./ghl-products.js";
 import { hydrateOrders as hydrateOrdersShared } from "./ghl-orders.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
@@ -218,9 +218,9 @@ export function determineSeriesType(classifications) {
   // Most authoritative: explicit series purchases. The 4→8 upgrade lands the
   // client on the 8-session series, so it must count toward has8 (not has4).
   const has12Week = classifications.some((c) => c.type === "12-week");
-  if (has12Week) return "12-week";
+  if (has12Week) return "24-session";
   const has6Week = classifications.some((c) => c.type === "6-week");
-  if (has6Week) return "6-week";
+  if (has6Week) return "12-session";
   const has8 = classifications.some((c) => c.type === "8-series" || c.type === "8-upgrade" || c.type === "4-to-8-upgrade");
   if (has8) return "8-session";
   const has4 = classifications.some((c) => c.type === "4-series" || c.type === "4-upgrade");
@@ -492,7 +492,7 @@ export function deriveLedger({
   const fieldSeriesTypeRaw = getCustomField(contact, "series_type", fieldDefs);
   const fieldSeriesType =
     typeof fieldSeriesTypeRaw === "string" && fieldSeriesTypeRaw.length > 0
-      ? fieldSeriesTypeRaw
+      ? canonicalSeriesType(fieldSeriesTypeRaw)
       : null;
   const useField = manualLock || confidence === "low";
   const displaySeriesType = useField && fieldSeriesType ? fieldSeriesType : seriesType;

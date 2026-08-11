@@ -40,11 +40,11 @@ describe('determineSeriesType', () => {
     expect(determineSeriesType([{ type: '8-upgrade' }])).toBe('8-session');
   });
   it('the 12-week practice takes precedence over older package history', () => {
-    expect(determineSeriesType([{ type: '8-series' }, { type: '12-week' }])).toBe('12-week');
+    expect(determineSeriesType([{ type: '8-series' }, { type: '12-week' }])).toBe('24-session');
   });
   it('the 6-week practice beats 8-session history but loses to 12-week', () => {
-    expect(determineSeriesType([{ type: '8-series' }, { type: '6-week' }])).toBe('6-week');
-    expect(determineSeriesType([{ type: '6-week' }, { type: '12-week' }])).toBe('12-week');
+    expect(determineSeriesType([{ type: '8-series' }, { type: '6-week' }])).toBe('12-session');
+    expect(determineSeriesType([{ type: '6-week' }, { type: '12-week' }])).toBe('24-session');
   });
 });
 
@@ -395,7 +395,17 @@ describe('deriveLedger — clean cases', () => {
       appointments: [appt({ calendarId: CAL.initial }), appt({ calendarId: CAL.followup })],
       fieldDefs: FIELD_DEFS,
     });
-    expect(result).toMatchObject({ purchased: 24, attended: 2, remaining: 22, seriesType: '12-week', confidence: 'high' });
+    expect(result).toMatchObject({ purchased: 24, attended: 2, remaining: 22, seriesType: '24-session', confidence: 'high' });
+  });
+
+  it('6-week Practice derives the canonical 12-session identity', () => {
+    const result = deriveLedger({
+      contact: contact(),
+      orders: [order({ sourceName: 'The 6-Week Amari Practice', amount: 3000 })],
+      appointments: [appt({ calendarId: CAL.initial }), appt({ calendarId: CAL.followup })],
+      fieldDefs: FIELD_DEFS,
+    });
+    expect(result).toMatchObject({ purchased: 12, attended: 2, remaining: 10, seriesType: '12-session', confidence: 'high' });
   });
 
   it('upgrade path: initial + upgrade order = 4 purchased', () => {

@@ -28,7 +28,7 @@ function meetingFormat(appointment: Appointment): string {
 }
 
 function practiceCopy(seriesType: string) {
-  if (seriesType === '6-week') {
+  if (seriesType === '12-session') {
     return {
       title: <>The 6-Week Amari Practice</>,
       subtitle: '12 in-person visits, with Living Practice included.',
@@ -42,7 +42,7 @@ function practiceCopy(seriesType: string) {
       ],
     };
   }
-  if (seriesType === '12-week') {
+  if (seriesType === '24-session') {
     return {
       title: <>The 12-Week Amari Practice</>,
       subtitle: '24 in-person visits, with Living Practice included.',

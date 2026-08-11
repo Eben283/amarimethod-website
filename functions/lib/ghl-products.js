@@ -19,6 +19,38 @@
 // them to compute the "earliest active package purchase date" cutoff.
 export const PACKAGE_TYPES = new Set(["4-series", "8-series", "6-week", "12-week", "4-upgrade", "8-upgrade", "4-to-8-upgrade"]);
 
+// Session count is the owned contract. GHL's Series Type dropdown predates
+// that contract and retains its duration labels only at the provider boundary.
+// Keep the translation here so portal, ledger, and staff logic never need to
+// infer that "6-week" means 12 prepaid sessions.
+export const CANONICAL_SERIES_BY_GHL_VALUE = Object.freeze({
+  "4-session": "4-session",
+  "8-session": "8-session",
+  "6-week": "12-session",
+  "12-week": "24-session",
+  // Read compatibility for records written before this adapter existed.
+  "12-session": "12-session",
+  "24-session": "24-session",
+  Single: "Single",
+  none: "none",
+});
+
+export const SESSION_COUNT_BY_SERIES_TYPE = Object.freeze({
+  "4-session": 4,
+  "8-session": 8,
+  "12-session": 12,
+  "24-session": 24,
+  none: 0,
+});
+
+export function canonicalSeriesType(value) {
+  return CANONICAL_SERIES_BY_GHL_VALUE[value] || "none";
+}
+
+export function sessionCountForSeriesType(value) {
+  return SESSION_COUNT_BY_SERIES_TYPE[canonicalSeriesType(value)] || 0;
+}
+
 export const GHL_PRODUCTS = {
   // ── Series purchases (full package up-front) ──
   "69987357c839790426996114": {
@@ -26,6 +58,9 @@ export const GHL_PRODUCTS = {
     classification: "8-series",
     sessions: 8,
     seriesType: "8-session",
+    canonicalSeriesType: "8-session",
+    sessionCount: 8,
+    providerSeriesType: "8-session",
     sessionsRemaining: 8,
     livingPractice: true,
     isPackagePurchase: true,
@@ -35,6 +70,9 @@ export const GHL_PRODUCTS = {
     classification: "4-series",
     sessions: 4,
     seriesType: "4-session",
+    canonicalSeriesType: "4-session",
+    sessionCount: 4,
+    providerSeriesType: "4-session",
     sessionsRemaining: 4,
     livingPractice: false,
     isPackagePurchase: true,
@@ -44,6 +82,9 @@ export const GHL_PRODUCTS = {
     classification: "12-week",
     sessions: 24,
     seriesType: "12-week",
+    canonicalSeriesType: "24-session",
+    sessionCount: 24,
+    providerSeriesType: "12-week",
     sessionsRemaining: 24,
     // The at-home protocol library is part of this practice, not a bonus.
     livingPractice: true,
@@ -54,6 +95,9 @@ export const GHL_PRODUCTS = {
     classification: "6-week",
     sessions: 12,
     seriesType: "6-week",
+    canonicalSeriesType: "12-session",
+    sessionCount: 12,
+    providerSeriesType: "6-week",
     sessionsRemaining: 12,
     livingPractice: true,
     isPackagePurchase: true,
@@ -65,6 +109,9 @@ export const GHL_PRODUCTS = {
     classification: "8-upgrade",
     sessions: 7, // initial already counted as +1; this adds 7
     seriesType: "8-session",
+    canonicalSeriesType: "8-session",
+    sessionCount: 8,
+    providerSeriesType: "8-session",
     sessionsRemaining: 7,
     livingPractice: true,
     isPackagePurchase: true,
@@ -74,6 +121,9 @@ export const GHL_PRODUCTS = {
     classification: "4-upgrade",
     sessions: 3, // initial already counted as +1; this adds 3
     seriesType: "4-session",
+    canonicalSeriesType: "4-session",
+    sessionCount: 4,
+    providerSeriesType: "4-session",
     sessionsRemaining: 3,
     livingPractice: false,
     isPackagePurchase: true,
@@ -88,6 +138,9 @@ export const GHL_PRODUCTS = {
     classification: "4-to-8-upgrade",
     sessions: 4, // 4-pack already counted as +4; this adds 4
     seriesType: "8-session",
+    canonicalSeriesType: "8-session",
+    sessionCount: 8,
+    providerSeriesType: "8-session",
     sessionsRemaining: 4,
     isAdditive: true, // reconcile: ADD to current balance, not SET — client may have unused 4-pack sessions
     livingPractice: true,
@@ -175,7 +228,8 @@ export const LEDGER_PRODUCT_MAP = Object.fromEntries(
 );
 
 // Convenience: derived map for the invoice webhook's purchase automation.
-// Shape: { [productId]: { name, sessionsRemaining, seriesType, livingPractice } }
+// Shape: { [productId]: { name, sessionsRemaining, seriesType, canonicalSeriesType,
+//                         sessionCount, livingPractice } }
 // Filtered to package purchases only (4-series, 8-series, 4-upgrade, 8-upgrade).
 export const WEBHOOK_PURCHASE_MAP = Object.fromEntries(
   Object.entries(GHL_PRODUCTS)
@@ -185,7 +239,10 @@ export const WEBHOOK_PURCHASE_MAP = Object.fromEntries(
       {
         name: p.name,
         sessionsRemaining: p.sessionsRemaining,
-        seriesType: p.seriesType,
+        // `seriesType` remains the exact value writers send to GHL.
+        seriesType: p.providerSeriesType || p.seriesType,
+        canonicalSeriesType: p.canonicalSeriesType || p.seriesType,
+        sessionCount: p.sessionCount || p.sessionsRemaining,
         livingPractice: p.livingPractice,
         classification: p.classification,
       },
@@ -266,7 +323,14 @@ export const PURCHASE_CREDIT_MAP = Object.fromEntries(
     .map(([id, p]) => [
       id,
       p.isPackagePurchase
-        ? { name: p.name, sessionsToAdd: p.sessionsRemaining, seriesType: p.seriesType, livingPractice: !!p.livingPractice }
+        ? {
+            name: p.name,
+            sessionsToAdd: p.sessionsRemaining,
+            seriesType: p.providerSeriesType || p.seriesType,
+            canonicalSeriesType: p.canonicalSeriesType || p.seriesType,
+            sessionCount: p.sessionCount || p.sessionsRemaining,
+            livingPractice: !!p.livingPractice,
+          }
         : { name: p.name, sessionsToAdd: p.sessions, seriesType: null, livingPractice: false },
     ]),
 );
@@ -278,7 +342,15 @@ export const PACKAGE_MAP = Object.fromEntries(
     .filter(([, p]) => p.isPackagePurchase)
     .map(([id, p]) => [
       id,
-      { name: p.name, sessionsToSet: p.sessionsRemaining, seriesType: p.seriesType, livingPractice: !!p.livingPractice, isAdditive: !!p.isAdditive },
+      {
+        name: p.name,
+        sessionsToSet: p.sessionsRemaining,
+        seriesType: p.providerSeriesType || p.seriesType,
+        canonicalSeriesType: p.canonicalSeriesType || p.seriesType,
+        sessionCount: p.sessionCount || p.sessionsRemaining,
+        livingPractice: !!p.livingPractice,
+        isAdditive: !!p.isAdditive,
+      },
     ]),
 );
 
@@ -290,7 +362,13 @@ export const AUDIT_INCREMENT_MAP = (() => {
   for (const [productId, p] of Object.entries(GHL_PRODUCTS)) {
     if (!creditsOnPurchase(productId, p)) continue;
     const entry = p.isPackagePurchase
-      ? { name: p.name, increment: p.sessionsRemaining, seriesType: p.seriesType }
+      ? {
+          name: p.name,
+          increment: p.sessionsRemaining,
+          seriesType: p.providerSeriesType || p.seriesType,
+          canonicalSeriesType: p.canonicalSeriesType || p.seriesType,
+          sessionCount: p.sessionCount || p.sessionsRemaining,
+        }
       : { name: p.name, increment: p.sessions, seriesType: null };
     m[productId] = entry;
     for (const priceId of (PRICE_IDS[productId] || [])) m[priceId] = entry;

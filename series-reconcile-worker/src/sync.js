@@ -15,6 +15,7 @@
 // single source of truth. Wrangler bundles transitively.
 
 import { deriveLedger } from "../../functions/lib/session-ledger.js";
+import { canonicalSeriesType, sessionCountForSeriesType } from "../../functions/lib/ghl-products.js";
 import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
 import { parsePacificWallClock } from "../../functions/lib/datetime.js";
 import { ghlGet, ghlPut, getOrderDetail, LOCATION_ID } from "./ghl.js";
@@ -137,10 +138,6 @@ function computeLifetimeCount(appointments) {
   }).length;
 }
 
-// Package size lookup. Keep in sync with the values written by
-// reconcile.js when an order is detected. "none" means no series → 0.
-const PACKAGE_SIZE = { "8-session": 8, "4-session": 4, "none": 0 };
-
 /**
  * Read-only contact-counts lookup. Returns ledger-derived session truth
  * without any writes. Used by /day morning briefing to get authoritative
@@ -151,8 +148,8 @@ const PACKAGE_SIZE = { "8-session": 8, "4-session": 4, "none": 0 };
  *   {
  *     status: "ok" | "low-confidence" | "errored",
  *     contactId, contactName,
- *     seriesType: "8-session" | "4-session" | "none",
- *     packageSize: 8 | 4 | 0,
+ *     seriesType: "24-session" | "12-session" | "8-session" | "4-session" | "none",
+ *     packageSize: 24 | 12 | 8 | 4 | 0,
  *     sessionsRemaining: int,        // ledger truth — package balance
  *     sessionsCompleted: int,        // lifetime visits (per 5/29 contract)
  *     pkgCompleted: int,             // packageSize - sessionsRemaining (0 if no pack)
@@ -197,8 +194,8 @@ export async function getContactCounts(env, contactId, fieldDefs = {}) {
     const lifetimeCount = computeLifetimeCount(appointments);
 
     const seriesRaw = readField(contact, FIELD_IDS.series_type);
-    const seriesType = (seriesRaw && (seriesRaw === "8-session" || seriesRaw === "4-session")) ? seriesRaw : "none";
-    const packageSize = PACKAGE_SIZE[seriesType] || 0;
+    const seriesType = canonicalSeriesType(seriesRaw);
+    const packageSize = sessionCountForSeriesType(seriesType);
 
     // sessionsRemaining: if locked, prefer the manually-pinned GHL field
     // value (worker would skip overwriting it). Otherwise use ledger truth.

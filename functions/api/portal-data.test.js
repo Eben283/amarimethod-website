@@ -143,6 +143,10 @@ describe('computeHasLivingPractice', () => {
   it('returns true when seriesType is "6-week" regardless of lpRaw', () => {
     expect(computeHasLivingPractice('false', [], '6-week')).toBe(true);
   });
+  it('returns true for canonical Practice session identities', () => {
+    expect(computeHasLivingPractice('false', [], '12-session')).toBe(true);
+    expect(computeHasLivingPractice('false', [], '24-session')).toBe(true);
+  });
 
   it('returns false when none of the three conditions apply', () => {
     expect(computeHasLivingPractice(null, [], 'none')).toBe(false);
