@@ -471,6 +471,7 @@ async function getGhlSummary(context) {
       "oVn77FcecFY16iS2pHyP", // Follow-up — Virtual
       "bJFkhVP35Ecwh4tLnSmy", // Follow-up — Virtual (Package)
       "waHmG2mHNThPfMVuNJWG", // Single Session — 50 Minutes
+      "Ggz6VP9Vg5T05WBCiPmz", // Single Session — Virtual
       "B5aGXLoS4kzAjZAMMXxk", // Entrainment
       "wO5lnu7BOQOHEJ5YQU0f", // Entrainment — 20 Minutes
       "lfsnaiGiLNL2z12pLKDP", // Partner Initial

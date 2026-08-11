@@ -111,6 +111,7 @@ const CAL = {
   followupPackage: 'ZO1jlGfy01rsxVqicoSB',
   followupVirtual: 'oVn77FcecFY16iS2pHyP',
   singleSession: 'waHmG2mHNThPfMVuNJWG',
+  singleSessionVirtual: 'Ggz6VP9Vg5T05WBCiPmz',
   entrainment: 'B5aGXLoS4kzAjZAMMXxk',
   entrainment20: 'wO5lnu7BOQOHEJ5YQU0f',
   discovery: 'USgPsktqRcuomdUgpShL',
@@ -1726,12 +1727,13 @@ describe('computeSessionLedger — POS order hydration', () => {
 });
 
 describe('SERIES_CALENDAR_IDS', () => {
-  it('contains the 7 series calendar IDs (2 initial + 5 follow-up)', () => {
-    expect(SERIES_CALENDAR_IDS.size).toBe(7);
+  it('contains the 8 series calendar IDs (2 initial + 6 follow-up/service)', () => {
+    expect(SERIES_CALENDAR_IDS.size).toBe(8);
     expect(SERIES_CALENDAR_IDS.has(CAL.initial)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.initialVirtual)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.followup)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.singleSession)).toBe(true);
+    expect(SERIES_CALENDAR_IDS.has(CAL.singleSessionVirtual)).toBe(true);
     expect(SERIES_CALENDAR_IDS.has(CAL.entrainment)).toBe(false);
     expect(SERIES_CALENDAR_IDS.has(CAL.entrainment20)).toBe(false);
     expect(SERIES_CALENDAR_IDS.has(CAL.discovery)).toBe(false);
@@ -1742,21 +1744,23 @@ describe('SERIES_CALENDAR_IDS', () => {
 });
 
 describe('Single Session calendar', () => {
-  it('consumes the prepaid credit granted by the $285 Single Session product', () => {
-    const result = deriveLedger({
-      contact: contact(),
-      orders: [order({
-        sourceName: '',
-        amount: 285,
-        items: [{ product: { _id: PID.singleSession } }],
-      })],
-      invoices: [],
-      appointments: [appt({ calendarId: CAL.singleSession })],
-      fieldDefs: FIELD_DEFS,
-    });
-    expect(result.purchased).toBe(1);
-    expect(result.attended).toBe(1);
-    expect(result.remaining).toBe(0);
+  it('consumes the prepaid credit granted by the $285 Single Session product in either format', () => {
+    for (const calendarId of [CAL.singleSession, CAL.singleSessionVirtual]) {
+      const result = deriveLedger({
+        contact: contact(),
+        orders: [order({
+          sourceName: '',
+          amount: 285,
+          items: [{ product: { _id: PID.singleSession } }],
+        })],
+        invoices: [],
+        appointments: [appt({ calendarId })],
+        fieldDefs: FIELD_DEFS,
+      });
+      expect(result.purchased).toBe(1);
+      expect(result.attended).toBe(1);
+      expect(result.remaining).toBe(0);
+    }
   });
 });
 

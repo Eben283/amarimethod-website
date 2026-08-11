@@ -68,6 +68,14 @@ export const STAFF_BOOK_TYPES = {
     title: "Amari Method Single Session",
     label: "Single Session · 50 min",
   },
+  single_session_virtual: {
+    // GHL creates a distinct Google Meet conference for each appointment.
+    // This is deliberately not the legacy $190 Follow-up virtual calendar.
+    calendarId: "Ggz6VP9Vg5T05WBCiPmz",
+    durationMinutes: 50,
+    title: "Amari Method Single Session — Virtual",
+    label: "Single Session · virtual · 50 min",
+  },
 };
 
 export function resolveStaffBookType(sessionType) {
