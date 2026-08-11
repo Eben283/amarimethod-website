@@ -66,6 +66,7 @@ const PRIMARY_ITEMS: RailItem[] = [
   { label: 'Pipeline', detail: 'Care flow', to: '/pipeline', Icon: GitBranch, matches: (path) => path === '/pipeline' || path === '/funnel' },
   { label: 'Money', detail: 'Balances and payment work', to: '/balances', Icon: WalletCards },
   { label: 'Revenue', detail: 'Stripe sales record', to: '/revenue', Icon: CircleDollarSign },
+  { label: 'Partner rewards', detail: 'Manual referral reward ledger', to: '/partner-rewards', Icon: CircleDollarSign },
   { label: 'Products', detail: 'Offers and sale items', to: '/products', Icon: Package, matches: (path) => path === '/products' || path.startsWith('/products/') },
   { label: 'Staff POS', detail: 'In-person checkout', to: '/pos', Icon: ShoppingBag },
   { label: 'Automations', detail: 'What runs and why', to: '/automations', Icon: Workflow },
@@ -75,8 +76,8 @@ const PRIMARY_ITEMS: RailItem[] = [
 const PRIMARY_GROUPS = [
   { label: 'Today', items: PRIMARY_ITEMS.slice(0, 3) },
   { label: 'People', items: PRIMARY_ITEMS.slice(3, 6) },
-  { label: 'Business', items: PRIMARY_ITEMS.slice(6, 10) },
-  { label: 'System', items: PRIMARY_ITEMS.slice(10) },
+  { label: 'Business', items: PRIMARY_ITEMS.slice(6, 11) },
+  { label: 'System', items: PRIMARY_ITEMS.slice(11) },
 ];
 
 const SPECIALIST_ITEMS: RailItem[] = [
