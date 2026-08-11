@@ -279,41 +279,30 @@ function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamil
   const pilots = families.filter((family) => family.cutoverTree);
   if (!pilots.length) return null;
   const family = pilots[0];
-  const nodes = family.cutoverTree!.nodes;
-  const live = nodes.filter((node) => node.state === 'verified_ghl');
-  const shadows = nodes.filter((node) => node.state === 'owned_shadow');
-  const ownedLive = nodes.filter((node) => node.state === 'owned_live');
-  const gaps = nodes.filter((node) => node.state === 'gap');
   return (
-    <section className="automation-health-pilot" aria-label="Automation health pilot">
+    <section className="automation-health-pilot" aria-label="Initial and Assessment ownership map">
       <header>
         <div>
-          <span><Activity size={14} /> Automation health · first path</span>
-          <h2>Can we see what is actually covered?</h2>
-          <p>This is the first health card, for the in-person booking path. It shows the current owner, proof, rollback, and the one remaining separate gap.</p>
+          <span><Activity size={14} /> Ownership map · first path</span>
+          <h2>Who operates each part of the appointment?</h2>
+          <p>Read the path from top to bottom. A color identifies the system responsible for that node, not a vague migration percentage.</p>
         </div>
-        <button type="button" onClick={() => onOpen(family.key)}>Open evidence tree <ChevronRight size={15} /></button>
+        <button type="button" onClick={() => onOpen(family.key)}>Open full evidence <ChevronRight size={15} /></button>
       </header>
-      <div className="automation-health-pilot-grid">
-        <article className="is-current">
-          <span>Current state</span>
-          <strong>{ownedLive.length ? 'Live in Amari' : 'Needs verification'}</strong>
-          <p>{ownedLive.length ? 'Amari owns the in-person reminder path. The former GHL workflow is retained in Draft as rollback.' : 'GHL owns the live reminder path. The owned version is a shadow only; it cannot send yet.'}</p>
-        </article>
-        <article className="is-owned">
-          <span>Known owners</span>
-          <strong>{live.length} GHL source · {ownedLive.length} owned live · {shadows.length} owned shadow</strong>
-          <p>{live.map((node) => node.label).join(' · ')}</p>
-        </article>
-        <article className="is-gap">
-          <span>Needs attention</span>
-          <strong>{gaps.length ? gaps.map((node) => node.label).join(' · ') : 'No known gap'}</strong>
-          <p>{gaps[0]?.detail || 'No gap is recorded for this path.'}</p>
-        </article>
-      </div>
-      <footer><b>Next evidence:</b> read back the first ordinary booking and cancellation. The no-show/rebooking gap is separate from this live reminder flow.</footer>
+      <OwnershipLegend />
+      <CutoverTree tree={family.cutoverTree!} compact />
+      <footer><b>Plain answer:</b> GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run and cancels that run when GHL reports a cancellation. The published GHL cleanup is a fallback, not a second sender.</footer>
     </section>
   );
+}
+
+function OwnershipLegend() {
+  return <div className="automation-ownership-legend" aria-label="Ownership map legend">
+    <span className="is-ghl">GHL operates</span>
+    <span className="is-amari">Amari operates</span>
+    <span className="is-rollback">GHL rollback / cleanup</span>
+    <span className="is-gap">Unresolved gap</span>
+  </div>;
 }
 
 function FamilyDetail({
@@ -377,7 +366,7 @@ function FamilyDetail({
         {family.implementationUnits.map((unit) => <span key={unit}>{IMPLEMENTATION_LABELS[unit] || humanize(unit)}</span>)}
       </div>
 
-      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>Scope: Initial / Assessment in-person is owned live; Initial Virtual is staged locally and not yet published to the executing Worker.</strong> The virtual GHL workflow remains the operating sender until the separate behavior release, shadow proof, queue reconciliation, and activation gates pass.</p>}
+      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>Scope: this is a shared in-person lifecycle, not a full Amari cutover.</strong> GHL operates the calendar and appointment status; Amari operates the live in-person reminder run. Initial Virtual remains GHL-operated while its separate behavior release, shadow proof, queue reconciliation, and activation gates remain incomplete.</p>}
 
       {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: in-person ${activeInitialRuntime?.flow?.delivery || 'unknown'}; virtual ${virtualInitialRuntime?.flow?.delivery || 'unknown'}.` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read both scoped definitions; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim a delivery state until the Worker can answer for both scopes.'}</span></div>}
 
@@ -550,7 +539,7 @@ function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../ty
   </article>;
 }
 
-function CutoverTree({ tree }: { tree: AutomationCutoverTree }) {
+function CutoverTree({ tree, compact = false }: { tree: AutomationCutoverTree; compact?: boolean }) {
   const nodesByParent = new Map<string | null, typeof tree.nodes>();
   for (const node of tree.nodes) {
     const nodes = nodesByParent.get(node.parentId) || [];
@@ -558,7 +547,7 @@ function CutoverTree({ tree }: { tree: AutomationCutoverTree }) {
     nodesByParent.set(node.parentId, nodes);
   }
   const stateLabel: Record<typeof tree.nodes[number]['state'], string> = {
-    verified_ghl: 'GHL source', owned_shadow: 'Owned shadow', owned_live: 'Owned live', proven_owned: 'Owned proven', gap: 'Gap',
+    verified_ghl: 'GHL operates', legacy_ghl: 'GHL rollback', owned_shadow: 'Amari shadow', owned_live: 'Amari operates', proven_owned: 'Amari proven', gap: 'Gap',
   };
   const renderChildren = (parentId: string | null) => (nodesByParent.get(parentId) || []).map((node) => (
     <li className={`automation-tree-node is-${node.state}`} key={node.id}>
@@ -571,9 +560,9 @@ function CutoverTree({ tree }: { tree: AutomationCutoverTree }) {
     </li>
   ));
   return (
-    <section className="automation-cutover-tree" aria-label={`${tree.title} evidence tree`}>
+    <section className={`automation-cutover-tree${compact ? ' is-ownership-map' : ''}`} aria-label={`${tree.title} evidence tree`}>
       <header>
-        <div><span>Live workflow tree</span><h3>{tree.title}</h3><p>{tree.summary}</p></div>
+        <div><span>{compact ? 'Current operating path' : 'Live workflow tree'}</span><h3>{tree.title}</h3><p>{tree.summary}</p></div>
         <i>Only backed connections appear</i>
       </header>
       <ul className="automation-tree-root">{renderChildren(null)}</ul>

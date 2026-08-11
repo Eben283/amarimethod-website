@@ -21,25 +21,27 @@ const record = (name, status) => Object.freeze({
 const p = (name) => record(name, "published");
 const d = (name) => record(name, "draft");
 
-// This is the focused, in-person cutover map shown in Staff. It documents the live owner,
-// the one retained rollback, and the separate no-show gap without implying that virtual
-// reminders or a future no-show recovery are part of this live path.
+// This is the focused, in-person ownership map shown in Staff. It deliberately distinguishes
+// the calendar/provider from the reminder operator and the retained GHL rollback. A green
+// Amari node never means that Amari owns the whole customer lifecycle.
 const ASSESSMENT_CUTOVER_TREE = Object.freeze({
   status: "live_workflow",
-  title: "Initial / Assessment — in-person workflow",
-  summary: "Confirmed bookings are sent by Amari. Cancellation stops the remaining reminders. The separate no-show recovery is visible below as a gap, not part of this live flow.",
+  title: "Initial / Assessment — in-person appointment path",
+  summary: "GHL operates the calendar and appointment status. Amari operates its own reminder run after a confirmed appointment. The old GHL reminder flow remains rollback, so this is a shared lifecycle—not a full Amari cutover.",
   nodes: Object.freeze([
-    Object.freeze({ id: "assessment-event", parentId: null, label: "In-person appointment changes", state: "verified_ghl", evidence: "Initial Session — In Person + Amari Assessment — In Person calendars", detail: "Both in-person calendars enter this same reminder lifecycle." }),
-    Object.freeze({ id: "confirmed", parentId: "assessment-event", label: "Confirmed", state: "verified_ghl", evidence: "Initial in-person Session Welcome / reminder email flow (Draft)", detail: "GHL remains as the intact rollback workflow; it is no longer the live sender." }),
-    Object.freeze({ id: "confirmed-shadow", parentId: "confirmed", label: "Owned in-person lifecycle", state: "owned_live", evidence: "initial-in-person definition v3 + Appointment Events Webhook", detail: "The owned six-step lifecycle is live for Initial In-Person and Assessment confirmed bookings." }),
-    Object.freeze({ id: "owned-internal-email", parentId: "confirmed-shadow", label: "Garrett booking email", state: "owned_live", evidence: "initial-in-person booked-internal step", detail: "Owned delivery is live." }),
-    Object.freeze({ id: "owned-confirmation", parentId: "confirmed-shadow", label: "Client confirmation email", state: "proven_owned", evidence: "D1 receipt 19fe8b341af3ea40", detail: "Proven once through the native GHL booking bridge to Eben’s controlled inbox." }),
-    Object.freeze({ id: "owned-day-before", parentId: "confirmed-shadow", label: "Client day-before email", state: "owned_live", evidence: "initial-in-person day-before step", detail: "Owned delivery is live." }),
-    Object.freeze({ id: "owned-client-sms", parentId: "confirmed-shadow", label: "Client one-hour SMS", state: "owned_live", evidence: "initial-in-person one-hour-sms step + recipient proof", detail: "Owned timing with the existing GHL SMS delivery pipe is live." }),
-    Object.freeze({ id: "owned-starting-soon", parentId: "confirmed-shadow", label: "Client one-hour email", state: "owned_live", evidence: "initial-in-person starting-soon step", detail: "Owned delivery is live." }),
-    Object.freeze({ id: "owned-internal-sms", parentId: "confirmed-shadow", label: "Garrett one-hour SMS", state: "owned_live", evidence: "initial-in-person one-hour-internal step + recipient proof", detail: "Owned timing with the existing GHL SMS delivery pipe is live." }),
-    Object.freeze({ id: "cancelled", parentId: "assessment-event", label: "Cancelled", state: "verified_ghl", evidence: "remove from workflow in person booking", detail: "GHL removes the person from pending reminders." }),
-    Object.freeze({ id: "cancelled-shadow", parentId: "cancelled", label: "Owned cancellation exit", state: "proven_owned", evidence: "D1 cancellation proof for UQshXptaKUlun990N6pj", detail: "Native cancellation cancelled the three remaining owned future steps." }),
+    Object.freeze({ id: "assessment-event", parentId: null, label: "Calendar, availability, and appointment status", state: "verified_ghl", evidence: "Initial Session — In Person + Amari Assessment — In Person calendars", detail: "GHL creates the appointment and provides confirmed, cancelled, and no-show status changes." }),
+    Object.freeze({ id: "confirmed", parentId: "assessment-event", label: "Confirmed appointment", state: "verified_ghl", evidence: "Appointment Events Webhook", detail: "GHL sends the confirmed appointment event to the Amari reminder engine." }),
+    Object.freeze({ id: "confirmed-owned", parentId: "confirmed", label: "Amari reminder run", state: "owned_live", evidence: "initial-in-person definition v3 + Appointment Events Webhook", detail: "Amari sends the booking, day-before, and one-hour reminders for these in-person appointments." }),
+    Object.freeze({ id: "owned-internal-email", parentId: "confirmed-owned", label: "Garrett booking email", state: "owned_live", evidence: "initial-in-person booked-internal step", detail: "Owned delivery is live." }),
+    Object.freeze({ id: "owned-confirmation", parentId: "confirmed-owned", label: "Client confirmation email", state: "proven_owned", evidence: "D1 receipt 19fe8b341af3ea40", detail: "Proven once through the native GHL booking bridge to Eben’s controlled inbox." }),
+    Object.freeze({ id: "owned-day-before", parentId: "confirmed-owned", label: "Client day-before email", state: "owned_live", evidence: "initial-in-person day-before step", detail: "Owned delivery is live." }),
+    Object.freeze({ id: "owned-client-sms", parentId: "confirmed-owned", label: "Client one-hour SMS", state: "owned_live", evidence: "initial-in-person one-hour-sms step + recipient proof", detail: "Owned timing with the existing GHL SMS delivery pipe is live." }),
+    Object.freeze({ id: "owned-starting-soon", parentId: "confirmed-owned", label: "Client one-hour email", state: "owned_live", evidence: "initial-in-person starting-soon step", detail: "Owned delivery is live." }),
+    Object.freeze({ id: "owned-internal-sms", parentId: "confirmed-owned", label: "Garrett one-hour SMS", state: "owned_live", evidence: "initial-in-person one-hour-internal step + recipient proof", detail: "Owned timing with the existing GHL SMS delivery pipe is live." }),
+    Object.freeze({ id: "confirmed-rollback", parentId: "confirmed", label: "Old GHL reminder workflow", state: "legacy_ghl", evidence: "Initial in-person Session Welcome / reminder email flow (Draft)", detail: "Draft rollback only. It is retained as evidence and is not the live reminder sender." }),
+    Object.freeze({ id: "cancelled", parentId: "assessment-event", label: "Cancelled appointment", state: "verified_ghl", evidence: "Appointment Events Webhook", detail: "GHL is the source of the cancellation event." }),
+    Object.freeze({ id: "cancelled-owned", parentId: "cancelled", label: "Amari cancels its pending reminders", state: "proven_owned", evidence: "D1 cancellation proof for UQshXptaKUlun990N6pj", detail: "The Amari reminder engine cancels remaining future reminder steps for that appointment." }),
+    Object.freeze({ id: "cancelled-rollback", parentId: "cancelled", label: "GHL legacy cleanup", state: "legacy_ghl", evidence: "remove from workflow in person booking", detail: "Published cleanup removes any old GHL reminder enrollment. It does not send the current reminders." }),
     Object.freeze({ id: "noshow", parentId: "assessment-event", label: "No-show", state: "gap", evidence: "No Show Email SMS series trigger inventory", detail: "GHL has no Assessment no-show trigger. This is an observed gap, not an assumed path." }),
     Object.freeze({ id: "noshow-shadow", parentId: "noshow", label: "Owned no-show recovery shadow", state: "owned_shadow", evidence: "assessment-no-show definition v1", detail: "Local code models the three existing recovery messages without sending them." }),
     Object.freeze({ id: "rebooked-shadow", parentId: "noshow-shadow", label: "Confirmed rebooking exits recovery", state: "owned_shadow", evidence: "assessment-no-show exitOn: confirmed", detail: "A confirmed Assessment booking closes remaining owned recovery steps for that person." }),

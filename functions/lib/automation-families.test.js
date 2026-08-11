@@ -75,9 +75,12 @@ describe("provider-neutral automation families", () => {
 
   it("keeps the first cutover tree source-backed and visibly preserves the Assessment no-show gap", () => {
     const tree = automationFamily("initial-session-reminders").cutoverTree;
-    expect(tree).toEqual(expect.objectContaining({ status: "live_workflow", title: "Initial / Assessment — in-person workflow" }));
+    expect(tree).toEqual(expect.objectContaining({ status: "live_workflow", title: "Initial / Assessment — in-person appointment path" }));
     expect(tree.nodes).toEqual(expect.arrayContaining([
-      expect.objectContaining({ id: "confirmed", state: "verified_ghl", evidence: "Initial in-person Session Welcome / reminder email flow (Draft)" }),
+      expect.objectContaining({ id: "confirmed", state: "verified_ghl", evidence: "Appointment Events Webhook" }),
+      expect.objectContaining({ id: "confirmed-owned", state: "owned_live" }),
+      expect.objectContaining({ id: "cancelled-owned", state: "proven_owned" }),
+      expect.objectContaining({ id: "cancelled-rollback", state: "legacy_ghl", evidence: "remove from workflow in person booking" }),
       expect.objectContaining({ id: "noshow", state: "gap", evidence: "No Show Email SMS series trigger inventory" }),
       expect.objectContaining({ id: "noshow-shadow", state: "owned_shadow", evidence: "assessment-no-show definition v1" }),
     ]));
