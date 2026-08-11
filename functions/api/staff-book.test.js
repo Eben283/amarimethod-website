@@ -22,6 +22,13 @@ describe("staff-book-calendars", () => {
     expect(types.some((t) => t.id === "entrainment")).toBe(true);
     expect(types.some((t) => t.id === "entrainment_20")).toBe(true);
     expect(types.some((t) => t.id === "single_session")).toBe(true);
+    expect(types.some((t) => t.id === "single_session_virtual")).toBe(true);
+  });
+
+  it("maps virtual single sessions to their dedicated Google Meet calendar", () => {
+    const booking = resolveStaffBookType("single_session_virtual");
+    expect(booking.calendarId).toBe("Ggz6VP9Vg5T05WBCiPmz");
+    expect(booking.durationMinutes).toBe(50);
   });
 });
 

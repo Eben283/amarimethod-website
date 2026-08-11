@@ -60,6 +60,7 @@ export const SERIES_CALENDAR_IDS = new Set([
   "bJFkhVP35Ecwh4tLnSmy", // Follow-up Session — Virtual (Package)
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
   "waHmG2mHNThPfMVuNJWG", // Single Session — 50 Minutes (uses its prepaid credit)
+  "Ggz6VP9Vg5T05WBCiPmz", // Single Session — Virtual (uses its prepaid credit)
 ]);
 
 // Calendars that are explicitly NOT against series. Kept for documentation;

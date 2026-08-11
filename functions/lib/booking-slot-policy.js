@@ -63,6 +63,7 @@ export const SLOT_POLICIES = {
       "ZO1jlGfy01rsxVqicoSB", // package IP
       "bJFkhVP35Ecwh4tLnSmy", // package virtual
       "waHmG2mHNThPfMVuNJWG", // Single Session — 50 Minutes
+      "Ggz6VP9Vg5T05WBCiPmz", // Single Session — Virtual
     ],
     durationMinutes: 50,
     bufferMinutes: 20,
