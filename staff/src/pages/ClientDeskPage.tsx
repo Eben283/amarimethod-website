@@ -1,6 +1,6 @@
-import { ChevronLeft, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getCrmMirrorAccessUrl } from '../lib/api';
 import { deskNavigationRoute } from '../lib/desk-navigation';
 
@@ -62,14 +62,10 @@ export default function ClientDeskPage() {
   }, [navigate, src]);
 
   return (
-    <main className="ops-hub">
-      <header className="ops-hub__head">
-        <Link to="/" className="ops-hub__back"><ChevronLeft aria-hidden="true" /> Staff home</Link>
-        <div><p>Practice member relationships</p><h1>Practice Member Desk</h1><span>Recent communication and practice member context, read-only.</span></div>
-      </header>
-      <section className="ops-hub__frame" aria-label="Practice Member Desk">
-        {error ? <div className="ops-hub__status ops-hub__status--error" role="alert">{error}</div> : null}
-        {src ? <iframe ref={frameRef} title="Practice Member Desk" src={src} /> : !error ? <div className="ops-hub__status"><Loader2 className="animate-spin" aria-hidden="true" /> Opening protected Practice Member Desk…</div> : null}
+    <main className="client-desk-shell">
+      <section className="client-desk-shell__frame" aria-label="Practice Member Desk">
+        {error ? <div className="client-desk-shell__status client-desk-shell__status--error" role="alert">{error}</div> : null}
+        {src ? <iframe ref={frameRef} title="Practice Member Desk" src={src} /> : !error ? <div className="client-desk-shell__status"><Loader2 className="animate-spin" aria-hidden="true" /> Opening protected Practice Member Desk…</div> : null}
       </section>
     </main>
   );

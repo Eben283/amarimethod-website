@@ -16,6 +16,8 @@ import {
   Images,
   Palette,
   Package,
+  PanelLeftClose,
+  PanelLeftOpen,
   BellRing,
   Search,
   ShoppingBag,
@@ -271,6 +273,15 @@ export default function StaffShell({ children }: { children: ReactNode }) {
   const compact = useCompactLayout();
   const counts = useShellCounts();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [railCollapsed, setRailCollapsed] = useState(() => {
+    try {
+      if (typeof window === 'undefined') return false;
+      const saved = window.localStorage.getItem('amari-staff-rail-collapsed');
+      return saved === null ? !window.matchMedia('(max-width: 900px)').matches : saved === 'true';
+    } catch {
+      return false;
+    }
+  });
   const isReferencePage = location.pathname.startsWith('/design-system');
   const [specialistsOpen, setSpecialistsOpen] = useState(() => SPECIALIST_ITEMS.some((item) => itemIsActive(item, location.pathname)));
   const railRef = useRef<HTMLElement>(null);
@@ -290,6 +301,15 @@ export default function StaffShell({ children }: { children: ReactNode }) {
     setDrawerOpen(false);
     if (SPECIALIST_ITEMS.some((item) => itemIsActive(item, location.pathname))) setSpecialistsOpen(true);
   }, [location.pathname]);
+
+  useEffect(() => {
+    if (compact) return;
+    try {
+      window.localStorage.setItem('amari-staff-rail-collapsed', String(railCollapsed));
+    } catch {
+      // The workspace remains usable when browser storage is unavailable.
+    }
+  }, [compact, railCollapsed]);
 
   useEffect(() => {
     const rail = railRef.current;
@@ -330,7 +350,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
   const closeDrawer = () => setDrawerOpen(false);
 
   return (
-    <div className="staff-shell">
+    <div className={`staff-shell${railCollapsed ? ' is-rail-collapsed' : ''}`}>
       <header ref={mobileHeadRef} className="staff-shell__mobile-head" aria-hidden={compact && drawerOpen ? true : undefined}>
         <button type="button" onClick={() => setDrawerOpen(true)} aria-label="Open Staff navigation" aria-expanded={drawerOpen}>
           <Menu aria-hidden="true" />
@@ -341,15 +361,24 @@ export default function StaffShell({ children }: { children: ReactNode }) {
         </button>
       </header>
 
-      <aside ref={railRef} className={`practice-rail${drawerOpen ? ' is-open' : ''}`} aria-label="Staff workspace" aria-hidden={compact && !drawerOpen ? true : undefined}>
+      <aside ref={railRef} className={`practice-rail${drawerOpen ? ' is-open' : ''}${railCollapsed ? ' is-collapsed' : ''}`} aria-label="Staff workspace" aria-hidden={compact && !drawerOpen ? true : undefined}>
         <div className="practice-rail__head">
           <NavLink to="/" className="practice-rail__brand" onClick={closeDrawer}>
             <span className="practice-rail__brand-mark" aria-hidden="true"><i /><i /><i /></span>
             <span><strong>Amari Method</strong><small>Practice room</small></span>
           </NavLink>
+          <button type="button" className="practice-rail__collapse" onClick={() => setRailCollapsed((collapsed) => !collapsed)} aria-label={railCollapsed ? 'Expand Staff navigation' : 'Collapse Staff navigation'} aria-pressed={railCollapsed}>
+            {railCollapsed ? <PanelLeftOpen aria-hidden="true" /> : <PanelLeftClose aria-hidden="true" />}
+          </button>
           <button type="button" className="practice-rail__close" onClick={closeDrawer} aria-label="Close Staff navigation"><X aria-hidden="true" /></button>
         </div>
 
+        <button type="button" className="practice-rail__collapsed-search" onClick={() => {
+          setRailCollapsed(false);
+          window.setTimeout(() => searchRef.current?.focus(), 80);
+        }} aria-label="Find a practice member">
+          <Search aria-hidden="true" />
+        </button>
         <MemberSearch inputRef={searchRef} onChoose={closeDrawer} />
 
         <nav className="practice-rail__nav" aria-label="Primary Staff navigation">

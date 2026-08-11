@@ -512,6 +512,28 @@
   .ops-hub__tabs button small { color: var(--staff-muted); font-size: 12px; }
   .ops-hub__tabs button.is-active { border-bottom: 4px solid var(--staff-active); background: var(--staff-active-soft); color: var(--staff-active); box-shadow: none; }
   .ops-hub__frame { margin: 22px clamp(18px, 3vw, 40px) 40px; border: 1px solid var(--staff-line); border-radius: 6px; background: var(--staff-sheet); box-shadow: none; }
+  .client-desk-shell { position:relative; min-height:100dvh; background:var(--staff-paper); }
+  .client-desk-shell__frame { position:relative; min-height:100dvh; overflow:hidden; background:var(--staff-sheet); }
+  .client-desk-shell__frame iframe { display:block; width:100%; height:100dvh; border:0; background:var(--staff-paper); }
+  .client-desk-shell__status { position:absolute; inset:0; z-index:1; display:grid; place-content:center; justify-items:center; gap:10px; padding:24px; color:var(--staff-muted); font-size:14px; text-align:center; }
+  .client-desk-shell__status--error { color:var(--staff-danger); }
+  @media (min-width:901px) {
+    .ops-hub__head { gap:5px; padding-top:14px; }
+    .ops-hub__head p, .ops-hub__head span { display:none; }
+    .ops-hub__head h1 { margin:0; font-size:24px; }
+    .ops-hub__tabs { padding-top:10px; }
+    .ops-hub__frame { margin-top:12px; margin-bottom:18px; }
+    .ops-hub__frame iframe { height:calc(100dvh - 156px); }
+    .ops-hub--framed { display:grid; min-height:100dvh; grid-template-rows:50px 52px minmax(0,1fr); }
+    .ops-hub--framed .ops-hub__head { display:flex; align-items:center; gap:0; padding:0 16px; }
+    .ops-hub--framed .ops-hub__back { display:none; }
+    .ops-hub--framed .ops-hub__head h1 { font-size:20px; }
+    .ops-hub--framed .ops-hub__tabs { min-height:52px; padding:0 16px; }
+    .ops-hub--framed .ops-hub__tabs button { min-height:52px; padding:8px 12px; }
+    .ops-hub--framed .ops-hub__tabs button small { display:none; }
+    .ops-hub--framed .ops-hub__frame { min-height:0; margin:0; border:0; border-radius:0; }
+    .ops-hub--framed .ops-hub__frame iframe { height:100%; min-height:0; }
+  }
   .ops-overview { max-width: none; padding: 22px; gap: 22px; }
   .ops-overview__signal,
   .ops-mailbox,

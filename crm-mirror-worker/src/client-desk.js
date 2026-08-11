@@ -33,12 +33,18 @@ const CLIENT_DESK_HTML = `<!doctype html>
      carries the same tokens explicitly instead of inheriting the React shell. */
   :root { --desk-paper:#f4f3ee; --desk-sheet:#fffefa; --desk-ink:#12333b; --desk-body:#303c3d; --desk-muted:#526a70; --desk-line:#aebdb9; --desk-line-soft:#d7deda; --desk-active:#0d6268; --desk-active-soft:#d8e9e7; --desk-attention:#7a5100; --desk-attention-soft:#f4e2b4; --desk-danger:#91382f; font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; color:var(--desk-body); background:var(--desk-paper); }
   body { background:var(--desk-paper); color:var(--desk-body); font-size:16px; }
-  main { width:min(1520px,calc(100% - 32px)); padding-top:26px; }
+  main { width:100%; min-height:100dvh; height:100dvh; padding:0; }
+  .desk-toolbar { display:grid; min-height:64px; grid-template-columns:auto minmax(280px,620px) minmax(0,1fr); align-items:center; gap:18px; padding:10px 20px; border-bottom:1px solid var(--desk-line); background:var(--desk-paper); }
+  .desk-toolbar__title { display:flex; align-items:baseline; gap:9px; min-width:0; }
+  .desk-toolbar h1 { margin:0; color:var(--desk-ink); font-size:20px; line-height:1; white-space:nowrap; }
+  .desk-toolbar .eyebrow { color:var(--desk-muted); font-size:12px; white-space:nowrap; }
+  .desk-toolbar .page-note { display:none; }
+  .desk-toolbar .searchbar { min-height:42px; padding:7px 11px; }
   h1,.pane-title { color:var(--desk-ink); font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; font-weight:650; }
   .eyebrow,.record-status h3,.record-section h3,.status-label,.identity-label,.record-section-count,.composer label,.payment-row.heading { color:var(--desk-muted); font-size:12px; letter-spacing:.07em; }
   .page-note,.count,.thread-preview,.thread-meta,.thread-exact-time,.client-address,.send-state,.record-subtitle,.status-value,.identity-value,.tag,.compact-card,.field-row,.empty-small,.source-note,.record-tab,.payment-actions-toggle,.payment-action,.payment-action span,.payment-summary,.payment-row,.workflow-row span,.workflow-run,.workflow-evidence-note,.show-all,.composer-status,.message-workflow-link { font-size:12px; line-height:1.45; }
   .searchbar,.workspace { border-color:var(--desk-line); border-radius:6px; background:var(--desk-sheet); box-shadow:none; }
-  .workspace { grid-template-columns:minmax(270px,.72fr) minmax(430px,1.35fr) minmax(310px,.9fr); }
+  .workspace { height:calc(100dvh - 64px); margin-top:0; grid-template-columns:minmax(270px,.72fr) minmax(430px,1.35fr) minmax(310px,.9fr); border-inline:0; border-bottom:0; border-radius:0; }
   .inbox,.conversation,.record,.pane-head,.client-head,.timeline-toolbar,.record-head,.record-status,.record-section,.field-row,.payment-row,.workflow-run { border-color:var(--desk-line-soft); }
   .inbox,.timeline-toolbar,.record { background:var(--desk-sheet); }
   .thread-row { min-height:74px; border-color:var(--desk-line-soft); }
@@ -75,7 +81,12 @@ const CLIENT_DESK_HTML = `<!doctype html>
     .record-scroll { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:0 22px; max-height:none; }
   }
   @media (max-width:720px) {
-    main { width:min(100% - 20px,580px); padding-top:20px; }
+    main { width:100%; height:auto; min-height:100dvh; padding:0 10px 20px; }
+    .desk-toolbar { grid-template-columns:1fr; gap:9px; margin:0 -10px 14px; padding:15px 10px 10px; }
+    .desk-toolbar .eyebrow { display:none; }
+    .desk-toolbar h1 { font-size:24px; }
+    .desk-toolbar .searchbar { width:100%; }
+    .workspace { height:auto; border:1px solid var(--desk-line); border-radius:6px; }
     .workspace { grid-template-columns:1fr; }
     .inbox,.conversation { height:auto; border-right:0; border-bottom:1px solid var(--desk-line-soft); }
     .conversation { min-height:560px; }
@@ -88,8 +99,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     .mobile-back { display:inline-flex; }
   }
 </style></head><body><main>
-<div class="eyebrow">Amari Method · staff</div><div class="page-head"><h1>Communication</h1><p class="page-note">Every mirrored contact, ordered by most recent activity. Client, automated, and operational messages remain visible in the selected record. This mirror does not send messages.</p></div>
-<label class="searchbar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="query" type="search" autocomplete="off" placeholder="Search name, email, or phone" aria-label="Search all contacts" /><span class="count" id="count">Loading…</span></label>
+<header class="desk-toolbar"><div class="desk-toolbar__title"><span class="eyebrow">Amari Method · staff</span><h1>Communication</h1></div><label class="searchbar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="query" type="search" autocomplete="off" placeholder="Search name, email, or phone" aria-label="Search all contacts" /><span class="count" id="count">Loading…</span></label><p class="page-note">Every mirrored contact, ordered by most recent activity. Client, automated, and operational messages remain visible in the selected record. This mirror does not send messages.</p></header>
 <section class="workspace" id="workspace" aria-label="Complete communication workspace"><aside class="pane inbox"><header class="pane-head"><h2 class="pane-title">All contacts</h2><span class="unread" id="unread" aria-live="polite">—</span></header><ul class="thread-list" id="thread-list"></ul></aside><section class="pane conversation" id="conversation" aria-live="polite"><div class="conversation-empty"><div><strong>Select a contact</strong>Read the complete mirrored chronology without leaving the record.</div></div></section><aside class="pane record" id="record" aria-live="polite"><div class="conversation-empty"><div><strong>Contact record</strong>Contact details, appointments, notes, tasks, and payments appear here.</div></div></aside></section>
 </main><script>
 (() => {

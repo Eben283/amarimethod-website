@@ -369,7 +369,7 @@ export default function OperationsPage() {
   const attention = (board?.systems || []).filter((system) => ['red', 'sick', 'stuck', 'map_bad'].includes(system.state));
 
   return (
-    <main className="ops-hub">
+    <main className={`ops-hub${tab !== 'overview' ? ' ops-hub--framed' : ''}`}>
       <header className="ops-hub__head">
         <Link to="/" className="ops-hub__back"><ChevronLeft aria-hidden="true" /> Staff home</Link>
         <div>

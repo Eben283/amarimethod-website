@@ -109,6 +109,20 @@
   color: #d6e4e3;
 }
 
+.practice-rail__collapse {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  place-items: center;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: #d6e4e3;
+}
+.practice-rail__collapse:hover { background: rgba(255, 255, 255, .08); color: #fff; }
+.practice-rail__collapse svg { width: 17px; height: 17px; }
+.practice-rail__collapsed-search { display: none; }
+
 .practice-rail__close svg { width: 19px; height: 19px; }
 
 .practice-search {
@@ -273,6 +287,8 @@
 .practice-rail__specialist-toggle:focus-visible,
 .practice-rail__foot button:focus-visible,
 .practice-rail__close:focus-visible,
+.practice-rail__collapse:focus-visible,
+.practice-rail__collapsed-search:focus-visible,
 .practice-search__results button:focus-visible,
 .staff-shell__dock a:focus-visible,
 .staff-shell__dock button:focus-visible,
@@ -379,6 +395,29 @@
 .practice-rail__foot button svg { width: 13px; height: 13px; }
 
 .staff-shell__main { min-width: 0; min-height: 100dvh; margin-left: 240px; }
+.staff-shell.is-rail-collapsed .staff-shell__main { margin-left: 68px; }
+.practice-rail.is-collapsed { width: 68px; padding-inline: 10px; }
+.practice-rail.is-collapsed .practice-rail__head { justify-content: center; padding: 0; }
+.practice-rail.is-collapsed .practice-rail__brand > span:last-child,
+.practice-rail.is-collapsed .practice-search,
+.practice-rail.is-collapsed .practice-rail__section-label,
+.practice-rail.is-collapsed .practice-rail__specialist-toggle,
+.practice-rail.is-collapsed .practice-rail__foot span,
+.practice-rail.is-collapsed .practice-rail__foot button { display: none; }
+.practice-rail.is-collapsed .practice-rail__brand { display: none; }
+.practice-rail.is-collapsed .practice-rail__collapsed-search { display: grid; width: 42px; height: 42px; place-items: center; margin: 12px auto 4px; border: 1px solid rgba(215, 231, 229, .18); border-radius: var(--staff-radius-control); background: rgba(255, 255, 255, .08); color: #d6e4e3; }
+.practice-rail.is-collapsed .practice-rail__collapsed-search:hover { background: rgba(242, 248, 247, .14); color: #fff; }
+.practice-rail.is-collapsed .practice-rail__collapsed-search svg { width: 18px; height: 18px; }
+.practice-rail.is-collapsed .practice-rail__nav { gap: 10px; }
+.practice-rail.is-collapsed .practice-rail__group { gap: 4px; }
+.practice-rail.is-collapsed .practice-rail__link,
+.practice-rail.is-collapsed .practice-rail__specialists .practice-rail__link,
+.practice-rail.is-collapsed .practice-rail__settings .practice-rail__link { grid-template-columns: 1fr auto; justify-items: center; min-height: 42px; padding: 7px; }
+.practice-rail.is-collapsed .practice-rail__copy { display: none; }
+.practice-rail.is-collapsed .practice-rail__specialists { margin-top: 12px; padding-top: 10px; }
+.practice-rail.is-collapsed .practice-rail__specialists nav { display: grid; gap: 4px; margin-top: 0; }
+.practice-rail.is-collapsed .practice-rail__settings { margin-top: 10px; padding-top: 10px; }
+.practice-rail.is-collapsed .practice-rail__foot { justify-content: center; padding: 12px 0 0; }
 .staff-shell__content { min-width: 0; min-height: 100dvh; }
 .staff-shell__mobile-head,
 .staff-shell__dock,
@@ -394,6 +433,24 @@
 
 @media (max-width: 900px) {
   .staff-shell { --staff-shell-topbar-height: calc(57px + env(safe-area-inset-top, 0px)); }
+  .staff-shell.is-rail-collapsed .staff-shell__main { margin-left: 0; }
+  .practice-rail.is-collapsed { width: min(340px, calc(100vw - 42px)); padding-inline: 12px; }
+  .practice-rail.is-collapsed .practice-rail__head { justify-content: space-between; padding: 0 5px; }
+  .practice-rail.is-collapsed .practice-rail__brand { display: inline-flex; }
+  .practice-rail.is-collapsed .practice-rail__brand > span:last-child { display: grid; }
+  .practice-rail.is-collapsed .practice-search { display: block; }
+  .practice-rail.is-collapsed .practice-rail__section-label { display: block; }
+  .practice-rail.is-collapsed .practice-rail__foot span { display: inline-flex; }
+  .practice-rail.is-collapsed .practice-rail__foot button { display: inline-flex; }
+  .practice-rail.is-collapsed .practice-rail__collapsed-search { display: none; }
+  .practice-rail.is-collapsed .practice-rail__copy { display: grid; }
+  .practice-rail.is-collapsed .practice-rail__specialist-toggle { display: grid; }
+  .practice-rail.is-collapsed .practice-rail__specialists nav { display: none; }
+  .practice-rail.is-collapsed .practice-rail__specialists.is-open nav { display: grid; }
+  .practice-rail.is-collapsed .practice-rail__link,
+  .practice-rail.is-collapsed .practice-rail__specialists .practice-rail__link,
+  .practice-rail.is-collapsed .practice-rail__settings .practice-rail__link { grid-template-columns: 20px minmax(0, 1fr) auto; justify-items: stretch; padding: 7px 10px; }
+  .practice-rail__collapse { display: none; }
   .staff-shell__mobile-head {
     position: sticky;
     top: 0;

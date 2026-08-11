@@ -108,6 +108,22 @@ describe('Staff legibility contract', () => {
     expect(member).toContain('.sa-head,.sa-body{min-width:0; max-width:100%;}');
   });
 
+  it('lets desktop Staff workspaces reclaim the navigation rail', () => {
+    const shell = css('components/StaffShell.tsx');
+    const shellCss = css('styles/staff-shell.css');
+    expect(shell).toContain("localStorage.getItem('amari-staff-rail-collapsed')");
+    expect(shell).toContain('Collapse Staff navigation');
+    expect(shellCss).toContain('.staff-shell.is-rail-collapsed .staff-shell__main { margin-left: 68px; }');
+  });
+
+  it('gives every protected desktop frame the compact working treatment', () => {
+    const operations = css('pages/OperationsPage.tsx');
+    const global = css('index.css');
+    expect(operations).toContain("ops-hub${tab !== 'overview' ? ' ops-hub--framed' : ''}");
+    expect(global).toContain('.ops-hub--framed { display:grid; min-height:100dvh; grid-template-rows:50px 52px minmax(0,1fr); }');
+    expect(global).toContain('.ops-hub--framed .ops-hub__frame iframe { height:100%; min-height:0; }');
+  });
+
   it('opens an attention reply on the selected person', () => {
     const home = css('pages/HomePage.tsx');
     expect(home).toContain("`/client-desk?contact=${encodeURIComponent(reply.contactId)}`");

@@ -99,6 +99,14 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain(".workspace { grid-template-columns:1fr; }");
   });
 
+  it("treats Communication as the working surface instead of a third landing-page header", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain('<header class="desk-toolbar">');
+    expect(html).toContain('height:calc(100dvh - 64px)');
+    expect(html).toContain('min-height:64px');
+    expect(html).not.toContain('<div class="eyebrow">Amari Method · staff</div><div class="page-head">');
+  });
+
   it("uses a mobile contact-list to selected-thread flow", () => {
     const html = clientDeskHtml();
     expect(html).toContain(".workspace.has-selection .inbox { display:none; }");
