@@ -22,7 +22,8 @@ import { dashboardSessionCookie } from "./dashboard-session.js";
 import { handleGhlEvent } from "./ghl-events.js";
 import { runtimeStatus } from "./runtime-status.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
-import { ensurePublishedWorkflow, saveDraftWorkflow, publishDraftWorkflow } from "./workflow-store.js";
+import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
+import { ensurePublishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow } from "./workflow-store.js";
 import { appendEvent } from "./store.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -134,6 +135,19 @@ export default {
         const runtime = await runtimeStatus(env, flowKey);
         if (!runtime) return json(404, { error: "unknown flow" });
         return json(200, { success: true, runtime });
+      }
+      if (request.method === "POST" && url.pathname === "/workflow-release") {
+        const body = await request.json();
+        if (body?.workflowId !== INITIAL_VIRTUAL_WORKFLOW.id) return json(400, { error: "unsupported workflow release" });
+        if (env.INITIAL_VIRTUAL_BEHAVIOR_RELEASE !== "approved") {
+          return json(403, { error: "Initial Virtual behavior release is not approved" });
+        }
+        const document = await publishBundledWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW);
+        await appendEvent(env.REMINDER_DB, {
+          ts: Date.now(), engine: "reminder", flowKey: document.id, definitionVersion: document.version,
+          action: "workflow_published", outcome: "published", detail: { actor: requestedStaffActor(request.headers.get("X-Staff-Actor")), lane: "initial_virtual_behavior_release" },
+        });
+        return json(200, { success: true, document });
       }
       if (request.method === "POST" && url.pathname === "/workflow-draft") {
         const body = await request.json();

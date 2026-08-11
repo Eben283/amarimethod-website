@@ -17,15 +17,21 @@ import { deliverInitialInPersonStep, initialInPersonCutoverEligibility } from ".
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { deliverInitialVirtualStep, initialVirtualCutoverEligibility } from "./initial-virtual-cutover.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
-import { ensurePublishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
+import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
 
 async function executionFlows(env) {
-  const documents = await Promise.all([
-    ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW),
-    ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW),
-  ]);
+  // The in-person version predates the separately gated release lane. Virtual
+  // deliberately does not seed here: an ordinary deployment must not publish,
+  // enroll, shadow, backfill, or otherwise change its live behavior.
+  const documents = [
+    await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW),
+    await publishedWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW.id),
+  ].filter(Boolean);
   const canonical = Object.fromEntries(documents.map((document) => [document.id, asExecutableWorkflow(document)]));
-  return FLOWS.map((flow) => canonical[flow.flowKey] || flow);
+  const canonicalOnly = new Set([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id]);
+  return FLOWS
+    .filter((flow) => !canonicalOnly.has(flow.flowKey) || canonical[flow.flowKey])
+    .map((flow) => canonical[flow.flowKey] || flow);
 }
 
 /**

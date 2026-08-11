@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
-import { ensurePublishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, workflowVersion } from "./workflow-store.js";
+import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
+import { ensurePublishedWorkflow, publishBundledWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, workflowVersion } from "./workflow-store.js";
 
 function fakeD1() {
   const rows = [];
@@ -61,5 +62,15 @@ describe("workflow version store", () => {
     await publishDraftWorkflow(db, draft.id, 4, 3, 300);
     expect(db.rows.find((row) => row.version === 3).state).toBe("retired");
     expect(db.rows.find((row) => row.version === 4).state).toBe("published");
+  });
+
+  it("publishes a bundled first version only when the behavior-release path calls it", async () => {
+    const db = fakeD1();
+    expect(await publishedWorkflow(db, INITIAL_VIRTUAL_WORKFLOW.id)).toBeNull();
+
+    await publishBundledWorkflow(db, INITIAL_VIRTUAL_WORKFLOW, 100);
+
+    expect(await publishedWorkflow(db, INITIAL_VIRTUAL_WORKFLOW.id)).toEqual(INITIAL_VIRTUAL_WORKFLOW);
+    expect(db.rows).toMatchObject([{ workflow_id: "initial-virtual", version: 3, state: "published", published_at: 100 }]);
   });
 });

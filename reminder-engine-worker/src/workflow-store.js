@@ -21,9 +21,25 @@ export async function ensurePublishedWorkflow(db, fallback, nowMs = Date.now()) 
 }
 
 export async function publishedWorkflow(db, workflowId) {
-  return parse(await db.prepare(
+  const read = db.prepare(
     "SELECT document FROM workflow_versions WHERE workflow_id = ? AND state = 'published' LIMIT 1",
-  ).bind(workflowId).first());
+  ).bind(workflowId);
+  // Some isolated adapters only model the reminder ledger. Missing workflow
+  // storage must fail closed for a separately released workflow.
+  if (typeof read.first !== "function") return null;
+  return parse(await read.first());
+}
+
+// Publishing a bundled first version is an explicit CRM behavior-release action.
+// It is deliberately never called during Worker startup or an ordinary deployment.
+export async function publishBundledWorkflow(db, document, nowMs = Date.now()) {
+  const existing = await publishedWorkflow(db, document.id);
+  if (existing) return existing;
+  await db.prepare(
+    `INSERT INTO workflow_versions (workflow_id, version, state, document, created_at, published_at)
+     VALUES (?, ?, 'published', ?, ?, ?) ON CONFLICT(workflow_id, version) DO NOTHING`,
+  ).bind(document.id, document.version, JSON.stringify(document), nowMs, nowMs).run();
+  return document;
 }
 
 export async function workflowVersion(db, workflowId, version) {

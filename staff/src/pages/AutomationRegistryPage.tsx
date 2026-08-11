@@ -377,7 +377,7 @@ function FamilyDetail({
         {family.implementationUnits.map((unit) => <span key={unit}>{IMPLEMENTATION_LABELS[unit] || humanize(unit)}</span>)}
       </div>
 
-      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>Scope: Initial / Assessment in-person is owned live; Initial Virtual is published disabled and shadow-only.</strong> The virtual GHL workflow remains the operating sender until its separate proof and activation gates pass.</p>}
+      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>Scope: Initial / Assessment in-person is owned live; Initial Virtual is staged locally and not yet published to the executing Worker.</strong> The virtual GHL workflow remains the operating sender until the separate behavior release, shadow proof, queue reconciliation, and activation gates pass.</p>}
 
       {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: in-person ${activeInitialRuntime?.flow?.delivery || 'unknown'}; virtual ${virtualInitialRuntime?.flow?.delivery || 'unknown'}.` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read both scoped definitions; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim a delivery state until the Worker can answer for both scopes.'}</span></div>}
 
@@ -485,7 +485,7 @@ function FamilyDetail({
   );
 }
 
-function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../types/staff').CanonicalWorkflow; delivery: 'active' | 'disabled' }) {
+function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../types/staff').CanonicalWorkflow; delivery: 'active' | 'disabled' | 'unpublished' }) {
   const [draft, setDraft] = useState<import('../types/staff').CanonicalWorkflow | null>(null);
   const [dragged, setDragged] = useState<number | null>(null);
   const [status, setStatus] = useState('');
@@ -526,7 +526,7 @@ function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../ty
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Workflow could not be published.'); setSaving(false); }
   };
   return <article className="automation-definition-card automation-canonical-workflow">
-    <header><span>{delivery === 'active' ? 'Published · live' : 'Published · disabled'}</span><strong>{workflow.name}</strong><em>v{workflow.version}</em></header>
+    <header><span>{delivery === 'active' ? 'Published · live' : delivery === 'disabled' ? 'Published · disabled' : 'Not published'}</span><strong>{workflow.name}</strong><em>v{workflow.version}</em></header>
     <div className="canonical-workflow-controls">
       <p><strong>Published v{workflow.version} is the sender.</strong> The cards, copy, timing, and order below come from that exact document.</p>
       {!draft ? <button type="button" onClick={beginEdit}>Edit as draft v{workflow.version + 1}</button> : <><button type="button" disabled={saving} onClick={save}>Save draft</button><button className="is-publish" type="button" disabled={saving} onClick={publish}>Publish v{draft.version}</button><button type="button" disabled={saving} onClick={() => { setDraft(null); setStatus(''); }}>Discard draft</button></>}
