@@ -105,6 +105,9 @@ export default function TrainingPage() {
             <a href="/staff/resources/garrett-amari-practice-sales-worksheet.pdf" target="_blank" rel="noreferrer">
               <FileText aria-hidden="true" /><span><strong>$5,400 Amari Practice sales worksheet</strong><small>50-minute Assessment conversation and decision worksheet</small></span><ChevronRight aria-hidden="true" />
             </a>
+            <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf" target="_blank" rel="noreferrer">
+              <FileText aria-hidden="true" /><span><strong>Sales scripts</strong><small>Rewritten closer scripts and reference</small></span><ChevronRight aria-hidden="true" />
+            </a>
           </div>
         </section>
       ) : null}
