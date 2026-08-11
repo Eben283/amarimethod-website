@@ -90,7 +90,10 @@ export const SLOT_POLICIES = {
   assessment: {
     id: "assessment",
     label: "Amari Assessment",
-    calendarIds: ["EM6vB2mq7EAdGCbUb3j1"],
+    calendarIds: [
+      "EM6vB2mq7EAdGCbUb3j1",
+      "fFdlRts2KpUf2LYvPf2n", // Virtual Assessment — published-disabled
+    ],
     durationMinutes: 50, // was 40 — public first visit
     bufferMinutes: 20,
     intervalMinutes: STUDIO_INTERVAL_MINUTES,

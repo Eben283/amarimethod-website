@@ -56,6 +56,24 @@ export const ALLOWED_BOOKINGS = {
     paymentLinkUrl:
       "https://link.amarimethod.com/payment-link/6a66cf107b99151a540409b3",
   },
+  // Future Google-Meet variant of the public Assessment. Its calendar is
+  // deliberately inactive and this server-side gate rejects every checkout
+  // request, so an unlinked URL or direct API call cannot create a payment
+  // intent before its separate release proof.
+  amari_assessment_virtual: {
+    enabled: false,
+    calendarId: "fFdlRts2KpUf2LYvPf2n",
+    productId: "6a66cf0103821ea09ea13f1b",
+    price: 29,
+    title: "Amari Assessment — Virtual",
+    durationMinutes: 50,
+    pmaTag: "agreed-pma-v2026-06-16",
+    requiresParticipantAgreement: true,
+    participantAgreementVersion: "participant-agreement-v2026-08-09",
+    sessionTag: null,
+    paymentLinkUrl:
+      "https://link.amarimethod.com/payment-link/6a66cf107b99151a540409b3",
+  },
   // Free 15-min phone call. No Stripe payment link — we book the GHL
   // appointment directly in this handler and redirect to /book/success.
   discovery_call: {
@@ -273,6 +291,7 @@ export function validateBody(b) {
   if (b.phone.replace(/\D/g, "").length < 10) return "Invalid phone";
   if (!ALLOWED_BOOKINGS[b.sessionType]) return "Invalid sessionType";
   const booking = ALLOWED_BOOKINGS[b.sessionType];
+  if (booking.enabled === false) return "This booking is not yet available";
   if (booking.calendarId !== b.calendarId) {
     return "Calendar does not match sessionType";
   }

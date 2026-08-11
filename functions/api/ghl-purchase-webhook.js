@@ -83,7 +83,10 @@ export const PAID_BOOKING_MAP = {
     isNonCreditBooking: true,
     name: "Amari Assessment",
     calendarId: "EM6vB2mq7EAdGCbUb3j1",
-    duplicateCalendarIds: ["EM6vB2mq7EAdGCbUb3j1"],
+    // One Assessment product temporarily pays for both formats. The durable
+    // booking intent, not mutable contact fields, decides the format/slot.
+    duplicateCalendarIds: ["EM6vB2mq7EAdGCbUb3j1", "fFdlRts2KpUf2LYvPf2n"],
+    allowRequestedCalendar: true,
     durationMinutes: 50,
     sessionTitle: "Amari Assessment — In Person",
     sessionTag: null,
@@ -336,7 +339,9 @@ async function bookPaidBookingAppointment(context, contact, booking, token, dura
       ? "Amari Method Follow-up Session — Virtual"
       : calendarId === "SKDVOL8wtUN6Ne0ppbC9"
         ? "Amari Method Follow-up Session — In Person"
-        : booking.sessionTitle;
+        : calendarId === "fFdlRts2KpUf2LYvPf2n"
+          ? "Amari Assessment — Virtual"
+          : booking.sessionTitle;
 
   // Reconcile the exact paid slot before creating. An unrelated future session
   // must not satisfy this order, while a matching `new` appointment can be

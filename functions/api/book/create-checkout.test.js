@@ -48,6 +48,13 @@ describe('public paid booking catalog', () => {
     });
     expect(ALLOWED_BOOKINGS.initial_in_person).toBeUndefined();
     expect(ALLOWED_BOOKINGS.initial_virtual).toBeUndefined();
+    expect(ALLOWED_BOOKINGS.amari_assessment_virtual).toMatchObject({
+      enabled: false,
+      calendarId: 'fFdlRts2KpUf2LYvPf2n',
+      productId: '6a66cf0103821ea09ea13f1b',
+      price: 29,
+      durationMinutes: 50,
+    });
   });
 });
 
@@ -77,6 +84,15 @@ describe('Assessment participant agreement', () => {
   it('accepts an Assessment checkout with the required participant agreement', () => {
     expect(validateBody({ ...assessmentCheckout, agreeParticipantAgreement: true }))
       .toBeNull();
+  });
+
+  it('rejects the virtual Assessment before its explicit public release', () => {
+    expect(validateBody({
+      ...assessmentCheckout,
+      sessionType: 'amari_assessment_virtual',
+      calendarId: 'fFdlRts2KpUf2LYvPf2n',
+      agreeParticipantAgreement: true,
+    })).toMatch(/not yet available/i);
   });
 });
 
