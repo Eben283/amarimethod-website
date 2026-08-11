@@ -1,5 +1,6 @@
 import { FLOWS } from "./config.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
+import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { ensurePublishedWorkflow, workflowVersions, asExecutableWorkflow } from "./workflow-store.js";
 
 function iso(value) {
@@ -15,9 +16,9 @@ function parseDetail(value) {
 // This is deliberately served by the executing Worker. Staff must not infer the
 // delivery gate from its own copy of the workflow configuration.
 export async function runtimeStatus(env, flowKey) {
-  const canonical = flowKey === INITIAL_IN_PERSON_WORKFLOW.id
-    ? await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW)
-    : null;
+  const fallback = [INITIAL_IN_PERSON_WORKFLOW, INITIAL_VIRTUAL_WORKFLOW]
+    .find((workflow) => workflow.id === flowKey);
+  const canonical = fallback ? await ensurePublishedWorkflow(env.REMINDER_DB, fallback) : null;
   const flow = canonical ? asExecutableWorkflow(canonical) : FLOWS.find((candidate) => candidate.flowKey === flowKey);
   if (!flow) return null;
 
@@ -65,7 +66,8 @@ export async function runtimeStatus(env, flowKey) {
     }
   }
 
-  const cutoverEnabled = flowKey === "initial-in-person" && env.INITIAL_IN_PERSON_CUTOVER === "enabled";
+  const cutoverEnabled = (flowKey === "initial-in-person" && env.INITIAL_IN_PERSON_CUTOVER === "enabled")
+    || (flowKey === "initial-virtual" && env.INITIAL_VIRTUAL_CUTOVER === "enabled");
   return {
     verifiedAt: new Date().toISOString(),
     flow: {

@@ -134,6 +134,25 @@ describe("staff-automations — views", () => {
     vi.unstubAllGlobals();
   });
 
+  it("keeps the virtual canonical workflow separate and disabled in Staff runtime truth", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url) => {
+      const virtual = String(url).includes("flow=initial-virtual");
+      if (String(url).includes("reminder-engine")) return Promise.resolve(new Response(JSON.stringify({ runtime: {
+        verifiedAt: "2026-08-10T16:00:00.000Z",
+        flow: { key: virtual ? "initial-virtual" : "initial-in-person", delivery: virtual ? "disabled" : "active" },
+        definition: { id: virtual ? "initial-virtual" : "initial-in-person", version: 3 }, events: [], enrollments: [],
+      } }), { status: 200 }));
+      return Promise.resolve(new Response(JSON.stringify({ contacts: [] }), { status: 200 }));
+    }));
+    const response = await onRequestGet(makeContext("view=family&key=initial-session-reminders", { WORKER_AUTH_SECRET: "secret" }));
+    const body = await response.json();
+    expect(body.runtime).toMatchObject({ verified: true, flows: expect.arrayContaining([
+      expect.objectContaining({ flow: expect.objectContaining({ key: "initial-in-person", delivery: "active" }) }),
+      expect.objectContaining({ flow: expect.objectContaining({ key: "initial-virtual", delivery: "disabled" }) }),
+    ]) });
+    vi.unstubAllGlobals();
+  });
+
   it("partner family view presents the shadow definition and read-only message copy", async () => {
     const res = await onRequestGet(makeContext("view=family&key=partner-session-lifecycle", {}));
     const body = await res.json();

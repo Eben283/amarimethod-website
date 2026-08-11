@@ -54,7 +54,8 @@ async function reminderRuntimeEvidence(context, flowKey) {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` }, signal: controller.signal,
     });
     if (!response.ok) return null;
-    return (await response.json()).runtime || null;
+    const runtime = (await response.json()).runtime || null;
+    return runtime?.flow?.key === flowKey ? runtime : null;
   } catch { return null; } finally { clearTimeout(timer); }
 }
 
@@ -252,12 +253,17 @@ export async function onRequestGet(context) {
       if (!family) {
         return new Response(JSON.stringify({ error: "Automation family not found" }), { status: 404, headers });
       }
-      const initialRuntime = family.key === "initial-session-reminders"
-        ? await reminderRuntimeEvidence(context, "initial-in-person")
-        : null;
+      const initialRuntimes = family.key === "initial-session-reminders"
+        ? (await Promise.all(["initial-in-person", "initial-virtual"].map((flowKey) => reminderRuntimeEvidence(context, flowKey)))).filter(Boolean)
+        : [];
+      const initialRuntime = initialRuntimes[0] || null;
       const workerExecution = !db && !initialRuntime ? await workerFamilyAutomationEvidence(context, family.key) : null;
       const execution = initialRuntime
-        ? { enrollments: initialRuntime.enrollments || [], events: initialRuntime.events || [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } }
+        ? {
+            enrollments: initialRuntimes.flatMap((runtime) => runtime.enrollments || []),
+            events: initialRuntimes.flatMap((runtime) => runtime.events || []),
+            coverage: { enrollmentsTruncated: false, eventsTruncated: false },
+          }
         : db
           ? await automationFamilyExecutionView(db, family)
           : workerExecution || { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
@@ -270,7 +276,7 @@ export async function onRequestGet(context) {
         registryVersion: REGISTRY_VERSION,
         family,
         ...displayExecution,
-        runtime: initialRuntime ? { verified: true, ...initialRuntime } : { verified: false },
+        runtime: initialRuntime ? { verified: initialRuntimes.length === 2, flows: initialRuntimes } : { verified: false, flows: [] },
         evidence: {
           ...executionEvidence,
           gaps: [...family.evidence.gaps, ...executionEvidence.gaps, ...(workerExecution?.evidence?.gaps || [])],

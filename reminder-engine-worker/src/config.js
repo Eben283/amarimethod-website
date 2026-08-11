@@ -20,27 +20,8 @@
 
 export { INITIAL_IN_PERSON } from "./initial-in-person-workflow.js";
 import { INITIAL_IN_PERSON } from "./initial-in-person-workflow.js";
-
-// Initial -Virtual Session Welcome / reminder email flow — virtual mirror of the in-person
-// flow (twin: initial-virtual-session-welcome-reminder-email-flow.yaml, 95%, copy captured
-// 2026-06-17 de-slopped; templates resolve at the active-mode brick).
-export const INITIAL_VIRTUAL = Object.freeze({
-  name: "Initial Session — Virtual",
-  definitionVersion: 2,
-  flowKey: "initial-virtual",
-  calendarIds: Object.freeze(["ySmht5hx4uZGEpgZrlCw"]), // Initial Session - Virtual
-  enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: Object.freeze(["user", "customer"]) }),
-  cancelOn: Object.freeze(["cancelled"]),
-  mode: "shadow",
-  steps: Object.freeze([
-    { at: "enroll", type: "internal_email", template: "booked-internal", skipIfPast: false },
-    { at: "enroll", type: "email", template: "welcome", skipIfPast: false },
-    { at: "start-1440m", type: "email", template: "day-before", skipIfPast: true },
-    { at: "start-60m", type: "email", template: "one-hour-email", skipIfPast: true },
-    { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
-    { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true },
-  ]),
-});
+export { INITIAL_VIRTUAL } from "./initial-virtual-workflow.js";
+import { INITIAL_VIRTUAL } from "./initial-virtual-workflow.js";
 
 // Discovery Call — Confirmation & Reminder Flow (twin: discovery-call-confirmation-reminder-
 // flow.yaml, published, 3 calendars). GHL trigger is `confirmed` only — with auto-confirm that

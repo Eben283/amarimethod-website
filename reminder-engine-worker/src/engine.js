@@ -15,12 +15,17 @@ import { assessmentCutoverEligibility, assessmentTestEligibility, renderAssessme
 import { sendOwnedEmail } from "./gmail-test-send.js";
 import { deliverInitialInPersonStep, initialInPersonCutoverEligibility } from "./initial-in-person-cutover.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
+import { deliverInitialVirtualStep, initialVirtualCutoverEligibility } from "./initial-virtual-cutover.js";
+import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { ensurePublishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
 
 async function executionFlows(env) {
-  const canonical = await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW);
-  const initial = asExecutableWorkflow(canonical);
-  return FLOWS.map((flow) => flow.flowKey === initial.flowKey ? initial : flow);
+  const documents = await Promise.all([
+    ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW),
+    ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW),
+  ]);
+  const canonical = Object.fromEntries(documents.map((document) => [document.id, asExecutableWorkflow(document)]));
+  return FLOWS.map((flow) => canonical[flow.flowKey] || flow);
 }
 
 /**
@@ -137,6 +142,11 @@ export async function runSweep(env, nowMs, limit = 100) {
         const result = await deliverInitialInPersonStep(env, step, enrollment, {}, flow.workflowDocument);
         return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
       }
+      const virtualCutover = initialVirtualCutoverEligibility(env, flow, step, enrollment);
+      if (virtualCutover.eligible) {
+        const result = await deliverInitialVirtualStep(env, step, enrollment, {}, flow.workflowDocument);
+        return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
+      }
       const cutover = assessmentCutoverEligibility(env, flow, step, enrollment);
       if (!cutover.eligible) return null;
       const message = await renderAssessmentConfirmation(env, enrollment);
@@ -150,7 +160,7 @@ export async function runSweep(env, nowMs, limit = 100) {
   const counts = { would_send: 0, sent: 0, failed: 0, skip: 0 };
   for (const item of due) {
     let flow = flowByKey[item.enrollment.flowKey];
-    if (flow?.flowKey === INITIAL_IN_PERSON_WORKFLOW.id && item.enrollment.definitionVersion !== flow.definitionVersion) {
+    if ([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id].includes(flow?.flowKey) && item.enrollment.definitionVersion !== flow.definitionVersion) {
       const pinned = await workflowVersion(db, flow.flowKey, item.enrollment.definitionVersion);
       if (pinned) flow = asExecutableWorkflow(pinned);
     }

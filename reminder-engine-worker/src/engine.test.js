@@ -170,6 +170,16 @@ describe("handleEvent — enroll", () => {
     expect(actions).toHaveLength(0);
     expect(env.REMINDER_DB._enrollments.size).toBe(0);
   });
+
+  it("seeds and shadows Initial Virtual from its own canonical version", async () => {
+    const { actions } = await handleEvent(env, event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_1", modifiedBy: "user",
+    }), NOW);
+    expect(actions).toContainEqual({ engine: "reminder", action: "enroll", detail: { flowKey: "initial-virtual" } });
+    expect(env.REMINDER_DB._enrollments.get("initial-virtual:virtual_1").definition_version).toBe(3);
+    expect((await runSweep(env, NOW)).would_send).toBe(2);
+    expect(sendConversationMessage).not.toHaveBeenCalled();
+  });
 });
 
 describe("handleEvent — cancel", () => {

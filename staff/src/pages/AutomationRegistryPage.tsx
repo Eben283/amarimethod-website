@@ -333,16 +333,13 @@ function FamilyDetail({
 }) {
   const family = detail.family;
   const isInPersonCutover = family.key === 'initial-session-reminders';
+  const canonicalRuntimes = detail.runtime?.flows || [];
+  const activeInitialRuntime = canonicalRuntimes.find((runtime) => runtime.flow?.key === 'initial-in-person');
+  const virtualInitialRuntime = canonicalRuntimes.find((runtime) => runtime.flow?.key === 'initial-virtual');
   const displayedDefinitions = isInPersonCutover
     ? []
     : family.ownedDefinitions;
-  const displayedSourceRecords = isInPersonCutover
-    ? family.sourceRecords.filter((record) => [
-      'Initial in-person Session Welcome / reminder email flow',
-      'Initial Session In-Person — Pipeline Update',
-      'remove from workflow in person booking',
-    ].includes(record.name))
-    : family.sourceRecords;
+  const displayedSourceRecords = family.sourceRecords;
   const displayedEvidenceGaps = isInPersonCutover
     ? detail.evidence.gaps.filter((gap) => ![
       'external_canvas_history_not_imported',
@@ -380,18 +377,18 @@ function FamilyDetail({
         {family.implementationUnits.map((unit) => <span key={unit}>{IMPLEMENTATION_LABELS[unit] || humanize(unit)}</span>)}
       </div>
 
-      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>This view is intentionally scoped to the live in-person cutover.</strong> Virtual reminders are not shown here; they remain on their separate, not-yet-moved path.</p>}
+      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>Scope: Initial / Assessment in-person is owned live; Initial Virtual is published disabled and shadow-only.</strong> The virtual GHL workflow remains the operating sender until its separate proof and activation gates pass.</p>}
 
-      {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: ${detail.runtime.flow?.delivery === 'active' ? 'owned delivery active' : 'owned delivery disabled'}` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read this at ${exactTime(detail.runtime.verifiedAt)}; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim live delivery until the Worker can answer.'}</span></div>}
+      {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: in-person ${activeInitialRuntime?.flow?.delivery || 'unknown'}; virtual ${virtualInitialRuntime?.flow?.delivery || 'unknown'}.` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read both scoped definitions; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim a delivery state until the Worker can answer for both scopes.'}</span></div>}
 
-      {isInPersonCutover && detail.runtime?.verified && <div className="automation-evidence-banner"><MessageSquareText size={17} /><span><strong>Delivery evidence is channel-specific.</strong> {detail.runtime.flow?.receiptCoverage?.sms === 'terminal_status_reconciled' ? (detail.runtime.receiptHealth?.status === 'healthy' ? `SMS receipt reconciliation was healthy at ${exactTime(detail.runtime.receiptHealth.checkedAt)} (${detail.runtime.receiptHealth.recorded} new terminal outcome${detail.runtime.receiptHealth.recorded === 1 ? '' : 's'}, ${detail.runtime.receiptHealth.pending} still pending).` : detail.runtime.receiptHealth?.status === 'degraded' ? `SMS receipt reconciliation was degraded at ${exactTime(detail.runtime.receiptHealth.checkedAt)} with ${detail.runtime.receiptHealth.errors} error${detail.runtime.receiptHealth.errors === 1 ? '' : 's'}. Delivery evidence may be incomplete.` : 'SMS receipt reconciliation is configured, but no completed sweep can currently be proven.') : 'SMS receipt coverage is unavailable from the executing Worker.'} Email shows Gmail acceptance only; Gmail does not provide an affirmative recipient-delivery receipt.</span></div>}
+      {isInPersonCutover && detail.runtime?.verified && <div className="automation-evidence-banner"><MessageSquareText size={17} /><span><strong>Delivery evidence is channel-specific.</strong> {activeInitialRuntime?.flow?.receiptCoverage?.sms === 'terminal_status_reconciled' ? (activeInitialRuntime.receiptHealth?.status === 'healthy' ? `SMS receipt reconciliation was healthy at ${exactTime(activeInitialRuntime.receiptHealth.checkedAt)} (${activeInitialRuntime.receiptHealth.recorded} new terminal outcome${activeInitialRuntime.receiptHealth.recorded === 1 ? '' : 's'}, ${activeInitialRuntime.receiptHealth.pending} still pending).` : activeInitialRuntime.receiptHealth?.status === 'degraded' ? `SMS receipt reconciliation was degraded at ${exactTime(activeInitialRuntime.receiptHealth.checkedAt)} with ${activeInitialRuntime.receiptHealth.errors} error${activeInitialRuntime.receiptHealth.errors === 1 ? '' : 's'}. Delivery evidence may be incomplete.` : 'SMS receipt reconciliation is configured, but no completed sweep can currently be proven.') : 'SMS receipt coverage is unavailable from the executing Worker.'} Email shows Gmail acceptance only; Gmail does not provide an affirmative recipient-delivery receipt.</span></div>}
 
       {family.cutoverTree && !isInPersonCutover && <CutoverTree tree={family.cutoverTree} />}
 
       <section className="automation-detail-section" id="workflow-definition">
-        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>{isInPersonCutover ? 'Canonical executable workflow' : 'Owned definition'}</h3><p>{isInPersonCutover ? 'The executing Worker and this view read this same versioned document.' : 'Exact trigger, step timing, type, branch structure, and template key from code.'}</p></div><b>{isInPersonCutover ? (detail.runtime?.definition ? 1 : 0) : displayedDefinitions.length}</b></div>
-        {isInPersonCutover && detail.runtime?.definition && <CanonicalWorkflowView workflow={detail.runtime.definition} delivery={detail.runtime.flow?.delivery || 'disabled'} />}
-        {isInPersonCutover && !detail.runtime?.definition && <p className="automation-registry-empty">The executing Worker did not return its canonical workflow. No fallback copy is shown.</p>}
+        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>{isInPersonCutover ? 'Canonical executable workflows' : 'Owned definition'}</h3><p>{isInPersonCutover ? 'The executing Worker and this view read these same scoped, versioned documents.' : 'Exact trigger, step timing, type, branch structure, and template key from code.'}</p></div><b>{isInPersonCutover ? canonicalRuntimes.filter((runtime) => runtime.definition).length : displayedDefinitions.length}</b></div>
+        {isInPersonCutover && canonicalRuntimes.filter((runtime) => runtime.definition).map((runtime) => <CanonicalWorkflowView key={runtime.definition!.id} workflow={runtime.definition!} delivery={runtime.flow?.delivery || 'disabled'} />)}
+        {isInPersonCutover && !canonicalRuntimes.some((runtime) => runtime.definition) && <p className="automation-registry-empty">The executing Worker did not return a canonical workflow. No fallback copy is shown.</p>}
         {displayedDefinitions.length ? displayedDefinitions.map((definition) => (
           <article className="automation-definition-card" key={definition.id}>
             <header><span>{humanize(definition.engine)}</span><strong>{definition.name}</strong><em>v{definition.definitionVersion} · {definition.mode}</em></header>
