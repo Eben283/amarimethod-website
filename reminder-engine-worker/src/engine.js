@@ -5,7 +5,7 @@
 //   runSweep(env, nowMs)           — the cron: fire (or shadow-log) every due step.
 
 import { FLOWS } from "./config.js";
-import { enroll } from "./enroll.js";
+import { enroll, backfillEnrollment } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
 import { saveEnrollment, retimeEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
@@ -20,6 +20,17 @@ import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
 
+export function mergeExecutionFlows(staticFlows, canonicalFlows) {
+  const canonicalOnly = new Set([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id]);
+  // A staged canonical flow must be added even when it has no legacy config
+  // entry. Otherwise Staff can read a valid document that the event router can
+  // never enter — exactly the split-brain this migration is eliminating.
+  return [
+    ...staticFlows.filter((flow) => !canonicalOnly.has(flow.flowKey)),
+    ...canonicalFlows,
+  ];
+}
+
 async function executionFlows(env) {
   // The in-person version predates the separately gated release lane. Virtual
   // deliberately does not seed here: an ordinary deployment must not publish,
@@ -29,11 +40,7 @@ async function executionFlows(env) {
     await publishedWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW.id),
     await publishedWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW.id),
   ].filter(Boolean);
-  const canonical = Object.fromEntries(documents.map((document) => [document.id, asExecutableWorkflow(document)]));
-  const canonicalOnly = new Set([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id]);
-  return FLOWS
-    .filter((flow) => !canonicalOnly.has(flow.flowKey) || canonical[flow.flowKey])
-    .map((flow) => canonical[flow.flowKey] || flow);
+  return mergeExecutionFlows(FLOWS, documents.map(asExecutableWorkflow));
 }
 
 /**
@@ -121,6 +128,34 @@ export async function handleEvent(env, event, nowMs) {
   }
 
   return { actions };
+}
+
+/**
+ * Reconcile an appointment that was already waiting in the former sender when
+ * this owned workflow entered shadow. This deliberately has a narrower
+ * contract than handleEvent: it only accepts a published shadow workflow,
+ * never replays enroll-time work, and is idempotent by appointment id.
+ */
+export async function backfillShadowEnrollment(env, workflowId, event, nowMs) {
+  const flowDocument = await publishedWorkflow(env.REMINDER_DB, workflowId);
+  if (!flowDocument) throw new Error("workflow is not staged");
+  const flow = asExecutableWorkflow(flowDocument);
+  if (flow.mode !== "shadow") throw new Error("backfill is allowed only while the workflow is shadowing");
+  const enrollment = backfillEnrollment(event, flow, nowMs);
+  if (!enrollment) throw new Error("appointment is not eligible for this workflow");
+
+  const { created, enrollmentId: id } = await saveEnrollment(env.REMINDER_DB, enrollment);
+  if (created) {
+    const skipped = enrollment.steps.filter((step) => step.status === "skipped").map((step) => step.template);
+    const pending = enrollment.steps.filter((step) => step.status === "pending").map((step) => step.template);
+    await appendEvent(env.REMINDER_DB, {
+      ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
+      definitionVersion: flow.definitionVersion, appointmentId: event.appointmentId,
+      action: "backfilled", outcome: "shadow",
+      detail: { calendarId: event.calendarId, skipped, pending, source: "former_ghl_queue" },
+    });
+  }
+  return { created, enrollmentId: id, steps: enrollment.steps };
 }
 
 /**

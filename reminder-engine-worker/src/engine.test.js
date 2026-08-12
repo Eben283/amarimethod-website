@@ -4,7 +4,7 @@ import { describe, it, expect, vi, beforeEach } from "vitest";
 // it is NEVER called while the default-shadow flow runs.
 vi.mock("../../functions/lib/ghl-send.js", () => ({ sendConversationMessage: vi.fn() }));
 
-import { handleEvent, runSweep } from "./engine.js";
+import { handleEvent, mergeExecutionFlows, runSweep } from "./engine.js";
 import { loadDueSteps } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 
@@ -121,6 +121,18 @@ const event = (over = {}) => ({
 
 let env;
 beforeEach(() => { env = { REMINDER_DB: fakeD1() }; vi.clearAllMocks(); });
+
+describe("canonical workflow routing", () => {
+  it("adds a staged Follow-Up document to the executable event routes", () => {
+    const routed = mergeExecutionFlows(
+      [{ flowKey: "initial-in-person" }, { flowKey: "discovery-call" }],
+      [{ flowKey: "initial-in-person" }, { flowKey: "follow-up-session-reminders" }],
+    );
+    expect(routed.map((flow) => flow.flowKey)).toEqual([
+      "discovery-call", "initial-in-person", "follow-up-session-reminders",
+    ]);
+  });
+});
 
 describe("handleEvent — enroll", () => {
   it("enrolls a confirmed booking into the matching flow and logs it", async () => {

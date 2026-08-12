@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { enroll } from "./enroll.js";
+import { backfillEnrollment, enroll } from "./enroll.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { executableFlow } from "./workflow-definition.js";
 
@@ -42,5 +42,15 @@ describe("Follow-up session reminder workflow", () => {
       "booked-internal",
       "confirmation",
     ]);
+  });
+
+  it("backfills only future Follow-Up work and never replays the booking-time actions", () => {
+    const flow = executableFlow(FOLLOW_UP_WORKFLOW);
+    const enrollment = backfillEnrollment(booking("full"), flow, NOW);
+
+    expect(enrollment.steps.slice(0, 3).map((step) => step.status)).toEqual([
+      "skipped", "skipped", "skipped",
+    ]);
+    expect(enrollment.steps.slice(3).every((step) => step.status === "pending")).toBe(true);
   });
 });
