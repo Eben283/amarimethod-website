@@ -30,6 +30,10 @@ export function isEligible(event, flow) {
   if (!event || event.recognized !== true) return false;
   if (!flow.calendarIds.includes(event.calendarId)) return false;
   if (!flow.enrollOn.statuses.includes(event.type)) return false;
+  // GHL's “Event Type = Normal” is independent of status. If an owned
+  // workflow declares it, absence is a fail-closed mismatch rather than an
+  // invitation to enroll recurring/custom events by accident.
+  if (flow.enrollOn.eventTypes && !flow.enrollOn.eventTypes.includes(event.appointmentEventType)) return false;
   const overrides = flow.enrollOn.modifiedByByCalendar;
   const mb = overrides && Object.hasOwn(overrides, event.calendarId)
     ? overrides[event.calendarId]

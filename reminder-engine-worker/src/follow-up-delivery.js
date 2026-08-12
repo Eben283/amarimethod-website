@@ -28,10 +28,10 @@ function customField(contact, key) {
 
 export function followUpDeliveryEligibility(env, flow, step, enrollment) {
   if (env?.FOLLOW_UP_DELIVERY_RELEASE !== "approved") return { eligible: false, reason: "follow-up-delivery-disabled" };
+  if (env?.FOLLOW_UP_ASSIGNED_USER_DELIVERY !== "approved") return { eligible: false, reason: "assigned-user-delivery-unverified" };
   if (flow?.flowKey !== "follow-up-session-reminders" || !flow.calendarIds?.includes(enrollment?.calendarId)) return { eligible: false, reason: "not-follow-up" };
   if (flow?.mode !== "active") return { eligible: false, reason: "workflow-not-active" };
   if (!flow.workflowDocument?.nodes?.some((node) => node.action.template === step?.template)) return { eligible: false, reason: "not-owned-step" };
-  if (!EMAIL.test(clean(env.GARRETT_INTERNAL_EMAIL)) || !clean(env.GARRETT_INTERNAL_CONTACT_ID)) return { eligible: false, reason: "internal-recipient-not-configured" };
   return { eligible: true };
 }
 
@@ -47,6 +47,19 @@ async function read(env, path) {
   const response = await fetch(`${GHL_API_BASE}${path}`, { headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" } });
   if (!response.ok) throw new Error(`GHL read ${response.status}`);
   return response.json();
+}
+
+function assignedUserEmail(appointment, env) {
+  const direct = clean(
+    appointment.assignedUser?.email || appointment.assigned_user?.email
+    || appointment.assignedUserEmail || appointment.assigned_user_email,
+  );
+  if (EMAIL.test(direct)) return direct;
+  const assignedId = clean(appointment.assignedUserId || appointment.assigned_user_id || appointment.assignedUser?.id || appointment.assigned_user?.id);
+  if (assignedId && assignedId === clean(env.GARRETT_ASSIGNED_USER_ID) && EMAIL.test(clean(env.GARRETT_INTERNAL_EMAIL))) {
+    return clean(env.GARRETT_INTERNAL_EMAIL);
+  }
+  return "";
 }
 
 export async function deliverFollowUpStep(env, step, enrollment, services = {}, workflow) {
@@ -81,13 +94,21 @@ export async function deliverFollowUpStep(env, step, enrollment, services = {}, 
   const subject = renderWorkflowText(node.message.subject, values);
   const text = renderWorkflowText(node.message.body, values);
   if (node.message.channel === "email") {
-    const recipient = node.message.audience === "internal" ? clean(env.GARRETT_INTERNAL_EMAIL) : clean(contact.email || contact.emailAddress || contact.email_address);
+    const recipient = node.message.audience === "internal"
+      ? assignedUserEmail(appointment, env)
+      : clean(contact.email || contact.emailAddress || contact.email_address);
     if (!EMAIL.test(recipient)) return { success: false, error: "recipient email is unavailable" };
     let actor;
     try { actor = actorForFrom(node.message.from || "Amari Method <eben@amarimethod.com>"); }
     catch (error) { return { success: false, error: String(error?.message || error) }; }
     return { recipient, ...(await sendEmail(env, { to: recipient, subject, text, preheader: renderWorkflowText(node.message.preheader, values), actor })) };
   }
-  const recipient = node.message.audience === "internal" ? clean(env.GARRETT_INTERNAL_CONTACT_ID) : enrollment.contactId;
+  if (node.message.audience === "internal") {
+    // GHL's internal-SMS action targets the assigned user, not a CRM contact.
+    // The current GHL conversation adapter accepts contacts only, so using
+    // GARRETT_INTERNAL_CONTACT_ID here would be a source-parity lie.
+    return { success: false, error: "assigned-user SMS transport is not implemented" };
+  }
+  const recipient = enrollment.contactId;
   return { recipient, ...(await sendSms({ channel: "sms", contactId: recipient, message: text })) };
 }

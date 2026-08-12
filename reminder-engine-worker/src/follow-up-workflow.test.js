@@ -10,7 +10,7 @@ function booking(reminderPreference) {
   return {
     recognized: true,
     type: "confirmed",
-    modifiedBy: "customer",
+    appointmentEventType: "normal",
     calendarId: "SKDVOL8wtUN6Ne0ppbC9",
     contactId: "follow-up-client",
     appointmentId: `follow-up-${reminderPreference || "full"}`,
@@ -20,6 +20,14 @@ function booking(reminderPreference) {
 }
 
 describe("Follow-up session reminder workflow", () => {
+  it("matches GHL's normal-event filter without inventing a modified-by restriction", () => {
+    const flow = executableFlow(FOLLOW_UP_WORKFLOW);
+    expect(flow.definitionVersion).toBe(2);
+    expect(flow.enrollOn.eventTypes).toEqual(["normal"]);
+    expect(flow.enrollOn.modifiedBy).toBeUndefined();
+    expect(enroll({ ...booking("full"), appointmentEventType: "recurring" }, flow, NOW)).toBe(null);
+  });
+
   it("uses the one owned document to schedule the documented short-notice path", () => {
     const flow = executableFlow(FOLLOW_UP_WORKFLOW);
     const enrollment = enroll(booking("some"), flow, NOW);

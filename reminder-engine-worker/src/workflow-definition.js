@@ -16,6 +16,13 @@ const CHANNELS = new Set(["email", "sms"]);
 const AUDIENCES = new Set(["client", "internal"]);
 const TIMING = /^(enroll|start-[1-9][0-9]*m)$/;
 
+function optionalStringList(value, label) {
+  if (value == null) return;
+  if (!Array.isArray(value) || !value.length || !value.every((item) => typeof item === "string" && item.trim())) {
+    throw new Error(`${label} must be a non-empty string list`);
+  }
+}
+
 /**
  * The one workflow interface shared by execution and presentation.
  * Validation lives here so callers cannot construct a half-runnable document.
@@ -25,6 +32,8 @@ export function defineWorkflow(document) {
   requireText(document?.name, "workflow name");
   if (!Number.isInteger(document?.version) || document.version < 1) throw new Error("workflow version must be a positive integer");
   if (!Array.isArray(document?.trigger?.calendarIds) || !document.trigger.calendarIds.length) throw new Error("workflow trigger needs a calendar");
+  optionalStringList(document.trigger.statuses, "workflow trigger statuses");
+  optionalStringList(document.trigger.eventTypes, "workflow trigger event types");
   if (!Array.isArray(document?.nodes) || !document.nodes.length) throw new Error("workflow needs at least one node");
   const ids = new Set();
   for (const node of document.nodes) {
@@ -76,6 +85,7 @@ export function executableFlow(workflow) {
     calendarIds: workflow.trigger.calendarIds,
     enrollOn: {
       statuses: workflow.trigger.statuses,
+      eventTypes: workflow.trigger.eventTypes,
       modifiedBy: workflow.trigger.modifiedBy,
       modifiedByByCalendar: workflow.trigger.modifiedByByCalendar,
     },
