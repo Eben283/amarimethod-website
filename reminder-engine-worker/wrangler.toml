@@ -2,9 +2,9 @@ name = "reminder-engine"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
 
-# Sweep every 5 minutes: fires (or shadow-logs) any step whose due_at has passed.
+# Sweep every minute: fires (or shadow-logs) any step whose due_at has passed.
 [triggers]
-crons = ["*/5 * * * *"]
+crons = ["* * * * *"]
 
 # SHARED automation D1 spine (renamed from amari-reminder-engine before any deploy: the
 # nurture engine lives in the same database so automation_events is one log — DASHBOARD-PLAN).
