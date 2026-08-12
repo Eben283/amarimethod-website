@@ -43,6 +43,15 @@ function isDeficient(event) {
   return !event.recognized || !event.contactId || !event.calendarId || !event.startAt;
 }
 
+// The shared GHL bridge deliberately carries the stable appointment identifiers and status,
+// but not GHL's separate trigger-level Event Type. Follow-Up accepts Normal appointments only.
+// Read the canonical appointment record before letting that shadow flow evaluate the event,
+// rather than treating an absent kind as Normal. This stays narrowly scoped to Follow-Up;
+// every other flow continues to use the bridge payload without an extra API read.
+function needsFollowUpEventType(event) {
+  return FOLLOW_UP_CALENDAR_IDS.has(event.calendarId) && !event.appointmentEventType;
+}
+
 /**
  * The 2026-07-12 first-live-payload finding: GHL's webhook merge tags reliably carry the
  * CONTACT and APPOINTMENT ids, but calendar/status arrive as the literal string "null" and
@@ -64,6 +73,8 @@ async function enrichFromApi(env, event, nowMs) {
     // the webhook payload's ids are reliable — keep them when the API omits either
     contactId: enriched.contactId || event.contactId,
     appointmentId: enriched.appointmentId || event.appointmentId,
+    calendarId: enriched.calendarId || event.calendarId,
+    startAt: enriched.startAt || event.startAt,
     modifiedBy: enriched.modifiedBy ?? event.modifiedBy,
   };
 }
@@ -109,8 +120,9 @@ export async function handleWebhook(request, env, nowMs) {
   const db = env.REMINDER_DB;
   let event = normalizeAppointmentEvent(body);
 
-  // Deficient payload with a usable appointment id → rebuild from the GHL API.
-  if (isDeficient(event) && event.appointmentId && env.PORTAL_KV) {
+  // A deficient bridge payload, or a Follow-Up event missing its required Event Type, with a
+  // usable appointment id → rebuild from GHL's canonical record. Both paths are read-only.
+  if ((isDeficient(event) || needsFollowUpEventType(event)) && event.appointmentId && env.PORTAL_KV) {
     try {
       const enriched = await enrichFromApi(env, event, nowMs);
       await appendEvent(db, {

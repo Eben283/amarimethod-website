@@ -163,6 +163,35 @@ describe("handleWebhook — the GHL appointment ingest on the worker (no Pages n
     expect(String(apiCall[0])).toContain("/calendars/events/appointments/appt_live1");
   });
 
+  it("enriches a complete Follow-Up bridge payload when its required GHL Event Type is absent", async () => {
+    const followUpPayload = {
+      contact_id: "cont_follow_up", appointment_id: "appt_follow_up",
+      calendar_id: "ZO1jlGfy01rsxVqicoSB", status: "confirmed",
+      start_time: "2026-08-20T14:30:00-07:00", source: "appointment-events-webhook",
+    };
+    fetchMock.mockImplementation(async (url) => {
+      const value = String(url);
+      if (value.includes("/calendars/events/appointments/")) {
+        return new Response(JSON.stringify({ appointment: {
+          id: "appt_follow_up", contactId: "cont_follow_up", calendarId: "ZO1jlGfy01rsxVqicoSB",
+          appointmentStatus: "confirmed", startTime: "2026-08-20T14:30:00-07:00", eventType: "Normal",
+        } }), { status: 200 });
+      }
+      if (value.includes("/contacts/")) {
+        return new Response(JSON.stringify({ contact: { customFields: [] } }), { status: 200 });
+      }
+      return new Response(JSON.stringify({ success: true, actions: [] }), { status: 200 });
+    });
+
+    const res = await handleWebhook(req(followUpPayload, SECRET), { ...env, PORTAL_KV: {} }, Date.now());
+    expect(res.status).toBe(200);
+    const enrichment = env.REMINDER_DB._events.find((event) => event.action === "ingest_enriched");
+    expect(enrichment).toBeDefined();
+    expect(JSON.parse(enrichment.detail).enriched.appointmentEventType).toBe("normal");
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/calendars/events/appointments/appt_follow_up"))).toBe(true);
+    expect(fetchMock.mock.calls.some(([url]) => String(url).includes("/contacts/cont_follow_up"))).toBe(true);
+  });
+
   it("an API-lookup failure degrades to the raw capture, never a 5xx", async () => {
     const livePayload = { contact_id: "c1", appointment_id: "appt_x", status: "null", calendar_id: "null" };
     fetchMock.mockImplementation(async (url) => {
