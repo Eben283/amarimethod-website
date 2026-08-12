@@ -73,7 +73,11 @@ export async function runtimeStatus(env, flowKey) {
   }
 
   const cutoverEnabled = (flowKey === "initial-in-person" && env.INITIAL_IN_PERSON_CUTOVER === "enabled")
-    || (flowKey === "initial-virtual" && env.INITIAL_VIRTUAL_CUTOVER === "enabled");
+    || (flowKey === "initial-virtual" && env.INITIAL_VIRTUAL_CUTOVER === "enabled")
+    || (flowKey === FOLLOW_UP_WORKFLOW.id && flow.mode === "active" && env.FOLLOW_UP_DELIVERY_RELEASE === "approved");
+  const delivery = canonical
+    ? (cutoverEnabled ? "active" : flow.mode === "shadow" ? "shadow" : "disabled")
+    : "unpublished";
   return {
     verifiedAt: new Date().toISOString(),
     flow: {
@@ -81,7 +85,7 @@ export async function runtimeStatus(env, flowKey) {
       name: flow.name,
       definitionVersion: flow.definitionVersion,
       configuredMode: flow.mode,
-      delivery: canonical ? (cutoverEnabled ? "active" : flowKey === FOLLOW_UP_WORKFLOW.id ? "shadow" : "disabled") : "unpublished",
+      delivery,
       receiptCoverage: {
         sms: "terminal_status_reconciled",
         email: "provider_acceptance_only",

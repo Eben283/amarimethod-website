@@ -55,36 +55,40 @@ export async function processStep({ enrollment, step, flow }, deps, nowMs) {
     }
   }
 
+  // A cutover adapter has its own explicit eligibility gate. It runs before the
+  // generic active sender so a canonical workflow can use its literal node
+  // renderer rather than falling through to an unrelated transport. The gate
+  // must be satisfied even when the workflow is active; it never turns a
+  // shadow workflow into a sender by itself.
+  if (deps.controlledDelivery) {
+    try {
+      const delivered = await deps.controlledDelivery(flow, step, enrollment);
+      if (delivered?.handled) {
+        const ok = delivered.result?.success === true;
+        const isTest = delivered.kind === "test";
+        await deps.logEvent({
+          ...base,
+          action: isTest ? "test_send" : "send",
+          outcome: ok ? "sent" : "failed",
+          message_ref: delivered.result?.messageId || null,
+          detail: {
+            recipient: delivered.recipient,
+            ...(isTest ? { testOnly: true } : { cutover: true }),
+            ...(ok ? {} : { error: delivered.result?.error || "delivery failed" }),
+          },
+        });
+        await deps.markStep(enrollment, step.stepIndex, ok ? "sent" : "failed");
+        return { outcome: ok ? "sent" : "failed" };
+      }
+    } catch (err) {
+      await deps.logEvent({ ...base, action: "send", outcome: "failed", detail: { cutover: true, error: String(err?.message || err) } });
+      await deps.markStep(enrollment, step.stepIndex, "failed");
+      return { outcome: "failed" };
+    }
+  }
+
   // Shadow is the default: anything not explicitly "active" observes without sending.
   if (flow.mode !== "active") {
-    // This is the only exception to the shadow guarantee: a separately configured, single-contact
-    // Assessment confirmation proof. The dependency returns null unless every allowlist gate passes.
-    if (deps.controlledDelivery) {
-      try {
-        const delivered = await deps.controlledDelivery(flow, step, enrollment);
-        if (delivered?.handled) {
-          const ok = delivered.result?.success === true;
-          const isTest = delivered.kind === "test";
-          await deps.logEvent({
-            ...base,
-            action: isTest ? "test_send" : "send",
-            outcome: ok ? "sent" : "failed",
-            message_ref: delivered.result?.messageId || null,
-            detail: {
-              recipient: delivered.recipient,
-              ...(isTest ? { testOnly: true } : { cutover: true }),
-              ...(ok ? {} : { error: delivered.result?.error || "delivery failed" }),
-            },
-          });
-          await deps.markStep(enrollment, step.stepIndex, ok ? "sent" : "failed");
-          return { outcome: ok ? "sent" : "failed" };
-        }
-      } catch (err) {
-        await deps.logEvent({ ...base, action: "send", outcome: "failed", detail: { cutover: true, error: String(err?.message || err) } });
-        await deps.markStep(enrollment, step.stepIndex, "failed");
-        return { outcome: "failed" };
-      }
-    }
     await deps.logEvent({ ...base, action: "would_send", outcome: "would_send", detail: { template: step.template } });
     await deps.markStep(enrollment, step.stepIndex, "would_send");
     return { outcome: "would_send" };

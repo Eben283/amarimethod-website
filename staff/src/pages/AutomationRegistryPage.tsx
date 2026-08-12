@@ -197,9 +197,9 @@ export default function AutomationRegistryPage() {
     document.getElementById('automation-evidence')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  const mapRuntimes = familyDetail?.family.key === 'initial-session-reminders'
-    ? familyDetail.runtime?.flows || []
-    : [];
+  // A family with a Worker definition must render that definition, not fall
+  // back to a separate static source map.
+  const mapRuntimes = familyDetail?.runtime?.flows || [];
   const mapActiveEnrollments = familyDetail?.enrollments.filter((enrollment) => enrollment.status === 'active') || [];
 
   return (
@@ -564,10 +564,11 @@ function FamilyDetail({
   const family = detail.family;
   const isInPersonCutover = family.key === 'initial-session-reminders';
   const canonicalRuntimes = detail.runtime?.flows || [];
+  const hasCanonicalRuntime = canonicalRuntimes.some((runtime) => runtime.definition && runtime.flow);
   const isFollowUpSourceMap = family.key === 'follow-up-session-reminders' && !canonicalRuntimes.some((runtime) => runtime.definition);
   const activeInitialRuntime = canonicalRuntimes.find((runtime) => runtime.flow?.key === 'initial-in-person');
   const virtualInitialRuntime = canonicalRuntimes.find((runtime) => runtime.flow?.key === 'initial-virtual');
-  const displayedDefinitions = isInPersonCutover || isFollowUpSourceMap
+  const displayedDefinitions = hasCanonicalRuntime || isInPersonCutover || isFollowUpSourceMap
     ? []
     : family.ownedDefinitions;
   const displayedSourceRecords = family.sourceRecords;
@@ -642,6 +643,11 @@ function FamilyDetail({
       {isFollowUpSourceMap && focused && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How the live GHL workflow works</h3><p>One source-backed canvas for the published GHL sender, its waits, branches, and cancellation cleanup.</p></div><b>1</b></div>
         <FollowUpGhlWorkflowCanvas />
+      </section>}
+
+      {focused && hasCanonicalRuntime && <section className="automation-detail-section automation-live-workflow-editor" aria-label="Published executable workflow">
+        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>Edit the workflow the Worker reads</h3><p>This is the same published D1 document rendered in the canvas. Saving a draft does not send or change GHL.</p></div><b>{canonicalRuntimes.filter((runtime) => runtime.definition).length}</b></div>
+        {canonicalRuntimes.filter((runtime) => runtime.definition && runtime.flow).map((runtime) => <CanonicalWorkflowView key={runtime.flow!.key} workflow={runtime.definition!} delivery={runtime.flow!.delivery} />)}
       </section>}
 
       {!isInPersonCutover && !isFollowUpSourceMap && <section className="automation-detail-section" id="workflow-definition">
@@ -742,27 +748,13 @@ function FamilyDetail({
   );
 }
 
-function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../types/staff').CanonicalWorkflow; delivery: 'active' | 'disabled' | 'unpublished' }) {
+function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../types/staff').CanonicalWorkflow; delivery: 'active' | 'shadow' | 'disabled' | 'unpublished' }) {
   const [draft, setDraft] = useState<import('../types/staff').CanonicalWorkflow | null>(null);
-  const [dragged, setDragged] = useState<number | null>(null);
   const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
-  const updateNode = (index: number, patch: Record<string, unknown>) => setDraft((current) => current ? ({ ...current, nodes: current.nodes.map((node, i) => i === index ? { ...node, ...patch } : node) }) : current);
   const updateMessage = (index: number, patch: Record<string, string>) => setDraft((current) => current ? ({ ...current, nodes: current.nodes.map((node, i) => i === index ? { ...node, message: { ...node.message, ...patch } } : node) }) : current);
-  const drop = (event: DragEvent, target: number) => {
-    event.preventDefault();
-    if (dragged == null || dragged === target) return;
-    setDraft((current) => {
-      if (!current) return current;
-      const nodes = [...current.nodes];
-      const [node] = nodes.splice(dragged, 1);
-      nodes.splice(target, 0, node);
-      return { ...current, nodes };
-    });
-    setDragged(null);
-  };
   const beginEdit = () => {
-    setStatus('Draft changes do not affect running enrollments or send messages.');
+    setStatus('Draft changes do not send or change GHL. Copy edits apply only after an explicit publish.');
     setDraft({ ...workflow, version: workflow.version + 1, nodes: workflow.nodes.map((node) => ({ ...node, action: { ...node.action }, message: { ...node.message } })) });
   };
   const save = async () => {
@@ -783,21 +775,22 @@ function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../ty
     } catch (error) { setStatus(error instanceof Error ? error.message : 'Workflow could not be published.'); setSaving(false); }
   };
   return <article className="automation-definition-card automation-canonical-workflow">
-    <header><span>{delivery === 'active' ? 'Published · live' : delivery === 'disabled' ? 'Published · disabled' : 'Not published'}</span><strong>{workflow.name}</strong><em>v{workflow.version}</em></header>
+    <header><span>{delivery === 'active' ? 'Published · live' : delivery === 'shadow' ? 'Published · shadow' : delivery === 'disabled' ? 'Published · disabled' : 'Not published'}</span><strong>{workflow.name}</strong><em>v{workflow.version}</em></header>
     <div className="canonical-workflow-controls">
-      <p><strong>Published v{workflow.version} is the sender.</strong> The cards, copy, timing, and order below come from that exact document.</p>
+      <p><strong>Published v{workflow.version} is the Worker document.</strong> Copy, sender, subject, and preheader edits are executable. Timing, branches, and order stay locked until Staff can preview and replan every pending person safely.</p>
       {!draft ? <button type="button" onClick={beginEdit}>Edit as draft v{workflow.version + 1}</button> : <><button type="button" disabled={saving} onClick={save}>Save draft</button><button className="is-publish" type="button" disabled={saving} onClick={publish}>Publish v{draft.version}</button><button type="button" disabled={saving} onClick={() => { setDraft(null); setStatus(''); }}>Discard draft</button></>}
       {status && <output>{status}</output>}
     </div>
     <div className="automation-definition-grid"><div><h4>Trigger</h4><pre>{structured(workflow.trigger)}</pre></div><div><h4>Exits</h4><pre>{structured(workflow.exits)}</pre></div></div>
     {!draft && <div className="automation-step-list canonical-workflow-tree">{workflow.nodes.map((node, index) => <div key={node.id}><span>{index + 1}</span><p><strong>{node.label}</strong><small>{node.at} · {humanize(node.action.type)} · <code>{node.id}</code></small></p></div>)}</div>}
     {draft && <div className="canonical-workflow-editor" aria-label={`Draft workflow version ${draft.version}`}>
-      {draft.nodes.map((node, index) => <article key={node.id} draggable onDragStart={() => setDragged(index)} onDragOver={(event) => event.preventDefault()} onDrop={(event) => drop(event, index)}>
-        <header><b>⋮⋮</b><span>{index + 1}</span><strong>{humanize(node.action.type)}</strong><code>{node.id}</code></header>
-        <label>Step name<input value={node.label} onChange={(event) => updateNode(index, { label: event.target.value })} /></label>
-        <label>Timing<input value={node.at} onChange={(event) => updateNode(index, { at: event.target.value })} /><small>Use <code>enroll</code> or <code>start-60m</code>.</small></label>
+      {draft.nodes.map((node, index) => <article key={node.id}>
+        <header><span>{index + 1}</span><strong>{humanize(node.action.type)}</strong><code>{node.id}</code></header>
+        <label>Step name<input readOnly value={node.label} /></label>
+        <label>Timing<input readOnly value={node.at} /><small>Locked until the pending-step replan preview is implemented.</small></label>
         {node.message.from !== undefined && <label>From<input value={node.message.from} onChange={(event) => updateMessage(index, { from: event.target.value })} /></label>}
         {node.message.subject !== undefined && <label>Subject<input value={node.message.subject} onChange={(event) => updateMessage(index, { subject: event.target.value })} /></label>}
+        {node.message.preheader !== undefined && <label>Preheader<input value={node.message.preheader} onChange={(event) => updateMessage(index, { preheader: event.target.value })} /></label>}
         <label>Exact message<textarea rows={7} value={node.message.body} onChange={(event) => updateMessage(index, { body: event.target.value })} /></label>
       </article>)}
     </div>}

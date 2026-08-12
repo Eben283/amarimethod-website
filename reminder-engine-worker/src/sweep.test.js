@@ -76,6 +76,15 @@ describe("processStep — active mode", () => {
     expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 3, "sent");
   });
 
+  it("uses a handled canonical adapter before the generic sender in active mode", async () => {
+    const d = deps({ controlledDelivery: vi.fn().mockResolvedValue({ handled: true, kind: "cutover", recipient: "client@amarimethod.com", result: { success: true, messageId: "owned_1" } }) });
+    const out = await processStep({ enrollment: enrollment(), step: step({ type: "email", template: "confirmation" }), flow: activeFlow }, d, NOW);
+    expect(out.outcome).toBe("sent");
+    expect(d.renderMessage).not.toHaveBeenCalled();
+    expect(d.send).not.toHaveBeenCalled();
+    expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 3, "sent");
+  });
+
   it("logs failed (and does not throw) when the send adapter reports failure", async () => {
     const d = deps({ send: vi.fn().mockResolvedValue({ success: false, error: "invalid phone" }) });
     const out = await processStep({ enrollment: enrollment(), step: step(), flow: activeFlow }, d, NOW);

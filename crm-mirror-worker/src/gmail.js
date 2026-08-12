@@ -59,6 +59,10 @@ function cleanEmail(value, name) {
   return email;
 }
 
+function escapeHtml(value) {
+  return String(value || "").replace(/[&<>\"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+}
+
 export function resolveAmariMailIdentity(actor) {
   const identity = AMARI_MAIL_IDENTITIES[String(actor || "").trim()];
   if (!identity) throw new Error("staff actor does not have an Amari mail identity");
@@ -157,7 +161,7 @@ export async function sendGmailEmail(env, message) {
   if (Object.hasOwn(message || {}, "from") || Object.hasOwn(message || {}, "replyTo")) {
     throw new Error("sender identity is server-owned");
   }
-  const { to, subject, text, actor } = message || {};
+  const { to, subject, text, preheader, actor } = message || {};
   const identity = resolveAmariMailIdentity(actor);
   const recipient = cleanEmail(to, "recipient");
   const sender = identity.from;
@@ -166,16 +170,33 @@ export async function sendGmailEmail(env, message) {
   const safeSubject = cleanHeader(subject, "subject", 160);
   const body = String(text || "").trim();
   if (!body || body.length > 20_000) throw new Error("invalid email body");
+  const preview = preheader == null ? "" : cleanHeader(preheader, "preheader", 240);
+  const contentType = preview ? "multipart/alternative; boundary=amari-boundary" : "text/plain; charset=UTF-8";
+  const content = preview
+    ? [
+      "--amari-boundary",
+      "Content-Type: text/plain; charset=UTF-8",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      body,
+      "--amari-boundary",
+      "Content-Type: text/html; charset=UTF-8",
+      "Content-Transfer-Encoding: 8bit",
+      "",
+      `<div style=\"display:none!important;max-height:0;overflow:hidden;opacity:0;color:transparent\">${escapeHtml(preview)}</div><div style=\"white-space:pre-wrap\">${escapeHtml(body)}</div>`,
+      "--amari-boundary--",
+    ].join("\r\n")
+    : body;
   const raw = [
     `From: ${sender}`,
     `Reply-To: ${identity.replyTo}`,
     `To: ${recipient}`,
     `Subject: ${safeSubject}`,
     "MIME-Version: 1.0",
-    "Content-Type: text/plain; charset=UTF-8",
+    `Content-Type: ${contentType}`,
     "Content-Transfer-Encoding: 8bit",
     "",
-    body,
+    content,
   ].join("\r\n");
   const token = await getGoogleWorkspaceToken(env, actor);
   const response = await fetch(GMAIL_SEND_URL, {
