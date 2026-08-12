@@ -572,7 +572,11 @@ function FamilyDetail({
   const activeEnrollments = detail.enrollments.filter((item) => item.status === 'active');
   const workflowNodes = activeInitialRuntime?.definition?.nodes || [];
   const nodeFor = (stepIndex: number | null | undefined, template?: string | null) => workflowNodes.find((node, index) => index === stepIndex || node.action.template === template) || null;
-  const nameForEvent = (event: typeof detail.events[number]) => detail.enrollments.find((entry) => entry.contactId && entry.contactId === event.contactId)?.contactName || 'Person not recorded';
+  const nameForEvent = (event: typeof detail.events[number]) => {
+    const enrollment = detail.enrollments.find((entry) => entry.contactId === event.contactId || entry.providerContactId === event.contactId);
+    if (enrollment?.contactName) return enrollment.contactName;
+    return event.contactId ? 'Person not yet linked' : 'Unlinked delivery';
+  };
   const describeEvent = (event: typeof detail.events[number]) => {
     const node = nodeFor(event.stepIndex, event.action);
     const step = node?.label || (event.stepIndex == null ? 'Workflow event' : `Workflow step ${event.stepIndex + 1}`);
