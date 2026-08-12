@@ -6,9 +6,10 @@
 //
 // Why defensive extraction: GHL appointment payloads vary by trigger shape (nested
 // `appointment.*`, flat snake_case, `calendar.id`/`contact.id` objects), the same way the
-// purchase webhook already handles varying purchase payloads via an alias walker. No GHL
-// appointment webhook is configured yet, so the exact live shape is UNVERIFIED — the alias
-// lists below are the single place to adjust once a real payload is captured.
+// purchase webhook already handles varying purchase payloads via an alias walker. The shared
+// Appointment Events Webhook is live; its known merge-tag gaps are repaired by the Worker's
+// read-only appointment lookup, and these aliases remain the single place to adjust if its
+// payload shape changes.
 
 import { normalizeGhlTimestamp } from "./datetime.js";
 
