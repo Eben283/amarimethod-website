@@ -37,6 +37,7 @@ import './AutomationRegistryPage.css';
 import './AutomationCutoverTree.css';
 import './AutomationCutoverTreeFix.css';
 import './AutomationHealthPilot.css';
+import './AutomationMasterMap.css';
 
 const LIFECYCLES: Array<{ key: AutomationFamily['lifecycle'] | 'all'; label: string }> = [
   { key: 'all', label: 'All' },
@@ -46,6 +47,15 @@ const LIFECYCLES: Array<{ key: AutomationFamily['lifecycle'] | 'all'; label: str
   { key: 'commerce', label: 'Commerce' },
   { key: 'partners', label: 'Partners' },
   { key: 'studies', label: 'Studies' },
+];
+
+const MASTER_MAP_LANES: Array<{ key: AutomationFamily['lifecycle']; label: string; description: string }> = [
+  { key: 'platform', label: 'Shared signals', description: 'Events that feed other automations' },
+  { key: 'acquisition', label: 'Find and qualify', description: 'Lead and discovery paths' },
+  { key: 'sessions', label: 'Book and deliver', description: 'Appointments, reminders, and attendance' },
+  { key: 'commerce', label: 'Pay and access', description: 'Entitlements and access' },
+  { key: 'partners', label: 'Partner operations', description: 'Partner sessions and rewards' },
+  { key: 'studies', label: 'Studies', description: 'Specialist study operations' },
 ];
 
 const IMPLEMENTATION_LABELS: Record<string, string> = {
@@ -207,21 +217,14 @@ export default function AutomationRegistryPage() {
             </>
           ) : (
             <>
-              <h1>One operational map, not 82 canvases.</h1>
-              <p>Browse lifecycle families, inspect the definitions Amari actually owns, and keep the complete former-CRM record inventory visible as evidence—not as imported history.</p>
+              <h1>Amari automation map.</h1>
+              <p>The 24 named automations are one operating system. Each detailed node will show who operates it now—GHL, Amari, Stripe, Google, or a person—so the remaining cutover work is visible rather than implied.</p>
             </>
           )}
         </div>
-        {registry?.summary && !isFocusedInspector && (
-          <div className="automation-registry-stats" aria-label="Automation inventory summary">
-            <span><strong>{registry.summary.operationalFamilies}</strong><small>operating families</small></span>
-            <span><strong>{registry.summary.ownedDefinitions}</strong><small>owned definitions</small></span>
-            <span><strong>{registry.summary.sourceRecords}</strong><small>source records preserved</small></span>
-            <span><strong>{registry.summary.publishedSourceRecords} / {registry.summary.draftSourceRecords}</strong><small>published / draft evidence</small></span>
-          </div>
-        )}
       </header>
 
+      {registry && !isFocusedInspector && <AutomationMasterMap families={registry.families} onOpen={selectFamily} />}
       {registry && !isFocusedInspector && <AutomationHealthPilot families={registry.families} onOpen={selectFamily} />}
 
       {registryError && <p className="automation-registry-error"><AlertTriangle size={16} />{registryError}</p>}
@@ -275,6 +278,34 @@ export default function AutomationRegistryPage() {
   );
 }
 
+function AutomationMasterMap({ families, onOpen }: { families: AutomationFamily[]; onOpen: (key: string) => void }) {
+  return <section className="automation-master-map" aria-label="Amari master automation map">
+    <header>
+      <div>
+        <span>Master map · 24 automations</span>
+        <h2>What exists, before we claim who owns it.</h2>
+        <p>Every card below is one named master automation. A “Node map drawn” card links to source-backed action ownership. A gray card is known work that has not been drawn yet; it is not an ownership claim.</p>
+      </div>
+      <div className="automation-master-key" aria-label="Master map status legend"><span className="is-drawn">Node map drawn</span><span className="is-pending">Not drawn yet</span></div>
+    </header>
+    <div className="automation-master-lanes">
+      {MASTER_MAP_LANES.map((lane) => {
+        const laneFamilies = families.filter((family) => family.kind === 'operational' && family.lifecycle === lane.key);
+        return <section key={lane.key} className="automation-master-lane">
+          <header><strong>{lane.label}</strong><small>{lane.description}</small></header>
+          <div>
+            {laneFamilies.map((family) => <button type="button" key={family.key} className={family.cutoverTree ? 'is-drawn' : 'is-pending'} onClick={() => onOpen(family.key)}>
+              <strong>{family.name}</strong>
+              <small>{family.cutoverTree ? 'Node map drawn' : 'Needs node map'}</small>
+              <ChevronRight size={14} aria-hidden="true" />
+            </button>)}
+          </div>
+        </section>;
+      })}
+    </div>
+  </section>;
+}
+
 function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamily[]; onOpen: (key: string) => void }) {
   const pilots = families.filter((family) => family.cutoverTree);
   if (!pilots.length) return null;
@@ -283,9 +314,9 @@ function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamil
     <section className="automation-health-pilot" aria-label="Initial and Assessment ownership map">
       <header>
         <div>
-          <span><Activity size={14} /> Ownership map · first path</span>
-          <h2>Who operates each part of the appointment?</h2>
-          <p>Read the path from top to bottom. A color identifies the system responsible for that node, not a vague migration percentage.</p>
+          <span><Activity size={14} /> First automation drawn · Initial-session reminders</span>
+          <h2>Initial / Assessment in-person reminder</h2>
+          <p>This is the first detailed map. Read from top to bottom: each color identifies the system that operates that action today.</p>
         </div>
         <button type="button" onClick={() => onOpen(family.key)}>Open full evidence <ChevronRight size={15} /></button>
       </header>
