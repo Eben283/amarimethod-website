@@ -85,6 +85,18 @@ describe("processStep — active mode", () => {
     expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 3, "sent");
   });
 
+  it("fails closed instead of mutating an unmigrated GHL workflow exit", async () => {
+    const d = deps();
+    const out = await processStep({
+      enrollment: enrollment(),
+      step: step({ type: "exit_flow", template: "remove-no-show", target: "ghl:0e9a4b98-1ab5-4681-8371-027953a7ad15" }),
+      flow: activeFlow,
+    }, d, NOW);
+    expect(out.outcome).toBe("failed");
+    expect(d.send).not.toHaveBeenCalled();
+    expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({ outcome: "failed", detail: expect.objectContaining({ target: "ghl:0e9a4b98-1ab5-4681-8371-027953a7ad15" }) }));
+  });
+
   it("logs failed (and does not throw) when the send adapter reports failure", async () => {
     const d = deps({ send: vi.fn().mockResolvedValue({ success: false, error: "invalid phone" }) });
     const out = await processStep({ enrollment: enrollment(), step: step(), flow: activeFlow }, d, NOW);

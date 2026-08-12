@@ -48,6 +48,13 @@ const CONTACT_ID_KEYS = ["appointment.contactId", "contactId", "contact_id", "ap
 const START_AT_KEYS = ["appointment.startTime", "startTime", "start_time", "appointment.start_time", "appointment.startAt", "startAt"];
 const STATUS_KEYS = ["appointment.appointmentStatus", "appointmentStatus", "appointment_status", "appointment.status", "status"];
 const MODIFIED_BY_KEYS = ["modified_by", "modifiedBy", "appointment.modifiedBy", "appointment.modified_by", "appointment.source", "source"];
+// This is GHL's trigger-level “Event Type” (for example, Normal), not the
+// appointment status above. Keep the two concepts separate: a normal
+// appointment can be confirmed, cancelled, or no-showed.
+const APPOINTMENT_EVENT_KIND_KEYS = [
+  "appointment.eventType", "appointment.event_type", "eventType", "event_type",
+  "appointment.appointmentType", "appointment.appointment_type", "appointment.type",
+];
 
 // Dotted-path alias walker. Same semantics as ghl-purchase-webhook.js's extractField:
 // first alias yielding a non-empty scalar wins; returns a trimmed string or null.
@@ -92,6 +99,12 @@ function normalizeModifiedBy(raw) {
   return null;
 }
 
+function normalizeAppointmentEventKind(raw) {
+  if (typeof raw !== "string") return null;
+  const value = raw.trim().toLowerCase();
+  return value || null;
+}
+
 /**
  * Normalize a raw GHL appointment webhook payload into a typed, immutable event.
  * Never throws; unrecognized or malformed input yields a safe all-null event with
@@ -101,7 +114,8 @@ function normalizeModifiedBy(raw) {
  * @returns {{
  *   type: string, recognized: boolean, status: string|null,
  *   calendarId: string|null, contactId: string|null, appointmentId: string|null,
- *   startAt: string|null, modifiedBy: ("user"|"customer"|null)
+ *   startAt: string|null, modifiedBy: ("user"|"customer"|null),
+ *   appointmentEventType: string|null
  * }}
  */
 export function normalizeAppointmentEvent(payload) {
@@ -120,5 +134,6 @@ export function normalizeAppointmentEvent(payload) {
     appointmentId,
     startAt: rawStart != null ? normalizeGhlTimestamp(rawStart) : null,
     modifiedBy: normalizeModifiedBy(pick(payload, MODIFIED_BY_KEYS)),
+    appointmentEventType: normalizeAppointmentEventKind(pick(payload, APPOINTMENT_EVENT_KIND_KEYS)),
   };
 }

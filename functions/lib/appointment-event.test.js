@@ -18,12 +18,13 @@ import {
 
 const NESTED = {
   type: "AppointmentCreate",
-  appointment: {
+    appointment: {
     id: "appt_abc123",
     calendarId: "G7OAnnJuFbMF6nQSlZVQ", // Initial Session In-Person
     contactId: "contact_xyz789",
     startTime: "2026-07-20T15:00:00-07:00",
-    appointmentStatus: "confirmed",
+      appointmentStatus: "confirmed",
+      eventType: "Normal",
   },
   modified_by: "customer",
 };
@@ -81,6 +82,7 @@ describe("normalizeAppointmentEvent", () => {
       appointmentId: "appt_abc123",
       startAt: "2026-07-20T15:00:00-07:00",
       modifiedBy: "customer",
+      appointmentEventType: "normal",
     });
   });
 
@@ -131,6 +133,13 @@ describe("normalizeAppointmentEvent", () => {
     const noActor = { ...NESTED };
     delete noActor.modified_by;
     expect(normalizeAppointmentEvent(noActor).modifiedBy).toBe(null);
+  });
+
+  it("keeps GHL Event Type distinct from appointment status", () => {
+    const withoutKind = { ...NESTED, appointment: { ...NESTED.appointment } };
+    delete withoutKind.appointment.eventType;
+    expect(normalizeAppointmentEvent({ ...withoutKind, appointment: { ...withoutKind.appointment, event_type: "Recurring" } }).appointmentEventType).toBe("recurring");
+    expect(normalizeAppointmentEvent(withoutKind).appointmentEventType).toBe(null);
   });
 
   it("is not recognized when the status is unmappable", () => {

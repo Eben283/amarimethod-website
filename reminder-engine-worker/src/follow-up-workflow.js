@@ -5,7 +5,7 @@ import { defineWorkflow, executableFlow } from "./workflow-definition.js";
 export const FOLLOW_UP_WORKFLOW = defineWorkflow({
   id: "follow-up-session-reminders",
   name: "Follow-up session reminders",
-  version: 1,
+  version: 2,
   executionMode: "shadow",
   trigger: {
     event: "appointment_status_changed",
@@ -19,21 +19,24 @@ export const FOLLOW_UP_WORKFLOW = defineWorkflow({
       "waHmG2mHNThPfMVuNJWG",
     ],
     statuses: ["confirmed"],
-    modifiedBy: ["user", "customer"],
+    eventTypes: ["normal"],
   },
   exits: [{ event: "cancelled", effect: "cancel_pending", label: "Cancel every pending reminder" }],
   nodes: [
     {
       id: "remove-no-show-series",
-      label: "Exit no-show recovery",
+      label: "Remove from GHL no-show recovery",
       at: "enroll",
-      action: { type: "exit_flow", template: "remove-no-show-series", target: "assessment-no-show" },
+      // Source parity: D7 removes the person from GHL's shared no-show
+      // sender. This is evidence-only while shadowing; active execution must
+      // not pretend that a local Assessment-only flow is the GHL target.
+      action: { type: "exit_flow", template: "remove-no-show-series", target: "ghl:0e9a4b98-1ab5-4681-8371-027953a7ad15" },
       skipIfPast: false,
-      message: { audience: "internal", channel: "email", body: "Control node: exit the owned no-show recovery enrollment. This is not a delivered message." },
+      message: { audience: "internal", channel: "email", body: "Control node: remove the person from GHL's shared No Show Email SMS series. This remains a non-delivering source-parity dependency until that recovery workflow moves into Amari." },
     },
     {
       id: "booked-internal",
-      label: "Notify Garrett by email",
+      label: "Notify assigned user by email",
       at: "enroll",
       action: { type: "internal_email", template: "booked-internal" },
       skipIfPast: false,
@@ -98,7 +101,7 @@ export const FOLLOW_UP_WORKFLOW = defineWorkflow({
     },
     {
       id: "one-hour-internal",
-      label: "Notify Garrett by SMS",
+      label: "Notify assigned user by SMS",
       at: "start-60m",
       when: { field: "reminderPreference", oneOf: ["some", "full"] },
       action: { type: "internal_sms", template: "one-hour-internal" },
