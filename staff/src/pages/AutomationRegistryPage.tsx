@@ -15,7 +15,7 @@ import {
   GitBranch,
   Loader2,
   MessageSquareText,
-  Search,
+  Users,
   Workflow,
 } from 'lucide-react';
 import {
@@ -33,22 +33,14 @@ import type {
   AutomationCutoverTree,
   CanonicalWorkflow,
   ContactAutomationEvidence,
+  ContactAutomationEnrollment,
 } from '../types/staff';
 import './AutomationRegistryPage.css';
 import './AutomationCutoverTree.css';
 import './AutomationCutoverTreeFix.css';
 import './AutomationHealthPilot.css';
 import './AutomationMasterMap.css';
-
-const LIFECYCLES: Array<{ key: AutomationFamily['lifecycle'] | 'all'; label: string }> = [
-  { key: 'all', label: 'All' },
-  { key: 'platform', label: 'Platform' },
-  { key: 'acquisition', label: 'Acquisition' },
-  { key: 'sessions', label: 'Sessions' },
-  { key: 'commerce', label: 'Commerce' },
-  { key: 'partners', label: 'Partners' },
-  { key: 'studies', label: 'Studies' },
-];
+import './AutomationWorkflowCanvas.css';
 
 const MASTER_MAP_LANES: Array<{ key: AutomationFamily['lifecycle']; label: string; description: string }> = [
   { key: 'platform', label: 'Shared signals', description: 'Events that feed other automations' },
@@ -127,8 +119,6 @@ export default function AutomationRegistryPage() {
   const [registryError, setRegistryError] = useState('');
   const [familyDetail, setFamilyDetail] = useState<AutomationFamilyResponse | null>(null);
   const [familyLoading, setFamilyLoading] = useState(false);
-  const [lifecycle, setLifecycle] = useState<AutomationFamily['lifecycle'] | 'all'>('all');
-  const [query, setQuery] = useState('');
   const [selectedPerson, setSelectedPerson] = useState<AutomationPerson | null>(null);
   const [personEvidence, setPersonEvidence] = useState<ContactAutomationEvidence | null>(null);
   const [personError, setPersonError] = useState('');
@@ -194,21 +184,6 @@ export default function AutomationRegistryPage() {
     return () => { cancelled = true; };
   }, [selectedContactId, selectedPerson?.id]);
 
-  const operationalFamilies = useMemo(() => (registry?.families || []).filter((family) => {
-    if (family.kind !== 'operational') return false;
-    if (lifecycle !== 'all' && family.lifecycle !== lifecycle) return false;
-    const needle = query.trim().toLowerCase();
-    return !needle || `${family.name} ${family.purpose} ${family.lifecycle}`.toLowerCase().includes(needle);
-  }), [registry, lifecycle, query]);
-  const archiveGroup = registry?.families.find((family) => family.kind === 'evidence_only') || null;
-
-  function selectFamily(key: string) {
-    const next = new URLSearchParams();
-    if (selectedContactId) next.set('contact', selectedContactId);
-    const queryString = next.toString();
-    navigate(`/automations/${encodeURIComponent(key)}${queryString ? `?${queryString}` : ''}`);
-  }
-
   function selectMapFamily(key: string) {
     const next = new URLSearchParams(params);
     next.set('family', key);
@@ -224,7 +199,7 @@ export default function AutomationRegistryPage() {
     : null;
   const mapWorkflow = mapRuntime?.definition || null;
   const mapDelivery = mapRuntime?.flow?.delivery || 'unpublished';
-  const mapPendingCount = familyDetail?.enrollments.filter((enrollment) => enrollment.status === 'active').length || 0;
+  const mapActiveEnrollments = familyDetail?.enrollments.filter((enrollment) => enrollment.status === 'active') || [];
 
   return (
     <main className={`automation-registry-page${isFocusedInspector ? ' is-focused' : ''}`}>
@@ -253,7 +228,7 @@ export default function AutomationRegistryPage() {
         onRevealEvidence={revealAutomationEvidence}
         workflow={mapWorkflow}
         delivery={mapDelivery}
-        pendingCount={mapPendingCount}
+        activeEnrollments={mapActiveEnrollments}
       />}
 
       {registryError && <p className="automation-registry-error"><AlertTriangle size={16} />{registryError}</p>}
@@ -261,33 +236,6 @@ export default function AutomationRegistryPage() {
 
       {registry && (
         <div className={`automation-registry-workspace${isFocusedInspector ? ' is-focused' : ''}`}>
-          {!isFocusedInspector && <aside className="automation-family-browser" aria-label="Automation families">
-            <div className="automation-family-tools">
-              <label><Search size={15} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a family" /></label>
-              <div className="automation-lifecycle-filters">
-                {LIFECYCLES.map((item) => <button type="button" key={item.key} className={lifecycle === item.key ? 'is-active' : ''} onClick={() => setLifecycle(item.key)}>{item.label}</button>)}
-              </div>
-            </div>
-            <div className="automation-family-list">
-              {operationalFamilies.map((family) => (
-                <button type="button" key={family.key} className={`automation-family-card${selectedFamilyKey === family.key ? ' is-selected' : ''}`} onClick={() => selectFamily(family.key)}>
-                  <span className="automation-family-card-top"><em>{family.lifecycle}</em><span>{family.operatingState === 'in_person_live' && <b className="automation-live-badge">In-person live</b>}<i>{family.counts.ownedDefinitions ? `${family.counts.ownedDefinitions} owned` : 'source only'}</i></span></span>
-                  <strong>{family.name}</strong>
-                  <small>{family.counts.sourceRecords} source record{family.counts.sourceRecords === 1 ? '' : 's'} · {family.implementationUnits.map((unit) => IMPLEMENTATION_LABELS[unit] || unit).join(' + ')}</small>
-                  <ChevronRight size={16} aria-hidden="true" />
-                </button>
-              ))}
-              {!operationalFamilies.length && <p className="automation-registry-empty">No operating family matches this view.</p>}
-            </div>
-            {archiveGroup && (
-              <button type="button" className={`automation-archive-card${selectedFamilyKey === archiveGroup.key ? ' is-selected' : ''}`} onClick={() => selectFamily(archiveGroup.key)}>
-                <Archive size={18} />
-                <span><strong>Archive / test evidence</strong><small>{archiveGroup.counts.sourceRecords} preserved records · not an operating family</small></span>
-                <ChevronRight size={16} />
-              </button>
-            )}
-          </aside>}
-
           <section className="automation-family-detail" id="automation-evidence" aria-live="polite">
             {familyLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Opening family…</div>}
             {!familyLoading && familyDetail && (
@@ -314,7 +262,7 @@ function AutomationMasterMap({
   onRevealEvidence,
   workflow,
   delivery,
-  pendingCount,
+  activeEnrollments,
 }: {
   families: AutomationFamily[];
   selectedKey: string;
@@ -322,7 +270,7 @@ function AutomationMasterMap({
   onRevealEvidence: () => void;
   workflow: CanonicalWorkflow | null;
   delivery: 'active' | 'disabled' | 'unpublished';
-  pendingCount: number;
+  activeEnrollments: ContactAutomationEnrollment[];
 }) {
   const selectedFamily = families.find((family) => family.key === selectedKey)
     || families.find((family) => family.cutoverTree)
@@ -352,7 +300,7 @@ function AutomationMasterMap({
       })}
     </div>
     {selectedFamily?.cutoverTree
-      ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} workflow={workflow} delivery={delivery} pendingCount={pendingCount} />
+      ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} workflow={workflow} delivery={delivery} activeEnrollments={activeEnrollments} />
       : selectedFamily && <AutomationMapPending family={selectedFamily} />}
   </section>;
 }
@@ -369,13 +317,13 @@ function AutomationHealthPilot({
   onRevealEvidence,
   workflow,
   delivery,
-  pendingCount,
+  activeEnrollments,
 }: {
   family: AutomationFamily;
   onRevealEvidence: () => void;
   workflow: CanonicalWorkflow | null;
   delivery: 'active' | 'disabled' | 'unpublished';
-  pendingCount: number;
+  activeEnrollments: ContactAutomationEnrollment[];
 }) {
   return (
     <section className="automation-health-pilot" aria-label={`${family.name} ownership map`}>
@@ -388,7 +336,7 @@ function AutomationHealthPilot({
         <button type="button" onClick={onRevealEvidence}>Open live run evidence <ChevronRight size={15} /></button>
       </header>
       <OwnershipLegend />
-      {workflow ? <WorkflowPlaybookPreview workflow={workflow} delivery={delivery} pendingCount={pendingCount} tree={family.cutoverTree!} /> : <CutoverTree tree={family.cutoverTree!} compact />}
+      {workflow ? <WorkflowPlaybookPreview workflow={workflow} delivery={delivery} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} /> : <CutoverTree tree={family.cutoverTree!} compact />}
       <footer><b>Plain answer:</b> GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run and cancels that run when GHL reports a cancellation. The published GHL cleanup is a fallback, not a second sender.</footer>
     </section>
   );
@@ -397,52 +345,85 @@ function AutomationHealthPilot({
 type PreviewNode = {
   id: string;
   owner: 'ghl' | 'amari' | 'rollback';
-  kind: 'trigger' | 'action' | 'exit';
+  kind: 'trigger' | 'action' | 'exit' | 'wait';
   label: string;
   timing: string;
   detail: string;
   message?: CanonicalWorkflow['nodes'][number]['message'];
+  waiting?: ContactAutomationEnrollment[];
 };
 
-function WorkflowPlaybookPreview({ workflow, delivery, pendingCount, tree }: {
+function initials(name: string | null | undefined) {
+  return (name || 'Unknown person').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]?.toUpperCase()).join('') || '?';
+}
+
+function WaitingPeople({ enrollments }: { enrollments: ContactAutomationEnrollment[] }) {
+  if (!enrollments.length) return null;
+  return <span className="automation-playbook-waiters" title={enrollments.map((entry) => entry.contactName || 'Name unavailable').join(', ')}>
+    <Users size={13} aria-hidden="true" />
+    <span className="automation-playbook-avatar-stack" aria-hidden="true">{enrollments.slice(0, 3).map((entry) => <i key={entry.enrollmentId}>{initials(entry.contactName)}</i>)}</span>
+    <b>{enrollments.length} waiting</b>
+  </span>;
+}
+
+function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments, tree }: {
   workflow: CanonicalWorkflow;
   delivery: 'active' | 'disabled' | 'unpublished';
-  pendingCount: number;
+  activeEnrollments: ContactAutomationEnrollment[];
   tree: AutomationCutoverTree;
 }) {
   const [selectedId, setSelectedId] = useState('trigger');
   useEffect(() => setSelectedId('trigger'), [workflow.id, workflow.version]);
-  const triggerSummary = Object.values(workflow.trigger).filter((value) => typeof value === 'string').join(' · ') || 'GHL appointment event';
+  const nodeByTemplate = (template: string) => workflow.nodes.find((node) => node.action.template === template || node.id === template);
+  const bookedInternal = nodeByTemplate('booked-internal');
+  const confirmation = nodeByTemplate('confirmation');
+  const dayBefore = nodeByTemplate('day-before');
+  const oneHourSms = nodeByTemplate('one-hour-sms');
+  const startingSoon = nodeByTemplate('starting-soon');
+  const oneHourInternal = nodeByTemplate('one-hour-internal');
+  const activeFor = (templates: Array<string | undefined>) => activeEnrollments.filter((entry) => entry.nextStep?.template != null && templates.includes(entry.nextStep.template));
+  const toAction = (node: CanonicalWorkflow['nodes'][number] | undefined): PreviewNode | null => node ? ({ id: node.id, owner: 'amari', kind: 'action', label: node.label, timing: node.at === 'enroll' ? 'Immediately after booking' : node.at === 'start-1440m' ? '24 hours before appointment' : node.at === 'start-60m' ? '1 hour before appointment' : node.at, detail: `${humanize(node.action.type)} · ${node.message.audience} ${node.message.channel}`, message: node.message }) : null;
+  const immediateNodes = [toAction(bookedInternal), toAction(confirmation)].filter(Boolean) as PreviewNode[];
+  const finalNodes = [toAction(oneHourSms), toAction(startingSoon), toAction(oneHourInternal)].filter(Boolean) as PreviewNode[];
+  const dayWaiters = activeFor([dayBefore?.action.template, dayBefore?.id]);
+  const oneHourWaiters = activeFor([oneHourSms?.action.template, oneHourSms?.id, startingSoon?.action.template, startingSoon?.id, oneHourInternal?.action.template, oneHourInternal?.id]);
+  const waitDayBefore: PreviewNode | null = dayBefore ? { id: 'wait-day-before', owner: 'amari', kind: 'wait', label: 'Wait until 24 hours before', timing: 'Scheduler wait', detail: 'The worker holds this person here until the day-before reminder is due.', waiting: dayWaiters } : null;
+  const waitOneHour: PreviewNode | null = finalNodes.length ? { id: 'wait-one-hour', owner: 'amari', kind: 'wait', label: 'Wait until 1 hour before', timing: 'Scheduler wait', detail: 'The worker holds this person here until the one-hour messages are due.', waiting: oneHourWaiters } : null;
+  const trigger: PreviewNode = { id: 'trigger', owner: 'ghl', kind: 'trigger', label: 'Confirmed appointment', timing: 'GHL event trigger', detail: 'GHL reports a confirmed appointment from a covered in-person calendar.' };
   const cancellation = workflow.exits.find((exit) => /cancel/i.test(`${exit.event} ${exit.effect} ${exit.label}`));
   const rollback = tree.nodes.find((node) => node.state === 'legacy_ghl');
-  const nodes: PreviewNode[] = [
-    { id: 'trigger', owner: 'ghl', kind: 'trigger', label: 'Confirmed appointment', timing: 'Event trigger', detail: triggerSummary },
-    ...workflow.nodes.map((node) => ({ id: node.id, owner: 'amari' as const, kind: 'action' as const, label: node.label, timing: node.at, detail: `${humanize(node.action.type)} · ${node.message.audience} ${node.message.channel}`, message: node.message })),
-    ...(cancellation ? [{ id: 'cancellation', owner: 'amari' as const, kind: 'exit' as const, label: cancellation.label || 'Cancellation exit', timing: 'Exit', detail: cancellation.effect }] : []),
-    ...(rollback ? [{ id: 'rollback', owner: 'rollback' as const, kind: 'exit' as const, label: rollback.label, timing: 'Fallback only', detail: rollback.detail }] : []),
-  ];
-  const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
+  const cancellationNodes: PreviewNode[] = cancellation ? [
+    { id: 'cancel-event', owner: 'ghl', kind: 'trigger', label: 'Appointment is cancelled', timing: 'GHL event trigger', detail: 'GHL reports that this same appointment was cancelled.' },
+    { id: 'cancellation', owner: 'amari', kind: 'exit', label: cancellation.label || 'Cancel every pending reminder', timing: 'Immediate exit', detail: cancellation.effect },
+  ] : [];
+  const rollbackNode: PreviewNode | null = rollback ? { id: 'rollback', owner: 'rollback', kind: 'exit', label: rollback.label, timing: 'Fallback only', detail: rollback.detail } : null;
+  const allNodes = [trigger, ...immediateNodes, waitDayBefore, toAction(dayBefore), waitOneHour, ...finalNodes, ...cancellationNodes, rollbackNode].filter(Boolean) as PreviewNode[];
+  const selected = allNodes.find((node) => node.id === selectedId) || trigger;
+  const NodeButton = ({ node }: { node: PreviewNode }) => <button type="button" className={`automation-playbook-node is-${node.owner}${selected.id === node.id ? ' is-selected' : ''}${node.kind === 'wait' ? ' is-wait' : ''}`} onClick={() => setSelectedId(node.id)} aria-pressed={selected.id === node.id}>
+    <span>{node.owner === 'ghl' ? 'GHL' : node.owner === 'amari' ? 'AMARI' : 'GHL FALLBACK'}</span><strong>{node.label}</strong><small>{node.timing}</small>{node.kind === 'wait' && <WaitingPeople enrollments={node.waiting || []} />}
+  </button>;
   return <section className="automation-playbook-preview" aria-label="Future operational workflow editor preview">
     <header>
       <div><span>Read-only future control-room preview</span><h3>One canvas. The actual workflow underneath.</h3><p>These nodes use the current published in-person definition. Click a node to inspect what the future editor will control.</p></div>
       <b className={delivery === 'active' ? 'is-live' : ''}>{delivery === 'active' ? 'Live definition' : 'Definition not sending'}</b>
     </header>
     <div className="automation-playbook-preview-grid">
-      <ol className="automation-playbook-canvas">
-        {nodes.map((node, index) => <li key={node.id} className={`is-${node.owner}${selected.id === node.id ? ' is-selected' : ''}`}>
-          <button type="button" onClick={() => setSelectedId(node.id)} aria-pressed={selected.id === node.id}>
-            <span>{node.owner === 'ghl' ? 'GHL' : node.owner === 'amari' ? 'AMARI' : 'GHL FALLBACK'}</span>
-            <strong>{node.label}</strong>
-            <small>{node.timing}</small>
-          </button>
-          {index < nodes.length - 1 && <i aria-hidden="true">↓</i>}
-        </li>)}
-      </ol>
+      <div className="automation-playbook-flow" aria-label="In-person reminder workflow">
+        <div className="automation-playbook-step"><NodeButton node={trigger} /></div>
+        {immediateNodes.length > 0 && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className={`automation-playbook-parallel is-${immediateNodes.length}`}>{immediateNodes.map((node) => <NodeButton key={node.id} node={node} />)}</div></>}
+        {waitDayBefore && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className="automation-playbook-step"><NodeButton node={waitDayBefore} /></div></>}
+        {dayBefore && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className="automation-playbook-step"><NodeButton node={toAction(dayBefore)!} /></div></>}
+        {waitOneHour && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className="automation-playbook-step"><NodeButton node={waitOneHour} /></div></>}
+        {finalNodes.length > 0 && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className={`automation-playbook-parallel is-${finalNodes.length}`}>{finalNodes.map((node) => <NodeButton key={node.id} node={node} />)}</div></>}
+        {cancellationNodes.length > 0 && <section className="automation-playbook-side-path"><header><span>Separate cancellation path</span><p>This is not after the reminders. It can interrupt them at any point.</p></header><div>{cancellationNodes.map((node, index) => <span key={node.id}>{index > 0 && <i aria-hidden="true">→</i>}<NodeButton node={node} /></span>)}</div></section>}
+        {rollbackNode && <section className="automation-playbook-fallback"><span>Rollback protection</span><NodeButton node={rollbackNode} /></section>}
+      </div>
       <aside className="automation-playbook-inspector" aria-live="polite">
-        <header><span>{selected.kind === 'trigger' ? 'Trigger' : selected.kind === 'exit' ? 'Exit / fallback' : 'Action'}</span><h4>{selected.label}</h4><p>{selected.detail}</p></header>
+        <header><span>{selected.kind === 'trigger' ? 'Trigger' : selected.kind === 'wait' ? 'Wait' : selected.kind === 'exit' ? 'Exit / fallback' : 'Action'}</span><h4>{selected.label}</h4><p>{selected.detail}</p></header>
         <dl><div><dt>Operated by</dt><dd>{selected.owner === 'ghl' ? 'GHL' : selected.owner === 'amari' ? 'Amari' : 'GHL rollback / cleanup'}</dd></div><div><dt>When</dt><dd>{selected.timing}</dd></div></dl>
+        {selected.kind === 'wait' && <section className="automation-playbook-waiting-list"><span><Users size={14} /> People waiting here now</span>{selected.waiting?.length ? <ul>{selected.waiting.map((entry) => <li key={entry.enrollmentId}><i>{initials(entry.contactName)}</i><div><strong>{entry.contactName || 'Name unavailable'}</strong><small>Due {exactTime(entry.nextStep?.dueAt)}</small></div></li>)}</ul> : <p>No active enrollment is currently waiting at this point.</p>}</section>}
         {selected.message && <section className="automation-playbook-message"><span>Future editable fields</span>{selected.message.from && <label>From<input readOnly value={selected.message.from} /></label>}{selected.message.subject && <label>Subject<input readOnly value={selected.message.subject} /></label>}<label>Exact message<textarea readOnly rows={8} value={selected.message.body} /></label></section>}
-        <footer><strong>Preview only.</strong> There is no save or publish action here. When editing is enabled, publishing this node will show the {pendingCount} active enrollment{pendingCount === 1 ? '' : 's'} and pending actions affected before anything changes.</footer>
+        <footer><strong>Preview only.</strong> There is no save or publish action here. When editing is enabled, publishing this node will show the {activeEnrollments.length} active enrollment{activeEnrollments.length === 1 ? '' : 's'} and pending actions affected before anything changes.</footer>
       </aside>
     </div>
   </section>;
@@ -488,6 +469,18 @@ function FamilyDetail({
       'owned_delivery_templates_not_loaded',
     ].includes(gap.code))
     : detail.evidence.gaps;
+  const activeEnrollments = detail.enrollments.filter((item) => item.status === 'active');
+  const workflowNodes = activeInitialRuntime?.definition?.nodes || [];
+  const nodeFor = (stepIndex: number | null | undefined, template?: string | null) => workflowNodes.find((node, index) => index === stepIndex || node.action.template === template) || null;
+  const nameForEvent = (event: typeof detail.events[number]) => detail.enrollments.find((entry) => entry.contactId && entry.contactId === event.contactId)?.contactName || 'Person not recorded';
+  const describeEvent = (event: typeof detail.events[number]) => {
+    const node = nodeFor(event.stepIndex, event.action);
+    const step = node?.label || (event.stepIndex == null ? 'Workflow event' : `Workflow step ${event.stepIndex + 1}`);
+    if (event.action === 'delivery_status') return `${nameForEvent(event)} — ${step} delivery ${eventOutcome(event).toLowerCase()}`;
+    if (event.action === 'send') return `${nameForEvent(event)} — ${step} sent`;
+    if (event.action === 'backfilled') return `${nameForEvent(event)} — reminder run enrolled`;
+    return `${nameForEvent(event)} — ${humanize(event.action)}`;
+  };
   return (
     <>
       <div className="automation-family-title">
@@ -526,10 +519,13 @@ function FamilyDetail({
 
       {family.cutoverTree && !isInPersonCutover && <CutoverTree tree={family.cutoverTree} />}
 
-      <section className="automation-detail-section" id="workflow-definition">
+      {isInPersonCutover && focused && activeInitialRuntime?.definition && <section className="automation-detail-section" id="workflow-definition">
+        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How this reminder run works</h3><p>The canvas is the one readable view of the current published in-person definition.</p></div><b>1</b></div>
+        <WorkflowPlaybookPreview workflow={activeInitialRuntime.definition} delivery={activeInitialRuntime.flow?.delivery || 'disabled'} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} />
+      </section>}
+
+      {!isInPersonCutover && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>{isInPersonCutover ? 'Canonical executable workflows' : 'Owned definition'}</h3><p>{isInPersonCutover ? 'The executing Worker and this view read these same scoped, versioned documents.' : 'Exact trigger, step timing, type, branch structure, and template key from code.'}</p></div><b>{isInPersonCutover ? canonicalRuntimes.filter((runtime) => runtime.definition).length : displayedDefinitions.length}</b></div>
-        {isInPersonCutover && canonicalRuntimes.filter((runtime) => runtime.definition).map((runtime) => <CanonicalWorkflowView key={runtime.definition!.id} workflow={runtime.definition!} delivery={runtime.flow?.delivery || 'disabled'} />)}
-        {isInPersonCutover && !canonicalRuntimes.some((runtime) => runtime.definition) && <p className="automation-registry-empty">The executing Worker did not return a canonical workflow. No fallback copy is shown.</p>}
         {displayedDefinitions.length ? displayedDefinitions.map((definition) => (
           <article className="automation-definition-card" key={definition.id}>
             <header><span>{humanize(definition.engine)}</span><strong>{definition.name}</strong><em>v{definition.definitionVersion} · {definition.mode}</em></header>
@@ -583,8 +579,8 @@ function FamilyDetail({
               </section>
             )}
           </article>
-        )) : !isInPersonCutover && <p className="automation-registry-empty">No owned definition exists for this family yet. The source inventory below is evidence, not runnable code.</p>}
-      </section>
+        )) : <p className="automation-registry-empty">No owned definition exists for this family yet. The source inventory below is evidence, not runnable code.</p>}
+      </section>}
 
       <div id="person-run-evidence">
         {personLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading this person’s workflow evidence…</div>}
@@ -597,17 +593,17 @@ function FamilyDetail({
         {!detail.configured ? <p className="automation-registry-empty">The execution store is not connected in this environment. No inference about runs can be made.</p> : (
           <div className="automation-execution-summary">
             <span><strong>{detail.enrollments.length}</strong><small>enrollments</small></span>
-            <span><strong>{detail.enrollments.filter((item) => item.status === 'active').length}</strong><small>active</small></span>
+            <span><strong>{activeEnrollments.length}</strong><small>active</small></span>
             <span><strong>{detail.events.length}</strong><small>run events</small></span>
             <span><strong>{detail.events.filter((item) => ['failed', 'bounced', 'error'].includes((item.outcome || '').toLowerCase())).length}</strong><small>failures</small></span>
           </div>
         )}
         {isInPersonCutover && detail.configured && <div className="automation-person-columns">
           <section><h3><Workflow size={16} /> Enrolled people <b>{detail.enrollments.length}</b></h3>
-            {detail.enrollments.length ? detail.enrollments.map((enrollment) => <article key={enrollment.enrollmentId}><div><strong>{enrollment.contactName || 'Name unavailable'}</strong><span className={enrollment.status === 'active' ? 'active' : ''}>{enrollment.status}</span></div><dl><div><dt>Phone</dt><dd>{enrollment.contactPhone || 'Not recorded'}</dd></div><div><dt>Version</dt><dd>{enrollment.definitionVersion ? `v${enrollment.definitionVersion}` : 'Pre-version history'}</dd></div><div><dt>Current step</dt><dd>{enrollment.nextStep ? `${humanize(enrollment.nextStep.type)} · ${enrollment.nextStep.template || 'template not recorded'}` : 'No pending step'}</dd></div><div><dt>Next action</dt><dd>{enrollment.nextStep ? exactTime(enrollment.nextStep.dueAt) : 'Not scheduled'}</dd></div><div><dt>Person ID</dt><dd><code>{enrollment.contactId || 'Not recorded'}</code></dd></div><div><dt>Appointment</dt><dd>{enrollment.appointmentId || 'Not recorded'}</dd></div></dl></article>) : <p className="automation-registry-empty">No enrollment is recorded by the executing Worker.</p>}
+            {detail.enrollments.length ? detail.enrollments.map((enrollment) => <article key={enrollment.enrollmentId}><div><strong>{enrollment.contactName || 'Name unavailable'}</strong><span className={enrollment.status === 'active' ? 'active' : ''}>{enrollment.status}</span></div><dl><div><dt>Version</dt><dd>{enrollment.definitionVersion ? `v${enrollment.definitionVersion}` : 'Pre-version history'}</dd></div><div><dt>Waiting for</dt><dd>{enrollment.nextStep ? nodeFor(enrollment.nextStep.stepIndex, enrollment.nextStep.template)?.label || 'Next scheduled message' : 'No pending message'}</dd></div><div><dt>Next action</dt><dd>{enrollment.nextStep ? exactTime(enrollment.nextStep.dueAt) : 'Nothing scheduled'}</dd></div><div><dt>Appointment</dt><dd>{enrollment.appointmentId ? 'Linked to this reminder run' : 'Not recorded'}</dd></div></dl></article>) : <p className="automation-registry-empty">No enrollment is recorded by the executing Worker.</p>}
           </section>
           <section><h3><Clock3 size={16} /> Run history <b>{detail.events.length}</b></h3>
-            {detail.events.length ? detail.events.slice(0, 50).map((event, index) => <article className={['failed', 'error', 'bounced'].includes(String(event.outcome).toLowerCase()) ? 'is-failure' : ''} key={`${event.ts}-${event.messageRef || index}`}><div><strong>{humanize(event.action)}</strong><span>{eventOutcome(event)}</span></div><time>{exactTime(event.ts)}</time><p>{event.stepIndex == null ? 'Workflow event' : `Step ${event.stepIndex + 1}`} · {event.definitionVersion ? `v${event.definitionVersion}` : 'pre-version history'}{event.channel ? ` · ${humanize(event.channel)}` : ''}</p>{event.messageRef && <small>{event.action === 'delivery_status' ? 'Provider receipt' : 'Provider reference'}: <code>{event.messageRef}</code></small>}</article>) : <p className="automation-registry-empty">No execution event is recorded by the executing Worker.</p>}
+            {detail.events.length ? detail.events.slice(0, 50).map((event, index) => <article className={['failed', 'error', 'bounced'].includes(String(event.outcome).toLowerCase()) ? 'is-failure' : ''} key={`${event.ts}-${event.messageRef || index}`}><div><strong>{describeEvent(event)}</strong><span>{eventOutcome(event)}</span></div><time>{exactTime(event.ts)}</time><p>{nodeFor(event.stepIndex, event.action)?.message.audience === 'internal' ? 'Internal notification' : 'Client reminder'}{event.channel ? ` · ${humanize(event.channel)}` : ''}{event.definitionVersion ? ` · version ${event.definitionVersion}` : ''}</p>{event.messageRef && <small>{event.action === 'delivery_status' ? 'Provider receipt' : 'Provider reference'}: <code>{event.messageRef}</code></small>}</article>) : <p className="automation-registry-empty">No execution event is recorded by the executing Worker.</p>}
           </section></div>}
       </section>
 
