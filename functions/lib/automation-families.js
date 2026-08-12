@@ -48,6 +48,24 @@ const ASSESSMENT_CUTOVER_TREE = Object.freeze({
   ]),
 });
 
+// Follow-up remains completely GHL-operated. This source-backed map exists so Staff can show
+// the live GHL workflow and its queue in the same canvas language as owned workflows without
+// suggesting that Amari has begun sending a second set of reminders.
+const FOLLOW_UP_GHL_CUTOVER_TREE = Object.freeze({
+  status: "draft_evidence_map",
+  title: "Follow-up session reminder — current GHL path",
+  summary: "GHL operates appointment creation, the published Follow-Up reminder workflow, waits, messages, and cancellation cleanup. Amari has not enrolled or sent anyone on this path.",
+  nodes: Object.freeze([
+    Object.freeze({ id: "follow-up-event", parentId: null, label: "Confirmed follow-up appointment", state: "verified_ghl", evidence: "Follow up session Confirmation email / reminder flow · 7 calendar triggers", detail: "GHL enters a contact when a normal appointment is confirmed on one of the covered Follow-Up, Virtual, Package, Entrainment, or Single Session calendars." }),
+    Object.freeze({ id: "follow-up-ghl-sender", parentId: "follow-up-event", label: "Published GHL reminder workflow", state: "verified_ghl", evidence: "Workflow 1e40bb5f-7b70-4be0-b870-f8334288f7c2", detail: "GHL sends the confirmation and applies the contact’s Reminder Preference branch." }),
+    Object.freeze({ id: "follow-up-internal", parentId: "follow-up-ghl-sender", label: "Internal booking email", state: "verified_ghl", evidence: "D7 action 2", detail: "GHL notifies the assigned user immediately after confirmation." }),
+    Object.freeze({ id: "follow-up-confirmation", parentId: "follow-up-ghl-sender", label: "Client booking confirmation", state: "verified_ghl", evidence: "D7 action 3", detail: "GHL emails the client the appointment-specific date, time, connection location, and calendar links." }),
+    Object.freeze({ id: "follow-up-preference", parentId: "follow-up-ghl-sender", label: "Reminder Preference branch", state: "verified_ghl", evidence: "contact.reminder_preference", detail: "GHL selects no reminders, a short-notice one-hour SMS path, or the full day-before and one-hour path." }),
+    Object.freeze({ id: "follow-up-cancel", parentId: "follow-up-event", label: "Cancelled appointment cleanup", state: "verified_ghl", evidence: "I2 / I4 / I5 / I6 cancellation coverage", detail: "Calendar-specific GHL cleanup workflows remove the person from the GHL reminder workflow so future messages stop." }),
+    Object.freeze({ id: "follow-up-owned-gap", parentId: "follow-up-ghl-sender", label: "Owned sender not built", state: "gap", evidence: "No registered owned Follow-Up definition", detail: "Amari has no enabled Follow-Up sender or queue. Build and prove it separately after this GHL queue is reconciled." }),
+  ]),
+});
+
 const RAW_FAMILIES = [
   {
     key: "appointment-event-ingest",
@@ -205,6 +223,7 @@ const RAW_FAMILIES = [
     purpose: "Confirm and remind follow-up appointments while cancelling every pending step after cancellation.",
     implementationUnits: ["reminder-confirmation", "pipeline-helper"],
     definitionIds: [],
+    cutoverTree: FOLLOW_UP_GHL_CUTOVER_TREE,
     sourceRecords: [
       p("Follow up session Confirmation email / reminder flow"),
       p("Follow-up Session — Pipeline Update"),

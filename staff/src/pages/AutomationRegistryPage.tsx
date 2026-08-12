@@ -64,6 +64,7 @@ const IMPLEMENTATION_LABELS: Record<string, string> = {
 
 const NODE_MAP_TITLES: Record<string, string> = {
   'initial-session-reminders': 'Initial / Assessment in-person reminder',
+  'follow-up-session-reminders': 'Follow-up session reminder',
 };
 
 type RuntimeFlow = NonNullable<NonNullable<AutomationFamilyResponse['runtime']>['flows']>[number];
@@ -320,6 +321,7 @@ function AutomationHealthPilot({
   runtimes: RuntimeFlow[];
   activeEnrollments: ContactAutomationEnrollment[];
 }) {
+  const isFollowUp = family.key === 'follow-up-session-reminders';
   return (
     <section className="automation-health-pilot" aria-label={`${family.name} ownership map`}>
       <header>
@@ -331,8 +333,14 @@ function AutomationHealthPilot({
         <button type="button" onClick={onRevealEvidence}>Open live run evidence <ChevronRight size={15} /></button>
       </header>
       <OwnershipLegend />
-      {runtimes.some((runtime) => runtime.definition) ? <InitialWorkflowCanvas runtimes={runtimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} /> : <CutoverTree tree={family.cutoverTree!} compact />}
-      <footer><b>Plain answer:</b> GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run. The virtual definition is saved but disabled, so it cannot send alongside GHL. GHL cleanup remains rollback protection, not a second sender.</footer>
+      {runtimes.some((runtime) => runtime.definition)
+        ? <InitialWorkflowCanvas runtimes={runtimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} />
+        : isFollowUp
+          ? <FollowUpGhlWorkflowCanvas />
+          : <CutoverTree tree={family.cutoverTree!} compact />}
+      <footer><b>Plain answer:</b> {isFollowUp
+        ? 'GHL owns this whole live reminder path, including the eight-person queue recorded on August 11. Amari is not a sender here yet, so there is no parallel workflow to turn on accidentally.'
+        : 'GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run. The virtual definition is saved but disabled, so it cannot send alongside GHL. GHL cleanup remains rollback protection, not a second sender.'}</footer>
     </section>
   );
 }
@@ -376,6 +384,84 @@ function WaitingPeople({ enrollments }: { enrollments: ContactAutomationEnrollme
     <span className="automation-playbook-avatar-stack" aria-hidden="true">{enrollments.slice(0, 3).map((entry) => <i key={entry.enrollmentId}>{initials(entry.contactName)}</i>)}</span>
     <b>{enrollments.length} waiting</b>
   </span>;
+}
+
+type SourceWorkflowNode = {
+  id: string;
+  kind: 'trigger' | 'action' | 'wait' | 'exit';
+  label: string;
+  timing: string;
+  detail: string;
+};
+
+function FollowUpGhlWorkflowCanvas() {
+  const [selectedId, setSelectedId] = useState('follow-up-trigger');
+  const trigger: SourceWorkflowNode = {
+    id: 'follow-up-trigger', kind: 'trigger', label: 'Confirmed follow-up appointment', timing: 'GHL event trigger',
+    detail: 'GHL starts this published workflow for a normal, confirmed appointment on one of its seven covered calendars.',
+  };
+  const internal: SourceWorkflowNode = {
+    id: 'follow-up-internal', kind: 'action', label: 'Notify assigned user', timing: 'Immediately after confirmation',
+    detail: 'GHL sends the internal booking email before the client confirmation. Exact message fields remain in the authenticated GHL source record.',
+  };
+  const confirmation: SourceWorkflowNode = {
+    id: 'follow-up-confirmation', kind: 'action', label: 'Send booking confirmation', timing: 'Immediately after confirmation',
+    detail: 'GHL sends the client the appointment-specific details and links. Exact message fields remain in the authenticated GHL source record.',
+  };
+  const preference: SourceWorkflowNode = {
+    id: 'follow-up-preference', kind: 'action', label: 'Check Reminder Preference', timing: 'After confirmation',
+    detail: 'GHL reads contact.reminder_preference: “none” ends reminder delivery; “some” takes the short-notice path; every other value takes the full reminder path.',
+  };
+  const none: SourceWorkflowNode = { id: 'follow-up-none', kind: 'exit', label: 'No reminders', timing: 'Preference = none', detail: 'GHL ends the reminder portion of this workflow. The initial internal email and booking confirmation have already been sent.' };
+  const shortWait: SourceWorkflowNode = { id: 'follow-up-short-wait', kind: 'wait', label: 'Wait until 1 hour before', timing: 'GHL scheduler wait', detail: 'GHL holds a short-notice-path contact until one hour before the booked appointment.' };
+  const shortSms: SourceWorkflowNode = {
+    id: 'follow-up-short-sms', kind: 'action', label: 'Send one-hour client SMS', timing: '1 hour before appointment',
+    detail: 'GHL sends the client reminder on the short-notice path. Exact message fields remain in the authenticated GHL source record.',
+  };
+  const fullWait: SourceWorkflowNode = { id: 'follow-up-full-wait', kind: 'wait', label: 'Wait until 1 day before', timing: 'GHL scheduler wait', detail: 'GHL holds a full-path contact until the day-before email is due.' };
+  const dayBefore: SourceWorkflowNode = {
+    id: 'follow-up-day-before', kind: 'action', label: 'Send day-before email', timing: '1 day before appointment',
+    detail: 'GHL sends the full-path client reminder. Exact message fields remain in the authenticated GHL source record.',
+  };
+  const fullOneHour: SourceWorkflowNode = { id: 'follow-up-full-one-hour', kind: 'wait', label: 'Wait until 1 hour before', timing: 'GHL scheduler wait', detail: 'GHL holds the full-path contact until the final email, SMS, and internal SMS are due.' };
+  const finalEmail: SourceWorkflowNode = {
+    id: 'follow-up-final-email', kind: 'action', label: 'Send one-hour client email', timing: '1 hour before appointment',
+    detail: 'GHL sends the final full-path email reminder. Exact message fields remain in the authenticated GHL source record.',
+  };
+  const finalSms: SourceWorkflowNode = { ...shortSms, id: 'follow-up-final-sms', label: 'Send one-hour client SMS', detail: 'GHL sends the same client SMS on the full reminder path.' };
+  const finalInternal: SourceWorkflowNode = {
+    id: 'follow-up-final-internal', kind: 'action', label: 'Notify assigned user by SMS', timing: '1 hour before appointment',
+    detail: 'GHL sends the assigned user the one-hour internal notification on both reminder paths. Exact message fields remain in the authenticated GHL source record.',
+  };
+  const cancelled: SourceWorkflowNode = { id: 'follow-up-cancelled', kind: 'trigger', label: 'Appointment is cancelled', timing: 'GHL event trigger', detail: 'GHL receives the cancellation for the same calendar appointment.' };
+  const cleanup: SourceWorkflowNode = { id: 'follow-up-cleanup', kind: 'exit', label: 'Remove from reminder workflow', timing: 'Immediate GHL cleanup', detail: 'Calendar-specific published GHL cleanup workflows remove the person from this sender, stopping every pending message. Coverage is split across Follow-up and Entrainment cancellation workflows.' };
+  const nodes = [trigger, internal, confirmation, preference, none, shortWait, shortSms, fullWait, dayBefore, fullOneHour, finalEmail, finalSms, finalInternal, cancelled, cleanup];
+  const selected = nodes.find((node) => node.id === selectedId) || trigger;
+  const NodeButton = ({ node }: { node: SourceWorkflowNode }) => <button type="button" className={`automation-playbook-node is-ghl${selected.id === node.id ? ' is-selected' : ''}${node.kind === 'wait' ? ' is-wait' : ''}`} onClick={() => setSelectedId(node.id)} aria-pressed={selected.id === node.id}>
+    <span>GHL OPERATES</span><strong>{node.label}</strong><small>{node.timing}</small>{node.kind === 'wait' && <span className="automation-playbook-waiters" title="Eight people were waiting in this GHL workflow at the Aug. 11 audit"><Users size={13} aria-hidden="true" /><b>8 active in GHL · Aug. 11 audit</b></span>}
+  </button>;
+  return <section className="automation-playbook-preview automation-source-workflow-preview" aria-label="Follow-up GHL workflow source snapshot">
+    <header><div><span>Read-only GHL source snapshot · audited Aug. 11</span><h3>One canvas. The live sender today.</h3><p>Click any node for the documented trigger, message, wait, or cleanup. The people icon is the last read GHL queue, not an Amari Worker queue.</p></div><b className="is-live">GHL-owned · live sender</b></header>
+    <div className="automation-playbook-preview-grid">
+      <div className="automation-playbook-flow" aria-label="Follow-up GHL reminder workflow">
+        <div className="automation-playbook-step"><NodeButton node={trigger} /></div><i className="automation-playbook-arrow" aria-hidden="true">↓</i>
+        <div className="automation-playbook-parallel is-2"><NodeButton node={internal} /><NodeButton node={confirmation} /></div><i className="automation-playbook-arrow" aria-hidden="true">↓</i>
+        <div className="automation-playbook-step"><NodeButton node={preference} /></div>
+        <div className="automation-source-branches">
+          <section><header><strong>None</strong><small>No reminder messages</small></header><NodeButton node={none} /></section>
+          <section><header><strong>Some</strong><small>Short-notice path</small></header><NodeButton node={shortWait} /><i aria-hidden="true">↓</i><NodeButton node={shortSms} /><i aria-hidden="true">↓</i><NodeButton node={finalInternal} /></section>
+          <section><header><strong>Full</strong><small>Day-before + one-hour path</small></header><NodeButton node={fullWait} /><i aria-hidden="true">↓</i><NodeButton node={dayBefore} /><i aria-hidden="true">↓</i><NodeButton node={fullOneHour} /><i aria-hidden="true">↓</i><NodeButton node={finalEmail} /><i aria-hidden="true">↓</i><NodeButton node={finalSms} /><i aria-hidden="true">↓</i><NodeButton node={finalInternal} /></section>
+        </div>
+        <section className="automation-playbook-side-path"><header><span>Separate cancellation path</span><p>It can interrupt either reminder branch at any point.</p></header><div><span><NodeButton node={cancelled} /><i aria-hidden="true">→</i><NodeButton node={cleanup} /></span></div></section>
+      </div>
+      <aside className="automation-playbook-inspector" aria-live="polite">
+        <header><span>{selected.kind === 'trigger' ? 'GHL trigger' : selected.kind === 'wait' ? 'GHL wait' : selected.kind === 'exit' ? 'GHL exit / cleanup' : 'GHL action'}</span><h4>{selected.label}</h4><p>{selected.detail}</p></header>
+        <dl><div><dt>Operated by</dt><dd>GHL</dd></div><div><dt>When</dt><dd>{selected.timing}</dd></div></dl>
+        {selected.kind === 'wait' && <section className="automation-playbook-waiting-list"><span><Users size={14} /> GHL queue snapshot · Aug. 11</span><p>GHL showed 8 active people in this workflow at the last audit. Their names, dates, and exact positions remain in the authenticated GHL source rather than deployable Staff code; the readback did not identify each person’s reminder-preference branch.</p></section>}
+        <footer><strong>GHL remains the sender.</strong> This node is documentation and inspection only; it cannot alter the live GHL workflow or queue. An owned version must be built, shadowed, reconciled, and explicitly activated before this becomes editable execution.</footer>
+      </aside>
+    </div>
+  </section>;
 }
 
 function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments, tree }: {
@@ -468,10 +554,11 @@ function FamilyDetail({
 }) {
   const family = detail.family;
   const isInPersonCutover = family.key === 'initial-session-reminders';
+  const isFollowUpSourceMap = family.key === 'follow-up-session-reminders';
   const canonicalRuntimes = detail.runtime?.flows || [];
   const activeInitialRuntime = canonicalRuntimes.find((runtime) => runtime.flow?.key === 'initial-in-person');
   const virtualInitialRuntime = canonicalRuntimes.find((runtime) => runtime.flow?.key === 'initial-virtual');
-  const displayedDefinitions = isInPersonCutover
+  const displayedDefinitions = isInPersonCutover || isFollowUpSourceMap
     ? []
     : family.ownedDefinitions;
   const displayedSourceRecords = family.sourceRecords;
@@ -526,18 +613,25 @@ function FamilyDetail({
 
       {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>Scope: this is a shared in-person lifecycle, not a full Amari cutover.</strong> GHL operates the calendar and appointment status; Amari operates the live in-person reminder run. Initial Virtual remains GHL-operated while its separate behavior release, shadow proof, queue reconciliation, and activation gates remain incomplete.</p>}
 
+      {isFollowUpSourceMap && <p className="automation-cutover-scope-note"><strong>Scope: this remains a GHL-owned live workflow.</strong> The map is a source-backed inspection surface, including the last read eight-person GHL queue. It does not enroll, send, pause, or edit anything in GHL.</p>}
+
       {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: in-person ${activeInitialRuntime?.flow?.delivery || 'unknown'}; virtual ${virtualInitialRuntime?.flow?.delivery || 'unknown'}.` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read both scoped definitions; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim a delivery state until the Worker can answer for both scopes.'}</span></div>}
 
       {isInPersonCutover && detail.runtime?.verified && <div className="automation-evidence-banner"><MessageSquareText size={17} /><span><strong>Delivery evidence is channel-specific.</strong> {activeInitialRuntime?.flow?.receiptCoverage?.sms === 'terminal_status_reconciled' ? (activeInitialRuntime.receiptHealth?.status === 'healthy' ? `SMS receipt reconciliation was healthy at ${exactTime(activeInitialRuntime.receiptHealth.checkedAt)} (${activeInitialRuntime.receiptHealth.recorded} new terminal outcome${activeInitialRuntime.receiptHealth.recorded === 1 ? '' : 's'}, ${activeInitialRuntime.receiptHealth.pending} still pending).` : activeInitialRuntime.receiptHealth?.status === 'degraded' ? `SMS receipt reconciliation was degraded at ${exactTime(activeInitialRuntime.receiptHealth.checkedAt)} with ${activeInitialRuntime.receiptHealth.errors} error${activeInitialRuntime.receiptHealth.errors === 1 ? '' : 's'}. Delivery evidence may be incomplete.` : 'SMS receipt reconciliation is configured, but no completed sweep can currently be proven.') : 'SMS receipt coverage is unavailable from the executing Worker.'} Email shows Gmail acceptance only; Gmail does not provide an affirmative recipient-delivery receipt.</span></div>}
 
-      {family.cutoverTree && !isInPersonCutover && <CutoverTree tree={family.cutoverTree} />}
+      {family.cutoverTree && !isInPersonCutover && !isFollowUpSourceMap && <CutoverTree tree={family.cutoverTree} />}
 
       {isInPersonCutover && focused && activeInitialRuntime?.definition && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How this reminder run works</h3><p>The canvas is the one readable view of the current published in-person definition.</p></div><b>1</b></div>
         <InitialWorkflowCanvas runtimes={canonicalRuntimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} />
       </section>}
 
-      {!isInPersonCutover && <section className="automation-detail-section" id="workflow-definition">
+      {isFollowUpSourceMap && focused && <section className="automation-detail-section" id="workflow-definition">
+        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How the live GHL workflow works</h3><p>One source-backed canvas for the published GHL sender, its waits, branches, and cancellation cleanup.</p></div><b>1</b></div>
+        <FollowUpGhlWorkflowCanvas />
+      </section>}
+
+      {!isInPersonCutover && !isFollowUpSourceMap && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>{isInPersonCutover ? 'Canonical executable workflows' : 'Owned definition'}</h3><p>{isInPersonCutover ? 'The executing Worker and this view read these same scoped, versioned documents.' : 'Exact trigger, step timing, type, branch structure, and template key from code.'}</p></div><b>{isInPersonCutover ? canonicalRuntimes.filter((runtime) => runtime.definition).length : displayedDefinitions.length}</b></div>
         {displayedDefinitions.length ? displayedDefinitions.map((definition) => (
           <article className="automation-definition-card" key={definition.id}>
