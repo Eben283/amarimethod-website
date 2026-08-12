@@ -16,6 +16,7 @@ import { sendOwnedEmail } from "./gmail-test-send.js";
 import { deliverInitialInPersonStep, initialInPersonCutoverEligibility } from "./initial-in-person-cutover.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { deliverInitialVirtualStep, initialVirtualCutoverEligibility } from "./initial-virtual-cutover.js";
+import { deliverFollowUpStep, followUpDeliveryEligibility } from "./follow-up-delivery.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
@@ -192,6 +193,11 @@ export async function runSweep(env, nowMs, limit = 100) {
       const virtualCutover = initialVirtualCutoverEligibility(env, flow, step, enrollment);
       if (virtualCutover.eligible) {
         const result = await deliverInitialVirtualStep(env, step, enrollment, {}, flow.workflowDocument);
+        return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
+      }
+      const followUpCutover = followUpDeliveryEligibility(env, flow, step, enrollment);
+      if (followUpCutover.eligible) {
+        const result = await deliverFollowUpStep(env, step, enrollment, {}, flow.workflowDocument);
         return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
       }
       const cutover = assessmentCutoverEligibility(env, flow, step, enrollment);
