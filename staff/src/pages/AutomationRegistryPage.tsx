@@ -66,6 +66,8 @@ const NODE_MAP_TITLES: Record<string, string> = {
   'initial-session-reminders': 'Initial / Assessment in-person reminder',
 };
 
+type RuntimeFlow = NonNullable<NonNullable<AutomationFamilyResponse['runtime']>['flows']>[number];
+
 type AutomationPerson = {
   id: string;
   providerContactId: string | null;
@@ -194,11 +196,9 @@ export default function AutomationRegistryPage() {
     document.getElementById('automation-evidence')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
-  const mapRuntime = familyDetail?.family.key === 'initial-session-reminders'
-    ? familyDetail.runtime?.flows?.find((runtime) => runtime.flow?.key === 'initial-in-person')
-    : null;
-  const mapWorkflow = mapRuntime?.definition || null;
-  const mapDelivery = mapRuntime?.flow?.delivery || 'unpublished';
+  const mapRuntimes = familyDetail?.family.key === 'initial-session-reminders'
+    ? familyDetail.runtime?.flows || []
+    : [];
   const mapActiveEnrollments = familyDetail?.enrollments.filter((enrollment) => enrollment.status === 'active') || [];
 
   return (
@@ -226,8 +226,7 @@ export default function AutomationRegistryPage() {
         selectedKey={selectedFamilyKey}
         onSelect={selectMapFamily}
         onRevealEvidence={revealAutomationEvidence}
-        workflow={mapWorkflow}
-        delivery={mapDelivery}
+        runtimes={mapRuntimes}
         activeEnrollments={mapActiveEnrollments}
       />}
 
@@ -260,16 +259,14 @@ function AutomationMasterMap({
   selectedKey,
   onSelect,
   onRevealEvidence,
-  workflow,
-  delivery,
+  runtimes,
   activeEnrollments,
 }: {
   families: AutomationFamily[];
   selectedKey: string;
   onSelect: (key: string) => void;
   onRevealEvidence: () => void;
-  workflow: CanonicalWorkflow | null;
-  delivery: 'active' | 'disabled' | 'unpublished';
+  runtimes: RuntimeFlow[];
   activeEnrollments: ContactAutomationEnrollment[];
 }) {
   const selectedFamily = families.find((family) => family.key === selectedKey)
@@ -300,7 +297,7 @@ function AutomationMasterMap({
       })}
     </div>
     {selectedFamily?.cutoverTree
-      ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} workflow={workflow} delivery={delivery} activeEnrollments={activeEnrollments} />
+      ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} runtimes={runtimes} activeEnrollments={activeEnrollments} />
       : selectedFamily && <AutomationMapPending family={selectedFamily} />}
   </section>;
 }
@@ -315,14 +312,12 @@ function AutomationMapPending({ family }: { family: AutomationFamily }) {
 function AutomationHealthPilot({
   family,
   onRevealEvidence,
-  workflow,
-  delivery,
+  runtimes,
   activeEnrollments,
 }: {
   family: AutomationFamily;
   onRevealEvidence: () => void;
-  workflow: CanonicalWorkflow | null;
-  delivery: 'active' | 'disabled' | 'unpublished';
+  runtimes: RuntimeFlow[];
   activeEnrollments: ContactAutomationEnrollment[];
 }) {
   return (
@@ -336,10 +331,27 @@ function AutomationHealthPilot({
         <button type="button" onClick={onRevealEvidence}>Open live run evidence <ChevronRight size={15} /></button>
       </header>
       <OwnershipLegend />
-      {workflow ? <WorkflowPlaybookPreview workflow={workflow} delivery={delivery} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} /> : <CutoverTree tree={family.cutoverTree!} compact />}
-      <footer><b>Plain answer:</b> GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run and cancels that run when GHL reports a cancellation. The published GHL cleanup is a fallback, not a second sender.</footer>
+      {runtimes.some((runtime) => runtime.definition) ? <InitialWorkflowCanvas runtimes={runtimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} /> : <CutoverTree tree={family.cutoverTree!} compact />}
+      <footer><b>Plain answer:</b> GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run. The virtual definition is saved but disabled, so it cannot send alongside GHL. GHL cleanup remains rollback protection, not a second sender.</footer>
     </section>
   );
+}
+
+function InitialWorkflowCanvas({ runtimes, activeEnrollments, tree }: { runtimes: RuntimeFlow[]; activeEnrollments: ContactAutomationEnrollment[]; tree: AutomationCutoverTree }) {
+  const available = runtimes.filter((runtime) => runtime.definition && runtime.flow);
+  const [selectedFlowKey, setSelectedFlowKey] = useState('initial-in-person');
+  useEffect(() => {
+    if (!available.some((runtime) => runtime.flow?.key === selectedFlowKey)) setSelectedFlowKey(available[0]?.flow?.key || '');
+  }, [selectedFlowKey, available]);
+  const selected = available.find((runtime) => runtime.flow?.key === selectedFlowKey) || available[0];
+  if (!selected?.definition || !selected.flow) return null;
+  const isVirtual = selected.flow.key === 'initial-virtual';
+  const scopedEnrollments = activeEnrollments.filter((entry) => entry.key === selected.flow?.key);
+  return <section className="automation-workflow-scope" aria-label="Initial session workflow format selector">
+    <header><span>Format</span><div>{available.map((runtime) => <button type="button" key={runtime.flow!.key} className={runtime.flow!.key === selected.flow!.key ? 'is-selected' : ''} onClick={() => setSelectedFlowKey(runtime.flow!.key)}><strong>{runtime.flow!.key === 'initial-virtual' ? 'Virtual' : 'In person'}</strong><small>{runtime.flow!.delivery === 'active' ? 'Live sender' : 'Staged · disabled'}</small></button>)}</div></header>
+    {isVirtual && <p className="automation-workflow-scope-notice"><strong>Staged, not sending.</strong> This is the saved owned Virtual definition. GHL remains the sender until Eben deliberately activates it after the Google Meet, delivery, cancellation, and queue proof.</p>}
+    <WorkflowPlaybookPreview workflow={selected.definition} delivery={selected.flow.delivery} activeEnrollments={scopedEnrollments} tree={tree} />
+  </section>;
 }
 
 type PreviewNode = {
@@ -376,10 +388,10 @@ function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments, tree }
   useEffect(() => setSelectedId('trigger'), [workflow.id, workflow.version]);
   const nodeByTemplate = (template: string) => workflow.nodes.find((node) => node.action.template === template || node.id === template);
   const bookedInternal = nodeByTemplate('booked-internal');
-  const confirmation = nodeByTemplate('confirmation');
+  const confirmation = nodeByTemplate('confirmation') || nodeByTemplate('welcome');
   const dayBefore = nodeByTemplate('day-before');
   const oneHourSms = nodeByTemplate('one-hour-sms');
-  const startingSoon = nodeByTemplate('starting-soon');
+  const startingSoon = nodeByTemplate('starting-soon') || nodeByTemplate('one-hour-email');
   const oneHourInternal = nodeByTemplate('one-hour-internal');
   const activeFor = (templates: Array<string | undefined>) => activeEnrollments.filter((entry) => entry.nextStep?.template != null && templates.includes(entry.nextStep.template));
   const toAction = (node: CanonicalWorkflow['nodes'][number] | undefined): PreviewNode | null => node ? ({ id: node.id, owner: 'amari', kind: 'action', label: node.label, timing: node.at === 'enroll' ? 'Immediately after booking' : node.at === 'start-1440m' ? '24 hours before appointment' : node.at === 'start-60m' ? '1 hour before appointment' : node.at, detail: `${humanize(node.action.type)} · ${node.message.audience} ${node.message.channel}`, message: node.message }) : null;
@@ -389,7 +401,8 @@ function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments, tree }
   const oneHourWaiters = activeFor([oneHourSms?.action.template, oneHourSms?.id, startingSoon?.action.template, startingSoon?.id, oneHourInternal?.action.template, oneHourInternal?.id]);
   const waitDayBefore: PreviewNode | null = dayBefore ? { id: 'wait-day-before', owner: 'amari', kind: 'wait', label: 'Wait until 24 hours before', timing: 'Scheduler wait', detail: 'The worker holds this person here until the day-before reminder is due.', waiting: dayWaiters } : null;
   const waitOneHour: PreviewNode | null = finalNodes.length ? { id: 'wait-one-hour', owner: 'amari', kind: 'wait', label: 'Wait until 1 hour before', timing: 'Scheduler wait', detail: 'The worker holds this person here until the one-hour messages are due.', waiting: oneHourWaiters } : null;
-  const trigger: PreviewNode = { id: 'trigger', owner: 'ghl', kind: 'trigger', label: 'Confirmed appointment', timing: 'GHL event trigger', detail: 'GHL reports a confirmed appointment from a covered in-person calendar.' };
+  const isVirtual = workflow.id === 'initial-virtual';
+  const trigger: PreviewNode = { id: 'trigger', owner: 'ghl', kind: 'trigger', label: isVirtual ? 'Confirmed virtual appointment' : 'Confirmed appointment', timing: 'GHL event trigger', detail: isVirtual ? 'GHL reports a confirmed virtual appointment. The appointment-specific Google Meet link is the location used in every virtual message.' : 'GHL reports a confirmed appointment from a covered in-person calendar.' };
   const cancellation = workflow.exits.find((exit) => /cancel/i.test(`${exit.event} ${exit.effect} ${exit.label}`));
   const rollback = tree.nodes.find((node) => node.state === 'legacy_ghl');
   const cancellationNodes: PreviewNode[] = cancellation ? [
@@ -521,7 +534,7 @@ function FamilyDetail({
 
       {isInPersonCutover && focused && activeInitialRuntime?.definition && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How this reminder run works</h3><p>The canvas is the one readable view of the current published in-person definition.</p></div><b>1</b></div>
-        <WorkflowPlaybookPreview workflow={activeInitialRuntime.definition} delivery={activeInitialRuntime.flow?.delivery || 'disabled'} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} />
+        <InitialWorkflowCanvas runtimes={canonicalRuntimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} />
       </section>}
 
       {!isInPersonCutover && <section className="automation-detail-section" id="workflow-definition">
