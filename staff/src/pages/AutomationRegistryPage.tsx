@@ -31,6 +31,7 @@ import type {
   AutomationFamily,
   AutomationFamilyResponse,
   AutomationCutoverTree,
+  CanonicalWorkflow,
   ContactAutomationEvidence,
 } from '../types/staff';
 import './AutomationRegistryPage.css';
@@ -218,6 +219,13 @@ export default function AutomationRegistryPage() {
     document.getElementById('automation-evidence')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
 
+  const mapRuntime = familyDetail?.family.key === 'initial-session-reminders'
+    ? familyDetail.runtime?.flows?.find((runtime) => runtime.flow?.key === 'initial-in-person')
+    : null;
+  const mapWorkflow = mapRuntime?.definition || null;
+  const mapDelivery = mapRuntime?.flow?.delivery || 'unpublished';
+  const mapPendingCount = familyDetail?.enrollments.filter((enrollment) => enrollment.status === 'active').length || 0;
+
   return (
     <main className={`automation-registry-page${isFocusedInspector ? ' is-focused' : ''}`}>
       <header className={`automation-registry-hero${isFocusedInspector ? ' is-focused' : ''}`}>
@@ -243,6 +251,9 @@ export default function AutomationRegistryPage() {
         selectedKey={selectedFamilyKey}
         onSelect={selectMapFamily}
         onRevealEvidence={revealAutomationEvidence}
+        workflow={mapWorkflow}
+        delivery={mapDelivery}
+        pendingCount={mapPendingCount}
       />}
 
       {registryError && <p className="automation-registry-error"><AlertTriangle size={16} />{registryError}</p>}
@@ -301,11 +312,17 @@ function AutomationMasterMap({
   selectedKey,
   onSelect,
   onRevealEvidence,
+  workflow,
+  delivery,
+  pendingCount,
 }: {
   families: AutomationFamily[];
   selectedKey: string;
   onSelect: (key: string) => void;
   onRevealEvidence: () => void;
+  workflow: CanonicalWorkflow | null;
+  delivery: 'active' | 'disabled' | 'unpublished';
+  pendingCount: number;
 }) {
   const selectedFamily = families.find((family) => family.key === selectedKey)
     || families.find((family) => family.cutoverTree)
@@ -335,7 +352,7 @@ function AutomationMasterMap({
       })}
     </div>
     {selectedFamily?.cutoverTree
-      ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} />
+      ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} workflow={workflow} delivery={delivery} pendingCount={pendingCount} />
       : selectedFamily && <AutomationMapPending family={selectedFamily} />}
   </section>;
 }
@@ -347,7 +364,19 @@ function AutomationMapPending({ family }: { family: AutomationFamily }) {
   </section>;
 }
 
-function AutomationHealthPilot({ family, onRevealEvidence }: { family: AutomationFamily; onRevealEvidence: () => void }) {
+function AutomationHealthPilot({
+  family,
+  onRevealEvidence,
+  workflow,
+  delivery,
+  pendingCount,
+}: {
+  family: AutomationFamily;
+  onRevealEvidence: () => void;
+  workflow: CanonicalWorkflow | null;
+  delivery: 'active' | 'disabled' | 'unpublished';
+  pendingCount: number;
+}) {
   return (
     <section className="automation-health-pilot" aria-label={`${family.name} ownership map`}>
       <header>
@@ -356,13 +385,67 @@ function AutomationHealthPilot({ family, onRevealEvidence }: { family: Automatio
           <h2>{NODE_MAP_TITLES[family.key] || family.name}</h2>
           <p>Read from top to bottom: each color identifies the system that operates that action today.</p>
         </div>
-        <button type="button" onClick={onRevealEvidence}>See messages &amp; implementation <ChevronRight size={15} /></button>
+        <button type="button" onClick={onRevealEvidence}>Open live run evidence <ChevronRight size={15} /></button>
       </header>
       <OwnershipLegend />
-      <CutoverTree tree={family.cutoverTree!} compact />
+      {workflow ? <WorkflowPlaybookPreview workflow={workflow} delivery={delivery} pendingCount={pendingCount} tree={family.cutoverTree!} /> : <CutoverTree tree={family.cutoverTree!} compact />}
       <footer><b>Plain answer:</b> GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run and cancels that run when GHL reports a cancellation. The published GHL cleanup is a fallback, not a second sender.</footer>
     </section>
   );
+}
+
+type PreviewNode = {
+  id: string;
+  owner: 'ghl' | 'amari' | 'rollback';
+  kind: 'trigger' | 'action' | 'exit';
+  label: string;
+  timing: string;
+  detail: string;
+  message?: CanonicalWorkflow['nodes'][number]['message'];
+};
+
+function WorkflowPlaybookPreview({ workflow, delivery, pendingCount, tree }: {
+  workflow: CanonicalWorkflow;
+  delivery: 'active' | 'disabled' | 'unpublished';
+  pendingCount: number;
+  tree: AutomationCutoverTree;
+}) {
+  const [selectedId, setSelectedId] = useState('trigger');
+  useEffect(() => setSelectedId('trigger'), [workflow.id, workflow.version]);
+  const triggerSummary = Object.values(workflow.trigger).filter((value) => typeof value === 'string').join(' · ') || 'GHL appointment event';
+  const cancellation = workflow.exits.find((exit) => /cancel/i.test(`${exit.event} ${exit.effect} ${exit.label}`));
+  const rollback = tree.nodes.find((node) => node.state === 'legacy_ghl');
+  const nodes: PreviewNode[] = [
+    { id: 'trigger', owner: 'ghl', kind: 'trigger', label: 'Confirmed appointment', timing: 'Event trigger', detail: triggerSummary },
+    ...workflow.nodes.map((node) => ({ id: node.id, owner: 'amari' as const, kind: 'action' as const, label: node.label, timing: node.at, detail: `${humanize(node.action.type)} · ${node.message.audience} ${node.message.channel}`, message: node.message })),
+    ...(cancellation ? [{ id: 'cancellation', owner: 'amari' as const, kind: 'exit' as const, label: cancellation.label || 'Cancellation exit', timing: 'Exit', detail: cancellation.effect }] : []),
+    ...(rollback ? [{ id: 'rollback', owner: 'rollback' as const, kind: 'exit' as const, label: rollback.label, timing: 'Fallback only', detail: rollback.detail }] : []),
+  ];
+  const selected = nodes.find((node) => node.id === selectedId) || nodes[0];
+  return <section className="automation-playbook-preview" aria-label="Future operational workflow editor preview">
+    <header>
+      <div><span>Read-only future control-room preview</span><h3>One canvas. The actual workflow underneath.</h3><p>These nodes use the current published in-person definition. Click a node to inspect what the future editor will control.</p></div>
+      <b className={delivery === 'active' ? 'is-live' : ''}>{delivery === 'active' ? 'Live definition' : 'Definition not sending'}</b>
+    </header>
+    <div className="automation-playbook-preview-grid">
+      <ol className="automation-playbook-canvas">
+        {nodes.map((node, index) => <li key={node.id} className={`is-${node.owner}${selected.id === node.id ? ' is-selected' : ''}`}>
+          <button type="button" onClick={() => setSelectedId(node.id)} aria-pressed={selected.id === node.id}>
+            <span>{node.owner === 'ghl' ? 'GHL' : node.owner === 'amari' ? 'AMARI' : 'GHL FALLBACK'}</span>
+            <strong>{node.label}</strong>
+            <small>{node.timing}</small>
+          </button>
+          {index < nodes.length - 1 && <i aria-hidden="true">↓</i>}
+        </li>)}
+      </ol>
+      <aside className="automation-playbook-inspector" aria-live="polite">
+        <header><span>{selected.kind === 'trigger' ? 'Trigger' : selected.kind === 'exit' ? 'Exit / fallback' : 'Action'}</span><h4>{selected.label}</h4><p>{selected.detail}</p></header>
+        <dl><div><dt>Operated by</dt><dd>{selected.owner === 'ghl' ? 'GHL' : selected.owner === 'amari' ? 'Amari' : 'GHL rollback / cleanup'}</dd></div><div><dt>When</dt><dd>{selected.timing}</dd></div></dl>
+        {selected.message && <section className="automation-playbook-message"><span>Future editable fields</span>{selected.message.from && <label>From<input readOnly value={selected.message.from} /></label>}{selected.message.subject && <label>Subject<input readOnly value={selected.message.subject} /></label>}<label>Exact message<textarea readOnly rows={8} value={selected.message.body} /></label></section>}
+        <footer><strong>Preview only.</strong> There is no save or publish action here. When editing is enabled, publishing this node will show the {pendingCount} active enrollment{pendingCount === 1 ? '' : 's'} and pending actions affected before anything changes.</footer>
+      </aside>
+    </div>
+  </section>;
 }
 
 function OwnershipLegend() {
