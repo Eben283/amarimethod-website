@@ -16,7 +16,7 @@ import { sendOwnedEmail } from "./gmail-test-send.js";
 import { deliverInitialInPersonStep, initialInPersonCutoverEligibility } from "./initial-in-person-cutover.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { deliverInitialVirtualStep, initialVirtualCutoverEligibility } from "./initial-virtual-cutover.js";
-import { deliverFollowUpStep, followUpDeliveryEligibility } from "./follow-up-delivery.js";
+import { deliverFollowUpStep, followUpDeliveryEligibility, removeFromGhlWorkflow } from "./follow-up-delivery.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
@@ -174,6 +174,10 @@ export async function runSweep(env, nowMs, limit = 100) {
     exitFlow: async (target, contactId) => {
       if (!target || !contactId) return null;
       return exitEnrollmentsForContact(db, target, contactId);
+    },
+    exitExternalFlow: async (target, contactId) => {
+      if (!target || !contactId) return null;
+      return removeFromGhlWorkflow(env, target, contactId);
     },
     // active-mode only; copy templates are a later brick, so an active flow without templates
     // fails loudly rather than sending a blank message. Shadow flows never reach this.

@@ -1,8 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { deliverFollowUpStep, followUpDeliveryEligibility } from "./follow-up-delivery.js";
+import { deliverFollowUpStep, followUpDeliveryEligibility, removeFromGhlWorkflow } from "./follow-up-delivery.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 
-const env = { FOLLOW_UP_DELIVERY_RELEASE: "approved", FOLLOW_UP_ASSIGNED_USER_DELIVERY: "approved", GARRETT_INTERNAL_EMAIL: "garrett@amarimethod.com", GARRETT_ASSIGNED_USER_ID: "garrett-user" };
+const env = { FOLLOW_UP_DELIVERY_RELEASE: "approved", FOLLOW_UP_ASSIGNED_USER_DELIVERY: "approved", GARRETT_INTERNAL_EMAIL: "garrett@amarimethod.com", GARRETT_ASSIGNED_USER_ID: "garrett-user", GARRETT_INTERNAL_CONTACT_ID: "garrett-contact" };
 const flow = { flowKey: "follow-up-session-reminders", mode: "active", calendarIds: FOLLOW_UP_WORKFLOW.trigger.calendarIds, workflowDocument: FOLLOW_UP_WORKFLOW };
 const enrollment = { calendarId: "SKDVOL8wtUN6Ne0ppbC9", appointmentId: "appointment-1", contactId: "contact-1", startAt: "2026-08-20T10:00:00-07:00" };
 
@@ -56,8 +56,34 @@ describe("Follow-Up delivery release gate", () => {
     expect(sent.to).toBe("garrett@amarimethod.com");
   });
 
-  it("never routes GHL's Assigned User SMS through a configured CRM contact", async () => {
-    const result = await deliverFollowUpStep(env, { template: "one-hour-internal" }, enrollment, services(), FOLLOW_UP_WORKFLOW);
-    expect(result).toEqual({ success: false, error: "assigned-user SMS transport is not implemented" });
+  it("routes the assigned Garrett notification through the proven owned recipient", async () => {
+    let sent;
+    const result = await deliverFollowUpStep(env, { template: "one-hour-internal" }, enrollment, {
+      ...services(), sendSms: async (message) => { sent = message; return { success: true, messageId: "sms-internal" }; },
+    }, FOLLOW_UP_WORKFLOW);
+    expect(result).toMatchObject({ success: true, recipient: "garrett-contact" });
+    expect(sent.contactId).toBe("garrett-contact");
+  });
+
+  it("fails closed when the appointment is assigned to someone without an owned SMS recipient", async () => {
+    const result = await deliverFollowUpStep(env, { template: "one-hour-internal" }, enrollment, {
+      ...services(), read: async (_env, path) => path.includes("appointments") ? { appointment: { ...appointment.appointment, assignedUser: { id: "another-user" } } } : contact,
+    }, FOLLOW_UP_WORKFLOW);
+    expect(result).toEqual({ success: false, error: "assigned user does not have a configured owned SMS recipient" });
+  });
+
+  it("removes the rebooking from the still-GHL-owned no-show queue through its exact endpoint", async () => {
+    let path;
+    const result = await removeFromGhlWorkflow(env, "ghl:0e9a4b98-1ab5-4681-8371-027953a7ad15", "contact-1", {
+      request: async (value) => { path = value; return { ok: true, status: 204 }; },
+    });
+    expect(path).toBe("/contacts/contact-1/workflow/0e9a4b98-1ab5-4681-8371-027953a7ad15");
+    expect(result).toEqual({ provider: "ghl", workflowId: "0e9a4b98-1ab5-4681-8371-027953a7ad15", removed: true });
+  });
+
+  it("cannot mutate an arbitrary external workflow", async () => {
+    await expect(removeFromGhlWorkflow(env, "ghl:not-the-no-show-workflow", "contact-1", {
+      request: async () => ({ ok: true }),
+    })).rejects.toThrow("unexpected GHL workflow exit target");
   });
 });

@@ -8,6 +8,7 @@ import { sendOwnedEmail } from "./gmail-test-send.js";
 import { renderWorkflowText } from "./workflow-definition.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
+const GHL_NO_SHOW_WORKFLOW_ID = "0e9a4b98-1ab5-4681-8371-027953a7ad15";
 const EMAIL = /^[^\s@]+@[^\s@]+$/;
 const clean = (value) => String(value || "").trim();
 const DATE = new Intl.DateTimeFormat("en-US", { timeZone: "America/Los_Angeles", weekday: "long", month: "long", day: "numeric" });
@@ -31,6 +32,7 @@ export function followUpDeliveryEligibility(env, flow, step, enrollment) {
   if (env?.FOLLOW_UP_ASSIGNED_USER_DELIVERY !== "approved") return { eligible: false, reason: "assigned-user-delivery-unverified" };
   if (flow?.flowKey !== "follow-up-session-reminders" || !flow.calendarIds?.includes(enrollment?.calendarId)) return { eligible: false, reason: "not-follow-up" };
   if (flow?.mode !== "active") return { eligible: false, reason: "workflow-not-active" };
+  if (!EMAIL.test(clean(env?.GARRETT_INTERNAL_EMAIL)) || !clean(env?.GARRETT_INTERNAL_CONTACT_ID) || !clean(env?.GARRETT_ASSIGNED_USER_ID)) return { eligible: false, reason: "assigned-user-recipient-not-configured" };
   if (!flow.workflowDocument?.nodes?.some((node) => node.action.template === step?.template)) return { eligible: false, reason: "not-owned-step" };
   return { eligible: true };
 }
@@ -60,6 +62,32 @@ function assignedUserEmail(appointment, env) {
     return clean(env.GARRETT_INTERNAL_EMAIL);
   }
   return "";
+}
+
+function assignedUserId(appointment) {
+  return clean(appointment.assignedUserId || appointment.assigned_user_id || appointment.assignedUser?.id || appointment.assigned_user?.id);
+}
+
+/**
+ * The original Follow-Up sender removes a confirmed rebooking from the still
+ * GHL-owned No Show Email SMS series. This is a narrowly scoped transition,
+ * not a second reminder sender: it calls GHL's documented idempotent
+ * remove-enrollment endpoint until No Show recovery itself migrates.
+ */
+export async function removeFromGhlWorkflow(env, target, contactId, services = {}) {
+  const workflowId = clean(target).replace(/^ghl:/, "");
+  if (!workflowId || !clean(contactId)) throw new Error("GHL workflow exit requires a workflow and contact");
+  if (workflowId !== GHL_NO_SHOW_WORKFLOW_ID) throw new Error("unexpected GHL workflow exit target");
+  const request = services.request || (async (path) => {
+    const token = await getAccessToken(env);
+    return fetch(`${GHL_API_BASE}${path}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+    });
+  });
+  const response = await request(`/contacts/${encodeURIComponent(contactId)}/workflow/${encodeURIComponent(workflowId)}`);
+  if (!response?.ok) throw new Error(`GHL workflow exit ${response?.status || "failed"}`);
+  return { provider: "ghl", workflowId, removed: true };
 }
 
 export async function deliverFollowUpStep(env, step, enrollment, services = {}, workflow) {
@@ -104,10 +132,16 @@ export async function deliverFollowUpStep(env, step, enrollment, services = {}, 
     return { recipient, ...(await sendEmail(env, { to: recipient, subject, text, preheader: renderWorkflowText(node.message.preheader, values), actor })) };
   }
   if (node.message.audience === "internal") {
-    // GHL's internal-SMS action targets the assigned user, not a CRM contact.
-    // The current GHL conversation adapter accepts contacts only, so using
-    // GARRETT_INTERNAL_CONTACT_ID here would be a source-parity lie.
-    return { success: false, error: "assigned-user SMS transport is not implemented" };
+    // GHL's internal-SMS action targets the appointment's Assigned User. The
+    // proven Amari internal-recipient record is Garrett's contact, but use it
+    // only when this appointment is actually assigned to Garrett; otherwise
+    // fail closed rather than redirect a practitioner notification.
+    if (assignedUserId(appointment) !== clean(env.GARRETT_ASSIGNED_USER_ID)) {
+      return { success: false, error: "assigned user does not have a configured owned SMS recipient" };
+    }
+    const recipient = clean(env.GARRETT_INTERNAL_CONTACT_ID);
+    if (!recipient) return { success: false, error: "assigned user SMS recipient is unavailable" };
+    return { recipient, ...(await sendSms({ channel: "sms", contactId: recipient, message: text })) };
   }
   const recipient = enrollment.contactId;
   return { recipient, ...(await sendSms({ channel: "sms", contactId: recipient, message: text })) };

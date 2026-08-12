@@ -42,16 +42,11 @@ export async function processStep({ enrollment, step, flow }, deps, nowMs) {
       await deps.markStep(enrollment, step.stepIndex, "would_execute");
       return { outcome: "would_execute" };
     }
-    if (String(step.target || "").startsWith("ghl:")) {
-      // The authored source exit still belongs to GHL. Never make a local
-      // active flow silently mutate it through an unreviewed API seam.
-      const error = "external GHL exit has not been separately migrated";
-      await deps.logEvent({ ...base, channel: null, action: "exit", outcome: "failed", detail: { target: step.target, error } });
-      await deps.markStep(enrollment, step.stepIndex, "failed");
-      return { outcome: "failed" };
-    }
     try {
-      const result = await deps.exitFlow?.(step.target, enrollment.contactId);
+      const external = String(step.target || "").startsWith("ghl:");
+      const result = external
+        ? await deps.exitExternalFlow?.(step.target, enrollment.contactId)
+        : await deps.exitFlow?.(step.target, enrollment.contactId);
       if (!result) throw new Error("owned exit target is unavailable");
       await deps.logEvent({ ...base, channel: null, action: "exit", outcome: "executed", detail: { target: step.target, ...result } });
       await deps.markStep(enrollment, step.stepIndex, "executed");
