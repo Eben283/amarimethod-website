@@ -1,9 +1,12 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("staff appointment management API", () => {
   beforeEach(() => vi.resetModules());
+  afterEach(() => vi.useRealTimers());
 
   it("returns Garrett's internal availability without calling public free slots", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-08-10T09:00:00-07:00"));
     vi.doMock("../lib/endpoint-guards.js", () => ({
       requireStaffAuth: vi.fn(async () => ({ error: null, payload: { role: "staff", user: "Garrett" } })),
       corsHeaders: () => ({ "Access-Control-Allow-Origin": "https://www.amarimethod.com" }),

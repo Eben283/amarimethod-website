@@ -217,6 +217,7 @@ export async function manageAppointmentCommand(input) {
       endDate: dateMatch[1],
       events: schedule,
       excludeAppointmentId: appointmentId,
+      now,
     });
     if (!available.some((slot) => slot.datetime === newStartTime)) {
       throw Object.assign(new Error("That time is no longer open on Garrett’s schedule."), { code: "slot_unavailable" });
