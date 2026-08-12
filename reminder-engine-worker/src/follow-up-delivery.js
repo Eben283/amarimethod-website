@@ -29,9 +29,17 @@ function customField(contact, key) {
 export function followUpDeliveryEligibility(env, flow, step, enrollment) {
   if (env?.FOLLOW_UP_DELIVERY_RELEASE !== "approved") return { eligible: false, reason: "follow-up-delivery-disabled" };
   if (flow?.flowKey !== "follow-up-session-reminders" || !flow.calendarIds?.includes(enrollment?.calendarId)) return { eligible: false, reason: "not-follow-up" };
+  if (flow?.mode !== "active") return { eligible: false, reason: "workflow-not-active" };
   if (!flow.workflowDocument?.nodes?.some((node) => node.action.template === step?.template)) return { eligible: false, reason: "not-owned-step" };
   if (!EMAIL.test(clean(env.GARRETT_INTERNAL_EMAIL)) || !clean(env.GARRETT_INTERNAL_CONTACT_ID)) return { eligible: false, reason: "internal-recipient-not-configured" };
   return { eligible: true };
+}
+
+function actorForFrom(value) {
+  const from = clean(value).toLowerCase();
+  if (from === "amari method <eben@amarimethod.com>" || from === "eben@amarimethod.com") return "Eben";
+  if (from === "garrett <garrett@amarimethod.com>" || from === "garrett@amarimethod.com") return "Garrett";
+  throw new Error("workflow From identity is not an approved Amari sender");
 }
 
 async function read(env, path) {
@@ -75,7 +83,10 @@ export async function deliverFollowUpStep(env, step, enrollment, services = {}, 
   if (node.message.channel === "email") {
     const recipient = node.message.audience === "internal" ? clean(env.GARRETT_INTERNAL_EMAIL) : clean(contact.email || contact.emailAddress || contact.email_address);
     if (!EMAIL.test(recipient)) return { success: false, error: "recipient email is unavailable" };
-    return { recipient, ...(await sendEmail(env, { to: recipient, subject, text })) };
+    let actor;
+    try { actor = actorForFrom(node.message.from || "Amari Method <eben@amarimethod.com>"); }
+    catch (error) { return { success: false, error: String(error?.message || error) }; }
+    return { recipient, ...(await sendEmail(env, { to: recipient, subject, text, preheader: renderWorkflowText(node.message.preheader, values), actor })) };
   }
   const recipient = node.message.audience === "internal" ? clean(env.GARRETT_INTERNAL_CONTACT_ID) : enrollment.contactId;
   return { recipient, ...(await sendSms({ channel: "sms", contactId: recipient, message: text })) };

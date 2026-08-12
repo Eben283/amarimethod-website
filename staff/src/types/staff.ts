@@ -340,7 +340,7 @@ export interface CanonicalWorkflow {
     at: string;
     skipIfPast: boolean;
     action: { type: string; template: string; target?: string };
-    message: { audience: string; channel: string; from?: string; subject?: string; body: string };
+    message: { audience: string; channel: string; from?: string; subject?: string; preheader?: string; body: string };
   }>;
 }
 

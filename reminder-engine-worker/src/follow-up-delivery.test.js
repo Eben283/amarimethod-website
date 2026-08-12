@@ -3,7 +3,7 @@ import { deliverFollowUpStep, followUpDeliveryEligibility } from "./follow-up-de
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 
 const env = { FOLLOW_UP_DELIVERY_RELEASE: "approved", GARRETT_INTERNAL_EMAIL: "garrett@amarimethod.com", GARRETT_INTERNAL_CONTACT_ID: "garrett-contact" };
-const flow = { flowKey: "follow-up-session-reminders", calendarIds: FOLLOW_UP_WORKFLOW.trigger.calendarIds, workflowDocument: FOLLOW_UP_WORKFLOW };
+const flow = { flowKey: "follow-up-session-reminders", mode: "active", calendarIds: FOLLOW_UP_WORKFLOW.trigger.calendarIds, workflowDocument: FOLLOW_UP_WORKFLOW };
 const enrollment = { calendarId: "SKDVOL8wtUN6Ne0ppbC9", appointmentId: "appointment-1", contactId: "contact-1", startAt: "2026-08-20T10:00:00-07:00" };
 
 const appointment = { appointment: {
@@ -23,12 +23,18 @@ describe("Follow-Up delivery release gate", () => {
     expect(followUpDeliveryEligibility(env, flow, { template: "confirmation" }, enrollment)).toEqual({ eligible: true });
   });
 
+  it("never lets the release flag turn a shadow document into a sender", () => {
+    expect(followUpDeliveryEligibility(env, { ...flow, mode: "shadow" }, { template: "confirmation" }, enrollment)).toEqual({ eligible: false, reason: "workflow-not-active" });
+  });
+
   it("renders the appointment-specific connection value from the authoritative appointment", async () => {
     let sent;
     const result = await deliverFollowUpStep(env, { template: "confirmation" }, enrollment, services(async (_env, message) => { sent = message; return { success: true, messageId: "email-1" }; }), FOLLOW_UP_WORKFLOW);
     expect(result).toMatchObject({ success: true, recipient: "avery@example.test" });
     expect(sent.text).toContain("https://meet.google.test/unique-room");
     expect(sent.text).not.toContain("static");
+    expect(sent.actor).toBe("Eben");
+    expect(sent.preheader).toBe("See you soon. Here are your session details.");
   });
 
   it("fails closed when appointment connection details cannot be read", async () => {

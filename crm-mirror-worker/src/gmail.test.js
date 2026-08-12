@@ -188,6 +188,18 @@ describe("Gmail provider", () => {
     expect(decoded).toContain("Reply-To: eben@amarimethod.com");
   });
 
+  it("renders an optional preheader as a multipart inbox-preview value without changing the plain-text body", async () => {
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [{ sendAsEmail: "eben@amarimethod.com", verificationStatus: "accepted" }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "gmail-id" }), { status: 200 })));
+    await sendGmailEmail(e, { actor: "Eben", to: "person@example.test", subject: "A subject", preheader: "Preview this", text: "Private body" });
+    const decoded = Buffer.from(JSON.parse(fetch.mock.calls[1][1].body).raw, "base64url").toString("utf8");
+    expect(decoded).toContain("Content-Type: multipart/alternative; boundary=amari-boundary");
+    expect(decoded).toContain("Preview this");
+    expect(decoded).toContain("Private body");
+  });
+
   it("lists only exact server-owned identities that Gmail has accepted", async () => {
     const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
     vi.stubGlobal("fetch", vi.fn(async () => new Response(JSON.stringify({ sendAs: [

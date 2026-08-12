@@ -5,9 +5,9 @@
 import { sendGmailEmail } from "../../crm-mirror-worker/src/gmail.js";
 
 /** Send a transactional email through the existing verified Amari Gmail identity. */
-export async function sendOwnedEmail(env, { to, subject, text, actor = "Eben" }) {
+export async function sendOwnedEmail(env, { to, subject, text, preheader, actor = "Eben" }) {
   try {
-    const result = await sendGmailEmail(env, { actor, to, subject, text });
+    const result = await sendGmailEmail(env, { actor, to, subject, text, preheader });
     return { success: true, messageId: result.id };
   } catch (error) {
     return { success: false, error: String(error?.message || error) };
