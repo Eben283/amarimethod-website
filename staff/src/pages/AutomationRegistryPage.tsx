@@ -69,6 +69,10 @@ const IMPLEMENTATION_LABELS: Record<string, string> = {
   'evidence-only': 'Evidence only',
 };
 
+const NODE_MAP_TITLES: Record<string, string> = {
+  'initial-session-reminders': 'Initial / Assessment in-person reminder',
+};
+
 type AutomationPerson = {
   id: string;
   providerContactId: string | null;
@@ -204,6 +208,16 @@ export default function AutomationRegistryPage() {
     navigate(`/automations/${encodeURIComponent(key)}${queryString ? `?${queryString}` : ''}`);
   }
 
+  function selectMapFamily(key: string) {
+    const next = new URLSearchParams(params);
+    next.set('family', key);
+    setParams(next, { replace: true });
+  }
+
+  function revealAutomationEvidence() {
+    document.getElementById('automation-evidence')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
   return (
     <main className={`automation-registry-page${isFocusedInspector ? ' is-focused' : ''}`}>
       <header className={`automation-registry-hero${isFocusedInspector ? ' is-focused' : ''}`}>
@@ -224,8 +238,12 @@ export default function AutomationRegistryPage() {
         </div>
       </header>
 
-      {registry && !isFocusedInspector && <AutomationMasterMap families={registry.families} onOpen={selectFamily} />}
-      {registry && !isFocusedInspector && <AutomationHealthPilot families={registry.families} onOpen={selectFamily} />}
+      {registry && !isFocusedInspector && <AutomationMasterMap
+        families={registry.families}
+        selectedKey={selectedFamilyKey}
+        onSelect={selectMapFamily}
+        onRevealEvidence={revealAutomationEvidence}
+      />}
 
       {registryError && <p className="automation-registry-error"><AlertTriangle size={16} />{registryError}</p>}
       {!registry && !registryError && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading the registry…</div>}
@@ -259,7 +277,7 @@ export default function AutomationRegistryPage() {
             )}
           </aside>}
 
-          <section className="automation-family-detail" aria-live="polite">
+          <section className="automation-family-detail" id="automation-evidence" aria-live="polite">
             {familyLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Opening family…</div>}
             {!familyLoading && familyDetail && (
               <FamilyDetail
@@ -278,7 +296,20 @@ export default function AutomationRegistryPage() {
   );
 }
 
-function AutomationMasterMap({ families, onOpen }: { families: AutomationFamily[]; onOpen: (key: string) => void }) {
+function AutomationMasterMap({
+  families,
+  selectedKey,
+  onSelect,
+  onRevealEvidence,
+}: {
+  families: AutomationFamily[];
+  selectedKey: string;
+  onSelect: (key: string) => void;
+  onRevealEvidence: () => void;
+}) {
+  const selectedFamily = families.find((family) => family.key === selectedKey)
+    || families.find((family) => family.cutoverTree)
+    || null;
   return <section className="automation-master-map" aria-label="Amari master automation map">
     <header>
       <div>
@@ -294,7 +325,7 @@ function AutomationMasterMap({ families, onOpen }: { families: AutomationFamily[
         return <section key={lane.key} className="automation-master-lane">
           <header><strong>{lane.label}</strong><small>{lane.description}</small></header>
           <div>
-            {laneFamilies.map((family) => <button type="button" key={family.key} className={family.cutoverTree ? 'is-drawn' : 'is-pending'} onClick={() => onOpen(family.key)}>
+            {laneFamilies.map((family) => <button type="button" key={family.key} className={`${family.cutoverTree ? 'is-drawn' : 'is-pending'}${selectedFamily?.key === family.key ? ' is-selected' : ''}`} aria-pressed={selectedFamily?.key === family.key} onClick={() => onSelect(family.key)}>
               <strong>{family.name}</strong>
               <small>{family.cutoverTree ? 'Node map drawn' : 'Needs node map'}</small>
               <ChevronRight size={14} aria-hidden="true" />
@@ -303,22 +334,29 @@ function AutomationMasterMap({ families, onOpen }: { families: AutomationFamily[
         </section>;
       })}
     </div>
+    {selectedFamily?.cutoverTree
+      ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} />
+      : selectedFamily && <AutomationMapPending family={selectedFamily} />}
   </section>;
 }
 
-function AutomationHealthPilot({ families, onOpen }: { families: AutomationFamily[]; onOpen: (key: string) => void }) {
-  const pilots = families.filter((family) => family.cutoverTree);
-  if (!pilots.length) return null;
-  const family = pilots[0];
+function AutomationMapPending({ family }: { family: AutomationFamily }) {
+  return <section className="automation-map-pending" aria-label={`${family.name} node map status`}>
+    <div><span>Selected automation · node map not drawn</span><h3>{family.name}</h3><p>We know this automation exists, but we have not yet verified and drawn its individual actions. It stays neutral until each action can be assigned to its real operator.</p></div>
+    <small>{family.counts.sourceRecords} source record{family.counts.sourceRecords === 1 ? '' : 's'} preserved</small>
+  </section>;
+}
+
+function AutomationHealthPilot({ family, onRevealEvidence }: { family: AutomationFamily; onRevealEvidence: () => void }) {
   return (
-    <section className="automation-health-pilot" aria-label="Initial and Assessment ownership map">
+    <section className="automation-health-pilot" aria-label={`${family.name} ownership map`}>
       <header>
         <div>
-          <span><Activity size={14} /> First automation drawn · Initial-session reminders</span>
-          <h2>Initial / Assessment in-person reminder</h2>
-          <p>This is the first detailed map. Read from top to bottom: each color identifies the system that operates that action today.</p>
+          <span><Activity size={14} /> Selected automation · node map drawn</span>
+          <h2>{NODE_MAP_TITLES[family.key] || family.name}</h2>
+          <p>Read from top to bottom: each color identifies the system that operates that action today.</p>
         </div>
-        <button type="button" onClick={() => onOpen(family.key)}>Open full evidence <ChevronRight size={15} /></button>
+        <button type="button" onClick={onRevealEvidence}>See messages &amp; implementation <ChevronRight size={15} /></button>
       </header>
       <OwnershipLegend />
       <CutoverTree tree={family.cutoverTree!} compact />
