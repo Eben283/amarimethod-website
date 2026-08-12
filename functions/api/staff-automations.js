@@ -253,8 +253,13 @@ export async function onRequestGet(context) {
       if (!family) {
         return new Response(JSON.stringify({ error: "Automation family not found" }), { status: 404, headers });
       }
-      const initialRuntimes = family.key === "initial-session-reminders"
-        ? (await Promise.all(["initial-in-person", "initial-virtual"].map((flowKey) => reminderRuntimeEvidence(context, flowKey)))).filter(Boolean)
+      const runtimeFlowKeys = family.key === "initial-session-reminders"
+        ? ["initial-in-person", "initial-virtual"]
+        : family.key === "follow-up-session-reminders"
+          ? ["follow-up-session-reminders"]
+          : [];
+      const initialRuntimes = runtimeFlowKeys.length
+        ? (await Promise.all(runtimeFlowKeys.map((flowKey) => reminderRuntimeEvidence(context, flowKey)))).filter(Boolean)
         : [];
       const initialRuntime = initialRuntimes[0] || null;
       const workerExecution = !db && !initialRuntime ? await workerFamilyAutomationEvidence(context, family.key) : null;
@@ -276,7 +281,7 @@ export async function onRequestGet(context) {
         registryVersion: REGISTRY_VERSION,
         family,
         ...displayExecution,
-        runtime: initialRuntime ? { verified: initialRuntimes.length === 2, flows: initialRuntimes } : { verified: false, flows: [] },
+        runtime: initialRuntime ? { verified: initialRuntimes.length === runtimeFlowKeys.length, flows: initialRuntimes } : { verified: false, flows: [] },
         evidence: {
           ...executionEvidence,
           gaps: [...family.evidence.gaps, ...executionEvidence.gaps, ...(workerExecution?.evidence?.gaps || [])],

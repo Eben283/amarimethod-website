@@ -21,6 +21,11 @@ import { handleEvent } from "./engine.js";
 import { appendEvent } from "./store.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
+const FOLLOW_UP_CALENDAR_IDS = new Set([
+  "ZO1jlGfy01rsxVqicoSB", "SKDVOL8wtUN6Ne0ppbC9", "oVn77FcecFY16iS2pHyP", "B5aGXLoS4kzAjZAMMXxk",
+  "bJFkhVP35Ecwh4tLnSmy", "wO5lnu7BOQOHEJ5YQU0f", "waHmG2mHNThPfMVuNJWG",
+]);
+const REMINDER_PREFERENCE_FIELD = "a42sQtjQ2yZPd0eJmkGW";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
@@ -61,6 +66,30 @@ async function enrichFromApi(env, event, nowMs) {
     appointmentId: enriched.appointmentId || event.appointmentId,
     modifiedBy: enriched.modifiedBy ?? event.modifiedBy,
   };
+}
+
+function fieldValue(contact, fieldId) {
+  const fields = contact?.customFields || contact?.custom_fields || [];
+  if (!Array.isArray(fields)) return "";
+  const field = fields.find((item) => item?.id === fieldId || item?.key === "contact.reminder_preference");
+  return String(field?.value ?? field?.fieldValue ?? field?.field_value ?? "").trim().toLowerCase();
+}
+
+// GHL supplies the appointment event during the transition, but the Worker records the branch
+// choice with the enrollment. A later copy edit therefore changes the pending owned node, not a
+// hidden GHL branch. Empty/unknown matches the live workflow's full-reminder fallback.
+async function enrichFollowUpPreference(env, event) {
+  if (event.type !== "confirmed" || !FOLLOW_UP_CALENDAR_IDS.has(event.calendarId) || !event.contactId) {
+    return event;
+  }
+  const token = await getAccessToken(env);
+  const res = await fetch(`${GHL_API_BASE}/contacts/${encodeURIComponent(event.contactId)}`, {
+    headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+  });
+  if (!res.ok) throw new Error(`follow-up preference lookup ${res.status}`);
+  const raw = fieldValue((await res.json()).contact || {}, REMINDER_PREFERENCE_FIELD);
+  const reminderPreference = raw === "none" || raw === "some" ? raw : "full";
+  return { ...event, context: { ...(event.context || {}), reminderPreference } };
 }
 
 export async function handleWebhook(request, env, nowMs) {
@@ -105,6 +134,18 @@ export async function handleWebhook(request, env, nowMs) {
       detail: captureDetail(body),
     });
     return json(200, { success: true, skipped: "unrecognized" });
+  }
+
+  try {
+    event = await enrichFollowUpPreference(env, event);
+  } catch (err) {
+    // Preserve the GHL fallback semantics in shadow mode while keeping the source-read failure
+    // visible in owned evidence. This never sends or changes GHL.
+    event = { ...event, context: { ...(event.context || {}), reminderPreference: "full" } };
+    await appendEvent(db, {
+      ts: nowMs, engine: "ingest", flowKey: "follow-up-session-reminders", contactId: event.contactId, appointmentId: event.appointmentId,
+      action: "follow_up_preference_lookup", outcome: "fallback", detail: { error: String((err && err.message) || err) },
+    });
   }
 
   // Still missing a field the engines key on (and enrichment unavailable/failed) → capture

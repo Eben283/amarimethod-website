@@ -34,6 +34,27 @@ export async function processStep({ enrollment, step, flow }, deps, nowMs) {
     channel: channelForType(step.type),
   };
 
+  // A control node is part of the same authored workflow, but is not a client message.
+  // In shadow it is evidence only; active mode may only exit a separately owned flow.
+  if (step.type === "exit_flow") {
+    if (flow.mode !== "active") {
+      await deps.logEvent({ ...base, channel: null, action: "would_exit", outcome: "would_execute", detail: { target: step.target, template: step.template } });
+      await deps.markStep(enrollment, step.stepIndex, "would_execute");
+      return { outcome: "would_execute" };
+    }
+    try {
+      const result = await deps.exitFlow?.(step.target, enrollment.contactId);
+      if (!result) throw new Error("owned exit target is unavailable");
+      await deps.logEvent({ ...base, channel: null, action: "exit", outcome: "executed", detail: { target: step.target, ...result } });
+      await deps.markStep(enrollment, step.stepIndex, "executed");
+      return { outcome: "executed" };
+    } catch (err) {
+      await deps.logEvent({ ...base, channel: null, action: "exit", outcome: "failed", detail: { target: step.target, error: String(err?.message || err) } });
+      await deps.markStep(enrollment, step.stepIndex, "failed");
+      return { outcome: "failed" };
+    }
+  }
+
   // Shadow is the default: anything not explicitly "active" observes without sending.
   if (flow.mode !== "active") {
     // This is the only exception to the shadow guarantee: a separately configured, single-contact

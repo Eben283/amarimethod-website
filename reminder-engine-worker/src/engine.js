@@ -17,6 +17,7 @@ import { deliverInitialInPersonStep, initialInPersonCutoverEligibility } from ".
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { deliverInitialVirtualStep, initialVirtualCutoverEligibility } from "./initial-virtual-cutover.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
+import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
 
 async function executionFlows(env) {
@@ -26,9 +27,10 @@ async function executionFlows(env) {
   const documents = [
     await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW),
     await publishedWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW.id),
+    await publishedWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW.id),
   ].filter(Boolean);
   const canonical = Object.fromEntries(documents.map((document) => [document.id, asExecutableWorkflow(document)]));
-  const canonicalOnly = new Set([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id]);
+  const canonicalOnly = new Set([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id]);
   return FLOWS
     .filter((flow) => !canonicalOnly.has(flow.flowKey) || canonical[flow.flowKey])
     .map((flow) => canonical[flow.flowKey] || flow);
@@ -133,6 +135,10 @@ export async function runSweep(env, nowMs, limit = 100) {
   const deps = {
     logEvent: (r) => appendEvent(db, r),
     markStep: (enr, idx, status) => markStep(db, enrollmentId(enr.flowKey, enr.appointmentId), idx, status),
+    exitFlow: async (target, contactId) => {
+      if (!target || !contactId) return null;
+      return exitEnrollmentsForContact(db, target, contactId);
+    },
     // active-mode only; copy templates are a later brick, so an active flow without templates
     // fails loudly rather than sending a blank message. Shadow flows never reach this.
     renderMessage: async () => { throw new Error("active-mode templates not built yet"); },
@@ -163,7 +169,7 @@ export async function runSweep(env, nowMs, limit = 100) {
     },
   };
 
-  const counts = { would_send: 0, sent: 0, failed: 0, skip: 0 };
+  const counts = { would_send: 0, would_execute: 0, executed: 0, sent: 0, failed: 0, skip: 0 };
   for (const item of due) {
     let flow = flowByKey[item.enrollment.flowKey];
     if ([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id].includes(flow?.flowKey) && item.enrollment.definitionVersion !== flow.definitionVersion) {

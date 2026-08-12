@@ -9,7 +9,9 @@ function requireText(value, label) {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${label} is required`);
 }
 
-const ACTIONS = new Set(["email", "internal_email", "sms", "internal_sms"]);
+const MESSAGE_ACTIONS = new Set(["email", "internal_email", "sms", "internal_sms"]);
+const CONTROL_ACTIONS = new Set(["exit_flow"]);
+const ACTIONS = new Set([...MESSAGE_ACTIONS, ...CONTROL_ACTIONS]);
 const CHANNELS = new Set(["email", "sms"]);
 const AUDIENCES = new Set(["client", "internal"]);
 const TIMING = /^(enroll|start-[1-9][0-9]*m)$/;
@@ -31,11 +33,23 @@ export function defineWorkflow(document) {
     requireText(node.at, `node ${node.id} timing`);
     requireText(node.action?.type, `node ${node.id} action type`);
     requireText(node.action?.template, `node ${node.id} template`);
+    if (!TIMING.test(node.at)) throw new Error(`node ${node.id} has unsupported timing`);
+    if (!ACTIONS.has(node.action.type)) throw new Error(`node ${node.id} has unsupported action type`);
+    if (node.when != null) {
+      requireText(node.when.field, `node ${node.id} condition field`);
+      const hasEquals = typeof node.when.equals === "string" && node.when.equals.trim();
+      const hasOneOf = Array.isArray(node.when.oneOf) && node.when.oneOf.length > 0 && node.when.oneOf.every((value) => typeof value === "string" && value.trim());
+      if (!hasEquals && !hasOneOf) throw new Error(`node ${node.id} condition value is required`);
+    }
+    if (CONTROL_ACTIONS.has(node.action.type)) {
+      requireText(node.action.target, `node ${node.id} control target`);
+      if (ids.has(node.id)) throw new Error(`duplicate workflow node ${node.id}`);
+      ids.add(node.id);
+      continue;
+    }
     requireText(node.message?.channel, `node ${node.id} message channel`);
     requireText(node.message?.audience, `node ${node.id} message audience`);
     requireText(node.message?.body, `node ${node.id} message body`);
-    if (!TIMING.test(node.at)) throw new Error(`node ${node.id} has unsupported timing`);
-    if (!ACTIONS.has(node.action.type)) throw new Error(`node ${node.id} has unsupported action type`);
     if (!CHANNELS.has(node.message.channel)) throw new Error(`node ${node.id} has unsupported message channel`);
     if (!AUDIENCES.has(node.message.audience)) throw new Error(`node ${node.id} has unsupported message audience`);
     const expectedChannel = node.action.type.endsWith("email") ? "email" : "sms";
@@ -73,6 +87,8 @@ export function executableFlow(workflow) {
       type: node.action.type,
       template: node.action.template,
       skipIfPast: node.skipIfPast,
+      when: node.when,
+      target: node.action.target,
     })),
   });
 }

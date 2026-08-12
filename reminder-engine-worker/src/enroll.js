@@ -38,6 +38,12 @@ export function isEligible(event, flow) {
   return true;
 }
 
+function conditionMatches(condition, context) {
+  if (!condition) return true;
+  const value = String(context?.[condition.field] ?? "");
+  return Array.isArray(condition.oneOf) ? condition.oneOf.includes(value) : value === condition.equals;
+}
+
 /**
  * Build an enrollment record for an eligible event, or null if not eligible / unschedulable.
  * Steps whose `skipIfPast` time has already passed at enrollment are marked "skipped" (never
@@ -48,7 +54,7 @@ export function enroll(event, flow, nowMs) {
   const startMs = Date.parse(event.startAt);
   if (!Number.isFinite(startMs)) return null; // no start → can't schedule
 
-  const steps = flow.steps.map((s, stepIndex) => {
+  const steps = flow.steps.filter((s) => conditionMatches(s.when, event.context)).map((s, stepIndex) => {
     const dueAt = resolveDueAt(s.at, startMs, nowMs);
     const skipped = s.skipIfPast === true && dueAt < nowMs;
     return {

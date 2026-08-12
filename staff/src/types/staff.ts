@@ -323,7 +323,7 @@ export interface AutomationFamilyResponse {
   enrollments: ContactAutomationEnrollment[];
   events: ContactAutomationEvent[];
   coverage: { enrollmentsTruncated: boolean; eventsTruncated: boolean };
-  runtime?: { verified: boolean; flows?: Array<{ verifiedAt?: string; flow?: { key: string; name: string; definitionVersion: number; configuredMode: string; delivery: 'active' | 'disabled' | 'unpublished'; receiptCoverage?: { sms: 'terminal_status_reconciled'; email: 'provider_acceptance_only' } }; receiptHealth?: { status: 'healthy' | 'degraded'; checkedAt: string; checked: number; recorded: number; pending: number; errors: number; lookbackDays: number; batchLimit: number } | null; definition?: CanonicalWorkflow | null; versions?: Array<{ version: number; state: 'draft' | 'published' | 'retired'; created_at: number; published_at: number | null }> }> };
+  runtime?: { verified: boolean; flows?: Array<{ verifiedAt?: string; flow?: { key: string; name: string; definitionVersion: number; configuredMode: string; delivery: 'active' | 'shadow' | 'disabled' | 'unpublished'; receiptCoverage?: { sms: 'terminal_status_reconciled'; email: 'provider_acceptance_only' } }; receiptHealth?: { status: 'healthy' | 'degraded'; checkedAt: string; checked: number; recorded: number; pending: number; errors: number; lookbackDays: number; batchLimit: number } | null; definition?: CanonicalWorkflow | null; versions?: Array<{ version: number; state: 'draft' | 'published' | 'retired'; created_at: number; published_at: number | null }> }> };
   evidence: { gaps: AutomationEvidenceGap[] };
 }
 
@@ -339,7 +339,7 @@ export interface CanonicalWorkflow {
     label: string;
     at: string;
     skipIfPast: boolean;
-    action: { type: string; template: string };
+    action: { type: string; template: string; target?: string };
     message: { audience: string; channel: string; from?: string; subject?: string; body: string };
   }>;
 }

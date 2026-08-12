@@ -23,7 +23,8 @@ import { handleGhlEvent } from "./ghl-events.js";
 import { runtimeStatus } from "./runtime-status.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
-import { ensurePublishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow } from "./workflow-store.js";
+import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
+import { ensurePublishedWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow } from "./workflow-store.js";
 import { appendEvent } from "./store.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -44,6 +45,11 @@ function requestedStaffActor(value) {
   const actor = String(value || "").trim();
   return /^[A-Za-z][A-Za-z .'-]{0,78}$/.test(actor) ? actor : "Staff";
 }
+
+const STAFF_MANAGED_WORKFLOWS = new Map([
+  [INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_IN_PERSON_WORKFLOW],
+  [FOLLOW_UP_WORKFLOW.id, FOLLOW_UP_WORKFLOW],
+]);
 
 export default {
   async scheduled(event, env, ctx) {
@@ -149,9 +155,30 @@ export default {
         });
         return json(200, { success: true, document });
       }
+      // This is deliberately a shadow-only release. It creates the D1 document the Worker
+      // reads, starts evidence collection, and cannot send to a client. It is the first
+      // operational state for a new migration slice — not an activation switch.
+      if (request.method === "POST" && url.pathname === "/workflow-stage") {
+        const body = await request.json();
+        if (body?.workflowId !== FOLLOW_UP_WORKFLOW.id) return json(400, { error: "unsupported workflow stage" });
+        const existing = await publishedWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW.id);
+        if (existing) return json(409, { error: "Follow-up workflow is already staged", document: existing });
+        const document = await publishBundledWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW);
+        await appendEvent(env.REMINDER_DB, {
+          ts: Date.now(), engine: "reminder", flowKey: document.id, definitionVersion: document.version,
+          action: "workflow_staged", outcome: "shadow", detail: { actor: requestedStaffActor(request.headers.get("X-Staff-Actor")), lane: "follow_up_shadow" },
+        });
+        return json(200, { success: true, document, state: "shadow" });
+      }
       if (request.method === "POST" && url.pathname === "/workflow-draft") {
         const body = await request.json();
-        const current = await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW);
+        const workflowId = body?.document?.id;
+        const bundled = STAFF_MANAGED_WORKFLOWS.get(workflowId);
+        if (!bundled) return json(400, { error: "unsupported workflow" });
+        const current = workflowId === INITIAL_IN_PERSON_WORKFLOW.id
+          ? await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW)
+          : await publishedWorkflow(env.REMINDER_DB, workflowId);
+        if (!current) return json(409, { error: "workflow must be shadow-staged before it can be edited" });
         if (body?.document?.id !== current.id || body.document.version !== current.version + 1) {
           return json(409, { error: `draft must be ${current.id} v${current.version + 1}` });
         }
@@ -160,7 +187,7 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/workflow-publish") {
         const body = await request.json();
-        if (body?.workflowId !== INITIAL_IN_PERSON_WORKFLOW.id || !Number.isInteger(body?.version) || !Number.isInteger(body?.expectedPublishedVersion)) {
+        if (!STAFF_MANAGED_WORKFLOWS.has(body?.workflowId) || !Number.isInteger(body?.version) || !Number.isInteger(body?.expectedPublishedVersion)) {
           return json(400, { error: "workflowId, version, and expectedPublishedVersion are required" });
         }
         const document = await publishDraftWorkflow(env.REMINDER_DB, body.workflowId, body.version, body.expectedPublishedVersion);
