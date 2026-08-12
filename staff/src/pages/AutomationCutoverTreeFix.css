@@ -1,13 +1,13 @@
 .automation-tree-node > article { height: auto; }
 
 .automation-tree-node.is-owned_live > article {
-  border-color: #78a99a;
-  background: #f4fbf7;
+  border-color: #83a9d6;
+  background: #edf5ff;
 }
 
 .automation-tree-node.is-owned_live header span {
-  background: #d7eee2;
-  color: #266b50;
+  background: #dbeafe;
+  color: #245c95;
 }
 
 .automation-cutover-scope-note {
