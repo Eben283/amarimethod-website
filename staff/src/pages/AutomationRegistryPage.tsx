@@ -193,6 +193,10 @@ export default function AutomationRegistryPage() {
     setParams(next, { replace: true });
   }
 
+  function returnToAutomationMap() {
+    navigate('/automations', { replace: true });
+  }
+
   function revealAutomationEvidence() {
     document.getElementById('automation-evidence')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -226,6 +230,7 @@ export default function AutomationRegistryPage() {
         families={registry.families}
         selectedKey={selectedFamilyKey}
         onSelect={selectMapFamily}
+        onBack={returnToAutomationMap}
         onRevealEvidence={revealAutomationEvidence}
         runtimes={mapRuntimes}
         activeEnrollments={mapActiveEnrollments}
@@ -259,6 +264,7 @@ function AutomationMasterMap({
   families,
   selectedKey,
   onSelect,
+  onBack,
   onRevealEvidence,
   runtimes,
   activeEnrollments,
@@ -266,6 +272,7 @@ function AutomationMasterMap({
   families: AutomationFamily[];
   selectedKey: string;
   onSelect: (key: string) => void;
+  onBack: () => void;
   onRevealEvidence: () => void;
   runtimes: RuntimeFlow[];
   activeEnrollments: ContactAutomationEnrollment[];
@@ -273,6 +280,14 @@ function AutomationMasterMap({
   const selectedFamily = families.find((family) => family.key === selectedKey)
     || families.find((family) => family.cutoverTree)
     || null;
+  if (selectedKey && selectedFamily) {
+    return <section className="automation-master-map is-selected-view" aria-label={`${selectedFamily.name} automation map`}>
+      <button className="automation-map-back" type="button" onClick={onBack}>← All automations</button>
+      {selectedFamily.cutoverTree
+        ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} runtimes={runtimes} activeEnrollments={activeEnrollments} />
+        : <AutomationMapPending family={selectedFamily} />}
+    </section>;
+  }
   return <section className="automation-master-map" aria-label="Amari master automation map">
     <header>
       <div>
