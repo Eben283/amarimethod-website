@@ -66,6 +66,21 @@ const FOLLOW_UP_GHL_CUTOVER_TREE = Object.freeze({
   ]),
 });
 
+const ASSESSMENT_PAID_BOOKING_CUTOVER_TREE = Object.freeze({
+  status: "live_workflow",
+  title: "Assessment paid booking",
+  summary: "GHL takes the payment and posts the order event. Amari owns the selected-slot intent, one booking operation, appointment creation, and the one-minute recovery guard.",
+  nodes: Object.freeze([
+    Object.freeze({ id: "assessment-payment", parentId: null, label: "Paid Assessment order", state: "verified_ghl", evidence: "Order Submission Webhook", detail: "GHL accepts the $29 payment and sends the order event to the owned booking endpoint." }),
+    Object.freeze({ id: "assessment-order-verify", parentId: "assessment-payment", label: "Verify paid order", state: "owned_live", evidence: "assessment-paid-booking definition", detail: "Amari verifies that the event belongs to the public Assessment product before continuing." }),
+    Object.freeze({ id: "assessment-intent", parentId: "assessment-order-verify", label: "Bind exact selected slot", state: "owned_live", evidence: "paid_booking_intents D1", detail: "Amari binds the paid order to the immutable checkout slot rather than mutable contact fields." }),
+    Object.freeze({ id: "assessment-book", parentId: "assessment-intent", label: "Create one GHL appointment", state: "owned_live", evidence: "booking_operations D1 lease", detail: "Amari owns the idempotent booking command and uses GHL only as the calendar provider." }),
+    Object.freeze({ id: "assessment-checkpoint", parentId: "assessment-book", label: "Checkpoint booked appointment", state: "owned_live", evidence: "paid_booking_intents appointment checkpoint", detail: "The appointment ID is retained before the request is considered complete." }),
+    Object.freeze({ id: "assessment-recovery", parentId: "assessment-intent", label: "One-minute recovery guard", state: "owned_live", evidence: "reminder-engine scheduled cycle", detail: "Amari reads recent unbound paid intents and resumes the same booking handler; it never implements a second booking path." }),
+    Object.freeze({ id: "assessment-review", parentId: "assessment-intent", label: "Staff manual review", state: "proven_owned", evidence: "manual_review durable intent state", detail: "A different active Assessment appointment stops automatic booking and opens an owned exception instead of a double-booking." }),
+  ]),
+});
+
 const RAW_FAMILIES = [
   {
     key: "appointment-event-ingest",
@@ -79,12 +94,13 @@ const RAW_FAMILIES = [
   },
   {
     key: "commerce-ledger-event-ingest",
-    name: "Commerce and ledger event ingest",
+    name: "Assessment paid booking",
     lifecycle: "platform",
     kind: "operational",
-    purpose: "Carry purchase, invoice, and session-balance evidence into owned money and entitlement processing.",
+    purpose: "Turn a paid public Assessment order into exactly one selected GHL appointment, with a durable one-minute recovery guard.",
     implementationUnits: ["shared-substrate", "purchase-cluster"],
-    definitionIds: [],
+    definitionIds: ["booking:assessment-paid-booking"],
+    cutoverTree: ASSESSMENT_PAID_BOOKING_CUTOVER_TREE,
     sourceRecords: [
       p("Invoice Paid Webhook Notification"),
       p("Order Submission Webhook"),

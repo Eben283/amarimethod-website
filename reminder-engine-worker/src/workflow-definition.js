@@ -1,3 +1,5 @@
+import { defineAssessmentPaidBookingWorkflow } from "../../functions/lib/assessment-paid-booking-workflow.js";
+
 function deepFreeze(value) {
   if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
   Object.freeze(value);
@@ -28,6 +30,11 @@ function optionalStringList(value, label) {
  * Validation lives here so callers cannot construct a half-runnable document.
  */
 export function defineWorkflow(document) {
+  if (document?.kind === "paid_booking") {
+    // Imported lazily here rather than copied into the Staff renderer. This
+    // keeps one validator for the map document read by both runtimes.
+    return defineAssessmentPaidBookingWorkflow(document);
+  }
   requireText(document?.id, "workflow id");
   requireText(document?.name, "workflow name");
   if (!Number.isInteger(document?.version) || document.version < 1) throw new Error("workflow version must be a positive integer");

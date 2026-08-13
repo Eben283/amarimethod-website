@@ -257,7 +257,9 @@ export async function onRequestGet(context) {
         ? ["initial-in-person", "initial-virtual"]
         : family.key === "follow-up-session-reminders"
           ? ["follow-up-session-reminders"]
-          : [];
+          : family.key === "commerce-ledger-event-ingest"
+            ? ["assessment-paid-booking"]
+            : [];
       const initialRuntimes = runtimeFlowKeys.length
         ? (await Promise.all(runtimeFlowKeys.map((flowKey) => reminderRuntimeEvidence(context, flowKey)))).filter(Boolean)
         : [];

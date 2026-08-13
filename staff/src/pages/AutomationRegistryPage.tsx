@@ -322,6 +322,7 @@ function AutomationHealthPilot({
   activeEnrollments: ContactAutomationEnrollment[];
 }) {
   const isFollowUp = family.key === 'follow-up-session-reminders';
+  const isPaidBooking = family.key === 'commerce-ledger-event-ingest';
   return (
     <section className="automation-health-pilot" aria-label={`${family.name} ownership map`}>
       <header>
@@ -333,18 +334,57 @@ function AutomationHealthPilot({
         <button type="button" onClick={onRevealEvidence}>Open live run evidence <ChevronRight size={15} /></button>
       </header>
       <OwnershipLegend />
-      {runtimes.some((runtime) => runtime.definition)
+      {isPaidBooking && runtimes.some((runtime) => runtime.definition)
+        ? <PaidBookingWorkflowCanvas runtime={runtimes.find((runtime) => runtime.flow?.key === 'assessment-paid-booking')!} />
+        : runtimes.some((runtime) => runtime.definition)
         ? <InitialWorkflowCanvas runtimes={runtimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} />
         : isFollowUp
           ? <FollowUpGhlWorkflowCanvas />
           : <CutoverTree tree={family.cutoverTree!} compact />}
-      <footer><b>Plain answer:</b> {isFollowUp
+      <footer><b>Plain answer:</b> {isPaidBooking
+        ? 'GHL still takes the $29 payment. The selected slot, booking lease, appointment command, checkpoint, and one-minute recovery guard are Amari-owned and read the same published definition shown above.'
+        : isFollowUp
         ? runtimes.some((runtime) => runtime.definition)
           ? 'Amari now owns this executable Follow-up definition and its shadow queue. GHL still sends the live messages until shadow evidence, the eight-person reconciliation, and activation are complete.'
           : 'GHL owns this whole live reminder path, including the eight-person queue recorded on August 11. Amari is not a sender here yet, so there is no parallel workflow to turn on accidentally.'
         : 'GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run. The virtual definition is saved but disabled, so it cannot send alongside GHL. GHL cleanup remains rollback protection, not a second sender.'}</footer>
     </section>
   );
+}
+
+function PaidBookingWorkflowCanvas({ runtime }: { runtime: RuntimeFlow }) {
+  const workflow = runtime.definition!;
+  const [selectedId, setSelectedId] = useState(workflow.nodes[0]?.id || '');
+  const [draft, setDraft] = useState<CanonicalWorkflow | null>(null);
+  const [status, setStatus] = useState('');
+  const [saving, setSaving] = useState(false);
+  useEffect(() => { setSelectedId(workflow.nodes[0]?.id || ''); setDraft(null); setStatus(''); }, [workflow.id, workflow.version]);
+  const shown = draft || workflow;
+  const selected = shown.nodes.find((node) => node.id === selectedId) || shown.nodes[0];
+  const beginEdit = () => {
+    setDraft({ ...workflow, version: workflow.version + 1, booking: { ...workflow.booking! }, recovery: { ...workflow.recovery! }, nodes: workflow.nodes.map((node) => ({ ...node })) });
+    setStatus('Draft changes do not alter a payment or an appointment. Publish is the single atomic switch the Pages handler and minute guard read.');
+  };
+  const updateBooking = (key: string, value: string | number) => setDraft((current) => current ? { ...current, booking: { ...current.booking!, [key]: value } } : current);
+  const updateRecovery = (key: string, value: number) => setDraft((current) => current ? { ...current, recovery: { ...current.recovery!, [key]: value } } : current);
+  const save = async (publish = false) => {
+    if (!draft) return;
+    setSaving(true); setStatus(publish ? 'Validating and publishing the booking map…' : 'Saving the booking-map draft…');
+    try {
+      await saveAutomationWorkflowDraft(draft);
+      if (publish) await publishAutomationWorkflow(draft.id, draft.version, workflow.version);
+      setStatus(publish ? `Published v${draft.version}. The booking endpoint and minute guard now read this definition.` : `Draft v${draft.version} saved. The live booking path is unchanged.`);
+      if (publish) window.location.reload();
+    } catch (error) { setStatus(error instanceof Error ? error.message : 'Booking map could not be saved.'); }
+    finally { setSaving(false); }
+  };
+  return <section className="automation-playbook-preview automation-paid-booking-canvas" aria-label="Assessment paid booking executable map">
+    <header><div><span>Canonical executable workflow</span><h3>One canvas. The actual paid-booking path.</h3><p>Each Amari node is the document used by the public checkout, order handler, and one-minute recovery guard. GHL’s payment trigger is shown as an external node because GHL still processes the card.</p></div><b className="is-live">Live definition · v{workflow.version}</b></header>
+    <div className="automation-playbook-preview-grid">
+      <div className="automation-playbook-flow">{shown.nodes.map((node, index) => <div key={node.id} className="automation-playbook-step">{index > 0 && <i className="automation-playbook-arrow" aria-hidden="true">↓</i>}<button type="button" className={`automation-playbook-node is-${node.operator === 'GHL' ? 'ghl' : node.operator === 'Staff' ? 'rollback' : 'amari'}${selected?.id === node.id ? ' is-selected' : ''}`} onClick={() => setSelectedId(node.id)}><span>{node.operator === 'GHL' ? 'GHL' : node.operator === 'Staff' ? 'STAFF EXIT' : 'AMARI'}</span><strong>{node.label}</strong><small>{node.timing}</small></button></div>)}</div>
+      <aside className="automation-playbook-inspector" aria-live="polite"><header><span>{selected?.kind === 'trigger' ? 'External trigger' : selected?.kind === 'recovery' ? 'Recovery guard' : selected?.kind === 'exit' ? 'Exit' : 'Action'}</span><h4>{selected?.label}</h4><p>{selected?.operator === 'GHL' ? 'GHL is the external payment authority. The owned endpoint verifies the order after this trigger.' : 'This is an Amari-owned executable part of the paid-booking definition.'}</p></header><dl><div><dt>Operated by</dt><dd>{selected?.operator}</dd></div><div><dt>When</dt><dd>{selected?.timing}</dd></div></dl>{!draft ? <footer><strong>This is live wiring.</strong> Edit creates a draft; publish changes the document read by the runtime without touching a customer already booked.</footer> : <section className="automation-playbook-message"><span>Executable settings</span><label>Default calendar<input value={draft.booking!.defaultCalendarId} onChange={(event) => updateBooking('defaultCalendarId', event.target.value)} /></label><label>Allowed calendars (one ID per line)<textarea rows={3} value={draft.booking!.allowedCalendarIds.join('\n')} onChange={(event) => setDraft((current) => current ? { ...current, booking: { ...current.booking!, allowedCalendarIds: event.target.value.split(/\n+/).map((value) => value.trim()).filter(Boolean) } } : current)} /></label><label>Appointment title<input value={draft.booking!.sessionTitle} onChange={(event) => updateBooking('sessionTitle', event.target.value)} /></label><label>Duration minutes<input type="number" value={draft.booking!.durationMinutes} onChange={(event) => updateBooking('durationMinutes', Number(event.target.value))} /></label><label>Recovery minimum age (seconds)<input type="number" value={draft.recovery!.minimumAgeSeconds} onChange={(event) => updateRecovery('minimumAgeSeconds', Number(event.target.value))} /></label><label>Recovery maximum age (minutes)<input type="number" value={draft.recovery!.maximumAgeMinutes} onChange={(event) => updateRecovery('maximumAgeMinutes', Number(event.target.value))} /></label></section>}<div className="canonical-workflow-controls">{!draft ? <button type="button" onClick={beginEdit}>Edit live map as draft v{workflow.version + 1}</button> : <><button type="button" disabled={saving} onClick={() => save(false)}>Save draft</button><button type="button" className="is-publish" disabled={saving} onClick={() => save(true)}>Publish v{draft.version}</button><button type="button" disabled={saving} onClick={() => { setDraft(null); setStatus(''); }}>Discard</button></>}{status && <output>{status}</output>}</div></aside>
+    </div>
+  </section>;
 }
 
 function InitialWorkflowCanvas({ runtimes, activeEnrollments, tree }: { runtimes: RuntimeFlow[]; activeEnrollments: ContactAutomationEnrollment[]; tree: AutomationCutoverTree }) {
@@ -633,7 +673,7 @@ function FamilyDetail({
 
       {isInPersonCutover && detail.runtime?.verified && <div className="automation-evidence-banner"><MessageSquareText size={17} /><span><strong>Delivery evidence is channel-specific.</strong> {activeInitialRuntime?.flow?.receiptCoverage?.sms === 'terminal_status_reconciled' ? (activeInitialRuntime.receiptHealth?.status === 'healthy' ? `SMS receipt reconciliation was healthy at ${exactTime(activeInitialRuntime.receiptHealth.checkedAt)} (${activeInitialRuntime.receiptHealth.recorded} new terminal outcome${activeInitialRuntime.receiptHealth.recorded === 1 ? '' : 's'}, ${activeInitialRuntime.receiptHealth.pending} still pending).` : activeInitialRuntime.receiptHealth?.status === 'degraded' ? `SMS receipt reconciliation was degraded at ${exactTime(activeInitialRuntime.receiptHealth.checkedAt)} with ${activeInitialRuntime.receiptHealth.errors} error${activeInitialRuntime.receiptHealth.errors === 1 ? '' : 's'}. Delivery evidence may be incomplete.` : 'SMS receipt reconciliation is configured, but no completed sweep can currently be proven.') : 'SMS receipt coverage is unavailable from the executing Worker.'} Email shows Gmail acceptance only; Gmail does not provide an affirmative recipient-delivery receipt.</span></div>}
 
-      {family.cutoverTree && !isInPersonCutover && !isFollowUpSourceMap && <CutoverTree tree={family.cutoverTree} />}
+      {family.cutoverTree && !isInPersonCutover && !isFollowUpSourceMap && family.key !== 'commerce-ledger-event-ingest' && <CutoverTree tree={family.cutoverTree} />}
 
       {isInPersonCutover && focused && activeInitialRuntime?.definition && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How this reminder run works</h3><p>The canvas is the one readable view of the current published in-person definition.</p></div><b>1</b></div>
@@ -645,12 +685,12 @@ function FamilyDetail({
         <FollowUpGhlWorkflowCanvas />
       </section>}
 
-      {focused && hasCanonicalRuntime && <section className="automation-detail-section automation-live-workflow-editor" aria-label="Published executable workflow">
+      {focused && hasCanonicalRuntime && family.key !== 'commerce-ledger-event-ingest' && <section className="automation-detail-section automation-live-workflow-editor" aria-label="Published executable workflow">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>Edit the workflow the Worker reads</h3><p>This is the same published D1 document rendered in the canvas. Saving a draft does not send or change GHL.</p></div><b>{canonicalRuntimes.filter((runtime) => runtime.definition).length}</b></div>
         {canonicalRuntimes.filter((runtime) => runtime.definition && runtime.flow).map((runtime) => <CanonicalWorkflowView key={runtime.flow!.key} workflow={runtime.definition!} delivery={runtime.flow!.delivery} />)}
       </section>}
 
-      {!isInPersonCutover && !isFollowUpSourceMap && <section className="automation-detail-section" id="workflow-definition">
+      {!isInPersonCutover && !isFollowUpSourceMap && family.key !== 'commerce-ledger-event-ingest' && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>{isInPersonCutover ? 'Canonical executable workflows' : 'Owned definition'}</h3><p>{isInPersonCutover ? 'The executing Worker and this view read these same scoped, versioned documents.' : 'Exact trigger, step timing, type, branch structure, and template key from code.'}</p></div><b>{isInPersonCutover ? canonicalRuntimes.filter((runtime) => runtime.definition).length : displayedDefinitions.length}</b></div>
         {displayedDefinitions.length ? displayedDefinitions.map((definition) => (
           <article className="automation-definition-card" key={definition.id}>

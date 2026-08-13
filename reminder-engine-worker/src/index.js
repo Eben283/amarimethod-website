@@ -24,6 +24,7 @@ import { runtimeStatus } from "./runtime-status.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
+import { ASSESSMENT_PAID_BOOKING_WORKFLOW } from "../../functions/lib/assessment-paid-booking-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow } from "./workflow-store.js";
 import { appendEvent } from "./store.js";
 
@@ -49,6 +50,7 @@ function requestedStaffActor(value) {
 const STAFF_MANAGED_WORKFLOWS = new Map([
   [INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_IN_PERSON_WORKFLOW],
   [FOLLOW_UP_WORKFLOW.id, FOLLOW_UP_WORKFLOW],
+  [ASSESSMENT_PAID_BOOKING_WORKFLOW.id, ASSESSMENT_PAID_BOOKING_WORKFLOW],
 ]);
 
 export default {
@@ -194,8 +196,8 @@ export default {
         const workflowId = body?.document?.id;
         const bundled = STAFF_MANAGED_WORKFLOWS.get(workflowId);
         if (!bundled) return json(400, { error: "unsupported workflow" });
-        const current = workflowId === INITIAL_IN_PERSON_WORKFLOW.id
-          ? await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW)
+        const current = [INITIAL_IN_PERSON_WORKFLOW.id, ASSESSMENT_PAID_BOOKING_WORKFLOW.id].includes(workflowId)
+          ? await ensurePublishedWorkflow(env.REMINDER_DB, bundled)
           : await publishedWorkflow(env.REMINDER_DB, workflowId);
         if (!current) return json(409, { error: "workflow must be shadow-staged before it can be edited" });
         if (body?.document?.id !== current.id || body.document.version !== current.version + 1) {

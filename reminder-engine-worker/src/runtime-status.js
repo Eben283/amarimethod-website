@@ -2,6 +2,7 @@ import { FLOWS } from "./config.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
+import { ASSESSMENT_PAID_BOOKING_WORKFLOW } from "../../functions/lib/assessment-paid-booking-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersions, asExecutableWorkflow } from "./workflow-store.js";
 
 function iso(value) {
@@ -17,7 +18,7 @@ function parseDetail(value) {
 // This is deliberately served by the executing Worker. Staff must not infer the
 // delivery gate from its own copy of the workflow configuration.
 export async function runtimeStatus(env, flowKey) {
-  const fallback = [INITIAL_IN_PERSON_WORKFLOW, INITIAL_VIRTUAL_WORKFLOW, FOLLOW_UP_WORKFLOW]
+  const fallback = [INITIAL_IN_PERSON_WORKFLOW, INITIAL_VIRTUAL_WORKFLOW, FOLLOW_UP_WORKFLOW, ASSESSMENT_PAID_BOOKING_WORKFLOW]
     .find((workflow) => workflow.id === flowKey);
   const canonical = [INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id].includes(fallback?.id)
     ? await publishedWorkflow(env.REMINDER_DB, fallback.id)
@@ -25,7 +26,9 @@ export async function runtimeStatus(env, flowKey) {
       ? await ensurePublishedWorkflow(env.REMINDER_DB, fallback)
       : null;
   const configured = FLOWS.find((candidate) => candidate.flowKey === flowKey);
-  const flow = canonical ? asExecutableWorkflow(canonical) : configured;
+  const flow = canonical?.kind === "paid_booking"
+    ? { flowKey: canonical.id, name: canonical.name, definitionVersion: canonical.version, mode: canonical.executionMode }
+    : canonical ? asExecutableWorkflow(canonical) : configured;
   if (!flow) return null;
 
   const [result, eventResult, receiptHealth] = await Promise.all([env.REMINDER_DB.prepare(
@@ -72,7 +75,8 @@ export async function runtimeStatus(env, flowKey) {
     }
   }
 
-  const cutoverEnabled = (flowKey === "initial-in-person" && env.INITIAL_IN_PERSON_CUTOVER === "enabled")
+  const cutoverEnabled = flowKey === ASSESSMENT_PAID_BOOKING_WORKFLOW.id
+    || (flowKey === "initial-in-person" && env.INITIAL_IN_PERSON_CUTOVER === "enabled")
     || (flowKey === "initial-virtual" && env.INITIAL_VIRTUAL_CUTOVER === "enabled")
     || (flowKey === FOLLOW_UP_WORKFLOW.id && flow.mode === "active" && env.FOLLOW_UP_DELIVERY_RELEASE === "approved");
   const delivery = canonical

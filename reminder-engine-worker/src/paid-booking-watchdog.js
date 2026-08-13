@@ -9,6 +9,8 @@
 
 import { onRequestPost as fulfillPaidBooking } from "../../functions/api/ghl-purchase-webhook.js";
 import { PAID_BOOKING_MAP } from "../../functions/api/ghl-purchase-webhook.js";
+import { ASSESSMENT_PAID_BOOKING_WORKFLOW, assessmentBookingFromWorkflow } from "../../functions/lib/assessment-paid-booking-workflow.js";
+import { ensurePublishedWorkflow } from "./workflow-store.js";
 import { ghlFetch } from "../../functions/lib/ghl.js";
 import { recordOpsError } from "../../functions/lib/ops-alert.js";
 import { parsePacificWallClock } from "../../functions/lib/datetime.js";
@@ -18,7 +20,7 @@ import {
 } from "../../functions/lib/paid-booking-intents.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
-export const ASSESSMENT_PRODUCT_ID = "6a66cf0103821ea09ea13f1b";
+export { ASSESSMENT_PRODUCT_ID } from "../../functions/lib/assessment-paid-booking-workflow.js";
 const MINIMUM_CHECKOUT_AGE_MS = 90_000;
 const MAXIMUM_CHECKOUT_AGE_MS = 30 * 60_000;
 const RETRY_INTERVAL_MS = 45_000;
@@ -40,8 +42,7 @@ function sameSlot(left, right) {
   return Number.isFinite(a) && Number.isFinite(b) && Math.abs(a - b) <= 60_000;
 }
 
-async function laterManualAssessmentAppointment(env, intent, nowMs) {
-  const booking = PAID_BOOKING_MAP[intent.product_id];
+async function laterManualAssessmentAppointment(env, intent, nowMs, booking = PAID_BOOKING_MAP[intent.product_id]) {
   const allowedCalendarIds = booking?.duplicateCalendarIds || [intent.calendar_id];
   const response = await ghlFetch(
     { env },
@@ -60,7 +61,7 @@ async function laterManualAssessmentAppointment(env, intent, nowMs) {
   )) || null;
 }
 
-function workerContext(env, contactId) {
+function workerContext(env, contactId, assessmentWorkflow) {
   return {
     env,
     request: new Request("https://internal.amari/ghl-purchase-webhook", {
@@ -80,6 +81,7 @@ function workerContext(env, contactId) {
     waitUntil(promise) {
       Promise.resolve(promise).catch((error) => console.error("[paid-booking-watchdog] deferred handler task failed", error));
     },
+    assessmentWorkflow,
   };
 }
 
@@ -87,8 +89,8 @@ function intentSafeContactId(value) {
   return String(value || "").trim().slice(0, 50);
 }
 
-async function defaultFulfill(env, intent) {
-  return fulfillPaidBooking(workerContext(env, intent.contact_id));
+async function defaultFulfill(env, intent, assessmentWorkflow) {
+  return fulfillPaidBooking(workerContext(env, intent.contact_id, assessmentWorkflow));
 }
 
 function parseResponse(body) {
@@ -109,6 +111,11 @@ export async function reconcilePaidBookingIntents(env, nowMs = Date.now(), depen
     return { checked: 0, recovered: 0, waitingForPayment: 0, manualReview: 0, errors: 0, skipped: "not-configured" };
   }
 
+  const workflow = dependencies.workflow || (env.REMINDER_DB
+    ? await ensurePublishedWorkflow(env.REMINDER_DB, ASSESSMENT_PAID_BOOKING_WORKFLOW, nowMs)
+    : ASSESSMENT_PAID_BOOKING_WORKFLOW);
+  const booking = assessmentBookingFromWorkflow(workflow);
+  const recovery = workflow.recovery;
   const rows = await env.ATTEND_DB.prepare(
     `SELECT intent_id, contact_id, product_id, calendar_id, start_time, timezone,
             status, order_id, appointment_id, created_at, expires_at, updated_at
@@ -119,17 +126,17 @@ export async function reconcilePaidBookingIntents(env, nowMs = Date.now(), depen
       ORDER BY created_at ASC
       LIMIT ?`,
   ).bind(
-    ASSESSMENT_PRODUCT_ID,
-    nowMs - MINIMUM_CHECKOUT_AGE_MS,
-    nowMs - MAXIMUM_CHECKOUT_AGE_MS,
+    workflow.booking.productId,
+    nowMs - recovery.minimumAgeSeconds * 1000,
+    nowMs - recovery.maximumAgeMinutes * 60_000,
     nowMs,
-    nowMs - RETRY_INTERVAL_MS,
-    MAX_PER_CYCLE,
+    nowMs - recovery.retryIntervalSeconds * 1000,
+    recovery.maxPerCycle,
   ).all();
 
   const intents = rows?.results || [];
-  const findManualAppointment = dependencies.findManualAppointment || laterManualAssessmentAppointment;
-  const fulfill = dependencies.fulfill || defaultFulfill;
+  const findManualAppointment = dependencies.findManualAppointment || ((runtime, intent, now) => laterManualAssessmentAppointment(runtime, intent, now, booking));
+  const fulfill = dependencies.fulfill || ((runtime, intent) => defaultFulfill(runtime, intent, workflow));
   const alert = dependencies.recordOpsError || recordOpsError;
   let recovered = 0;
   let waitingForPayment = 0;

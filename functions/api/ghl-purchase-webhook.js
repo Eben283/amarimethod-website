@@ -43,6 +43,8 @@ import {
   bindPaidBookingIntent,
   completePaidBookingIntent,
 } from "../lib/paid-booking-intents.js";
+import { currentAssessmentPaidBookingWorkflow } from "../lib/assessment-paid-booking-runtime.js";
+import { assessmentBookingFromWorkflow, ASSESSMENT_PRODUCT_ID } from "../lib/assessment-paid-booking-workflow.js";
 import {
   emitPathHop,
   paidBookPathForProduct,
@@ -78,7 +80,7 @@ export const PAID_BOOKING_MAP = {
     sessionTitle: "Amari Method Initial Session — Virtual",
     sessionTag: "booked-initial-virtual",
   },
-  "6a66cf0103821ea09ea13f1b": {
+  [ASSESSMENT_PRODUCT_ID]: {
     isNativePaidBooking: true,
     isNonCreditBooking: true,
     name: "Amari Assessment",
@@ -712,7 +714,19 @@ export async function onRequestPost(context) {
     }
 
     const pkg = PRODUCT_MAP[resolvedProductId] || null;
-    const booking = PAID_BOOKING_MAP[resolvedProductId] || null;
+    let booking = PAID_BOOKING_MAP[resolvedProductId] || null;
+    if (resolvedProductId === ASSESSMENT_PRODUCT_ID) {
+      try {
+        booking = assessmentBookingFromWorkflow(await currentAssessmentPaidBookingWorkflow(context));
+      } catch (err) {
+        await recordOpsError(context.env, "ghl-purchase-webhook:assessment", "Assessment workflow definition is unavailable", {
+          contactId,
+          orderId: resolvedOrderId,
+          error: String(err?.message || err).slice(0, 300),
+        });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Assessment workflow definition unavailable" }), { status: 503, headers });
+      }
+    }
     const productName = pkg?.name || booking?.name || booking?.sessionTitle || resolvedProductId;
     console.log(
       pkg

@@ -21,6 +21,8 @@ import { appointmentEndTime } from "../../lib/datetime.js";
 import { FIELD_IDS } from "../../lib/ghl-fields.js";
 import { recordOpsError } from "../../lib/ops-alert.js";
 import { recordAssessmentCheckout } from "../../lib/ops-assessment.js";
+import { currentAssessmentPaidBookingWorkflow } from "../../lib/assessment-paid-booking-runtime.js";
+import { assessmentBookingFromWorkflow } from "../../lib/assessment-paid-booking-workflow.js";
 import { emitPathHop } from "../../lib/ops-path-emit.js";
 import { assertSlotRespectsAppBuffer } from "../../lib/app-owned-buffer.js";
 import { createConfirmedAppointment } from "../../lib/ghl-appointment-handoff.js";
@@ -530,7 +532,23 @@ export async function onRequestPost(context) {
   const validationError = validateBody(body);
   if (validationError) return json({ error: validationError }, 400, origin);
 
-  const booking = ALLOWED_BOOKINGS[body.sessionType];
+  let booking = ALLOWED_BOOKINGS[body.sessionType];
+  // The public $29 entry point also reads the same published map as fulfillment
+  // and the minute guard.  Its public-format gate remains deliberately outside
+  // the map: publishing a booking definition cannot accidentally make the
+  // staged virtual assessment public.
+  if (body.sessionType === "amari_assessment") {
+    try {
+      const workflowBooking = assessmentBookingFromWorkflow(await currentAssessmentPaidBookingWorkflow(context));
+      if (!workflowBooking.duplicateCalendarIds.includes(booking.calendarId)) {
+        throw new Error("The public Assessment calendar is not allowed by the published booking workflow");
+      }
+      booking = { ...booking, ...workflowBooking, calendarId: booking.calendarId, title: booking.title };
+    } catch (err) {
+      console.error("[book/create-checkout] Assessment workflow definition unavailable:", err);
+      return json({ error: "Secure booking is temporarily unavailable. Please try again.", retryable: true }, 503, origin);
+    }
+  }
   const locationId = env.GHL_LOCATION_ID || DEFAULT_LOCATION_ID;
   const ip =
     request.headers.get("CF-Connecting-IP") ||

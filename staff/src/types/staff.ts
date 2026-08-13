@@ -328,6 +328,7 @@ export interface AutomationFamilyResponse {
 }
 
 export interface CanonicalWorkflow {
+  kind?: 'paid_booking';
   id: string;
   name: string;
   version: number;
@@ -337,11 +338,16 @@ export interface CanonicalWorkflow {
   nodes: Array<{
     id: string;
     label: string;
-    at: string;
-    skipIfPast: boolean;
-    action: { type: string; template: string; target?: string };
-    message: { audience: string; channel: string; from?: string; subject?: string; preheader?: string; body: string };
+    at?: string;
+    timing?: string;
+    operator?: string;
+    kind?: string;
+    skipIfPast?: boolean;
+    action?: { type: string; template: string; target?: string };
+    message?: { audience: string; channel: string; from?: string; subject?: string; preheader?: string; body: string };
   }>;
+  booking?: { productId: string; defaultCalendarId: string; allowedCalendarIds: string[]; durationMinutes: number; sessionTitle: string };
+  recovery?: { minimumAgeSeconds: number; maximumAgeMinutes: number; retryIntervalSeconds: number; maxPerCycle: number };
 }
 
 export interface QuizResults {
