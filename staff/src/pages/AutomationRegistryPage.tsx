@@ -23,6 +23,7 @@ import {
   getAutomationFamily,
   getContactAutomationEvidence,
   publishAutomationWorkflow,
+  previewAutomationWorkflowImpact,
   saveAutomationWorkflowDraft,
   searchOwnedContacts,
 } from '../lib/api';
@@ -34,6 +35,7 @@ import type {
   CanonicalWorkflow,
   ContactAutomationEvidence,
   ContactAutomationEnrollment,
+  WorkflowImpactPreview,
 } from '../types/staff';
 import './AutomationRegistryPage.css';
 import './AutomationCutoverTree.css';
@@ -790,11 +792,16 @@ function FamilyDetail({
 
 function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../types/staff').CanonicalWorkflow; delivery: 'active' | 'shadow' | 'disabled' | 'unpublished' }) {
   const [draft, setDraft] = useState<import('../types/staff').CanonicalWorkflow | null>(null);
+  const [impact, setImpact] = useState<{ signature: string; preview: WorkflowImpactPreview } | null>(null);
   const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
+  const requiresImpactPreview = workflow.id === 'follow-up-session-reminders';
+  const draftSignature = draft ? JSON.stringify(draft) : '';
+  const previewCurrent = !!draft && impact?.signature === draftSignature;
   const updateMessage = (index: number, patch: Record<string, string>) => setDraft((current) => current ? ({ ...current, nodes: current.nodes.map((node, i) => i === index ? { ...node, message: { ...node.message, ...patch } } : node) }) : current);
   const beginEdit = () => {
     setStatus('Draft changes do not send or change GHL. Copy edits apply only after an explicit publish.');
+    setImpact(null);
     setDraft({ ...workflow, version: workflow.version + 1, nodes: workflow.nodes.map((node) => ({ ...node, action: { ...node.action }, message: { ...node.message } })) });
   };
   const save = async () => {
@@ -804,8 +811,18 @@ function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../ty
     catch (error) { setStatus(error instanceof Error ? error.message : 'Draft could not be saved.'); }
     finally { setSaving(false); }
   };
-  const publish = async () => {
+  const previewImpact = async () => {
     if (!draft) return;
+    setSaving(true); setStatus('Reading every active pending Follow-up step affected by this exact draft…');
+    try {
+      const result = await previewAutomationWorkflowImpact(draft);
+      setImpact({ signature: JSON.stringify(draft), preview: result.preview });
+      setStatus(`Impact preview complete: ${result.preview.affected.length} pending step${result.preview.affected.length === 1 ? '' : 's'} would use the new version. Nothing was changed.`);
+    } catch (error) { setImpact(null); setStatus(error instanceof Error ? error.message : 'Impact preview could not be calculated.'); }
+    finally { setSaving(false); }
+  };
+  const publish = async () => {
+    if (!draft || (requiresImpactPreview && !previewCurrent)) return;
     setSaving(true); setStatus('Validating published-version lock…');
     try {
       await saveAutomationWorkflowDraft(draft);
@@ -818,9 +835,10 @@ function CanonicalWorkflowView({ workflow, delivery }: { workflow: import('../ty
     <header><span>{delivery === 'active' ? 'Published · live' : delivery === 'shadow' ? 'Published · shadow' : delivery === 'disabled' ? 'Published · disabled' : 'Not published'}</span><strong>{workflow.name}</strong><em>v{workflow.version}</em></header>
     <div className="canonical-workflow-controls">
       <p><strong>Published v{workflow.version} is the Worker document.</strong> Copy, sender, subject, and preheader edits are executable. Timing, branches, and order stay locked until Staff can preview and replan every pending person safely.</p>
-      {!draft ? <button type="button" onClick={beginEdit}>Edit as draft v{workflow.version + 1}</button> : <><button type="button" disabled={saving} onClick={save}>Save draft</button><button className="is-publish" type="button" disabled={saving} onClick={publish}>Publish v{draft.version}</button><button type="button" disabled={saving} onClick={() => { setDraft(null); setStatus(''); }}>Discard draft</button></>}
+      {!draft ? <button type="button" onClick={beginEdit}>Edit as draft v{workflow.version + 1}</button> : <><button type="button" disabled={saving} onClick={save}>Save draft</button>{requiresImpactPreview && <button type="button" disabled={saving} onClick={previewImpact}>Preview affected people and steps</button>}<button className="is-publish" type="button" disabled={saving || (requiresImpactPreview && !previewCurrent)} title={!requiresImpactPreview || previewCurrent ? 'Ready to publish this draft.' : 'Preview affected pending people and steps before publishing.'} onClick={publish}>Publish v{draft.version}</button><button type="button" disabled={saving} onClick={() => { setDraft(null); setImpact(null); setStatus(''); }}>Discard draft</button></>}
       {status && <output>{status}</output>}
     </div>
+    {draft && requiresImpactPreview && impact && <section className="automation-impact-preview" aria-live="polite"><header><h4>Publish impact preview {previewCurrent ? '· current draft' : '· stale after an edit'}</h4><p>{impact.preview.changedNodes.length} changed message node{impact.preview.changedNodes.length === 1 ? '' : 's'}; {impact.preview.affected.length} active pending step{impact.preview.affected.length === 1 ? '' : 's'} affected.</p></header>{impact.preview.affected.length ? <ul>{impact.preview.affected.map((item) => <li key={`${item.enrollmentId}:${item.stepIndex}`}><strong>{item.contactName || item.contactId || 'Person identity unresolved'}</strong><span>{item.template} · due {exactTime(item.dueAt)} · appointment {item.appointmentId || 'not recorded'}{item.contactName ? '' : ` · identity ${humanize(item.identityState)}`}</span></li>)}</ul> : <p>No active pending step will render a different message from this draft.</p>}{!previewCurrent && <p><strong>Preview again before publishing.</strong> The displayed result is for the earlier draft.</p>}</section>}
     <div className="automation-definition-grid"><div><h4>Trigger</h4><pre>{structured(workflow.trigger)}</pre></div><div><h4>Exits</h4><pre>{structured(workflow.exits)}</pre></div></div>
     {!draft && <div className="automation-step-list canonical-workflow-tree">{workflow.nodes.map((node, index) => <div key={node.id}><span>{index + 1}</span><p><strong>{node.label}</strong><small>{node.at} · {humanize(node.action.type)} · <code>{node.id}</code></small></p></div>)}</div>}
     {draft && <div className="canonical-workflow-editor" aria-label={`Draft workflow version ${draft.version}`}>

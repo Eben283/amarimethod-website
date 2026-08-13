@@ -350,6 +350,14 @@ export interface CanonicalWorkflow {
   recovery?: { minimumAgeSeconds: number; maximumAgeMinutes: number; retryIntervalSeconds: number; maxPerCycle: number };
 }
 
+export interface WorkflowImpactPreview {
+  workflowId: string;
+  currentVersion: number;
+  candidateVersion: number;
+  changedNodes: Array<{ nodeId: string; label: string; template: string; changedFields: string[] }>;
+  affected: Array<{ enrollmentId: string; contactId: string | null; contactName?: string | null; providerContactId?: string | null; identityState?: string; appointmentId: string; stepIndex: number; template: string; dueAt: number }>;
+}
+
 export interface QuizResults {
   patternSignature: string;
   recoveryPotentialScore: string | null;

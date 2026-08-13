@@ -25,7 +25,7 @@ import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { ASSESSMENT_PAID_BOOKING_WORKFLOW } from "../../functions/lib/assessment-paid-booking-workflow.js";
-import { ensurePublishedWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow } from "./workflow-store.js";
+import { changedMessageNodes, ensurePublishedWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow, workflowImpactPreview } from "./workflow-store.js";
 import { appendEvent } from "./store.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -203,8 +203,18 @@ export default {
         if (body?.document?.id !== current.id || body.document.version !== current.version + 1) {
           return json(409, { error: `draft must be ${current.id} v${current.version + 1}` });
         }
+        if (workflowId === FOLLOW_UP_WORKFLOW.id) changedMessageNodes(current, body.document);
         const document = await saveDraftWorkflow(env.REMINDER_DB, body.document);
         return json(200, { success: true, document, publishedVersion: current.version });
+      }
+      if (request.method === "POST" && url.pathname === "/workflow-impact") {
+        const body = await request.json();
+        const workflowId = body?.document?.id;
+        if (workflowId !== FOLLOW_UP_WORKFLOW.id) return json(400, { error: "impact preview is currently available for Follow-up copy amendments only" });
+        const current = await publishedWorkflow(env.REMINDER_DB, workflowId);
+        if (!current) return json(409, { error: "workflow must be shadow-staged before it can be previewed" });
+        const preview = await workflowImpactPreview(env.REMINDER_DB, current, body.document);
+        return json(200, { success: true, preview });
       }
       if (request.method === "POST" && url.pathname === "/workflow-publish") {
         const body = await request.json();

@@ -436,6 +436,10 @@ export async function publishAutomationWorkflow(workflowId: string, version: num
   return fetchApi('/staff-automations?view=workflow-publish', { method: 'POST', body: JSON.stringify({ workflowId, version, expectedPublishedVersion }) });
 }
 
+export async function previewAutomationWorkflowImpact(document: import('../types/staff').CanonicalWorkflow): Promise<{ success: true; preview: import('../types/staff').WorkflowImpactPreview }> {
+  return fetchApi('/staff-automations?view=workflow-impact', { method: 'POST', body: JSON.stringify({ document }) });
+}
+
 export async function addNote(contactId: string, body: string): Promise<{ success: boolean }> {
   return fetchApi('/staff-note', {
     method: 'POST',

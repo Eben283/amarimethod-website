@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
-import { ensurePublishedWorkflow, publishBundledWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, workflowVersion } from "./workflow-store.js";
+import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
+import { changedMessageNodes, ensurePublishedWorkflow, publishBundledWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, workflowVersion } from "./workflow-store.js";
 
 function fakeD1() {
   const rows = [];
@@ -42,6 +43,18 @@ function fakeD1() {
 }
 
 describe("workflow version store", () => {
+  it("limits Follow-up publish impact previews to copy changes on stable nodes", () => {
+    const draft = structuredClone(FOLLOW_UP_WORKFLOW);
+    draft.version += 1;
+    draft.nodes[0].message.body = `${draft.nodes[0].message.body}\nUpdated wording.`;
+    expect(changedMessageNodes(FOLLOW_UP_WORKFLOW, draft)).toEqual([expect.objectContaining({ nodeId: draft.nodes[0].id, template: draft.nodes[0].action.template })]);
+
+    const structuralDraft = structuredClone(FOLLOW_UP_WORKFLOW);
+    structuralDraft.version += 1;
+    structuralDraft.nodes[0].at = "start-2m";
+    expect(() => changedMessageNodes(FOLLOW_UP_WORKFLOW, structuralDraft)).toThrow("requires a separate replan review");
+  });
+
   it("seeds the shipped document as the first published truth", async () => {
     const db = fakeD1();
     expect(await ensurePublishedWorkflow(db, INITIAL_IN_PERSON_WORKFLOW, 100)).toEqual(INITIAL_IN_PERSON_WORKFLOW);

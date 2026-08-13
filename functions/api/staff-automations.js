@@ -193,7 +193,7 @@ export async function onRequestPost(context) {
   if (!context.env.WORKER_AUTH_SECRET) return new Response(JSON.stringify({ error: "Workflow runtime is not configured" }), { status: 503, headers });
   const body = await context.request.json().catch(() => null);
   const view = new URL(context.request.url).searchParams.get("view");
-  const path = view === "workflow-draft" ? "/workflow-draft" : view === "workflow-publish" ? "/workflow-publish" : null;
+  const path = view === "workflow-draft" ? "/workflow-draft" : view === "workflow-publish" ? "/workflow-publish" : view === "workflow-impact" ? "/workflow-impact" : null;
   if (!path || !body) return new Response(JSON.stringify({ error: "Invalid workflow operation" }), { status: 400, headers });
   const response = await fetch(`${REMINDER_ENGINE_URL}${path}`, {
     method: "POST",
@@ -201,6 +201,24 @@ export async function onRequestPost(context) {
     body: JSON.stringify(body),
   });
   const result = await response.text();
+  if (view === "workflow-impact" && response.ok) {
+    try {
+      const body = JSON.parse(result);
+      if (Array.isArray(body?.preview?.affected)) {
+        body.preview.affected = await Promise.all(body.preview.affected.map(async (item) => {
+          const person = item.contactId ? await contactIdentityForReference(context, item.contactId) : null;
+          return {
+            ...item,
+            contactId: person?.ownedContactId || item.contactId || null,
+            contactName: person?.name || null,
+            providerContactId: person?.providerContactId || null,
+            identityState: person?.state || "not_recorded",
+          };
+        }));
+      }
+      return new Response(JSON.stringify(body), { status: response.status, headers });
+    } catch { /* Preserve the authenticated Worker response if its JSON is malformed. */ }
+  }
   return new Response(result, { status: response.status, headers });
 }
 
