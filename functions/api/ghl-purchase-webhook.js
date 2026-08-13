@@ -774,6 +774,9 @@ export async function onRequestPost(context) {
         );
         return new Response(JSON.stringify({ success: false, manualReview: true, error: "Ambiguous paid booking intent" }), { status: 200, headers });
       }
+      if (intentBinding.state === "manual_review") {
+        return new Response(JSON.stringify({ success: false, manualReview: true, error: "Paid booking intent is held for staff review" }), { status: 200, headers });
+      }
       if (intentBinding.state !== "bound") {
         await recordIntentFailure(new Error("no matching durable checkout slot"), "no compatible intent");
         return new Response(JSON.stringify({ success: false, retryable: true, error: "Paid booking intent not found" }), { status: 500, headers });

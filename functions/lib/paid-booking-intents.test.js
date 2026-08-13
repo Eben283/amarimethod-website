@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { bindPaidBookingIntent, completePaidBookingIntent, createPaidBookingIntent } from "./paid-booking-intents.js";
+import {
+  bindPaidBookingIntent,
+  completePaidBookingIntent,
+  createPaidBookingIntent,
+  flagPaidBookingIntentForManualReview,
+  touchPaidBookingIntent,
+} from "./paid-booking-intents.js";
 
 function fakeDb() {
   const rows = new Map();
@@ -28,6 +34,20 @@ function fakeDb() {
             const row = rows.get(intentId);
             if (!row || !["bound", "completed"].includes(row.status) || (row.appointment_id && row.appointment_id !== appointmentId)) return { meta: { changes: 0 } };
             Object.assign(row, { status: "completed", appointment_id: appointmentId, updated_at: now });
+            return { meta: { changes: 1 } };
+          }
+          if (sql.includes("SET status = 'manual_review'")) {
+            const [now, intentId] = args;
+            const row = rows.get(intentId);
+            if (!row || !["pending", "bound"].includes(row.status)) return { meta: { changes: 0 } };
+            Object.assign(row, { status: "manual_review", updated_at: now });
+            return { meta: { changes: 1 } };
+          }
+          if (sql.includes("SET updated_at = ?")) {
+            const [now, intentId] = args;
+            const row = rows.get(intentId);
+            if (!row || row.status !== "pending") return { meta: { changes: 0 } };
+            Object.assign(row, { updated_at: now });
             return { meta: { changes: 1 } };
           }
           throw new Error(`Unhandled SQL: ${sql}`);
@@ -104,5 +124,20 @@ describe("paid booking intents", () => {
     await bindPaidBookingIntent(db, { orderId: "order-1", contactId: "contact-1", productId: "assessment", orderCreatedAt: 200 }, { now: 300, skewMs: 0 });
     await completePaidBookingIntent(db, intent.intentId, "appt-1", { now: 400 });
     expect(db.rows.get(intent.intentId)).toMatchObject({ status: "completed", appointment_id: "appt-1" });
+  });
+
+  it("holds a human-recovered booking and never lets a delayed webhook re-open it", async () => {
+    const db = fakeDb();
+    await createPaidBookingIntent(db, intent, { now: 100, ttlMs: 1000 });
+    await bindPaidBookingIntent(db, { orderId: "order-1", contactId: "contact-1", productId: "assessment", orderCreatedAt: 200 }, { now: 300, skewMs: 0 });
+    expect((await flagPaidBookingIntentForManualReview(db, intent.intentId, { now: 350 })).ok).toBe(true);
+    expect((await bindPaidBookingIntent(db, { orderId: "order-1", contactId: "contact-1", productId: "assessment" })).state).toBe("manual_review");
+  });
+
+  it("uses updated_at as a bounded recovery-check clock while payment is pending", async () => {
+    const db = fakeDb();
+    await createPaidBookingIntent(db, intent, { now: 100, ttlMs: 1000 });
+    expect((await touchPaidBookingIntent(db, intent.intentId, { now: 150 })).ok).toBe(true);
+    expect(db.rows.get(intent.intentId).updated_at).toBe(150);
   });
 });

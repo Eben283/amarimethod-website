@@ -90,7 +90,15 @@ export async function bindPaidBookingIntent(db, input, options = {}) {
   const existing = await db.prepare("SELECT * FROM paid_booking_intents WHERE order_id = ?")
     .bind(input.orderId)
     .first();
-  if (existing) return { state: "bound", intent: normalize(existing) };
+  // A recovery guard can deliberately hold an intent for staff when it sees a
+  // human-created appointment at a different time. Never let a delayed GHL
+  // webhook turn that explicit stop into a second appointment.
+  if (existing) {
+    return {
+      state: existing.status === "manual_review" ? "manual_review" : "bound",
+      intent: normalize(existing),
+    };
+  }
 
   const now = Number(options.now ?? Date.now());
   const rawOrderAt = input.orderCreatedAt;
@@ -134,4 +142,33 @@ export async function completePaidBookingIntent(db, intentId, appointmentId, opt
   ).bind(appointmentId, now, intentId, appointmentId).run();
   if (changesOf(updated) !== 1) throw new Error("paid-booking intent completion was not accepted");
   return { ok: true };
+}
+
+// The payment-recovery worker touches a recent pending intent after each safe
+// check. `updated_at` is intentionally reused as its bounded retry clock: it
+// avoids an additional schema table while leaving the immutable selected slot
+// and checkout evidence untouched.
+export async function touchPaidBookingIntent(db, intentId, options = {}) {
+  if (!db || !intentId) throw new TypeError("paid-booking touch identity required");
+  const now = Number(options.now ?? Date.now());
+  const updated = await db.prepare(
+    `UPDATE paid_booking_intents
+        SET updated_at = ?
+      WHERE intent_id = ? AND status = 'pending'`,
+  ).bind(now, intentId).run();
+  return { ok: changesOf(updated) === 1 };
+}
+
+// An unexpected staff-created appointment is a safety stop, not a failure to
+// be retried. Keep the durable intent visible but make every later webhook or
+// worker pass stop until a person deliberately resolves it.
+export async function flagPaidBookingIntentForManualReview(db, intentId, options = {}) {
+  if (!db || !intentId) throw new TypeError("paid-booking manual-review identity required");
+  const now = Number(options.now ?? Date.now());
+  const updated = await db.prepare(
+    `UPDATE paid_booking_intents
+        SET status = 'manual_review', updated_at = ?
+      WHERE intent_id = ? AND status IN ('pending', 'bound')`,
+  ).bind(now, intentId).run();
+  return { ok: changesOf(updated) === 1 };
 }

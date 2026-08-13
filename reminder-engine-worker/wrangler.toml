@@ -17,6 +17,14 @@ binding = "REMINDER_DB"
 database_name = "amari-automation"
 database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
 
+# Durable checkout-slot/booking-operation state. The one-minute recovery guard
+# only reads recent public Assessment intents from this database and resumes the
+# existing Pages fulfillment handler; it never owns a second booking path.
+[[d1_databases]]
+binding = "ATTEND_DB"
+database_name = "amari-attendance"
+database_id = "8c66fe4c-bc3a-4a2d-905c-6f18f20f6faa"
+
 # Token cache for read-only GHL API lookups (webhook enrichment — the ghl-token-refresh
 # worker keeps the token fresh; same namespace as Pages + the other workers).
 [[kv_namespaces]]
