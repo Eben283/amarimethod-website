@@ -1,7 +1,9 @@
 // Amari Method Partner PWA — Service Worker
 // Caches the app shell so Sarah can open it instantly from her home screen
 
-const CACHE_NAME = 'amari-partner-v5';
+// Bump when the app shell changes so installed partner PWAs do not retain
+// an obsolete header or identity asset.
+const CACHE_NAME = 'amari-partner-v6';
 const SHELL_URLS = [
   '/partner-app',
   '/css/style-v5.css?v=15',
