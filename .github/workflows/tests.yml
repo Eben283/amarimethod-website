@@ -33,4 +33,7 @@ jobs:
       - run: npm run check:owned-access
       - run: npm run check:build-contract
       - run: npm run check:app-separation
+      # Cloudflare Pages serves the committed dist/ directory directly. Fail before
+      # the build can mask a missing committed public asset.
+      - run: npm run check:dist-assets
       - run: npm run build

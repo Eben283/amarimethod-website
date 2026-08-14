@@ -14,6 +14,7 @@
     "check:owned-access": "node scripts/check-owned-access.mjs",
     "check:app-separation": "node scripts/check-app-separation.mjs",
     "check:build-contract": "node scripts/check-build-contract.mjs",
+    "check:dist-assets": "node scripts/check-dist-assets.mjs",
     "test:staff-legibility": "vitest run --config functions/api/vitest.config.js staff/src/lib/legibility-contract.test.ts staff/src/lib/outreach-scope.test.ts staff/src/lib/training-sections.test.ts",
     "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config call-coach-worker/vitest.config.js && vitest run --config reminder-engine-worker/vitest.config.js && vitest run --config nurture-engine-worker/vitest.config.js && vitest run --config crm-mirror-worker/vitest.config.js && node --test morning-sms-worker/src/*.test.js && npm run test:staff-legibility"
   },
