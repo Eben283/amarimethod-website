@@ -242,5 +242,17 @@ header.site.menu-open .hdr-menu span:last-child{transform:translateY(-3.25px) ro
 }
 
 /* Newsletter form states */
+.news{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:4px;border:1px solid rgba(23,26,24,.22);background:var(--paper);max-width:460px}
+.news input{min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:400 14px/1.2 var(--sans);padding:11px 12px}
+.news input::placeholder{color:var(--body);opacity:.7}
+.news input:focus-visible{outline:1px solid var(--ink);outline-offset:-1px}
+.news button{appearance:none;border:0;border-radius:0;background:var(--carbon);color:var(--chalk);font:500 12px/1 var(--sans);letter-spacing:.02em;padding:0 17px;min-height:40px;cursor:pointer;transition:background .2s var(--ease)}
+.news button:hover{background:var(--mineral)}
 .news-msg{margin:14px auto 0;font-size:13.5px;max-width:32ch}
 .news-msg:empty{display:none}
+
+@media (max-width:640px){
+  .art-signup .news{grid-template-columns:1fr;padding:0;border:0;background:transparent;gap:10px}
+  .art-signup .news input{background:var(--paper);border:1px solid rgba(23,26,24,.22);min-height:46px}
+  .art-signup .news button{width:100%;min-height:46px}
+}
