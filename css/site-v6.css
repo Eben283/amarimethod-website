@@ -235,6 +235,12 @@ header.site.menu-open .hdr-menu span:last-child{transform:translateY(-3.25px) ro
   header.site.menu-open .mobile-nav .btn{padding-left:20px;padding-right:20px}
 }
 
+/* The desktop hero deliberately leaves room for copy on the left. On a phone,
+   surface the person rather than preserving that wide-screen crop. */
+@media (max-width:640px){
+  .home-hero .hero-bg{background-position:74% center}
+}
+
 /* Newsletter form states */
 .news-msg{margin:14px auto 0;font-size:13.5px;max-width:32ch}
 .news-msg:empty{display:none}
