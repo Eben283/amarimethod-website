@@ -223,6 +223,18 @@ header.site.menu-open .hdr-menu span:last-child{transform:translateY(-3.25px) ro
   body.menu-open{overflow:hidden}
 }
 
+/* Keep the mobile header intentional rather than letting the controls press
+   into the viewport edge: the wordmark yields a little space to the primary
+   action and the menu retains a clear tap target. */
+@media (max-width:480px){
+  .hdr-row{padding:0 20px;gap:0}
+  .wordmark{width:154px}
+  .hdr-right{gap:16px}
+  .btn.hdr-book{padding:11px 19px}
+  .hdr-menu{padding:9px 5px 9px 9px}
+  header.site.menu-open .mobile-nav .btn{padding-left:20px;padding-right:20px}
+}
+
 /* Newsletter form states */
 .news-msg{margin:14px auto 0;font-size:13.5px;max-width:32ch}
 .news-msg:empty{display:none}
