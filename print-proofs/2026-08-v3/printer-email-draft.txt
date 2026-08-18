@@ -1,0 +1,19 @@
+SUBJECT: Digital proof request — Amari Method business card, postcard, and flyer
+
+Hi [Printer name],
+
+Please prepare digital proofs and a quote for the attached Amari Method files:
+
+- Amari-Method-Business-Card-Final-v3.pdf — 3.5 × 2 in trim, double-sided, 0.125 in bleed (PDF pages: 3.75 × 2.25 in)
+- Amari-Method-Postcard-Final-v3.pdf — 4 × 6 in trim, double-sided, 0.125 in bleed (PDF pages: 6.25 × 4.25 in)
+- Amari-Method-Flyer-Final-v3.pdf — US Letter trim, one-sided, 0.125 in bleed (PDF page: 8.75 × 11.25 in)
+
+Please confirm the trim and bleed geometry, safe areas, embedded fonts, and color handling. Please also recommend an appropriate matte or uncoated stock for each piece and provide price breaks at 100, 250, and 500 copies, along with turnaround and pickup or shipping options.
+
+Please do not print anything until I approve the digital proofs in writing.
+
+Thank you,
+Eben
+Amari Method
+
+DRAFT STATUS: NOT SENT. Do not attach or send until the v3 proof is approved and the three printer PDFs pass page-geometry, embedded-font, color-profile, and actual-size proof checks.
