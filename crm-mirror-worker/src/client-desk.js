@@ -272,9 +272,11 @@ const CLIENT_DESK_HTML = `<!doctype html>
     root.querySelectorAll('[data-staff-handoff]').forEach((link) => link.addEventListener('click', (event) => {
       if (window.parent === window) return;
       const parentOrigin = new URLSearchParams(window.location.search).get('parent_origin');
-      if (parentOrigin !== 'https://www.amarimethod.com') return;
+      if (!['https://amarimethod.com', 'https://www.amarimethod.com'].includes(parentOrigin)) return;
       const destination = new URL(link.href);
-      if (destination.origin !== parentOrigin || !['/staff/pos', '/staff/automations'].includes(destination.pathname)) return;
+      const isAutomationDetail = destination.pathname.startsWith('/staff/automations/')
+        && destination.pathname.split('/').length === 4;
+      if (destination.origin !== parentOrigin || (!['/staff/pos', '/staff/automations'].includes(destination.pathname) && !isAutomationDetail)) return;
       event.preventDefault();
       const client = link.dataset.contactId ? {
         id: link.dataset.contactId,

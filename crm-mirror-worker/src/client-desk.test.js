@@ -326,6 +326,8 @@ describe("Client Desk message rendering", () => {
     expect(rendered).toContain("Inspect workflow");
     expect(rendered).toContain("/staff/automations/initial-session-lifecycle?contact=owned_person_1");
     expect(rendered).toContain('data-staff-handoff');
+    expect(clientDeskHtml()).toContain("https://amarimethod.com");
+    expect(clientDeskHtml()).toContain("isAutomationDetail");
   });
 
   it("links a mirrored message only when an exact owned run reference attributes it", () => {
