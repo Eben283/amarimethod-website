@@ -24,3 +24,10 @@ The v2 PDFs in Staff Media are immutable and are not modified by this branch.
 - Source and dist proof files are exact mirrors for Cloudflare branch-preview review.
 
 Required before printer export: visual approval, 300-DPI/bleed export, embedded-font and page-geometry checks, physical-size proof, then upload clearly versioned printer files to Staff Media.
+
+## 3 × 3 square sticker proof
+
+- Exact source assets: outlined Gothia wordmark blob `89483a0b7dd832b5d7af6d25f87f2881b30825ad`, ABC Diatype, ink `#171A18`, and warm paper `#F4F3EE`, all pinned to website commit `0e57e5279d6ee22670398bb14ca267faa6592070`.
+- Copy is limited to `YOUR BODY CAN CHANGE IN A MOMENT.` and `SAN FRANCISCO`. There is no QR, URL, symbol, extra copy, special-finish treatment, or rounded-corner assumption.
+- Jukebox's current square-sticker product offers a 3 × 3 in square preset with sharp edges. Its sticker artwork guide requires about 1.5 mm bleed beyond the cut line and at least 1.5 mm safe area inside it, recommends vector artwork or 300 DPI raster artwork, and recommends CMYK for production: https://www.jukeboxprint.com/custom-stickers/square and https://www.jukeboxprint.com/custom-stickers
+- This browser proof uses a 3.125 × 3.125 in artboard for a 3 × 3 in trim. Important content is held 0.25 in inside trim, which is more conservative than the product's 1.5 mm minimum. It is review-only RGB browser output, not a production PDF or cut-line file.
