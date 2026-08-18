@@ -129,6 +129,63 @@ export async function claimBookingOperation(db, input, options = {}) {
   return { state: "in_progress", operation: normalizeRow(row) };
 }
 
+function sameCreateAttempt(attempt, details) {
+  return Boolean(attempt) &&
+    attempt.kind === details.kind &&
+    attempt.contactId === details.contactId &&
+    attempt.calendarId === details.calendarId &&
+    attempt.startTime === details.startTime;
+}
+
+export async function checkpointBookingCreateAttempt(db, opKey, details, options = {}) {
+  if (!db || !opKey || !details?.kind || !details?.contactId ||
+      !details?.calendarId || !details?.startTime) {
+    throw new TypeError("booking create-attempt identity required");
+  }
+
+  const row = await readRow(db, opKey);
+  if (!row || row.status !== "processing" || row.appointment_id ||
+      row.kind !== details.kind || row.contact_id !== details.contactId ||
+      row.calendar_id !== details.calendarId || row.start_time !== details.startTime) {
+    throw new Error("booking create-attempt checkpoint was not accepted");
+  }
+
+  const priorResult = normalizeRow(row).result;
+  if (priorResult && !sameCreateAttempt(priorResult.createAttempt, details)) {
+    throw new Error("booking create-attempt provenance conflicts with the operation");
+  }
+
+  const now = Number(options.now ?? Date.now());
+  const leaseUntil = now + Number(options.leaseMs ?? 120_000);
+  const createAttempt = priorResult?.createAttempt || {
+    at: now,
+    kind: details.kind,
+    contactId: details.contactId,
+    calendarId: details.calendarId,
+    startTime: details.startTime,
+  };
+  const result = { ...(priorResult || {}), createAttempt };
+  const updated = await db.prepare(
+    `UPDATE booking_operations
+        SET result_json = ?, lease_until = ?, updated_at = ?
+      WHERE op_key = ? AND status = 'processing' AND appointment_id IS NULL
+        AND kind = ? AND contact_id = ? AND calendar_id = ? AND start_time = ?`,
+  ).bind(
+    JSON.stringify(result),
+    leaseUntil,
+    now,
+    opKey,
+    details.kind,
+    details.contactId,
+    details.calendarId,
+    details.startTime,
+  ).run();
+  if (changesOf(updated) !== 1) {
+    throw new Error("booking create-attempt checkpoint was not accepted");
+  }
+  return { ok: true, createAttempt };
+}
+
 export async function checkpointBookingAppointment(db, opKey, appointmentId, options = {}) {
   if (!db || !opKey || !appointmentId) throw new TypeError("booking checkpoint identity required");
   const now = Number(options.now ?? Date.now());
