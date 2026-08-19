@@ -27,6 +27,7 @@ import { emitPathHop } from "../../lib/ops-path-emit.js";
 import { assertSlotRespectsAppBuffer } from "../../lib/app-owned-buffer.js";
 import { createConfirmedAppointment } from "../../lib/ghl-appointment-handoff.js";
 import { createPaidBookingIntent } from "../../lib/paid-booking-intents.js";
+import { resolvePartnerReferral, recordPartnerReferralAttribution } from "../../lib/partner-referrals.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://www.amarimethod.com",
@@ -292,6 +293,7 @@ export function validateBody(b) {
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(b.email)) return "Invalid email";
   if (b.phone.replace(/\D/g, "").length < 10) return "Invalid phone";
   if (!ALLOWED_BOOKINGS[b.sessionType]) return "Invalid sessionType";
+  if (b.partnerReferralCode != null && b.partnerReferralCode !== "" && (b.sessionType !== "amari_assessment" || !resolvePartnerReferral(b.partnerReferralCode))) return "Invalid partner referral";
   const booking = ALLOWED_BOOKINGS[b.sessionType];
   if (booking.enabled === false) return "This booking is not yet available";
   if (booking.calendarId !== b.calendarId) {
@@ -598,6 +600,18 @@ export async function onRequestPost(context) {
       422,
       origin,
     );
+  }
+
+  const partnerReferral = resolvePartnerReferral(body.partnerReferralCode);
+  if (partnerReferral) {
+    try {
+      const attribution = await recordPartnerReferralAttribution(env.ATTEND_DB, { partner: partnerReferral, contactId });
+      if (attribution.state === "conflict") return json({ error: "This person already has a different referral source.", code: "partner_attribution_conflict" }, 409, origin);
+    } catch (err) {
+      console.error("[book/create-checkout] partner attribution failed:", err);
+      context.waitUntil(recordOpsError(env, "book/create-checkout:partner", "partner attribution was not saved", { contactId, partnerEntityId: partnerReferral.entityId, message: err instanceof Error ? err.message.slice(0, 300) : String(err).slice(0, 300) }));
+      return json({ error: "Referral tracking is temporarily unavailable. Please try again.", retryable: true }, 503, origin);
+    }
   }
 
   // Persist the immutable payment-to-slot intent before the browser leaves
