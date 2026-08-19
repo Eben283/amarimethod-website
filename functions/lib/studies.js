@@ -64,7 +64,7 @@ export const STUDIES = {
     module: "spring-step",
     condition: "plantar fasciitis / heel & foot pain",
     shortName: "Foot Pain Study",
-    bodyQuestion: { key: "leg", label: "Which leg?", options: ["Left", "Right", "Both"] },
+    bodyQuestion: { key: "leg", label: "Which foot?", options: ["Left", "Right", "Both"] },
     instrument: { abbr: "FAAM", name: "Foot & Ankle Ability Measure (ADL)", recall: "past week", license: "free-clinical-research (Martin)" },
     venues: ["Running clubs", "Run-specialty stores", "Park trailheads"],
     status: "live",

@@ -55,7 +55,7 @@
   main.study-page .choice-group input:checked + label{background:var(--ink);border-color:var(--ink);color:#fff}
   main.study-page .form-error{display:none;font-size:13px;color:#a13a2e;background:#fdf1ee;border:1px solid #f0c9c0;border-radius:2px;padding:12px 14px;margin-bottom:16px}
   main.study-page .form-error.show{display:block}
-  main.study-page form .btn{width:100%;border:none;cursor:pointer;text-align:center}
+  main.study-page .study-cta{display:block;box-sizing:border-box;width:100%;border:none;cursor:pointer;text-align:center;text-decoration:none}
   main.study-page form .btn:disabled{opacity:.6;cursor:default;transform:none}
   main.study-page .not-a-fit{margin:22px 0 0;font-size:14px;color:var(--body);text-align:center;max-width:none}
   main.study-page .not-a-fit a{border-bottom:1px solid var(--ink);padding-bottom:2px;color:var(--ink);font-weight:600}
@@ -115,57 +115,12 @@
       </div>
     </details>
 
-    <form class="study-form" id="signupForm">
-      <div class="field">
-        <label for="name">Name</label>
-        <input type="text" id="name" required autocomplete="name">
-      </div>
-      <div class="field">
-        <label for="phone">Phone</label>
-        <input type="tel" id="phone" required autocomplete="tel" inputmode="tel">
-        <p class="field-note">Used only to schedule your sessions.</p>
-      </div>
-      <div class="field">
-        <label for="email">Email</label>
-        <input type="email" id="email" required autocomplete="email" inputmode="email">
-        <p class="field-note">Where we send your study results.</p>
-      </div>
-      <div class="field">
-        <label>Which foot <span class="opt">(optional)</span></label>
-        <div class="choice-group">
-          <input type="radio" name="bodyPart" id="bpLeft" value="left">
-          <label for="bpLeft">Left</label>
-          <input type="radio" name="bodyPart" id="bpRight" value="right">
-          <label for="bpRight">Right</label>
-          <input type="radio" name="bodyPart" id="bpBoth" value="both">
-          <label for="bpBoth">Both</label>
-        </div>
-      </div>
-
+    <div class="study-form">
       <div class="screen">
-        <p class="screen-title">Do you qualify?</p>
-        <label class="screen-item">
-          <input type="checkbox" class="screen-check" required>
-          <span>My foot pain has lasted 2 weeks or more.</span>
-        </label>
-        <label class="screen-item">
-          <input type="checkbox" class="screen-check" required>
-          <span>I can get to 662 8th Ave three times.</span>
-        </label>
+        <p class="screen-title">Ready to join?</p>
+        <p class="learn-text">Choose your first free 15-minute session and complete the qualification check in one booking.</p>
       </div>
-
-      <label class="screen-item publish-optin">
-        <input type="checkbox" id="consentPublish" class="screen-check">
-        <span>You can use my first name and results in the published case series. <span class="opt">(optional)</span></span>
-      </label>
-      <p class="form-error" id="formError"></p>
-      <button type="submit" class="btn" id="submitBtn">Join the study</button>
-    </form>
-
-    <div class="confirm" id="confirm">
-      <div class="confirm-mark">&check;</div>
-      <h2>You&rsquo;re enrolled.</h2>
-      <p>We&rsquo;ll text you to schedule session 1.</p>
+      <a class="btn study-cta" href="/book/study?study=runners-lower-leg">Choose your free first session</a>
     </div>
 
 
@@ -175,48 +130,6 @@
 
 <!-- Footer is injected by site-v6.js -->
 <script src="/js/site-v6.js?v=footer-1" data-nav=""></script>
-<script>
-  var form = document.getElementById('signupForm');
-  var errorEl = document.getElementById('formError');
-  var submitBtn = document.getElementById('submitBtn');
 
-  form.addEventListener('submit', function (e) {
-    e.preventDefault();
-    errorEl.classList.remove('show');
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Joining…';
-
-    var side = document.querySelector('input[name="bodyPart"]:checked');
-
-    fetch('/api/foot-study-signup', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: document.getElementById('name').value,
-        phone: document.getElementById('phone').value,
-        email: document.getElementById('email').value,
-        bodyPart: side ? side.value : undefined,
-        publishOptIn: document.getElementById('consentPublish').checked,
-      }),
-    })
-      .then(function (res) {
-        return res.json().then(function (data) { return { ok: res.ok, data: data }; });
-      })
-      .then(function (result) {
-        if (!result.ok) {
-          throw new Error(result.data && result.data.error ? result.data.error : 'Something went wrong. Please try again.');
-        }
-        document.getElementById('card').classList.add('confirmed');
-        document.getElementById('confirm').classList.add('show');
-        if (window.gtag) { gtag('event', 'foot_study_signup'); }
-      })
-      .catch(function (err) {
-        errorEl.textContent = err.message || 'Something went wrong. Please try again.';
-        errorEl.classList.add('show');
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Join the study';
-      });
-  });
-</script>
 </body>
 </html>

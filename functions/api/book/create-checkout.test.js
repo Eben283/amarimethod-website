@@ -86,6 +86,11 @@ describe('Assessment participant agreement', () => {
       .toBeNull();
   });
 
+  it('accepts only the registered Vital Ice business referral on the Assessment', () => {
+    expect(validateBody({ ...assessmentCheckout, agreeParticipantAgreement: true, partnerReferralCode: 'vital-ice' })).toBeNull();
+    expect(validateBody({ ...assessmentCheckout, agreeParticipantAgreement: true, partnerReferralCode: 'sean' })).toMatch(/invalid partner referral/i);
+  });
+
   it('rejects the virtual Assessment before its explicit public release', () => {
     expect(validateBody({
       ...assessmentCheckout,

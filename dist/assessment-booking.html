@@ -342,6 +342,7 @@
 
       // ---------- config ----------
       const query = new URLSearchParams(window.location.search);
+      const PARTNER_REFERRAL_CODE = (query.get('partner') || '').trim().toLowerCase();
       const IS_ASSESSMENT = query.get('assessment') === '1';
       const IS_EMBEDDED = query.get('embed') === '1';
       const BOOKING_CONFIGS = {
@@ -895,6 +896,7 @@
           startTime: state.selectedSlot.datetime,
           timezone: state.timezone,
           idempotencyKey: state.checkoutKey,
+          partnerReferralCode: PARTNER_REFERRAL_CODE || undefined,
         };
 
         async function requestCheckout() {

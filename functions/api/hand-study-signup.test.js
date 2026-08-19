@@ -60,52 +60,26 @@ describe('isValidEmail', () => {
 });
 
 describe('onRequestPost', () => {
-  function makeContext(body) {
-    return {
+  it('fails closed without parsing or mutating a cached legacy signup', async () => {
+    ghlFetchMock.mockClear();
+    const res = await onRequestPost({
       request: {
         headers: { get: () => 'https://www.amarimethod.com' },
-        json: async () => body,
+        json: async () => {
+          throw new Error('legacy guard must not parse a participant payload');
+        },
       },
       env: {},
-    };
-  }
+    });
+    const body = await res.json();
 
-  it('builds the hand-study tag, source, and Study Name from the registry', async () => {
-    ghlFetchMock.mockClear();
-    const res = await onRequestPost(makeContext({
-      name: 'Alex Boulder',
-      phone: '4155551234',
-      email: 'alex@example.com',
-      bodyPart: 'right',
-    }));
-
-    expect(res.status).toBe(200);
-    expect(ghlFetchMock).toHaveBeenCalledTimes(1);
-    const [, , options] = ghlFetchMock.mock.calls[0];
-    const payload = JSON.parse(options.body);
-
-    expect(payload.tags).toEqual(['hand-study-participant', 'hand-right']);
-    expect(payload.source).toBe('Hand Pain Study');
-    expect(payload.customFields).toEqual([
-      { id: '1xhxStKyEN47shwjOKC0', value: 'Hand Pain Study' },
-    ]);
-  });
-
-  it('omits the hand tag when no hand is given', async () => {
-    ghlFetchMock.mockClear();
-    await onRequestPost(makeContext({
-      name: 'Alex Boulder',
-      phone: '4155551234',
-      email: 'alex@example.com',
-    }));
-
-    const [, , options] = ghlFetchMock.mock.calls[0];
-    const payload = JSON.parse(options.body);
-    expect(payload.tags).toEqual(['hand-study-participant']);
-  });
-
-  it('rejects a request missing required fields', async () => {
-    const res = await onRequestPost(makeContext({ name: 'Alex Boulder' }));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
+    expect(body).toEqual({
+      error: 'Study signup now includes choosing your first session. Refresh this page or continue at /book/study?study=hand.',
+      bookingUrl: '/book/study?study=hand',
+      refreshRequired: true,
+    });
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
+    expect(ghlFetchMock).not.toHaveBeenCalled();
   });
 });

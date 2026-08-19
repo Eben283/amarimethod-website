@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Book a Free Study Session | Amari Method</title>
-  <meta name="description" content="Book a free 15-minute in-person Amari Method study session in San Francisco.">
+  <meta name="description" content="Choose one of five Amari Method studies and book your free first 15-minute session in San Francisco.">
   <meta name="robots" content="noindex,follow">
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon-light.png" media="(prefers-color-scheme: light)">
   <link rel="icon" type="image/png" sizes="64x64" href="/favicon-dark.png" media="(prefers-color-scheme: dark)">
@@ -15,50 +15,163 @@
   <link rel="stylesheet" href="/css/site-v6.css?v=footer-1">
   <link rel="stylesheet" href="/css/amari-calendar.css?v=1">
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-DGQM32BMYZ"></script>
-  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag('js',new Date());gtag('config','G-DGQM32BMYZ');</script>
+  <script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments)}gtag("js",new Date());gtag("config","G-DGQM32BMYZ");</script>
   <script>(function(c,l,a,r,i,t,y){c[a]=c[a]||function(){(c[a].q=c[a].q||[]).push(arguments)};t=l.createElement(r);t.async=1;t.src='https://www.clarity.ms/tag/'+i;y=l.getElementsByTagName(r)[0];y.parentNode.insertBefore(t,y)})(window,document,'clarity','script','vuvx43xu8h');</script>
   <style>
-    /* This is the native booking-page component. The study flow intentionally
-       keeps its typography, spacing, calendar, form, and controls unchanged. */
     .book-page{max-width:880px;margin:0 auto;padding:clamp(140px,16vw,190px) 32px 96px}
-    .book-header{text-align:center;margin-bottom:44px;background:transparent}.book-kicker{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--body);margin:0 0 14px}.book-headline{font-family:var(--serif);font-weight:400;font-size:clamp(36px,5vw,56px);line-height:1.05;letter-spacing:-.02em;color:var(--ink);margin:0 0 18px}.book-headline em{font-style:normal}.book-sub{font-family:var(--sans);font-size:16px;line-height:1.55;color:var(--body);margin:0 auto;max-width:50ch}
-    .book-progress{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:36px;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body)}.book-progress-step{display:inline-flex;align-items:center;gap:8px}.book-progress-num{font-family:var(--serif);font-style:normal;font-size:16px;font-weight:400;color:var(--body);letter-spacing:0;text-transform:none}.book-progress-step.is-active .book-progress-num,.book-progress-step.is-active .book-progress-label{color:var(--ink)}.book-progress-step.is-done .book-progress-num,.book-progress-step.is-done .book-progress-label{color:var(--peach)}.book-progress-bar{flex:0 0 24px;height:1px;background:var(--line)}
-    .form-banner-error{padding:14px 16px;background:#fdf3f0;border-left:3px solid #c64a3a;color:#8a2e1f;font-size:14px;line-height:1.55;margin-bottom:24px;font-family:var(--sans)}.form-banner-error.is-hidden{display:none}.step-section{display:none}.step-section.is-active{display:block}
-    .order-summary{margin-top:28px;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}.order-summary-title{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--body);margin:0 0 10px}.order-summary-row{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:4px 0;font-family:var(--sans);font-size:14px;color:var(--ink)}.order-summary-row .summary-datetime{color:var(--body);font-weight:500}.order-summary-total{padding-top:8px;margin-top:6px;border-top:1px solid var(--line);font-size:15px;font-weight:600}
-    .step-section h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,3.4vw,38px);line-height:1.1;letter-spacing:-.015em;color:var(--ink);margin:0 0 8px}.step-section .subhead{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--body);margin:0 0 28px}.btn-back{display:inline-flex;align-items:center;gap:6px;padding:0 0 16px;font-family:var(--sans);font-size:13px;color:var(--body);text-decoration:none;background:none;border:none;cursor:pointer}.btn-back:hover{color:var(--ink)}.form-row{margin-bottom:18px}.form-row.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}.form-label{display:block;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--body);margin-bottom:8px}.form-label .req{color:#c64a3a;margin-left:2px}.form-input{width:100%;box-sizing:border-box;padding:12px 0;font-family:var(--sans);font-size:16px;line-height:1.4;color:var(--ink);background:transparent;border:none;border-bottom:1px solid var(--line);border-radius:0;transition:border-color .15s ease}.form-input:focus{outline:none;border-bottom-color:var(--ink);border-bottom-width:2px;padding-bottom:11px}.form-input.is-invalid{border-bottom-color:#c64a3a}.form-input::placeholder{color:#b8b0a0}.form-error{font-family:var(--sans);font-size:12px;color:#c64a3a;margin-top:6px;min-height:1em}.btn-primary-pill{display:inline-flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 34px;min-height:56px;background:var(--ink);color:#fff;border:none;border-radius:2px;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;transition:background .4s var(--ease),transform .4s var(--ease),opacity .15s ease;margin-top:28px}.btn-primary-pill:hover:not(:disabled){background:#000;transform:translateY(-1px)}.btn-primary-pill:disabled{opacity:.35;cursor:not-allowed}.btn-primary-pill .arrow{transition:transform .15s ease}.btn-primary-pill:hover:not(:disabled) .arrow{transform:translateX(4px)}.confirmation{padding:52px 24px;text-align:center}.confirmation h2{font-size:clamp(36px,5vw,56px)}.confirmation p{max-width:42ch;margin:14px auto;color:var(--body);font-family:var(--sans);line-height:1.55}
-    @media(max-width:720px){.book-page{padding:clamp(120px,22vw,150px) 20px 64px}.book-progress{gap:8px;font-size:10px;letter-spacing:.1em}.book-progress-bar{flex:0 0 14px}}@media(max-width:480px){.book-page{padding:clamp(110px,24vw,140px) 16px 48px}.form-row.cols-2{grid-template-columns:1fr}.cal-day{font-size:14px;min-height:44px}.slot-btn{min-height:48px;padding:16px 10px}.btn-primary-pill{min-height:56px}}
+    .book-header{text-align:center;margin-bottom:36px;background:transparent}
+    .book-kicker{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:var(--body);margin:0 0 14px}
+    .book-headline{font-family:var(--serif);font-weight:400;font-size:clamp(36px,5vw,56px);line-height:1.05;letter-spacing:-.02em;color:var(--ink);margin:0 0 18px}
+    .book-sub{font-family:var(--sans);font-size:16px;line-height:1.55;color:var(--body);margin:0 auto;max-width:54ch}
+    .book-progress{display:flex;justify-content:center;align-items:center;gap:14px;margin-bottom:36px;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--body)}
+    .book-progress-step{display:inline-flex;align-items:center;gap:8px}.book-progress-num{font-family:var(--serif);font-size:16px;font-weight:400;letter-spacing:0;text-transform:none}
+    .book-progress-step.is-active .book-progress-num,.book-progress-step.is-active .book-progress-label{color:var(--ink)}
+    .book-progress-step.is-done .book-progress-num,.book-progress-step.is-done .book-progress-label{color:var(--peach)}
+    .book-progress-bar{flex:0 0 24px;height:1px;background:var(--line)}
+    .form-banner-error{padding:14px 16px;background:#fdf3f0;border-left:3px solid #c64a3a;color:#8a2e1f;font-size:14px;line-height:1.55;margin-bottom:24px;font-family:var(--sans)}
+    .form-banner-error.is-hidden,.booking-init[hidden]{display:none}.step-section{display:none}.step-section.is-active{display:block}
+    .step-section h2{font-family:var(--serif);font-weight:400;font-size:clamp(28px,3.4vw,38px);line-height:1.1;color:var(--ink);margin:0 0 8px}
+    .step-section .subhead{font-family:var(--sans);font-size:14px;line-height:1.5;color:var(--body);margin:0 0 28px}
+    .form-row{margin-bottom:20px}.form-row.cols-2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    .study-locked{display:flex;align-items:baseline;justify-content:space-between;gap:16px;padding:16px 0;margin-bottom:22px;border-top:1px solid var(--line);border-bottom:1px solid var(--line);font-family:var(--sans)}
+    .study-locked-label{font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--body)}.study-locked-name{font-family:var(--serif);font-size:24px;font-weight:400;color:var(--ink);text-align:right}
+    .qualification-panel[hidden],.study-locked[hidden],.study-chooser[hidden]{display:none}.focus-heading:focus{outline:2px solid var(--ink);outline-offset:6px}
+    .form-label,.form-legend{display:block;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--body);margin-bottom:8px}
+    .form-label .req,.form-legend .req{color:#c64a3a;margin-left:2px}.opt{font-weight:500;letter-spacing:0;text-transform:none}
+    .form-input{width:100%;box-sizing:border-box;padding:12px 0;font-family:var(--sans);font-size:16px;line-height:1.4;color:var(--ink);background:transparent;border:0;border-bottom:1px solid var(--line);border-radius:0}
+    select.form-input{cursor:pointer}.form-input:focus{outline:none;border-bottom:2px solid var(--ink);padding-bottom:11px}.form-input.is-invalid{border-bottom-color:#c64a3a}
+    .form-error{font-family:var(--sans);font-size:12px;color:#c64a3a;margin-top:6px;min-height:1em}
+    fieldset{border:0;padding:0;margin:0 0 22px;min-width:0}
+    .choice-group{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.choice-group input{position:absolute;opacity:0;pointer-events:none}
+    .choice-group label{display:flex;align-items:center;justify-content:center;font-family:var(--sans);font-size:14px;font-weight:600;color:var(--ink);background:var(--paper);border:1px solid var(--line);border-radius:2px;padding:12px 4px;cursor:pointer}
+    .choice-group input:focus-visible+label{outline:2px solid var(--ink);outline-offset:2px}.choice-group input:checked+label{background:var(--ink);border-color:var(--ink);color:#fff}
+    .screen{border:1px solid var(--line);background:var(--paper);padding:18px 18px 8px;margin:8px 0 20px}
+    .screen-title{font-family:var(--sans);font-weight:600;font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--body);margin:0 0 14px}
+    .screen-item{display:flex;align-items:flex-start;gap:12px;font-family:var(--sans);font-size:15px;line-height:1.45;color:var(--ink);margin:0 0 12px;cursor:pointer}
+    .screen-check{flex-shrink:0;width:18px;height:18px;margin:2px 0 0;accent-color:var(--ink)}
+    .order-summary{margin:28px 0;padding:18px 0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+    .order-summary-title{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--body);margin:0 0 10px}
+    .order-summary-row{display:flex;justify-content:space-between;gap:12px;padding:4px 0;font-family:var(--sans);font-size:14px;color:var(--ink)}
+    .summary-datetime{color:var(--body);font-weight:500}
+    .btn-primary-pill{display:inline-flex;align-items:center;justify-content:center;gap:12px;width:100%;padding:18px 34px;min-height:56px;background:var(--ink);color:#fff;border:0;border-radius:2px;font-family:var(--sans);font-size:12px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;margin-top:28px}
+    .btn-primary-pill:disabled{opacity:.35;cursor:not-allowed}.btn-back{display:inline-flex;padding:0 0 16px;font-family:var(--sans);font-size:13px;color:var(--body);background:none;border:0;cursor:pointer}
+    .confirmation{padding:52px 24px;text-align:center}.confirmation h2{font-size:clamp(36px,5vw,56px)}.confirmation p{max-width:45ch;margin:14px auto;color:var(--body);font-family:var(--sans);line-height:1.55}
+    @media(max-width:720px){.book-page{padding:clamp(120px,22vw,150px) 20px 64px}.book-progress{gap:8px;font-size:10px;letter-spacing:.1em}.book-progress-bar{flex-basis:14px}}
+    @media(max-width:480px){.book-page{padding:clamp(110px,24vw,140px) 16px 48px}.form-row.cols-2{grid-template-columns:1fr}.study-locked{align-items:flex-start;flex-direction:column}.study-locked-name{text-align:left}.btn-primary-pill{min-height:56px}}
   </style>
 </head>
 <body>
-  <main><div class="book-page">
-    <section class="book-header"><p class="book-kicker">Study session · San Francisco</p><h1 class="book-headline">Book your free study session.</h1><p class="book-sub">15 minutes with Garrett. Choose a time that works for you.</p></section>
-    <div class="book-progress" aria-label="Booking progress"><span class="book-progress-step is-active" id="progressStep1"><span class="book-progress-num">01</span><span class="book-progress-label">Pick a time</span></span><span class="book-progress-bar"></span><span class="book-progress-step" id="progressStep2"><span class="book-progress-num">02</span><span class="book-progress-label">Your details</span></span><span class="book-progress-bar"></span><span class="book-progress-step" id="progressStep3"><span class="book-progress-num">03</span><span class="book-progress-label">Confirmed</span></span></div>
-    <div class="form-banner-error is-hidden" id="bannerError" role="alert"></div>
-    <section class="step-section is-active" id="step1Section">
-      <div class="slot-loading" id="slotLoading">Loading available times…</div><div class="slot-error" id="slotError" hidden></div><div class="slot-empty" id="slotEmpty" hidden>No openings this month. Please check the next month.</div>
-      <div class="cal-frame" id="calFrame" hidden><div class="cal-month-header"><button type="button" class="cal-nav-btn" id="calPrevBtn" aria-label="Previous month">‹</button><span class="cal-month-label" id="calLabel">—</span><button type="button" class="cal-nav-btn" id="calNextBtn" aria-label="Next month">›</button></div><div class="cal-weekdays" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div><div class="cal-days" id="calDays" role="grid"></div><div class="time-slots" id="timeSlotsContainer" hidden><p class="time-slots-label">Times for <strong id="timeSlotsLabel">—</strong> · all in <span id="userTimezone">your local time</span></p><div class="time-slots-grid" id="timeSlots" role="tabpanel" aria-label="Available times"></div></div></div>
-      <div class="order-summary" id="orderSummaryStep1" hidden><p class="order-summary-title">Your booking</p><div class="order-summary-row"><span>Study Session · In Person</span><span>Free</span></div><div class="order-summary-row"><span class="summary-datetime">—</span></div></div>
-      <button type="button" class="btn-primary-pill" id="step1ContinueBtn" disabled><span id="step1ContinueLabel">Pick a time to continue</span><span class="arrow" aria-hidden="true">→</span></button>
-    </section>
-    <section class="step-section" id="step2Section" aria-labelledby="step2Heading" hidden><button type="button" class="btn-back" id="backToStep1">← Pick a different time</button><h2 id="step2Heading">Tell us about you.</h2><p class="subhead">We’ll send your confirmation here and use this for your study record.</p><div class="order-summary" id="orderSummaryStep2" hidden style="margin-top:0"><p class="order-summary-title">Your booking</p><div class="order-summary-row"><span>Study Session · In Person</span><span>Free</span></div><div class="order-summary-row"><span class="summary-datetime">—</span></div></div><form id="clientForm" novalidate style="margin-top:28px"><div class="form-row cols-2"><div><label class="form-label" for="firstName">First name<span class="req">*</span></label><input class="form-input" type="text" id="firstName" name="firstName" autocomplete="given-name" required><div class="form-error" data-error-for="firstName"></div></div><div><label class="form-label" for="lastName">Last name<span class="req">*</span></label><input class="form-input" type="text" id="lastName" name="lastName" autocomplete="family-name" required><div class="form-error" data-error-for="lastName"></div></div></div><div class="form-row"><label class="form-label" for="email">Email<span class="req">*</span></label><input class="form-input" type="email" id="email" name="email" autocomplete="email" inputmode="email" required><div class="form-error" data-error-for="email"></div></div><div class="form-row"><label class="form-label" for="phone">Phone<span class="req">*</span></label><input class="form-input" type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" placeholder="(415) 555-1234" required><div class="form-error" data-error-for="phone"></div></div><button type="submit" class="btn-primary-pill" id="step2SubmitBtn"><span id="step2SubmitLabel">Confirm free study session</span><span class="arrow" aria-hidden="true">→</span></button></form></section>
-    <section class="step-section confirmation" id="step3Section" hidden><h2>You’re booked.</h2><p id="confirmationDate"></p><p>A confirmation text and email are on their way.</p></section>
-  </div></main>
+  <main>
+    <div class="book-page">
+      <section class="book-header">
+        <p class="book-kicker">Free study session · San Francisco</p>
+        <h1 class="book-headline" id="pageHeading">Start your free study session.</h1>
+        <p class="book-sub">Confirm your study and eligibility first. If you qualify, choose one free 15-minute session and enter your details once.</p>
+      </section>
+
+      <div class="book-progress" aria-label="Booking progress">
+        <span class="book-progress-step is-active" id="progressStep1" aria-current="step"><span class="book-progress-num">01</span><span class="book-progress-label">Study &amp; qualify</span></span>
+        <span class="book-progress-bar"></span>
+        <span class="book-progress-step" id="progressStep2"><span class="book-progress-num">02</span><span class="book-progress-label">Time &amp; details</span></span>
+        <span class="book-progress-bar"></span>
+        <span class="book-progress-step" id="progressStep3"><span class="book-progress-num">03</span><span class="book-progress-label">Confirmed</span></span>
+      </div>
+
+      <div class="form-banner-error is-hidden" id="bannerError" role="alert"></div>
+      <div class="form-banner-error booking-init" id="bookingInitFallback" role="status">Loading study signup… If this message remains, refresh the page or email eben@amarimethod.com.</div>
+
+      <section class="step-section is-active" id="step1Section">
+        <div class="form-row study-chooser" id="studyChooser" hidden>
+          <label class="form-label" for="studySelect">Current study<span class="req">*</span></label>
+          <select class="form-input" id="studySelect" required>
+            <option value="">Choose a study</option>
+            <option value="tennis-elbow">Elbow Pain Study</option>
+            <option value="tmj">Jaw Tension Study</option>
+            <option value="hand">Hand Pain Study</option>
+            <option value="runners-lower-leg">Foot Pain Study</option>
+            <option value="desk-shoulders">Desk Shoulders Study</option>
+          </select>
+          <div class="form-error" id="studyError" role="alert" aria-live="assertive"></div>
+        </div>
+
+        <div class="study-locked" id="lockedStudy" role="status" aria-live="polite" hidden>
+          <span class="study-locked-label">Current study</span>
+          <strong class="study-locked-name" id="lockedStudyName"></strong>
+        </div>
+
+        <div class="qualification-panel" id="qualificationPanel" hidden>
+          <fieldset class="screen" aria-describedby="qualificationError">
+            <legend class="screen-title focus-heading" id="qualificationHeading" tabindex="-1">Do you qualify?<span class="req">*</span></legend>
+            <div id="qualificationItems"></div>
+          </fieldset>
+          <div class="form-error" id="qualificationError" role="alert" aria-live="assertive"></div>
+          <button type="button" class="btn-primary-pill" id="step1ContinueBtn"><span id="step1ContinueLabel">Confirm eligibility to see times</span><span aria-hidden="true">→</span></button>
+        </div>
+      </section>
+
+      <section class="step-section" id="step2Section" aria-labelledby="step2Heading" hidden>
+        <button type="button" class="btn-back" id="backToStep1">← Review study eligibility</button>
+        <h2 class="focus-heading" id="step2Heading" tabindex="-1">Choose your first session.</h2>
+        <p class="subhead">Your eligibility is confirmed. Pick an available time, then enter your details to reserve it.</p>
+
+        <div id="calendarBlock" hidden>
+          <div class="slot-loading" id="slotLoading" role="status" aria-live="polite">Loading available times…</div>
+          <div class="slot-error" id="slotError" role="alert" hidden></div>
+          <div class="slot-empty" id="slotEmpty" role="status" aria-live="polite" hidden>No openings this month. Please check the next month.</div>
+          <div class="cal-frame" id="calFrame" hidden>
+            <div class="cal-month-header">
+              <button type="button" class="cal-nav-btn" id="calPrevBtn" aria-label="Previous month">‹</button>
+              <span class="cal-month-label" id="calLabel">—</span>
+              <button type="button" class="cal-nav-btn" id="calNextBtn" aria-label="Next month">›</button>
+            </div>
+            <div class="cal-weekdays" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+            <div class="cal-days" id="calDays" role="grid" aria-label="Available appointment dates"></div>
+            <div class="time-slots" id="timeSlotsContainer" hidden>
+              <p class="time-slots-label">Times for <strong id="timeSlotsLabel">—</strong> · all in <span id="userTimezone">your local time</span></p>
+              <div class="time-slots-grid" id="timeSlots" role="group" aria-label="Available times"></div>
+            </div>
+          </div>
+          <div class="order-summary" id="orderSummaryStep1" hidden>
+            <p class="order-summary-title">Your booking</p>
+            <div class="order-summary-row"><span class="summary-study">Study Session · In Person</span><span>Free</span></div>
+            <div class="order-summary-row"><span class="summary-datetime">—</span></div>
+          </div>
+        </div>
+
+        <form id="clientForm" novalidate>
+          <div class="form-row cols-2">
+            <div><label class="form-label" for="firstName">First name<span class="req">*</span></label><input class="form-input" type="text" id="firstName" name="firstName" autocomplete="given-name" required><div class="form-error" data-error-for="firstName"></div></div>
+            <div><label class="form-label" for="lastName">Last name<span class="req">*</span></label><input class="form-input" type="text" id="lastName" name="lastName" autocomplete="family-name" required><div class="form-error" data-error-for="lastName"></div></div>
+          </div>
+          <div class="form-row"><label class="form-label" for="email">Email<span class="req">*</span></label><input class="form-input" type="email" id="email" name="email" autocomplete="email" inputmode="email" required><div class="form-error" data-error-for="email"></div></div>
+          <div class="form-row"><label class="form-label" for="phone">Mobile phone<span class="req">*</span></label><input class="form-input" type="tel" id="phone" name="phone" autocomplete="tel" inputmode="tel" required><div class="form-error" data-error-for="phone"></div></div>
+
+          <fieldset id="bodyPartFieldset">
+            <legend class="form-legend"><span id="bodyPartLegend">Which side?</span> <span class="opt">(optional)</span></legend>
+            <div class="choice-group">
+              <input type="radio" name="bodyPart" id="bodyLeft" value="left"><label for="bodyLeft">Left</label>
+              <input type="radio" name="bodyPart" id="bodyRight" value="right"><label for="bodyRight">Right</label>
+              <input type="radio" name="bodyPart" id="bodyBoth" value="both"><label for="bodyBoth">Both</label>
+            </div>
+          </fieldset>
+
+          <label class="screen-item">
+            <input type="checkbox" id="publishOptIn" class="screen-check">
+            <span>You can use my first name and results in the published case series. <span class="opt">(optional)</span></span>
+          </label>
+
+          <button type="submit" class="btn-primary-pill" id="step2SubmitBtn" disabled><span id="step2SubmitLabel">Choose a time to book</span><span aria-hidden="true">→</span></button>
+        </form>
+      </section>
+
+      <section class="step-section confirmation" id="step3Section" hidden>
+        <h2 id="confirmationHeading">You’re booked.</h2>
+        <p id="confirmationDate"></p>
+        <p id="confirmationMessage">Your first study session is reserved.</p>
+      </section>
+    </div>
+  </main>
   <script src="/js/site-v6.js?v=footer-1" data-nav=""></script>
-  <script>
-  (function(){'use strict';
-    const API='/api/study-book',tz=Intl.DateTimeFormat().resolvedOptions().timeZone||'America/Los_Angeles';
-    const $=id=>document.getElementById(id);const els={bannerError:$('bannerError'),progressStep1:$('progressStep1'),progressStep2:$('progressStep2'),progressStep3:$('progressStep3'),step1:$('step1Section'),step2:$('step2Section'),step3:$('step3Section'),slotLoading:$('slotLoading'),slotError:$('slotError'),slotEmpty:$('slotEmpty'),calFrame:$('calFrame'),calLabel:$('calLabel'),calDays:$('calDays'),calPrevBtn:$('calPrevBtn'),calNextBtn:$('calNextBtn'),timeSlotsContainer:$('timeSlotsContainer'),timeSlotsLabel:$('timeSlotsLabel'),timeSlots:$('timeSlots'),userTimezone:$('userTimezone'),summary1:$('orderSummaryStep1'),summary2:$('orderSummaryStep2'),summaryDates:document.querySelectorAll('.summary-datetime'),continue:$('step1ContinueBtn'),continueLabel:$('step1ContinueLabel'),form:$('clientForm'),back:$('backToStep1'),submit:$('step2SubmitBtn'),submitLabel:$('step2SubmitLabel'),confirmationDate:$('confirmationDate')};
-    const state={slotsByDay:{},availableDates:new Set(),selectedDate:null,selectedSlot:null,viewMonth:null,submitting:false};
-    const pad=n=>String(n).padStart(2,'0'),ymd=d=>d.getFullYear()+'-'+pad(d.getMonth()+1)+'-'+pad(d.getDate()),ym=d=>d.getFullYear()+'-'+pad(d.getMonth()+1);const dateFromYm=v=>{const [y,m]=v.split('-').map(Number);return new Date(y,m-1,1)};const monthLabel=v=>dateFromYm(v).toLocaleDateString(undefined,{month:'long',year:'numeric'});const prevMonth=v=>{const d=dateFromYm(v);d.setMonth(d.getMonth()-1);return ym(d)};const nextMonth=v=>{const d=dateFromYm(v);d.setMonth(d.getMonth()+1);return ym(d)};const longDate=v=>{const [y,m,d]=v.split('-').map(Number);return new Date(y,m-1,d).toLocaleDateString(undefined,{weekday:'long',month:'long',day:'numeric'})};const time=(h,m)=>{const n=h%12||12;return m===0?n+(h>=12?'pm':'am'):n+':'+pad(m)+(h>=12?'pm':'am')};
-    function track(event,params){if(window.gtag)window.gtag('event',event,Object.assign({booking_type:'study_session',booking_price:0},params||{}))}function showError(message){els.bannerError.textContent=message||'';els.bannerError.classList.toggle('is-hidden',!message)}function setStep(n){[els.step1,els.step2,els.step3].forEach((el,index)=>{const active=index===n-1;el.classList.toggle('is-active',active);el.toggleAttribute('hidden',!active)});els.progressStep1.classList.toggle('is-active',n===1);els.progressStep1.classList.toggle('is-done',n>1);els.progressStep2.classList.toggle('is-active',n===2);els.progressStep2.classList.toggle('is-done',n>2);els.progressStep3.classList.toggle('is-active',n===3);window.scrollTo({top:0,behavior:'smooth'})}
-    async function loadMonth(){showError('');state.selectedDate=null;state.selectedSlot=null;els.continue.disabled=true;els.continueLabel.textContent='Pick a time to continue';els.summary1.hidden=true;els.timeSlotsContainer.hidden=true;els.slotLoading.hidden=false;els.slotError.hidden=true;els.slotEmpty.hidden=true;els.calFrame.hidden=true;els.calLabel.textContent=monthLabel(state.viewMonth);els.calPrevBtn.disabled=state.viewMonth<=ym(new Date());els.userTimezone.textContent=tz;const start=dateFromYm(state.viewMonth),end=new Date(start.getFullYear(),start.getMonth()+1,0);try{const r=await fetch(API+'?startDate='+ymd(start)+'&endDate='+ymd(end)+'&timezone='+encodeURIComponent(tz));const body=await r.json();if(!r.ok)throw Error(body.error||'Could not load available times.');const byDay={};(body.slots||[]).forEach(s=>{(byDay[s.date]||(byDay[s.date]=[])).push(s)});state.slotsByDay=byDay;state.availableDates=new Set(Object.keys(byDay));els.slotLoading.hidden=true;els.calFrame.hidden=false;if(!state.availableDates.size)els.slotEmpty.hidden=false;renderCalendar()}catch(err){els.slotLoading.hidden=true;els.slotError.hidden=false;els.slotError.textContent="Couldn't load times. Try refreshing, or email eben@amarimethod.com.";showError('Could not load available times. Please try again.')}}
-    function renderCalendar(){els.calLabel.textContent=monthLabel(state.viewMonth);els.calDays.innerHTML='';const first=dateFromYm(state.viewMonth),startDay=first.getDay(),days=new Date(first.getFullYear(),first.getMonth()+1,0).getDate(),today=ymd(new Date());for(let i=0;i<startDay;i++){const empty=document.createElement('span');empty.className='cal-day is-empty';els.calDays.append(empty)}for(let d=1;d<=days;d++){const date=state.viewMonth+'-'+pad(d),button=document.createElement('button'),available=state.availableDates.has(date);button.type='button';button.className='cal-day';button.textContent=d;if(date<today||!available){button.classList.add('is-unavailable');button.disabled=true}else button.addEventListener('click',()=>selectDate(date));if(date===today)button.classList.add('is-today');if(date===state.selectedDate)button.classList.add('is-selected');els.calDays.append(button)}}
-    function selectDate(date){state.selectedDate=date;state.selectedSlot=null;renderCalendar();els.timeSlotsContainer.hidden=false;els.timeSlotsLabel.textContent=longDate(date);els.timeSlots.innerHTML='';(state.slotsByDay[date]||[]).forEach(slot=>{const button=document.createElement('button');button.type='button';button.className='slot-btn';button.textContent=time(slot.hour,slot.minute);button.addEventListener('click',()=>selectSlot(slot,button));els.timeSlots.append(button)});els.summary1.hidden=true;els.continue.disabled=true;els.continueLabel.textContent='Pick a time to continue';els.timeSlotsContainer.scrollIntoView({behavior:'smooth',block:'nearest'})}
-    function selectSlot(slot,button){state.selectedSlot=slot;Array.from(els.timeSlots.children).forEach(el=>el.classList.toggle('is-selected',el===button));const label=longDate(slot.date)+' at '+time(slot.hour,slot.minute);els.summaryDates.forEach(el=>el.textContent=label);els.summary1.hidden=false;els.continue.disabled=false;els.continueLabel.textContent='Continue to your details';track('study_slot_selected',{slot_datetime:slot.datetime})}
-    function setFieldError(name,message){const input=els.form.elements[name],error=document.querySelector('[data-error-for="'+name+'"]');if(input)input.classList.toggle('is-invalid',!!message);if(error)error.textContent=message||''}function readForm(){const f=els.form.elements;return{firstName:f.firstName.value.trim(),lastName:f.lastName.value.trim(),email:f.email.value.trim(),phone:f.phone.value.trim()}}const validEmail=v=>/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v),validPhone=v=>v.replace(/\D/g,'').length>=10;function validate(data){let ok=true;['firstName','lastName','email','phone'].forEach(name=>setFieldError(name,''));if(!data.firstName){setFieldError('firstName','Required');ok=false}if(!data.lastName){setFieldError('lastName','Required');ok=false}if(!data.email){setFieldError('email','Required');ok=false}else if(!validEmail(data.email)){setFieldError('email','Enter a valid email');ok=false}if(!data.phone){setFieldError('phone','Required');ok=false}else if(!validPhone(data.phone)){setFieldError('phone','Enter at least 10 digits');ok=false}return ok}
-    els.calPrevBtn.addEventListener('click',()=>{if(!els.calPrevBtn.disabled){state.viewMonth=prevMonth(state.viewMonth);loadMonth()}});els.calNextBtn.addEventListener('click',()=>{state.viewMonth=nextMonth(state.viewMonth);loadMonth()});els.continue.addEventListener('click',()=>{if(!state.selectedSlot)return;showError('');els.summary2.hidden=false;setStep(2);$('firstName').focus();track('study_details_view')});els.back.addEventListener('click',()=>setStep(1));els.form.addEventListener('submit',async e=>{e.preventDefault();if(state.submitting||!state.selectedSlot)return;showError('');const data=readForm();if(!validate(data))return;state.submitting=true;els.submit.disabled=true;els.submitLabel.textContent='Booking…';try{const r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name:data.firstName+' '+data.lastName,phone:data.phone,email:data.email,startTime:state.selectedSlot.datetime,timezone:tz})}),body=await r.json();if(!r.ok)throw Error(body.error||'Could not save that booking.');els.confirmationDate.textContent=longDate(state.selectedSlot.date)+' at '+time(state.selectedSlot.hour,state.selectedSlot.minute)+'.';setStep(3);track('study_booking_confirmed',{slot_datetime:state.selectedSlot.datetime})}catch(err){state.submitting=false;els.submit.disabled=false;els.submitLabel.textContent='Confirm free study session';showError(err.message||'We could not save that booking. Please try again.')}});
-    state.viewMonth=ym(new Date());track('study_booking_page_view');loadMonth();
-  })();
-  </script>
+  <script src="/js/study-book.js?v=3"></script>
 </body>
 </html>
