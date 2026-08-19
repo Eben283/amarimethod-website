@@ -56,7 +56,7 @@ Last updated: 2026-08-08.
 |------|------|-------|-------|
 | Slot policy (duration/interval/buffer) | Native catalog | `functions/lib/booking-slot-policy.js` | Assessment + Follow-up both **50/10/60** on the hour. Partner Initial stays 60. `applyHourPackPreference` + look-busy on public/portal slots. Doc: `decision_booking_slot_model.md` |
 | Public Tock bookers | Native | `book/initial-in-person.html`, `initial-virtual.html`, `discovery-call.html`, `assessment-booking.html` | Two-month; slots via `/api/book/public-slots` |
-| Public study booker | Native | `book/study.html` | Single-month cousin; `/api/study-book` |
+| Public study booker | Native | `book/study.html`, `js/study-book.js`, `functions/api/study-book-v2.js` | Single-month, five-study single-entry booking. `/api/study-book-v2` owns the versioned GET/POST contract; legacy `/api/study-book` POST is a non-mutating cached-page guard. |
 | Assessment modal chrome | Native shell | `js/site-v6.js`, `css/site-v6.css` (`.assessment-booking-modal`) | Iframes native `/assessment-booking` |
 | Portal `BookingModal` | Native | `portal/src/components/BookingModal.tsx` | Prepaid → `portal-book`; no balance → Amari calendar then existing $190 payment link (`portal-pay-followup`) |
 | Staff Field Studies calendar | Native | `staff/src/pages/FieldStudiesPage.tsx` (`CalendarModal`) | Uses shared calendar; study multi-session loop is page-specific |

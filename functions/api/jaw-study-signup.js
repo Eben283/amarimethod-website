@@ -7,6 +7,7 @@
 import { ghlFetch } from "../lib/ghl.js";
 import { STUDIES } from "../lib/studies.js";
 import { wantsPublishOptIn, STUDY_PUBLISH_OPT_IN_TAG } from "../lib/study-consent.js";
+import { legacyStudySignupDisabledResponse } from "../lib/legacy-study-signup.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -66,6 +67,9 @@ export async function onRequestPost(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers = corsHeaders(origin);
   headers["Content-Type"] = "application/json";
+
+  // Non-mutating cutover guard for cached pre-booking pages.
+  return legacyStudySignupDisabledResponse(headers, "tmj");
 
   try {
     // Rate limit per IP, not per session — Garrett may submit many sign-ups
