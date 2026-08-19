@@ -60,52 +60,26 @@ describe('isValidEmail', () => {
 });
 
 describe('onRequestPost', () => {
-  function makeContext(body) {
-    return {
+  it('fails closed without parsing or mutating a cached legacy signup', async () => {
+    ghlFetchMock.mockClear();
+    const res = await onRequestPost({
       request: {
         headers: { get: () => 'https://www.amarimethod.com' },
-        json: async () => body,
+        json: async () => {
+          throw new Error('legacy guard must not parse a participant payload');
+        },
       },
       env: {},
-    };
-  }
+    });
+    const body = await res.json();
 
-  it('builds the jaw-study tag, source, and Study Name from the registry', async () => {
-    ghlFetchMock.mockClear();
-    const res = await onRequestPost(makeContext({
-      name: 'Jamie Rivera',
-      phone: '4155551234',
-      email: 'jamie@example.com',
-      bodyPart: 'left',
-    }));
-
-    expect(res.status).toBe(200);
-    expect(ghlFetchMock).toHaveBeenCalledTimes(1);
-    const [, , options] = ghlFetchMock.mock.calls[0];
-    const payload = JSON.parse(options.body);
-
-    expect(payload.tags).toEqual(['tmj-study-participant', 'tmj-left']);
-    expect(payload.source).toBe('Jaw Tension Study');
-    expect(payload.customFields).toEqual([
-      { id: '1xhxStKyEN47shwjOKC0', value: 'Jaw Tension Study' },
-    ]);
-  });
-
-  it('omits the side tag when no side is given', async () => {
-    ghlFetchMock.mockClear();
-    await onRequestPost(makeContext({
-      name: 'Jamie Rivera',
-      phone: '4155551234',
-      email: 'jamie@example.com',
-    }));
-
-    const [, , options] = ghlFetchMock.mock.calls[0];
-    const payload = JSON.parse(options.body);
-    expect(payload.tags).toEqual(['tmj-study-participant']);
-  });
-
-  it('rejects a request missing required fields', async () => {
-    const res = await onRequestPost(makeContext({ name: 'Jamie Rivera' }));
-    expect(res.status).toBe(400);
+    expect(res.status).toBe(409);
+    expect(body).toEqual({
+      error: 'Study signup now includes choosing your first session. Refresh this page or continue at /book/study?study=tmj.',
+      bookingUrl: '/book/study?study=tmj',
+      refreshRequired: true,
+    });
+    expect(res.headers.get('Cache-Control')).toBe('no-store');
+    expect(ghlFetchMock).not.toHaveBeenCalled();
   });
 });

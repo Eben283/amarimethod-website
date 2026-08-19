@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   clearBookingAppointmentCheckpoint,
   checkpointBookingAppointment,
+  checkpointBookingCreateAttempt,
   claimBookingOperation,
   completeBookingOperation,
   failBookingOperation,
@@ -28,6 +29,17 @@ function fakeDb() {
             return { meta: { changes: 1 } };
           }
           const row = rows.get(sql.includes("WHERE op_key = ? AND status = 'processing'") ? args.at(-2) : args[2]);
+          if (sql.includes("SET result_json = ?")) {
+            const [resultJson, leaseUntil, now, opKey, kind, contactId, calendarId, startTime] = args;
+            const current = rows.get(opKey);
+            if (!current || current.status !== "processing" || current.appointment_id ||
+                current.kind !== kind || current.contact_id !== contactId ||
+                current.calendar_id !== calendarId || current.start_time !== startTime) {
+              return { meta: { changes: 0 } };
+            }
+            Object.assign(current, { result_json: resultJson, lease_until: leaseUntil, updated_at: now });
+            return { meta: { changes: 1 } };
+          }
           if (sql.includes("attempts = attempts + 1")) {
             const [leaseUntil, now, opKey, cutoff] = args;
             const current = rows.get(opKey);
@@ -94,6 +106,32 @@ describe("booking operation state machine", () => {
     await checkpointBookingAppointment(db, input.opKey, "appt1", { now: 101, leaseMs: 10 });
     const resumed = await claimBookingOperation(db, input, { now: 112, leaseMs: 10 });
     expect(resumed).toMatchObject({ state: "acquired", operation: { appointmentId: "appt1", attempts: 2 } });
+  });
+
+  it("preserves one frozen create-attempt marker through failure and same-key reclaim", async () => {
+    const db = fakeDb();
+    await claimBookingOperation(db, input, { now: 100, leaseMs: 10 });
+    const marker = await checkpointBookingCreateAttempt(db, input.opKey, input, { now: 101, leaseMs: 10 });
+    expect(marker.createAttempt).toEqual({
+      at: 101,
+      kind: input.kind,
+      contactId: input.contactId,
+      calendarId: input.calendarId,
+      startTime: input.startTime,
+    });
+
+    await failBookingOperation(db, input.opKey, "create response was interrupted", { now: 102 });
+    const resumed = await claimBookingOperation(db, input, { now: 103, leaseMs: 10 });
+    expect(resumed).toMatchObject({
+      state: "acquired",
+      operation: {
+        attempts: 2,
+        result: { createAttempt: marker.createAttempt },
+      },
+    });
+
+    const repeated = await checkpointBookingCreateAttempt(db, input.opKey, input, { now: 104, leaseMs: 10 });
+    expect(repeated.createAttempt.at).toBe(101);
   });
 
   it("returns the durable result after completion", async () => {
