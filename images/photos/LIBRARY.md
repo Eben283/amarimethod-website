@@ -52,7 +52,8 @@ All landscape ~1600×1194. This is the backbone. Filename encodes subject + demo
 ## KEEP — approved editorial protocol photography
 | File | Provenance | Approved use |
 |---|---|---|
-| `amari-method-active-bridge-ocean-swimmer.png` | Active Bridge editorial image approved in commit `118a5d0bdb` (2026-08-15) | Active Bridge and sciatica article, card, and tile imagery |
+| `amari-method-active-bridge-ocean-swimmer.png` | Priya Active Bridge original-source-plate rebuild, approved by Eben 2026-08-19; staged in PR #451 | Active Bridge and sciatica article, card, and tile imagery |
+| `amari-method-active-bridge-cassia-trackpants.png` | Cassia original-source-plate rebuild from `IMG_3299.HEIC`, approved by Eben 2026-08-19; staged in PR #451 | Sciatica, knee, comparison, and condition article/card imagery |
 | `amari-method-passive-bridge-south-asian-client.png` | Passive Bridge editorial image introduced in `3d2c5d0101` and approved current image in `0e57e5279d` (2026-08-18) | Passive Bridge, lower-back, and psoas article, card, tile, and condition-hero imagery |
 
 Keep `journal-base/jh-spinal-wave-refined.jpg` for the Spinal Wave article and Spinal Wave cards. Do not use it as sciatica imagery.
