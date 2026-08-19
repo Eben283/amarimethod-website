@@ -605,7 +605,7 @@ export async function onRequestPost(context) {
   const partnerReferral = resolvePartnerReferral(body.partnerReferralCode);
   if (partnerReferral) {
     try {
-      const attribution = await recordPartnerReferralAttribution(env.ATTEND_DB, { partner: partnerReferral, contactId });
+      const attribution = await recordPartnerReferralAttribution(env.AUTOMATION_DB, { partner: partnerReferral, contactId });
       if (attribution.state === "conflict") return json({ error: "This person already has a different referral source.", code: "partner_attribution_conflict" }, 409, origin);
     } catch (err) {
       console.error("[book/create-checkout] partner attribution failed:", err);
