@@ -58,7 +58,8 @@ function KindIcon({ kind }: { kind: StaffMediaKind }) {
 function Preview({ asset, large = false }: { asset: StaffMediaAsset; large?: boolean }) {
   if (asset.kind === 'image') return <img src={asset.previewUrl} alt="" loading="lazy" />;
   if (asset.kind === 'video' && large) return <video src={asset.previewUrl} controls preload="metadata" />;
-  if (asset.mimeType === 'application/pdf') return <iframe className={`media-pdf-preview`} src={asset.previewUrl} title={`Preview of `} loading="lazy" />;
+  if (asset.mimeType === "application/pdf") return <iframe className={\`media-pdf-preview\${large ? " is-large" : ""}\`} src={asset.previewUrl} title={\`Preview of \${asset.name}\`} loading="lazy" />;
+
   return <div className={`media-file-fallback media-file-fallback--${asset.kind}`}><KindIcon kind={asset.kind} /><span>{asset.mimeType === 'application/pdf' ? 'PDF' : asset.kind}</span></div>;
 }
 
