@@ -2,10 +2,11 @@ name = "morning-sms"
 main = "src/index.js"
 compatibility_date = "2024-09-23"
 
-# Morning window, every 5 minutes. Logic is PT-aware inside the worker; the UTC
-# window covers ~4am–12pm PT across DST (11:00–19:59 UTC).
+# Morning window, every 5 minutes Monday–Saturday. Logic is PT-aware inside
+# the worker; the UTC window covers ~4am–12pm PT across DST (11:00–19:59 UTC).
+# `MON-SAT` intentionally excludes Sunday delivery for both internal texts.
 [triggers]
-crons = ["*/5 11-19 * * *"]
+crons = ["*/5 11-19 * * MON-SAT"]
 
 # Same KV as Pages / other workers — send idempotency + GHL OAuth tokens.
 [[kv_namespaces]]
