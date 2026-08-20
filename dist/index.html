@@ -25,12 +25,19 @@
 <meta name="twitter:image" content="https://www.amarimethod.com/social-preview.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="preload" as="image" href="/images/photos/optimized/hero-home-cedar-woman-1448.webp" imagesrcset="/images/photos/optimized/hero-home-cedar-woman-768.webp 768w, /images/photos/optimized/hero-home-cedar-woman-1448.webp 1448w" imagesizes="100vw" fetchpriority="high">
+<link rel="preload" as="image" href="/images/photos/optimized/amari-method-passive-bridge-south-asian-client-1448.webp" imagesrcset="/images/photos/optimized/amari-method-passive-bridge-south-asian-client-768.webp 768w, /images/photos/optimized/amari-method-passive-bridge-south-asian-client-1448.webp 1448w" imagesizes="100vw" fetchpriority="high">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
 <link rel="stylesheet" href="/css/site-v6.css?v=footer-1">
 <style>
   /* ---------- Homepage-specific styles ---------- */
-  .home-hero .hero-bg{background-image:url('/images/photos/optimized/hero-home-cedar-woman-1448.webp')}
+  .home-hero{align-items:center;padding:120px 0 80px}
+  .home-hero .hero-bg{background-image:url('/images/photos/optimized/amari-method-passive-bridge-south-asian-client-1448.webp');background-position:center center}
+  .home-hero .hero-bg::after{background:linear-gradient(90deg,rgba(23,26,24,.2) 0%,rgba(23,26,24,.1) 43%,rgba(23,26,24,0) 68%)}
+  .home-hero .hero-inner{padding-left:calc(50% + 20px);color:var(--carbon)}
+  .home-hero h1{color:var(--carbon)}
+  .home-hero p{color:rgba(23,26,24,.88)}
+  .home-hero .btn-pale{background:var(--carbon);color:var(--chalk)}
+  .home-hero .btn-pale:hover{background:var(--mineral);color:var(--chalk)}
   .hero p{max-width:46ch}
   .first-visit-link{margin:16px 0 0;font-family:var(--sans);font-size:13px;line-height:1.4}
   .first-visit-link a{color:inherit;border-bottom:1px solid currentColor;padding-bottom:2px}
@@ -114,7 +121,7 @@
   .home-pullquote cite{font-family:var(--sans);font-size:12px;font-weight:400;letter-spacing:.02em;color:rgba(244,243,238,.68)}
 
   @media (prefers-reduced-motion:reduce){.tile img,.jph img,.first-step img,.btn{transition:none!important}}
-  @media (max-width:768px){.home-hero .hero-bg{background-image:url('/images/photos/optimized/hero-home-cedar-woman-768.webp')}}
+  @media (max-width:768px){.home-hero .hero-bg{background-image:url('/images/photos/optimized/amari-method-passive-bridge-south-asian-client-768.webp')}}
   @media (max-width:1000px){
     .cards4,.tiles{grid-template-columns:1fr 1fr}
     .first-steps-intro{grid-template-columns:1fr;gap:20px}
@@ -129,6 +136,16 @@
     .first-visit-facts{grid-template-columns:1fr}
     .first-visit-facts span,.first-visit-facts span + span{padding:13px 0;border-left:0}
     .first-visit-facts span + span{border-top:1px solid var(--line)}
+  }
+  @media (max-width:860px){
+    .home-hero{align-items:flex-end;padding:126px 0 58px}
+    .home-hero .hero-bg{background-position:68% center}
+    .home-hero .hero-bg::after{background:linear-gradient(90deg,rgba(23,26,24,.78) 0%,rgba(23,26,24,.56) 44%,rgba(23,26,24,.12) 100%)}
+    .home-hero .hero-inner{padding-left:22px;color:#fff}
+    .home-hero h1{color:#fff}
+    .home-hero p{max-width:30ch;color:rgba(255,255,255,.9)}
+    .home-hero .btn-pale{background:var(--chalk);color:var(--carbon)}
+    .home-hero .btn-pale:hover{background:var(--paper);color:var(--carbon)}
   }
   /* Yinova-style band: cutout person floating on the color field (not a boxed photo) */
   .band .band-fig{align-self:stretch;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:540px}
