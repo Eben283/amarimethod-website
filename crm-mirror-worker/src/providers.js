@@ -176,20 +176,48 @@ export async function fetchGhlContactsPage(env, cursor, limit) {
   return { contacts, nextCursor: nextGhlCursor(payload.meta, contacts.length, limit) };
 }
 
-// The location-wide inbox is paginated separately from contacts. It supplies
-// thread-level unread state and the most recent preview; messages are then
-// fetched per thread so the owned timeline never depends on a UI-only summary.
-export async function fetchGhlConversationsPage(env, page = 1, limit = 100) {
+// The location-wide inbox is paginated separately from contacts. GHL's
+// conversation search uses the sort value of the last returned row
+// (`startAfterDate`), not a page number. A synthetic `page` query silently
+// returned the same recent slice forever, leaving older conversations absent.
+// Messages are then fetched per thread so the owned timeline never depends on
+// a UI-only summary.
+function conversationCursor(cursor) {
+  if (typeof cursor !== "string") return null;
+  const value = cursor.trim();
+  // Legacy values were small synthetic page numbers such as "1041". GHL's
+  // numeric sort value is epoch milliseconds, so only accept a plausibly
+  // modern timestamp; otherwise restart once from the recent window.
+  if (Number.isFinite(Number(value))) return Number(value) >= 1_000_000_000_000 ? value : null;
+  return value && Number.isFinite(Date.parse(value)) ? value : null;
+}
+
+function conversationSortValue(conversation) {
+  const value = conversation?.lastMessageDate || conversation?.dateUpdated || conversation?.dateAdded;
+  if (typeof value === "number" && Number.isFinite(value)) return String(value);
+  if (typeof value === "string" && (Number.isFinite(Number(value)) || Number.isFinite(Date.parse(value)))) return value;
+  return null;
+}
+
+export async function fetchGhlConversationsPage(env, cursor = null, limit = 100) {
   const params = new URLSearchParams({
     locationId: env.GHL_LOCATION_ID,
     sortBy: "last_message_date",
     sort: "desc",
     limit: String(Math.min(100, Math.max(1, limit))),
-    page: String(Math.max(1, page)),
   });
+  const position = conversationCursor(cursor);
+  if (position) params.set("startAfterDate", position);
   const payload = await ghlGet(env, `/conversations/search?${params}`);
   const conversations = Array.isArray(payload.conversations) ? payload.conversations : (Array.isArray(payload.data) ? payload.data : []);
-  return { conversations, nextPage: conversations.length >= limit ? page + 1 : null };
+  const lastCursor = conversationSortValue(conversations.at(-1));
+  // A missing or unchanged sort value is not safe to advance. Stop rather
+  // than repeatedly importing the same slice; a subsequent run can restart
+  // from the newest bounded window without corrupting the mirror.
+  const nextCursor = conversations.length >= limit && lastCursor && lastCursor !== position
+    ? lastCursor
+    : null;
+  return { conversations, nextCursor };
 }
 
 export async function fetchGhlConversationMessages(env, conversationExternalId, limit = 100) {

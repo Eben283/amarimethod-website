@@ -74,11 +74,10 @@ export async function syncGhl(env, limit, now) {
 // against GHL and writes solely into the owned CRM mirror.
 export async function syncGhlConversations(env, limit, now) {
   const cursorBefore = await getSyncCursor(env.CRM_DB, "ghl-conversations");
-  const page = Math.max(1, Number(cursorBefore || 1) || 1);
-  const runId = await beginSyncRun(env.CRM_DB, "ghl", `conversations:${page}`, now);
+  const runId = await beginSyncRun(env.CRM_DB, "ghl", `conversations:${cursorBefore || "start"}`, now);
   const outcome = result();
   try {
-    const response = await fetchGhlConversationsPage(env, page, Math.min(100, limit));
+    const response = await fetchGhlConversationsPage(env, cursorBefore, Math.min(100, limit));
     for (const rawThread of response.conversations) {
       outcome.recordsRead += 1;
       const thread = normalizeGhlConversation(rawThread);
@@ -96,8 +95,8 @@ export async function syncGhlConversations(env, limit, now) {
         outcome.recordsWritten += 1;
       }
     }
-    outcome.cursorAfter = response.nextPage ? String(response.nextPage) : "1";
-    outcome.status = response.nextPage ? "partial" : "succeeded";
+    outcome.cursorAfter = response.nextCursor;
+    outcome.status = response.nextCursor ? "partial" : "succeeded";
     await setSyncCursor(env.CRM_DB, "ghl-conversations", outcome.cursorAfter, now);
   } catch (error) {
     outcome.status = "failed";

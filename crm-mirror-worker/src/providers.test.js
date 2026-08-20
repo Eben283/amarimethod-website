@@ -9,6 +9,7 @@ import {
   fetchGhlContactNotes,
   fetchGhlContactTasks,
   fetchGhlContactsPage,
+  fetchGhlConversationsPage,
   fetchStripeCustomer,
   fetchStripeInvoicesPage,
 } from "./providers.js";
@@ -55,6 +56,35 @@ describe("GHL contact pagination", () => {
     const url = new URL(fetch.mock.calls[0][0]);
     expect(url.searchParams.has("startAfterId")).toBe(false);
     expect(url.searchParams.has("startAfter")).toBe(false);
+  });
+
+  it("uses GHL's conversation sort cursor instead of an unsupported page number", async () => {
+    fetch.mockResolvedValueOnce(Response.json({
+      conversations: [
+        { id: "thread_1", lastMessageDate: 1_721_000_000_000 },
+        { id: "thread_2", lastMessageDate: 1_720_000_000_000 },
+      ],
+    }));
+
+    const first = await fetchGhlConversationsPage(env, null, 2);
+    expect(first.nextCursor).toBe("1720000000000");
+    let url = new URL(fetch.mock.calls.at(-1)[0]);
+    expect(url.searchParams.has("page")).toBe(false);
+    expect(url.searchParams.has("startAfterDate")).toBe(false);
+
+    fetch.mockResolvedValueOnce(Response.json({ conversations: [] }));
+    await fetchGhlConversationsPage(env, first.nextCursor, 2);
+    url = new URL(fetch.mock.calls.at(-1)[0]);
+    expect(url.searchParams.get("startAfterDate")).toBe(first.nextCursor);
+  });
+
+  it("restarts instead of sending a legacy synthetic page number to GHL", async () => {
+    fetch.mockResolvedValueOnce(Response.json({ conversations: [] }));
+
+    await fetchGhlConversationsPage(env, "1041", 50);
+
+    const url = new URL(fetch.mock.calls.at(-1)[0]);
+    expect(url.searchParams.has("startAfterDate")).toBe(false);
   });
 
   it("accepts GHL appointment responses in their events shape", async () => {

@@ -59,7 +59,20 @@ vi.mock("../../functions/lib/ops-last-run.js", () => ({
   writeOpsLastRun: mocks.writeOpsLastRun, OPS_LAST_RUN_KEYS: { crmMirror: "crm" },
 }));
 
-import { backfillGhlClientRecords, syncStripeInvoices } from "./sync.js";
+import { backfillGhlClientRecords, syncGhlConversations, syncStripeInvoices } from "./sync.js";
+
+describe("GHL conversation mirror cursor", () => {
+  it("passes the durable GHL sort cursor through and persists the returned cursor", async () => {
+    mocks.getSyncCursor.mockResolvedValueOnce("2026-07-17T18:03:00.000Z");
+    mocks.fetchGhlConversationsPage.mockResolvedValueOnce({ conversations: [], nextCursor: null });
+
+    const outcome = await syncGhlConversations({ CRM_DB: {} }, 50, "2026-08-20T22:15:00.000Z");
+
+    expect(mocks.fetchGhlConversationsPage).toHaveBeenCalledWith({ CRM_DB: {} }, "2026-07-17T18:03:00.000Z", 50);
+    expect(mocks.setSyncCursor).toHaveBeenCalledWith({}, "ghl-conversations", null, "2026-08-20T22:15:00.000Z");
+    expect(outcome).toMatchObject({ status: "succeeded", cursorAfter: null });
+  });
+});
 
 describe("historic GHL client-record backfill", () => {
   it("refreshes source state and projects notes/tasks in a bounded resumable page", async () => {
