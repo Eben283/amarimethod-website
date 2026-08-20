@@ -1,4 +1,4 @@
-import { ArrowRight, Goal, Trophy } from 'lucide-react';
+import { ArrowRight, FileText, Goal, Trophy } from 'lucide-react';
 import './ProjectNovakPage.css';
 
 const PATHS = [
@@ -72,6 +72,7 @@ export default function ProjectNovakPage() {
       <div>
         <p>What we are building</p>
         <h2 id="novak-target">A serious San Francisco care company with a real route into Djokovic’s performance circle.</h2>
+        <a className="project-novak__plan-link" href="/staff/resources/project-novak-plan.txt" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /> Read the full internal plan <ArrowRight aria-hidden="true" /></a>
       </div>
     </section>
 
