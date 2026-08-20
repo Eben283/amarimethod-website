@@ -153,6 +153,11 @@ async function processGhlWebhook(request, env) {
   return finish(200, { projected: true, messageDuplicate: recorded.duplicate }, true);
 }
 
+const TRUSTED_STAFF_PARENT_ORIGINS = new Set([
+  "https://amarimethod.com",
+  "https://www.amarimethod.com",
+]);
+
 function html(body) {
   return new Response(body, {
     headers: {
@@ -266,7 +271,7 @@ export default {
       const embed = url.searchParams.get("embed") === "1";
       if (embed) destinationParams.set("embed", "1");
       const parentOrigin = url.searchParams.get("parent_origin");
-      if (embed && parentOrigin === "https://www.amarimethod.com") {
+      if (embed && TRUSTED_STAFF_PARENT_ORIGINS.has(parentOrigin)) {
         destinationParams.set("parent_origin", parentOrigin);
       }
       const requestedContact = url.searchParams.get("contact");

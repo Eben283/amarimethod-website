@@ -424,6 +424,7 @@ describe("Client Desk message rendering", () => {
     expect(rendered).toContain('data-contact-phone="+14155550123"');
     expect(clientDeskHtml()).toContain("window.parent.postMessage({ type: 'amari:staff-navigate'");
     expect(clientDeskHtml()).toContain('path: destination.pathname + destination.search, client');
+    expect(clientDeskHtml()).toContain("'https://amarimethod.com', 'https://www.amarimethod.com'");
     expect(clientDeskHtml()).toContain('bindRecordNavigation();');
   });
 
