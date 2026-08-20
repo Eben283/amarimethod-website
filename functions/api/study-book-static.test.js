@@ -230,6 +230,12 @@ describe("single-entry study page contract", () => {
     expect(read("package.json")).toContain("staff-sw.js _headers dist/");
   });
 
+  it("allows the protected CRM Worker only as a Staff iframe source", () => {
+    const headers = read("_headers");
+    expect(headers).toContain("frame-src https://link.amarimethod.com https://amarimethodfollowup.amarimethod.com https://amari-crm-mirror.eben-fa2.workers.dev");
+    expect(read("dist/_headers")).toBe(headers);
+  });
+
   it("gates participant tags behind a provider-read control marker and isolates one exact preview", () => {
     const endpoint = read("functions/api/study-book-v2.js");
     const marker = read("functions/lib/study-enrollment-marker.js");
