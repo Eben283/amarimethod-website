@@ -35,7 +35,25 @@
   .first-visit-link{margin:16px 0 0;font-family:var(--sans);font-size:13px;line-height:1.4}
   .first-visit-link a{color:inherit;border-bottom:1px solid currentColor;padding-bottom:2px}
   .capacity-note{margin:14px 0 0;font-family:var(--sans);font-size:12px;line-height:1.45;letter-spacing:.04em;text-transform:uppercase;color:var(--body)}
-  /* This Just In */
+  /* The first decision: concrete, quiet, and rooted in the actual visit. */
+  .first-steps{padding:clamp(72px,9vw,124px) 0;background:var(--cream-2);border-bottom:1px solid var(--line)}
+  .first-steps-intro{display:grid;grid-template-columns:minmax(0,.85fr) minmax(280px,1fr);gap:clamp(36px,7vw,112px);align-items:end;padding-bottom:42px}
+  .first-steps-intro .eyebrow{display:block;margin-bottom:14px}
+  .first-steps-intro h2{font-size:clamp(2.35rem,4.1vw,3.7rem);font-weight:500;max-width:12ch}
+  .first-steps-intro p{font-size:1.06rem;line-height:1.65;margin:0;max-width:43ch}
+  .first-visit-facts{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:42px}
+  .first-visit-facts span{padding:16px 18px 16px 0;font-size:12px;letter-spacing:.04em;color:var(--ink)}
+  .first-visit-facts span + span{padding-left:18px;border-left:1px solid var(--line)}
+  .first-step-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
+  .first-step{border-top:1px solid var(--ink);padding-top:16px}
+  .first-step figure{margin:0 0 22px;aspect-ratio:4/3;overflow:hidden;background:var(--tan)}
+  .first-step img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
+  .first-step:hover img{transform:scale(1.035)}
+  .first-step .step-number{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--body)}
+  .first-step h3{font-size:clamp(1.35rem,2vw,1.7rem);font-weight:500;line-height:1.08;max-width:16ch;margin-top:10px}
+  .first-step p{margin-top:13px;max-width:35ch;font-size:.96rem;line-height:1.6}
+  .first-step-cta{margin-top:40px}
+  /* Journal */
   .justin{padding:clamp(70px,8vw,112px) 0 clamp(56px,6vw,84px);text-align:left}
   .justin .kicker{font-family:var(--sans);font-weight:500;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-bottom:30px}
   .cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;text-align:left}
@@ -95,15 +113,22 @@
   .home-pullquote blockquote{font-family:var(--sans);font-weight:500;font-size:clamp(1.85rem,3.6vw,3rem);line-height:1.14;letter-spacing:-.028em;color:var(--chalk);max-width:23ch}
   .home-pullquote cite{font-family:var(--sans);font-size:12px;font-weight:400;letter-spacing:.02em;color:rgba(244,243,238,.68)}
 
-  @media (prefers-reduced-motion:reduce){.tile img,.jph img,.btn{transition:none!important}}
+  @media (prefers-reduced-motion:reduce){.tile img,.jph img,.first-step img,.btn{transition:none!important}}
   @media (max-width:768px){.home-hero .hero-bg{background-image:url('/images/photos/optimized/hero-home-cedar-woman-768.webp')}}
   @media (max-width:1000px){
     .cards4,.tiles{grid-template-columns:1fr 1fr}
+    .first-steps-intro{grid-template-columns:1fr;gap:20px}
+    .first-visit-facts{grid-template-columns:repeat(2,1fr)}
+    .first-visit-facts span:nth-child(3){border-left:0}
+    .first-step-grid{grid-template-columns:1fr 1fr}
     .shop-panel{grid-template-columns:1fr}
     .shop-panel img.prod{min-height:320px}
   }
   @media (max-width:640px){
-    .cards4,.tiles{grid-template-columns:1fr}
+    .cards4,.tiles,.first-step-grid{grid-template-columns:1fr}
+    .first-visit-facts{grid-template-columns:1fr}
+    .first-visit-facts span,.first-visit-facts span + span{padding:13px 0;border-left:0}
+    .first-visit-facts span + span{border-top:1px solid var(--line)}
   }
   /* Yinova-style band: cutout person floating on the color field (not a boxed photo) */
   .band .band-fig{align-self:stretch;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:540px}
@@ -146,37 +171,48 @@
   <div class="hero-bg"></div>
   <div class="hero-inner">
     <h1>Subtle input.<br>Unmistakable result.</h1>
-    <p>Private, hands-on guided movement that changes how your body moves and feels.</p>
+    <p>Private guided movement for pain and restriction—one-on-one in San Francisco.</p>
     <a href="/assessment-booking" class="btn btn-pale">Start with a $29 Assessment</a>
   </div>
 </section>
 
-<!-- THIS JUST IN -->
-<section class="justin">
+<!-- FIRST VISIT: make the service and first decision clear before editorial content. -->
+<section class="first-steps" aria-labelledby="first-steps-title">
   <div class="wrap">
-    <h2 class="kicker reveal">This Just In</h2>
-    <div class="cards4">
-      <a class="jcard reveal" href="/blog-suspension-squat-hanging-exercises">
-        <div class="jph" style="background:var(--tan)"><img src="/images/photos/optimized/amari-method-suspension-squat-athletic-client-1448.webp" srcset="/images/photos/optimized/amari-method-suspension-squat-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-suspension-squat-athletic-client-1448.webp 1448w" sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" decoding="async" alt="" onerror="this.remove()"></div>
-        <div class="cat">Protocol</div>
-        <h3>Suspension squat: hanging protocols that cascade through your chain</h3>
-      </a>
-      <a class="jcard reveal" href="/blog-power-posture-shoulder-blades" style="transition-delay:.06s">
-        <div class="jph" style="background:var(--peach)"><img src="/images/photos/optimized/amari-method-power-posture-athletic-client-1448.webp" srcset="/images/photos/optimized/amari-method-power-posture-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-power-posture-athletic-client-1448.webp 1448w" sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" decoding="async" alt="" onerror="this.remove()"></div>
-        <div class="cat">Protocol</div>
-        <h3>Power Posture: undo the damage from sitting all day</h3>
-      </a>
-      <a class="jcard reveal" href="/blog-elbow-reset-tennis-elbow" style="transition-delay:.12s">
-        <div class="jph" style="background:#B98E63"><img src="/images/photos/optimized/amari-method-elbow-reset-athletic-ceo-1448.webp" srcset="/images/photos/optimized/amari-method-elbow-reset-athletic-ceo-768.webp 768w, /images/photos/optimized/amari-method-elbow-reset-athletic-ceo-1448.webp 1448w" sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" decoding="async" alt="" onerror="this.remove()"></div>
-        <div class="cat">Protocol</div>
-        <h3>The elbow reset: for tennis elbow and golfer's elbow</h3>
-      </a>
-      <a class="jcard reveal" href="/blog-hand-balancer-carpal-tunnel" style="transition-delay:.18s">
-        <div class="jph" style="background:var(--peach)"><img src="/images/photos/optimized/amari-method-guided-hand-position-athletic-client-1448.webp" srcset="/images/photos/optimized/amari-method-guided-hand-position-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-guided-hand-position-athletic-client-1448.webp 1448w" sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" decoding="async" alt="" onerror="this.remove()"></div>
-        <div class="cat">Protocol</div>
-        <h3>The hand balancer: for carpal tunnel and wrist pain</h3>
-      </a>
+    <div class="first-steps-intro">
+      <div class="reveal">
+        <span class="eyebrow">Start here</span>
+        <h2 id="first-steps-title">Feel the work before you decide.</h2>
+      </div>
+      <p class="reveal">The Assessment is a private first visit with Garrett—not a sales call or a class. You will experience the work directly, then decide whether a longer practice is right for you.</p>
     </div>
+    <div class="first-visit-facts reveal" aria-label="Assessment details">
+      <span>$29 Assessment</span>
+      <span>50 minutes</span>
+      <span>Private &amp; in person</span>
+      <span>25+ years in practice</span>
+    </div>
+    <div class="first-step-grid">
+      <article class="first-step reveal">
+        <figure><img src="/images/photos/optimized/amari-method-concept-explanation-athletic-client-1448.webp" srcset="/images/photos/optimized/amari-method-concept-explanation-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-concept-explanation-athletic-client-1448.webp 1448w" sizes="(max-width: 640px) 100vw, 50vw" loading="lazy" decoding="async" alt="Garrett speaking with an Amari client"></figure>
+        <span class="step-number">01 — Arrive</span>
+        <h3>Start with what has been getting in the way.</h3>
+        <p>Talk through what has changed, what you want to return to, and how you are moving now.</p>
+      </article>
+      <article class="first-step reveal" style="transition-delay:.08s">
+        <figure><img src="/images/photos/optimized/amari-method-guided-forearm-position-athletic-client-1448.webp" srcset="/images/photos/optimized/amari-method-guided-forearm-position-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-guided-forearm-position-athletic-client-1448.webp 1448w" sizes="(max-width: 640px) 100vw, 50vw" loading="lazy" decoding="async" alt="An Amari client moving with direct guidance"></figure>
+        <span class="step-number">02 — Move</span>
+        <h3>Work one-on-one with direct guidance.</h3>
+        <p>You will move, breathe, and work through a precise physical setup with Garrett.</p>
+      </article>
+      <article class="first-step reveal" style="transition-delay:.16s">
+        <figure><img src="/images/photos/optimized/amari-method-passive-bridge-south-asian-client-1448.webp" srcset="/images/photos/optimized/amari-method-passive-bridge-south-asian-client-768.webp 768w, /images/photos/optimized/amari-method-passive-bridge-south-asian-client-1448.webp 1448w" sizes="(max-width: 640px) 100vw, 50vw" loading="lazy" decoding="async" alt="An Amari client in a guided movement position"></figure>
+        <span class="step-number">03 — Notice</span>
+        <h3>Notice what changes, then decide what is next.</h3>
+        <p>There is no package decision before you have had a chance to experience the work for yourself.</p>
+      </article>
+    </div>
+    <a href="/assessment-booking" class="btn first-step-cta reveal">Book your $29 Assessment</a>
   </div>
 </section>
 
@@ -249,6 +285,35 @@
   <div class="wrap reveal">
     <blockquote>I thought the best I could hope for was less pain. I've never felt this at home in my body.</blockquote>
     <cite>Sara, Amari client</cite>
+  </div>
+</section>
+
+<!-- JOURNAL: useful depth after the service, visit, and proof have been made clear. -->
+<section class="justin" aria-labelledby="journal-title">
+  <div class="wrap">
+    <h2 id="journal-title" class="kicker reveal">From the Journal</h2>
+    <div class="cards4">
+      <a class="jcard reveal" href="/blog-suspension-squat-hanging-exercises">
+        <div class="jph" style="background:var(--tan)"><img src="/images/photos/optimized/amari-method-suspension-squat-athletic-client-1448.webp" srcset="/images/photos/optimized/amari-method-suspension-squat-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-suspension-squat-athletic-client-1448.webp 1448w" sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" decoding="async" alt="" onerror="this.remove()"></div>
+        <div class="cat">Protocol</div>
+        <h3>Suspension squat: hanging protocols that cascade through your chain</h3>
+      </a>
+      <a class="jcard reveal" href="/blog-power-posture-shoulder-blades" style="transition-delay:.06s">
+        <div class="jph" style="background:var(--peach)"><img src="/images/photos/optimized/amari-method-power-posture-athletic-client-1448.webp" srcset="/images/photos/optimized/amari-method-power-posture-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-power-posture-athletic-client-1448.webp 1448w" sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" decoding="async" alt="" onerror="this.remove()"></div>
+        <div class="cat">Protocol</div>
+        <h3>Power Posture: undo the damage from sitting all day</h3>
+      </a>
+      <a class="jcard reveal" href="/blog-elbow-reset-tennis-elbow" style="transition-delay:.12s">
+        <div class="jph" style="background:#B98E63"><img src="/images/photos/optimized/amari-method-elbow-reset-athletic-ceo-1448.webp" srcset="/images/photos/optimized/amari-method-elbow-reset-athletic-ceo-768.webp 768w, /images/photos/optimized/amari-method-elbow-reset-athletic-ceo-1448.webp 1448w" sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" decoding="async" alt="" onerror="this.remove()"></div>
+        <div class="cat">Protocol</div>
+        <h3>The elbow reset: for tennis elbow and golfer's elbow</h3>
+      </a>
+      <a class="jcard reveal" href="/blog-hand-balancer-carpal-tunnel" style="transition-delay:.18s">
+        <div class="jph" style="background:var(--peach)"><img src="/images/photos/optimized/amari-method-guided-hand-position-athletic-client-1448.webp" srcset="/images/photos/optimized/amari-method-guided-hand-position-athletic-client-768.webp 768w, /images/photos/optimized/amari-method-guided-hand-position-athletic-client-1448.webp 1448w" sizes="(max-width: 768px) 100vw, 25vw" loading="lazy" decoding="async" alt="" onerror="this.remove()"></div>
+        <div class="cat">Protocol</div>
+        <h3>The hand balancer: for carpal tunnel and wrist pain</h3>
+      </a>
+    </div>
   </div>
 </section>
 
