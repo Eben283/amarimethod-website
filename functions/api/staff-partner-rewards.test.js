@@ -38,11 +38,11 @@ function ctx(body, d = db()) {
 beforeEach(() => { vi.clearAllMocks(); requireStaffAuth.mockResolvedValue({ payload: { role: "staff", user: "Eben" } }); });
 
 describe("staff partner rewards", () => {
-  it("records a qualifying 12-session purchase as a $400 chargeback hold", async () => {
+  it("records a qualifying 12-session purchase as a $250 plus one Amari session chargeback hold", async () => {
     const d = db();
     const response = await onRequestPost(ctx({ action: "qualify", rewardId: "reward_1", purchasedAt: "2026-08-30T00:00:00Z", sessionCount: 12 }, d));
     expect(response.status).toBe(201);
-    await expect(response.json()).resolves.toMatchObject({ state: "chargeback_hold", amountCents: 40000 });
+    await expect(response.json()).resolves.toMatchObject({ state: "chargeback_hold", amountCents: 25000, sessionEntitlement: "one Amari session" });
     expect(d.batch).toHaveBeenCalledOnce();
   });
 

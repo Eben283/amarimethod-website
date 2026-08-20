@@ -5,7 +5,10 @@ const inputClass = 'mt-1 block w-full rounded-md border border-slate-300 bg-whit
 const labelClass = 'block text-sm font-medium text-slate-700';
 
 function eventDetail(event: Event) {
-  if (typeof event.detail.amountCents === 'number') return `$${(event.detail.amountCents / 100).toLocaleString()} · hold to ${new Date(String(event.detail.holdUntil)).toLocaleDateString()}`;
+  if (typeof event.detail.amountCents === 'number') {
+    const session = event.detail.sessionEntitlement ? ` + ${String(event.detail.sessionEntitlement)}` : '';
+    return `$${(event.detail.amountCents / 100).toLocaleString()}${session} · hold to ${new Date(String(event.detail.holdUntil)).toLocaleDateString()}`;
+  }
   if (event.detail.payoutReference) return `Payout reference: ${String(event.detail.payoutReference)}`;
   if (event.detail.reason) return String(event.detail.reason);
   if (event.detail.partnerContactId) return `Partner ${String(event.detail.partnerContactId)} → referred ${String(event.detail.referredContactId)}`;
@@ -61,7 +64,7 @@ export default function PartnerRewardsPage() {
     <header>
       <p className="text-sm uppercase tracking-wide text-amari-accent-warm">Manual ledger</p>
       <h1 className="text-3xl font-serif text-amari-charcoal">Partner rewards</h1>
-      <p className="mt-2 max-w-3xl text-slate-600">$400 for a qualifying 12-session Practice and $700 for 24 sessions. The referral must purchase within 90 days; payout is recorded only after the 30-day chargeback hold. This page sends no emails and initiates no payout.</p>
+      <p className="mt-2 max-w-3xl text-slate-600">$250 cash plus one Amari session for a qualifying 12-session Practice, or $500 cash plus one Amari session for 24 sessions. The referral must purchase within 90 days; payout is recorded only after the 30-day chargeback hold. This page sends no emails and initiates no payout.</p>
     </header>
 
     <section className="grid gap-4 lg:grid-cols-2" aria-label="Partner reward manual controls">
@@ -78,7 +81,7 @@ export default function PartnerRewardsPage() {
         <h2 className="font-semibold text-amari-charcoal">2. Verify qualifying Practice purchase</h2>
         <label className={labelClass}>Ledger reward ID<input required name="rewardId" pattern="[A-Za-z0-9_-]+" className={inputClass} /></label>
         <label className={labelClass}>Stripe purchase date and time<input required name="purchasedAt" type="datetime-local" className={inputClass} /></label>
-        <label className={labelClass}>Practice package<select required name="sessionCount" defaultValue="12" className={inputClass}><option value="12">12-session Practice — $400</option><option value="24">24-session Practice — $700</option></select></label>
+        <label className={labelClass}>Practice package<select required name="sessionCount" defaultValue="12" className={inputClass}><option value="12">12-session Practice — $250 + one Amari session</option><option value="24">24-session Practice — $500 + one Amari session</option></select></label>
         <button disabled={saving} className="rounded-md bg-amari-charcoal px-4 py-2 text-sm font-medium text-white disabled:opacity-50">Start 30-day hold</button>
       </form>
 

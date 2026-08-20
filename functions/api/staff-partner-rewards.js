@@ -44,7 +44,7 @@ export async function onRequestPost(context) {
     if (existing) return new Response(JSON.stringify({ error: "Reward is already qualified; use a correction event to preserve the history" }), { status: 409, headers: out });
     const policy = rewardForPracticePurchase({ referralAt: JSON.parse(attribution.detail).referralAt, purchasedAt, sessionCount: Number(sessionCount) });
     if (!policy.qualifies) return new Response(JSON.stringify({ error: policy.reason }), { status: 422, headers: out });
-    const detail = { purchasedAt: iso(purchasedAt), sessionCount: Number(sessionCount), amountCents: policy.amountCents, holdUntil: policy.holdUntil };
+    const detail = { purchasedAt: iso(purchasedAt), sessionCount: Number(sessionCount), amountCents: policy.amountCents, sessionEntitlement: policy.sessionEntitlement, holdUntil: policy.holdUntil };
     await db.batch(["qualifying_purchase", "chargeback_hold"].map(type => insert(db, rewardId, actor, type, detail)));
     return new Response(JSON.stringify({ success: true, state: "chargeback_hold", ...detail }), { status: 201, headers: out });
   }
