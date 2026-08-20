@@ -397,25 +397,6 @@
     .share-link-copy:hover { background: var(--pa-ink); color: var(--pa-paper); }
     .share-link-copy:active { background: var(--pa-accent-strong); color: var(--pa-paper); }
 
-    /* ===== Already-sold link ===== */
-    .sold-link-row {
-      text-align: center;
-      margin-top: 12px;
-    }
-    #btn-sold {
-      background: none;
-      border: 0;
-      font: inherit;
-      font-size: 13px;
-      color: var(--pa-ink-2);
-      cursor: pointer;
-      text-decoration: underline;
-      text-decoration-color: var(--pa-line-2);
-      padding: 8px 0;
-      min-height: 36px;
-    }
-    #btn-sold:hover { color: var(--pa-accent-strong); text-decoration-color: var(--pa-accent-strong); }
-
     /* ===== Inline forms (Refer / Sold) ===== */
     .inline-form {
       display: none;
@@ -1465,9 +1446,9 @@
   <section class="earnings-card" id="earnings-card">
     <div class="earnings-top">
       <div>
-        <span class="earnings-amount" id="earnings-amount">$0</span>
+        <span class="earnings-amount" id="earnings-amount">$250 / $500</span>
         <div class="earnings-paid" id="earnings-paid" style="display:none;"></div>
-        <div class="earnings-label">Earned from referrals</div>
+        <div class="earnings-label">Cash reward after a referred person purchases a Practice</div>
       </div>
       <div class="earnings-breakdown" id="earnings-breakdown">
         <div data-label="Booked"><strong id="stat-booked">0</strong></div>
@@ -1475,34 +1456,34 @@
       </div>
     </div>
     <p class="earnings-nudge" id="earnings-nudge">
-      Your first referral earns $50 cash &mdash; just a name and a phone number.
+      6-Week Practice: $250 cash + a Partner Care Session. 12-Week Practice: $500 cash + a Partner Care Session.
     </p>
   </section>
 
-  <!-- 2. ACTION STACK — Refer primary + Sold secondary -->
+  <!-- 2. ACTION STACK — Direct introduction + personal link -->
   <div class="action-stack">
     <button class="cta-card cta-card-primary" id="btn-refer" type="button">
       <span class="cta-icon">+</span>
       <div>
-        <span class="cta-label">Refer a client</span>
-        <span class="cta-desc">Submit their name and number. We handle the rest.</span>
+        <span class="cta-label">Introduce someone</span>
+        <span class="cta-desc">Share their name and number. We&rsquo;ll take it from there.</span>
       </div>
-      <span class="cta-earn-tag">+$50</span>
+      <span class="cta-earn-tag">$250&ndash;$500</span>
     </button>
 
-    <button class="cta-card cta-card-secondary" id="btn-sold" type="button">
+    <button class="cta-card cta-card-secondary" id="btn-share" type="button">
       <div>
-        <span class="cta-label">Send a client to Amari</span>
-        <span class="cta-desc">Log their details and we&rsquo;ll follow up directly.</span>
+        <span class="cta-label">Share your link</span>
+        <span class="cta-desc">Give them a simple way to begin with Amari.</span>
       </div>
       <span class="cta-earn-tag">→</span>
     </button>
   </div>
 
-  <!-- Refer form (hidden, shown when "Refer a client" tapped) -->
+  <!-- Refer form (hidden, shown when "Introduce someone" tapped) -->
   <div class="inline-form" id="refer-form-panel">
-    <h3>Refer a client</h3>
-    <div class="form-subtitle">Just a name and number. We'll reach out, handle booking, and you earn $50 when they show up.</div>
+    <h3>Introduce someone</h3>
+    <div class="form-subtitle">With their permission, share their name and number. We&rsquo;ll reach out personally and take it from there.</div>
     <form id="refer-form" novalidate>
       <div class="field">
         <label for="refer-name">Client first name</label>
@@ -1564,7 +1545,7 @@
   <!-- 3. SHARE LINK -->
   <section class="app-share-section" id="share-panel">
     <h3>Share your link</h3>
-    <p>Text this to anyone you know with pain. When they book through your link, you earn $50.</p>
+    <p>Text this to someone whose pain or restriction keeps coming back. If they purchase a Practice within 90 days, your referral stays attached to you.</p>
     <div class="share-link-row">
       <input type="text" class="share-link-input" id="share-link" readonly>
       <button type="button" class="share-link-copy" id="btn-copy">Copy</button>
@@ -1591,20 +1572,20 @@
         <div class="pitch-section-title">Use the one that fits the conversation</div>
         <div class="talking-points">
           <div class="talking-point">
-            <span class="talking-point-label">Simplest</span>
-            <p class="talking-point-copy">Amari teaches you to bring your body back into balance yourself.</p>
+            <span class="talking-point-label">The simple version</span>
+            <p class="talking-point-copy">Amari is one-on-one work for people whose pain or restriction keeps coming back.</p>
           </div>
           <div class="talking-point">
-            <span class="talking-point-label">The comparison</span>
-            <p class="talking-point-copy">Like chiropractic, except you learn to do it yourself.</p>
+            <span class="talking-point-label">What happens</span>
+            <p class="talking-point-copy">Garrett helps them understand the pattern, works with them directly, then gives them practical ways to keep changing it between sessions.</p>
           </div>
           <div class="talking-point">
-            <span class="talking-point-label">The big promise</span>
-            <p class="talking-point-copy">Amari helps people end the cycle of needing someone else to fix them.</p>
+            <span class="talking-point-label">Who to think of</span>
+            <p class="talking-point-copy">Someone who has tried the usual things, keeps managing the same problem, and wants a more personal, hands-on plan.</p>
           </div>
           <div class="talking-point">
-            <span class="talking-point-label">The fuller explanation</span>
-            <p class="talking-point-copy">Amari helps you understand what your pain means, then gives you the skills to bring that part of your body back into balance.</p>
+            <span class="talking-point-label">The invitation</span>
+            <p class="talking-point-copy">Start with a 50-minute Assessment for $29. They&rsquo;ll leave with a clearer sense of what may be driving the problem and what to do next.</p>
           </div>
         </div>
         <button class="pitch-video-btn" id="btn-video" type="button">
@@ -1616,12 +1597,12 @@
       </div>
 
       <div class="pitch-section">
-        <div class="pitch-section-title">What they're buying</div>
+        <div class="pitch-section-title">What starts here</div>
         <ul class="spec-list">
-          <li><span class="spec-k">Session</span><span class="spec-v">60 minutes with the Amari team</span></li>
-          <li><span class="spec-k">Format</span><span class="spec-v">In-person or virtual</span></li>
-          <li><span class="spec-k">Payment</span><span class="spec-v">Affirm available</span></li>
-          <li><span class="spec-k">Includes</span><span class="spec-v">A full look at their pattern, hands-on work, and take-home protocols</span></li>
+          <li><span class="spec-k">First visit</span><span class="spec-v">50-minute Assessment &middot; $29</span></li>
+          <li><span class="spec-k">Setting</span><span class="spec-v">One-on-one, in San Francisco</span></li>
+          <li><span class="spec-k">Focus</span><span class="spec-v">The pattern behind the pain or restriction</span></li>
+          <li><span class="spec-k">Takeaway</span><span class="spec-v">A clearer next step and practical work to begin with</span></li>
         </ul>
       </div>
     </div>
@@ -1913,30 +1894,13 @@
     }
   }
 
-  // ── Earnings display ──
-  function updateEarnings(earned, paid, total) {
-    var earnedAmount = earned * 50;
-    var paidAmount = paid * 50;
-    document.getElementById('earnings-amount').textContent = '$' + earnedAmount;
-    document.getElementById('stat-booked').textContent = earned;
+  // ── Referral counts ──
+  // Reward qualification follows a later Practice purchase and is tracked
+  // separately, so this portal shows introduction and booking progress rather
+  // than inventing an earned-dollar total from an Assessment appointment.
+  function updateReferralCounts(booked, total) {
+    document.getElementById('stat-booked').textContent = booked;
     document.getElementById('stat-total').textContent = total;
-
-    // Show paid sub-line if any payouts have been made
-    var paidEl = document.getElementById('earnings-paid');
-    if (paidEl) {
-      if (paid > 0) {
-        paidEl.textContent = '$' + paidAmount + ' paid';
-        paidEl.style.display = '';
-      } else {
-        paidEl.style.display = 'none';
-      }
-    }
-
-    // Show nudge only at zero state; hide once they have earnings
-    var nudgeEl = document.getElementById('earnings-nudge');
-    if (nudgeEl) {
-      nudgeEl.style.display = earned > 0 ? 'none' : '';
-    }
   }
 
   // ── Load dashboard data ──
@@ -1968,18 +1932,17 @@
       var partnerLink = 'https://www.amarimethod.com/client-landing?ref=' + encodeURIComponent(firstName.toLowerCase());
       document.getElementById('share-link').value = partnerLink;
 
-      // Update earnings card — only refer-path booked/completed referrals earn $50
+      // A booked introduction is useful partner context, but not a reward
+      // qualification: the current offer qualifies after a Practice purchase.
       var total = stats.total || 0;
-      var referEarned = 0;
-      var referPaid = 0;
+      var bookedIntroductions = 0;
       for (var i = 0; i < referrals.length; i++) {
         var ref = referrals[i];
-        if (ref.referralType !== 'sold' && ref.feeStatus !== 'expired' && (ref.status === 'booked' || ref.status === 'completed')) {
-          referEarned++;
-          if (ref.feeStatus === 'paid') referPaid++;
+        if (ref.referralType !== 'sold' && (ref.status === 'booked' || ref.status === 'completed')) {
+          bookedIntroductions++;
         }
       }
-      updateEarnings(referEarned, referPaid, total);
+      updateReferralCounts(bookedIntroductions, total);
       document.getElementById('earnings-card').classList.add('loaded');
 
       // Referral history
@@ -1997,7 +1960,7 @@
           var displayStatus = hasBooked ? 'booked' : 'referred';
           var statusClass = 'status-' + displayStatus;
 
-          // Fee badge for refer-path only
+          // Referral state only. Practice rewards are recorded separately.
           var earningText = '';
           if (isReferPath) {
             if (r.feeStatus === 'expired') {
@@ -2005,11 +1968,8 @@
               statusClass = 'status-expired';
             } else if (!hasBooked) {
               earningText = 'pending';
-            } else if (r.feeStatus === 'paid') {
-              earningText = '$50 paid';
-              statusClass = 'status-paid';
             } else {
-              earningText = '$50 earned';
+              earningText = 'introduced';
             }
           } else {
             earningText = 'sold';
@@ -2135,13 +2095,11 @@
     }
   });
 
-  document.getElementById('btn-sold').addEventListener('click', function () {
-    var isActive = soldPanel.classList.contains('active');
+  document.getElementById('btn-share').addEventListener('click', function () {
     closeAllForms();
-    if (!isActive) {
-      soldPanel.classList.add('active');
-      document.getElementById('sold-name').focus();
-    }
+    var sharePanel = document.getElementById('share-panel');
+    sharePanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    window.setTimeout(function () { document.getElementById('btn-copy').focus(); }, 350);
   });
 
   // ── Generic referral submit handler ──
@@ -2224,7 +2182,7 @@
           glyphEl.textContent = '✦'; // ✦
           headingEl.innerHTML = "We've got " + nameHtml + " from here.";
           messageEl.textContent =
-            "We'll reach out within 24 hours and let you know when they book. Your $50 lands on the next payout.";
+            "We’ll reach out personally and take it from here. If they purchase a Practice within 90 days, your Partner reward applies.";
           metaK1.textContent = 'Sent to';
           metaV1.textContent = payload.clientPhone;
           metaK2.textContent = 'Submitted';
