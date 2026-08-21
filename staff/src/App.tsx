@@ -7,6 +7,12 @@ import HomePage from './pages/HomePage';
 import StaffShell from './components/StaffShell';
 import { Loader2 } from 'lucide-react';
 import './styles/staff-legibility.css';
+import './pages/AutomationRegistryPage.css';
+import './pages/AutomationCutoverTree.css';
+import './pages/AutomationCutoverTreeFix.css';
+import './pages/AutomationHealthPilot.css';
+import './pages/AutomationMasterMap.css';
+import './pages/AutomationWorkflowCanvas.css';
 
 const TodayPage = lazy(() => import('./pages/TodayPage'));
 const ClientsPage = lazy(() => import('./pages/ClientsPage'));
