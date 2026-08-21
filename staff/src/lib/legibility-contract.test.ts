@@ -92,6 +92,15 @@ describe('Staff legibility contract', () => {
     expect(workflow).toContain('.automation-master-map.is-selected-view .automation-playbook-parallel.is-3{grid-template-columns:1fr');
   });
 
+  it('counts automation families from live registry data and exposes the Morning SMS node map', () => {
+    const registryPage = css('pages/AutomationRegistryPage.tsx');
+
+    expect(registryPage).toContain("'morning-staff-sms': 'Morning SMS to Eben and Garrett'");
+    expect(registryPage).toContain("const isMorningSms = family.key === 'morning-staff-sms'");
+    expect(registryPage).toContain("families.filter((family) => family.kind === 'operational').length");
+    expect(registryPage).not.toContain('Master map · 24 automations');
+  });
+
   it('keeps review-worthy automation evidence reachable without restoring the full event wall', () => {
     const record = css('pages/ClientDetailPage.tsx');
     expect(record).toContain('failedAutomationEvents.slice(0, 3)');
