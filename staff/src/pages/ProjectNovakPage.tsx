@@ -5,20 +5,20 @@ const PLAN = [
   {
     number: '01',
     eyebrow: 'First 90 days',
-    title: 'Choose two real starting points.',
-    text: 'Pick one body-professional host and one tennis or racquet-sport host. Agree on why Amari belongs there, how people first experience it, and when we review what happened.',
+    title: 'Choose two specific communities.',
+    text: 'Choose one local fitness or movement community and one local tennis or racquet-sport community. In each, find a person or venue willing to invite a few people to try Amari, give honest feedback, and introduce anyone who is genuinely interested.',
   },
   {
     number: '02',
     eyebrow: 'First 90 days',
-    title: 'Run the small cohort and learn.',
-    text: 'Garrett delivers the work. Eben records the source, return care, paid-care choices, voluntary introductions, and any real next connection. Review the two lanes at days 30, 60, and 90.',
+    title: 'Run a small test and learn.',
+    text: 'Decide what the first session looks like and set a review date. Garrett delivers the work; Eben records who came, who returned, who chose paid care, and whether any genuine introductions followed. Review both communities at days 30, 60, and 90.',
   },
   {
     number: '03',
     eyebrow: 'Months 4–12',
-    title: 'Keep the lane that proves itself.',
-    text: 'Concentrate on the lane that creates paid care and voluntary introductions. By year end, earn one trusted tennis or performance connector and name the next credible link toward Djokovic’s team.',
+    title: 'Keep the community that proves itself.',
+    text: 'Focus on the community that creates paid care and genuine introductions. By year end, earn one trusted tennis or performance connection and name the next credible person between Amari and Djokovic’s team.',
   },
 ];
 
@@ -36,9 +36,9 @@ const HORIZONS = [
 ];
 
 const FILTERS = [
-  ['Double down', 'The lane creates paid care and either voluntary introductions or a real tennis/performance bridge.'],
-  ['Keep or repair', 'Keep a revenue-producing lane as business-only. Repair the experience or explanation when people value it but do not return.'],
-  ['Exit', 'After two 90-day cycles with neither paid care nor a warm next step, stop calling it Project Novak work.'],
+  ['Double down', 'The community creates paid care and either genuine introductions or a real tennis/performance connection.'],
+  ['Keep or repair', 'Keep a revenue-producing community as business-only. Improve the experience or explanation when people value it but do not return.'],
+  ['Exit', 'After two 90-day cycles with neither paid care nor a genuine next introduction, stop treating it as Project Novak work.'],
 ];
 
 const IMAGES = [
@@ -106,7 +106,7 @@ export default function ProjectNovakPage() {
     </section>
 
     <section className="project-novak__owners" aria-label="Project Novak ownership">
-      <div><p>Eben owns</p><h3>Hosts, numbers, route, and review.</h3></div>
+      <div><p>Eben owns</p><h3>Communities, numbers, route, and review.</h3></div>
       <div><p>Garrett owns</p><h3>The care, relationships, and trust.</h3></div>
       <div><p>Together</p><h3>One clear decision every month.</h3></div>
     </section>
