@@ -35,13 +35,6 @@ import type {
   ContactAutomationEvidence,
   ContactAutomationEnrollment,
 } from '../types/staff';
-import './AutomationRegistryPage.css';
-import './AutomationCutoverTree.css';
-import './AutomationCutoverTreeFix.css';
-import './AutomationHealthPilot.css';
-import './AutomationMasterMap.css';
-import './AutomationWorkflowCanvas.css';
-
 const MASTER_MAP_LANES: Array<{ key: AutomationFamily['lifecycle']; label: string; description: string }> = [
   { key: 'platform', label: 'Shared signals', description: 'Events that feed other automations' },
   { key: 'acquisition', label: 'Find and qualify', description: 'Lead and discovery paths' },
@@ -137,14 +130,6 @@ export default function AutomationRegistryPage() {
       .then((response) => {
         if (cancelled) return;
         setRegistry(response);
-        if (!selectedFamilyKey) {
-          const first = response.families.find((family) => family.kind === 'operational');
-          if (first) {
-            const next = new URLSearchParams(params);
-            next.set('family', first.key);
-            setParams(next, { replace: true });
-          }
-        }
       })
       .catch((error) => { if (!cancelled) setRegistryError(error instanceof Error ? error.message : 'Could not load the automation registry.'); });
     return () => { cancelled = true; };
@@ -234,6 +219,7 @@ export default function AutomationRegistryPage() {
         onRevealEvidence={revealAutomationEvidence}
         runtimes={mapRuntimes}
         activeEnrollments={mapActiveEnrollments}
+        detailReady={familyDetail?.family.key === selectedFamilyKey && !familyLoading}
       />}
 
       {registryError && <p className="automation-registry-error"><AlertTriangle size={16} />{registryError}</p>}
@@ -268,6 +254,7 @@ function AutomationMasterMap({
   onRevealEvidence,
   runtimes,
   activeEnrollments,
+  detailReady,
 }: {
   families: AutomationFamily[];
   selectedKey: string;
@@ -276,14 +263,15 @@ function AutomationMasterMap({
   onRevealEvidence: () => void;
   runtimes: RuntimeFlow[];
   activeEnrollments: ContactAutomationEnrollment[];
+  detailReady: boolean;
 }) {
-  const selectedFamily = families.find((family) => family.key === selectedKey)
-    || families.find((family) => family.cutoverTree)
-    || null;
+  const selectedFamily = families.find((family) => family.key === selectedKey) || null;
   if (selectedKey && selectedFamily) {
     return <section className="automation-master-map is-selected-view" aria-label={`${selectedFamily.name} automation map`}>
       <button className="automation-map-back" type="button" onClick={onBack}>← All automations</button>
-      {selectedFamily.cutoverTree
+      {!detailReady
+        ? <div className="automation-registry-loading" role="status"><Loader2 className="spin" /> Opening one verified workflow view…</div>
+        : selectedFamily.cutoverTree
         ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} runtimes={runtimes} activeEnrollments={activeEnrollments} />
         : <AutomationMapPending family={selectedFamily} />}
     </section>;
@@ -312,9 +300,6 @@ function AutomationMasterMap({
         </section>;
       })}
     </div>
-    {selectedFamily?.cutoverTree
-      ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} runtimes={runtimes} activeEnrollments={activeEnrollments} />
-      : selectedFamily && <AutomationMapPending family={selectedFamily} />}
   </section>;
 }
 

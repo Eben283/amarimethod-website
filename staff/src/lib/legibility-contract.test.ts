@@ -79,6 +79,19 @@ describe('Staff legibility contract', () => {
     expect(workflow).toContain('position:sticky');
   });
 
+  it('renders one stable workflow map without squeezing three actions into narrow cards', () => {
+    const app = css('App.tsx');
+    const registryPage = css('pages/AutomationRegistryPage.tsx');
+    const workflow = css('pages/AutomationWorkflowCanvas.css');
+
+    expect(app).toContain("import './pages/AutomationWorkflowCanvas.css';");
+    expect(registryPage).not.toContain("import './AutomationWorkflowCanvas.css';");
+    expect(registryPage).not.toContain('const first = response.families.find');
+    expect(registryPage).toContain('detailReady={familyDetail?.family.key === selectedFamilyKey && !familyLoading}');
+    expect(registryPage).toContain('Opening one verified workflow view…');
+    expect(workflow).toContain('.automation-master-map.is-selected-view .automation-playbook-parallel.is-3{grid-template-columns:1fr');
+  });
+
   it('keeps review-worthy automation evidence reachable without restoring the full event wall', () => {
     const record = css('pages/ClientDetailPage.tsx');
     expect(record).toContain('failedAutomationEvents.slice(0, 3)');
