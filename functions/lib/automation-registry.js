@@ -7,6 +7,7 @@
 
 import { FLOWS } from "../../reminder-engine-worker/src/config.js";
 import { SEQUENCES } from "../../nurture-engine-worker/src/config.js";
+import { MORNING_SMS_DEFINITION } from "../../morning-sms-worker/src/config.js";
 
 export const REGISTRY_VERSION = 1;
 
@@ -227,6 +228,7 @@ function nurtureDefinition(sequence) {
 const DEFINITIONS = Object.freeze([
   ...FLOWS.map(reminderDefinition),
   ...SEQUENCES.map(nurtureDefinition),
+  MORNING_SMS_DEFINITION,
 ].map(Object.freeze));
 
 export function automationDefinitions() {

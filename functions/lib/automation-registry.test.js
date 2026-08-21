@@ -8,10 +8,10 @@ import {
 } from "./automation-registry.js";
 
 describe("owned automation registry", () => {
-  it("publishes the eight owned definitions with explicit versions and source evidence", () => {
+  it("publishes the nine owned definitions with explicit versions and source evidence", () => {
     const definitions = automationDefinitions();
     expect(REGISTRY_VERSION).toBe(1);
-    expect(definitions).toHaveLength(8);
+    expect(definitions).toHaveLength(9);
     expect(definitions.map((definition) => definition.id)).toEqual([
       "reminder:initial-in-person",
       "reminder:initial-virtual",
@@ -21,16 +21,38 @@ describe("owned automation registry", () => {
       "nurture:flow-1-quiz",
       "nurture:flow-2-post-discovery",
       "nurture:flow-3-post-initial",
+      "morning-sms:daily-staff-brief",
     ]);
     for (const definition of definitions) {
       expect(definition.definitionVersion).toBe(
         definition.id === "reminder:initial-in-person" || definition.id === "reminder:initial-virtual" ? 3 : 1,
       );
       expect(definition.name).toBeTruthy();
-      expect(definition.mode).toBe("shadow");
+      expect(["shadow", "active"]).toContain(definition.mode);
       expect(definition.source.kind).toBe("owned_code");
       expect(definition.steps[0].stepIndex).toBe(0);
     }
+  });
+
+  it("registers the live Morning SMS from its owned Worker source", () => {
+    expect(findAutomationDefinition("morning-sms", "daily-staff-brief")).toEqual(expect.objectContaining({
+      id: "morning-sms:daily-staff-brief",
+      name: "Morning SMS to Eben and Garrett",
+      mode: "active",
+      trigger: expect.objectContaining({
+        cron: "*/5 11-19 * * MON-SAT",
+        timeZone: "America/Los_Angeles",
+      }),
+      steps: expect.arrayContaining([
+        expect.objectContaining({ stepIndex: 1, type: "reconcile", result: "LAST PACKAGE SESSION" }),
+        expect.objectContaining({ stepIndex: 4, type: "sms", audience: "Eben and Garrett" }),
+        expect.objectContaining({ stepIndex: 6, type: "sms", audience: "Eben and Garrett" }),
+      ]),
+      source: {
+        kind: "owned_code",
+        path: "morning-sms-worker/src/config.js",
+      },
+    }));
   });
 
   it("exposes source-verified partner message copy as a read-only shadow preview", () => {

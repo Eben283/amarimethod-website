@@ -8,26 +8,51 @@ import {
 } from "./automation-families.js";
 
 describe("provider-neutral automation families", () => {
-  it("condenses the complete current inventory into 24 operational families plus one evidence-only group", () => {
+  it("condenses the complete current inventory into 25 operational families plus one evidence-only group", () => {
     const families = automationFamilies();
     const summary = automationInventorySummary();
 
     expect(AUTOMATION_INVENTORY_AS_OF).toBe("2026-08-07");
-    expect(families.filter((family) => family.kind === "operational")).toHaveLength(24);
+    expect(families.filter((family) => family.kind === "operational")).toHaveLength(25);
     expect(families.filter((family) => family.kind === "evidence_only")).toHaveLength(1);
     expect(summary).toEqual(expect.objectContaining({
       sourceRecords: 82,
       publishedSourceRecords: 64,
       draftSourceRecords: 18,
-      operationalFamilies: 24,
+      operationalFamilies: 25,
       evidenceOnlyGroups: 1,
-      ownedDefinitions: 8,
+      ownedDefinitions: 9,
     }));
 
     const records = families.flatMap((family) => family.sourceRecords);
     expect(new Set(records.map((record) => record.name)).size).toBe(82);
     expect(records.filter((record) => record.status === "published")).toHaveLength(64);
     expect(records.filter((record) => record.status === "draft")).toHaveLength(18);
+  });
+
+  it("shows the live Morning SMS as a source-backed session automation", () => {
+    const family = automationFamily("morning-staff-sms");
+
+    expect(family).toEqual(expect.objectContaining({
+      name: "Morning SMS",
+      lifecycle: "sessions",
+      operatingState: "active",
+      sourceRecords: [],
+      ownedDefinitions: [expect.objectContaining({
+        id: "morning-sms:daily-staff-brief",
+        mode: "active",
+      })],
+      cutoverTree: expect.objectContaining({
+        status: "live_workflow",
+        nodes: expect.arrayContaining([
+          expect.objectContaining({ id: "morning-last-session", state: "owned_live" }),
+          expect.objectContaining({ id: "morning-send-agenda", state: "owned_live" }),
+          expect.objectContaining({ id: "morning-send-meeting", state: "owned_live" }),
+        ]),
+      }),
+    }));
+    expect(familyForDefinition("morning-sms", "daily-staff-brief")).toEqual(expect.objectContaining({ key: "morning-staff-sms" }));
+    expect(family.evidence.gaps.map((gap) => gap.code)).not.toContain("owned_definition_not_available");
   });
 
   it("keeps lifecycle family identity separate from the four reusable implementation units", () => {

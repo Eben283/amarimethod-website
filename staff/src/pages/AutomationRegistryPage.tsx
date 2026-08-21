@@ -58,6 +58,7 @@ const IMPLEMENTATION_LABELS: Record<string, string> = {
 const NODE_MAP_TITLES: Record<string, string> = {
   'initial-session-reminders': 'Initial / Assessment in-person reminder',
   'follow-up-session-reminders': 'Follow-up session reminder',
+  'morning-staff-sms': 'Morning SMS to Eben and Garrett',
 };
 
 type RuntimeFlow = NonNullable<NonNullable<AutomationFamilyResponse['runtime']>['flows']>[number];
@@ -279,7 +280,7 @@ function AutomationMasterMap({
   return <section className="automation-master-map" aria-label="Amari master automation map">
     <header>
       <div>
-        <span>Master map · 24 automations</span>
+        <span>Master map · {families.filter((family) => family.kind === 'operational').length} automations</span>
         <h2>What exists, before we claim who owns it.</h2>
         <p>Every card below is one named master automation. A “Node map drawn” card links to source-backed action ownership. A gray card is known work that has not been drawn yet; it is not an ownership claim.</p>
       </div>
@@ -323,6 +324,7 @@ function AutomationHealthPilot({
 }) {
   const isFollowUp = family.key === 'follow-up-session-reminders';
   const isPaidBooking = family.key === 'commerce-ledger-event-ingest';
+  const isMorningSms = family.key === 'morning-staff-sms';
   return (
     <section className="automation-health-pilot" aria-label={`${family.name} ownership map`}>
       <header>
@@ -343,6 +345,8 @@ function AutomationHealthPilot({
           : <CutoverTree tree={family.cutoverTree!} compact />}
       <footer><b>Plain answer:</b> {isPaidBooking
         ? 'GHL still takes the $29 payment. The selected slot, booking lease, appointment command, checkpoint, and one-minute recovery guard are Amari-owned and read the same published definition shown above.'
+        : isMorningSms
+        ? 'This is the live Morning SMS Worker. Amari owns the schedule, agenda, last-package-session decision, duplicate protection, and run evidence; GHL supplies appointment data and carries the two staff SMS messages.'
         : isFollowUp
         ? runtimes.some((runtime) => runtime.definition)
           ? 'Amari now owns this executable Follow-up definition and its shadow queue. GHL still sends the live messages until shadow evidence, the eight-person reconciliation, and activation are complete.'
