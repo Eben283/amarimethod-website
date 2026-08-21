@@ -3,6 +3,7 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { QuizAnswer, ScoreCategories, PatternSignature, QuizInsight } from '@/types/quiz';
 import { calculateScores, determinePatternSignature, generateInsights } from '@/lib/quizLogic';
 import { useToast } from '@/components/ui/use-toast';
+import { getTurnstileToken } from '@/lib/turnstile';
 
 type QuizContextType = {
   currentStep: number;
@@ -293,13 +294,15 @@ export function QuizProvider({ children }: { children: React.ReactNode }) {
       referralSource: referralSource || undefined,
     };
 
+    const turnstileToken = await getTurnstileToken();
+
     console.log('Sending data to API at:', apiRoute);
     console.log('Contact data:', contactData);
 
     return fetch(apiRoute, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(contactData)
+      body: JSON.stringify({ ...contactData, turnstileToken })
     });
   };
 
