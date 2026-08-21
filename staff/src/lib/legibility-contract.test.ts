@@ -99,6 +99,13 @@ describe('Staff legibility contract', () => {
     expect(registryPage).toContain("const isMorningSms = family.key === 'morning-staff-sms'");
     expect(registryPage).toContain("families.filter((family) => family.kind === 'operational').length");
     expect(registryPage).not.toContain('Master map · 24 automations');
+    expect(registryPage).not.toContain('The 24 named automations');
+  });
+
+  it('renders a selected source-backed node map only once', () => {
+    const registryPage = css('pages/AutomationRegistryPage.tsx');
+
+    expect(registryPage).not.toContain("family.cutoverTree && !isInPersonCutover && !isFollowUpSourceMap");
   });
 
   it('keeps review-worthy automation evidence reachable without restoring the full event wall', () => {

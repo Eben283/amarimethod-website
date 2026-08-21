@@ -206,7 +206,7 @@ export default function AutomationRegistryPage() {
           ) : (
             <>
               <h1>Amari automation map.</h1>
-              <p>The 24 named automations are one operating system. Each detailed node will show who operates it now—GHL, Amari, Stripe, Google, or a person—so the remaining cutover work is visible rather than implied.</p>
+              <p>The current named automations are one operating system. Each detailed node shows who operates it now—GHL, Amari, Stripe, Google, or a person—so the remaining cutover work is visible rather than implied.</p>
             </>
           )}
         </div>
@@ -676,8 +676,6 @@ function FamilyDetail({
       {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: in-person ${activeInitialRuntime?.flow?.delivery || 'unknown'}; virtual ${virtualInitialRuntime?.flow?.delivery || 'unknown'}.` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read both scoped definitions; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim a delivery state until the Worker can answer for both scopes.'}</span></div>}
 
       {isInPersonCutover && detail.runtime?.verified && <div className="automation-evidence-banner"><MessageSquareText size={17} /><span><strong>Delivery evidence is channel-specific.</strong> {activeInitialRuntime?.flow?.receiptCoverage?.sms === 'terminal_status_reconciled' ? (activeInitialRuntime.receiptHealth?.status === 'healthy' ? `SMS receipt reconciliation was healthy at ${exactTime(activeInitialRuntime.receiptHealth.checkedAt)} (${activeInitialRuntime.receiptHealth.recorded} new terminal outcome${activeInitialRuntime.receiptHealth.recorded === 1 ? '' : 's'}, ${activeInitialRuntime.receiptHealth.pending} still pending).` : activeInitialRuntime.receiptHealth?.status === 'degraded' ? `SMS receipt reconciliation was degraded at ${exactTime(activeInitialRuntime.receiptHealth.checkedAt)} with ${activeInitialRuntime.receiptHealth.errors} error${activeInitialRuntime.receiptHealth.errors === 1 ? '' : 's'}. Delivery evidence may be incomplete.` : 'SMS receipt reconciliation is configured, but no completed sweep can currently be proven.') : 'SMS receipt coverage is unavailable from the executing Worker.'} Email shows Gmail acceptance only; Gmail does not provide an affirmative recipient-delivery receipt.</span></div>}
-
-      {family.cutoverTree && !isInPersonCutover && !isFollowUpSourceMap && family.key !== 'commerce-ledger-event-ingest' && <CutoverTree tree={family.cutoverTree} />}
 
       {isInPersonCutover && focused && activeInitialRuntime?.definition && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How this reminder run works</h3><p>The canvas is the one readable view of the current published in-person definition.</p></div><b>1</b></div>
