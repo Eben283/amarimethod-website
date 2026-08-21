@@ -17,28 +17,28 @@ const PLAN = [
   {
     number: '03',
     eyebrow: 'Months 4–12',
-    title: 'Keep the community that proves itself.',
-    text: 'Focus on the community that creates paid care and genuine introductions. By year end, earn one trusted tennis or performance connection and name the next credible person between Amari and Djokovic’s team.',
+    title: 'Keep doing what works.',
+    text: 'Put more energy into the community where people return, pay for care, and introduce others. By the end of year one, know at least one person in tennis or performance sport who has seen the work and can make a useful next introduction.',
   },
 ];
 
 const HORIZONS = [
   {
     label: 'Year two',
-    title: 'Earn a serious performance bridge.',
-    text: 'Use the business and trusted connectors to earn repeat care and discreet word-of-mouth with more demanding, better-connected people. The goal is one genuine bridge into professional tennis or a closely adjacent performance network.',
+    title: 'Get closer to professional tennis.',
+    text: 'Keep doing excellent work with people who are well connected in tennis or performance sport. The goal is to know one person who understands Amari and can introduce Garrett to someone closer to Novak’s team.',
   },
   {
     label: 'Year three',
-    title: 'Make the warm introduction.',
-    text: 'When there is a credible route, make a small, respectful invitation to the person who can evaluate fit for Novak’s team. If the route is not real yet, identify the missing link and decide whether another three years is warranted.',
+    title: 'Ask for the introduction.',
+    text: 'When someone who knows the work can introduce Garrett to the right person on Novak’s team, ask them to do it. Keep the invitation simple: would it be useful for Novak to try a session with Garrett? If nobody can make that introduction yet, identify who is missing from the chain.',
   },
 ];
 
 const FILTERS = [
-  ['Double down', 'The community creates paid care and either genuine introductions or a real tennis/performance connection.'],
-  ['Keep or repair', 'Keep a revenue-producing community as business-only. Improve the experience or explanation when people value it but do not return.'],
-  ['Exit', 'After two 90-day cycles with neither paid care nor a genuine next introduction, stop treating it as Project Novak work.'],
+  ['Do more', 'Stay involved when people pay for care and introduce others, or when the community brings Garrett closer to tennis.'],
+  ['Keep or fix', 'Keep a community that brings in revenue even if it does not help with Novak. Improve the session or explanation when people like it but do not return.'],
+  ['Stop', 'After two 90-day periods with no paid care and no useful introductions, stop spending Project Novak time there.'],
 ];
 
 const IMAGES = [
@@ -54,7 +54,7 @@ export default function ProjectNovakPage() {
         <p><Trophy aria-hidden="true" /> Internal target · August 2029</p>
         <h1>Project<br />Novak</h1>
         <strong>Bring Novak Djokovic under Garrett’s care.</strong>
-        <span>A three-year plan: build proof, earn the right relationships, then make a credible introduction.</span>
+        <span>Build a strong Amari practice. Meet people who know the work. Use the right introduction to get Novak a session.</span>
       </div>
       <figure className="project-novak__hero-image">
         <img src={IMAGES[0].src} alt={IMAGES[0].alt} />
@@ -66,13 +66,13 @@ export default function ProjectNovakPage() {
       <Goal aria-hidden="true" />
       <div>
         <p>The goal by August 2029</p>
-        <h2 id="novak-target">A warm, credible route for Novak Djokovic to experience Garrett’s care.</h2>
+        <h2 id="novak-target">Novak Djokovic has a session with Garrett because someone who knows the work introduces it to his team.</h2>
         <a className="project-novak__plan-link" href="/staff/resources/project-novak-plan.txt" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /> Read the full internal plan <ArrowRight aria-hidden="true" /></a>
       </div>
     </section>
 
     <section className="project-novak__section project-novak__section--path" aria-labelledby="novak-path">
-      <header><p>The plan outline</p><h2 id="novak-path">Start here. Prove it. Build the bridge.</h2></header>
+      <header><p>What we do first</p><h2 id="novak-path">Build local proof, then use it to meet the next person.</h2></header>
       <div className="project-novak__path-grid">
         {PLAN.map((path) => <article key={path.number}>
           <span>{path.number}</span>
@@ -84,11 +84,11 @@ export default function ProjectNovakPage() {
     </section>
 
     <section className="project-novak__route" aria-label="Project Novak route">
-      <span>Real care experience</span><ArrowRight aria-hidden="true" /><span>Trusted local introducers</span><ArrowRight aria-hidden="true" /><span>Professional-performance bridge</span><ArrowRight aria-hidden="true" /><strong>Novak’s team</strong>
+      <span>People try Amari</span><ArrowRight aria-hidden="true" /><span>They tell people they trust</span><ArrowRight aria-hidden="true" /><span>Someone closer to tennis sees the work</span><ArrowRight aria-hidden="true" /><strong>Novak’s team hears about it</strong>
     </section>
 
     <section className="project-novak__section" aria-labelledby="novak-horizons">
-      <header><p>What happens after year one</p><h2 id="novak-horizons">Earn the bridge, then use it.</h2></header>
+      <header><p>Years two and three</p><h2 id="novak-horizons">Keep meeting the next person until the right introduction exists.</h2></header>
       <ol className="project-novak__timeline">
         {HORIZONS.map((horizon, index) => <li key={horizon.label}>
           <span className="project-novak__marker">{String(index + 1).padStart(2, '0')}</span>
@@ -98,17 +98,17 @@ export default function ProjectNovakPage() {
     </section>
 
     <section className="project-novak__section project-novak__section--filter" aria-labelledby="novak-filter">
-      <header><p>Decision rules</p><h2 id="novak-filter">At each review, decide what happens next.</h2></header>
+      <header><p>How we decide</p><h2 id="novak-filter">Every month, decide whether to do more, fix it, or stop.</h2></header>
       <div className="project-novak__filter-grid">
         {FILTERS.map(([title, text]) => <article key={title}><h3>{title}</h3><span>{text}</span></article>)}
       </div>
-      <p className="project-novak__filter-note">Eben and Garrett hold a monthly review. The question is concrete: double down, keep it as business-only, repair it, or stop.</p>
+      <p className="project-novak__filter-note">Eben and Garrett review the actual results every month. They decide whether to do more of it, keep it as regular business, fix what is not working, or stop.</p>
     </section>
 
     <section className="project-novak__owners" aria-label="Project Novak ownership">
-      <div><p>Eben owns</p><h3>Communities, numbers, route, and review.</h3></div>
-      <div><p>Garrett owns</p><h3>The care, relationships, and trust.</h3></div>
-      <div><p>Together</p><h3>One clear decision every month.</h3></div>
+      <div><p>Eben does</p><h3>Choose communities, track results, and run the monthly review.</h3></div>
+      <div><p>Garrett does</p><h3>Deliver the sessions and build real relationships.</h3></div>
+      <div><p>Together</p><h3>Choose the next step every month.</h3></div>
     </section>
 
     <section className="project-novak__gallery" aria-label="Novak Djokovic reference imagery">
