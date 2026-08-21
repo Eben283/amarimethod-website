@@ -110,9 +110,13 @@ function appointmentLabel(appointment) {
   const detail = String(
     appointment?.calendarName || appointment?.title || "Appointment",
   ).trim();
-  if (!name) return detail;
-  if (detail.toLowerCase().includes(name.toLowerCase())) return detail;
-  return `${name} · ${detail}`;
+  let label;
+  if (!name) label = detail;
+  else if (detail.toLowerCase().includes(name.toLowerCase())) label = detail;
+  else label = `${name} · ${detail}`;
+  return appointment?.lastPackageSession
+    ? `${label} · LAST PACKAGE SESSION`
+    : label;
 }
 
 /** A compact internal SMS agenda. A null agenda means GHL was unavailable. */

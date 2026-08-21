@@ -79,6 +79,27 @@ describe("copy", () => {
     assert.equal(body, "Today's appointments:\n8:00 AM — Ada Lovelace · Initial Session\n11:30 AM — Grace Hopper · Follow-up Session\n\nTime to prepare for the day.");
   });
 
+  it("labels only an appointment proven to be the last package session", () => {
+    const body = formatDailyAgenda([
+      {
+        startMs: Date.parse("2026-07-30T15:00:00Z"),
+        contactName: "Ada Lovelace",
+        calendarName: "Follow-up Session",
+        lastPackageSession: true,
+      },
+      {
+        startMs: Date.parse("2026-07-30T18:30:00Z"),
+        contactName: "Grace Hopper",
+        calendarName: "Entrainment",
+        lastPackageSession: false,
+      },
+    ]);
+    assert.equal(
+      body,
+      "Today's appointments:\n8:00 AM — Ada Lovelace · Follow-up Session · LAST PACKAGE SESSION\n11:30 AM — Grace Hopper · Entrainment\n\nTime to prepare for the day.",
+    );
+  });
+
   it("distinguishes an empty day from an unavailable appointment feed", () => {
     assert.equal(formatDailyAgenda([]), "Good morning — no appointments today.");
     assert.equal(

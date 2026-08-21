@@ -63,15 +63,21 @@ describe("fetchTodaysAppointments", () => {
     assert.deepEqual(appointments, [
       {
         startMs: Date.parse("2026-08-05T09:00:00-07:00"),
+        contactId: null,
+        calendarId: "cal-earlier",
         contactName: "Ada Lovelace",
         calendarName: "Assessment",
         title: null,
+        lastPackageSession: false,
       },
       {
         startMs: Date.parse("2026-08-05T11:00:00-07:00"),
+        contactId: null,
+        calendarId: "cal-later",
         contactName: "Grace Hopper",
         calendarName: "Follow-up Session",
         title: null,
+        lastPackageSession: false,
       },
     ]);
   });

@@ -2,12 +2,22 @@
 // the runner keeps its normal schedule and reports that the agenda is unavailable.
 
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
+import { FIELD_IDS } from "../../functions/lib/ghl-fields.js";
+import { hydrateOrders } from "../../functions/lib/ghl-orders.js";
+import { deriveLedger, SERIES_CALENDAR_IDS } from "../../functions/lib/session-ledger.js";
 import { dateKeyInZone, zonedTimeToUtcMs } from "./schedule.js";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 export const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 
 const CANCELLED = new Set(["cancelled", "canceled", "invalid", "no_show", "noshow"]);
+const LEDGER_FIELD_DEFS = Object.freeze({
+  sessions_remaining: FIELD_IDS.sessions_remaining,
+  sessions_completed: FIELD_IDS.sessions_completed,
+  series_type: FIELD_IDS.series_type,
+  sessions_remaining_locked: FIELD_IDS.sessions_remaining_locked,
+  session_prepaid: FIELD_IDS.session_prepaid,
+});
 
 async function ghlGet(env, path) {
   const token = await getAccessToken(env);
@@ -63,6 +73,8 @@ function appointmentFromEvent(event, calendar) {
 
   return {
     startMs,
+    contactId: text(event?.contactId || event?.contact_id) || null,
+    calendarId: text(event?.calendarId || event?.calendar_id || calendar?.id) || null,
     contactName: text(
       event?.contactName ||
       event?.contact_name ||
@@ -70,7 +82,75 @@ function appointmentFromEvent(event, calendar) {
     ) || null,
     calendarName: text(event?.calendarName || calendar?.name) || null,
     title: text(event?.title) || null,
+    lastPackageSession: false,
   };
+}
+
+async function fetchContactLedger(env, contactId) {
+  const [contactData, ordersData, invoicesData, appointmentsData] = await Promise.all([
+    ghlGet(env, `/contacts/${contactId}`),
+    ghlGet(env, `/payments/orders?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=100`),
+    ghlGet(env, `/invoices/?altId=${LOCATION_ID}&altType=location&contactId=${contactId}&limit=100&offset=0`),
+    ghlGet(env, `/contacts/${contactId}/appointments`),
+  ]);
+
+  const fetchFailures = [];
+  const ordersList = ordersData.data || ordersData.orders || [];
+  const invoices = invoicesData.invoices || [];
+  const appointments = appointmentsData.appointments || appointmentsData.events || [];
+  if (ordersList.length >= 100) fetchFailures.push("orders page full at 100 — history may be truncated");
+  if (invoices.length >= 100) fetchFailures.push("invoices page full at 100 — history may be truncated");
+
+  const orders = await hydrateOrders(
+    (orderId) => ghlGet(
+      env,
+      `/payments/orders/${orderId}?altId=${LOCATION_ID}&altType=location`,
+    ),
+    ordersList,
+  );
+
+  return deriveLedger({
+    contact: contactData.contact || { customFields: [] },
+    orders,
+    invoices,
+    appointments,
+    fieldDefs: LEDGER_FIELD_DEFS,
+    fetchFailures,
+  });
+}
+
+function ledgerCanProveLastSession(ledger) {
+  return ledger?.confidence === "high" || ledger?.manualLock === true;
+}
+
+async function markLastPackageSessions(env, appointments) {
+  const byContact = new Map();
+  for (const appointment of appointments) {
+    if (!appointment.contactId || !SERIES_CALENDAR_IDS.has(appointment.calendarId)) continue;
+    const group = byContact.get(appointment.contactId) || [];
+    group.push(appointment);
+    byContact.set(appointment.contactId, group);
+  }
+
+  // One contact at a time: each ledger read fans out to four GHL endpoints,
+  // so sequential enrichment stays below Cloudflare's connection ceiling.
+  for (const [contactId, todaysPackageAppointments] of byContact) {
+    try {
+      const ledger = await fetchContactLedger(env, contactId);
+      if (!ledgerCanProveLastSession(ledger)) continue;
+      const remaining = Number(ledger.display?.remaining);
+      if (!Number.isInteger(remaining) || remaining < 1) continue;
+      // If two package visits are booked on the same day and two visits
+      // remain, the second one is the package-ending appointment.
+      if (remaining <= todaysPackageAppointments.length) {
+        todaysPackageAppointments[remaining - 1].lastPackageSession = true;
+      }
+    } catch (err) {
+      // The agenda is still useful without the badge. Fail closed instead of
+      // guessing from a stale raw sessions_remaining field.
+      console.warn(`[morning-sms] package ledger ${contactId} failed: ${err.message}`);
+    }
+  }
 }
 
 /**
@@ -113,7 +193,9 @@ export async function fetchTodaysAppointments(env, nowMs, timeZone = "America/Lo
       return null;
     }
   }
-  return appointments.sort((a, b) => a.startMs - b.startMs);
+  appointments.sort((a, b) => a.startMs - b.startMs);
+  await markLastPackageSessions(env, appointments);
+  return appointments;
 }
 
 /** Earliest active appointment start for schedule pull-forward. */
