@@ -24,6 +24,10 @@
     --staff-success-soft: #D5E8DD;
     --staff-radius-control: 6px;
     --staff-radius-sheet: 10px;
+    /* USWDS recommends an effective 16px for most screen text. Automation
+       surfaces use this as a hard floor; compactness comes from structure,
+       spacing, and progressive disclosure rather than microtype. */
+    --staff-readable-min: 1rem;
     --background: 45 21% 95%;
     --foreground: 190 53% 15%;
 
