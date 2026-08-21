@@ -19,6 +19,12 @@ export default defineConfig({
     }),
   ],
   vite: {
+    // This is intentionally a public build-time value. Define it explicitly
+    // so the React island receives the Pages build variable in its client
+    // bundle rather than relying on an undeclared ambient env type.
+    define: {
+      'import.meta.env.PUBLIC_TURNSTILE_SITE_KEY': JSON.stringify(process.env.PUBLIC_TURNSTILE_SITE_KEY || ''),
+    },
     resolve: {
       alias: {
         '@': '/src',
