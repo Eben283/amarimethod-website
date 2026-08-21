@@ -6,6 +6,7 @@ import {
   recordFailedPinAttempt,
   clearPinAttempts,
   PIN_RATE_LIMITS,
+  pinRateLimitKv,
 } from './rate-limit.js';
 
 // Minimal in-memory KV stub matching the subset these helpers use.
@@ -117,6 +118,23 @@ describe('checkPinAttempts (PIN brute-force guard)', () => {
     const kv = { async get() { throw new Error('kv down'); } };
     const r = await checkPinAttempts(kv, pinArgs());
     expect(r).toMatchObject({ ok: false, status: 503 });
+  });
+});
+
+describe('pinRateLimitKv', () => {
+  it('uses production PORTAL_KV when it is available', () => {
+    const production = makeKv();
+    const preview = makeKv();
+    expect(pinRateLimitKv({ PORTAL_KV: production, STAFF_AUTH_RATE_LIMIT_KV: preview })).toBe(production);
+  });
+
+  it('uses the isolated Staff preview namespace without production PORTAL_KV', () => {
+    const preview = makeKv();
+    expect(pinRateLimitKv({ STAFF_AUTH_RATE_LIMIT_KV: preview })).toBe(preview);
+  });
+
+  it('returns null when neither safe binding exists so PIN auth still fails closed', () => {
+    expect(pinRateLimitKv({})).toBeNull();
   });
 });
 
