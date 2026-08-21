@@ -99,12 +99,20 @@ export const PIN_RATE_LIMITS = Object.freeze({
 
 const pinAttemptKey = (scope, ip) => `rl:pin:${scope}:${(ip || "unknown").slice(0, 64)}`;
 
+// PIN login needs an isolated counter store in Pages previews. Never make a
+// preview depend on production PORTAL_KV just so reviewers can sign in.
+// Production keeps PORTAL_KV as the first choice; previews bind the dedicated
+// STAFF_AUTH_RATE_LIMIT_KV namespace instead.
+export function pinRateLimitKv(env) {
+  return env?.PORTAL_KV || env?.STAFF_AUTH_RATE_LIMIT_KV || null;
+}
+
 // Call BEFORE checking the PIN. Returns { ok:false, status:429 } when the IP is
 // locked out, else { ok:true, key, count } so the caller can record a failure.
 export async function checkPinAttempts(kv, { ip, scope }) {
   if (!kv) {
     console.error(`[rate-limit] ${scope}: PORTAL_KV unavailable — rejecting PIN login without an attempt limit`);
-    return { ok: false, status: 503, error: "Login is temporarily unavailable. Please try again shortly." };
+    return { ok: false, status: 503, reason: "missing", error: "Login is temporarily unavailable. Please try again shortly." };
   }
   try {
     const count = parseInt((await kv.get(pinAttemptKey(scope, ip))) || "0", 10) || 0;
@@ -114,7 +122,7 @@ export async function checkPinAttempts(kv, { ip, scope }) {
     return { ok: true, count };
   } catch (err) {
     console.error(`[rate-limit] ${scope}: KV error, rejecting PIN login — ${err.message}`);
-    return { ok: false, status: 503, error: "Login is temporarily unavailable. Please try again shortly." };
+    return { ok: false, status: 503, reason: "unavailable", error: "Login is temporarily unavailable. Please try again shortly." };
   }
 }
 

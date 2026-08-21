@@ -66,6 +66,19 @@ describe('Staff legibility contract', () => {
     }
   });
 
+  it('keeps automation maps and run evidence at the 16px readable-text floor', () => {
+    const workflow = css('pages/AutomationWorkflowCanvas.css');
+    const registry = css('pages/AutomationRegistryPage.css');
+
+    expect(globalCss).toContain('--staff-readable-min: 1rem;');
+    expect(registry).toContain('strong,b,em,i,time,dt,dd,label,input,textarea,select,button,a,code,pre,output,li,th,td,legend,figcaption,footer');
+    expect(registry).toContain('font-size:var(--staff-readable-min)!important');
+    expect(registry).toContain('.automation-person-columns');
+    expect(workflow).toContain('font-size:var(--staff-readable-min)!important');
+    expect(workflow).toContain('.automation-master-map.is-selected-view .automation-playbook-preview-grid');
+    expect(workflow).toContain('position:sticky');
+  });
+
   it('keeps review-worthy automation evidence reachable without restoring the full event wall', () => {
     const record = css('pages/ClientDetailPage.tsx');
     expect(record).toContain('failedAutomationEvents.slice(0, 3)');

@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 
 vi.mock("../lib/rate-limit.js", () => ({
+  pinRateLimitKv: vi.fn((env) => env.PORTAL_KV || env.STAFF_AUTH_RATE_LIMIT_KV || null),
   checkPinAttempts: vi.fn(async () => ({ ok: true, count: 0 })),
   recordFailedPinAttempt: vi.fn(),
   clearPinAttempts: vi.fn(),

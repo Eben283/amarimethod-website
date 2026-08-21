@@ -15,3 +15,39 @@
 .automation-health-pilot{container-type:inline-size;container-name:automation-map}
 @container automation-map (max-width:1120px){.automation-health-pilot .automation-playbook-preview-grid,.automation-health-pilot .automation-source-workflow-preview .automation-playbook-preview-grid{grid-template-columns:1fr}.automation-health-pilot .automation-playbook-inspector{border-top:1px solid #d8e4e1}}
 @container automation-map (max-width:760px){.automation-health-pilot .automation-playbook-parallel,.automation-health-pilot .automation-playbook-parallel.is-3,.automation-health-pilot .automation-source-branches{grid-template-columns:1fr}.automation-health-pilot .automation-playbook-node{grid-template-columns:auto minmax(0,1fr)}.automation-health-pilot .automation-playbook-node>small{grid-column:2;text-align:left}.automation-health-pilot .automation-playbook-waiters{grid-column:2}.automation-health-pilot .automation-playbook-side-path>div>span{align-items:stretch;flex-direction:column}.automation-health-pilot .automation-playbook-side-path>div>span>i{align-self:center;transform:rotate(90deg)}}
+
+/* Default operational map -------------------------------------------------------
+   A vertical signal path with a persistent inspector is faster to scan than the
+   former edge-to-edge stack. Ownership is encoded by a strong left rule; waits,
+   cancellation, and rollback each occupy a visibly different lane. */
+.automation-master-map.is-selected-view .automation-playbook-preview-grid,.automation-master-map.is-selected-view .automation-source-workflow-preview .automation-playbook-preview-grid{grid-template-columns:minmax(42rem,1.35fr) minmax(25rem,.65fr);align-items:start}
+.automation-master-map.is-selected-view .automation-playbook-flow{position:relative;min-width:0;padding:2.5rem clamp(1.5rem,3vw,3.5rem);background:linear-gradient(90deg,rgba(13,98,104,.045) 1px,transparent 1px),linear-gradient(rgba(13,98,104,.045) 1px,transparent 1px),#f4f8f6;background-size:2rem 2rem}
+.automation-master-map.is-selected-view .automation-playbook-step{width:min(100%,52rem)}
+.automation-master-map.is-selected-view .automation-playbook-parallel{width:min(100%,68rem);gap:1rem}
+.automation-master-map.is-selected-view .automation-playbook-node{min-height:4.75rem;grid-template-columns:minmax(7rem,.34fr) minmax(0,1fr) minmax(10rem,.48fr);gap:.45rem 1rem;padding:1rem 1.15rem;border:1px solid #aec4bf;border-left:6px solid #2879ad;border-radius:.85rem;background:#fff;box-shadow:0 .25rem .9rem rgba(26,64,62,.06);transition:border-color .15s ease,box-shadow .15s ease,transform .15s ease}
+.automation-master-map.is-selected-view .automation-playbook-node.is-ghl{border-left-color:#a96b1f}
+.automation-master-map.is-selected-view .automation-playbook-node.is-wait{border-left-color:#527a73;background:#edf5f2}
+.automation-master-map.is-selected-view .automation-playbook-node.is-rollback{border-left-color:#8a6b2b;background:#fffaf0}
+.automation-master-map.is-selected-view .automation-playbook-node.is-selected{border-color:#0d6268;border-left-color:#0d6268;box-shadow:0 0 0 3px rgba(13,98,104,.14),0 .55rem 1.25rem rgba(26,64,62,.11)}
+.automation-master-map.is-selected-view .automation-playbook-node>span:first-child{letter-spacing:.075em}
+.automation-master-map.is-selected-view .automation-playbook-node>strong{font-weight:700;line-height:1.35;text-wrap:pretty}
+.automation-master-map.is-selected-view .automation-playbook-node>small{text-align:right;line-height:1.4}
+.automation-master-map.is-selected-view .automation-playbook-arrow{display:grid;width:2.25rem;height:2.25rem;margin:.45rem 0;place-items:center;border:1px solid #b6cbc6;border-radius:999px;background:#fff;color:#446f69;box-shadow:0 .15rem .45rem rgba(26,64,62,.07)}
+.automation-master-map.is-selected-view .automation-playbook-inspector{position:sticky;top:1rem;min-height:0;margin:1.5rem 1.5rem 1.5rem 0;border:1px solid #c4d5d1;border-radius:.85rem;background:#fff;box-shadow:0 .5rem 1.4rem rgba(26,64,62,.08)}
+.automation-master-map.is-selected-view .automation-playbook-inspector h4{font-size:1.75rem;line-height:1.15;text-wrap:balance}
+.automation-master-map.is-selected-view .automation-playbook-inspector dl{gap:1px;margin:1.25rem 0}
+.automation-master-map.is-selected-view .automation-playbook-inspector dl>div{padding:1rem}
+.automation-master-map.is-selected-view .automation-playbook-side-path{margin-top:2rem;padding:1.25rem;border:1px solid #d9c49a;border-radius:.85rem;background:#fffaf0}
+.automation-master-map.is-selected-view .automation-playbook-side-path header{margin-bottom:1rem}
+.automation-master-map.is-selected-view .automation-playbook-fallback{display:grid;width:min(100%,52rem);gap:.65rem;margin-top:1.25rem;padding:1.25rem;border:1px dashed #b9a46f;border-radius:.85rem;background:#fffdf7}
+.automation-master-map.is-selected-view .automation-playbook-fallback>span{color:#745b27;font-weight:800}
+
+/* The same 16px floor applies to the map and inspector. The global Automation
+   contract covers the evidence ledger rendered below it. */
+.automation-registry-page .automation-playbook-preview :where(p,span,small,strong,dt,dd,label,input,textarea,button,code,pre){font-size:var(--staff-readable-min)!important;line-height:1.5}
+.automation-registry-page .automation-playbook-avatar-stack i,.automation-registry-page .automation-playbook-waiting-list li>i{font-size:var(--staff-readable-min)!important}
+
+@media(max-width:1440px){.automation-master-map.is-selected-view .automation-playbook-preview-grid,.automation-master-map.is-selected-view .automation-source-workflow-preview .automation-playbook-preview-grid{grid-template-columns:1fr}.automation-master-map.is-selected-view .automation-playbook-inspector{position:static;margin:0;border-width:1px 0 0;border-radius:0;box-shadow:none}}
+@media(max-width:900px){.automation-master-map.is-selected-view .automation-playbook-node{grid-template-columns:1fr}.automation-master-map.is-selected-view .automation-playbook-node>span:first-child,.automation-master-map.is-selected-view .automation-playbook-node>strong,.automation-master-map.is-selected-view .automation-playbook-node>small,.automation-master-map.is-selected-view .automation-playbook-waiters{grid-column:1;text-align:left}.automation-master-map.is-selected-view .automation-playbook-parallel,.automation-master-map.is-selected-view .automation-playbook-parallel.is-3{grid-template-columns:1fr}.automation-master-map.is-selected-view .automation-playbook-flow{padding:1.5rem 1rem}}
+
+@media(prefers-reduced-motion:reduce){.automation-playbook-node{transition:none}.automation-playbook-node:hover{transform:none}}

@@ -2,7 +2,7 @@
 // Accepts { pin }, validates against per-user PIN env vars, returns 30-day JWT
 // Env vars: STAFF_PIN_GARRETT, STAFF_PIN_EBEN (each a 4-8 digit PIN)
 
-import { checkPinAttempts, recordFailedPinAttempt, clearPinAttempts } from "../lib/rate-limit.js";
+import { checkPinAttempts, recordFailedPinAttempt, clearPinAttempts, pinRateLimitKv } from "../lib/rate-limit.js";
 import { STAFF_SESSION_COOKIE } from "../lib/endpoint-guards.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../lib/ops-last-run.js";
 
@@ -77,9 +77,13 @@ export async function onRequestPost(context) {
 
     // Brute-force guard: cap wrong PINs per IP before checking the PIN.
     const ip = context.request.headers.get("CF-Connecting-IP") || "";
-    const gate = await checkPinAttempts(context.env.PORTAL_KV, { ip, scope: "staff" });
+    const rateLimitKv = pinRateLimitKv(context.env);
+    const gate = await checkPinAttempts(rateLimitKv, { ip, scope: "staff" });
     if (!gate.ok) {
-      return new Response(JSON.stringify({ error: gate.error }), { status: gate.status, headers });
+      return new Response(JSON.stringify({ error: gate.error }), {
+        status: gate.status,
+        headers: { ...headers, "X-Amari-Auth-Rate-Limit": gate.reason || "ready" },
+      });
     }
 
     // Check PIN against each staff member's env var
@@ -109,7 +113,7 @@ export async function onRequestPost(context) {
     }
 
     if (!matchedUser) {
-      await recordFailedPinAttempt(context.env.PORTAL_KV, { ip, scope: "staff", count: gate.count });
+      await recordFailedPinAttempt(rateLimitKv, { ip, scope: "staff", count: gate.count });
       return new Response(
         JSON.stringify({ error: "Incorrect PIN." }),
         { status: 401, headers }
@@ -117,7 +121,7 @@ export async function onRequestPost(context) {
     }
 
     // Correct PIN — clear the per-IP failure counter.
-    await clearPinAttempts(context.env.PORTAL_KV, { ip, scope: "staff" });
+    await clearPinAttempts(rateLimitKv, { ip, scope: "staff" });
 
     // Generate 30-day session token with user identity
     const token = await createToken(
@@ -141,6 +145,7 @@ export async function onRequestPost(context) {
         headers: {
           ...headers,
           "Cache-Control": "no-store",
+          "X-Amari-Auth-Rate-Limit": "ready",
           "Set-Cookie": `${STAFF_SESSION_COOKIE}=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; Secure; SameSite=Strict`,
         },
       }

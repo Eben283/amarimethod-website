@@ -73,3 +73,22 @@
 
 /* A selected workflow is a canvas, not a sidecar to a browser that is no longer rendered. */
 .automation-registry-workspace{display:block}
+
+/* Automation legibility standard ------------------------------------------------
+   WCAG requires lossless 200% text resizing but does not name a pixel minimum.
+   Staff therefore adopts the USWDS effective 16px recommendation as the hard
+   floor for every readable label, value, control, receipt, and code excerpt in
+   Automation. Display headings and summary numerals retain their larger scale. */
+.automation-registry-page :where(p,span,small,strong,b,em,i,time,dt,dd,label,input,textarea,select,button,a,code,pre,output,li,th,td,legend,figcaption,footer){font-size:var(--staff-readable-min)!important;line-height:1.5}
+.automation-registry-page :where(h3,h4,h5,h6){font-size:1.125rem;line-height:1.3}
+.automation-registry-page :where(p,dd,small,code,pre){overflow-wrap:anywhere}
+.automation-registry-stats strong,.automation-execution-summary strong{font-size:2rem!important;line-height:1.05}
+.automation-person-columns dl>div{grid-template-columns:minmax(9rem,.38fr) minmax(0,1fr);gap:.75rem}
+.automation-person-columns article{gap:.75rem;padding:1rem}
+.automation-person-columns article+article{margin-top:.75rem}
+.automation-person-columns>section{padding:1rem}
+.automation-person-columns h3{margin-bottom:1rem}
+.automation-section-heading{gap:.75rem}
+.automation-section-heading>svg{width:1.25rem;height:1.25rem}
+.automation-section-heading>b{min-width:2.25rem;height:2.25rem}
+@media(max-width:560px){.automation-person-columns dl>div{grid-template-columns:1fr;gap:.15rem}}
