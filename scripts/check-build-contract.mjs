@@ -46,13 +46,8 @@ assert.match(
 );
 assert.equal(
   pkg.scripts?.["build:pages-functions"],
-  "wrangler pages functions build functions --outdir .wrangler/pages-functions-build && cp .wrangler/pages-functions-build/index.js dist/_worker.js",
+  "npx --yes wrangler@4.125.0 pages functions build functions --outdir .wrangler/pages-functions-build && cp .wrangler/pages-functions-build/index.js dist/_worker.js",
   "Pages Functions must be compiled from functions/ into the deployed dist/_worker.js",
-);
-assert.equal(
-  pkg.devDependencies?.wrangler,
-  "4.125.0",
-  "the Pages Functions compiler must be pinned for reproducible deployments",
 );
 
 console.log("✓ build contract is fail-fast and lockfile-driven");
