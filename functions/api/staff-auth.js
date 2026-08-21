@@ -80,7 +80,10 @@ export async function onRequestPost(context) {
     const rateLimitKv = pinRateLimitKv(context.env);
     const gate = await checkPinAttempts(rateLimitKv, { ip, scope: "staff" });
     if (!gate.ok) {
-      return new Response(JSON.stringify({ error: gate.error }), { status: gate.status, headers });
+      return new Response(JSON.stringify({ error: gate.error }), {
+        status: gate.status,
+        headers: { ...headers, "X-Amari-Auth-Rate-Limit": gate.reason || "ready" },
+      });
     }
 
     // Check PIN against each staff member's env var
@@ -142,6 +145,7 @@ export async function onRequestPost(context) {
         headers: {
           ...headers,
           "Cache-Control": "no-store",
+          "X-Amari-Auth-Rate-Limit": "ready",
           "Set-Cookie": `${STAFF_SESSION_COOKIE}=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; Secure; SameSite=Strict`,
         },
       }

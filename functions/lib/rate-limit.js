@@ -112,7 +112,7 @@ export function pinRateLimitKv(env) {
 export async function checkPinAttempts(kv, { ip, scope }) {
   if (!kv) {
     console.error(`[rate-limit] ${scope}: PORTAL_KV unavailable — rejecting PIN login without an attempt limit`);
-    return { ok: false, status: 503, error: "Login is temporarily unavailable. Please try again shortly." };
+    return { ok: false, status: 503, reason: "missing", error: "Login is temporarily unavailable. Please try again shortly." };
   }
   try {
     const count = parseInt((await kv.get(pinAttemptKey(scope, ip))) || "0", 10) || 0;
@@ -122,7 +122,7 @@ export async function checkPinAttempts(kv, { ip, scope }) {
     return { ok: true, count };
   } catch (err) {
     console.error(`[rate-limit] ${scope}: KV error, rejecting PIN login — ${err.message}`);
-    return { ok: false, status: 503, error: "Login is temporarily unavailable. Please try again shortly." };
+    return { ok: false, status: 503, reason: "unavailable", error: "Login is temporarily unavailable. Please try again shortly." };
   }
 }
 

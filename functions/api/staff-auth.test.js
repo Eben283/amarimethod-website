@@ -44,6 +44,7 @@ describe("POST /api/staff-auth", () => {
     const response = await onRequestPost(loginContext({ STAFF_AUTH_RATE_LIMIT_KV: previewKv }));
 
     expect(response.status).toBe(200);
+    expect(response.headers.get("X-Amari-Auth-Rate-Limit")).toBe("ready");
     expect(response.headers.get("Set-Cookie")).toContain("staff_session=");
     expect(rateLimitMocks.checkPinAttempts).toHaveBeenCalledWith(
       previewKv,
