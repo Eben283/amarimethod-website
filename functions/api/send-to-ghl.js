@@ -56,10 +56,6 @@ const TEXT_LIMITS = Object.freeze({
 });
 
 const REFERRAL_SOURCE_RE = /^[a-z0-9][a-z0-9_-]{0,63}$/i;
-const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
-const RATE_LIMIT = 10;
-const RATE_LIMIT_TTL_SECONDS = 3600;
-const IDEMPOTENCY_TTL_SECONDS = 24 * 3600;
 
 function corsHeaders(origin) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -85,26 +81,6 @@ function cleanText(value, key, { required = false } = {}) {
   const cleaned = value.trim();
   if ((required && !cleaned) || cleaned.length > TEXT_LIMITS[key]) return null;
   return cleaned;
-}
-
-async function verifyTurnstile(token, secret, remoteIp) {
-  if (!token || !secret) return false;
-  const form = new URLSearchParams({ secret, response: token });
-  if (remoteIp && remoteIp !== "unknown") form.set("remoteip", remoteIp);
-  const response = await fetch(TURNSTILE_VERIFY_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: form,
-  });
-  if (!response.ok) return false;
-  const result = await response.json();
-  return result.success === true;
-}
-
-async function submissionKey(body) {
-  const bytes = new TextEncoder().encode(JSON.stringify(body));
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
 // The quiz is public, but it is still a narrowly defined lead-intake contract.
@@ -237,54 +213,27 @@ export async function onRequestPost(context) {
       return json(headers, { error: "Expected a JSON quiz submission." }, 415);
     }
 
-    const rawBody = await context.request.json();
-    const body = normalizeQuizSubmission(rawBody);
+    const body = normalizeQuizSubmission(await context.request.json());
     if (!body) return json(headers, { error: "Invalid quiz submission." }, 400);
     const { firstName, lastName, email } = body;
-    const turnstileToken = rawBody.turnstileToken;
-    const clientIP = context.request.headers.get("CF-Connecting-IP") || "unknown";
-
-    try {
-      const verified = await verifyTurnstile(turnstileToken, context.env.TURNSTILE_SECRET_KEY, clientIP);
-      if (!verified) return json(headers, { error: "Bot verification failed." }, 403);
-    } catch (err) {
-      console.error("[send-to-ghl] Turnstile verification failed:", err);
-      return json(headers, { error: "Bot verification failed." }, 403);
-    }
 
     // Protect GHL from abuse without blocking legitimate people on a shared
     // network. Invalid or incomplete attempts must never consume this quota.
     // The new key deliberately clears the overly strict legacy 3/hour bucket.
     const kv = context.env.PORTAL_KV;
-    if (!kv) {
-      console.error("[send-to-ghl] PORTAL_KV is not configured");
-      return json(headers, { error: "Submission protection unavailable." }, 422);
-    }
-
-    let idempotencyKey;
-    try {
-      idempotencyKey = `quiz_submission:${await submissionKey(body)}`;
-      if (await kv.get(idempotencyKey)) {
-        return json(headers, { success: true, duplicate: true }, 200);
-      }
-
+    if (kv) {
+      const clientIP = context.request.headers.get("CF-Connecting-IP") || "unknown";
       const rateKey = `quiz_submission_rate:${clientIP}`;
       const currentCount = parseInt(await kv.get(rateKey) || "0", 10);
-      if (!Number.isFinite(currentCount)) throw new Error("Invalid rate-limit value");
-      if (currentCount >= RATE_LIMIT) {
+      if (currentCount >= 10) {
         return json(headers, { error: "Too many submissions from this network. Please try again in an hour." }, 429);
       }
-      await kv.put(rateKey, String(currentCount + 1), { expirationTtl: RATE_LIMIT_TTL_SECONDS });
-      await kv.put(idempotencyKey, "processing", { expirationTtl: IDEMPOTENCY_TTL_SECONDS });
-    } catch (err) {
-      console.error("[send-to-ghl] KV protection failed:", err);
-      return json(headers, { error: "Submission protection unavailable." }, 422);
+      await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
 
     const GHL_API_KEY = await getGhlToken(context);
     if (!GHL_API_KEY) {
       console.error("[send-to-ghl] GHL_API_KEY not configured");
-      await kv.delete(idempotencyKey).catch(() => {});
       return json(headers, { error: "Server configuration error" }, 500);
     }
 
@@ -361,7 +310,6 @@ export async function onRequestPost(context) {
     if (!upsertResponse.ok) {
       const errorText = await upsertResponse.text();
       console.error(`[send-to-ghl] GHL upsert error: ${upsertResponse.status} ${errorText}`);
-      await kv.delete(idempotencyKey).catch(() => {});
       return new Response(
         JSON.stringify({ error: "Failed to save contact" }),
         { status: 422, headers }

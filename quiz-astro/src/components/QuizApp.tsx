@@ -1,8 +1,7 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect } from 'react';
 import { QuizProvider, useQuiz } from '@/contexts/QuizContext';
 import QuizContainer from './QuizContainer';
 import { Toaster } from './ui/toaster';
-import { mountTurnstile } from '@/lib/turnstile';
 
 /**
  * Bootstrap component — fires startQuiz() once on mount so the React island
@@ -18,19 +17,10 @@ function QuizBootstrap() {
 }
 
 export default function QuizApp() {
-  const turnstileRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (turnstileRef.current) {
-      mountTurnstile(turnstileRef.current, import.meta.env.PUBLIC_TURNSTILE_SITE_KEY || '');
-    }
-  }, []);
-
   return (
     <QuizProvider>
       <QuizBootstrap />
       <Toaster />
-      <div ref={turnstileRef} aria-hidden="true" />
     </QuizProvider>
   );
 }
