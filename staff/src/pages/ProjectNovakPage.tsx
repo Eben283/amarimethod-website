@@ -1,49 +1,44 @@
 import { ArrowRight, FileText, Goal, Trophy } from 'lucide-react';
 import './ProjectNovakPage.css';
 
-const PATHS = [
+const PLAN = [
   {
     number: '01',
-    eyebrow: 'Build the company',
-    title: 'Premium care people choose again.',
-    text: 'Serve demanding bodies exceptionally. Build a business with real return care, clear premium decisions, and a reputation that travels through people.',
+    eyebrow: 'First 90 days',
+    title: 'Choose two real starting points.',
+    text: 'Pick one body-professional host and one tennis or racquet-sport host. Agree on why Amari belongs there, how people first experience it, and when we review what happened.',
   },
   {
     number: '02',
-    eyebrow: 'Enter the conversation',
-    title: 'Earn serious tennis relationships.',
-    text: 'Show up repeatedly in the right rooms. Let coaches, performance people, and body professionals experience or closely observe what Garrett does.',
+    eyebrow: 'First 90 days',
+    title: 'Run the small cohort and learn.',
+    text: 'Garrett delivers the work. Eben records the source, return care, paid-care choices, voluntary introductions, and any real next connection. Review the two lanes at days 30, 60, and 90.',
   },
   {
     number: '03',
-    eyebrow: 'Reach the team',
-    title: 'Make the warm introduction inevitable.',
-    text: 'Build a chain of trusted people who know the work well enough to introduce Garrett one meaningful step closer to Djokovic’s performance circle.',
+    eyebrow: 'Months 4–12',
+    title: 'Keep the lane that proves itself.',
+    text: 'Concentrate on the lane that creates paid care and voluntary introductions. By year end, earn one trusted tennis or performance connector and name the next credible link toward Djokovic’s team.',
   },
 ];
 
 const HORIZONS = [
   {
-    label: 'Now → 90 days',
-    title: 'Choose the rooms.',
-    text: 'Select one premium body-professional host and one tennis or racquet-sport host. Run a small founder cohort, learn from every experience, and name the first credible connection hypothesis.',
+    label: 'Year two',
+    title: 'Earn a serious performance bridge.',
+    text: 'Use the business and trusted connectors to earn repeat care and discreet word-of-mouth with more demanding, better-connected people. The goal is one genuine bridge into professional tennis or a closely adjacent performance network.',
   },
   {
-    label: 'Year one',
-    title: 'Build proof and a bridge.',
-    text: 'Establish the commercial wedge, a base of demanding-body clients, and trusted tennis/performance people who can accurately describe the work and open the next conversation.',
-  },
-  {
-    label: 'Years two + three',
-    title: 'Make the attempt.',
-    text: 'Earn the professional-performance bridge, build destination-care readiness from real demand, and make a respectful warm invitation when the right route exists.',
+    label: 'Year three',
+    title: 'Make the warm introduction.',
+    text: 'When there is a credible route, make a small, respectful invitation to the person who can evaluate fit for Novak’s team. If the route is not real yet, identify the missing link and decide whether another three years is warranted.',
   },
 ];
 
 const FILTERS = [
-  ['Care reputation', 'Does this create a deeper, real experience of Amari for a demanding body?'],
-  ['Commercial strength', 'Does this create paid care, trusted demand, or delivery capacity?'],
-  ['Tennis access', 'Does this bring us one credible relationship closer to Djokovic’s performance circle?'],
+  ['Double down', 'The lane creates paid care and either voluntary introductions or a real tennis/performance bridge.'],
+  ['Keep or repair', 'Keep a revenue-producing lane as business-only. Repair the experience or explanation when people value it but do not return.'],
+  ['Exit', 'After two 90-day cycles with neither paid care nor a warm next step, stop calling it Project Novak work.'],
 ];
 
 const IMAGES = [
@@ -59,7 +54,7 @@ export default function ProjectNovakPage() {
         <p><Trophy aria-hidden="true" /> Internal target · August 2029</p>
         <h1>Project<br />Novak</h1>
         <strong>Bring Novak Djokovic under Garrett’s care.</strong>
-        <span>Build the company, earn the performance relationships, make the introduction.</span>
+        <span>A three-year plan: build proof, earn the right relationships, then make a credible introduction.</span>
       </div>
       <figure className="project-novak__hero-image">
         <img src={IMAGES[0].src} alt={IMAGES[0].alt} />
@@ -70,16 +65,16 @@ export default function ProjectNovakPage() {
     <section className="project-novak__target" aria-labelledby="novak-target">
       <Goal aria-hidden="true" />
       <div>
-        <p>What we are building</p>
-        <h2 id="novak-target">A serious San Francisco care company with a real route into Djokovic’s performance circle.</h2>
+        <p>The goal by August 2029</p>
+        <h2 id="novak-target">A warm, credible route for Novak Djokovic to experience Garrett’s care.</h2>
         <a className="project-novak__plan-link" href="/staff/resources/project-novak-plan.txt" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /> Read the full internal plan <ArrowRight aria-hidden="true" /></a>
       </div>
     </section>
 
     <section className="project-novak__section project-novak__section--path" aria-labelledby="novak-path">
-      <header><p>The path</p><h2 id="novak-path">Three moves. One direction.</h2></header>
+      <header><p>The plan outline</p><h2 id="novak-path">Start here. Prove it. Build the bridge.</h2></header>
       <div className="project-novak__path-grid">
-        {PATHS.map((path) => <article key={path.number}>
+        {PLAN.map((path) => <article key={path.number}>
           <span>{path.number}</span>
           <p>{path.eyebrow}</p>
           <h3>{path.title}</h3>
@@ -89,11 +84,11 @@ export default function ProjectNovakPage() {
     </section>
 
     <section className="project-novak__route" aria-label="Project Novak route">
-      <span>Exceptional care</span><ArrowRight aria-hidden="true" /><span>Trusted tennis people</span><ArrowRight aria-hidden="true" /><span>Performance connector</span><ArrowRight aria-hidden="true" /><strong>Novak’s team</strong>
+      <span>Real care experience</span><ArrowRight aria-hidden="true" /><span>Trusted local introducers</span><ArrowRight aria-hidden="true" /><span>Professional-performance bridge</span><ArrowRight aria-hidden="true" /><strong>Novak’s team</strong>
     </section>
 
     <section className="project-novak__section" aria-labelledby="novak-horizons">
-      <header><p>The horizons</p><h2 id="novak-horizons">Own the next move.</h2></header>
+      <header><p>What happens after year one</p><h2 id="novak-horizons">Earn the bridge, then use it.</h2></header>
       <ol className="project-novak__timeline">
         {HORIZONS.map((horizon, index) => <li key={horizon.label}>
           <span className="project-novak__marker">{String(index + 1).padStart(2, '0')}</span>
@@ -103,17 +98,17 @@ export default function ProjectNovakPage() {
     </section>
 
     <section className="project-novak__section project-novak__section--filter" aria-labelledby="novak-filter">
-      <header><p>Operating filter</p><h2 id="novak-filter">Every move earns its place.</h2></header>
+      <header><p>Decision rules</p><h2 id="novak-filter">At each review, decide what happens next.</h2></header>
       <div className="project-novak__filter-grid">
         {FILTERS.map(([title, text]) => <article key={title}><h3>{title}</h3><span>{text}</span></article>)}
       </div>
-      <p className="project-novak__filter-note">At the monthly Project Novak review, Eben and Garrett choose the next move from the evidence: deepen, redirect, or stop.</p>
+      <p className="project-novak__filter-note">Eben and Garrett hold a monthly review. The question is concrete: double down, keep it as business-only, repair it, or stop.</p>
     </section>
 
     <section className="project-novak__owners" aria-label="Project Novak ownership">
-      <div><p>Owner · Eben</p><h3>Route, economics, and evidence.</h3></div>
-      <div><p>Owner · Garrett</p><h3>Care, presence, and trust.</h3></div>
-      <div><p>Shared</p><h3>One monthly keep / change decision.</h3></div>
+      <div><p>Eben owns</p><h3>Hosts, numbers, route, and review.</h3></div>
+      <div><p>Garrett owns</p><h3>The care, relationships, and trust.</h3></div>
+      <div><p>Together</p><h3>One clear decision every month.</h3></div>
     </section>
 
     <section className="project-novak__gallery" aria-label="Novak Djokovic reference imagery">
