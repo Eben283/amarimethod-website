@@ -39,4 +39,20 @@ for (const app of ["quiz-astro", "portal", "staff", "cos"]) {
   );
 }
 
+assert.match(
+  build,
+  /npm run build:pages-functions/,
+  "production build must regenerate the Pages Functions runtime instead of deploying a stale committed bundle",
+);
+assert.equal(
+  pkg.scripts?.["build:pages-functions"],
+  "wrangler pages functions build functions --outdir .wrangler/pages-functions-build && cp .wrangler/pages-functions-build/index.js dist/_worker.js",
+  "Pages Functions must be compiled from functions/ into the deployed dist/_worker.js",
+);
+assert.equal(
+  pkg.devDependencies?.wrangler,
+  "4.125.0",
+  "the Pages Functions compiler must be pinned for reproducible deployments",
+);
+
 console.log("✓ build contract is fail-fast and lockfile-driven");
