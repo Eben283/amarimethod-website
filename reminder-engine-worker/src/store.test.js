@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { enrollmentId, saveEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, loadDeliveryReceiptCandidates, appendDeliveryReceiptEvent } from "./store.js";
+import { enrollmentId, saveEnrollment, saveBackfilledEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, loadDeliveryReceiptCandidates, appendDeliveryReceiptEvent } from "./store.js";
 
 // Stateful fake of the D1 binding — models exactly the queries store.js issues, the way
 // attendance-claim.test.js models its INSERT. prepare().bind().run()/.all().
@@ -21,6 +21,9 @@ function fakeD1() {
         }
         if (/INSERT INTO reminder_steps/.test(sql)) {
           const [enrollment_id, step_index, at, type, template, due_at, status] = a;
+          if (steps.some((step) => step.enrollment_id === enrollment_id && step.step_index === step_index)) {
+            return { meta: { changes: 0 } };
+          }
           steps.push({ enrollment_id, step_index, at, type, template, due_at, status });
           return { meta: { changes: 1 } };
         }
@@ -70,6 +73,20 @@ function fakeD1() {
           if (e) e.status = "cancelled";
           return { meta: { changes: e ? 1 : 0 } };
         }
+        if (/UPDATE reminder_enrollments\s+SET definition_version = \?/.test(sql)) {
+          const [definitionVersion, contactId, calendarId, startAt, startMs, enrolledAt, id, oldVersion] = a;
+          const e = enrollments.get(id);
+          if (!e || e.status !== "active" || e.definition_version !== oldVersion) return { meta: { changes: 0 } };
+          Object.assign(e, {
+            definition_version: definitionVersion,
+            contact_id: contactId,
+            calendar_id: calendarId,
+            start_at: startAt,
+            start_ms: startMs,
+            enrolled_at: enrolledAt,
+          });
+          return { meta: { changes: 1 } };
+        }
         return { meta: { changes: 0 } };
       },
       async all() {
@@ -98,9 +115,20 @@ function fakeD1() {
         }
         return { results: [] };
       },
+      async first() {
+        const [id] = this._args;
+        if (/SELECT flow_key, definition_version/.test(sql)) return enrollments.get(id) || null;
+        return null;
+      },
     };
   }
-  return { prepare, _enrollments: enrollments, _steps: steps, _events: events };
+  return {
+    prepare,
+    async batch(statements) { return Promise.all(statements.map((statement) => statement.run())); },
+    _enrollments: enrollments,
+    _steps: steps,
+    _events: events,
+  };
 }
 
 const NOW = 1_000_000;
@@ -143,6 +171,58 @@ describe("saveEnrollment", () => {
     const second = await saveEnrollment(db, enrollment());
     expect(second.created).toBe(false);
     expect(db._steps).toHaveLength(2); // not 4
+  });
+});
+
+describe("saveBackfilledEnrollment", () => {
+  it("keeps an ordinary duplicate inert unless replacement is explicit", async () => {
+    await saveEnrollment(db, enrollment());
+    const out = await saveBackfilledEnrollment(db, enrollment({ definitionVersion: 2 }));
+    expect(out).toMatchObject({ created: false, reconciled: false, cancelledSteps: 0 });
+    expect(db._enrollments.get("initial-in-person:a1").definition_version).toBe(1);
+    expect(db._steps).toHaveLength(2);
+  });
+
+  it("atomically advances a legacy row while preserving immutable evidence", async () => {
+    await saveEnrollment(db, enrollment());
+    await markStep(db, "initial-in-person:a1", 0, "would_send");
+    const replacement = enrollment({
+      definitionVersion: 2,
+      startAt: "2026-07-27T15:00:00-07:00",
+      startMs: 10_000_000,
+      steps: [
+        { stepIndex: 0, at: "enroll", type: "email", template: "confirmation", dueAt: NOW, status: "skipped" },
+        { stepIndex: 1, at: "start-60m", type: "sms", template: "one-hour-sms", dueAt: NOW + 200_000, status: "pending" },
+      ],
+    });
+
+    const out = await saveBackfilledEnrollment(db, replacement, { replaceExisting: true });
+
+    expect(out).toMatchObject({
+      created: false,
+      reconciled: true,
+      cancelledSteps: 1,
+      previousDefinitionVersion: 1,
+    });
+    expect(db._enrollments.get("initial-in-person:a1")).toMatchObject({
+      definition_version: 2,
+      start_at: replacement.startAt,
+    });
+    expect(db._steps.find((step) => step.step_index === 0).status).toBe("would_send");
+    expect(db._steps.find((step) => step.step_index === 1).status).toBe("cancelled");
+    expect(db._steps.find((step) => step.step_index === 2001)).toMatchObject({
+      template: "one-hour-sms",
+      status: "pending",
+    });
+  });
+
+  it("rejects replacement that does not advance the definition", async () => {
+    await saveEnrollment(db, enrollment({ definitionVersion: 2 }));
+    await expect(saveBackfilledEnrollment(
+      db,
+      enrollment({ definitionVersion: 2, startAt: "2026-07-27T15:00:00-07:00" }),
+      { replaceExisting: true },
+    )).rejects.toThrow("advance the workflow definition version");
   });
 });
 

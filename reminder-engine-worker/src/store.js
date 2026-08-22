@@ -48,6 +48,81 @@ export async function saveEnrollment(db, enrollment) {
 }
 
 /**
+ * Persist an authoritative shadow backfill, with an explicit migration path for a legacy
+ * enrollment that uses the same (flow, appointment) key. Historical step outcomes remain
+ * immutable. Only still-pending legacy work is cancelled, and replacement v2 timer steps use a
+ * versioned index range so they cannot overwrite the earlier evidence rows.
+ */
+export async function saveBackfilledEnrollment(db, enrollment, { replaceExisting = false } = {}) {
+  const id = enrollmentId(enrollment.flowKey, enrollment.appointmentId);
+  const existing = await db
+    .prepare(
+      `SELECT flow_key, definition_version, appointment_id, contact_id, calendar_id, start_at, status
+       FROM reminder_enrollments WHERE enrollment_id = ?`,
+    )
+    .bind(id)
+    .first();
+
+  if (!existing) {
+    const saved = await saveEnrollment(db, enrollment);
+    return { ...saved, reconciled: false, cancelledSteps: 0, steps: enrollment.steps };
+  }
+  if (!replaceExisting) {
+    return { created: false, reconciled: false, cancelledSteps: 0, enrollmentId: id, steps: [] };
+  }
+  if (existing.status !== "active") throw new Error("only an active legacy enrollment can be reconciled");
+  if (
+    existing.flow_key !== enrollment.flowKey
+    || existing.appointment_id !== enrollment.appointmentId
+    || existing.contact_id !== enrollment.contactId
+    || existing.calendar_id !== enrollment.calendarId
+  ) {
+    throw new Error("legacy enrollment identity does not match the authoritative appointment");
+  }
+  const oldVersion = Number(existing.definition_version || 0);
+  const newVersion = Number(enrollment.definitionVersion || 0);
+  if (!Number.isInteger(newVersion) || newVersion <= oldVersion) {
+    if (newVersion === oldVersion && existing.start_at === enrollment.startAt) {
+      return { created: false, reconciled: false, cancelledSteps: 0, enrollmentId: id, steps: [] };
+    }
+    throw new Error("replacement backfill must advance the workflow definition version");
+  }
+
+  const pending = enrollment.steps
+    .filter((step) => step.status === "pending" && step.at !== "enroll")
+    .map((step) => ({ ...step, stepIndex: newVersion * 1000 + step.stepIndex }));
+  const cancel = db
+    .prepare(`UPDATE reminder_steps SET status = 'cancelled' WHERE enrollment_id = ? AND status = 'pending'`)
+    .bind(id);
+  const update = db
+    .prepare(
+      `UPDATE reminder_enrollments
+       SET definition_version = ?, contact_id = ?, calendar_id = ?, start_at = ?, start_ms = ?, enrolled_at = ?
+       WHERE enrollment_id = ? AND status = 'active' AND definition_version = ?`,
+    )
+    .bind(
+      newVersion, enrollment.contactId, enrollment.calendarId, enrollment.startAt,
+      enrollment.startMs, enrollment.enrolledAt, id, oldVersion,
+    );
+  const inserts = pending.map((step) => db
+    .prepare(
+      `INSERT INTO reminder_steps (enrollment_id, step_index, at, type, template, due_at, status)
+       VALUES (?,?,?,?,?,?,?) ON CONFLICT(enrollment_id, step_index) DO NOTHING`,
+    )
+    .bind(id, step.stepIndex, step.at, step.type, step.template, step.dueAt, step.status));
+  const results = await db.batch([cancel, update, ...inserts]);
+  if (changesOf(results[1]) !== 1) throw new Error("legacy enrollment changed during reconciliation");
+  return {
+    created: false,
+    reconciled: true,
+    cancelledSteps: changesOf(results[0]),
+    enrollmentId: id,
+    steps: pending,
+    previousDefinitionVersion: oldVersion,
+  };
+}
+
+/**
  * Move the still-pending timer steps for an existing active appointment. Sent, shadowed, skipped,
  * failed, and cancelled steps are immutable evidence and deliberately stay untouched: a reschedule
  * must never send a second confirmation. Returns false for a duplicate event or non-active record.

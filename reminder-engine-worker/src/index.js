@@ -181,11 +181,15 @@ export default {
         if (body?.workflowId !== FOLLOW_UP_WORKFLOW.id || !body?.event) {
           return json(400, { error: "workflowId and event are required" });
         }
-        const result = await backfillShadowEnrollment(env, body.workflowId, body.event, Date.now());
+        const result = await backfillShadowEnrollment(
+          env, body.workflowId, body.event, Date.now(),
+          { replaceExisting: body.replaceExisting === true },
+        );
         return json(200, {
           success: true,
           state: "shadow",
           created: result.created,
+          reconciled: result.reconciled,
           enrollmentId: result.enrollmentId,
           skipped: result.steps.filter((step) => step.status === "skipped").map((step) => step.template),
           pending: result.steps.filter((step) => step.status === "pending").map((step) => step.template),
