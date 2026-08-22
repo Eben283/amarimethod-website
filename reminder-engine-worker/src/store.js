@@ -123,6 +123,61 @@ export async function saveBackfilledEnrollment(db, enrollment, { replaceExisting
 }
 
 /**
+ * Retire a stale v1 shadow enrollment after the provider appointment is already in the past.
+ * This is deliberately not cancellation: provider history may say showed (or may still say
+ * confirmed), and inventing a cancellation would corrupt the audit trail. The operation is
+ * migration-only, requires exact identity, and refuses to retire anything that can still send.
+ */
+export async function retireLegacyEnrollment(db, event, nowMs) {
+  const id = enrollmentId(event.flowKey, event.appointmentId);
+  const existing = await db
+    .prepare(
+      `SELECT e.flow_key, e.definition_version, e.appointment_id, e.contact_id, e.calendar_id,
+              e.start_at, e.status,
+              (SELECT COUNT(*) FROM reminder_steps s
+               WHERE s.enrollment_id = e.enrollment_id AND s.status = 'pending') AS pending_steps
+       FROM reminder_enrollments e WHERE e.enrollment_id = ?`,
+    )
+    .bind(id)
+    .first();
+  if (!existing) throw new Error("legacy enrollment does not exist");
+  if (
+    existing.flow_key !== event.flowKey
+    || existing.appointment_id !== event.appointmentId
+    || existing.contact_id !== event.contactId
+    || existing.calendar_id !== event.calendarId
+    || existing.start_at !== event.startAt
+  ) {
+    throw new Error("legacy enrollment identity does not match the provider appointment");
+  }
+  if (existing.status === "retired") return { retired: false, enrollmentId: id };
+  if (existing.status !== "active") throw new Error("only an active legacy enrollment can be retired");
+  if (Number(existing.definition_version) !== 1) throw new Error("only a v1 legacy enrollment can be retired");
+  if (!Number.isFinite(Date.parse(event.startAt)) || Date.parse(event.startAt) >= nowMs) {
+    throw new Error("legacy appointment must be in the past");
+  }
+  if (!new Set(["showed", "confirmed"]).has(event.providerStatus)) {
+    throw new Error("provider status is not eligible for migration retirement");
+  }
+  if (Number(existing.pending_steps || 0) !== 0) {
+    throw new Error("legacy enrollment still has pending work");
+  }
+  const updated = await db
+    .prepare(
+      `UPDATE reminder_enrollments SET status = 'retired'
+       WHERE enrollment_id = ? AND status = 'active' AND definition_version = 1
+         AND NOT EXISTS (
+           SELECT 1 FROM reminder_steps
+           WHERE enrollment_id = ? AND status = 'pending'
+         )`,
+    )
+    .bind(id, id)
+    .run();
+  if (changesOf(updated) !== 1) throw new Error("legacy enrollment changed during retirement");
+  return { retired: true, enrollmentId: id };
+}
+
+/**
  * Move the still-pending timer steps for an existing active appointment. Sent, shadowed, skipped,
  * failed, and cancelled steps are immutable evidence and deliberately stay untouched: a reschedule
  * must never send a second confirmation. Returns false for a duplicate event or non-active record.

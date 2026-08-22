@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { enrollmentId, saveEnrollment, saveBackfilledEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, loadDeliveryReceiptCandidates, appendDeliveryReceiptEvent } from "./store.js";
+import { enrollmentId, saveEnrollment, saveBackfilledEnrollment, retireLegacyEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, loadDeliveryReceiptCandidates, appendDeliveryReceiptEvent } from "./store.js";
 
 // Stateful fake of the D1 binding — models exactly the queries store.js issues, the way
 // attendance-claim.test.js models its INSERT. prepare().bind().run()/.all().
@@ -87,6 +87,14 @@ function fakeD1() {
           });
           return { meta: { changes: 1 } };
         }
+        if (/UPDATE reminder_enrollments SET status = 'retired'/.test(sql)) {
+          const [id] = a;
+          const e = enrollments.get(id);
+          const pending = steps.some((step) => step.enrollment_id === id && step.status === "pending");
+          if (!e || e.status !== "active" || e.definition_version !== 1 || pending) return { meta: { changes: 0 } };
+          e.status = "retired";
+          return { meta: { changes: 1 } };
+        }
         return { meta: { changes: 0 } };
       },
       async all() {
@@ -118,6 +126,10 @@ function fakeD1() {
       async first() {
         const [id] = this._args;
         if (/SELECT flow_key, definition_version/.test(sql)) return enrollments.get(id) || null;
+        if (/SELECT e.flow_key, e.definition_version/.test(sql)) {
+          const e = enrollments.get(id);
+          return e ? { ...e, pending_steps: steps.filter((step) => step.enrollment_id === id && step.status === "pending").length } : null;
+        }
         return null;
       },
     };
@@ -223,6 +235,44 @@ describe("saveBackfilledEnrollment", () => {
       enrollment({ definitionVersion: 2, startAt: "2026-07-27T15:00:00-07:00" }),
       { replaceExisting: true },
     )).rejects.toThrow("advance the workflow definition version");
+  });
+});
+
+describe("retireLegacyEnrollment", () => {
+  const past = "1970-01-01T00:10:00.000Z";
+  const retirement = (over = {}) => ({
+    flowKey: "initial-in-person", appointmentId: "a1", contactId: "c1", calendarId: "cal",
+    startAt: past, providerStatus: "showed", ...over,
+  });
+
+  it("retires an exact past v1 row only after all pending work is gone", async () => {
+    await saveEnrollment(db, enrollment({ startAt: past, startMs: Date.parse(past) }));
+    await markStep(db, "initial-in-person:a1", 0, "would_send");
+    await markStep(db, "initial-in-person:a1", 1, "would_send");
+
+    expect(await retireLegacyEnrollment(db, retirement(), NOW)).toEqual({
+      retired: true, enrollmentId: "initial-in-person:a1",
+    });
+    expect(db._enrollments.get("initial-in-person:a1").status).toBe("retired");
+    expect(await retireLegacyEnrollment(db, retirement(), NOW)).toEqual({
+      retired: false, enrollmentId: "initial-in-person:a1",
+    });
+  });
+
+  it("fails closed for pending work, identity drift, current definitions, or a future appointment", async () => {
+    await saveEnrollment(db, enrollment({ startAt: past, startMs: Date.parse(past) }));
+    await expect(retireLegacyEnrollment(db, retirement(), NOW)).rejects.toThrow("pending work");
+    await markStep(db, "initial-in-person:a1", 0, "would_send");
+    await markStep(db, "initial-in-person:a1", 1, "would_send");
+    await expect(retireLegacyEnrollment(db, retirement({ contactId: "wrong" }), NOW)).rejects.toThrow("identity");
+    db._enrollments.get("initial-in-person:a1").definition_version = 2;
+    await expect(retireLegacyEnrollment(db, retirement(), NOW)).rejects.toThrow("v1");
+    db._enrollments.get("initial-in-person:a1").definition_version = 1;
+    const future = "1970-01-01T01:00:00.000Z";
+    db._enrollments.get("initial-in-person:a1").start_at = future;
+    await expect(retireLegacyEnrollment(db, retirement({ startAt: future }), NOW)).rejects.toThrow("must be in the past");
+    db._enrollments.get("initial-in-person:a1").start_at = past;
+    await expect(retireLegacyEnrollment(db, retirement({ providerStatus: "cancelled" }), NOW)).rejects.toThrow("provider status");
   });
 });
 
