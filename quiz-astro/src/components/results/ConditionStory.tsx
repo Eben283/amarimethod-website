@@ -108,6 +108,7 @@ const ConditionStory = ({ content }: Props) => {
               <div className="video-frame-inner">
                 <video
                   src={content.protocolIntro.introVideoUrl}
+                  poster={content.protocolIntro.posterImageUrl}
                   controls
                   preload="metadata"
                   playsInline

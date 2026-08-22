@@ -32,6 +32,8 @@ export type ProtocolIntro = {
   framingLine: string;
   /** Direct video URL — currently filesafe.space (GHL/groups.amarimethod.com asset CDN) */
   introVideoUrl: string;
+  /** Matching still shown before the visitor starts the video. */
+  posterImageUrl: string;
   /** Approximate runtime, shown to the visitor so they know what they're committing to */
   durationLabel: string;
 };
@@ -381,6 +383,7 @@ const SPINAL_WAVE: ProtocolIntro = {
   name: 'The Spinal Wave',
   framingLine: '"Go for the feeling of it, not the doing of it. Let the ocean move you."',
   introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30c3bfe4d0d3ac8d60938.mp4',
+  posterImageUrl: '/images/photos/journal-base/jh-spinal-wave.jpg',
   durationLabel: '4 min',
 };
 
@@ -392,6 +395,7 @@ const POWER_POSTURE: ProtocolIntro = {
   name: 'Power Posture',
   framingLine: '"We have a huge over-flexion problem in the culture, and this exercise totally corrects it."',
   introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30d0ef5a3893acea59684.mp4',
+  posterImageUrl: '/images/photos/journal-base/base-power-posture-1.5s.jpg',
   durationLabel: '2 min',
 };
 
@@ -399,6 +403,7 @@ const SPRING_STEP: ProtocolIntro = {
   name: 'Spring Step',
   framingLine: '"Imagine feeling the bottom of your body as buoyant and free, rather than stuck."',
   introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c306b5f5a389ab2aa4c3a0.mp4',
+  posterImageUrl: '/images/photos/journal-base/jh-spring-step.jpg',
   durationLabel: '3 min',
 };
 
@@ -406,6 +411,7 @@ const HAND_BALANCER: ProtocolIntro = {
   name: 'The Hand Balancer',
   framingLine: '"Most people are experiencing some kind of hand issue these days. This balances out the hand so the front and back are working equally."',
   introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c305e33ab4d91e7fc7763d.mp4',
+  posterImageUrl: '/images/photos/journal-base/base-hand-balancer-3s.jpg',
   durationLabel: '1 min',
 };
 
@@ -413,6 +419,7 @@ const ELBOW_RESET: ProtocolIntro = {
   name: 'The Elbow Reset',
   framingLine: '"From all the overuse we do with the forearm, the tendon gets inflamed. This is a great tool for any kind of dysfunction of the elbow or forearm."',
   introVideoUrl: 'https://assets.cdn.filesafe.space/7pIO7FHVAyBT1jKGhfQM/media/69c30e9b6bd30ff0fd318d61.mp4',
+  posterImageUrl: '/images/photos/journal-base/base-elbow-reset-6s.jpg',
   durationLabel: '1 min',
 };
 
