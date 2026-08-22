@@ -195,10 +195,12 @@ export async function retimeEnrollment(db, event, flow, nowMs) {
   const startMs = Date.parse(event.startAt);
   if (!Number.isFinite(startMs)) return { rescheduled: false };
 
-  const confirmation = await db
-    .prepare(`SELECT status FROM reminder_steps WHERE enrollment_id = ? AND template = 'confirmation' LIMIT 1`)
-    .bind(id)
-    .first();
+  const confirmationTemplate = flow.steps.find((step) => step.at === "enroll" && step.type === "email")?.template;
+  const confirmation = confirmationTemplate ? (await db
+    .prepare(`SELECT status FROM reminder_steps WHERE enrollment_id = ? AND template = ? LIMIT 1`)
+    .bind(id, confirmationTemplate)
+    .first())
+    : null;
 
   for (let stepIndex = 0; stepIndex < flow.steps.length; stepIndex += 1) {
     const definition = flow.steps[stepIndex];

@@ -7,12 +7,14 @@ vi.mock("../../functions/lib/ghl-send.js", () => ({ sendConversationMessage: vi.
 import { handleEvent, mergeExecutionFlows, runSweep } from "./engine.js";
 import { loadDueSteps } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
+import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 
 // Minimal stateful fake D1 (same shape as store.test.js's).
 function fakeD1() {
   const enrollments = new Map();
   const steps = [];
   const events = [];
+  const workflowDocuments = new Map();
   const prepare = (sql) => ({
     _args: [],
     bind(...a) { this._args = a; return this; },
@@ -100,19 +102,23 @@ function fakeD1() {
       return { results: [] };
     },
     async first() {
+      if (/SELECT document FROM workflow_versions WHERE workflow_id = \? AND state = 'published'/.test(sql)) {
+        const document = workflowDocuments.get(this._args[0]);
+        return document ? { document: JSON.stringify(document) } : null;
+      }
       const [id] = this._args;
       if (/SELECT start_at, status FROM reminder_enrollments/.test(sql)) {
         const record = enrollments.get(id);
         return record ? { start_at: record.start_at, status: record.status } : null;
       }
       if (/SELECT status FROM reminder_steps/.test(sql)) {
-        const record = steps.find((step) => step.enrollment_id === id && step.template === "confirmation");
+        const record = steps.find((step) => step.enrollment_id === id && step.template === this._args[1]);
         return record ? { status: record.status } : null;
       }
       return null;
     },
   });
-  return { prepare, _enrollments: enrollments, _steps: steps, _events: events };
+  return { prepare, _enrollments: enrollments, _steps: steps, _events: events, _workflowDocuments: workflowDocuments };
 }
 
 const START = Date.parse("2026-07-20T15:00:00-07:00");
@@ -192,6 +198,23 @@ describe("handleEvent — enroll", () => {
     expect(queued).toMatchObject({ at: "reschedule", type: "email", due_at: NOW + 1_000, status: "pending" });
     expect(env.REMINDER_DB._events).toContainEqual(expect.objectContaining({
       action: "reschedule_confirmation_queued", outcome: "queued", channel: "email",
+    }));
+  });
+
+  it("queues one updated virtual confirmation after a sent welcome is rescheduled", async () => {
+    env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
+    const virtual = event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_1", modifiedBy: "user",
+    });
+    await handleEvent(env, virtual, NOW);
+    env.REMINDER_DB._steps.find((step) => step.template === "welcome").status = "sent";
+
+    await handleEvent(env, { ...virtual, startAt: "2026-07-23T15:00:00-07:00" }, NOW + 2_000);
+
+    expect(env.REMINDER_DB._steps.filter((step) => step.template === "reschedule-confirmation"))
+      .toEqual([expect.objectContaining({ at: "reschedule", type: "email", due_at: NOW + 2_000, status: "pending" })]);
+    expect(env.REMINDER_DB._events).toContainEqual(expect.objectContaining({
+      flow_key: "initial-virtual", action: "reschedule_confirmation_queued", outcome: "queued",
     }));
   });
 
