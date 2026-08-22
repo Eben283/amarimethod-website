@@ -91,7 +91,7 @@ function NewFolderDialog({ parentId, onClose, onCreated }: { parentId: string | 
   );
 }
 
-function AssetDrawer({ asset, folders, onClose, onChanged }: { asset: StaffMediaAsset; folders: StaffMediaFolder[]; onClose: () => void; onChanged: (asset: StaffMediaAsset) => void }) {
+function AssetDrawer({ asset, folders, onClose, onChanged, onReconcile }: { asset: StaffMediaAsset; folders: StaffMediaFolder[]; onClose: () => void; onChanged: (asset: StaffMediaAsset) => void; onReconcile: (assetId: string) => Promise<StaffMediaAsset | null> }) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(asset.name);
   const [busy, setBusy] = useState(false);
@@ -106,6 +106,14 @@ function AssetDrawer({ asset, folders, onClose, onChanged }: { asset: StaffMedia
       if (result.asset) onChanged(result.asset);
       return result.asset || null;
     } catch (cause) {
+      if ((cause as { status?: number })?.status === 408) {
+        const reconciled = await onReconcile(asset.id);
+        if (reconciled) {
+          onChanged(reconciled);
+          setNotice(reconciled.status === asset.status ? 'The request timed out. The file is unchanged after a fresh read.' : reconciled.status === 'archived' ? 'The request timed out, but the file was archived.' : 'The request timed out, but the file was restored.');
+          return reconciled;
+        }
+      }
       setError(cause instanceof Error ? cause.message : 'The file could not be updated.');
       return null;
     } finally {
@@ -348,7 +356,13 @@ export default function MediaPage() {
       </section>
 
       {folderDialog ? <NewFolderDialog parentId={folderId} onClose={() => setFolderDialog(false)} onCreated={(folder) => { setFolders((current) => [...current, folder]); setFolderDialog(false); setFolderId(folder.id); setNotice(`Folder “${folder.name}” created.`); }} /> : null}
-      {selectedAsset ? <AssetDrawer asset={selectedAsset} folders={folders} onClose={() => setSearchParams({})} onChanged={(changed) => { setAssets((current) => current.map((asset) => asset.id === changed.id ? changed : asset)); }} /> : null}
+      {selectedAsset ? <AssetDrawer asset={selectedAsset} folders={folders} onClose={() => setSearchParams({})} onChanged={(changed) => { setAssets((current) => current.map((asset) => asset.id === changed.id ? changed : asset)); }} onReconcile={async (assetId) => {
+        const result = await getStaffMedia(true);
+        setFolders(result.folders);
+        setAssets(result.assets);
+        setUploadReady(result.uploadReady);
+        return result.assets.find((candidate) => candidate.id === assetId) || null;
+      }} /> : null}
     </main>
   );
 }
