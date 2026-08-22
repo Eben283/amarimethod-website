@@ -78,7 +78,7 @@ describe("staff-automations — views", () => {
     expect(body.definitions).toHaveLength(9);
     expect(body.definitions[0]).toEqual(expect.objectContaining({
       id: "reminder:initial-in-person",
-      definitionVersion: 3,
+      definitionVersion: 4,
       source: { kind: "owned_code", path: "reminder-engine-worker/src/config.js" },
       messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
       cutoverReadiness: expect.objectContaining({ status: "active" }),
@@ -334,8 +334,8 @@ describe("staff-automations — views", () => {
         automationContactIds: ["owned_person_1", "legacy_ghl_1"],
         enrollments: [{ enrollmentId: "enrollment_1", status: "active" }],
         events: [
-          { id: "receipt_1", engine: "reminder", flowKey: "initial-in-person", definitionVersion: 3, action: "delivery_status", outcome: "delivered", channel: "sms", messageRef: "sms_1", evidence: { gaps: [] } },
-          { id: "send_1", engine: "reminder", flowKey: "initial-in-person", definitionVersion: 3, action: "send", outcome: "sent", channel: "sms", messageRef: "sms_1", evidence: { gaps: [{ code: "delivery_outcome_not_recorded", label: "This event does not prove final delivery." }] } },
+          { id: "receipt_1", engine: "reminder", flowKey: "initial-in-person", definitionVersion: 4, action: "delivery_status", outcome: "delivered", channel: "sms", messageRef: "sms_1", evidence: { gaps: [] } },
+          { id: "send_1", engine: "reminder", flowKey: "initial-in-person", definitionVersion: 4, action: "send", outcome: "sent", channel: "sms", messageRef: "sms_1", evidence: { gaps: [{ code: "delivery_outcome_not_recorded", label: "This event does not prove final delivery." }] } },
         ],
         coverage: { eventLimit: 200, eventsTruncated: false },
         evidence: { source: "owned_automation_d1", gaps: [] },

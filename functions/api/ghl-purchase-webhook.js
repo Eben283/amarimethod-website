@@ -23,7 +23,7 @@
 import { ghlFetch, ghlHeaders, getGhlToken } from "../lib/ghl.js";
 import { PURCHASE_CREDIT_MAP, productIdForAnyId } from "../lib/ghl-products.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
-import { timingSafeEqual } from "../lib/safe-equal.js";
+import { verifyGhlWebhookSecret } from "../lib/ghl-webhook-auth.js";
 import { appointmentEndTime, parsePacificWallClock } from "../lib/datetime.js";
 import { claimProcessedEvent } from "../lib/processed-events.js";
 import { recordOpsError } from "../lib/ops-alert.js";
@@ -619,8 +619,9 @@ export async function onRequestPost(context) {
 
   try {
     // ── 1. Verify webhook secret ──
-    const expectedSecret = context.env.GHL_WEBHOOK_SECRET;
-    if (!expectedSecret) {
+    const providedSecret = context.request.headers.get("X-Webhook-Secret") || "";
+    const auth = verifyGhlWebhookSecret(context.env, providedSecret);
+    if (!auth.configured) {
       console.error("[ghl-purchase-webhook] GHL_WEBHOOK_SECRET not configured");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
@@ -628,8 +629,7 @@ export async function onRequestPost(context) {
       );
     }
 
-    const providedSecret = context.request.headers.get("X-Webhook-Secret");
-    if (!timingSafeEqual(providedSecret || "", expectedSecret)) {
+    if (!auth.valid) {
       console.warn("[ghl-purchase-webhook] Invalid webhook secret");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),

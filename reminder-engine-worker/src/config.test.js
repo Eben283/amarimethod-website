@@ -25,7 +25,7 @@ describe("registry", () => {
 
 describe("flow shapes vs the twin specs", () => {
   it("initial in-person/Assessment: six current live message actions, with no retired equipment email", () => {
-    expect(INITIAL_IN_PERSON.definitionVersion).toBe(3);
+    expect(INITIAL_IN_PERSON.definitionVersion).toBe(4);
     expect(INITIAL_IN_PERSON.steps.map((s) => `${s.at}:${s.type}`)).toEqual([
       "enroll:internal_email", "enroll:email", "start-1440m:email",
       "start-60m:sms", "start-60m:email", "start-60m:internal_sms",

@@ -13,7 +13,7 @@
 // shadow mode — the default — touches neither.
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
-import { handleEvent, backfillShadowEnrollment } from "./engine.js";
+import { handleEvent, backfillShadowEnrollment, retireLegacyShadowEnrollment } from "./engine.js";
 import { runAutomationCycle } from "./automation-cycle.js";
 import { reconcileDeliveryReceipts } from "./delivery-receipts.js";
 import { handleWebhook } from "./webhook.js";
@@ -181,15 +181,30 @@ export default {
         if (body?.workflowId !== FOLLOW_UP_WORKFLOW.id || !body?.event) {
           return json(400, { error: "workflowId and event are required" });
         }
-        const result = await backfillShadowEnrollment(env, body.workflowId, body.event, Date.now());
+        const result = await backfillShadowEnrollment(
+          env, body.workflowId, body.event, Date.now(),
+          { replaceExisting: body.replaceExisting === true },
+        );
         return json(200, {
           success: true,
           state: "shadow",
           created: result.created,
+          reconciled: result.reconciled,
           enrollmentId: result.enrollmentId,
           skipped: result.steps.filter((step) => step.status === "skipped").map((step) => step.template),
           pending: result.steps.filter((step) => step.status === "pending").map((step) => step.template),
         });
+      }
+      // Migration-only cleanup for stale v1 shadow rows whose provider appointments are past.
+      // This records retirement rather than fabricating a cancellation and cannot create or send
+      // any work. Exact identity, provider status, v1, and zero pending steps are required.
+      if (request.method === "POST" && url.pathname === "/workflow-backfill-retire") {
+        const body = await request.json();
+        if (body?.workflowId !== FOLLOW_UP_WORKFLOW.id || !body?.event) {
+          return json(400, { error: "workflowId and event are required" });
+        }
+        const result = await retireLegacyShadowEnrollment(env, body.workflowId, body.event, Date.now());
+        return json(200, { success: true, state: "shadow", ...result });
       }
       if (request.method === "POST" && url.pathname === "/workflow-draft") {
         const body = await request.json();

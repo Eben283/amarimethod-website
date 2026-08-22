@@ -13,7 +13,7 @@
 // so the normalizer's alias lists can be corrected from real JSON. PII posture: keep-always
 // (Eben, 2026-07-12).
 
-import { timingSafeEqual } from "../../functions/lib/safe-equal.js";
+import { verifyGhlWebhookSecret } from "../../functions/lib/ghl-webhook-auth.js";
 import { normalizeAppointmentEvent } from "../../functions/lib/appointment-event.js";
 import { forwardEventToEngine } from "../../functions/lib/engine-forward.js";
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
@@ -68,14 +68,23 @@ async function enrichFromApi(env, event, nowMs) {
   const data = await res.json();
   const appt = data.appointment || data.event || data;
   const enriched = normalizeAppointmentEvent({ appointment: appt });
+  const calendarId = enriched.calendarId || event.calendarId;
+  // GHL's canonical appointment API does not expose the workflow trigger's Event Type.
+  // Eben approved its exact `isRecurring:false` field as the Follow-Up-only equivalent of
+  // Event Type = Normal. Map only the literal false value on an owned Follow-Up calendar;
+  // true, absent, or malformed values remain fail-closed, and every other flow is untouched.
+  const appointmentEventType = enriched.appointmentEventType
+    || event.appointmentEventType
+    || (FOLLOW_UP_CALENDAR_IDS.has(calendarId) && enriched.isRecurring === false ? "normal" : null);
   return {
     ...enriched,
     // the webhook payload's ids are reliable — keep them when the API omits either
     contactId: enriched.contactId || event.contactId,
     appointmentId: enriched.appointmentId || event.appointmentId,
-    calendarId: enriched.calendarId || event.calendarId,
+    calendarId,
     startAt: enriched.startAt || event.startAt,
     modifiedBy: enriched.modifiedBy ?? event.modifiedBy,
+    appointmentEventType,
   };
 }
 
@@ -104,11 +113,10 @@ async function enrichFollowUpPreference(env, event) {
 }
 
 export async function handleWebhook(request, env, nowMs) {
-  const expected = env.GHL_APPOINTMENT_WEBHOOK_SECRET || env.GHL_WEBHOOK_SECRET;
-  if (!expected) return json(503, { error: "webhook secret not configured" });
-
   const provided = request.headers.get("X-Webhook-Secret") || "";
-  if (!timingSafeEqual(provided, expected)) return json(401, { error: "unauthorized" });
+  const auth = verifyGhlWebhookSecret(env, provided, "GHL_APPOINTMENT_WEBHOOK_SECRET");
+  if (!auth.configured) return json(503, { error: "webhook secret not configured" });
+  if (!auth.valid) return json(401, { error: "unauthorized" });
 
   let body;
   try {

@@ -48,6 +48,136 @@ export async function saveEnrollment(db, enrollment) {
 }
 
 /**
+ * Persist an authoritative shadow backfill, with an explicit migration path for a legacy
+ * enrollment that uses the same (flow, appointment) key. Historical step outcomes remain
+ * immutable. Only still-pending legacy work is cancelled, and replacement v2 timer steps use a
+ * versioned index range so they cannot overwrite the earlier evidence rows.
+ */
+export async function saveBackfilledEnrollment(db, enrollment, { replaceExisting = false } = {}) {
+  const id = enrollmentId(enrollment.flowKey, enrollment.appointmentId);
+  const existing = await db
+    .prepare(
+      `SELECT flow_key, definition_version, appointment_id, contact_id, calendar_id, start_at, status
+       FROM reminder_enrollments WHERE enrollment_id = ?`,
+    )
+    .bind(id)
+    .first();
+
+  if (!existing) {
+    const saved = await saveEnrollment(db, enrollment);
+    return { ...saved, reconciled: false, cancelledSteps: 0, steps: enrollment.steps };
+  }
+  if (!replaceExisting) {
+    return { created: false, reconciled: false, cancelledSteps: 0, enrollmentId: id, steps: [] };
+  }
+  if (existing.status !== "active") throw new Error("only an active legacy enrollment can be reconciled");
+  if (
+    existing.flow_key !== enrollment.flowKey
+    || existing.appointment_id !== enrollment.appointmentId
+    || existing.contact_id !== enrollment.contactId
+    || existing.calendar_id !== enrollment.calendarId
+  ) {
+    throw new Error("legacy enrollment identity does not match the authoritative appointment");
+  }
+  const oldVersion = Number(existing.definition_version || 0);
+  const newVersion = Number(enrollment.definitionVersion || 0);
+  if (!Number.isInteger(newVersion) || newVersion <= oldVersion) {
+    if (newVersion === oldVersion && existing.start_at === enrollment.startAt) {
+      return { created: false, reconciled: false, cancelledSteps: 0, enrollmentId: id, steps: [] };
+    }
+    throw new Error("replacement backfill must advance the workflow definition version");
+  }
+
+  const pending = enrollment.steps
+    .filter((step) => step.status === "pending" && step.at !== "enroll")
+    .map((step) => ({ ...step, stepIndex: newVersion * 1000 + step.stepIndex }));
+  const cancel = db
+    .prepare(`UPDATE reminder_steps SET status = 'cancelled' WHERE enrollment_id = ? AND status = 'pending'`)
+    .bind(id);
+  const update = db
+    .prepare(
+      `UPDATE reminder_enrollments
+       SET definition_version = ?, contact_id = ?, calendar_id = ?, start_at = ?, start_ms = ?, enrolled_at = ?
+       WHERE enrollment_id = ? AND status = 'active' AND definition_version = ?`,
+    )
+    .bind(
+      newVersion, enrollment.contactId, enrollment.calendarId, enrollment.startAt,
+      enrollment.startMs, enrollment.enrolledAt, id, oldVersion,
+    );
+  const inserts = pending.map((step) => db
+    .prepare(
+      `INSERT INTO reminder_steps (enrollment_id, step_index, at, type, template, due_at, status)
+       VALUES (?,?,?,?,?,?,?) ON CONFLICT(enrollment_id, step_index) DO NOTHING`,
+    )
+    .bind(id, step.stepIndex, step.at, step.type, step.template, step.dueAt, step.status));
+  const results = await db.batch([cancel, update, ...inserts]);
+  if (changesOf(results[1]) !== 1) throw new Error("legacy enrollment changed during reconciliation");
+  return {
+    created: false,
+    reconciled: true,
+    cancelledSteps: changesOf(results[0]),
+    enrollmentId: id,
+    steps: pending,
+    previousDefinitionVersion: oldVersion,
+  };
+}
+
+/**
+ * Retire a stale v1 shadow enrollment after the provider appointment is already in the past.
+ * This is deliberately not cancellation: provider history may say showed (or may still say
+ * confirmed), and inventing a cancellation would corrupt the audit trail. The operation is
+ * migration-only, requires exact identity, and refuses to retire anything that can still send.
+ */
+export async function retireLegacyEnrollment(db, event, nowMs) {
+  const id = enrollmentId(event.flowKey, event.appointmentId);
+  const existing = await db
+    .prepare(
+      `SELECT e.flow_key, e.definition_version, e.appointment_id, e.contact_id, e.calendar_id,
+              e.start_at, e.status,
+              (SELECT COUNT(*) FROM reminder_steps s
+               WHERE s.enrollment_id = e.enrollment_id AND s.status = 'pending') AS pending_steps
+       FROM reminder_enrollments e WHERE e.enrollment_id = ?`,
+    )
+    .bind(id)
+    .first();
+  if (!existing) throw new Error("legacy enrollment does not exist");
+  if (
+    existing.flow_key !== event.flowKey
+    || existing.appointment_id !== event.appointmentId
+    || existing.contact_id !== event.contactId
+    || existing.calendar_id !== event.calendarId
+    || existing.start_at !== event.startAt
+  ) {
+    throw new Error("legacy enrollment identity does not match the provider appointment");
+  }
+  if (existing.status === "retired") return { retired: false, enrollmentId: id };
+  if (existing.status !== "active") throw new Error("only an active legacy enrollment can be retired");
+  if (Number(existing.definition_version) !== 1) throw new Error("only a v1 legacy enrollment can be retired");
+  if (!Number.isFinite(Date.parse(event.startAt)) || Date.parse(event.startAt) >= nowMs) {
+    throw new Error("legacy appointment must be in the past");
+  }
+  if (!new Set(["showed", "confirmed"]).has(event.providerStatus)) {
+    throw new Error("provider status is not eligible for migration retirement");
+  }
+  if (Number(existing.pending_steps || 0) !== 0) {
+    throw new Error("legacy enrollment still has pending work");
+  }
+  const updated = await db
+    .prepare(
+      `UPDATE reminder_enrollments SET status = 'retired'
+       WHERE enrollment_id = ? AND status = 'active' AND definition_version = 1
+         AND NOT EXISTS (
+           SELECT 1 FROM reminder_steps
+           WHERE enrollment_id = ? AND status = 'pending'
+         )`,
+    )
+    .bind(id, id)
+    .run();
+  if (changesOf(updated) !== 1) throw new Error("legacy enrollment changed during retirement");
+  return { retired: true, enrollmentId: id };
+}
+
+/**
  * Move the still-pending timer steps for an existing active appointment. Sent, shadowed, skipped,
  * failed, and cancelled steps are immutable evidence and deliberately stay untouched: a reschedule
  * must never send a second confirmation. Returns false for a duplicate event or non-active record.
@@ -64,6 +194,11 @@ export async function retimeEnrollment(db, event, flow, nowMs) {
 
   const startMs = Date.parse(event.startAt);
   if (!Number.isFinite(startMs)) return { rescheduled: false };
+
+  const confirmation = await db
+    .prepare(`SELECT status FROM reminder_steps WHERE enrollment_id = ? AND template = 'confirmation' LIMIT 1`)
+    .bind(id)
+    .first();
 
   for (let stepIndex = 0; stepIndex < flow.steps.length; stepIndex += 1) {
     const definition = flow.steps[stepIndex];
@@ -82,7 +217,24 @@ export async function retimeEnrollment(db, event, flow, nowMs) {
     .prepare(`UPDATE reminder_enrollments SET start_at = ?, start_ms = ? WHERE enrollment_id = ? AND status = 'active'`)
     .bind(event.startAt, startMs, id)
     .run();
-  return { rescheduled: true, previousStartAt: existing.start_at };
+  return { rescheduled: true, previousStartAt: existing.start_at, confirmationSent: confirmation?.status === "sent" };
+}
+
+export async function queueRescheduleConfirmation(db, event, flow, nowMs) {
+  const id = enrollmentId(flow.flowKey, event.appointmentId);
+  const startMs = Date.parse(event.startAt);
+  if (!Number.isFinite(startMs)) return { queued: false };
+  await db
+    .prepare(`UPDATE reminder_steps SET status = 'cancelled'
+       WHERE enrollment_id = ? AND template = 'reschedule-confirmation' AND status = 'pending'`)
+    .bind(id)
+    .run();
+  const inserted = await db
+    .prepare(`INSERT INTO reminder_steps (enrollment_id, step_index, at, type, template, due_at, status)
+       VALUES (?,?,?,?,?,?,?) ON CONFLICT(enrollment_id, step_index) DO NOTHING`)
+    .bind(id, -startMs, "reschedule", "email", "reschedule-confirmation", nowMs, "pending")
+    .run();
+  return { queued: changesOf(inserted) === 1, stepIndex: -startMs };
 }
 
 /**

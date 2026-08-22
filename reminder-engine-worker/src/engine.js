@@ -8,7 +8,7 @@ import { FLOWS } from "./config.js";
 import { enroll, backfillEnrollment } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
-import { saveEnrollment, retimeEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
+import { saveEnrollment, saveBackfilledEnrollment, retireLegacyEnrollment, retimeEnrollment, queueRescheduleConfirmation, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 import { assessmentCutoverEligibility, assessmentTestEligibility, renderAssessmentConfirmation } from "./assessment-test-delivery.js";
@@ -77,6 +77,17 @@ export async function handleEvent(env, event, nowMs) {
               appointmentId: event.appointmentId, action: "rescheduled", outcome: "rescheduled",
               detail: { previousStartAt: retimed.previousStartAt, startAt: event.startAt },
             });
+            if (flow.flowKey === INITIAL_IN_PERSON_WORKFLOW.id && retimed.confirmationSent) {
+              const notice = await queueRescheduleConfirmation(db, event, flow, nowMs);
+              if (notice.queued) {
+                await appendEvent(db, {
+                  ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
+                  definitionVersion: flow.definitionVersion, appointmentId: event.appointmentId,
+                  stepIndex: notice.stepIndex, action: "reschedule_confirmation_queued", outcome: "queued",
+                  channel: "email", detail: { startAt: event.startAt },
+                });
+              }
+            }
           }
           actions.push({ engine: "reminder", action: retimed.rescheduled ? "reschedule" : "enroll-noop", detail: { flowKey: flow.flowKey } });
         } else {
@@ -137,7 +148,7 @@ export async function handleEvent(env, event, nowMs) {
  * contract than handleEvent: it only accepts a published shadow workflow,
  * never replays enroll-time work, and is idempotent by appointment id.
  */
-export async function backfillShadowEnrollment(env, workflowId, event, nowMs) {
+export async function backfillShadowEnrollment(env, workflowId, event, nowMs, { replaceExisting = false } = {}) {
   const flowDocument = await publishedWorkflow(env.REMINDER_DB, workflowId);
   if (!flowDocument) throw new Error("workflow is not staged");
   const flow = asExecutableWorkflow(flowDocument);
@@ -145,18 +156,54 @@ export async function backfillShadowEnrollment(env, workflowId, event, nowMs) {
   const enrollment = backfillEnrollment(event, flow, nowMs);
   if (!enrollment) throw new Error("appointment is not eligible for this workflow");
 
-  const { created, enrollmentId: id } = await saveEnrollment(env.REMINDER_DB, enrollment);
-  if (created) {
+  const saved = await saveBackfilledEnrollment(env.REMINDER_DB, enrollment, { replaceExisting });
+  const { created, reconciled, enrollmentId: id } = saved;
+  if (created || reconciled) {
     const skipped = enrollment.steps.filter((step) => step.status === "skipped").map((step) => step.template);
-    const pending = enrollment.steps.filter((step) => step.status === "pending").map((step) => step.template);
+    const pending = saved.steps.filter((step) => step.status === "pending").map((step) => step.template);
     await appendEvent(env.REMINDER_DB, {
       ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
       definitionVersion: flow.definitionVersion, appointmentId: event.appointmentId,
-      action: "backfilled", outcome: "shadow",
-      detail: { calendarId: event.calendarId, skipped, pending, source: "former_ghl_queue" },
+      action: reconciled ? "backfill_reconciled" : "backfilled", outcome: "shadow",
+      detail: {
+        calendarId: event.calendarId, skipped, pending, source: "former_ghl_queue",
+        ...(reconciled ? {
+          previousDefinitionVersion: saved.previousDefinitionVersion,
+          cancelledLegacyPendingSteps: saved.cancelledSteps,
+        } : {}),
+      },
     });
   }
-  return { created, enrollmentId: id, steps: enrollment.steps };
+  return { created, reconciled, enrollmentId: id, steps: saved.steps };
+}
+
+/**
+ * Close an obsolete v1 shadow row without pretending the provider cancelled the appointment.
+ * The store enforces exact identity, past time, zero pending work, and an observed provider state.
+ */
+export async function retireLegacyShadowEnrollment(env, workflowId, event, nowMs) {
+  const flowDocument = await publishedWorkflow(env.REMINDER_DB, workflowId);
+  if (!flowDocument) throw new Error("workflow is not staged");
+  const flow = asExecutableWorkflow(flowDocument);
+  if (flow.mode !== "shadow") throw new Error("legacy retirement is allowed only while the workflow is shadowing");
+  if (flow.flowKey !== FOLLOW_UP_WORKFLOW.id || event?.flowKey !== FOLLOW_UP_WORKFLOW.id) {
+    throw new Error("legacy retirement is limited to Follow-Up migration rows");
+  }
+  const result = await retireLegacyEnrollment(env.REMINDER_DB, event, nowMs);
+  if (result.retired) {
+    await appendEvent(env.REMINDER_DB, {
+      ts: nowMs, engine: "reminder", flowKey: event.flowKey, definitionVersion: 1,
+      contactId: event.contactId, appointmentId: event.appointmentId,
+      action: "backfill_retired", outcome: "retired",
+      detail: {
+        calendarId: event.calendarId,
+        startAt: event.startAt,
+        providerStatus: event.providerStatus,
+        source: "legacy_shadow_reconciliation",
+      },
+    });
+  }
+  return result;
 }
 
 /**
