@@ -56,6 +56,10 @@ const APPOINTMENT_EVENT_KIND_KEYS = [
   "appointment.eventType", "appointment.event_type", "eventType", "event_type",
   "appointment.appointmentType", "appointment.appointment_type", "appointment.type",
 ];
+const APPOINTMENT_RECURRING_KEYS = [
+  "appointment.isRecurring", "appointment.is_recurring", "isRecurring", "is_recurring",
+  "appointment.recurring.repeats", "recurring.repeats",
+];
 
 // Dotted-path alias walker. Same semantics as ghl-purchase-webhook.js's extractField:
 // first alias yielding a non-empty scalar wins; returns a trimmed string or null.
@@ -106,6 +110,15 @@ function normalizeAppointmentEventKind(raw) {
   return value || null;
 }
 
+function normalizeRecurring(raw) {
+  if (raw === true || raw === false) return raw;
+  if (typeof raw !== "string") return null;
+  const value = raw.trim().toLowerCase();
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return null;
+}
+
 /**
  * Normalize a raw GHL appointment webhook payload into a typed, immutable event.
  * Never throws; unrecognized or malformed input yields a safe all-null event with
@@ -116,7 +129,7 @@ function normalizeAppointmentEventKind(raw) {
  *   type: string, recognized: boolean, status: string|null,
  *   calendarId: string|null, contactId: string|null, appointmentId: string|null,
  *   startAt: string|null, modifiedBy: ("user"|"customer"|null),
- *   appointmentEventType: string|null
+ *   appointmentEventType: string|null, isRecurring: boolean|null
  * }}
  */
 export function normalizeAppointmentEvent(payload) {
@@ -136,5 +149,6 @@ export function normalizeAppointmentEvent(payload) {
     startAt: rawStart != null ? normalizeGhlTimestamp(rawStart) : null,
     modifiedBy: normalizeModifiedBy(pick(payload, MODIFIED_BY_KEYS)),
     appointmentEventType: normalizeAppointmentEventKind(pick(payload, APPOINTMENT_EVENT_KIND_KEYS)),
+    isRecurring: normalizeRecurring(pick(payload, APPOINTMENT_RECURRING_KEYS)),
   };
 }

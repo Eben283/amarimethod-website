@@ -68,14 +68,23 @@ async function enrichFromApi(env, event, nowMs) {
   const data = await res.json();
   const appt = data.appointment || data.event || data;
   const enriched = normalizeAppointmentEvent({ appointment: appt });
+  const calendarId = enriched.calendarId || event.calendarId;
+  // GHL's canonical appointment API does not expose the workflow trigger's Event Type.
+  // Eben approved its exact `isRecurring:false` field as the Follow-Up-only equivalent of
+  // Event Type = Normal. Map only the literal false value on an owned Follow-Up calendar;
+  // true, absent, or malformed values remain fail-closed, and every other flow is untouched.
+  const appointmentEventType = enriched.appointmentEventType
+    || event.appointmentEventType
+    || (FOLLOW_UP_CALENDAR_IDS.has(calendarId) && enriched.isRecurring === false ? "normal" : null);
   return {
     ...enriched,
     // the webhook payload's ids are reliable — keep them when the API omits either
     contactId: enriched.contactId || event.contactId,
     appointmentId: enriched.appointmentId || event.appointmentId,
-    calendarId: enriched.calendarId || event.calendarId,
+    calendarId,
     startAt: enriched.startAt || event.startAt,
     modifiedBy: enriched.modifiedBy ?? event.modifiedBy,
+    appointmentEventType,
   };
 }
 

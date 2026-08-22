@@ -83,6 +83,7 @@ describe("normalizeAppointmentEvent", () => {
       startAt: "2026-07-20T15:00:00-07:00",
       modifiedBy: "customer",
       appointmentEventType: "normal",
+      isRecurring: null,
     });
   });
 
@@ -140,6 +141,13 @@ describe("normalizeAppointmentEvent", () => {
     delete withoutKind.appointment.eventType;
     expect(normalizeAppointmentEvent({ ...withoutKind, appointment: { ...withoutKind.appointment, event_type: "Recurring" } }).appointmentEventType).toBe("recurring");
     expect(normalizeAppointmentEvent(withoutKind).appointmentEventType).toBe(null);
+  });
+
+  it("normalizes only explicit recurring booleans", () => {
+    expect(normalizeAppointmentEvent({ ...NESTED, appointment: { ...NESTED.appointment, isRecurring: false } }).isRecurring).toBe(false);
+    expect(normalizeAppointmentEvent({ ...NESTED, appointment: { ...NESTED.appointment, isRecurring: "true" } }).isRecurring).toBe(true);
+    expect(normalizeAppointmentEvent({ ...NESTED, appointment: { ...NESTED.appointment, isRecurring: "undefined" } }).isRecurring).toBe(null);
+    expect(normalizeAppointmentEvent({ ...NESTED, appointment: { ...NESTED.appointment, recurring: { repeats: "false" } } }).isRecurring).toBe(false);
   });
 
   it("is not recognized when the status is unmappable", () => {
