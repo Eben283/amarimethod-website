@@ -66,6 +66,11 @@
 /staff/index.html
   Cache-Control: private, no-store
 
+# Quiz-only Turnstile CSP. Keep this scoped so its tighter policy cannot alter
+# other public applications while allowing the widget script and iframe.
+/quiz/*
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://link.amarimethod.com https://www.googletagmanager.com https://www.google-analytics.com https://www.clarity.ms; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://api.fontshare.com; font-src 'self' https://fonts.gstatic.com https://cdn.fontshare.com; img-src 'self' data: https:; frame-src https://challenges.cloudflare.com https://link.amarimethod.com https://amarimethodfollowup.amarimethod.com https://amari-crm-mirror.eben-fa2.workers.dev; connect-src 'self' https://www.google-analytics.com https://region1.google-analytics.com https://analytics.google.com https://www.googletagmanager.com https://stats.g.doubleclick.net https://www.clarity.ms https://*.clarity.ms; object-src 'none'; base-uri 'self'
+
 /* Performance and Security Headers */
 /*
   X-Content-Type-Options: nosniff

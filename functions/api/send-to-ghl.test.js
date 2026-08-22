@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { normalizeQuizSubmission, onRequestPost } from "./send-to-ghl.js";
 
 function validSubmission(overrides = {}) {
@@ -34,7 +34,7 @@ function validSubmission(overrides = {}) {
   };
 }
 
-function context(body, headers = {}) {
+function context(body, headers = {}, env = {}) {
   return {
     request: new Request("https://www.amarimethod.com/api/send-to-ghl", {
       method: "POST",
@@ -45,9 +45,24 @@ function context(body, headers = {}) {
       },
       body: JSON.stringify(body),
     }),
-    env: {},
+    env,
   };
 }
+
+function protectionKV(overrides = {}) {
+  return {
+    get: vi.fn(async () => null),
+    put: vi.fn(async () => {}),
+    delete: vi.fn(async () => {}),
+    ...overrides,
+  };
+}
+
+function turnstileSuccess() {
+  return new Response(JSON.stringify({ success: true }), { status: 200 });
+}
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("quiz submission boundary", () => {
   it("normalizes the valid browser payload without changing its lifecycle fields", () => {
@@ -83,5 +98,82 @@ describe("quiz submission boundary", () => {
     }));
 
     expect(response.status).toBe(415);
+  });
+
+  it("rejects missing or invalid bot proof before making a GHL request", async () => {
+    const kv = protectionKV();
+    const fetchSpy = vi.fn(async () => new Response(JSON.stringify({ success: false }), { status: 200 }));
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const missing = await onRequestPost(context(validSubmission(), {}, {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: kv,
+    }));
+    const invalid = await onRequestPost(context(validSubmission({ turnstileToken: "invalid" }), {}, {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: kv,
+    }));
+
+    expect(missing.status).toBe(403);
+    expect(invalid.status).toBe(403);
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes("services.leadconnectorhq.com"))).toBe(false);
+  });
+
+  it("fails closed when the KV protection capability is absent or errors", async () => {
+    vi.stubGlobal("fetch", vi.fn(async () => turnstileSuccess()));
+    const body = validSubmission({ turnstileToken: "valid" });
+
+    const missing = await onRequestPost(context(body, {}, { TURNSTILE_SECRET_KEY: "test-secret" }));
+    const broken = await onRequestPost(context(body, {}, {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: protectionKV({ get: vi.fn(async () => { throw new Error("KV unavailable"); }) }),
+    }));
+
+    expect(missing.status).toBe(422);
+    expect(broken.status).toBe(422);
+    expect(globalThis.fetch.mock.calls.some(([url]) => String(url).includes("services.leadconnectorhq.com"))).toBe(false);
+  });
+
+  it("treats a duplicate submission as idempotent before any GHL write", async () => {
+    const kv = protectionKV({
+      get: vi.fn(async (key) => key.startsWith("quiz_submission:") ? "processing" : null),
+    });
+    const fetchSpy = vi.fn(async () => turnstileSuccess());
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const response = await onRequestPost(context(validSubmission({ turnstileToken: "valid" }), {}, {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: kv,
+    }));
+
+    expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({ success: true, duplicate: true });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes("services.leadconnectorhq.com"))).toBe(false);
+  });
+
+  it("accepts one valid preview proof without exposing GHL to the test", async () => {
+    const values = new Map();
+    const kv = protectionKV({
+      get: vi.fn(async (key) => values.get(key) || null),
+      put: vi.fn(async (key, value) => { values.set(key, value); }),
+    });
+    const fetchSpy = vi.fn(async () => turnstileSuccess());
+    vi.stubGlobal("fetch", fetchSpy);
+    const env = {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: kv,
+      QUIZ_SUBMISSION_MODE: "verify_only",
+    };
+
+    const first = await onRequestPost(context(validSubmission({ turnstileToken: "valid" }), {}, env));
+    const duplicate = await onRequestPost(context(validSubmission({ turnstileToken: "valid" }), {}, env));
+
+    expect(first.status).toBe(200);
+    expect(await first.json()).toEqual({ success: true, verificationOnly: true });
+    expect(duplicate.status).toBe(200);
+    expect(await duplicate.json()).toEqual({ success: true, duplicate: true });
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).includes("services.leadconnectorhq.com"))).toBe(false);
   });
 });
