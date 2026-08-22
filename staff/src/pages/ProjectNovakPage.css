@@ -15,9 +15,13 @@
 .project-novak__target { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 22px; align-items: center; padding: 28px; border-bottom: 2px solid var(--staff-ink); background: #e8d9b9; color: var(--staff-ink); }
 .project-novak__target > svg { width: 31px; height: 31px; }
 .project-novak__target h2 { max-width: 28ch; margin: 5px 0 0; font: 650 clamp(1.4rem, 2.6vw, 2.1rem)/1.05 'IBM Plex Sans', system-ui, sans-serif; letter-spacing: -.05em; }
-.project-novak__plan-link { display: inline-flex; gap: 8px; align-items: center; margin-top: 19px; color: var(--staff-ink); font-size: 12px; font-weight: 700; text-decoration: none; }
-.project-novak__plan-link:hover { text-decoration: underline; }
-.project-novak__plan-link svg { width: 14px; height: 14px; }
+.project-novak__plan-links { display: flex; flex-wrap: wrap; gap: 10px 12px; align-items: center; margin-top: 19px; }
+.project-novak__plan-link { display: inline-flex; gap: 8px; align-items: center; padding: 10px 12px; background: #fff; color: var(--staff-ink); font-size: 14px; font-weight: 500; text-decoration: none; }
+.project-novak__plan-link:hover, .project-novak__plan-link:focus-visible { text-decoration: underline; }
+.project-novak__plan-link svg { width: 16px; height: 16px; }
+.project-novak__roadmap-link { display: inline-flex; gap: 6px; align-items: center; color: var(--staff-ink); font-size: 13px; font-weight: 600; text-decoration: underline; text-underline-offset: 3px; }
+.project-novak__roadmap-link:hover, .project-novak__roadmap-link:focus-visible { color: #5e4214; }
+.project-novak__roadmap-link svg { width: 14px; height: 14px; }
 .project-novak__section { margin-top: 70px; }
 .project-novak__section > header { display: grid; grid-template-columns: minmax(200px, .55fr) minmax(300px, 1fr); gap: 36px; padding-bottom: 22px; border-bottom: 1px solid var(--staff-line); }
 .project-novak__section > header > p, .project-novak__timeline p, .project-novak__owners p { color: var(--staff-muted); }
