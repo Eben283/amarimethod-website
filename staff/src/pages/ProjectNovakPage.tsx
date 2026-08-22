@@ -68,8 +68,8 @@ export default function ProjectNovakPage() {
         <p>The goal by August 2029</p>
         <h2 id="novak-target">Novak Djokovic has a session with Garrett because someone who knows the work introduces it to his team.</h2>
         <div className="project-novak__plan-links">
-          <a className="project-novak__plan-link" href="/staff/resources/project-novak-plan.html" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /> Read the full internal plan <ArrowRight aria-hidden="true" /></a>
-          <a className="project-novak__roadmap-link" href="https://docs.google.com/document/d/1Bj9ZNh3bo9PC5qyijSx3sz1OySINT1dBpywi0U3Syts/edit" target="_blank" rel="noreferrer">Open the tennis target universe &amp; roadmap <ExternalLink aria-hidden="true" /></a>
+          <a className="project-novak__plan-link" href="/staff/resources/project-novak-plan.txt" target="_blank" rel="noreferrer"><FileText aria-hidden="true" /> <span>Read the full internal plan</span> <ArrowRight aria-hidden="true" /></a>
+          <a className="project-novak__roadmap-link" href="https://docs.google.com/spreadsheets/d/1CBSaYmhQfkJp9FWcmjIUv6S83Mjhu7ssc_QGnbNHes8/edit?usp=sharing" target="_blank" rel="noreferrer"><span>Open the tennis target universe &amp; roadmap</span> <ExternalLink aria-hidden="true" /></a>
         </div>
       </div>
     </section>
