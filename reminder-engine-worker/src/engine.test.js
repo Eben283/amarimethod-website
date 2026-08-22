@@ -28,6 +28,9 @@ function fakeD1() {
       }
       if (/INSERT INTO reminder_steps/.test(sql)) {
         const [enrollment_id, step_index, at, type, template, due_at, status] = a;
+        if (steps.some((step) => step.enrollment_id === enrollment_id && step.step_index === step_index)) {
+          return { meta: { changes: 0 } };
+        }
         steps.push({ enrollment_id, step_index, at, type, template, due_at, status });
         return { meta: { changes: 1 } };
       }
@@ -216,6 +219,25 @@ describe("handleEvent — enroll", () => {
     expect(env.REMINDER_DB._events).toContainEqual(expect.objectContaining({
       flow_key: "initial-virtual", action: "reschedule_confirmation_queued", outcome: "queued",
     }));
+  });
+
+  it("queues a fresh virtual notice when a later reschedule returns to an earlier start time", async () => {
+    env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
+    const virtual = event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_return", modifiedBy: "customer",
+    });
+    await handleEvent(env, virtual, NOW);
+    env.REMINDER_DB._steps.find((step) => step.template === "welcome").status = "sent";
+
+    const firstMove = "2026-07-23T15:00:00-07:00";
+    await handleEvent(env, { ...virtual, startAt: firstMove }, NOW + 1_000);
+    env.REMINDER_DB._steps.find((step) => step.template === "reschedule-confirmation" && step.status === "pending").status = "sent";
+    await handleEvent(env, { ...virtual, startAt: "2026-07-24T15:00:00-07:00" }, NOW + 2_000);
+    env.REMINDER_DB._steps.find((step) => step.template === "reschedule-confirmation" && step.status === "pending").status = "sent";
+    await handleEvent(env, { ...virtual, startAt: firstMove }, NOW + 3_000);
+
+    expect(env.REMINDER_DB._steps.filter((step) => step.template === "reschedule-confirmation"))
+      .toHaveLength(3);
   });
 
   it("ignores an event on an unconfigured calendar", async () => {

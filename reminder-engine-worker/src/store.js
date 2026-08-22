@@ -224,8 +224,7 @@ export async function retimeEnrollment(db, event, flow, nowMs) {
 
 export async function queueRescheduleConfirmation(db, event, flow, nowMs) {
   const id = enrollmentId(flow.flowKey, event.appointmentId);
-  const startMs = Date.parse(event.startAt);
-  if (!Number.isFinite(startMs)) return { queued: false };
+  if (!Number.isFinite(Date.parse(event.startAt))) return { queued: false };
   await db
     .prepare(`UPDATE reminder_steps SET status = 'cancelled'
        WHERE enrollment_id = ? AND template = 'reschedule-confirmation' AND status = 'pending'`)
@@ -234,9 +233,9 @@ export async function queueRescheduleConfirmation(db, event, flow, nowMs) {
   const inserted = await db
     .prepare(`INSERT INTO reminder_steps (enrollment_id, step_index, at, type, template, due_at, status)
        VALUES (?,?,?,?,?,?,?) ON CONFLICT(enrollment_id, step_index) DO NOTHING`)
-    .bind(id, -startMs, "reschedule", "email", "reschedule-confirmation", nowMs, "pending")
+    .bind(id, -nowMs, "reschedule", "email", "reschedule-confirmation", nowMs, "pending")
     .run();
-  return { queued: changesOf(inserted) === 1, stepIndex: -startMs };
+  return { queued: changesOf(inserted) === 1, stepIndex: -nowMs };
 }
 
 /**
