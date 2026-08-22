@@ -16,7 +16,7 @@ const CONTROL_ACTIONS = new Set(["exit_flow"]);
 const ACTIONS = new Set([...MESSAGE_ACTIONS, ...CONTROL_ACTIONS]);
 const CHANNELS = new Set(["email", "sms"]);
 const AUDIENCES = new Set(["client", "internal"]);
-const TIMING = /^(enroll|start-[1-9][0-9]*m)$/;
+const TIMING = /^(enroll|reschedule|start-[1-9][0-9]*m)$/;
 
 function optionalStringList(value, label) {
   if (value == null) return;
@@ -99,7 +99,7 @@ export function executableFlow(workflow) {
     cancelOn: workflow.exits.filter((exit) => exit.effect === "cancel_pending").map((exit) => exit.event),
     mode: workflow.executionMode,
     workflowDocument: workflow,
-    steps: workflow.nodes.map((node) => ({
+    steps: workflow.nodes.filter((node) => node.at !== "reschedule").map((node) => ({
       at: node.at,
       type: node.action.type,
       template: node.action.template,

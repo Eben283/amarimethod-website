@@ -45,23 +45,23 @@ describe("workflow version store", () => {
   it("seeds the shipped document as the first published truth", async () => {
     const db = fakeD1();
     expect(await ensurePublishedWorkflow(db, INITIAL_IN_PERSON_WORKFLOW, 100)).toEqual(INITIAL_IN_PERSON_WORKFLOW);
-    expect(db.rows).toMatchObject([{ workflow_id: "initial-in-person", version: 3, state: "published" }]);
+    expect(db.rows).toMatchObject([{ workflow_id: "initial-in-person", version: 4, state: "published" }]);
     const olderBundledCopy = { ...INITIAL_IN_PERSON_WORKFLOW, version: 2, name: "Accidental rollback" };
-    expect((await ensurePublishedWorkflow(db, olderBundledCopy, 200)).version).toBe(3);
+    expect((await ensurePublishedWorkflow(db, olderBundledCopy, 200)).version).toBe(4);
     expect(db.rows).toHaveLength(1);
   });
 
   it("keeps a draft inert and publishes only against the expected current version", async () => {
     const db = fakeD1();
     await ensurePublishedWorkflow(db, INITIAL_IN_PERSON_WORKFLOW, 100);
-    const draft = { ...INITIAL_IN_PERSON_WORKFLOW, version: 4, name: "Edited but inert" };
+    const draft = { ...INITIAL_IN_PERSON_WORKFLOW, version: 5, name: "Edited but inert" };
     await saveDraftWorkflow(db, draft, 200);
-    expect((await workflowVersion(db, draft.id, 4)).name).toBe("Edited but inert");
-    expect(db.rows.find((row) => row.version === 3).state).toBe("published");
-    await expect(publishDraftWorkflow(db, draft.id, 4, 2, 300)).rejects.toThrow("expected v2");
-    await publishDraftWorkflow(db, draft.id, 4, 3, 300);
-    expect(db.rows.find((row) => row.version === 3).state).toBe("retired");
+    expect((await workflowVersion(db, draft.id, 5)).name).toBe("Edited but inert");
     expect(db.rows.find((row) => row.version === 4).state).toBe("published");
+    await expect(publishDraftWorkflow(db, draft.id, 5, 3, 300)).rejects.toThrow("expected v3");
+    await publishDraftWorkflow(db, draft.id, 5, 4, 300);
+    expect(db.rows.find((row) => row.version === 4).state).toBe("retired");
+    expect(db.rows.find((row) => row.version === 5).state).toBe("published");
   });
 
   it("publishes a bundled first version only when the behavior-release path calls it", async () => {

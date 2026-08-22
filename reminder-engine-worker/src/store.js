@@ -65,6 +65,11 @@ export async function retimeEnrollment(db, event, flow, nowMs) {
   const startMs = Date.parse(event.startAt);
   if (!Number.isFinite(startMs)) return { rescheduled: false };
 
+  const confirmation = await db
+    .prepare(`SELECT status FROM reminder_steps WHERE enrollment_id = ? AND template = 'confirmation' LIMIT 1`)
+    .bind(id)
+    .first();
+
   for (let stepIndex = 0; stepIndex < flow.steps.length; stepIndex += 1) {
     const definition = flow.steps[stepIndex];
     const dueAt = resolveDueAt(definition.at, startMs, nowMs);
@@ -82,7 +87,24 @@ export async function retimeEnrollment(db, event, flow, nowMs) {
     .prepare(`UPDATE reminder_enrollments SET start_at = ?, start_ms = ? WHERE enrollment_id = ? AND status = 'active'`)
     .bind(event.startAt, startMs, id)
     .run();
-  return { rescheduled: true, previousStartAt: existing.start_at };
+  return { rescheduled: true, previousStartAt: existing.start_at, confirmationSent: confirmation?.status === "sent" };
+}
+
+export async function queueRescheduleConfirmation(db, event, flow, nowMs) {
+  const id = enrollmentId(flow.flowKey, event.appointmentId);
+  const startMs = Date.parse(event.startAt);
+  if (!Number.isFinite(startMs)) return { queued: false };
+  await db
+    .prepare(`UPDATE reminder_steps SET status = 'cancelled'
+       WHERE enrollment_id = ? AND template = 'reschedule-confirmation' AND status = 'pending'`)
+    .bind(id)
+    .run();
+  const inserted = await db
+    .prepare(`INSERT INTO reminder_steps (enrollment_id, step_index, at, type, template, due_at, status)
+       VALUES (?,?,?,?,?,?,?) ON CONFLICT(enrollment_id, step_index) DO NOTHING`)
+    .bind(id, -startMs, "reschedule", "email", "reschedule-confirmation", nowMs, "pending")
+    .run();
+  return { queued: changesOf(inserted) === 1, stepIndex: -startMs };
 }
 
 /**

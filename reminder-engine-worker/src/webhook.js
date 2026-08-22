@@ -13,7 +13,7 @@
 // so the normalizer's alias lists can be corrected from real JSON. PII posture: keep-always
 // (Eben, 2026-07-12).
 
-import { timingSafeEqual } from "../../functions/lib/safe-equal.js";
+import { verifyGhlWebhookSecret } from "../../functions/lib/ghl-webhook-auth.js";
 import { normalizeAppointmentEvent } from "../../functions/lib/appointment-event.js";
 import { forwardEventToEngine } from "../../functions/lib/engine-forward.js";
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
@@ -113,11 +113,10 @@ async function enrichFollowUpPreference(env, event) {
 }
 
 export async function handleWebhook(request, env, nowMs) {
-  const expected = env.GHL_APPOINTMENT_WEBHOOK_SECRET || env.GHL_WEBHOOK_SECRET;
-  if (!expected) return json(503, { error: "webhook secret not configured" });
-
   const provided = request.headers.get("X-Webhook-Secret") || "";
-  if (!timingSafeEqual(provided, expected)) return json(401, { error: "unauthorized" });
+  const auth = verifyGhlWebhookSecret(env, provided, "GHL_APPOINTMENT_WEBHOOK_SECRET");
+  if (!auth.configured) return json(503, { error: "webhook secret not configured" });
+  if (!auth.valid) return json(401, { error: "unauthorized" });
 
   let body;
   try {

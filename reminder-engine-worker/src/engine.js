@@ -8,7 +8,7 @@ import { FLOWS } from "./config.js";
 import { enroll, backfillEnrollment } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
-import { saveEnrollment, retimeEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
+import { saveEnrollment, retimeEnrollment, queueRescheduleConfirmation, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 import { assessmentCutoverEligibility, assessmentTestEligibility, renderAssessmentConfirmation } from "./assessment-test-delivery.js";
@@ -77,6 +77,17 @@ export async function handleEvent(env, event, nowMs) {
               appointmentId: event.appointmentId, action: "rescheduled", outcome: "rescheduled",
               detail: { previousStartAt: retimed.previousStartAt, startAt: event.startAt },
             });
+            if (flow.flowKey === INITIAL_IN_PERSON_WORKFLOW.id && retimed.confirmationSent) {
+              const notice = await queueRescheduleConfirmation(db, event, flow, nowMs);
+              if (notice.queued) {
+                await appendEvent(db, {
+                  ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
+                  definitionVersion: flow.definitionVersion, appointmentId: event.appointmentId,
+                  stepIndex: notice.stepIndex, action: "reschedule_confirmation_queued", outcome: "queued",
+                  channel: "email", detail: { startAt: event.startAt },
+                });
+              }
+            }
           }
           actions.push({ engine: "reminder", action: retimed.rescheduled ? "reschedule" : "enroll-noop", detail: { flowKey: flow.flowKey } });
         } else {

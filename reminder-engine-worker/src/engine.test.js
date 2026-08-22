@@ -105,6 +105,10 @@ function fakeD1() {
         const record = enrollments.get(id);
         return record ? { start_at: record.start_at, status: record.status } : null;
       }
+      if (/SELECT status FROM reminder_steps/.test(sql)) {
+        const record = steps.find((step) => step.enrollment_id === id && step.template === "confirmation");
+        return record ? { status: record.status } : null;
+      }
       return null;
     },
   });
@@ -175,6 +179,20 @@ describe("handleEvent — enroll", () => {
     expect(env.REMINDER_DB._steps.filter((step) => step.status === "would_send")).toHaveLength(2);
     expect(env.REMINDER_DB._steps.find((step) => step.step_index === 0).due_at).toBe(NOW);
     expect(env.REMINDER_DB._steps.find((step) => step.step_index === 1).due_at).toBe(NOW);
+  });
+
+  it("queues the v4 reschedule confirmation only after the original confirmation was sent", async () => {
+    await handleEvent(env, event(), NOW);
+    env.REMINDER_DB._steps.find((step) => step.template === "confirmation").status = "sent";
+
+    const movedStart = "2026-07-22T15:00:00-07:00";
+    await handleEvent(env, event({ startAt: movedStart }), NOW + 1_000);
+
+    const queued = env.REMINDER_DB._steps.find((step) => step.template === "reschedule-confirmation");
+    expect(queued).toMatchObject({ at: "reschedule", type: "email", due_at: NOW + 1_000, status: "pending" });
+    expect(env.REMINDER_DB._events).toContainEqual(expect.objectContaining({
+      action: "reschedule_confirmation_queued", outcome: "queued", channel: "email",
+    }));
   });
 
   it("ignores an event on an unconfigured calendar", async () => {

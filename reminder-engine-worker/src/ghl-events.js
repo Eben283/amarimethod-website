@@ -19,7 +19,7 @@
 // Every handler is non-fatal: after auth + parse the answer is always 200, failures are
 // captured on automation_events. All sends stay behind the libs' shadow gates.
 
-import { timingSafeEqual } from "../../functions/lib/safe-equal.js";
+import { verifyGhlWebhookSecret } from "../../functions/lib/ghl-webhook-auth.js";
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 import { PURCHASE_CREDIT_MAP, productIdForAnyId } from "../../functions/lib/ghl-products.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../../functions/lib/ghl-fields.js";
@@ -77,10 +77,10 @@ async function findCreditableOrder(env, contactId) {
 }
 
 export async function handleGhlEvent(request, env, nowMs) {
-  const expected = env.GHL_APPOINTMENT_WEBHOOK_SECRET || env.GHL_WEBHOOK_SECRET;
-  if (!expected) return json(503, { error: "webhook secret not configured" });
   const provided = request.headers.get("X-Webhook-Secret") || "";
-  if (!timingSafeEqual(provided, expected)) return json(401, { error: "unauthorized" });
+  const auth = verifyGhlWebhookSecret(env, provided, "GHL_APPOINTMENT_WEBHOOK_SECRET");
+  if (!auth.configured) return json(503, { error: "webhook secret not configured" });
+  if (!auth.valid) return json(401, { error: "unauthorized" });
 
   let body;
   try {
