@@ -41,18 +41,25 @@ describe("provider-neutral automation families", () => {
       ownedDefinitions: [expect.objectContaining({
         id: "morning-sms:daily-staff-brief",
         mode: "active",
+        authority: "executable_definition",
       })],
-      cutoverTree: expect.objectContaining({
-        status: "live_workflow",
-        nodes: expect.arrayContaining([
-          expect.objectContaining({ id: "morning-last-session", state: "owned_live" }),
-          expect.objectContaining({ id: "morning-send-agenda", state: "owned_live" }),
-          expect.objectContaining({ id: "morning-send-meeting", state: "owned_live" }),
-        ]),
-      }),
+      mapAuthority: "executable_definition",
     }));
+    expect(family.cutoverTree).toBeUndefined();
+    expect(family.ownedDefinitions[0].steps).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: "morning-last-session", handler: "identify_last_package_session" }),
+      expect.objectContaining({ id: "morning-send-agenda", handler: "send_due_sms", messageKind: "prepare" }),
+      expect.objectContaining({ id: "morning-send-meeting", handler: "send_due_sms", messageKind: "meeting" }),
+    ]));
+    expect(family.ownedDefinitions[0].steps.some((step) => step.type === "wait")).toBe(false);
     expect(familyForDefinition("morning-sms", "daily-staff-brief")).toEqual(expect.objectContaining({ key: "morning-staff-sms" }));
     expect(family.evidence.gaps.map((gap) => gap.code)).not.toContain("owned_definition_not_available");
+  });
+
+  it("distinguishes executable maps from provider diagrams", () => {
+    expect(automationFamily("morning-staff-sms").mapAuthority).toBe("executable_definition");
+    expect(automationFamily("initial-session-reminders").mapAuthority).toBe("executable_definition");
+    expect(automationFamily("study-program").mapAuthority).toBe("not_mapped");
   });
 
   it("keeps lifecycle family identity separate from the four reusable implementation units", () => {

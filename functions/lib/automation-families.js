@@ -66,23 +66,6 @@ const FOLLOW_UP_GHL_CUTOVER_TREE = Object.freeze({
   ]),
 });
 
-const MORNING_SMS_CUTOVER_TREE = Object.freeze({
-  status: "live_workflow",
-  title: "Morning SMS to Eben and Garrett",
-  summary: "Amari reads today's GHL appointments, adds a last-package-session note only when the owned session ledger can prove it, and sends the same agenda separately to Eben and Garrett. A second staff-meeting text follows 90 minutes later.",
-  nodes: Object.freeze([
-    Object.freeze({ id: "morning-schedule", parentId: null, label: "Morning schedule check", state: "owned_live", evidence: "morning-sms Worker cron + Pacific-time schedule", detail: "Amari checks every five minutes Monday through Saturday during the morning window. The agenda is due at 8:00 AM, or two hours before an earlier first appointment." }),
-    Object.freeze({ id: "morning-calendar-read", parentId: "morning-schedule", label: "Read today's calendars and appointments", state: "verified_ghl", evidence: "GHL calendars and calendar-events APIs", detail: "GHL supplies every calendar and today's appointment records. Cancelled, invalid, and no-show appointments are excluded." }),
-    Object.freeze({ id: "morning-last-session", parentId: "morning-calendar-read", label: "Check for the last session in a package", state: "owned_live", evidence: "owned session ledger · high-confidence or manual-lock only", detail: "Amari compares package appointments with the owned session ledger. It adds LAST PACKAGE SESSION only when the evidence is strong enough; otherwise it leaves the label off rather than guessing." }),
-    Object.freeze({ id: "morning-agenda", parentId: "morning-last-session", label: "Build today's appointment agenda", state: "owned_live", evidence: "morning-sms schedule and agenda formatter", detail: "Each active appointment is listed in time order. If a required GHL read fails, the message says the appointment list could not be loaded instead of falsely saying the day is empty." }),
-    Object.freeze({ id: "morning-idempotency", parentId: "morning-agenda", label: "Prevent duplicate texts", state: "owned_live", evidence: "PORTAL_KV date + message kind + recipient key", detail: "Amari records one key per date, message kind, and recipient before delivery, then removes it if delivery fails." }),
-    Object.freeze({ id: "morning-send-agenda", parentId: "morning-idempotency", label: "Send agenda SMS to Eben and Garrett", state: "owned_live", evidence: "GHL conversations SMS adapter", detail: "Amari sends the agenda separately to the two configured staff contacts through GHL's SMS provider." }),
-    Object.freeze({ id: "morning-wait", parentId: "morning-send-agenda", label: "Wait 90 minutes", state: "owned_live", evidence: "morning-sms schedule", detail: "The second message is due 90 minutes after the day's prepare time." }),
-    Object.freeze({ id: "morning-send-meeting", parentId: "morning-wait", label: "Send Staff meeting SMS to Eben and Garrett", state: "owned_live", evidence: "GHL conversations SMS adapter", detail: "Amari sends the exact follow-up text “Staff meeting” separately to both staff contacts." }),
-    Object.freeze({ id: "morning-run-evidence", parentId: "morning-send-meeting", label: "Record the run result", state: "owned_live", evidence: "ops last-run record", detail: "Amari records mode, schedule, sends, skips, and errors for operational readback." }),
-  ]),
-});
-
 const ASSESSMENT_PAID_BOOKING_CUTOVER_TREE = Object.freeze({
   status: "live_workflow",
   title: "Assessment paid booking",
@@ -238,7 +221,6 @@ const RAW_FAMILIES = [
     purpose: "Send Eben and Garrett the day's appointment agenda, including a last-package-session note only when owned ledger evidence proves it.",
     implementationUnits: ["standalone-owned-port"],
     definitionIds: ["morning-sms:daily-staff-brief"],
-    cutoverTree: MORNING_SMS_CUTOVER_TREE,
     sourceRecords: [],
   },
   {
@@ -502,6 +484,11 @@ const FAMILIES = Object.freeze(RAW_FAMILIES.map((raw) => {
     purpose: raw.purpose,
     implementationUnits: raw.implementationUnits,
     ...(raw.cutoverTree ? { cutoverTree: raw.cutoverTree } : {}),
+    mapAuthority: ownedDefinitions.some((definition) => definition.authority === "executable_definition") || (raw.cutoverTree && ownedDefinitions.length)
+      ? "executable_definition"
+      : raw.cutoverTree
+        ? "verified_operating_diagram"
+        : "not_mapped",
     ownedDefinitionIds: raw.definitionIds,
     ownedDefinitions,
     sourceRecords: raw.sourceRecords,

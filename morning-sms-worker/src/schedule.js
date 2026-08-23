@@ -61,14 +61,14 @@ export function zonedTimeToUtcMs(dateKey, minutesFromMidnight, timeZone = "Ameri
  * @param {{ nowMs: number, firstAppointmentMs?: number|null, timeZone?: string }} opts
  * @returns {{ dateKey: string, firstAtMs: number, secondAtMs: number, reason: string }}
  */
-export function computeMorningTimes({ nowMs, firstAppointmentMs = null, timeZone = "America/Los_Angeles" }) {
+export function computeMorningTimes({ nowMs, firstAppointmentMs = null, timeZone = "America/Los_Angeles", defaultFirstMinutes = DEFAULT_FIRST_MINUTES, earlyAppointmentLeadMs = PREP_LEAD_MS, secondOffsetMs = SECOND_OFFSET_MS }) {
   const dateKey = dateKeyInZone(nowMs, timeZone);
-  const eightAm = zonedTimeToUtcMs(dateKey, DEFAULT_FIRST_MINUTES, timeZone);
+  const eightAm = zonedTimeToUtcMs(dateKey, defaultFirstMinutes, timeZone);
   let firstAtMs = eightAm;
   let reason = "default-08:00";
 
   if (typeof firstAppointmentMs === "number" && Number.isFinite(firstAppointmentMs)) {
-    const candidate = firstAppointmentMs - PREP_LEAD_MS;
+    const candidate = firstAppointmentMs - earlyAppointmentLeadMs;
     // Only pull earlier than 08:00 when the appointment requires it.
     if (candidate < eightAm) {
       firstAtMs = candidate;
@@ -81,7 +81,7 @@ export function computeMorningTimes({ nowMs, firstAppointmentMs = null, timeZone
   return {
     dateKey,
     firstAtMs,
-    secondAtMs: firstAtMs + SECOND_OFFSET_MS,
+    secondAtMs: firstAtMs + secondOffsetMs,
     reason,
   };
 }
