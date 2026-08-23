@@ -202,4 +202,19 @@ describe('Staff legibility contract', () => {
     expect(registryPage).toContain('Verified operating diagram');
     expect(registryPage).not.toContain('runtimes.some((runtime) => runtime.definition)\n        ? <InitialWorkflowCanvas');
   });
+
+  it('renders reminder maps from every canonical runtime node without stale hand-drawn paths', () => {
+    const registryPage = css('pages/AutomationRegistryPage.tsx');
+
+    expect(registryPage).toContain('family.runtimeFlowKeys.includes(runtime.flow?.key || runtime.definition.id)');
+    expect(registryPage).toContain('workflow.nodes.forEach((node) =>');
+    expect(registryPage).toContain('workflow.exits.map((exit, index) =>');
+    expect(registryPage).toContain('node.when');
+    expect(registryPage).not.toContain('function FollowUpGhlWorkflowCanvas');
+    expect(registryPage).not.toContain('Staged, not sending.');
+    expect(registryPage).not.toContain('GHL owns this whole live reminder path');
+    expect(registryPage).not.toContain('GHL queue snapshot · Aug. 11');
+    expect(registryPage).not.toContain("id: 'wait-day-before'");
+    expect(registryPage).not.toContain("id: 'wait-one-hour'");
+  });
 });

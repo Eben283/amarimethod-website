@@ -56,7 +56,7 @@ const IMPLEMENTATION_LABELS: Record<string, string> = {
 };
 
 const NODE_MAP_TITLES: Record<string, string> = {
-  'initial-session-reminders': 'Initial / Assessment in-person reminder',
+  'initial-session-reminders': 'Initial-session reminders',
   'follow-up-session-reminders': 'Follow-up session reminder',
   'morning-staff-sms': 'Morning SMS to Eben and Garrett',
 };
@@ -326,7 +326,7 @@ function AutomationHealthPilot({
   const isFollowUp = family.key === 'follow-up-session-reminders';
   const isPaidBooking = family.key === 'commerce-ledger-event-ingest';
   const isMorningSms = family.key === 'morning-staff-sms';
-  const matchingRuntimes = runtimes.filter((runtime) => runtime.definition && family.ownedDefinitionIds.includes(runtime.definition.id));
+  const matchingRuntimes = runtimes.filter((runtime) => runtime.definition && family.runtimeFlowKeys.includes(runtime.flow?.key || runtime.definition.id));
   const morningDefinition = family.ownedDefinitions.find((definition) => definition.engine === 'morning-sms');
   return (
     <section className="automation-health-pilot" aria-label={`${family.name} ownership map`}>
@@ -343,22 +343,18 @@ function AutomationHealthPilot({
         ? <MorningWorkflowCanvas definition={morningDefinition} />
         : isPaidBooking && matchingRuntimes.length
         ? <PaidBookingWorkflowCanvas runtime={matchingRuntimes.find((runtime) => runtime.flow?.key === 'assessment-paid-booking')!} />
-        : matchingRuntimes.length && family.cutoverTree
-        ? <InitialWorkflowCanvas runtimes={matchingRuntimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree} />
+        : matchingRuntimes.length
+        ? <InitialWorkflowCanvas runtimes={matchingRuntimes} activeEnrollments={activeEnrollments} />
         : family.mapAuthority === 'executable_definition'
           ? <section className="automation-map-pending"><div><span>Executable map unavailable</span><h3>{family.name}</h3><p>The selected family’s published runtime definition could not be read. Staff will not substitute another family’s map or a hand-drawn approximation.</p></div></section>
-        : isFollowUp
-          ? <FollowUpGhlWorkflowCanvas />
-          : family.cutoverTree ? <CutoverTree tree={family.cutoverTree} compact /> : null}
+        : family.cutoverTree ? <CutoverTree tree={family.cutoverTree} compact /> : null}
       <footer><b>Plain answer:</b> {isPaidBooking
         ? 'GHL still takes the $29 payment. The selected slot, booking lease, appointment command, checkpoint, and one-minute recovery guard are Amari-owned and read the same published definition shown above.'
         : isMorningSms
         ? 'This is the live Morning SMS Worker. Amari owns the schedule, agenda, last-package-session decision, duplicate protection, and run evidence; GHL supplies appointment data and carries the two staff SMS messages.'
         : isFollowUp
-        ? matchingRuntimes.length
-          ? `Amari executes this Follow-up definition in ${matchingRuntimes[0]?.flow?.delivery || 'unknown'} mode. Every node shown comes from that selected definition; GHL is labeled only where it supplies an external event or delivery adapter.`
-          : 'GHL owns this whole live reminder path, including the eight-person queue recorded on August 11. Amari is not a sender here yet, so there is no parallel workflow to turn on accidentally.'
-        : 'GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run. The virtual definition is saved but disabled, so it cannot send alongside GHL. GHL cleanup remains rollback protection, not a second sender.'}</footer>
+        ? `Amari executes this Follow-Up definition in ${matchingRuntimes[0]?.flow?.delivery || 'unknown'} mode. Every action, condition, and exit shown comes from that exact selected definition; GHL appears only as the external appointment-event and delivery provider.`
+        : `GHL owns the appointment event and delivery adapters. Amari executes the selected ${matchingRuntimes.map((runtime) => runtime.flow?.name).filter(Boolean).join(' and ')} definition${matchingRuntimes.length === 1 ? '' : 's'} exactly as shown.`}</footer>
     </section>
   );
 }
@@ -414,7 +410,7 @@ function PaidBookingWorkflowCanvas({ runtime }: { runtime: RuntimeFlow }) {
   </section>;
 }
 
-function InitialWorkflowCanvas({ runtimes, activeEnrollments, tree }: { runtimes: RuntimeFlow[]; activeEnrollments: ContactAutomationEnrollment[]; tree: AutomationCutoverTree }) {
+function InitialWorkflowCanvas({ runtimes, activeEnrollments }: { runtimes: RuntimeFlow[]; activeEnrollments: ContactAutomationEnrollment[] }) {
   const available = runtimes.filter((runtime) => runtime.definition && runtime.flow);
   const [selectedFlowKey, setSelectedFlowKey] = useState('initial-in-person');
   useEffect(() => {
@@ -422,14 +418,11 @@ function InitialWorkflowCanvas({ runtimes, activeEnrollments, tree }: { runtimes
   }, [selectedFlowKey, available]);
   const selected = available.find((runtime) => runtime.flow?.key === selectedFlowKey) || available[0];
   if (!selected?.definition || !selected.flow) return null;
-  const isVirtual = selected.flow.key === 'initial-virtual';
-  const isFollowUp = selected.flow.key === 'follow-up-session-reminders';
   const scopedEnrollments = activeEnrollments.filter((entry) => entry.key === selected.flow?.key);
   return <section className="automation-workflow-scope" aria-label="Executable workflow selector">
     <header><span>{available.length > 1 ? 'Format' : 'Workflow'}</span><div>{available.map((runtime) => <button type="button" key={runtime.flow!.key} className={runtime.flow!.key === selected.flow!.key ? 'is-selected' : ''} onClick={() => setSelectedFlowKey(runtime.flow!.key)}><strong>{runtime.flow!.key === 'initial-virtual' ? 'Virtual' : runtime.flow!.name}</strong><small>{runtime.flow!.delivery === 'active' ? 'Live sender' : runtime.flow!.delivery === 'shadow' ? 'Shadow · no sending' : 'Staged · disabled'}</small></button>)}</div></header>
-    {isVirtual && <p className="automation-workflow-scope-notice"><strong>Staged, not sending.</strong> This is the saved owned Virtual definition. GHL remains the sender until Eben deliberately activates it after the Google Meet, delivery, cancellation, and queue proof.</p>}
-    {isFollowUp && <p className="automation-workflow-scope-notice"><strong>Shadowing, not sending.</strong> This is the D1 workflow the Worker executes. Every due node becomes owned evidence only; the present GHL sender remains on until reconciliation proves the cutover.</p>}
-    <WorkflowPlaybookPreview workflow={selected.definition} delivery={selected.flow.delivery} activeEnrollments={scopedEnrollments} tree={tree} />
+    <p className="automation-workflow-scope-notice"><strong>{selected.flow.delivery === 'active' ? 'Live sender.' : selected.flow.delivery === 'shadow' ? 'Shadow evidence only.' : 'Not sending.'}</strong> The map below is generated from the exact definition returned by the executing Worker.</p>
+    <WorkflowPlaybookPreview workflow={selected.definition} delivery={selected.flow.delivery} activeEnrollments={scopedEnrollments} />
   </section>;
 }
 
@@ -440,6 +433,7 @@ type PreviewNode = {
   label: string;
   timing: string;
   detail: string;
+  condition?: string;
   message?: CanonicalWorkflow['nodes'][number]['message'];
   waiting?: ContactAutomationEnrollment[];
 };
@@ -465,7 +459,7 @@ type SourceWorkflowNode = {
   detail: string;
 };
 
-function FollowUpGhlWorkflowCanvas() {
+function RetiredFollowUpSourceSnapshot() {
   const [selectedId, setSelectedId] = useState('follow-up-trigger');
   const trigger: SourceWorkflowNode = {
     id: 'follow-up-trigger', kind: 'trigger', label: 'Confirmed follow-up appointment', timing: 'GHL event trigger',
@@ -509,7 +503,7 @@ function FollowUpGhlWorkflowCanvas() {
   const nodes = [trigger, internal, confirmation, preference, none, shortWait, shortSms, fullWait, dayBefore, fullOneHour, finalEmail, finalSms, finalInternal, cancelled, cleanup];
   const selected = nodes.find((node) => node.id === selectedId) || trigger;
   const NodeButton = ({ node }: { node: SourceWorkflowNode }) => <button type="button" className={`automation-playbook-node is-ghl${selected.id === node.id ? ' is-selected' : ''}${node.kind === 'wait' ? ' is-wait' : ''}`} onClick={() => setSelectedId(node.id)} aria-pressed={selected.id === node.id}>
-    <span>GHL OPERATES</span><strong>{node.label}</strong><small>{node.timing}</small>{node.kind === 'wait' && <span className="automation-playbook-waiters" title="Eight people were waiting in this GHL workflow at the Aug. 11 audit"><Users size={13} aria-hidden="true" /><b>8 active in GHL · Aug. 11 audit</b></span>}
+    <span>HISTORICAL GHL</span><strong>{node.label}</strong><small>{node.timing}</small>
   </button>;
   return <section className="automation-playbook-preview automation-source-workflow-preview" aria-label="Follow-up GHL workflow source snapshot">
     <header><div><span>Read-only GHL source snapshot · audited Aug. 11</span><h3>One canvas. The live sender today.</h3><p>Click any node for the documented trigger, message, wait, or cleanup. The people icon is the last read GHL queue, not an Amari Worker queue.</p></div><b className="is-live">GHL-owned · live sender</b></header>
@@ -528,54 +522,53 @@ function FollowUpGhlWorkflowCanvas() {
       <aside className="automation-playbook-inspector" aria-live="polite">
         <header><span>{selected.kind === 'trigger' ? 'GHL trigger' : selected.kind === 'wait' ? 'GHL wait' : selected.kind === 'exit' ? 'GHL exit / cleanup' : 'GHL action'}</span><h4>{selected.label}</h4><p>{selected.detail}</p></header>
         <dl><div><dt>Operated by</dt><dd>GHL</dd></div><div><dt>When</dt><dd>{selected.timing}</dd></div></dl>
-        {selected.kind === 'wait' && <section className="automation-playbook-waiting-list"><span><Users size={14} /> GHL queue snapshot · Aug. 11</span><p>GHL showed 8 active people in this workflow at the last audit. Their names, dates, and exact positions remain in the authenticated GHL source rather than deployable Staff code; the readback did not identify each person’s reminder-preference branch.</p></section>}
-        <footer><strong>GHL remains the sender.</strong> This node is documentation and inspection only; it cannot alter the live GHL workflow or queue. An owned version must be built, shadowed, reconciled, and explicitly activated before this becomes editable execution.</footer>
+        <footer><strong>Superseded historical snapshot.</strong> This component is retained only for source archaeology and is never selected as an operating map.</footer>
       </aside>
     </div>
   </section>;
 }
 
-function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments, tree }: {
+function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments }: {
   workflow: CanonicalWorkflow;
   delivery: 'active' | 'shadow' | 'disabled' | 'unpublished';
   activeEnrollments: ContactAutomationEnrollment[];
-  tree: AutomationCutoverTree;
 }) {
   const [selectedId, setSelectedId] = useState('trigger');
   useEffect(() => setSelectedId('trigger'), [workflow.id, workflow.version]);
-  const nodeByTemplate = (template: string) => workflow.nodes.find((node) => node.action.template === template || node.id === template);
-  const bookedInternal = nodeByTemplate('booked-internal');
-  const confirmation = nodeByTemplate('confirmation') || nodeByTemplate('welcome');
-  const dayBefore = nodeByTemplate('day-before');
-  const oneHourSms = nodeByTemplate('one-hour-sms');
-  const startingSoon = nodeByTemplate('starting-soon') || nodeByTemplate('one-hour-email');
-  const oneHourInternal = nodeByTemplate('one-hour-internal');
-  const activeFor = (templates: Array<string | undefined>) => activeEnrollments.filter((entry) => entry.nextStep?.template != null && templates.includes(entry.nextStep.template));
-  const exitNoShow = nodeByTemplate('remove-no-show-series');
-  const toAction = (node: CanonicalWorkflow['nodes'][number] | undefined): PreviewNode | null => {
-    if (!node) return null;
-    if (node.action.type === 'exit_flow') return { id: node.id, owner: 'amari', kind: 'exit', label: node.label, timing: 'Immediately after booking', detail: `Exit owned flow: ${node.action.target || 'not configured'}` };
-    return { id: node.id, owner: 'amari', kind: 'action', label: node.label, timing: node.at === 'enroll' ? 'Immediately after booking' : node.at === 'start-1440m' ? '24 hours before appointment' : node.at === 'start-60m' ? '1 hour before appointment' : node.at, detail: `${humanize(node.action.type)} · ${node.message.audience} ${node.message.channel}`, message: node.message };
-  };
-  const immediateNodes = [toAction(exitNoShow), toAction(bookedInternal), toAction(confirmation)].filter(Boolean) as PreviewNode[];
-  const finalNodes = [toAction(oneHourSms), toAction(startingSoon), toAction(oneHourInternal)].filter(Boolean) as PreviewNode[];
-  const dayWaiters = activeFor([dayBefore?.action.template, dayBefore?.id]);
-  const oneHourWaiters = activeFor([oneHourSms?.action.template, oneHourSms?.id, startingSoon?.action.template, startingSoon?.id, oneHourInternal?.action.template, oneHourInternal?.id]);
-  const waitDayBefore: PreviewNode | null = dayBefore ? { id: 'wait-day-before', owner: 'amari', kind: 'wait', label: 'Wait until 24 hours before', timing: 'Scheduler wait', detail: 'The worker holds this person here until the day-before reminder is due.', waiting: dayWaiters } : null;
-  const waitOneHour: PreviewNode | null = finalNodes.length ? { id: 'wait-one-hour', owner: 'amari', kind: 'wait', label: 'Wait until 1 hour before', timing: 'Scheduler wait', detail: 'The worker holds this person here until the one-hour messages are due.', waiting: oneHourWaiters } : null;
-  const isVirtual = workflow.id === 'initial-virtual';
-  const trigger: PreviewNode = { id: 'trigger', owner: 'ghl', kind: 'trigger', label: isVirtual ? 'Confirmed virtual appointment' : 'Confirmed appointment', timing: 'GHL event trigger', detail: isVirtual ? 'GHL reports a confirmed virtual appointment. The appointment-specific Google Meet link is the location used in every virtual message.' : `GHL reports a confirmed appointment for ${workflow.name}.` };
-  const cancellation = workflow.exits.find((exit) => /cancel/i.test(`${exit.event} ${exit.effect} ${exit.label}`));
-  const rollback = tree.nodes.find((node) => node.state === 'legacy_ghl');
-  const cancellationNodes: PreviewNode[] = cancellation ? [
-    { id: 'cancel-event', owner: 'ghl', kind: 'trigger', label: 'Appointment is cancelled', timing: 'GHL event trigger', detail: 'GHL reports that this same appointment was cancelled.' },
-    { id: 'cancellation', owner: 'amari', kind: 'exit', label: cancellation.label || 'Cancel every pending reminder', timing: 'Immediate exit', detail: cancellation.effect },
-  ] : [];
-  const rollbackNode: PreviewNode | null = rollback ? { id: 'rollback', owner: 'rollback', kind: 'exit', label: rollback.label, timing: 'Fallback only', detail: rollback.detail } : null;
-  const allNodes = [trigger, ...immediateNodes, waitDayBefore, toAction(dayBefore), waitOneHour, ...finalNodes, ...cancellationNodes, rollbackNode].filter(Boolean) as PreviewNode[];
+  const timing = (value: string | undefined) => value === 'enroll' ? 'Immediately after enrollment' : value === 'reschedule' ? 'On reschedule' : value === 'start-1440m' ? '24 hours before appointment' : value === 'start-60m' ? '1 hour before appointment' : value || 'Timing recorded in definition';
+  const trigger: PreviewNode = { id: 'trigger', owner: 'ghl', kind: 'trigger', label: humanize(String(workflow.trigger.type || workflow.trigger.event || 'appointment event')), timing: 'External event source', detail: structured(workflow.trigger) };
+  const groups: Array<{ timingKey: string; nodes: PreviewNode[] }> = [];
+  workflow.nodes.forEach((node) => {
+    const timingKey = node.at || node.timing || 'definition order';
+    let group = groups.find((entry) => entry.timingKey === timingKey);
+    if (!group) { group = { timingKey, nodes: [] }; groups.push(group); }
+    const templates = [node.action?.template, node.id].filter(Boolean);
+    const waiting = activeEnrollments.filter((entry) => entry.nextStep?.template != null && templates.includes(entry.nextStep.template));
+    const channel = node.message ? `${node.message.audience} ${node.message.channel}` : 'No message payload';
+    group.nodes.push({
+      id: node.id,
+      owner: 'amari',
+      kind: node.action?.type === 'exit_flow' ? 'exit' : 'action',
+      label: node.label,
+      timing: timing(node.at || node.timing),
+      detail: `${humanize(node.action?.type || node.kind || 'operation')} · ${channel}`,
+      condition: node.when ? structured(node.when) : undefined,
+      message: node.message,
+      waiting,
+    });
+  });
+  const exitNodes: PreviewNode[] = workflow.exits.map((exit, index) => ({
+    id: `exit-${index}-${exit.event}`,
+    owner: 'amari',
+    kind: 'exit',
+    label: exit.label || humanize(exit.event),
+    timing: `On ${humanize(exit.event)}`,
+    detail: exit.effect,
+  }));
+  const allNodes = [trigger, ...groups.flatMap((group) => group.nodes), ...exitNodes];
   const selected = allNodes.find((node) => node.id === selectedId) || trigger;
   const NodeButton = ({ node }: { node: PreviewNode }) => <button type="button" className={`automation-playbook-node is-${node.owner}${selected.id === node.id ? ' is-selected' : ''}${node.kind === 'wait' ? ' is-wait' : ''}`} onClick={() => setSelectedId(node.id)} aria-pressed={selected.id === node.id}>
-    <span>{node.owner === 'ghl' ? 'GHL' : node.owner === 'amari' ? 'AMARI' : 'GHL FALLBACK'}</span><strong>{node.label}</strong><small>{node.timing}</small>{node.kind === 'wait' && <WaitingPeople enrollments={node.waiting || []} />}
+    <span>{node.owner === 'ghl' ? 'EXTERNAL EVENT' : 'AMARI'}</span><strong>{node.label}</strong><small>{node.timing}</small>{node.condition && <em>When {node.condition}</em>}<WaitingPeople enrollments={node.waiting || []} />
   </button>;
   return <section className="automation-playbook-preview" aria-label="Future operational workflow editor preview">
     <header>
@@ -585,18 +578,13 @@ function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments, tree }
     <div className="automation-playbook-preview-grid">
       <div className="automation-playbook-flow" aria-label={`${workflow.name} workflow`}>
         <div className="automation-playbook-step"><NodeButton node={trigger} /></div>
-        {immediateNodes.length > 0 && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className={`automation-playbook-parallel is-${immediateNodes.length}`}>{immediateNodes.map((node) => <NodeButton key={node.id} node={node} />)}</div></>}
-        {waitDayBefore && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className="automation-playbook-step"><NodeButton node={waitDayBefore} /></div></>}
-        {dayBefore && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className="automation-playbook-step"><NodeButton node={toAction(dayBefore)!} /></div></>}
-        {waitOneHour && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className="automation-playbook-step"><NodeButton node={waitOneHour} /></div></>}
-        {finalNodes.length > 0 && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className={`automation-playbook-parallel is-${finalNodes.length}`}>{finalNodes.map((node) => <NodeButton key={node.id} node={node} />)}</div></>}
-        {cancellationNodes.length > 0 && <section className="automation-playbook-side-path"><header><span>Separate cancellation path</span><p>This is not after the reminders. It can interrupt them at any point.</p></header><div>{cancellationNodes.map((node, index) => <span key={node.id}>{index > 0 && <i aria-hidden="true">→</i>}<NodeButton node={node} /></span>)}</div></section>}
-        {rollbackNode && <section className="automation-playbook-fallback"><span>Rollback protection</span><NodeButton node={rollbackNode} /></section>}
+        {groups.map((group) => <div key={group.timingKey} className="automation-playbook-step"><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className={`automation-playbook-parallel is-${group.nodes.length}`}>{group.nodes.map((node) => <NodeButton key={node.id} node={node} />)}</div></div>)}
+        {exitNodes.length > 0 && <section className="automation-playbook-side-path"><header><span>Executable exits</span><p>Each exit below is read directly from this definition and can interrupt pending actions when its event occurs.</p></header><div>{exitNodes.map((node) => <span key={node.id}><NodeButton node={node} /></span>)}</div></section>}
       </div>
       <aside className="automation-playbook-inspector" aria-live="polite">
         <header><span>{selected.kind === 'trigger' ? 'Trigger' : selected.kind === 'wait' ? 'Wait' : selected.kind === 'exit' ? 'Exit / fallback' : 'Action'}</span><h4>{selected.label}</h4><p>{selected.detail}</p></header>
         <dl><div><dt>Operated by</dt><dd>{selected.owner === 'ghl' ? 'GHL' : selected.owner === 'amari' ? 'Amari' : 'GHL rollback / cleanup'}</dd></div><div><dt>When</dt><dd>{selected.timing}</dd></div></dl>
-        {selected.kind === 'wait' && <section className="automation-playbook-waiting-list"><span><Users size={14} /> People waiting here now</span>{selected.waiting?.length ? <ul>{selected.waiting.map((entry) => <li key={entry.enrollmentId}><i>{initials(entry.contactName)}</i><div><strong>{entry.contactName || 'Name unavailable'}</strong><small>Due {exactTime(entry.nextStep?.dueAt)}</small></div></li>)}</ul> : <p>No active enrollment is currently waiting at this point.</p>}</section>}
+        {selected.waiting?.length ? <section className="automation-playbook-waiting-list"><span><Users size={14} /> People whose next action is this node</span><ul>{selected.waiting.map((entry) => <li key={entry.enrollmentId}><i>{initials(entry.contactName)}</i><div><strong>{entry.contactName || 'Name unavailable'}</strong><small>Due {exactTime(entry.nextStep?.dueAt)}</small></div></li>)}</ul></section> : null}
         {selected.message && <section className="automation-playbook-message"><span>Future editable fields</span>{selected.message.from && <label>From<input readOnly value={selected.message.from} /></label>}{selected.message.subject && <label>Subject<input readOnly value={selected.message.subject} /></label>}<label>Exact message<textarea readOnly rows={8} value={selected.message.body} /></label></section>}
         <footer><strong>Preview only.</strong> There is no save or publish action here. When editing is enabled, publishing this node will show the {activeEnrollments.length} active enrollment{activeEnrollments.length === 1 ? '' : 's'} and pending actions affected before anything changes.</footer>
       </aside>
@@ -632,10 +620,9 @@ function FamilyDetail({
   const isInPersonCutover = family.key === 'initial-session-reminders';
   const canonicalRuntimes = detail.runtime?.flows || [];
   const hasCanonicalRuntime = canonicalRuntimes.some((runtime) => runtime.definition && runtime.flow);
-  const isFollowUpSourceMap = family.key === 'follow-up-session-reminders' && !canonicalRuntimes.some((runtime) => runtime.definition);
   const activeInitialRuntime = canonicalRuntimes.find((runtime) => runtime.flow?.key === 'initial-in-person');
   const virtualInitialRuntime = canonicalRuntimes.find((runtime) => runtime.flow?.key === 'initial-virtual');
-  const displayedDefinitions = hasCanonicalRuntime || isInPersonCutover || isFollowUpSourceMap
+  const displayedDefinitions = hasCanonicalRuntime || isInPersonCutover
     ? []
     : family.ownedDefinitions;
   const displayedSourceRecords = family.sourceRecords;
@@ -692,9 +679,7 @@ function FamilyDetail({
         {family.implementationUnits.map((unit) => <span key={unit}>{IMPLEMENTATION_LABELS[unit] || humanize(unit)}</span>)}
       </div>
 
-      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>Scope: this is a shared in-person lifecycle, not a full Amari cutover.</strong> GHL operates the calendar and appointment status; Amari operates the live in-person reminder run. Initial Virtual remains GHL-operated while its separate behavior release, shadow proof, queue reconciliation, and activation gates remain incomplete.</p>}
-
-      {isFollowUpSourceMap && <p className="automation-cutover-scope-note"><strong>Scope: this remains a GHL-owned live workflow.</strong> The map is a source-backed inspection surface, including the last read eight-person GHL queue. It does not enroll, send, pause, or edit anything in GHL.</p>}
+      {isInPersonCutover && <p className="automation-cutover-scope-note"><strong>Scope: GHL supplies appointment events and delivery adapters; Amari operates both Initial definitions.</strong> The selector and node map use the exact definitions and delivery states returned by the executing Worker.</p>}
 
       {isInPersonCutover && <div className="automation-evidence-banner"><CircleDot size={17} /><span><strong>{detail.runtime?.verified ? `Runtime verified: in-person ${activeInitialRuntime?.flow?.delivery || 'unknown'}; virtual ${virtualInitialRuntime?.flow?.delivery || 'unknown'}.` : 'Runtime status unavailable.'}</strong> {detail.runtime?.verified ? `The executing reminder Worker read both scoped definitions; ${detail.enrollments.filter((item) => item.status === 'active').length} active enrollment${detail.enrollments.filter((item) => item.status === 'active').length === 1 ? '' : 's'} appear below.` : 'This page will not claim a delivery state until the Worker can answer for both scopes.'}</span></div>}
 
@@ -702,20 +687,10 @@ function FamilyDetail({
 
       {isInPersonCutover && focused && activeInitialRuntime?.definition && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How this reminder run works</h3><p>The canvas is the one readable view of the current published in-person definition.</p></div><b>1</b></div>
-        <InitialWorkflowCanvas runtimes={canonicalRuntimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} />
+        <InitialWorkflowCanvas runtimes={canonicalRuntimes} activeEnrollments={activeEnrollments} />
       </section>}
 
-      {isFollowUpSourceMap && focused && <section className="automation-detail-section" id="workflow-definition">
-        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>How the live GHL workflow works</h3><p>One source-backed canvas for the published GHL sender, its waits, branches, and cancellation cleanup.</p></div><b>1</b></div>
-        <FollowUpGhlWorkflowCanvas />
-      </section>}
-
-      {focused && hasCanonicalRuntime && family.key !== 'commerce-ledger-event-ingest' && <section className="automation-detail-section automation-live-workflow-editor" aria-label="Published executable workflow">
-        <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>Edit the workflow the Worker reads</h3><p>This is the same published D1 document rendered in the canvas. Saving a draft does not send or change GHL.</p></div><b>{canonicalRuntimes.filter((runtime) => runtime.definition).length}</b></div>
-        {canonicalRuntimes.filter((runtime) => runtime.definition && runtime.flow).map((runtime) => <CanonicalWorkflowView key={runtime.flow!.key} workflow={runtime.definition!} delivery={runtime.flow!.delivery} />)}
-      </section>}
-
-      {!isInPersonCutover && !isFollowUpSourceMap && family.key !== 'commerce-ledger-event-ingest' && <section className="automation-detail-section" id="workflow-definition">
+      {!isInPersonCutover && !hasCanonicalRuntime && family.key !== 'commerce-ledger-event-ingest' && <section className="automation-detail-section" id="workflow-definition">
         <div className="automation-section-heading"><BookOpenCheck size={17} /><div><h3>{isInPersonCutover ? 'Canonical executable workflows' : 'Owned definition'}</h3><p>{isInPersonCutover ? 'The executing Worker and this view read these same scoped, versioned documents.' : 'Exact trigger, step timing, type, branch structure, and template key from code.'}</p></div><b>{isInPersonCutover ? canonicalRuntimes.filter((runtime) => runtime.definition).length : displayedDefinitions.length}</b></div>
         {displayedDefinitions.length ? displayedDefinitions.map((definition) => (
           <article className="automation-definition-card" key={definition.id}>

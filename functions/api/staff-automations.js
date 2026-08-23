@@ -253,13 +253,7 @@ export async function onRequestGet(context) {
       if (!family) {
         return new Response(JSON.stringify({ error: "Automation family not found" }), { status: 404, headers });
       }
-      const runtimeFlowKeys = family.key === "initial-session-reminders"
-        ? ["initial-in-person", "initial-virtual"]
-        : family.key === "follow-up-session-reminders"
-          ? ["follow-up-session-reminders"]
-          : family.key === "commerce-ledger-event-ingest"
-            ? ["assessment-paid-booking"]
-            : [];
+      const runtimeFlowKeys = family.runtimeFlowKeys;
       const initialRuntimes = runtimeFlowKeys.length
         ? (await Promise.all(runtimeFlowKeys.map((flowKey) => reminderRuntimeEvidence(context, flowKey)))).filter(Boolean)
         : [];
