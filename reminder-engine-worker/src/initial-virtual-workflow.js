@@ -6,7 +6,7 @@ import { defineWorkflow, executableFlow } from "./workflow-definition.js";
 export const INITIAL_VIRTUAL_WORKFLOW = defineWorkflow({
   id: "initial-virtual",
   name: "Initial Session — Virtual",
-  version: 4,
+  version: 5,
   executionMode: "shadow",
   trigger: {
     event: "appointment_status_changed",

@@ -22,7 +22,7 @@ describe("canonical workflow definition", () => {
   });
 
   it("keeps Initial Virtual executable reminders separate from its one reschedule notice", () => {
-    expect(INITIAL_VIRTUAL.definitionVersion).toBe(4);
+    expect(INITIAL_VIRTUAL.definitionVersion).toBe(5);
     expect(INITIAL_VIRTUAL.steps).toEqual(INITIAL_VIRTUAL_WORKFLOW.nodes.filter((node) => node.at !== "reschedule").map((node) => ({
       at: node.at, type: node.action.type, template: node.action.template, skipIfPast: node.skipIfPast,
     })));

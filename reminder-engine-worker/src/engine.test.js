@@ -244,7 +244,7 @@ describe("handleEvent — enroll", () => {
     await handleEvent(env, virtual, NOW);
 
     expect(env.REMINDER_DB._enrollments.get("initial-virtual:virtual_actorless"))
-      .toEqual(expect.objectContaining({ status: "active", definition_version: 4 }));
+      .toEqual(expect.objectContaining({ status: "active", definition_version: 5 }));
   });
 
   it("queues a fresh virtual notice when a later reschedule returns to an earlier start time", async () => {

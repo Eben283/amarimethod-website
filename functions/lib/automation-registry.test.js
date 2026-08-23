@@ -26,7 +26,7 @@ describe("owned automation registry", () => {
     for (const definition of definitions) {
       expect(definition.definitionVersion).toBe(
         definition.id === "reminder:initial-in-person" ? 4
-          : definition.id === "reminder:initial-virtual" ? 4 : 1,
+          : definition.id === "reminder:initial-virtual" ? 5 : 1,
       );
       expect(definition.name).toBeTruthy();
       expect(["shadow", "active"]).toContain(definition.mode);
@@ -109,7 +109,7 @@ describe("owned automation registry", () => {
     expect(inPerson.steps).toHaveLength(6);
     expect(inPerson.steps.some((step) => step.template === "equipment-list")).toBe(false);
     expect(virtual).toEqual(expect.objectContaining({
-      definitionVersion: 4,
+      definitionVersion: 5,
       trigger: {
         calendarIds: ["ySmht5hx4uZGEpgZrlCw"],
         statuses: ["confirmed"],
