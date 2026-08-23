@@ -59,7 +59,23 @@ describe("provider-neutral automation families", () => {
   it("distinguishes executable maps from provider diagrams", () => {
     expect(automationFamily("morning-staff-sms").mapAuthority).toBe("executable_definition");
     expect(automationFamily("initial-session-reminders").mapAuthority).toBe("executable_definition");
+    expect(automationFamily("follow-up-session-reminders").mapAuthority).toBe("executable_definition");
+    expect(automationFamily("commerce-ledger-event-ingest").mapAuthority).toBe("executable_definition");
     expect(automationFamily("study-program").mapAuthority).toBe("not_mapped");
+  });
+
+  it("owns the exact runtime lookup keys used by both the API and Staff map", () => {
+    expect(automationFamily("initial-session-reminders").runtimeFlowKeys).toEqual([
+      "initial-in-person",
+      "initial-virtual",
+    ]);
+    expect(automationFamily("follow-up-session-reminders").runtimeFlowKeys).toEqual([
+      "follow-up-session-reminders",
+    ]);
+    expect(automationFamily("commerce-ledger-event-ingest").runtimeFlowKeys).toEqual([
+      "assessment-paid-booking",
+    ]);
+    expect(automationFamily("study-program").runtimeFlowKeys).toEqual([]);
   });
 
   it("keeps lifecycle family identity separate from the four reusable implementation units", () => {
@@ -76,7 +92,7 @@ describe("provider-neutral automation families", () => {
     ]));
     expect(automationFamily("initial-session-reminders")).toEqual(expect.objectContaining({
       lifecycle: "sessions",
-      operatingState: "in_person_live",
+      operatingState: "active",
       implementationUnits: ["reminder-confirmation", "pipeline-helper"],
     }));
   });

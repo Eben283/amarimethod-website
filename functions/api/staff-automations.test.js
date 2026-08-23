@@ -115,6 +115,26 @@ describe("staff-automations — views", () => {
     }));
     expect(body.enrollments).toEqual([]);
     expect(body.events).toEqual([]);
+    expect(body.family.runtimeFlowKeys).toEqual(["initial-in-person", "initial-virtual"]);
+  });
+
+  it("uses family-owned runtime keys for Follow-Up and Assessment", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockImplementation((url) => {
+      const flow = new URL(String(url)).searchParams.get("flow");
+      return Promise.resolve(new Response(JSON.stringify({ runtime: {
+        verifiedAt: "2026-08-23T18:32:08.000Z",
+        flow: { key: flow, delivery: "active" },
+        definition: { id: flow, version: 3, nodes: [], exits: [] },
+        events: [], enrollments: [],
+      } }), { status: 200 }));
+    }));
+
+    const followUp = await (await onRequestGet(makeContext("view=family&key=follow-up-session-reminders", { WORKER_AUTH_SECRET: "secret" }))).json();
+    const assessment = await (await onRequestGet(makeContext("view=family&key=commerce-ledger-event-ingest", { WORKER_AUTH_SECRET: "secret" }))).json();
+
+    expect(followUp.runtime.flows[0].flow.key).toBe("follow-up-session-reminders");
+    expect(assessment.runtime.flows[0].flow.key).toBe("assessment-paid-booking");
+    vi.unstubAllGlobals();
   });
 
   it("puts the owned person name and phone on live workflow enrollments", async () => {

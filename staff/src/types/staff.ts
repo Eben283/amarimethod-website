@@ -263,6 +263,7 @@ export interface AutomationFamily {
   operatingState: 'active' | 'in_person_live' | 'not_live';
   purpose: string;
   implementationUnits: string[];
+  runtimeFlowKeys: string[];
   ownedDefinitionIds: string[];
   ownedDefinitions: AutomationOwnedDefinition[];
   sourceRecords: AutomationSourceRecord[];
@@ -345,7 +346,8 @@ export interface CanonicalWorkflow {
     operator?: string;
     kind?: string;
     skipIfPast?: boolean;
-    action?: { type: string; template: string; target?: string };
+    when?: Record<string, unknown> | string;
+    action?: { type: string; template?: string; target?: string };
     message?: { audience: string; channel: string; from?: string; subject?: string; preheader?: string; body: string };
   }>;
   booking?: { productId: string; defaultCalendarId: string; allowedCalendarIds: string[]; durationMinutes: number; sessionTitle: string };
