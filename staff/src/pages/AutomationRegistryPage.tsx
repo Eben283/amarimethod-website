@@ -267,12 +267,13 @@ function AutomationMasterMap({
   detailReady: boolean;
 }) {
   const selectedFamily = families.find((family) => family.key === selectedKey) || null;
+  const hasMap = (family: AutomationFamily) => family.mapAuthority !== 'not_mapped';
   if (selectedKey && selectedFamily) {
     return <section className="automation-master-map is-selected-view" aria-label={`${selectedFamily.name} automation map`}>
       <button className="automation-map-back" type="button" onClick={onBack}>← All automations</button>
       {!detailReady
         ? <div className="automation-registry-loading" role="status"><Loader2 className="spin" /> Opening one verified workflow view…</div>
-        : selectedFamily.cutoverTree
+        : hasMap(selectedFamily)
         ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} runtimes={runtimes} activeEnrollments={activeEnrollments} />
         : <AutomationMapPending family={selectedFamily} />}
     </section>;
@@ -282,9 +283,9 @@ function AutomationMasterMap({
       <div>
         <span>Master map · {families.filter((family) => family.kind === 'operational').length} automations</span>
         <h2>What exists, before we claim who owns it.</h2>
-        <p>Every card below is one named master automation. A “Node map drawn” card links to source-backed action ownership. A gray card is known work that has not been drawn yet; it is not an ownership claim.</p>
+        <p>Every card below is one named master automation. An executable map is the document the Worker runs. A verified operating diagram records an external path but never claims to execute it.</p>
       </div>
-      <div className="automation-master-key" aria-label="Master map status legend"><span className="is-drawn">Node map drawn</span><span className="is-pending">Not drawn yet</span></div>
+      <div className="automation-master-key" aria-label="Master map status legend"><span className="is-drawn">Executable map</span><span>Verified operating diagram</span><span className="is-pending">Not mapped yet</span></div>
     </header>
     <div className="automation-master-lanes">
       {MASTER_MAP_LANES.map((lane) => {
@@ -292,9 +293,9 @@ function AutomationMasterMap({
         return <section key={lane.key} className="automation-master-lane">
           <header><strong>{lane.label}</strong><small>{lane.description}</small></header>
           <div>
-            {laneFamilies.map((family) => <button type="button" key={family.key} className={`${family.cutoverTree ? 'is-drawn' : 'is-pending'}${selectedFamily?.key === family.key ? ' is-selected' : ''}`} aria-pressed={selectedFamily?.key === family.key} onClick={() => onSelect(family.key)}>
+            {laneFamilies.map((family) => <button type="button" key={family.key} className={`${hasMap(family) ? 'is-drawn' : 'is-pending'}${selectedFamily?.key === family.key ? ' is-selected' : ''}`} aria-pressed={selectedFamily?.key === family.key} onClick={() => onSelect(family.key)}>
               <strong>{family.name}</strong>
-              <small>{family.cutoverTree ? 'Node map drawn' : 'Needs node map'}</small>
+              <small>{family.mapAuthority === 'executable_definition' ? 'Executable map' : family.mapAuthority === 'verified_operating_diagram' ? 'Verified operating diagram' : 'Needs executable map'}</small>
               <ChevronRight size={14} aria-hidden="true" />
             </button>)}
           </div>
@@ -325,35 +326,57 @@ function AutomationHealthPilot({
   const isFollowUp = family.key === 'follow-up-session-reminders';
   const isPaidBooking = family.key === 'commerce-ledger-event-ingest';
   const isMorningSms = family.key === 'morning-staff-sms';
+  const matchingRuntimes = runtimes.filter((runtime) => runtime.definition && family.ownedDefinitionIds.includes(runtime.definition.id));
+  const morningDefinition = family.ownedDefinitions.find((definition) => definition.engine === 'morning-sms');
   return (
     <section className="automation-health-pilot" aria-label={`${family.name} ownership map`}>
       <header>
         <div>
-          <span><Activity size={14} /> Selected automation · node map drawn</span>
+          <span><Activity size={14} /> Selected automation · {family.mapAuthority === 'executable_definition' ? 'executable map' : 'verified operating diagram'}</span>
           <h2>{NODE_MAP_TITLES[family.key] || family.name}</h2>
           <p>Read from top to bottom: each color identifies the system that operates that action today.</p>
         </div>
         <button type="button" onClick={onRevealEvidence}>Open live run evidence <ChevronRight size={15} /></button>
       </header>
       <OwnershipLegend />
-      {isPaidBooking && runtimes.some((runtime) => runtime.definition)
-        ? <PaidBookingWorkflowCanvas runtime={runtimes.find((runtime) => runtime.flow?.key === 'assessment-paid-booking')!} />
-        : runtimes.some((runtime) => runtime.definition)
-        ? <InitialWorkflowCanvas runtimes={runtimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree!} />
+      {isMorningSms && morningDefinition
+        ? <MorningWorkflowCanvas definition={morningDefinition} />
+        : isPaidBooking && matchingRuntimes.length
+        ? <PaidBookingWorkflowCanvas runtime={matchingRuntimes.find((runtime) => runtime.flow?.key === 'assessment-paid-booking')!} />
+        : matchingRuntimes.length && family.cutoverTree
+        ? <InitialWorkflowCanvas runtimes={matchingRuntimes} activeEnrollments={activeEnrollments} tree={family.cutoverTree} />
+        : family.mapAuthority === 'executable_definition'
+          ? <section className="automation-map-pending"><div><span>Executable map unavailable</span><h3>{family.name}</h3><p>The selected family’s published runtime definition could not be read. Staff will not substitute another family’s map or a hand-drawn approximation.</p></div></section>
         : isFollowUp
           ? <FollowUpGhlWorkflowCanvas />
-          : <CutoverTree tree={family.cutoverTree!} compact />}
+          : family.cutoverTree ? <CutoverTree tree={family.cutoverTree} compact /> : null}
       <footer><b>Plain answer:</b> {isPaidBooking
         ? 'GHL still takes the $29 payment. The selected slot, booking lease, appointment command, checkpoint, and one-minute recovery guard are Amari-owned and read the same published definition shown above.'
         : isMorningSms
         ? 'This is the live Morning SMS Worker. Amari owns the schedule, agenda, last-package-session decision, duplicate protection, and run evidence; GHL supplies appointment data and carries the two staff SMS messages.'
         : isFollowUp
-        ? runtimes.some((runtime) => runtime.definition)
-          ? 'Amari now owns this executable Follow-up definition and its shadow queue. GHL still sends the live messages until shadow evidence, the eight-person reconciliation, and activation are complete.'
+        ? matchingRuntimes.length
+          ? `Amari executes this Follow-up definition in ${matchingRuntimes[0]?.flow?.delivery || 'unknown'} mode. Every node shown comes from that selected definition; GHL is labeled only where it supplies an external event or delivery adapter.`
           : 'GHL owns this whole live reminder path, including the eight-person queue recorded on August 11. Amari is not a sender here yet, so there is no parallel workflow to turn on accidentally.'
         : 'GHL still owns the calendar and the appointment. Amari owns the live in-person reminder run. The virtual definition is saved but disabled, so it cannot send alongside GHL. GHL cleanup remains rollback protection, not a second sender.'}</footer>
     </section>
   );
+}
+
+function MorningWorkflowCanvas({ definition }: { definition: AutomationFamily['ownedDefinitions'][number] }) {
+  const [selectedId, setSelectedId] = useState(definition.steps[0]?.id || '');
+  const selected = definition.steps.find((step) => step.id === selectedId) || definition.steps[0];
+  const route = definition.steps.filter((step) => step.handler !== 'send_due_sms' && step.handler !== 'record_run_result');
+  const sends = definition.steps.filter((step) => step.handler === 'send_due_sms');
+  const record = definition.steps.find((step) => step.handler === 'record_run_result');
+  const Node = ({ step }: { step: typeof definition.steps[number] }) => <button type="button" className={`automation-playbook-node ${step.owner === 'cloudflare' ? 'is-ghl' : 'is-amari'}${selected?.id === step.id ? ' is-selected' : ''}`} onClick={() => setSelectedId(step.id || '')}><span>{step.owner === 'cloudflare' ? 'CLOUDFLARE' : 'AMARI'}</span><strong>{step.label}</strong><small>{step.provider === 'ghl' ? 'Uses GHL data or delivery adapter' : humanize(step.type)}</small></button>;
+  return <section className="automation-playbook-preview" aria-label="Morning SMS executable map">
+    <header><div><span>Canonical executable workflow</span><h3>One document. The exact Worker route.</h3><p>The Worker validates and executes these handler IDs. Staff renders this same definition; there is no separate Morning SMS drawing.</p></div><b className="is-live">Live definition · v{definition.definitionVersion}</b></header>
+    <div className="automation-playbook-preview-grid">
+      <div className="automation-playbook-flow">{route.map((step, index) => <div className="automation-playbook-step" key={step.id || index}>{index > 0 && <i className="automation-playbook-arrow" aria-hidden="true">↓</i>}<Node step={step} /></div>)}<i className="automation-playbook-arrow" aria-hidden="true">↓</i><p className="automation-workflow-scope-notice"><strong>Due branch only.</strong> A scheduled check runs the agenda branch, the meeting branch, or neither. There is no sleeping 90-minute job.</p><div className={`automation-playbook-parallel is-${sends.length}`}>{sends.map((step) => <Node key={step.id} step={step} />)}</div>{record && <><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className="automation-playbook-step"><Node step={record} /></div></>}</div>
+      <aside className="automation-playbook-inspector" aria-live="polite"><header><span>Executable node</span><h4>{selected?.label}</h4><p><code>{selected?.id}</code> invokes <code>{selected?.handler}</code>. {selected?.provider === 'ghl' ? 'GHL is an external provider for this node; Amari controls the route and decision.' : 'Amari owns this operation.'}</p></header><dl><div><dt>Definition</dt><dd>{definition.id} · v{definition.definitionVersion}</dd></div><div><dt>Runtime handler</dt><dd>{selected?.handler}</dd></div>{selected?.messageKind && <div><dt>Message kind</dt><dd>{selected.messageKind}</dd></div>}</dl>{selected?.copy && <section className="automation-playbook-message"><span>Exact executable copy</span><textarea readOnly rows={4} value={selected.copy} /></section>}<footer><strong>Execution authority.</strong> Run evidence records this definition version and the node IDs actually visited.</footer></aside>
+    </div>
+  </section>;
 }
 
 function PaidBookingWorkflowCanvas({ runtime }: { runtime: RuntimeFlow }) {

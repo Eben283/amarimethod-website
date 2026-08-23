@@ -241,14 +241,15 @@ export interface AutomationCutoverReadiness {
 
 export interface AutomationOwnedDefinition {
   id: string;
-  engine: 'reminder' | 'nurture';
+  engine: 'reminder' | 'nurture' | 'morning-sms';
   key: string;
   name: string;
   definitionVersion: number;
   mode: string;
+  authority?: 'executable_definition';
   trigger: Record<string, unknown>;
   exits: Array<Record<string, unknown>>;
-  steps: AutomationOwnedStep[];
+  steps: Array<AutomationOwnedStep & { id?: string; parentId?: string | null; handler?: string; messageKind?: 'prepare' | 'meeting'; copy?: string; provider?: string; owner?: string; label?: string; at?: string; idempotency?: string }>;
   messagePreview?: AutomationMessagePreview;
   cutoverReadiness?: AutomationCutoverReadiness;
   source: { kind: 'owned_code'; path: string };
@@ -276,6 +277,7 @@ export interface AutomationFamily {
     executionHistoryImported: boolean;
     gaps: AutomationEvidenceGap[];
   };
+  mapAuthority: 'executable_definition' | 'verified_operating_diagram' | 'not_mapped';
   cutoverTree?: AutomationCutoverTree;
 }
 

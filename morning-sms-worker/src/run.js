@@ -7,6 +7,8 @@ import {
 } from "./schedule.js";
 import { parseContactIds, sendGhlSms } from "./ghl-sms.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
+import { MORNING_SMS_DEFINITION } from "./config.js";
+import { defineMorningSmsWorkflow, renderWorkflowCopy, stepForHandler } from "./workflow-definition.js";
 
 const IDEMPOTENCY_TTL_S = 36 * 60 * 60; // survive past midnight PT
 
@@ -25,6 +27,8 @@ function maskId(id) {
 }
 
 async function finish(env, summary) {
+  if (summary.recordNodeId && !summary.executedNodeIds.includes(summary.recordNodeId)) summary.executedNodeIds.push(summary.recordNodeId);
+  delete summary.recordNodeId;
   const sendFails = (summary.sends || []).filter((s) => s.result && s.result.success === false).length;
   const status =
     (summary.errors?.length && !(summary.sends?.length)) ||
@@ -39,6 +43,9 @@ async function finish(env, summary) {
     errorCount: summary.errors?.length || 0,
     errors: (summary.errors || []).slice(0, 5),
     schedule: summary.schedule,
+    definitionId: summary.definitionId,
+    definitionVersion: summary.definitionVersion,
+    executedNodeIds: summary.executedNodeIds,
   });
   return summary;
 }
@@ -49,10 +56,15 @@ async function finish(env, summary) {
  */
 export async function runMorningSms(env, opts = {}) {
   const nowMs = opts.nowMs ?? Date.now();
-  const timeZone = env.TIMEZONE || "America/Los_Angeles";
+  const definition = defineMorningSmsWorkflow(opts.definition || MORNING_SMS_DEFINITION);
+  const timeZone = definition.trigger.timeZone;
   const mode = modeOf(env);
   const recipients = parseContactIds(env.MORNING_SMS_CONTACT_IDS);
   const summary = {
+    definitionId: definition.id,
+    definitionVersion: definition.definitionVersion,
+    executedNodeIds: [stepForHandler(definition, "scheduled_event").id],
+    recordNodeId: stepForHandler(definition, "record_run_result").id,
     provider: "ghl",
     mode,
     recipients: recipients.map(maskId),
@@ -69,14 +81,25 @@ export async function runMorningSms(env, opts = {}) {
 
   let appointments = null;
   try {
+    summary.executedNodeIds.push(stepForHandler(definition, "read_todays_appointments").id);
     appointments = await fetchTodaysAppointments(env, nowMs, timeZone);
+    summary.executedNodeIds.push(stepForHandler(definition, "identify_last_package_session").id);
   } catch (err) {
     summary.errors.push(`appointment lookup: ${err.message}`);
   }
 
   const firstAppointmentMs = appointments?.[0]?.startMs ?? null;
 
-  const schedule = computeMorningTimes({ nowMs, firstAppointmentMs, timeZone });
+  const scheduleStep = stepForHandler(definition, "calculate_due_times");
+  summary.executedNodeIds.push(scheduleStep.id);
+  const schedule = computeMorningTimes({
+    nowMs,
+    firstAppointmentMs,
+    timeZone,
+    defaultFirstMinutes: definition.trigger.defaultFirstMinutes,
+    earlyAppointmentLeadMs: definition.trigger.earlyAppointmentLeadMs,
+    secondOffsetMs: scheduleStep.afterMs,
+  });
   summary.schedule = {
     dateKey: schedule.dateKey,
     reason: schedule.reason,
@@ -88,7 +111,7 @@ export async function runMorningSms(env, opts = {}) {
 
   const kinds = opts.forceKinds?.length
     ? opts.forceKinds
-    : dueKinds(nowMs, schedule.firstAtMs, schedule.secondAtMs, SEND_GRACE_MS);
+    : dueKinds(nowMs, schedule.firstAtMs, schedule.secondAtMs, definition.trigger.sendGraceMs ?? SEND_GRACE_MS);
 
   if (kinds.length === 0) {
     summary.skipped.push("nothing due in grace window");
@@ -99,8 +122,13 @@ export async function runMorningSms(env, opts = {}) {
   const dry = Boolean(opts.dryRun) || mode === "shadow";
 
   for (const kind of kinds) {
-    const body = messageForKind(kind, appointments, timeZone);
+    const composeStep = stepForHandler(definition, "compose_agenda");
+    if (!summary.executedNodeIds.includes(composeStep.id)) summary.executedNodeIds.push(composeStep.id);
+    const sendStep = stepForHandler(definition, "send_due_sms", (step) => step.messageKind === kind);
+    const agenda = messageForKind(kind, appointments, timeZone);
+    const body = renderWorkflowCopy(sendStep.copy, { agenda });
     if (!body) continue;
+    summary.executedNodeIds.push(sendStep.id);
 
     for (const contactId of recipients) {
       const key = idemKey(schedule.dateKey, kind, contactId);

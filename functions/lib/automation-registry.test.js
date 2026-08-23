@@ -40,14 +40,15 @@ describe("owned automation registry", () => {
       id: "morning-sms:daily-staff-brief",
       name: "Morning SMS to Eben and Garrett",
       mode: "active",
+      authority: "executable_definition",
       trigger: expect.objectContaining({
         cron: "*/5 11-19 * * MON-SAT",
         timeZone: "America/Los_Angeles",
       }),
       steps: expect.arrayContaining([
-        expect.objectContaining({ stepIndex: 1, type: "reconcile", result: "LAST PACKAGE SESSION" }),
-        expect.objectContaining({ stepIndex: 4, type: "sms", audience: "Eben and Garrett" }),
-        expect.objectContaining({ stepIndex: 6, type: "sms", audience: "Eben and Garrett" }),
+        expect.objectContaining({ id: "morning-last-session", handler: "identify_last_package_session", type: "reconcile", result: "LAST PACKAGE SESSION" }),
+        expect.objectContaining({ id: "morning-send-agenda", handler: "send_due_sms", messageKind: "prepare", type: "sms", audience: "Eben and Garrett" }),
+        expect.objectContaining({ id: "morning-send-meeting", handler: "send_due_sms", messageKind: "meeting", type: "sms", audience: "Eben and Garrett" }),
       ]),
       source: {
         kind: "owned_code",

@@ -193,4 +193,13 @@ describe('Staff legibility contract', () => {
     expect(calendar).toContain('aria-label="Previous period"');
     expect(calendar).toContain('aria-label="Next period"');
   });
+
+  it('renders only the selected family executable definition and labels diagrams honestly', () => {
+    const registryPage = css('pages/AutomationRegistryPage.tsx');
+    expect(registryPage).toContain('MorningWorkflowCanvas');
+    expect(registryPage).toContain("family.mapAuthority === 'executable_definition'");
+    expect(registryPage).toContain('Executable map');
+    expect(registryPage).toContain('Verified operating diagram');
+    expect(registryPage).not.toContain('runtimes.some((runtime) => runtime.definition)\n        ? <InitialWorkflowCanvas');
+  });
 });

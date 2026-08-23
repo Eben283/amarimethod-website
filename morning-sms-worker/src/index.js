@@ -5,6 +5,7 @@
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { runMorningSms } from "./run.js";
+import { MORNING_SMS_DEFINITION } from "./config.js";
 
 export default {
   async scheduled(_event, env, ctx) {
@@ -39,6 +40,11 @@ export default {
     if (url.pathname === "/status") {
       return json({
         ok: true,
+        definition: {
+          id: MORNING_SMS_DEFINITION.id,
+          version: MORNING_SMS_DEFINITION.definitionVersion,
+          authority: MORNING_SMS_DEFINITION.authority,
+        },
         provider: env.MORNING_SMS_PROVIDER || "ghl",
         mode: env.MORNING_SMS_MODE || "shadow",
         contactCount: String(env.MORNING_SMS_CONTACT_IDS || "")

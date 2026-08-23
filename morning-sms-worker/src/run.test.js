@@ -2,6 +2,8 @@ import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { _resetForTests } from "../../functions/lib/ghl-worker-token.js";
 import { runMorningSms } from "./run.js";
+import { MORNING_SMS_DEFINITION } from "./config.js";
+import { defineMorningSmsWorkflow } from "./workflow-definition.js";
 
 const originalFetch = globalThis.fetch;
 
@@ -31,6 +33,43 @@ afterEach(() => {
 });
 
 describe("runMorningSms", () => {
+  it("fails closed if the displayed node order no longer matches the executor", () => {
+    const definition = structuredClone(MORNING_SMS_DEFINITION);
+    [definition.steps[5], definition.steps[6]] = [definition.steps[6], definition.steps[5]];
+    assert.throws(() => defineMorningSmsWorkflow(definition), /step order or branching/);
+  });
+
+  it("executes message copy and node identity from the canonical workflow document", async () => {
+    globalThis.fetch = async (input) => {
+      const url = new URL(input);
+      if (url.pathname === "/calendars/") return Response.json({ calendars: [] });
+      return Response.json({ events: [] });
+    };
+    const definition = structuredClone(MORNING_SMS_DEFINITION);
+    definition.definitionVersion = 99;
+    definition.steps.find((step) => step.id === "morning-send-agenda").copy = "CANONICAL {{agenda}}";
+
+    const summary = await runMorningSms(testEnv(), {
+      nowMs: Date.parse("2026-08-05T15:00:00Z"),
+      forceKinds: ["prepare"],
+      dryRun: true,
+      definition,
+    });
+
+    assert.equal(summary.definitionId, MORNING_SMS_DEFINITION.id);
+    assert.equal(summary.definitionVersion, 99);
+    assert.equal(summary.sends[0].body, "CANONICAL Good morning — no appointments today.");
+    assert.deepEqual(summary.executedNodeIds, [
+      "morning-cron",
+      "morning-calendar-read",
+      "morning-last-session",
+      "morning-schedule",
+      "morning-agenda",
+      "morning-send-agenda",
+      "morning-run-evidence",
+    ]);
+  });
+
   it("renders the complete agenda in a dry run even after today's real send", async () => {
     globalThis.fetch = async (input) => {
       const url = new URL(input);
@@ -58,6 +97,23 @@ describe("runMorningSms", () => {
       "Today's appointments:\n9:00 AM — Test Member · Assessment\n\nTime to prepare for the day.",
     );
     assert.equal(summary.sends[0].result.shadowed, true);
+  });
+
+  it("records the canonical trigger, schedule, and evidence nodes when nothing is due", async () => {
+    globalThis.fetch = async (input) => {
+      const url = new URL(input);
+      if (url.pathname === "/calendars/") return Response.json({ calendars: [] });
+      return Response.json({ events: [] });
+    };
+    const summary = await runMorningSms(testEnv(), { nowMs: Date.parse("2026-08-05T14:30:00Z") });
+    assert.deepEqual(summary.executedNodeIds, [
+      "morning-cron",
+      "morning-calendar-read",
+      "morning-last-session",
+      "morning-schedule",
+      "morning-run-evidence",
+    ]);
+    assert.deepEqual(summary.skipped, ["nothing due in grace window"]);
   });
 
   it("marks the package-ending appointment from the authoritative ledger", async () => {
