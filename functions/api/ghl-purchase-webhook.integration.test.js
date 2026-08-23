@@ -485,7 +485,7 @@ describe('purchase-webhook — write orchestration', () => {
   });
 
   it('Assessment retry confirms an existing new appointment instead of treating it as fulfilled', async () => {
-    const slot = '2026-08-21T14:00:00-07:00';
+    const slot = new Date(Date.now() + 7 * 86_400_000).toISOString();
     const contact = {
       id: 'assessment-existing-new',
       tags: ['native-booking-started'],

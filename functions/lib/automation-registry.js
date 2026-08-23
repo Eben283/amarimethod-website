@@ -68,7 +68,7 @@ const INITIAL_IN_PERSON_MESSAGE_PREVIEW = Object.freeze({
 
 const INITIAL_VIRTUAL_MESSAGE_PREVIEW = Object.freeze({
   status: "source_verified_read_only",
-  label: "Source-verified read-only copy. This reconciled shadow definition does not send messages.",
+  label: "Source-verified copy rendered by the owned adapter. Delivery remains gated while the workflow is in shadow.",
   notices: Object.freeze([
     Object.freeze({ stepIndex: 0, audience: "internal", channel: "email", subject: "{{contact.name}} booked a {{calendar.name}}", body: "Hi {{user.first_name}},\n\n{{contact.name}} booked a {{calendar.name}} for {{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n\nHow we'll connect: {{appointment.meeting_location}}" }),
     Object.freeze({ stepIndex: 1, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "You're booked, here's what to expect", preheader: "Your first Amari Method session is confirmed.", body: "Hi {{contact.first_name}},\n\nYou're confirmed for your first Amari Method session with Garrett. Here's everything you need.\n\nSession Details — Date: {{appointment.only_start_date}}\nTime: {{appointment.only_start_time}} {{appointment.timezone}}\nDuration: 60 minutes\n\nJoining Your Session — We use Google Meet. Your link: {{appointment.meeting_location}}. Please test your camera and mic beforehand. Find a quiet space with at least 6' x 6' of room to move.\n\nEquipment — It's most helpful to have everything below ready for your first session. We may not use it all today, that depends on what we focus on, but you'll use these as your practice continues.\nYoga block, required. We'll use it in the first session. → https://amzn.to/4kDykic\nHigh-density foam roller → https://amzn.to/4rjKlfk\nPull-up bar → https://amzn.to/3ZzXYel\nGymnastic rings → https://amzn.to/4aB3MsS\n\nWhat to Wear — Wear something comfortable you can move in.\n\nReschedule {{appointment.reschedule_link}} | Cancel {{appointment.cancellation_link}}\nAdd to Google Calendar {{appointment.add_to_google_calendar}} | Add to iCal/Outlook {{appointment.add_to_ical_outlook}}\n\nThe Amari Method Team" }),
@@ -145,15 +145,16 @@ const INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
 });
 
 const INITIAL_VIRTUAL_CUTOVER_READINESS = Object.freeze({
-  status: "not_eligible",
-  label: "Not eligible for active delivery",
-  summary: "The source contract is reconciled in code only. This legacy virtual definition has not yet run beside GHL on an all-DND test appointment.",
+  status: "proof_ready",
+  label: "Ready for controlled proof",
+  summary: "The exact six-message path, owned delivery adapter, cancellation, and one-time reschedule confirmation are built. GHL remains the sender until a controlled all-DND proof passes.",
   requirements: Object.freeze([
     Object.freeze({ code: "source_contract_reconciled", status: "proven", label: "Source contract reconciled", detail: "Confirmed-only user/customer triggers and all six live message actions are represented in the shadow definition." }),
+    Object.freeze({ code: "owned_delivery_built", status: "proven", label: "Owned delivery built", detail: "The owned Gmail and GHL conversations adapters render the exact virtual email, client SMS, and Garrett notification templates behind the Initial Virtual cutover gate." }),
+    Object.freeze({ code: "reschedule_confirmation_built", status: "proven", label: "Reschedule behavior built", detail: "A real time change retimes pending reminders and queues one concise updated confirmation only after the original welcome was sent; it never replays the full welcome." }),
     Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove a native shadow run", detail: "Use a dedicated all-DND appointment to verify enrollment, due timing, reschedule, and cancellation without sending a message." }),
-    Object.freeze({ code: "no_show_series_exit_not_owned", status: "blocked", label: "Preserve the No Show Email SMS series exit", detail: "The related legacy pipeline workflow currently owns this exit. It remains external behavior until an owned replacement is implemented and proven." }),
-    Object.freeze({ code: "delivery_templates_and_adapter_not_owned", status: "blocked", label: "Deliver the exact messages from Amari", detail: "The six messages below are source-verified previews only. No owned template renderer or email/SMS sender adapter is active." }),
-    Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep the GHL reminder workflow live", detail: "Retirement needs separate approval after all gates close and owned delivery evidence agrees with the live path." }),
+    Object.freeze({ code: "external_pipeline_preserved", status: "proven", label: "Keep non-reminder GHL ownership", detail: "The separate Initial Session Virtual pipeline and no-show cleanup behavior remain in GHL; this package replaces only the confirmation/reminder sender." }),
+    Object.freeze({ code: "ghl_retirement_not_approved", status: "review", label: "Keep the GHL reminder workflow live", detail: "Drafting the former sender needs separate approval only after the controlled proof and owned receipt readback pass." }),
   ]),
 });
 

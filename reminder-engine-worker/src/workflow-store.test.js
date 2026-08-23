@@ -71,6 +71,6 @@ describe("workflow version store", () => {
     await publishBundledWorkflow(db, INITIAL_VIRTUAL_WORKFLOW, 100);
 
     expect(await publishedWorkflow(db, INITIAL_VIRTUAL_WORKFLOW.id)).toEqual(INITIAL_VIRTUAL_WORKFLOW);
-    expect(db.rows).toMatchObject([{ workflow_id: "initial-virtual", version: 3, state: "published", published_at: 100 }]);
+    expect(db.rows).toMatchObject([{ workflow_id: "initial-virtual", version: 5, state: "published", published_at: 100 }]);
   });
 });

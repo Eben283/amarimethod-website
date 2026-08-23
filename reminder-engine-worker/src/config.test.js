@@ -43,8 +43,12 @@ describe("flow shapes vs the twin specs", () => {
       "enroll:internal_email", "enroll:email", "start-1440m:email",
       "start-60m:email", "start-60m:sms", "start-60m:internal_sms",
     ]);
-    expect(INITIAL_VIRTUAL.definitionVersion).toBe(3);
-    expect(INITIAL_VIRTUAL.enrollOn).toEqual({ statuses: ["confirmed"], modifiedBy: ["user", "customer"] });
+    expect(INITIAL_VIRTUAL.definitionVersion).toBe(5);
+    expect(INITIAL_VIRTUAL.enrollOn).toEqual({
+      statuses: ["confirmed"],
+      modifiedBy: ["user", "customer"],
+      modifiedByByCalendar: { ySmht5hx4uZGEpgZrlCw: null },
+    });
     expect(INITIAL_VIRTUAL.cancelOn).toEqual(["cancelled"]);
   });
 

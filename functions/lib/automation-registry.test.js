@@ -26,7 +26,7 @@ describe("owned automation registry", () => {
     for (const definition of definitions) {
       expect(definition.definitionVersion).toBe(
         definition.id === "reminder:initial-in-person" ? 4
-          : definition.id === "reminder:initial-virtual" ? 3 : 1,
+          : definition.id === "reminder:initial-virtual" ? 5 : 1,
       );
       expect(definition.name).toBeTruthy();
       expect(["shadow", "active"]).toContain(definition.mode);
@@ -109,10 +109,22 @@ describe("owned automation registry", () => {
     expect(inPerson.steps).toHaveLength(6);
     expect(inPerson.steps.some((step) => step.template === "equipment-list")).toBe(false);
     expect(virtual).toEqual(expect.objectContaining({
-      definitionVersion: 3,
-      trigger: { calendarIds: ["ySmht5hx4uZGEpgZrlCw"], statuses: ["confirmed"], modifiedBy: ["user", "customer"] },
+      definitionVersion: 5,
+      trigger: {
+        calendarIds: ["ySmht5hx4uZGEpgZrlCw"],
+        statuses: ["confirmed"],
+        modifiedBy: ["user", "customer"],
+        modifiedByByCalendar: { ySmht5hx4uZGEpgZrlCw: null },
+      },
       messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
-      cutoverReadiness: expect.objectContaining({ status: "not_eligible" }),
+      cutoverReadiness: expect.objectContaining({
+        status: "proof_ready",
+        requirements: expect.arrayContaining([
+          expect.objectContaining({ code: "owned_delivery_built", status: "proven" }),
+          expect.objectContaining({ code: "reschedule_confirmation_built", status: "proven" }),
+          expect.objectContaining({ code: "native_shadow_proof_pending", status: "review" }),
+        ]),
+      }),
     }));
   });
 

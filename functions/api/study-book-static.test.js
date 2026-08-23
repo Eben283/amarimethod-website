@@ -232,7 +232,7 @@ describe("single-entry study page contract", () => {
 
   it("allows the protected CRM Worker only as a Staff iframe source", () => {
     const headers = read("_headers");
-    expect(headers).toContain("frame-src https://link.amarimethod.com https://amarimethodfollowup.amarimethod.com https://amari-crm-mirror.eben-fa2.workers.dev");
+    expect(headers).toContain("frame-src https://challenges.cloudflare.com https://link.amarimethod.com https://amarimethodfollowup.amarimethod.com https://amari-crm-mirror.eben-fa2.workers.dev");
     expect(read("dist/_headers")).toBe(headers);
   });
 

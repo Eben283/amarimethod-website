@@ -7,12 +7,14 @@ vi.mock("../../functions/lib/ghl-send.js", () => ({ sendConversationMessage: vi.
 import { handleEvent, mergeExecutionFlows, runSweep } from "./engine.js";
 import { loadDueSteps } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
+import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 
 // Minimal stateful fake D1 (same shape as store.test.js's).
 function fakeD1() {
   const enrollments = new Map();
   const steps = [];
   const events = [];
+  const workflowDocuments = new Map();
   const prepare = (sql) => ({
     _args: [],
     bind(...a) { this._args = a; return this; },
@@ -26,6 +28,9 @@ function fakeD1() {
       }
       if (/INSERT INTO reminder_steps/.test(sql)) {
         const [enrollment_id, step_index, at, type, template, due_at, status] = a;
+        if (steps.some((step) => step.enrollment_id === enrollment_id && step.step_index === step_index)) {
+          return { meta: { changes: 0 } };
+        }
         steps.push({ enrollment_id, step_index, at, type, template, due_at, status });
         return { meta: { changes: 1 } };
       }
@@ -100,19 +105,23 @@ function fakeD1() {
       return { results: [] };
     },
     async first() {
+      if (/SELECT document FROM workflow_versions WHERE workflow_id = \? AND state = 'published'/.test(sql)) {
+        const document = workflowDocuments.get(this._args[0]);
+        return document ? { document: JSON.stringify(document) } : null;
+      }
       const [id] = this._args;
       if (/SELECT start_at, status FROM reminder_enrollments/.test(sql)) {
         const record = enrollments.get(id);
         return record ? { start_at: record.start_at, status: record.status } : null;
       }
       if (/SELECT status FROM reminder_steps/.test(sql)) {
-        const record = steps.find((step) => step.enrollment_id === id && step.template === "confirmation");
+        const record = steps.find((step) => step.enrollment_id === id && step.template === this._args[1]);
         return record ? { status: record.status } : null;
       }
       return null;
     },
   });
-  return { prepare, _enrollments: enrollments, _steps: steps, _events: events };
+  return { prepare, _enrollments: enrollments, _steps: steps, _events: events, _workflowDocuments: workflowDocuments };
 }
 
 const START = Date.parse("2026-07-20T15:00:00-07:00");
@@ -193,6 +202,68 @@ describe("handleEvent — enroll", () => {
     expect(env.REMINDER_DB._events).toContainEqual(expect.objectContaining({
       action: "reschedule_confirmation_queued", outcome: "queued", channel: "email",
     }));
+  });
+
+  it("queues one updated virtual confirmation after a sent welcome is rescheduled", async () => {
+    env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
+    const virtual = event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_1", modifiedBy: "user",
+    });
+    await handleEvent(env, virtual, NOW);
+    env.REMINDER_DB._steps.find((step) => step.template === "welcome").status = "sent";
+
+    await handleEvent(env, { ...virtual, startAt: "2026-07-23T15:00:00-07:00" }, NOW + 2_000);
+
+    expect(env.REMINDER_DB._steps.filter((step) => step.template === "reschedule-confirmation"))
+      .toEqual([expect.objectContaining({ at: "reschedule", type: "email", due_at: NOW + 2_000, status: "pending" })]);
+    expect(env.REMINDER_DB._events).toContainEqual(expect.objectContaining({
+      flow_key: "initial-virtual", action: "reschedule_confirmation_queued", outcome: "queued",
+    }));
+  });
+
+  it("queues the virtual reschedule confirmation after the welcome was observed in shadow", async () => {
+    env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
+    const virtual = event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_shadow", modifiedBy: "user",
+    });
+    await handleEvent(env, virtual, NOW);
+    await runSweep(env, NOW);
+
+    await handleEvent(env, { ...virtual, startAt: "2026-07-23T15:00:00-07:00" }, NOW + 2_000);
+
+    expect(env.REMINDER_DB._steps.filter((step) => step.template === "reschedule-confirmation"))
+      .toEqual([expect.objectContaining({ at: "reschedule", type: "email", due_at: NOW + 2_000, status: "pending" })]);
+  });
+
+  it("enrolls the actorless event shape emitted by the shared webhook for Initial Virtual", async () => {
+    env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
+    const virtual = event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_actorless", modifiedBy: null,
+    });
+
+    await handleEvent(env, virtual, NOW);
+
+    expect(env.REMINDER_DB._enrollments.get("initial-virtual:virtual_actorless"))
+      .toEqual(expect.objectContaining({ status: "active", definition_version: 5 }));
+  });
+
+  it("queues a fresh virtual notice when a later reschedule returns to an earlier start time", async () => {
+    env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
+    const virtual = event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_return", modifiedBy: "customer",
+    });
+    await handleEvent(env, virtual, NOW);
+    env.REMINDER_DB._steps.find((step) => step.template === "welcome").status = "sent";
+
+    const firstMove = "2026-07-23T15:00:00-07:00";
+    await handleEvent(env, { ...virtual, startAt: firstMove }, NOW + 1_000);
+    env.REMINDER_DB._steps.find((step) => step.template === "reschedule-confirmation" && step.status === "pending").status = "sent";
+    await handleEvent(env, { ...virtual, startAt: "2026-07-24T15:00:00-07:00" }, NOW + 2_000);
+    env.REMINDER_DB._steps.find((step) => step.template === "reschedule-confirmation" && step.status === "pending").status = "sent";
+    await handleEvent(env, { ...virtual, startAt: firstMove }, NOW + 3_000);
+
+    expect(env.REMINDER_DB._steps.filter((step) => step.template === "reschedule-confirmation"))
+      .toHaveLength(3);
   });
 
   it("ignores an event on an unconfigured calendar", async () => {

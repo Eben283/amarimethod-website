@@ -77,7 +77,7 @@ export async function handleEvent(env, event, nowMs) {
               appointmentId: event.appointmentId, action: "rescheduled", outcome: "rescheduled",
               detail: { previousStartAt: retimed.previousStartAt, startAt: event.startAt },
             });
-            if (flow.flowKey === INITIAL_IN_PERSON_WORKFLOW.id && retimed.confirmationSent) {
+            if ([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id].includes(flow.flowKey) && retimed.confirmationSent) {
               const notice = await queueRescheduleConfirmation(db, event, flow, nowMs);
               if (notice.queued) {
                 await appendEvent(db, {

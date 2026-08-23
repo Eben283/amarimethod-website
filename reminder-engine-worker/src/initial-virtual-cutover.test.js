@@ -13,8 +13,8 @@ describe("initialVirtualCutoverEligibility", () => {
     expect(initialVirtualCutoverEligibility(env, flow, { template: "welcome" }, enrollment)).toEqual({ eligible: true });
   });
 
-  it("admits only its six source-verified steps on the Initial Session — Virtual calendar", () => {
-    for (const template of ["booked-internal", "welcome", "day-before", "one-hour-email", "one-hour-sms", "one-hour-internal"]) {
+  it("admits only its six source-verified steps plus the owned reschedule notice on the Initial Session — Virtual calendar", () => {
+    for (const template of ["booked-internal", "welcome", "reschedule-confirmation", "day-before", "one-hour-email", "one-hour-sms", "one-hour-internal"]) {
       expect(initialVirtualCutoverEligibility(env, flow, { template }, enrollment).eligible).toBe(true);
     }
     expect(initialVirtualCutoverEligibility(env, flow, { template: "welcome" }, { ...enrollment, calendarId: "other" }).eligible).toBe(false);
@@ -53,5 +53,27 @@ describe("deliverInitialVirtualStep", () => {
       ...services(), read: async (_env, path) => path.includes("appointments") ? { appointment: { ...appointment.appointment, meetingLocation: "" } } : contact,
     }, INITIAL_VIRTUAL_WORKFLOW);
     expect(result).toEqual({ success: false, error: "virtual meeting link is unavailable" });
+  });
+
+  it("sends one concise updated confirmation with the new time and Google Meet link", async () => {
+    let sent;
+    const result = await deliverInitialVirtualStep(env, { template: "reschedule-confirmation" }, enrollment, services((message) => { sent = message; }), INITIAL_VIRTUAL_WORKFLOW);
+
+    expect(result).toMatchObject({ success: true, recipient: "avery@example.test" });
+    expect(sent.subject).toBe("Your virtual appointment time has been updated");
+    expect(sent.text).toContain("Monday, August 10 at 10:00 AM PDT");
+    expect(sent.text).toContain("Google Meet: https://meet.google.test/room");
+    expect(sent.text).not.toContain("Equipment");
+  });
+
+  it("uses the current reschedule notice for an older pinned virtual enrollment", async () => {
+    const pinnedV3 = {
+      ...INITIAL_VIRTUAL_WORKFLOW,
+      version: 3,
+      nodes: INITIAL_VIRTUAL_WORKFLOW.nodes.filter((node) => node.at !== "reschedule"),
+    };
+
+    expect(await deliverInitialVirtualStep(env, { template: "reschedule-confirmation" }, enrollment, services(), pinnedV3))
+      .toMatchObject({ success: true, recipient: "avery@example.test" });
   });
 });
