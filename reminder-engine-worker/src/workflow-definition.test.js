@@ -1,9 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { INITIAL_IN_PERSON, INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL, INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
+import { STAFF_MANAGED_WORKFLOW_IDS } from "./index.js";
 import { defineWorkflow } from "./workflow-definition.js";
 
 describe("canonical workflow definition", () => {
+  it("allows Staff to draft and publish the staged Initial Virtual definition", () => {
+    expect(STAFF_MANAGED_WORKFLOW_IDS).toContain("initial-virtual");
+  });
+
   it("derives the executable Initial-session flow from the document Staff reads", () => {
     expect(INITIAL_IN_PERSON.flowKey).toBe(INITIAL_IN_PERSON_WORKFLOW.id);
     expect(INITIAL_IN_PERSON.definitionVersion).toBe(INITIAL_IN_PERSON_WORKFLOW.version);
