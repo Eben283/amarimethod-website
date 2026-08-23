@@ -110,7 +110,12 @@ describe("owned automation registry", () => {
     expect(inPerson.steps.some((step) => step.template === "equipment-list")).toBe(false);
     expect(virtual).toEqual(expect.objectContaining({
       definitionVersion: 4,
-      trigger: { calendarIds: ["ySmht5hx4uZGEpgZrlCw"], statuses: ["confirmed"], modifiedBy: ["user", "customer"] },
+      trigger: {
+        calendarIds: ["ySmht5hx4uZGEpgZrlCw"],
+        statuses: ["confirmed"],
+        modifiedBy: ["user", "customer"],
+        modifiedByByCalendar: { ySmht5hx4uZGEpgZrlCw: null },
+      },
       messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
       cutoverReadiness: expect.objectContaining({
         status: "proof_ready",
