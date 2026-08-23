@@ -221,6 +221,20 @@ describe("handleEvent — enroll", () => {
     }));
   });
 
+  it("queues the virtual reschedule confirmation after the welcome was observed in shadow", async () => {
+    env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
+    const virtual = event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_shadow", modifiedBy: "user",
+    });
+    await handleEvent(env, virtual, NOW);
+    await runSweep(env, NOW);
+
+    await handleEvent(env, { ...virtual, startAt: "2026-07-23T15:00:00-07:00" }, NOW + 2_000);
+
+    expect(env.REMINDER_DB._steps.filter((step) => step.template === "reschedule-confirmation"))
+      .toEqual([expect.objectContaining({ at: "reschedule", type: "email", due_at: NOW + 2_000, status: "pending" })]);
+  });
+
   it("queues a fresh virtual notice when a later reschedule returns to an earlier start time", async () => {
     env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
     const virtual = event({

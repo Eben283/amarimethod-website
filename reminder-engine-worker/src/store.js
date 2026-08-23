@@ -219,7 +219,11 @@ export async function retimeEnrollment(db, event, flow, nowMs) {
     .prepare(`UPDATE reminder_enrollments SET start_at = ?, start_ms = ? WHERE enrollment_id = ? AND status = 'active'`)
     .bind(event.startAt, startMs, id)
     .run();
-  return { rescheduled: true, previousStartAt: existing.start_at, confirmationSent: confirmation?.status === "sent" };
+  return {
+    rescheduled: true,
+    previousStartAt: existing.start_at,
+    confirmationSent: ["sent", "would_send"].includes(confirmation?.status),
+  };
 }
 
 export async function queueRescheduleConfirmation(db, event, flow, nowMs) {
