@@ -13,6 +13,10 @@ export const INITIAL_VIRTUAL_WORKFLOW = defineWorkflow({
     calendarIds: ["ySmht5hx4uZGEpgZrlCw"],
     statuses: ["confirmed"],
     modifiedBy: ["user", "customer"],
+    // The shared Appointment Events Webhook omits the actor merge field for this
+    // calendar. Keep the documented GHL trigger contract above, but accept the
+    // enriched null actor only inside the exact Initial Virtual calendar boundary.
+    modifiedByByCalendar: { ySmht5hx4uZGEpgZrlCw: null },
   },
   exits: [{ event: "cancelled", effect: "cancel_pending", label: "Cancel every pending reminder" }],
   nodes: [

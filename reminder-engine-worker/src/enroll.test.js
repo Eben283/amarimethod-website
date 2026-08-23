@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { INITIAL_IN_PERSON } from "./config.js";
+import { INITIAL_IN_PERSON, INITIAL_VIRTUAL } from "./config.js";
 import { backfillEnrollment, enroll, isEligible, resolveDueAt } from "./enroll.js";
 
 const START = Date.parse("2026-07-20T15:00:00-07:00");
@@ -53,6 +53,10 @@ describe("isEligible", () => {
   it("accepts the Assessment trigger without an actor but retains the legacy calendar actor gate", () => {
     expect(isEligible(evt({ calendarId: "EM6vB2mq7EAdGCbUb3j1", modifiedBy: null }), INITIAL_IN_PERSON)).toBe(true);
     expect(isEligible(evt({ calendarId: "G7OAnnJuFbMF6nQSlZVQ", modifiedBy: null }), INITIAL_IN_PERSON)).toBe(false);
+  });
+  it("accepts the actorless enriched event only on the exact Initial Virtual calendar", () => {
+    expect(isEligible(evt({ calendarId: "ySmht5hx4uZGEpgZrlCw", modifiedBy: null }), INITIAL_VIRTUAL)).toBe(true);
+    expect(isEligible(evt({ calendarId: "other", modifiedBy: null }), INITIAL_VIRTUAL)).toBe(false);
   });
   it("rejects an unrecognized event", () => {
     expect(isEligible(evt({ recognized: false }), INITIAL_IN_PERSON)).toBe(false);

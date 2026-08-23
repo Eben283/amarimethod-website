@@ -235,6 +235,18 @@ describe("handleEvent — enroll", () => {
       .toEqual([expect.objectContaining({ at: "reschedule", type: "email", due_at: NOW + 2_000, status: "pending" })]);
   });
 
+  it("enrolls the actorless event shape emitted by the shared webhook for Initial Virtual", async () => {
+    env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
+    const virtual = event({
+      calendarId: "ySmht5hx4uZGEpgZrlCw", appointmentId: "virtual_actorless", modifiedBy: null,
+    });
+
+    await handleEvent(env, virtual, NOW);
+
+    expect(env.REMINDER_DB._enrollments.get("initial-virtual:virtual_actorless"))
+      .toEqual(expect.objectContaining({ status: "active", definition_version: 4 }));
+  });
+
   it("queues a fresh virtual notice when a later reschedule returns to an earlier start time", async () => {
     env.REMINDER_DB._workflowDocuments.set("initial-virtual", INITIAL_VIRTUAL_WORKFLOW);
     const virtual = event({
