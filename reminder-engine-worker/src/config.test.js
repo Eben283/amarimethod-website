@@ -93,7 +93,19 @@ describe("flow shapes vs the twin specs", () => {
   it("full no-show replacement is separate from Assessment and carries the exact GHL calendar set", () => {
     expect(NO_SHOW_RECOVERY.calendarIds).not.toContain("EM6vB2mq7EAdGCbUb3j1");
     expect(NO_SHOW_RECOVERY.calendarIds).toHaveLength(11);
-    expect(NO_SHOW_RECOVERY.enrollOn).toEqual({ statuses: ["noshow"], eventTypes: ["normal"], modifiedBy: undefined, modifiedByByCalendar: undefined });
+    expect(NO_SHOW_RECOVERY.enrollOn).toEqual({
+      statuses: ["noshow"],
+      eventTypes: ["normal"],
+      modifiedBy: undefined,
+      modifiedByByCalendar: undefined,
+      contactModeByCalendar: {
+        G7OAnnJuFbMF6nQSlZVQ: "contact",
+        ySmht5hx4uZGEpgZrlCw: "contact",
+        P7T6M1w8wtuRfwAqzOVw: "contact",
+        wO5lnu7BOQOHEJ5YQU0f: "contact",
+        waHmG2mHNThPfMVuNJWG: "contact",
+      },
+    });
     expect(NO_SHOW_RECOVERY.mode).toBe("shadow");
   });
 });

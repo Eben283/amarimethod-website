@@ -21,6 +21,13 @@ describe("No Show Email SMS series source stage", () => {
     expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.statuses).toEqual(["noshow"]);
     expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.eventTypes).toEqual(["normal"]);
     expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.calendarIds).toHaveLength(11);
+    expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.contactModeByCalendar).toEqual({
+      G7OAnnJuFbMF6nQSlZVQ: "contact",
+      ySmht5hx4uZGEpgZrlCw: "contact",
+      P7T6M1w8wtuRfwAqzOVw: "contact",
+      wO5lnu7BOQOHEJ5YQU0f: "contact",
+      waHmG2mHNThPfMVuNJWG: "contact",
+    });
     expect(NO_SHOW_RECOVERY.exitOn).toEqual(["confirmed"]);
   });
 
@@ -40,11 +47,25 @@ describe("No Show Email SMS series source stage", () => {
     expect(enroll(event("unknown"), NO_SHOW_RECOVERY, NOW).steps).toEqual([]);
   });
 
-  it("keeps every unknown live-builder value explicit and non-releasable", () => {
-    expect(NO_SHOW_RECOVERY_WORKFLOW.sourceGaps).toHaveLength(4);
-    expect(JSON.stringify(NO_SHOW_RECOVERY_WORKFLOW)).toContain("CONTENT UNKNOWN — extract from GHL");
-    expect(JSON.stringify(NO_SHOW_RECOVERY_WORKFLOW)).toContain("TARGET UNKNOWN — extract from GHL");
-    expect(() => defineWorkflow({ ...NO_SHOW_RECOVERY_WORKFLOW, executionMode: "active" }))
+  it("pins the exact source copy and two source reschedule checks", () => {
+    expect(NO_SHOW_RECOVERY_WORKFLOW.sourceGaps).toBeUndefined();
+    expect(NO_SHOW_RECOVERY_WORKFLOW.sourceDecisionChecks).toEqual([
+      expect.objectContaining({ at: "enroll+1440m", field: "appointmentRescheduled", equals: "false", falseBranch: "end", trueBranch: "regular-one-day-email" }),
+      expect.objectContaining({ at: "enroll+2880m", field: "appointmentRescheduled", equals: "false", falseBranch: "end", trueBranch: "regular-two-day-email" }),
+    ]);
+    expect(NO_SHOW_RECOVERY_WORKFLOW.nodes[0].message.body).toContain("- Garrett");
+    expect(NO_SHOW_RECOVERY_WORKFLOW.nodes[2].message).toEqual(expect.objectContaining({
+      subject: "About your missed session", preheader: "Here's how to reschedule",
+    }));
+    expect(NO_SHOW_RECOVERY_WORKFLOW.nodes[2].message.body).toContain("{{rescheduleLink}}");
+    expect(NO_SHOW_RECOVERY_WORKFLOW.nodes[3].message).toEqual(expect.objectContaining({
+      subject: "Your body is waiting", preheader: "Whenever you're ready",
+    }));
+    expect(NO_SHOW_RECOVERY_WORKFLOW.nodes[3].message.body).toContain("https://www.amarimethod.com/booking");
+  });
+
+  it("still refuses any unrelated active workflow with unresolved source gaps", () => {
+    expect(() => defineWorkflow({ ...NO_SHOW_RECOVERY_WORKFLOW, sourceGaps: ["unknown"], executionMode: "active" }))
       .toThrow("unresolved source gaps cannot be active");
   });
 });

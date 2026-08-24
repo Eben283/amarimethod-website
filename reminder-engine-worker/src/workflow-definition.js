@@ -99,6 +99,7 @@ export function executableFlow(workflow) {
       eventTypes: workflow.trigger.eventTypes,
       modifiedBy: workflow.trigger.modifiedBy,
       modifiedByByCalendar: workflow.trigger.modifiedByByCalendar,
+      contactModeByCalendar: workflow.trigger.contactModeByCalendar,
     },
     cancelOn: workflow.exits.filter((exit) => exit.effect === "cancel_pending").map((exit) => exit.event),
     exitOn: workflow.exits.filter((exit) => exit.effect === "exit_contact_pending").map((exit) => exit.event),
