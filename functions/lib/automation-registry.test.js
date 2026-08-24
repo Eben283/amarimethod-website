@@ -26,7 +26,8 @@ describe("owned automation registry", () => {
     for (const definition of definitions) {
       expect(definition.definitionVersion).toBe(
         definition.id === "reminder:initial-in-person" ? 4
-          : definition.id === "reminder:initial-virtual" ? 5 : 1,
+          : definition.id === "reminder:initial-virtual" ? 5
+          : definition.id === "morning-sms:daily-staff-brief" ? 2 : 1,
       );
       expect(definition.name).toBeTruthy();
       expect(["shadow", "active"]).toContain(definition.mode);
@@ -45,9 +46,26 @@ describe("owned automation registry", () => {
         cron: "*/5 11-19 * * MON-SAT",
         timeZone: "America/Los_Angeles",
       }),
+      agendaCopy: {
+        unavailable: "Good morning, time to prepare for the day. Today's appointment list could not be loaded.",
+        empty: "Good morning — no appointments today.",
+        header: "Today's appointments:",
+        appointmentLine: "{{time}} — {{label}}",
+        footer: "Time to prepare for the day.",
+      },
       steps: expect.arrayContaining([
         expect.objectContaining({ id: "morning-last-session", handler: "identify_last_package_session", type: "reconcile", result: "LAST PACKAGE SESSION" }),
-        expect.objectContaining({ id: "morning-send-agenda", handler: "send_due_sms", messageKind: "prepare", type: "sms", audience: "Eben and Garrett" }),
+        expect.objectContaining({
+          id: "morning-send-agenda",
+          handler: "send_due_sms",
+          messageKind: "prepare",
+          type: "sms",
+          audience: "Eben and Garrett",
+          logic: expect.arrayContaining([
+            "Append LAST PACKAGE SESSION only when the owned package ledger proves it with high confidence or a manual lock.",
+            "Send the completed agenda separately to Eben and Garrett.",
+          ]),
+        }),
         expect.objectContaining({ id: "morning-send-meeting", handler: "send_due_sms", messageKind: "meeting", type: "sms", audience: "Eben and Garrett" }),
       ]),
       source: {

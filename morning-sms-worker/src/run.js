@@ -125,7 +125,7 @@ export async function runMorningSms(env, opts = {}) {
     const composeStep = stepForHandler(definition, "compose_agenda");
     if (!summary.executedNodeIds.includes(composeStep.id)) summary.executedNodeIds.push(composeStep.id);
     const sendStep = stepForHandler(definition, "send_due_sms", (step) => step.messageKind === kind);
-    const agenda = messageForKind(kind, appointments, timeZone);
+    const agenda = messageForKind(kind, appointments, timeZone, definition.agendaCopy);
     const body = renderWorkflowCopy(sendStep.copy, { agenda });
     if (!body) continue;
     summary.executedNodeIds.push(sendStep.id);

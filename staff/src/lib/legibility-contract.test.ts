@@ -203,6 +203,17 @@ describe('Staff legibility contract', () => {
     expect(registryPage).not.toContain('runtimes.some((runtime) => runtime.definition)\n        ? <InitialWorkflowCanvas');
   });
 
+  it('shows the complete dynamic Morning SMS contract instead of only the agenda token', () => {
+    const registryPage = css('pages/AutomationRegistryPage.tsx');
+    const inspection = css('lib/morningWorkflowInspection.ts');
+
+    expect(registryPage).toContain('How this node actually works');
+    expect(registryPage).toContain('inspection.exactCopy');
+    expect(registryPage).toContain('inspection.variants.map');
+    expect(inspection).toContain('Exact dynamic SMS sent to Eben and Garrett');
+    expect(inspection).toContain('definition.agendaCopy');
+  });
+
   it('renders reminder maps from every canonical runtime node without stale hand-drawn paths', () => {
     const registryPage = css('pages/AutomationRegistryPage.tsx');
 
