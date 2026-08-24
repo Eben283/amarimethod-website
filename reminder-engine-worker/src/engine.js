@@ -19,10 +19,11 @@ import { deliverInitialVirtualStep, initialVirtualCutoverEligibility } from "./i
 import { deliverFollowUpStep, followUpDeliveryEligibility, removeFromGhlWorkflow } from "./follow-up-delivery.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
+import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
 
 export function mergeExecutionFlows(staticFlows, canonicalFlows) {
-  const canonicalOnly = new Set([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id]);
+  const canonicalOnly = new Set([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id, NO_SHOW_RECOVERY_WORKFLOW.id]);
   // A staged canonical flow must be added even when it has no legacy config
   // entry. Otherwise Staff can read a valid document that the event router can
   // never enter — exactly the split-brain this migration is eliminating.
@@ -40,6 +41,7 @@ async function executionFlows(env) {
     await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW),
     await publishedWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW.id),
     await publishedWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW.id),
+    await publishedWorkflow(env.REMINDER_DB, NO_SHOW_RECOVERY_WORKFLOW.id),
   ].filter(Boolean);
   return mergeExecutionFlows(FLOWS, documents.map(asExecutableWorkflow));
 }

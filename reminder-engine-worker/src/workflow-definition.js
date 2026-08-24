@@ -16,7 +16,7 @@ const CONTROL_ACTIONS = new Set(["exit_flow"]);
 const ACTIONS = new Set([...MESSAGE_ACTIONS, ...CONTROL_ACTIONS]);
 const CHANNELS = new Set(["email", "sms"]);
 const AUDIENCES = new Set(["client", "internal"]);
-const TIMING = /^(enroll|reschedule|start-[1-9][0-9]*m)$/;
+const TIMING = /^(enroll|enroll\+[1-9][0-9]*m|reschedule|start-[1-9][0-9]*m)$/;
 
 function optionalStringList(value, label) {
   if (value == null) return;
@@ -41,6 +41,10 @@ export function defineWorkflow(document) {
   if (!Array.isArray(document?.trigger?.calendarIds) || !document.trigger.calendarIds.length) throw new Error("workflow trigger needs a calendar");
   optionalStringList(document.trigger.statuses, "workflow trigger statuses");
   optionalStringList(document.trigger.eventTypes, "workflow trigger event types");
+  optionalStringList(document.sourceGaps, "workflow source gaps");
+  if (document.executionMode === "active" && document.sourceGaps?.length) {
+    throw new Error("workflow with unresolved source gaps cannot be active");
+  }
   if (!Array.isArray(document?.nodes) || !document.nodes.length) throw new Error("workflow needs at least one node");
   const ids = new Set();
   for (const node of document.nodes) {
@@ -97,6 +101,7 @@ export function executableFlow(workflow) {
       modifiedByByCalendar: workflow.trigger.modifiedByByCalendar,
     },
     cancelOn: workflow.exits.filter((exit) => exit.effect === "cancel_pending").map((exit) => exit.event),
+    exitOn: workflow.exits.filter((exit) => exit.effect === "exit_contact_pending").map((exit) => exit.event),
     mode: workflow.executionMode,
     workflowDocument: workflow,
     steps: workflow.nodes.filter((node) => node.at !== "reschedule").map((node) => ({

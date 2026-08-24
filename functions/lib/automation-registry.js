@@ -170,6 +170,19 @@ const ASSESSMENT_NO_SHOW_CUTOVER_READINESS = Object.freeze({
   ]),
 });
 
+const NO_SHOW_RECOVERY_CUTOVER_READINESS = Object.freeze({
+  status: "not_eligible",
+  label: "Source-staged; not eligible for active delivery",
+  summary: "The exact 11-calendar trigger, affiliate branch, regular branch, timing, and rebooking exit are staged in shadow code. GHL remains the live sender.",
+  requirements: Object.freeze([
+    Object.freeze({ code: "source_structure_reconciled", status: "proven", label: "Source structure reconciled", detail: "The exact 11 normal/no-show triggers, affiliate soft-SMS branch, regular three-message branch, and confirmed-rebooking exit are represented." }),
+    Object.freeze({ code: "email_subjects_unknown", status: "blocked", label: "Extract both email subjects", detail: "The live GHL builder subjects remain [CONTENT UNKNOWN — extract from GHL]." }),
+    Object.freeze({ code: "cta_targets_unknown", status: "blocked", label: "Extract both CTA targets", detail: "The Reschedule Your Session and Book Your Session destinations remain [CONTENT UNKNOWN — extract from GHL]." }),
+    Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove the no-show lifecycle safely", detail: "After exact copy extraction, use one approved all-DND fixture to prove ordinary and affiliate branches plus confirmed-rebooking exit." }),
+    Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep GHL live until activation", detail: "The Published No Show Email SMS series remains the rollback owner until a separately approved cutover." }),
+  ]),
+});
+
 function reminderDefinition(flow) {
   const definition = {
     id: `reminder:${flow.flowKey}`,
@@ -204,6 +217,16 @@ function reminderDefinition(flow) {
   if (flow.flowKey === "assessment-no-show") {
     definition.messagePreview = clone(ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW);
     definition.cutoverReadiness = clone(ASSESSMENT_NO_SHOW_CUTOVER_READINESS);
+  }
+  if (flow.flowKey === "no-show-recovery") {
+    definition.messagePreview = {
+      status: "source_staged_with_blockers",
+      label: "Exact documented bodies and branch structure; unknown live-builder subjects and CTA targets block release.",
+      notices: clone(flow.workflowDocument.nodes.map((node, stepIndex) => ({ stepIndex, ...node.message }))),
+      sourceGaps: clone(flow.workflowDocument.sourceGaps),
+    };
+    definition.cutoverReadiness = clone(NO_SHOW_RECOVERY_CUTOVER_READINESS);
+    definition.source.path = "reminder-engine-worker/src/no-show-recovery-workflow.js";
   }
   return definition;
 }

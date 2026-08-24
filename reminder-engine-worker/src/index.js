@@ -24,6 +24,7 @@ import { runtimeStatus } from "./runtime-status.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
+import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 import { ASSESSMENT_PAID_BOOKING_WORKFLOW } from "../../functions/lib/assessment-paid-booking-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow } from "./workflow-store.js";
 import { appendEvent } from "./store.js";
@@ -51,6 +52,7 @@ export const STAFF_MANAGED_WORKFLOW_IDS = Object.freeze([
   INITIAL_IN_PERSON_WORKFLOW.id,
   INITIAL_VIRTUAL_WORKFLOW.id,
   FOLLOW_UP_WORKFLOW.id,
+  NO_SHOW_RECOVERY_WORKFLOW.id,
   ASSESSMENT_PAID_BOOKING_WORKFLOW.id,
 ]);
 
@@ -58,6 +60,7 @@ const STAFF_MANAGED_WORKFLOWS = new Map([
   [INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_IN_PERSON_WORKFLOW],
   [INITIAL_VIRTUAL_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW],
   [FOLLOW_UP_WORKFLOW.id, FOLLOW_UP_WORKFLOW],
+  [NO_SHOW_RECOVERY_WORKFLOW.id, NO_SHOW_RECOVERY_WORKFLOW],
   [ASSESSMENT_PAID_BOOKING_WORKFLOW.id, ASSESSMENT_PAID_BOOKING_WORKFLOW],
 ]);
 
@@ -170,13 +173,17 @@ export default {
       // operational state for a new migration slice — not an activation switch.
       if (request.method === "POST" && url.pathname === "/workflow-stage") {
         const body = await request.json();
-        if (body?.workflowId !== FOLLOW_UP_WORKFLOW.id) return json(400, { error: "unsupported workflow stage" });
-        const existing = await publishedWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW.id);
-        if (existing) return json(409, { error: "Follow-up workflow is already staged", document: existing });
-        const document = await publishBundledWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW);
+        const staged = new Map([
+          [FOLLOW_UP_WORKFLOW.id, { document: FOLLOW_UP_WORKFLOW, lane: "follow_up_shadow" }],
+          [NO_SHOW_RECOVERY_WORKFLOW.id, { document: NO_SHOW_RECOVERY_WORKFLOW, lane: "no_show_recovery_shadow" }],
+        ]).get(body?.workflowId);
+        if (!staged) return json(400, { error: "unsupported workflow stage" });
+        const existing = await publishedWorkflow(env.REMINDER_DB, staged.document.id);
+        if (existing) return json(409, { error: "workflow is already staged", document: existing });
+        const document = await publishBundledWorkflow(env.REMINDER_DB, staged.document);
         await appendEvent(env.REMINDER_DB, {
           ts: Date.now(), engine: "reminder", flowKey: document.id, definitionVersion: document.version,
-          action: "workflow_staged", outcome: "shadow", detail: { actor: requestedStaffActor(request.headers.get("X-Staff-Actor")), lane: "follow_up_shadow" },
+          action: "workflow_staged", outcome: "shadow", detail: { actor: requestedStaffActor(request.headers.get("X-Staff-Actor")), lane: staged.lane },
         });
         return json(200, { success: true, document, state: "shadow" });
       }
