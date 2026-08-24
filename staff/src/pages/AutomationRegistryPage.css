@@ -92,3 +92,5 @@
 .automation-section-heading>svg{width:1.25rem;height:1.25rem}
 .automation-section-heading>b{min-width:2.25rem;height:2.25rem}
 @media(max-width:560px){.automation-person-columns dl>div{grid-template-columns:1fr;gap:.15rem}}
+.automation-playbook-message ol{display:grid;gap:.55rem;margin:0;padding-left:1.35rem;color:#294c50}
+.automation-playbook-message li{padding-left:.2rem;line-height:1.5}

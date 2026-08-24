@@ -3,6 +3,7 @@
 // object. There is deliberately no second hand-drawn Morning SMS route.
 
 import {
+  AGENDA_COPY,
   COPY,
   DEFAULT_FIRST_MINUTES,
   PREP_LEAD_MS,
@@ -16,7 +17,7 @@ export const MORNING_SMS_DEFINITION = Object.freeze(defineMorningSmsWorkflow({
   engine: "morning-sms",
   key: "daily-staff-brief",
   name: "Morning SMS to Eben and Garrett",
-  definitionVersion: 1,
+  definitionVersion: 2,
   mode: "active",
   authority: "executable_definition",
   trigger: Object.freeze({
@@ -26,6 +27,7 @@ export const MORNING_SMS_DEFINITION = Object.freeze(defineMorningSmsWorkflow({
     earlyAppointmentLeadMs: PREP_LEAD_MS,
     sendGraceMs: SEND_GRACE_MS,
   }),
+  agendaCopy: AGENDA_COPY,
   exits: Object.freeze([
     Object.freeze({ event: "nothing_due", effect: "no_send" }),
     Object.freeze({ event: "recipient_already_sent", effect: "skip_exact_date_kind_recipient" }),
@@ -36,7 +38,27 @@ export const MORNING_SMS_DEFINITION = Object.freeze(defineMorningSmsWorkflow({
     Object.freeze({ id: "morning-last-session", parentId: "morning-calendar-read", stepIndex: 2, type: "reconcile", handler: "identify_last_package_session", owner: "amari", label: "Identify a package-ending appointment", confidence: "high_or_manual_lock_only", result: "LAST PACKAGE SESSION" }),
     Object.freeze({ id: "morning-schedule", parentId: "morning-last-session", stepIndex: 3, type: "schedule", handler: "calculate_due_times", owner: "amari", label: "Decide what is due in this check", at: "Agenda at 08:00 PT or two hours before an earlier first appointment; meeting text 90 minutes later", afterMs: SECOND_OFFSET_MS }),
     Object.freeze({ id: "morning-agenda", parentId: "morning-schedule", stepIndex: 4, type: "compose", handler: "compose_agenda", owner: "amari", label: "Build today's appointment agenda when a text is due", failureCopy: "Today's appointment list could not be loaded." }),
-    Object.freeze({ id: "morning-send-agenda", parentId: "morning-agenda", stepIndex: 5, type: "sms", handler: "send_due_sms", messageKind: "prepare", owner: "amari", provider: "ghl", audience: "Eben and Garrett", label: "If the agenda is due, send it once per recipient", copy: "{{agenda}}", idempotency: "date + prepare + recipient" }),
+    Object.freeze({
+      id: "morning-send-agenda",
+      parentId: "morning-agenda",
+      stepIndex: 5,
+      type: "sms",
+      handler: "send_due_sms",
+      messageKind: "prepare",
+      owner: "amari",
+      provider: "ghl",
+      audience: "Eben and Garrett",
+      label: "If the agenda is due, send it once per recipient",
+      copy: "{{agenda}}",
+      logic: Object.freeze([
+        "Read every active appointment from every GHL calendar and sort the complete day by start time.",
+        "Build one Pacific-time line with the client name and calendar or session name.",
+        "Append LAST PACKAGE SESSION only when the owned package ledger proves it with high confidence or a manual lock.",
+        "Send the completed agenda separately to Eben and Garrett.",
+        "Skip a recipient when date + prepare + recipient was already recorded.",
+      ]),
+      idempotency: "date + prepare + recipient",
+    }),
     Object.freeze({ id: "morning-send-meeting", parentId: "morning-agenda", stepIndex: 6, type: "sms", handler: "send_due_sms", messageKind: "meeting", owner: "amari", provider: "ghl", audience: "Eben and Garrett", label: "If the meeting text is due, send it once per recipient", copy: COPY.meeting, idempotency: "date + meeting + recipient" }),
     Object.freeze({ id: "morning-run-evidence", parentId: "morning-schedule", stepIndex: 7, type: "record", handler: "record_run_result", owner: "amari", label: "Record this scheduled check", target: "ops last-run evidence" }),
   ]),

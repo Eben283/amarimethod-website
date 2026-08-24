@@ -39,6 +39,12 @@ describe("runMorningSms", () => {
     assert.throws(() => defineMorningSmsWorkflow(definition), /step order or branching/);
   });
 
+  it("fails closed if the dynamic agenda logic is no longer inspectable", () => {
+    const definition = structuredClone(MORNING_SMS_DEFINITION);
+    delete definition.steps.find((step) => step.id === "morning-send-agenda").logic;
+    assert.throws(() => defineMorningSmsWorkflow(definition), /inspectable logic/);
+  });
+
   it("executes message copy and node identity from the canonical workflow document", async () => {
     globalThis.fetch = async (input) => {
       const url = new URL(input);
@@ -68,6 +74,34 @@ describe("runMorningSms", () => {
       "morning-send-agenda",
       "morning-run-evidence",
     ]);
+  });
+
+  it("executes the dynamic agenda format published by the canonical workflow document", async () => {
+    globalThis.fetch = async (input) => {
+      const url = new URL(input);
+      if (url.pathname === "/calendars/") {
+        return Response.json({ calendars: [{ id: "cal-assessment", name: "Assessment" }] });
+      }
+      return Response.json({ events: [{
+        startTime: "2026-08-05T09:00:00-07:00",
+        contactName: "Test Member",
+        appointmentStatus: "confirmed",
+      }] });
+    };
+    const definition = structuredClone(MORNING_SMS_DEFINITION);
+    definition.agendaCopy.appointmentLine = "{{time}} / {{label}}";
+
+    const summary = await runMorningSms(testEnv(), {
+      nowMs: Date.parse("2026-08-05T15:00:00Z"),
+      forceKinds: ["prepare"],
+      dryRun: true,
+      definition,
+    });
+
+    assert.equal(
+      summary.sends[0].body,
+      "Today's appointments:\n9:00 AM / Test Member · Assessment\n\nTime to prepare for the day.",
+    );
   });
 
   it("renders the complete agenda in a dry run even after today's real send", async () => {

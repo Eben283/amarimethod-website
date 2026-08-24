@@ -248,8 +248,15 @@ export interface AutomationOwnedDefinition {
   mode: string;
   authority?: 'executable_definition';
   trigger: Record<string, unknown>;
+  agendaCopy?: {
+    unavailable: string;
+    empty: string;
+    header: string;
+    appointmentLine: string;
+    footer: string;
+  };
   exits: Array<Record<string, unknown>>;
-  steps: Array<AutomationOwnedStep & { id?: string; parentId?: string | null; handler?: string; messageKind?: 'prepare' | 'meeting'; copy?: string; provider?: string; owner?: string; label?: string; at?: string; idempotency?: string }>;
+  steps: Array<AutomationOwnedStep & { id?: string; parentId?: string | null; handler?: string; messageKind?: 'prepare' | 'meeting'; copy?: string; logic?: string[]; provider?: string; owner?: string; label?: string; at?: string; idempotency?: string }>;
   messagePreview?: AutomationMessagePreview;
   cutoverReadiness?: AutomationCutoverReadiness;
   source: { kind: 'owned_code'; path: string };

@@ -12,6 +12,14 @@ export const COPY = Object.freeze({
   meeting: "Staff meeting",
 });
 
+export const AGENDA_COPY = Object.freeze({
+  unavailable: `${COPY.prepare} Today's appointment list could not be loaded.`,
+  empty: "Good morning — no appointments today.",
+  header: "Today's appointments:",
+  appointmentLine: "{{time}} — {{label}}",
+  footer: "Time to prepare for the day.",
+});
+
 export const DEFAULT_FIRST_MINUTES = 8 * 60; // 08:00
 export const SECOND_OFFSET_MS = 90 * 60 * 1000;
 export const PREP_LEAD_MS = 2 * 60 * 60 * 1000;
@@ -119,21 +127,28 @@ function appointmentLabel(appointment) {
     : label;
 }
 
-/** A compact internal SMS agenda. A null agenda means GHL was unavailable. */
-export function formatDailyAgenda(appointments, timeZone = "America/Los_Angeles") {
-  if (appointments == null) {
-    return `${COPY.prepare} Today's appointment list could not be loaded.`;
-  }
-  if (appointments.length === 0) return "Good morning — no appointments today.";
-
-  const lines = appointments.map((appointment) => (
-    `${agendaTime(appointment.startMs, timeZone)} — ${appointmentLabel(appointment)}`
-  ));
-  return `Today's appointments:\n${lines.join("\n")}\n\nTime to prepare for the day.`;
+function renderAgendaCopy(template, values) {
+  return String(template).replace(/\{\{([A-Za-z][A-Za-z0-9]*)\}\}/g, (_match, key) => String(values?.[key] ?? ""));
 }
 
-export function messageForKind(kind, appointments, timeZone) {
-  if (kind === "prepare") return formatDailyAgenda(appointments, timeZone);
+/** A compact internal SMS agenda. A null agenda means GHL was unavailable. */
+export function formatDailyAgenda(appointments, timeZone = "America/Los_Angeles", copy = AGENDA_COPY) {
+  if (appointments == null) {
+    return copy.unavailable;
+  }
+  if (appointments.length === 0) return copy.empty;
+
+  const lines = appointments.map((appointment) => (
+    renderAgendaCopy(copy.appointmentLine, {
+      time: agendaTime(appointment.startMs, timeZone),
+      label: appointmentLabel(appointment),
+    })
+  ));
+  return `${copy.header}\n${lines.join("\n")}\n\n${copy.footer}`;
+}
+
+export function messageForKind(kind, appointments, timeZone, agendaCopy = AGENDA_COPY) {
+  if (kind === "prepare") return formatDailyAgenda(appointments, timeZone, agendaCopy);
   if (kind === "meeting") return COPY.meeting;
   return null;
 }

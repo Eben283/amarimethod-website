@@ -35,6 +35,12 @@ export function defineMorningSmsWorkflow(input) {
   if (input?.authority !== "executable_definition") throw new Error("workflow authority must be executable_definition");
   text(input?.trigger?.cron, "workflow cron");
   text(input?.trigger?.timeZone, "workflow timezone");
+  for (const field of ["unavailable", "empty", "header", "appointmentLine", "footer"]) {
+    text(input?.agendaCopy?.[field], `workflow agendaCopy.${field}`);
+  }
+  if (!input.agendaCopy.appointmentLine.includes("{{time}}") || !input.agendaCopy.appointmentLine.includes("{{label}}")) {
+    throw new Error("workflow agendaCopy.appointmentLine must include {{time}} and {{label}}");
+  }
   if (!Array.isArray(input?.steps) || !input.steps.length) throw new Error("workflow steps are required");
   const ids = new Set();
   const handlers = new Set();
@@ -50,6 +56,10 @@ export function defineMorningSmsWorkflow(input) {
       if (!new Set(["prepare", "meeting"]).has(step.messageKind)) throw new Error(`workflow step ${step.id} needs a supported messageKind`);
       text(step.copy, `workflow step ${step.id} copy`);
       text(step.idempotency, `workflow step ${step.id} idempotency`);
+      if (step.messageKind === "prepare") {
+        if (!Array.isArray(step.logic) || step.logic.length === 0) throw new Error(`workflow step ${step.id} needs inspectable logic`);
+        step.logic.forEach((line, index) => text(line, `workflow step ${step.id} logic ${index}`));
+      }
     }
   }
   for (const handler of REQUIRED_HANDLERS) {
