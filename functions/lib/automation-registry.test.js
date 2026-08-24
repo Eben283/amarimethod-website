@@ -8,16 +8,17 @@ import {
 } from "./automation-registry.js";
 
 describe("owned automation registry", () => {
-  it("publishes the nine owned definitions with explicit versions and source evidence", () => {
+  it("publishes the ten owned definitions with explicit versions and source evidence", () => {
     const definitions = automationDefinitions();
     expect(REGISTRY_VERSION).toBe(1);
-    expect(definitions).toHaveLength(9);
+    expect(definitions).toHaveLength(10);
     expect(definitions.map((definition) => definition.id)).toEqual([
       "reminder:initial-in-person",
       "reminder:initial-virtual",
       "reminder:discovery-call",
       "reminder:partner-initial-in-person",
       "reminder:assessment-no-show",
+      "reminder:no-show-recovery",
       "nurture:flow-1-quiz",
       "nurture:flow-2-post-discovery",
       "nurture:flow-3-post-initial",
@@ -27,6 +28,7 @@ describe("owned automation registry", () => {
       expect(definition.definitionVersion).toBe(
         definition.id === "reminder:initial-in-person" ? 4
           : definition.id === "reminder:initial-virtual" ? 5
+          : definition.id === "reminder:no-show-recovery" ? 2
           : definition.id === "morning-sms:daily-staff-brief" ? 2 : 1,
       );
       expect(definition.name).toBeTruthy();
@@ -158,6 +160,35 @@ describe("owned automation registry", () => {
       cutoverReadiness: expect.objectContaining({ status: "not_eligible" }),
     }));
     expect(noShow.steps.map((step) => step.at)).toEqual(["enroll", "enroll+1440m", "enroll+2880m"]);
+  });
+
+  it("reconciles the full GHL no-show source while keeping release proof blocking", () => {
+    const noShow = findAutomationDefinition("reminder", "no-show-recovery");
+    expect(noShow).toEqual(expect.objectContaining({
+      name: "No Show Email SMS series",
+      mode: "shadow",
+      trigger: expect.objectContaining({ statuses: ["noshow"], eventTypes: ["normal"] }),
+      exits: [expect.objectContaining({ kind: "rebooking", statuses: ["confirmed"], scope: "contact" })],
+      messagePreview: expect.objectContaining({ status: "source_reconciled_shadow", sourceDecisionChecks: expect.any(Array) }),
+      cutoverReadiness: expect.objectContaining({
+        status: "not_eligible",
+        requirements: expect.arrayContaining([
+          expect.objectContaining({ code: "source_copy_reconciled", status: "proven" }),
+          expect.objectContaining({ code: "owned_rebooking_equivalence_pending", status: "review" }),
+          expect.objectContaining({ code: "delivery_adapter_pending", status: "blocked" }),
+        ]),
+      }),
+      source: { kind: "owned_code", path: "reminder-engine-worker/src/no-show-recovery-workflow.js" },
+    }));
+    expect(noShow.trigger.calendarIds).toHaveLength(11);
+    expect(noShow.trigger.contactModeByCalendar).toEqual({
+      G7OAnnJuFbMF6nQSlZVQ: "contact",
+      ySmht5hx4uZGEpgZrlCw: "contact",
+      P7T6M1w8wtuRfwAqzOVw: "contact",
+      wO5lnu7BOQOHEJ5YQU0f: "contact",
+      waHmG2mHNThPfMVuNJWG: "contact",
+    });
+    expect(noShow.messagePreview.notices).toHaveLength(4);
   });
 
   it("returns detached read models so API consumers cannot mutate engine config", () => {

@@ -25,6 +25,11 @@ const FOLLOW_UP_CALENDAR_IDS = new Set([
   "ZO1jlGfy01rsxVqicoSB", "SKDVOL8wtUN6Ne0ppbC9", "oVn77FcecFY16iS2pHyP", "B5aGXLoS4kzAjZAMMXxk",
   "bJFkhVP35Ecwh4tLnSmy", "wO5lnu7BOQOHEJ5YQU0f", "waHmG2mHNThPfMVuNJWG",
 ]);
+const NO_SHOW_RECOVERY_CALENDAR_IDS = new Set([
+  "bJFkhVP35Ecwh4tLnSmy", "G7OAnnJuFbMF6nQSlZVQ", "B5aGXLoS4kzAjZAMMXxk", "SKDVOL8wtUN6Ne0ppbC9",
+  "ZO1jlGfy01rsxVqicoSB", "lfsnaiGiLNL2z12pLKDP", "oVn77FcecFY16iS2pHyP", "ySmht5hx4uZGEpgZrlCw",
+  "P7T6M1w8wtuRfwAqzOVw", "wO5lnu7BOQOHEJ5YQU0f", "waHmG2mHNThPfMVuNJWG",
+]);
 const REMINDER_PREFERENCE_FIELD = "a42sQtjQ2yZPd0eJmkGW";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
@@ -48,8 +53,9 @@ function isDeficient(event) {
 // Read the canonical appointment record before letting that shadow flow evaluate the event,
 // rather than treating an absent kind as Normal. This stays narrowly scoped to Follow-Up;
 // every other flow continues to use the bridge payload without an extra API read.
-function needsFollowUpEventType(event) {
-  return FOLLOW_UP_CALENDAR_IDS.has(event.calendarId) && !event.appointmentEventType;
+function needsCanonicalEventType(event) {
+  return (FOLLOW_UP_CALENDAR_IDS.has(event.calendarId) || NO_SHOW_RECOVERY_CALENDAR_IDS.has(event.calendarId))
+    && !event.appointmentEventType;
 }
 
 /**
@@ -75,7 +81,7 @@ async function enrichFromApi(env, event, nowMs) {
   // true, absent, or malformed values remain fail-closed, and every other flow is untouched.
   const appointmentEventType = enriched.appointmentEventType
     || event.appointmentEventType
-    || (FOLLOW_UP_CALENDAR_IDS.has(calendarId) && enriched.isRecurring === false ? "normal" : null);
+    || ((FOLLOW_UP_CALENDAR_IDS.has(calendarId) || NO_SHOW_RECOVERY_CALENDAR_IDS.has(calendarId)) && enriched.isRecurring === false ? "normal" : null);
   return {
     ...enriched,
     // the webhook payload's ids are reliable — keep them when the API omits either
@@ -112,6 +118,18 @@ async function enrichFollowUpPreference(env, event) {
   return { ...event, context: { ...(event.context || {}), reminderPreference } };
 }
 
+export async function enrichNoShowAffiliateStatus(env, event) {
+  if (event.type !== "noshow" || !NO_SHOW_RECOVERY_CALENDAR_IDS.has(event.calendarId) || !event.contactId) return event;
+  const token = await getAccessToken(env);
+  const res = await fetch(`${GHL_API_BASE}/contacts/${encodeURIComponent(event.contactId)}`, {
+    headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+  });
+  if (!res.ok) throw new Error(`no-show affiliate lookup ${res.status}`);
+  const contact = (await res.json()).contact || {};
+  const tags = Array.isArray(contact.tags) ? contact.tags.map((tag) => String(tag).trim().toLowerCase()) : [];
+  return { ...event, context: { ...(event.context || {}), affiliatePartner: tags.includes("affiliate-partner") ? "true" : "false" } };
+}
+
 export async function handleWebhook(request, env, nowMs) {
   const provided = request.headers.get("X-Webhook-Secret") || "";
   const auth = verifyGhlWebhookSecret(env, provided, "GHL_APPOINTMENT_WEBHOOK_SECRET");
@@ -130,7 +148,7 @@ export async function handleWebhook(request, env, nowMs) {
 
   // A deficient bridge payload, or a Follow-Up event missing its required Event Type, with a
   // usable appointment id → rebuild from GHL's canonical record. Both paths are read-only.
-  if ((isDeficient(event) || needsFollowUpEventType(event)) && event.appointmentId && env.PORTAL_KV) {
+  if ((isDeficient(event) || needsCanonicalEventType(event)) && event.appointmentId && env.PORTAL_KV) {
     try {
       const enriched = await enrichFromApi(env, event, nowMs);
       await appendEvent(db, {
@@ -165,6 +183,18 @@ export async function handleWebhook(request, env, nowMs) {
     await appendEvent(db, {
       ts: nowMs, engine: "ingest", flowKey: "follow-up-session-reminders", contactId: event.contactId, appointmentId: event.appointmentId,
       action: "follow_up_preference_lookup", outcome: "fallback", detail: { error: String((err && err.message) || err) },
+    });
+  }
+
+  try {
+    event = await enrichNoShowAffiliateStatus(env, event);
+  } catch (err) {
+    // Unknown is intentionally not a valid branch value. The workflow can record an
+    // enrollment but creates zero pending message steps until the contact is readable.
+    event = { ...event, context: { ...(event.context || {}), affiliatePartner: "unknown" } };
+    await appendEvent(db, {
+      ts: nowMs, engine: "ingest", flowKey: "no-show-recovery", contactId: event.contactId, appointmentId: event.appointmentId,
+      action: "no_show_affiliate_lookup", outcome: "blocked", detail: { error: String((err && err.message) || err) },
     });
   }
 

@@ -265,7 +265,8 @@ const RAW_FAMILIES = [
     kind: "operational",
     purpose: "Record a missed appointment and follow up only while live booking evidence still warrants recovery.",
     implementationUnits: ["reminder-confirmation", "pipeline-helper"],
-    definitionIds: ["reminder:assessment-no-show"],
+    definitionIds: ["reminder:assessment-no-show", "reminder:no-show-recovery"],
+    runtimeFlowKeys: ["assessment-no-show", "no-show-recovery"],
     sourceRecords: [p("No Show — Increment Missed Count"), p("No Show Email SMS series")],
   },
   {

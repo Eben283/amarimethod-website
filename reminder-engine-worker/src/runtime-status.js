@@ -2,6 +2,7 @@ import { FLOWS } from "./config.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
+import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 import { ASSESSMENT_PAID_BOOKING_WORKFLOW } from "../../functions/lib/assessment-paid-booking-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersions, asExecutableWorkflow } from "./workflow-store.js";
 
@@ -18,9 +19,9 @@ function parseDetail(value) {
 // This is deliberately served by the executing Worker. Staff must not infer the
 // delivery gate from its own copy of the workflow configuration.
 export async function runtimeStatus(env, flowKey) {
-  const fallback = [INITIAL_IN_PERSON_WORKFLOW, INITIAL_VIRTUAL_WORKFLOW, FOLLOW_UP_WORKFLOW, ASSESSMENT_PAID_BOOKING_WORKFLOW]
+  const fallback = [INITIAL_IN_PERSON_WORKFLOW, INITIAL_VIRTUAL_WORKFLOW, FOLLOW_UP_WORKFLOW, NO_SHOW_RECOVERY_WORKFLOW, ASSESSMENT_PAID_BOOKING_WORKFLOW]
     .find((workflow) => workflow.id === flowKey);
-  const canonical = [INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id].includes(fallback?.id)
+  const canonical = [INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id, NO_SHOW_RECOVERY_WORKFLOW.id].includes(fallback?.id)
     ? await publishedWorkflow(env.REMINDER_DB, fallback.id)
     : fallback
       ? await ensurePublishedWorkflow(env.REMINDER_DB, fallback)

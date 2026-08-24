@@ -1,24 +1,26 @@
 import { describe, it, expect } from "vitest";
-import { FLOWS, INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW, flowsForCalendar } from "./config.js";
+import { FLOWS, INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW, NO_SHOW_RECOVERY, flowsForCalendar } from "./config.js";
 
 // Config snapshot tests per the cluster brief: each flow's step count, offsets, and enroll
 // filters pinned against the twin specs, and the shadow default pinned for every flow.
 
 describe("registry", () => {
-  it("exposes the five configured flows, all in shadow mode", () => {
-    expect(FLOWS.map((f) => f.flowKey)).toEqual(["initial-in-person", "initial-virtual", "discovery-call", "partner-initial-in-person", "assessment-no-show"]);
+  it("exposes the six configured flows, with the new no-show replacement shadow-only", () => {
+    expect(FLOWS.map((f) => f.flowKey)).toEqual(["initial-in-person", "initial-virtual", "discovery-call", "partner-initial-in-person", "assessment-no-show", "no-show-recovery"]);
     for (const f of FLOWS) expect(f.mode).toBe("shadow");
   });
 
   it("routes calendars to their flows (discovery covers all THREE discovery calendars)", () => {
     for (const cal of ["G7OAnnJuFbMF6nQSlZVQ", "EM6vB2mq7EAdGCbUb3j1"]) {
-      expect(flowsForCalendar(cal).map((f) => f.flowKey)).toEqual(cal === "EM6vB2mq7EAdGCbUb3j1" ? ["initial-in-person", "assessment-no-show"] : ["initial-in-person"]);
+      expect(flowsForCalendar(cal).map((f) => f.flowKey)).toEqual(cal === "EM6vB2mq7EAdGCbUb3j1"
+        ? ["initial-in-person", "assessment-no-show"]
+        : ["initial-in-person", "no-show-recovery"]);
     }
-    expect(flowsForCalendar("ySmht5hx4uZGEpgZrlCw").map((f) => f.flowKey)).toEqual(["initial-virtual"]);
+    expect(flowsForCalendar("ySmht5hx4uZGEpgZrlCw").map((f) => f.flowKey)).toEqual(["initial-virtual", "no-show-recovery"]);
     for (const cal of ["USgPsktqRcuomdUgpShL", "aVE54Qf4lrbYTB0zFqXy", "ZEIGFHBi17SpZ3Ezi5DR"]) {
       expect(flowsForCalendar(cal).map((f) => f.flowKey)).toEqual(["discovery-call"]);
     }
-    expect(flowsForCalendar("lfsnaiGiLNL2z12pLKDP").map((f) => f.flowKey)).toEqual(["partner-initial-in-person"]);
+    expect(flowsForCalendar("lfsnaiGiLNL2z12pLKDP").map((f) => f.flowKey)).toEqual(["partner-initial-in-person", "no-show-recovery"]);
     expect(flowsForCalendar("not-a-calendar")).toEqual([]);
   });
 });
@@ -86,5 +88,24 @@ describe("flow shapes vs the twin specs", () => {
       "enroll:sms", "enroll+1440m:email", "enroll+2880m:email",
     ]);
     expect(ASSESSMENT_NO_SHOW.mode).toBe("shadow");
+  });
+
+  it("full no-show replacement is separate from Assessment and carries the exact GHL calendar set", () => {
+    expect(NO_SHOW_RECOVERY.calendarIds).not.toContain("EM6vB2mq7EAdGCbUb3j1");
+    expect(NO_SHOW_RECOVERY.calendarIds).toHaveLength(11);
+    expect(NO_SHOW_RECOVERY.enrollOn).toEqual({
+      statuses: ["noshow"],
+      eventTypes: ["normal"],
+      modifiedBy: undefined,
+      modifiedByByCalendar: undefined,
+      contactModeByCalendar: {
+        G7OAnnJuFbMF6nQSlZVQ: "contact",
+        ySmht5hx4uZGEpgZrlCw: "contact",
+        P7T6M1w8wtuRfwAqzOVw: "contact",
+        wO5lnu7BOQOHEJ5YQU0f: "contact",
+        waHmG2mHNThPfMVuNJWG: "contact",
+      },
+    });
+    expect(NO_SHOW_RECOVERY.mode).toBe("shadow");
   });
 });

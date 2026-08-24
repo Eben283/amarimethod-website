@@ -22,6 +22,8 @@ export { INITIAL_IN_PERSON } from "./initial-in-person-workflow.js";
 import { INITIAL_IN_PERSON } from "./initial-in-person-workflow.js";
 export { INITIAL_VIRTUAL } from "./initial-virtual-workflow.js";
 import { INITIAL_VIRTUAL } from "./initial-virtual-workflow.js";
+export { NO_SHOW_RECOVERY } from "./no-show-recovery-workflow.js";
+import { NO_SHOW_RECOVERY } from "./no-show-recovery-workflow.js";
 
 // Discovery Call — Confirmation & Reminder Flow (twin: discovery-call-confirmation-reminder-
 // flow.yaml, published, 3 calendars). GHL trigger is `confirmed` only — with auto-confirm that
@@ -97,7 +99,7 @@ export const ASSESSMENT_NO_SHOW = Object.freeze({
 // LAST per the brief, and its Entrainment-calendar overlap with the draft entrainment flows
 // must be resolved first), virtual partner session flows, post-session review request (needs the
 // wait_for_link_click extension).
-export const FLOWS = Object.freeze([INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW]);
+export const FLOWS = Object.freeze([INITIAL_IN_PERSON, INITIAL_VIRTUAL, DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW, NO_SHOW_RECOVERY]);
 
 export function flowsForCalendar(calendarId) {
   return FLOWS.filter((f) => f.calendarIds.includes(calendarId));

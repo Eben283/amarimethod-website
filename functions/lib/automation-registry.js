@@ -170,6 +170,20 @@ const ASSESSMENT_NO_SHOW_CUTOVER_READINESS = Object.freeze({
   ]),
 });
 
+const NO_SHOW_RECOVERY_CUTOVER_READINESS = Object.freeze({
+  status: "not_eligible",
+  label: "Source-reconciled; not eligible for active delivery",
+  summary: "The exact trigger filters, copy, branches, waits, and source reschedule checks are reconciled in shadow code. GHL remains the live sender.",
+  requirements: Object.freeze([
+    Object.freeze({ code: "source_structure_reconciled", status: "proven", label: "Source structure reconciled", detail: "The exact 11 Normal/no-show calendars, five contact-mode filters, affiliate branch, regular three-message branch, two one-day waits, and two appointmentRescheduled=false checks are represented." }),
+    Object.freeze({ code: "source_copy_reconciled", status: "proven", label: "Source copy reconciled", detail: "Both SMS messages, email subjects, preheaders, bodies, and destinations are exact source values." }),
+    Object.freeze({ code: "owned_rebooking_equivalence_pending", status: "review", label: "Prove the owned rebooking exit", detail: "GHL checks appointmentRescheduled=false after each wait. The owned design cancels all pending recovery steps on a confirmed rebooking event; an all-DND proof must demonstrate the same stop behavior before both emails." }),
+    Object.freeze({ code: "delivery_adapter_pending", status: "blocked", label: "Prove owned delivery", detail: "The source is reconciled, but the exact email/SMS rendering and receipt path has not been released for this workflow." }),
+    Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove the no-show lifecycle safely", detail: "Use one approved all-DND fixture to prove ordinary and affiliate branches, both wait points, confirmed-rebooking exit, and zero duplicate sends." }),
+    Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep GHL live until activation", detail: "The Published No Show Email SMS series remains the rollback owner until a separately approved cutover." }),
+  ]),
+});
+
 function reminderDefinition(flow) {
   const definition = {
     id: `reminder:${flow.flowKey}`,
@@ -204,6 +218,16 @@ function reminderDefinition(flow) {
   if (flow.flowKey === "assessment-no-show") {
     definition.messagePreview = clone(ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW);
     definition.cutoverReadiness = clone(ASSESSMENT_NO_SHOW_CUTOVER_READINESS);
+  }
+  if (flow.flowKey === "no-show-recovery") {
+    definition.messagePreview = {
+      status: "source_reconciled_shadow",
+      label: "Exact source copy and branch structure; controlled proof and owned delivery still block release.",
+      notices: clone(flow.workflowDocument.nodes.map((node, stepIndex) => ({ stepIndex, ...node.message }))),
+      sourceDecisionChecks: clone(flow.workflowDocument.sourceDecisionChecks),
+    };
+    definition.cutoverReadiness = clone(NO_SHOW_RECOVERY_CUTOVER_READINESS);
+    definition.source.path = "reminder-engine-worker/src/no-show-recovery-workflow.js";
   }
   return definition;
 }

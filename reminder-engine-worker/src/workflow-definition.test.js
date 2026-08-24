@@ -3,6 +3,7 @@ import { INITIAL_IN_PERSON, INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-pers
 import { INITIAL_VIRTUAL, INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { STAFF_MANAGED_WORKFLOW_IDS } from "./index.js";
 import { defineWorkflow } from "./workflow-definition.js";
+import { NO_SHOW_RECOVERY, NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 
 describe("canonical workflow definition", () => {
   it("allows Staff to draft and publish the staged Initial Virtual definition", () => {
@@ -34,5 +35,11 @@ describe("canonical workflow definition", () => {
     expect(() => defineWorkflow({ id: "x", name: "X", version: 1, trigger: { calendarIds: ["c"] }, exits: [], nodes: [] })).toThrow("at least one node");
     const node = { id: "step", label: "Step", at: "enroll", action: { type: "email", template: "copy" }, message: { channel: "email", audience: "client", subject: "Hello", body: "Hello" } };
     expect(() => defineWorkflow({ id: "x", name: "X", version: 1, trigger: { calendarIds: ["c"] }, exits: [], nodes: [node, node] })).toThrow("duplicate");
+  });
+
+  it("supports post-enrollment timing and derives contact-scoped exit behavior", () => {
+    expect(NO_SHOW_RECOVERY_WORKFLOW.nodes.map((node) => node.at)).toContain("enroll+1440m");
+    expect(NO_SHOW_RECOVERY.exitOn).toEqual(["confirmed"]);
+    expect(NO_SHOW_RECOVERY.steps.every((step) => step.when)).toBe(true);
   });
 });

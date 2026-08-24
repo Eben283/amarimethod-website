@@ -3,7 +3,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 vi.mock("../../functions/lib/ghl-send.js", () => ({ sendConversationMessage: vi.fn() }));
 vi.mock("../../functions/lib/ghl-worker-token.js", () => ({ getAccessToken: vi.fn().mockResolvedValue("tok_test") }));
 
-import { handleWebhook } from "./webhook.js";
+import { enrichNoShowAffiliateStatus, handleWebhook } from "./webhook.js";
 
 // Same stateful fake D1 shape as engine.test.js — reminder tables + automation_events.
 function fakeD1() {
@@ -70,6 +70,37 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("handleWebhook — the GHL appointment ingest on the worker (no Pages needed)", () => {
+  it.each([
+    [["affiliate-partner", "other"], "true"],
+    [["other"], "false"],
+    [[], "false"],
+  ])("reads affiliate-partner branching from the canonical contact tags: %j", async (tags, expected) => {
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ contact: { tags } }), { status: 200 }));
+    const event = {
+      recognized: true, type: "noshow", calendarId: "ySmht5hx4uZGEpgZrlCw",
+      contactId: "contact-no-show", appointmentId: "appointment-no-show",
+    };
+    const enriched = await enrichNoShowAffiliateStatus({ PORTAL_KV: {} }, event);
+    expect(enriched.context.affiliatePartner).toBe(expected);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/contacts/contact-no-show");
+  });
+
+  it("surfaces a no-show contact-read failure and creates no client steps", async () => {
+    const payload = {
+      contact_id: "cont_no_show", appointment_id: "appt_no_show",
+      calendar_id: "ySmht5hx4uZGEpgZrlCw", status: "noshow", event_type: "normal",
+      start_time: "2026-08-23T09:00:00-07:00", source: "appointment-events-webhook",
+    };
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("/contacts/")) return new Response("unavailable", { status: 503 });
+      return new Response(JSON.stringify({ success: true, actions: [] }), { status: 200 });
+    });
+    const res = await handleWebhook(req(payload, SECRET), { ...env, PORTAL_KV: {} }, Date.now());
+    expect(res.status).toBe(200);
+    const blocked = env.REMINDER_DB._events.find((row) => row.action === "no_show_affiliate_lookup");
+    expect(blocked?.outcome).toBe("blocked");
+    expect(env.REMINDER_DB._steps).toHaveLength(0);
+  });
   it("fails closed when no webhook secret is configured", async () => {
     const res = await handleWebhook(req(rawPayload(), SECRET), { REMINDER_DB: fakeD1() }, Date.now());
     expect(res.status).toBe(503);
