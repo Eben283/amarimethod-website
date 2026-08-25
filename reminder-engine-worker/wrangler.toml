@@ -45,6 +45,10 @@ NURTURE_ENGINE_URL = "https://nurture-engine.eben-fa2.workers.dev"
 # A separate evidence-capture release must provide all four exact bindings or the path fails closed:
 # FOLLOW_UP_RELIABILITY_SPINE_ENABLED=enabled, FOLLOW_UP_RELIABILITY_SOURCE_VERSION,
 # SOURCE_REVISION, and WORKER_VERSION. Adding the import alone performs no reliability read/write.
+# No Show delivery is also fail-closed by default. A coordinated release must
+# set both NO_SHOW_BEHAVIOR_RELEASE=approved and NO_SHOW_DELIVERY_RELEASE=approved,
+# then publish v3 through the authenticated /workflow-release endpoint. Neither
+# variable belongs in an ordinary deployment.
 
 [observability]
 enabled = true

@@ -85,6 +85,16 @@ describe("processStep — active mode", () => {
     expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 3, "sent");
   });
 
+  it("leaves a release-paused step pending without logging or consuming it", async () => {
+    const d = deps({ controlledDelivery: vi.fn().mockResolvedValue({ handled: true, paused: true, reason: "no-show-delivery-disabled" }) });
+    const out = await processStep({ enrollment: enrollment(), step: step(), flow: activeFlow }, d, NOW);
+    expect(out).toEqual({ outcome: "skip", reason: "no-show-delivery-disabled" });
+    expect(d.renderMessage).not.toHaveBeenCalled();
+    expect(d.send).not.toHaveBeenCalled();
+    expect(d.logEvent).not.toHaveBeenCalled();
+    expect(d.markStep).not.toHaveBeenCalled();
+  });
+
   it("fails closed when an external workflow exit has no explicit adapter", async () => {
     const d = deps();
     const out = await processStep({

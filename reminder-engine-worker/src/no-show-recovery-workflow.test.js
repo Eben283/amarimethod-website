@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { enroll } from "./enroll.js";
-import { NO_SHOW_RECOVERY, NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
+import { NO_SHOW_RECOVERY, NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 import { defineWorkflow } from "./workflow-definition.js";
 
 const NOW = Date.parse("2026-08-23T10:00:00-07:00");
@@ -29,6 +29,16 @@ describe("No Show Email SMS series source stage", () => {
       waHmG2mHNThPfMVuNJWG: "contact",
     });
     expect(NO_SHOW_RECOVERY.exitOn).toEqual(["confirmed"]);
+  });
+
+  it("keeps the release candidate as a distinct active version", () => {
+    expect(NO_SHOW_RECOVERY_RELEASE_WORKFLOW).toEqual(expect.objectContaining({
+      id: "no-show-recovery",
+      version: 3,
+      executionMode: "active",
+    }));
+    expect(NO_SHOW_RECOVERY_RELEASE_WORKFLOW.nodes).toEqual(NO_SHOW_RECOVERY_WORKFLOW.nodes);
+    expect(NO_SHOW_RECOVERY_WORKFLOW).toEqual(expect.objectContaining({ version: 2, executionMode: "shadow" }));
   });
 
   it("creates only the soft affiliate SMS for affiliate partners", () => {

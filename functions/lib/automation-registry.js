@@ -171,16 +171,17 @@ const ASSESSMENT_NO_SHOW_CUTOVER_READINESS = Object.freeze({
 });
 
 const NO_SHOW_RECOVERY_CUTOVER_READINESS = Object.freeze({
-  status: "not_eligible",
-  label: "Source-reconciled; not eligible for active delivery",
-  summary: "The exact trigger filters, copy, branches, waits, and source reschedule checks are reconciled in shadow code. GHL remains the live sender.",
+  status: "proof_ready",
+  label: "Delivery built; live release still gated",
+  summary: "The exact source path, owned delivery adapter, rebooking exits, and terminal SMS receipt reconciliation are built. GHL remains the live sender until a separately approved release.",
   requirements: Object.freeze([
     Object.freeze({ code: "source_structure_reconciled", status: "proven", label: "Source structure reconciled", detail: "The exact 11 Normal/no-show calendars, five contact-mode filters, affiliate branch, regular three-message branch, two one-day waits, and two appointmentRescheduled=false checks are represented." }),
     Object.freeze({ code: "source_copy_reconciled", status: "proven", label: "Source copy reconciled", detail: "Both SMS messages, email subjects, preheaders, bodies, and destinations are exact source values." }),
-    Object.freeze({ code: "owned_rebooking_equivalence_pending", status: "review", label: "Prove the owned rebooking exit", detail: "GHL checks appointmentRescheduled=false after each wait. The owned design cancels all pending recovery steps on a confirmed rebooking event; an all-DND proof must demonstrate the same stop behavior before both emails." }),
-    Object.freeze({ code: "delivery_adapter_pending", status: "blocked", label: "Prove owned delivery", detail: "The source is reconciled, but the exact email/SMS rendering and receipt path has not been released for this workflow." }),
-    Object.freeze({ code: "native_shadow_proof_pending", status: "review", label: "Prove the no-show lifecycle safely", detail: "Use one approved all-DND fixture to prove ordinary and affiliate branches, both wait points, confirmed-rebooking exit, and zero duplicate sends." }),
-    Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep GHL live until activation", detail: "The Published No Show Email SMS series remains the rollback owner until a separately approved cutover." }),
+    Object.freeze({ code: "owned_rebooking_equivalence_proven", status: "proven", label: "Owned rebooking exit proven", detail: "The controlled all-DND proof demonstrated affiliate and regular enrollment plus confirmed-rebooking cancellation without client sends." }),
+    Object.freeze({ code: "delivery_adapter_built", status: "proven", label: "Owned delivery built", detail: "The exact SMS and Garrett email templates render through the owned GHL conversations and Gmail adapters behind two disabled release gates." }),
+    Object.freeze({ code: "terminal_sms_receipts_built", status: "proven", label: "Terminal SMS receipt reconciliation built", detail: "No Show SMS provider references are reconciled into immutable delivery-status events with flow-specific health evidence." }),
+    Object.freeze({ code: "missed_count_owner_retained", status: "proven", label: "Keep the missed-count owner in GHL", detail: "The separate Published No Show — Increment Missed Count workflow remains the sole counter owner; this cutover replaces only the recovery messages." }),
+    Object.freeze({ code: "ghl_retirement_not_approved", status: "review", label: "Keep GHL live until activation", detail: "The Published No Show Email SMS series remains the rollback sender until a separately approved coordinated cutover." }),
   ]),
 });
 
@@ -221,8 +222,8 @@ function reminderDefinition(flow) {
   }
   if (flow.flowKey === "no-show-recovery") {
     definition.messagePreview = {
-      status: "source_reconciled_shadow",
-      label: "Exact source copy and branch structure; controlled proof and owned delivery still block release.",
+      status: "delivery_built_release_gated",
+      label: "Exact source copy, branch structure, owned delivery, and receipt reconciliation are built; live release remains gated.",
       notices: clone(flow.workflowDocument.nodes.map((node, stepIndex) => ({ stepIndex, ...node.message }))),
       sourceDecisionChecks: clone(flow.workflowDocument.sourceDecisionChecks),
     };

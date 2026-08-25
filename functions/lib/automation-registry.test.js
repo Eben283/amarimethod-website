@@ -162,20 +162,22 @@ describe("owned automation registry", () => {
     expect(noShow.steps.map((step) => step.at)).toEqual(["enroll", "enroll+1440m", "enroll+2880m"]);
   });
 
-  it("reconciles the full GHL no-show source while keeping release proof blocking", () => {
+  it("shows the full GHL no-show source and the gated owned-delivery release", () => {
     const noShow = findAutomationDefinition("reminder", "no-show-recovery");
     expect(noShow).toEqual(expect.objectContaining({
       name: "No Show Email SMS series",
       mode: "shadow",
       trigger: expect.objectContaining({ statuses: ["noshow"], eventTypes: ["normal"] }),
       exits: [expect.objectContaining({ kind: "rebooking", statuses: ["confirmed"], scope: "contact" })],
-      messagePreview: expect.objectContaining({ status: "source_reconciled_shadow", sourceDecisionChecks: expect.any(Array) }),
+      messagePreview: expect.objectContaining({ status: "delivery_built_release_gated", sourceDecisionChecks: expect.any(Array) }),
       cutoverReadiness: expect.objectContaining({
-        status: "not_eligible",
+        status: "proof_ready",
         requirements: expect.arrayContaining([
           expect.objectContaining({ code: "source_copy_reconciled", status: "proven" }),
-          expect.objectContaining({ code: "owned_rebooking_equivalence_pending", status: "review" }),
-          expect.objectContaining({ code: "delivery_adapter_pending", status: "blocked" }),
+          expect.objectContaining({ code: "owned_rebooking_equivalence_proven", status: "proven" }),
+          expect.objectContaining({ code: "delivery_adapter_built", status: "proven" }),
+          expect.objectContaining({ code: "terminal_sms_receipts_built", status: "proven" }),
+          expect.objectContaining({ code: "missed_count_owner_retained", status: "proven" }),
         ]),
       }),
       source: { kind: "owned_code", path: "reminder-engine-worker/src/no-show-recovery-workflow.js" },

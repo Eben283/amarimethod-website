@@ -44,6 +44,7 @@ describe("reconcileDeliveryReceipts", () => {
       loadCandidates: vi.fn(async () => [SENT_SMS]),
       readGhlMessage: vi.fn(async () => ({ message: { id: "message_1", status: "delivered", messageType: "TYPE_SMS" } })),
       appendReceipt,
+      flowKeys: ["initial-in-person"],
     });
 
     expect(result).toEqual({ checked: 1, recorded: 1, pending: 0, errors: 0 });
@@ -70,6 +71,7 @@ describe("reconcileDeliveryReceipts", () => {
       readGhlMessage: vi.fn(async () => ({ message: { status: "pending" } })),
       appendReceipt: vi.fn(),
       limit: 25,
+      flowKeys: ["initial-in-person"],
     });
     expect(put).toHaveBeenCalledOnce();
     expect(put.mock.calls[0][0]).toBe("reminder:delivery-receipts:initial-in-person");
@@ -90,6 +92,7 @@ describe("reconcileDeliveryReceipts", () => {
       loadCandidates: vi.fn(async () => [SENT_SMS]),
       readGhlMessage: vi.fn(async () => ({ message: { status: "pending" } })),
       appendReceipt,
+      flowKeys: ["initial-in-person"],
     });
     expect(result).toEqual({ checked: 1, recorded: 0, pending: 1, errors: 0 });
     expect(appendReceipt).not.toHaveBeenCalled();
@@ -101,8 +104,25 @@ describe("reconcileDeliveryReceipts", () => {
       loadCandidates: vi.fn(async () => [SENT_SMS]),
       readGhlMessage: vi.fn(async () => { throw new Error("provider unavailable"); }),
       appendReceipt,
+      flowKeys: ["initial-in-person"],
     });
     expect(result).toEqual({ checked: 1, recorded: 0, pending: 0, errors: 1 });
     expect(appendReceipt).not.toHaveBeenCalled();
+  });
+
+  it("covers No Show SMS receipts with a separate health record", async () => {
+    const put = vi.fn(async () => undefined);
+    const noShowSms = { ...SENT_SMS, flow_key: "no-show-recovery", definition_version: 3 };
+    const loadCandidates = vi.fn(async (_db, _since, _limit, _bucket, flowKey) => flowKey === "no-show-recovery" ? [noShowSms] : []);
+    const result = await reconcileDeliveryReceipts({ REMINDER_DB: {}, PORTAL_KV: { put } }, Date.parse("2026-08-10T22:05:00.000Z"), {
+      loadCandidates,
+      readGhlMessage: vi.fn(async () => ({ message: { status: "delivered" } })),
+      appendReceipt: vi.fn(async () => true),
+    });
+    expect(result).toEqual({ checked: 1, recorded: 1, pending: 0, errors: 0 });
+    expect(loadCandidates).toHaveBeenCalledTimes(4);
+    expect(put).toHaveBeenCalledTimes(4);
+    const noShowHealth = put.mock.calls.find(([key]) => key === "reminder:delivery-receipts:no-show-recovery");
+    expect(JSON.parse(noShowHealth[1])).toEqual(expect.objectContaining({ flowKey: "no-show-recovery", checked: 1, recorded: 1, status: "healthy" }));
   });
 });

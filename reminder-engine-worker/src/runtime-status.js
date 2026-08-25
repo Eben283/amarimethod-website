@@ -32,6 +32,7 @@ export async function runtimeStatus(env, flowKey) {
     : canonical ? asExecutableWorkflow(canonical) : configured;
   if (!flow) return null;
 
+  const receiptHealthKey = `reminder:delivery-receipts:${flowKey}`;
   const [result, eventResult, receiptHealth] = await Promise.all([env.REMINDER_DB.prepare(
     `SELECT e.enrollment_id, e.contact_id, e.appointment_id, e.definition_version, e.start_at, e.enrolled_at, e.status,
       s.step_index, s.type, s.template, s.due_at, s.status AS step_status
@@ -43,8 +44,8 @@ export async function runtimeStatus(env, flowKey) {
     `SELECT id, ts, engine, flow_key, definition_version, contact_id, appointment_id,
       step_index, action, outcome, channel, message_ref, detail
      FROM automation_events WHERE engine = 'reminder' AND flow_key = ? ORDER BY ts DESC LIMIT 200`,
-  ).bind(flowKey).all(), flowKey === "initial-in-person" && env.PORTAL_KV
-    ? env.PORTAL_KV.get("reminder:delivery-receipts:initial-in-person", "json")
+  ).bind(flowKey).all(), env.PORTAL_KV
+    ? env.PORTAL_KV.get(receiptHealthKey, "json")
     : null]);
 
   const byEnrollment = new Map();
@@ -79,7 +80,8 @@ export async function runtimeStatus(env, flowKey) {
   const cutoverEnabled = flowKey === ASSESSMENT_PAID_BOOKING_WORKFLOW.id
     || (flowKey === "initial-in-person" && env.INITIAL_IN_PERSON_CUTOVER === "enabled")
     || (flowKey === "initial-virtual" && env.INITIAL_VIRTUAL_CUTOVER === "enabled")
-    || (flowKey === FOLLOW_UP_WORKFLOW.id && flow.mode === "active" && env.FOLLOW_UP_DELIVERY_RELEASE === "approved");
+    || (flowKey === FOLLOW_UP_WORKFLOW.id && flow.mode === "active" && env.FOLLOW_UP_DELIVERY_RELEASE === "approved")
+    || (flowKey === NO_SHOW_RECOVERY_WORKFLOW.id && flow.mode === "active" && env.NO_SHOW_DELIVERY_RELEASE === "approved");
   const delivery = canonical
     ? (cutoverEnabled ? "active" : flow.mode === "shadow" ? "shadow" : "disabled")
     : "unpublished";

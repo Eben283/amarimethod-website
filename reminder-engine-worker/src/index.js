@@ -24,7 +24,7 @@ import { runtimeStatus } from "./runtime-status.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
-import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
+import { NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 import { ASSESSMENT_PAID_BOOKING_WORKFLOW } from "../../functions/lib/assessment-paid-booking-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow } from "./workflow-store.js";
 import { appendEvent } from "./store.js";
@@ -157,14 +157,39 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/workflow-release") {
         const body = await request.json();
-        if (body?.workflowId !== INITIAL_VIRTUAL_WORKFLOW.id) return json(400, { error: "unsupported workflow release" });
-        if (env.INITIAL_VIRTUAL_BEHAVIOR_RELEASE !== "approved") {
-          return json(403, { error: "Initial Virtual behavior release is not approved" });
+        if (body?.workflowId === INITIAL_VIRTUAL_WORKFLOW.id) {
+          if (env.INITIAL_VIRTUAL_BEHAVIOR_RELEASE !== "approved") {
+            return json(403, { error: "Initial Virtual behavior release is not approved" });
+          }
+          const document = await publishBundledWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW);
+          await appendEvent(env.REMINDER_DB, {
+            ts: Date.now(), engine: "reminder", flowKey: document.id, definitionVersion: document.version,
+            action: "workflow_published", outcome: "published", detail: { actor: requestedStaffActor(request.headers.get("X-Staff-Actor")), lane: "initial_virtual_behavior_release" },
+          });
+          return json(200, { success: true, document });
         }
-        const document = await publishBundledWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW);
+        if (body?.workflowId !== NO_SHOW_RECOVERY_WORKFLOW.id) return json(400, { error: "unsupported workflow release" });
+        if (env.NO_SHOW_BEHAVIOR_RELEASE !== "approved" || env.NO_SHOW_DELIVERY_RELEASE !== "approved") {
+          return json(403, { error: "No Show behavior and delivery release are not both approved" });
+        }
+        const current = await publishedWorkflow(env.REMINDER_DB, NO_SHOW_RECOVERY_WORKFLOW.id);
+        if (current?.version === NO_SHOW_RECOVERY_RELEASE_WORKFLOW.version && current.executionMode === "active") {
+          return json(200, { success: true, document: current, unchanged: true });
+        }
+        if (current?.version !== NO_SHOW_RECOVERY_WORKFLOW.version || current.executionMode !== "shadow") {
+          return json(409, { error: "No Show published workflow changed; release stopped", document: current });
+        }
+        await saveDraftWorkflow(env.REMINDER_DB, NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
+        const document = await publishDraftWorkflow(
+          env.REMINDER_DB,
+          NO_SHOW_RECOVERY_WORKFLOW.id,
+          NO_SHOW_RECOVERY_RELEASE_WORKFLOW.version,
+          NO_SHOW_RECOVERY_WORKFLOW.version,
+        );
         await appendEvent(env.REMINDER_DB, {
           ts: Date.now(), engine: "reminder", flowKey: document.id, definitionVersion: document.version,
-          action: "workflow_published", outcome: "published", detail: { actor: requestedStaffActor(request.headers.get("X-Staff-Actor")), lane: "initial_virtual_behavior_release" },
+          action: "workflow_published", outcome: "published",
+          detail: { actor: requestedStaffActor(request.headers.get("X-Staff-Actor")), lane: "no_show_behavior_release" },
         });
         return json(200, { success: true, document });
       }
