@@ -1,5 +1,17 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, dropAbsentGhlContacts, ledgerCutoverReview, mirrorReadiness, paymentAccessState, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlAppointment, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, deleteGhlEmailContainerEvent, dropAbsentGhlContacts, ledgerCutoverReview, mirrorReadiness, paymentAccessState, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlAppointment, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+
+describe("GHL email aggregate cleanup", () => {
+  it("deletes only the exact mutable GHL container row", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => ({ bind: (...values) => ({ run: async () => { writes.push({ sql, values }); return { meta: { changes: 1 } }; } }) }),
+    };
+
+    await expect(deleteGhlEmailContainerEvent(db, "container_1")).resolves.toBe(1);
+    expect(writes).toEqual([{ sql: "DELETE FROM communication_events WHERE provider = 'ghl' AND provider_event_id = ?", values: ["container_1"] }]);
+  });
+});
 
 describe("CRM mirror appointment projection isolation", () => {
   it("keeps the established appointment mirror write when shadow storage is unavailable", async () => {
