@@ -262,7 +262,8 @@ export async function fetchGhlMessage(env, messageExternalId) {
 // earlier one in Staff.
 export async function fetchGhlEmail(env, emailMessageExternalId) {
   const payload = await ghlGet(env, `/conversations/messages/email/${encodeURIComponent(emailMessageExternalId)}`);
-  return payload.emailMessage || payload.email || payload.message || payload;
+  const email = payload.emailMessage || payload.email || payload.message || payload;
+  return { ...email, messageType: email.messageType || "TYPE_EMAIL" };
 }
 
 export async function fetchGhlMessageExport(env, cursor = null, limit = 50) {

@@ -109,7 +109,7 @@ describe("GHL contact pagination", () => {
   it("reads an immutable email revision from GHL's email endpoint", async () => {
     fetch.mockResolvedValueOnce(Response.json({ emailMessage: { id: "email_1", direction: "inbound", body: "Reply" } }));
 
-    await expect(fetchGhlEmail(env, "email_1")).resolves.toMatchObject({ id: "email_1", direction: "inbound", body: "Reply" });
+    await expect(fetchGhlEmail(env, "email_1")).resolves.toMatchObject({ id: "email_1", messageType: "TYPE_EMAIL", direction: "inbound", body: "Reply" });
     expect(new URL(fetch.mock.calls.at(-1)[0]).pathname).toBe("/conversations/messages/email/email_1");
   });
 
