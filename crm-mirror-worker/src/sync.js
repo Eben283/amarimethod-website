@@ -16,6 +16,7 @@ import {
   upsertCommunicationEvent,
   upsertCommunicationThread,
   ensureCommunicationThread,
+  deleteGhlEmailContainerEvent,
 } from "./repository.js";
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
 import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlEmail, fetchGhlMessage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
@@ -83,6 +84,11 @@ export async function syncRecentGhlConversations(env, limit, now) {
       const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
       outcome.recordsWritten += 1;
       const listedMessages = await fetchGhlConversationMessages(env, thread.externalId, RECENT_MESSAGE_LIMIT);
+      for (const listedMessage of listedMessages) {
+        if (emailRevisionIds(listedMessage).length) {
+          outcome.recordsWritten += await deleteGhlEmailContainerEvent(env.CRM_DB, listedMessage.id || listedMessage.messageId || listedMessage.emailMessageId);
+        }
+      }
       const rawMessages = await expandGhlMessages(env, listedMessages, { hydrateNewest: true });
       outcome.recordsRead += rawMessages.length - listedMessages.length;
       for (const rawMessage of rawMessages) {
@@ -160,6 +166,11 @@ export async function syncGhlConversations(env, limit, now) {
       const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
       outcome.recordsWritten += 1;
       const listedMessages = await fetchGhlConversationMessages(env, thread.externalId);
+      for (const listedMessage of listedMessages) {
+        if (emailRevisionIds(listedMessage).length) {
+          outcome.recordsWritten += await deleteGhlEmailContainerEvent(env.CRM_DB, listedMessage.id || listedMessage.messageId || listedMessage.emailMessageId);
+        }
+      }
       const rawMessages = await expandGhlMessages(env, listedMessages);
       for (const rawMessage of rawMessages) {
         outcome.recordsRead += 1;

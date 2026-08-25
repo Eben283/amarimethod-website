@@ -223,6 +223,17 @@ export async function upsertCommunicationEvent(db, event, threadId, contactId, n
   return eventId;
 }
 
+// GHL's generic email row is a mutable thread container, not a message. Once
+// its immutable email revisions are available, remove only that provider
+// container from the owned mirror so Staff does not show both representations.
+export async function deleteGhlEmailContainerEvent(db, providerEventId) {
+  if (!providerEventId) return 0;
+  const result = await db.prepare(
+    "DELETE FROM communication_events WHERE provider = 'ghl' AND provider_event_id = ?",
+  ).bind(providerEventId).run();
+  return Number(result.meta?.changes ?? result.changes ?? 0) || 0;
+}
+
 export async function ensureCommunicationThread(db, event, contactId, now) {
   const existing = await db.prepare("SELECT id FROM communication_threads WHERE provider = 'ghl' AND provider_thread_id = ?").bind(event.threadExternalId).first();
   if (existing) return existing.id;

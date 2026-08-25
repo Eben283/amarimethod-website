@@ -18,6 +18,7 @@ const mocks = vi.hoisted(() => ({
   upsertCommunicationEvent: vi.fn(),
   upsertCommunicationThread: vi.fn(),
   ensureCommunicationThread: vi.fn(),
+  deleteGhlEmailContainerEvent: vi.fn(async () => 0),
   fetchGhlAppointmentsForContact: vi.fn(),
   fetchGhlContact: vi.fn(async (_env, id) => ({ externalId: id })),
   fetchGhlContactNotes: vi.fn(async (_env, id) => id === "contact_1" ? [{ externalId: "note_1" }] : [{ externalId: "note_2" }]),
@@ -43,6 +44,7 @@ vi.mock("./repository.js", () => ({
   recordConsentObservation: mocks.recordConsentObservation, backfillNativeBookingConsents: mocks.backfillNativeBookingConsents,
   upsertStripeCharge: mocks.upsertStripeCharge, upsertStripeInvoice: mocks.upsertStripeInvoice, upsertCommunicationEvent: mocks.upsertCommunicationEvent,
   upsertCommunicationThread: mocks.upsertCommunicationThread, ensureCommunicationThread: mocks.ensureCommunicationThread,
+  deleteGhlEmailContainerEvent: mocks.deleteGhlEmailContainerEvent,
 }));
 vi.mock("./providers.js", () => ({
   fetchGhlAppointmentsForContact: mocks.fetchGhlAppointmentsForContact, fetchGhlContact: mocks.fetchGhlContact,
@@ -118,6 +120,7 @@ describe("recent GHL conversation freshness", () => {
 
     expect(mocks.fetchGhlEmail).toHaveBeenNthCalledWith(1, { CRM_DB: {} }, "email_inbound_1");
     expect(mocks.fetchGhlEmail).toHaveBeenNthCalledWith(2, { CRM_DB: {} }, "email_outbound_2");
+    expect(mocks.deleteGhlEmailContainerEvent).toHaveBeenCalledWith({}, "mutable_thread_message");
     expect(mocks.fetchGhlMessage).not.toHaveBeenCalledWith({ CRM_DB: {} }, "mutable_thread_message");
     expect(mocks.upsertCommunicationEvent).toHaveBeenCalledTimes(2);
     expect(mocks.upsertCommunicationEvent).toHaveBeenCalledWith({}, expect.objectContaining({ id: "email_inbound_1", body: "Thanks, I found it." }), "owned_thread_1", "owned_contact_1", "2026-08-25T21:00:00.000Z");
