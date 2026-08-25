@@ -82,7 +82,7 @@ export function normalizeGhlMessage(raw, threadExternalId, contactExternalId) {
     channel,
     direction: messageDirection(raw),
     deliveryStatus: text(raw.status),
-    subject: text(raw.subject),
+    subject: text(raw.subject || raw.meta?.email?.subject),
     body: cleanMessage(raw.body || raw.message),
     occurredAt: typeof occurredAt === "number" ? new Date(occurredAt).toISOString() : text(occurredAt),
     senderLabel: text(raw.fromName || raw.userName),

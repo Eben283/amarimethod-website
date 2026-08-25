@@ -10,6 +10,7 @@ import {
   fetchGhlContactTasks,
   fetchGhlContactsPage,
   fetchGhlConversationsPage,
+  fetchGhlMessage,
   fetchStripeCustomer,
   fetchStripeInvoicesPage,
 } from "./providers.js";
@@ -328,5 +329,13 @@ describe("GHL contact pagination", () => {
     ]);
 
     expect(startedAt).toEqual([1_000, 1_200, 1_400]);
+  });
+
+  it("aborts a stalled GHL read so the serialized reader can continue", async () => {
+    _setGhlProviderTimingForTests({ minIntervalMs: 0, requestTimeoutMs: 5, sleep: async () => {}, random: () => 0 });
+    fetch.mockImplementationOnce(() => new Promise(() => {}));
+    await expect(fetchGhlContact(env, "stalled")).rejects.toThrow("GHL read timed out after 5ms");
+    fetch.mockResolvedValueOnce(Response.json({ message: { id: "message_1" } }));
+    await expect(fetchGhlMessage(env, "message_1")).resolves.toEqual({ id: "message_1" });
   });
 });

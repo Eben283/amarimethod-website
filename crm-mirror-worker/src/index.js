@@ -9,6 +9,7 @@ import { appointmentProjectionReadiness } from "./appointment-projection-store.j
 import {
   activeClientOperations,
   communicationsInbox,
+  communicationMirrorFreshness,
   consentReviewQueue,
   classifyPurchase,
   deleteClientNote,
@@ -200,8 +201,8 @@ function dashboardAccessRecord(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
-  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
+  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
+  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
   const requestedPages = Number(payload?.pages);
@@ -553,6 +554,7 @@ export default {
         return json(200, {
           success: true,
           worker: "amari-crm-mirror",
+          freshness: await communicationMirrorFreshness(env.CRM_DB, new Date().toISOString()),
           threads: await communicationsInbox(env.CRM_DB, { query, limit, actor }),
         });
       }

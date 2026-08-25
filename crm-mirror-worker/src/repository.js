@@ -647,6 +647,16 @@ export function syncHealthForRuns(runs, now = new Date().toISOString()) {
   return { overall, staleAfterMinutes: SYNC_STALE_AFTER_MINUTES, providers };
 }
 
+export async function communicationMirrorFreshness(db, now = new Date().toISOString()) {
+  const run = await db.prepare(
+    `SELECT provider, status, started_at, finished_at, records_read, records_written, failure_detail
+     FROM sync_runs
+     WHERE provider = 'ghl' AND cursor_before LIKE 'conversations-recent:%'
+     ORDER BY datetime(started_at) DESC LIMIT 1`,
+  ).first();
+  return providerSyncHealth(run || null, Date.parse(now));
+}
+
 function completedReadinessEvidence(row, current) {
   if (row) {
     return {
@@ -695,7 +705,7 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT provider, status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'stripe' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT status, finished_at, records_read, records_written, records_skipped, failure_detail FROM sync_runs WHERE provider = 'stripe' AND cursor_before LIKE 'invoices:%' ORDER BY started_at DESC LIMIT 1"),
-    db.prepare("SELECT status, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' AND (cursor_before = 'message-export' OR cursor_before LIKE 'conversations:%') ORDER BY started_at DESC LIMIT 1"),
+    db.prepare("SELECT status, started_at, finished_at, records_read, records_written, failure_detail FROM sync_runs WHERE provider = 'ghl' AND cursor_before LIKE 'conversations-recent:%' ORDER BY started_at DESC LIMIT 1"),
     db.prepare("SELECT status, finished_at, records_read, records_written, records_skipped, failure_detail FROM sync_runs WHERE provider = 'ghl' AND cursor_before LIKE 'client-records:%' ORDER BY started_at DESC LIMIT 1"),
   ]);
   return {
@@ -711,6 +721,7 @@ export async function mirrorStatus(db, now = new Date().toISOString()) {
       events: Number(events.results?.[0]?.count || 0),
       unreadInbound: Number(unread.results?.[0]?.count || 0),
       latestImport: latestCommunicationImport.results?.[0] || null,
+      freshness: providerSyncHealth(latestCommunicationImport.results?.[0] || null, Date.parse(now)),
     },
     clientRecords: {
       latestImport: latestClientRecordImport.results?.[0] || null,

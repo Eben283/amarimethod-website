@@ -18,7 +18,7 @@ import {
   ensureCommunicationThread,
 } from "./repository.js";
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 function result(status = "succeeded") {
@@ -29,6 +29,55 @@ function result(status = "succeeded") {
 // cursor advances through the full mirror across runs instead of doing one large
 // provider read. This is observation-only: these functions write only CRM_DB.
 export const SCHEDULED_SYNC_LIMIT = 50;
+export const RECENT_CONVERSATION_LIMIT = 10;
+
+function newestMessage(messages) {
+  return [...messages].sort((left, right) => Date.parse(right?.dateAdded || right?.createdAt || right?.date || 0) - Date.parse(left?.dateAdded || left?.createdAt || left?.date || 0))[0] || null;
+}
+
+// Always refresh the newest bounded conversation window before historical and
+// contact sweeps. GHL's message-list response can have a stale newest body, so
+// the newest row is hydrated from the authoritative individual-message read.
+export async function syncRecentGhlConversations(env, limit, now) {
+  const boundedLimit = Math.min(RECENT_CONVERSATION_LIMIT, Math.max(1, limit));
+  const runId = await beginSyncRun(env.CRM_DB, "ghl", `conversations-recent:${boundedLimit}`, now);
+  const outcome = result();
+  try {
+    const response = await fetchGhlConversationsPage(env, null, boundedLimit);
+    for (const rawThread of response.conversations) {
+      outcome.recordsRead += 1;
+      const thread = normalizeGhlConversation(rawThread);
+      if (!thread) { outcome.recordsSkipped += 1; continue; }
+      const contactId = await findContactIdByGhlId(env.CRM_DB, thread.contactExternalId);
+      if (!contactId) { outcome.recordsSkipped += 1; continue; }
+      const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
+      outcome.recordsWritten += 1;
+      const rawMessages = await fetchGhlConversationMessages(env, thread.externalId);
+      const newest = newestMessage(rawMessages);
+      let authoritativeNewest = newest;
+      const newestId = newest?.id || newest?.messageId || newest?.emailMessageId;
+      if (newestId) {
+        authoritativeNewest = await fetchGhlMessage(env, newestId);
+        outcome.recordsRead += 1;
+      }
+      for (const rawMessage of rawMessages) {
+        outcome.recordsRead += 1;
+        const candidate = rawMessage === newest ? authoritativeNewest : rawMessage;
+        const message = normalizeGhlMessage(candidate, thread.externalId, thread.contactExternalId);
+        if (!message) { outcome.recordsSkipped += 1; continue; }
+        await upsertCommunicationEvent(env.CRM_DB, message, threadId, contactId, now);
+        outcome.recordsWritten += 1;
+      }
+    }
+    outcome.status = "succeeded";
+  } catch (error) {
+    outcome.status = "failed";
+    outcome.failureDetail = error instanceof Error ? error.message : String(error);
+  }
+  await finishSyncRun(env.CRM_DB, runId, outcome, now);
+  if (outcome.status === "failed") throw new Error(outcome.failureDetail);
+  return outcome;
+}
 
 export async function syncGhl(env, limit, now) {
   const cursorBefore = await getSyncCursor(env.CRM_DB, "ghl");
@@ -294,6 +343,7 @@ export async function syncStripeInvoices(env, limit, now) {
 export async function syncRequestedProviders(env, sources, limit, now, pages = 8) {
   const selected = new Set(sources);
   const results = {};
+  if (selected.has("ghl-conversations-recent")) results.ghlConversationsRecent = await syncRecentGhlConversations(env, limit, now);
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
   if (selected.has("ghl-conversations")) results.ghlConversations = await syncGhlConversations(env, limit, now);
   if (selected.has("ghl-message-export")) results.ghlMessageExport = await backfillGhlMessageExport(env, { pages, pageSize: limit }, now);
@@ -344,6 +394,7 @@ export async function runScheduledSync(env, now) {
   // the complete communication mirror stays current without re-reading page 1.
   // Historic client records are separately capped below provider rate limits.
   for (const [provider, sync, limit] of [
+    ["ghl-conversations-recent", syncRecentGhlConversations, RECENT_CONVERSATION_LIMIT],
     ["ghl", syncGhl, SCHEDULED_SYNC_LIMIT],
     ["ghl-conversations", syncGhlConversations, SCHEDULED_SYNC_LIMIT],
     ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT],

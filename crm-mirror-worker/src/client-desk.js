@@ -35,7 +35,9 @@ const CLIENT_DESK_HTML = `<!doctype html>
   body { background:var(--desk-paper); color:var(--desk-body); font-size:16px; }
   main { width:100%; min-height:100dvh; height:100dvh; padding:0; }
   .desk-toolbar { display:grid; min-height:64px; grid-template-columns:auto minmax(280px,620px) minmax(0,1fr); align-items:center; gap:18px; padding:10px 20px; border-bottom:1px solid var(--desk-line); background:var(--desk-paper); }
-  .desk-toolbar__title { display:flex; align-items:baseline; gap:9px; min-width:0; }
+  .desk-toolbar__title { display:flex; align-items:center; gap:9px; min-width:0; }
+  .mirror-health { position:fixed; z-index:3; top:17px; right:20px; display:inline-flex; align-items:center; min-height:30px; padding:5px 10px; border:1px solid #c9ddd8; border-radius:999px; color:#456860; background:#edf6f3; font-size:12px; font-weight:800; white-space:nowrap; }
+  .mirror-health.degraded { border-color:#dfb66e; color:#77551b; background:#fff7e8; }
   .desk-toolbar h1 { margin:0; color:var(--desk-ink); font-size:20px; line-height:1; white-space:nowrap; }
   .desk-toolbar .eyebrow { color:var(--desk-muted); font-size:12px; white-space:nowrap; }
   .desk-toolbar .page-note { display:none; }
@@ -99,13 +101,14 @@ const CLIENT_DESK_HTML = `<!doctype html>
     .mobile-back { display:inline-flex; }
   }
 </style></head><body><main>
+<div class="mirror-health degraded" id="mirror-health" role="status">Checking mirror…</div>
 <header class="desk-toolbar"><div class="desk-toolbar__title"><span class="eyebrow">Amari Method · staff</span><h1>Communication</h1></div><label class="searchbar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="query" type="search" autocomplete="off" placeholder="Search name, email, or phone" aria-label="Search all contacts" /><span class="count" id="count">Loading…</span></label><p class="page-note">Every mirrored contact, ordered by most recent activity. Client, automated, and operational messages remain visible in the selected record. This mirror does not send messages.</p></header>
 <section class="workspace" id="workspace" aria-label="Complete communication workspace"><aside class="pane inbox"><header class="pane-head"><h2 class="pane-title">All contacts</h2><span class="unread" id="unread" aria-live="polite">—</span></header><ul class="thread-list" id="thread-list"></ul></aside><section class="pane conversation" id="conversation" aria-live="polite"><div class="conversation-empty"><div><strong>Select a contact</strong>Read the complete mirrored chronology without leaving the record.</div></div></section><aside class="pane record" id="record" aria-live="polite"><div class="conversation-empty"><div><strong>Contact record</strong>Contact details, appointments, notes, tasks, and payments appear here.</div></div></aside></section>
 </main><script>
 (() => {
-  const workspace = document.getElementById('workspace'), list = document.getElementById('thread-list'), conversation = document.getElementById('conversation'), record = document.getElementById('record'), query = document.getElementById('query'), count = document.getElementById('count'), unread = document.getElementById('unread');
+  const workspace = document.getElementById('workspace'), list = document.getElementById('thread-list'), conversation = document.getElementById('conversation'), record = document.getElementById('record'), query = document.getElementById('query'), count = document.getElementById('count'), unread = document.getElementById('unread'), mirrorHealth = document.getElementById('mirror-health');
   const requestedExternalContact = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('contact');
-  let requestedContactOpened = false, selected = null, current = [], timer, inboxRequest = 0, detailRequest = 0, detailController = null;
+  let requestedContactOpened = false, selected = null, current = [], mirrorFreshness = null, timer, inboxRequest = 0, detailRequest = 0, detailController = null;
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const initials = (name) => String(name || 'Client').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
   const activityAge = (value) => { if (!value) return '—'; const minutes = Math.max(0, Math.floor((Date.now() - new Date(value).getTime()) / 60000)); if (minutes < 1) return 'Just now'; if (minutes < 60) return minutes + ' minute' + (minutes === 1 ? '' : 's') + ' ago'; const hours = Math.floor(minutes / 60); if (hours < 24) return hours + ' hour' + (hours === 1 ? '' : 's') + ' ago'; const days = Math.floor(hours / 24); return days < 7 ? days + ' day' + (days === 1 ? '' : 's') + ' ago' : new Date(value).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }); };
@@ -289,11 +292,17 @@ const CLIENT_DESK_HTML = `<!doctype html>
   // Each contact appears once in this person-level inbox. A dot is an owned
   // attention marker: it clears only after this signed-in staff member opens
   // the selected record, and returns on a newer inbound source event.
+  function renderMirrorFreshness() {
+    const state = mirrorFreshness?.state || 'missing';
+    const healthy = state === 'healthy';
+    mirrorHealth?.classList?.toggle('degraded', !healthy);
+    if (mirrorHealth) mirrorHealth.textContent = healthy ? 'Mirror current' : 'Degraded · recent messages may be missing';
+  }
   function renderThreads() {
     list.replaceChildren();
     const attentionRows = current.filter((row) => Number(row.unread_inbound_count) > 0).length;
     count.textContent = current.length + ' contact' + (current.length === 1 ? '' : 's');
-    unread.textContent = attentionRows ? attentionRows + ' needs attention' : 'All caught up';
+    unread.textContent = mirrorFreshness?.state === 'healthy' ? (attentionRows ? attentionRows + ' needs attention' : 'All caught up') : 'Mirror degraded';
     if (!current.length) {
       list.innerHTML = '<li class="list-empty">No matching contacts.</li>';
       return;
@@ -329,6 +338,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
       if (!response.ok) throw new Error('unavailable');
       const data = await response.json();
       if (requestId !== inboxRequest) return;
+      mirrorFreshness = data.freshness || null;
+      renderMirrorFreshness();
       current = data.threads || [];
       if (selected && !current.some((row) => row.contact_id === selected)) selected = null;
       renderThreads();
@@ -342,6 +353,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
     } catch (error) {
       if (requestId !== inboxRequest) return;
       current = [];
+      mirrorFreshness = { state: 'failed' };
+      renderMirrorFreshness();
       list.innerHTML = '<li class="list-empty" role="alert">Index unavailable. Refresh to try again.</li>';
       count.textContent = 'Unavailable';
       unread.textContent = '—';
