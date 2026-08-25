@@ -125,11 +125,36 @@ describe("handleWebhook — the GHL appointment ingest on the worker (no Pages n
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.success).toBe(true);
+    expect(body.reliability).toBeUndefined();
     expect(body.actions).toContainEqual(expect.objectContaining({ engine: "reminder", action: "enroll" }));
     expect(body.actions).toContainEqual(expect.objectContaining({ engine: "nurture", action: "exit" }));
     expect(env.REMINDER_DB._enrollments.size).toBe(1);
     expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(fetchMock.mock.calls[0][0]).toBe("https://nurture-engine.example.workers.dev/event");
+  });
+
+  it("does not dispatch when enabled reliability cannot durably establish its published contract", async () => {
+    const guarded = { ...env, FOLLOW_UP_RELIABILITY_SPINE_ENABLED: "enabled" };
+    const followUp = {
+      contact_id: "follow-up-contact", appointment_id: "follow-up-appointment",
+      calendar_id: "SKDVOL8wtUN6Ne0ppbC9", status: "confirmed", event_type: "normal",
+      start_time: "2026-08-25T13:00:00-07:00",
+    };
+    const res = await handleWebhook(req(followUp, SECRET), guarded, Date.now());
+    expect(res.status).toBe(503);
+    expect(await res.json()).toEqual({ error: "Follow-Up reliability receipt unavailable", retryable: true });
+    expect(env.REMINDER_DB._enrollments.size).toBe(0);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/contacts/follow-up-contact");
+  });
+
+  it("keeps unrelated lifecycle traffic independent of the Follow-Up reliability contract", async () => {
+    const guarded = { ...env, FOLLOW_UP_RELIABILITY_SPINE_ENABLED: "enabled" };
+    const res = await handleWebhook(req(rawPayload(), SECRET), guarded, Date.now());
+    expect(res.status).toBe(200);
+    expect((await res.json()).reliability).toBeUndefined();
+    expect(env.REMINDER_DB._enrollments.size).toBe(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it("an unrecognized payload is captured to automation_events (the gx02 alias check) and skipped", async () => {

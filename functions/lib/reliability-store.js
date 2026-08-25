@@ -56,23 +56,17 @@ async function returnAcceptedReplay(db, existing, record, nowMs) {
     throw new Error("existing source identity is not the same accepted lifecycle family");
   }
   const owned = await readAcceptance(db, existing.source_event_id);
-  const expectedObligations = new Map(record.obligations.map((item) => [item.obligationKey, item]));
+  // The first durable acceptance is authoritative. A replay can arrive later or under a newer
+  // runtime, so recomputed immediate deadlines and definition metadata are not expected to
+  // equal the immutable first record. Verify identity/person/appointment and that the atomic
+  // transaction is complete, then return the stored lifecycle unchanged.
   const lifecycleMatches = owned.lifecycle
     && owned.lifecycle.lifecycle_instance_id === record.lifecycle.lifecycleInstanceId
     && owned.lifecycle.family === record.lifecycle.family
     && owned.lifecycle.scope === record.lifecycle.scope
     && owned.lifecycle.person_id === record.lifecycle.personId
-    && owned.lifecycle.appointment_id === record.lifecycle.appointmentId
-    && Number(owned.lifecycle.definition_version) === record.lifecycle.definitionVersion
-    && owned.lifecycle.runtime_version === record.lifecycle.runtimeVersion;
-  const obligationsMatch = owned.obligations.length === record.obligations.length
-    && owned.obligations.every((item) => {
-      const expected = expectedObligations.get(item.obligation_key);
-      return expected && item.obligation_id === expected.obligationId
-        && item.kind === expected.kind && Number(item.deadline_at) === expected.deadlineAt
-        && item.owner_role === expected.ownerRole && item.closer === expected.closer;
-    });
-  if (!lifecycleMatches || !obligationsMatch) throw new Error("existing source event is incomplete");
+    && owned.lifecycle.appointment_id === record.lifecycle.appointmentId;
+  if (!lifecycleMatches || owned.obligations.length === 0) throw new Error("existing source event is incomplete");
   await (await transitionStatement(
     db, existing.source_event_id, "deduplicated", nowMs,
     Number(existing.normalized_retention_until), { identityKey: record.sourceEvent.identityKey },
@@ -143,6 +137,36 @@ export async function acceptLifecycle(db, record, nowMs) {
     throw new Error("durable acceptance did not create the complete lifecycle transaction");
   }
   return { created: changesOf(results[0]) === 1, deduplicated: false, ...owned };
+}
+
+export async function markSourceDispatched(db, { sourceEventId, occurredAt }) {
+  if (!db || !sourceEventId || !Number.isInteger(occurredAt)) {
+    throw new TypeError("database, sourceEventId, and occurredAt are required");
+  }
+  const source = await db.prepare(
+    "SELECT state, normalized_retention_until FROM source_events WHERE source_event_id = ?",
+  ).bind(sourceEventId).first();
+  if (!source || source.state !== "accepted") throw new Error("only an accepted source event can be dispatched");
+  const statement = db.prepare(`INSERT INTO source_event_transitions
+    (source_transition_id, source_event_id, sequence, transition, occurred_at, detail_json, retention_until)
+    SELECT 'srct_' || lower(hex(randomblob(32))), ?,
+      COALESCE((SELECT MAX(sequence) FROM source_event_transitions WHERE source_event_id = ?), 0) + 1,
+      'dispatched', ?, NULL, ?
+    WHERE EXISTS (
+      SELECT 1 FROM lifecycle_instances l
+      JOIN lifecycle_obligations o ON o.lifecycle_instance_id = l.lifecycle_instance_id
+      WHERE l.source_event_id = ?
+    ) AND NOT EXISTS (
+      SELECT 1 FROM source_event_transitions WHERE source_event_id = ? AND transition = 'dispatched'
+    )`).bind(
+    sourceEventId, sourceEventId, occurredAt, Number(source.normalized_retention_until), sourceEventId, sourceEventId,
+  );
+  const result = await statement.run();
+  const dispatched = await db.prepare(
+    "SELECT source_transition_id FROM source_event_transitions WHERE source_event_id = ? AND transition = 'dispatched'",
+  ).bind(sourceEventId).first();
+  if (!dispatched) throw new Error("accepted source event was not durably dispatched");
+  return { created: changesOf(result) === 1, sourceEventId, transitionId: dispatched.source_transition_id };
 }
 
 async function returnRejectedReplay(db, existing, record, nowMs) {

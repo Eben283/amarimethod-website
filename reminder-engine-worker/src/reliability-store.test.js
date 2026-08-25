@@ -3,7 +3,7 @@ import { DatabaseSync } from "node:sqlite";
 import { beforeEach, describe, expect, it } from "vitest";
 import { FOLLOW_UP_FAMILY, buildAcceptedLifecycle, buildRejectedSource } from "../../functions/lib/reliability-contract.js";
 import {
-  acceptLifecycle, leaseObligation, readExceptionQueue, readReliabilityCounts, readReliabilityHealth,
+  acceptLifecycle, leaseObligation, markSourceDispatched, readExceptionQueue, readReliabilityCounts, readReliabilityHealth,
   readSourceEventDetail, recordEvidenceAccess, rejectSourceEvent, transitionException,
 } from "../../functions/lib/reliability-store.js";
 
@@ -98,6 +98,36 @@ describe("atomic source acceptance", () => {
     expect(replay).toMatchObject({ created: false, deduplicated: true });
     expect(raw.prepare("SELECT COUNT(*) count FROM lifecycle_obligations").get().count).toBe(2);
     expect(raw.prepare("SELECT COUNT(*) count FROM source_event_transitions WHERE transition='deduplicated'").get().count).toBe(1);
+  });
+
+  it("keeps the first lifecycle definition and deadlines immutable when a replay arrives under a newer runtime", async () => {
+    const first = await buildAcceptedLifecycle(acceptedInput());
+    await acceptLifecycle(db, first, NOW);
+    const later = await buildAcceptedLifecycle(acceptedInput({
+      runtimeVersion: "git:new-runtime",
+      lifecycle: { ...acceptedInput().lifecycle, definitionVersion: 3, runtimeVersion: "git:new-runtime" },
+      obligations: acceptedInput().obligations.map((item) => ({ ...item, deadlineAt: item.deadlineAt + 50_000 })),
+    }));
+    const replay = await acceptLifecycle(db, later, NOW + 50_000);
+    expect(replay).toMatchObject({ created: false, deduplicated: true });
+    expect(replay.lifecycle).toMatchObject({ definition_version: 2, runtime_version: "git:7f35492" });
+    expect(replay.obligations.map((item) => Number(item.deadline_at)).sort())
+      .toEqual(first.obligations.map((item) => item.deadlineAt).sort());
+  });
+
+  it("records exactly one durable dispatch transition after atomic acceptance", async () => {
+    const record = await buildAcceptedLifecycle(acceptedInput());
+    const accepted = await acceptLifecycle(db, record, NOW);
+    expect(await markSourceDispatched(db, { sourceEventId: accepted.sourceEvent.source_event_id, occurredAt: NOW + 1 }))
+      .toMatchObject({ created: true, sourceEventId: accepted.sourceEvent.source_event_id });
+    expect(await markSourceDispatched(db, { sourceEventId: accepted.sourceEvent.source_event_id, occurredAt: NOW + 2 }))
+      .toMatchObject({ created: false, sourceEventId: accepted.sourceEvent.source_event_id });
+    expect(raw.prepare("SELECT sequence, transition FROM source_event_transitions ORDER BY sequence").all())
+      .toEqual([
+        { sequence: 1, transition: "received" }, { sequence: 2, transition: "authenticated" },
+        { sequence: 3, transition: "normalized" }, { sequence: 4, transition: "accepted" },
+        { sequence: 5, transition: "dispatched" },
+      ]);
   });
 
   it("atomically sequences simultaneous accepted replays", async () => {

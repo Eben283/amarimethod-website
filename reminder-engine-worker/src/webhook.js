@@ -19,6 +19,9 @@ import { forwardEventToEngine } from "../../functions/lib/engine-forward.js";
 import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 import { handleEvent } from "./engine.js";
 import { appendEvent } from "./store.js";
+import { captureFollowUpReliability } from "./follow-up-reliability.js";
+import { publishedWorkflow } from "./workflow-store.js";
+import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const FOLLOW_UP_CALENDAR_IDS = new Set([
@@ -137,8 +140,10 @@ export async function handleWebhook(request, env, nowMs) {
   if (!auth.valid) return json(401, { error: "unauthorized" });
 
   let body;
+  let rawBody;
   try {
-    body = await request.json();
+    rawBody = await request.text();
+    body = JSON.parse(rawBody);
   } catch {
     return json(400, { error: "invalid JSON" });
   }
@@ -211,10 +216,47 @@ export async function handleWebhook(request, env, nowMs) {
   const actions = [];
   const errors = [];
 
+  // The import is inert unless the exact feature flag is enabled. In enabled mode, an
+  // applicable Follow-Up event must be durably accepted or explicitly rejected before the
+  // existing engine dispatches it. A reliability outage returns retryable failure and cannot
+  // fall through to the legacy enrollment path.
+  let reliability;
+  let reliabilityWorkflow = null;
   try {
-    const local = await handleEvent(env, event, nowMs);
+    const reliabilityEnabled = env.FOLLOW_UP_RELIABILITY_SPINE_ENABLED === "enabled";
+    const reliabilityCandidate = reliabilityEnabled && FOLLOW_UP_CALENDAR_IDS.has(event.calendarId);
+    if (reliabilityCandidate) {
+      reliabilityWorkflow = await publishedWorkflow(db, FOLLOW_UP_WORKFLOW.id);
+      reliability = await captureFollowUpReliability({
+        env, event, rawPayload: rawBody, nowMs, workflow: reliabilityWorkflow,
+      });
+    } else {
+      reliability = { enabled: reliabilityEnabled, applicable: false };
+    }
+  } catch {
+    return json(503, { error: "Follow-Up reliability receipt unavailable", retryable: true });
+  }
+  if (reliability.applicable && reliability.accepted === false) {
+    return json(422, {
+      error: "Follow-Up event rejected by the reliability contract",
+      sourceEventId: reliability.sourceEventId,
+      exceptionId: reliability.exceptionId,
+    });
+  }
+
+  try {
+    const local = await handleEvent(env, event, nowMs, {
+      workflowOverrides: reliability.accepted ? [reliabilityWorkflow] : [],
+    });
     actions.push(...local.actions);
   } catch (err) {
+    if (reliability.accepted) {
+      return json(503, {
+        error: "Follow-Up reliability dispatch failed",
+        retryable: true,
+        sourceEventId: reliability.sourceEvent?.source_event_id,
+      });
+    }
     errors.push(`reminder: ${String((err && err.message) || err)}`);
   }
 
@@ -229,5 +271,14 @@ export async function handleWebhook(request, env, nowMs) {
 
   // Always 200 once authenticated + parsed: a consumer hiccup must not become a GHL
   // retry storm; failures are visible on the errors list + automation_events.
-  return json(200, { success: true, actions, errors });
+  return json(200, {
+    success: true, actions, errors,
+    ...(reliability.accepted ? {
+      reliability: {
+        sourceEventId: reliability.sourceEvent?.source_event_id,
+        lifecycleInstanceId: reliability.lifecycle?.lifecycle_instance_id,
+        deduplicated: reliability.deduplicated,
+      },
+    } : {}),
+  });
 }
