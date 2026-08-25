@@ -10,6 +10,7 @@ import {
   fetchGhlContactTasks,
   fetchGhlContactsPage,
   fetchGhlConversationsPage,
+  fetchGhlEmail,
   fetchGhlMessage,
   fetchStripeCustomer,
   fetchStripeInvoicesPage,
@@ -103,6 +104,13 @@ describe("GHL contact pagination", () => {
     await expect(fetchGhlContactTasks(env, "contact_1")).resolves.toEqual([{ id: "task_1" }]);
     expect(new URL(fetch.mock.calls[0][0]).searchParams.has("locationId")).toBe(false);
     expect(new URL(fetch.mock.calls[1][0]).searchParams.has("locationId")).toBe(false);
+  });
+
+  it("reads an immutable email revision from GHL's email endpoint", async () => {
+    fetch.mockResolvedValueOnce(Response.json({ emailMessage: { id: "email_1", direction: "inbound", body: "Reply" } }));
+
+    await expect(fetchGhlEmail(env, "email_1")).resolves.toMatchObject({ id: "email_1", direction: "inbound", body: "Reply" });
+    expect(new URL(fetch.mock.calls.at(-1)[0]).pathname).toBe("/conversations/messages/email/email_1");
   });
 
   it("treats deleted GHL contacts as absent for completeness cleanup", async () => {

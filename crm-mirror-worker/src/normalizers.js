@@ -40,6 +40,20 @@ function cleanMessage(value) {
   return source ? source.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim() || null : null;
 }
 
+function cleanEmailMessage(value) {
+  const cleaned = cleanMessage(value);
+  if (!cleaned) return null;
+  return cleaned
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&amp;/gi, "&")
+    .replace(/^(?:(?:\.?(?:x_)?ProseMirror\s*>\s*p\.[^{]+|P)\s*\{[^}]*\}\s*(?:-->)?\s*)+/i, "")
+    .replace(/\s+From:\s+[\s\S]*?\s+Sent:\s+[\s\S]*$/i, "")
+    .replace(/\s+/g, " ")
+    .trim() || null;
+}
+
 function messageChannel(value) {
   const type = String(value || "").toUpperCase();
   if (type.includes("EMAIL") || type === "3") return "email";
@@ -83,7 +97,7 @@ export function normalizeGhlMessage(raw, threadExternalId, contactExternalId) {
     direction: messageDirection(raw),
     deliveryStatus: text(raw.status),
     subject: text(raw.subject || raw.meta?.email?.subject),
-    body: cleanMessage(raw.body || raw.message),
+    body: channel === "email" ? cleanEmailMessage(raw.body || raw.message) : cleanMessage(raw.body || raw.message),
     occurredAt: typeof occurredAt === "number" ? new Date(occurredAt).toISOString() : text(occurredAt),
     senderLabel: text(raw.fromName || raw.userName),
   };

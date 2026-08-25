@@ -18,7 +18,7 @@ import {
   ensureCommunicationThread,
 } from "./repository.js";
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
-import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlMessage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
+import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlEmail, fetchGhlMessage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 function result(status = "succeeded") {
@@ -30,9 +30,39 @@ function result(status = "succeeded") {
 // provider read. This is observation-only: these functions write only CRM_DB.
 export const SCHEDULED_SYNC_LIMIT = 50;
 export const RECENT_CONVERSATION_LIMIT = 10;
+export const RECENT_MESSAGE_LIMIT = 20;
 
 function newestMessage(messages) {
   return [...messages].sort((left, right) => Date.parse(right?.dateAdded || right?.createdAt || right?.date || 0) - Date.parse(left?.dateAdded || left?.createdAt || left?.date || 0))[0] || null;
+}
+
+function emailRevisionIds(raw) {
+  const ids = raw?.meta?.email?.messageIds || raw?.meta?.email?.email?.messageIds;
+  return Array.isArray(ids) ? [...new Set(ids.filter((value) => typeof value === "string" && value.trim()))] : [];
+}
+
+async function expandGhlMessages(env, rawMessages, { hydrateNewest = false } = {}) {
+  const newest = hydrateNewest ? newestMessage(rawMessages) : null;
+  const expanded = [];
+  const seenEmailIds = new Set();
+  for (const rawMessage of rawMessages) {
+    const revisionIds = emailRevisionIds(rawMessage);
+    if (revisionIds.length) {
+      for (const revisionId of revisionIds) {
+        if (seenEmailIds.has(revisionId)) continue;
+        seenEmailIds.add(revisionId);
+        expanded.push(await fetchGhlEmail(env, revisionId));
+      }
+      continue;
+    }
+    if (hydrateNewest && rawMessage === newest) {
+      const newestId = rawMessage?.id || rawMessage?.messageId || rawMessage?.emailMessageId;
+      expanded.push(newestId ? await fetchGhlMessage(env, newestId) : rawMessage);
+    } else {
+      expanded.push(rawMessage);
+    }
+  }
+  return expanded;
 }
 
 // Always refresh the newest bounded conversation window before historical and
@@ -52,18 +82,12 @@ export async function syncRecentGhlConversations(env, limit, now) {
       if (!contactId) { outcome.recordsSkipped += 1; continue; }
       const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
       outcome.recordsWritten += 1;
-      const rawMessages = await fetchGhlConversationMessages(env, thread.externalId);
-      const newest = newestMessage(rawMessages);
-      let authoritativeNewest = newest;
-      const newestId = newest?.id || newest?.messageId || newest?.emailMessageId;
-      if (newestId) {
-        authoritativeNewest = await fetchGhlMessage(env, newestId);
-        outcome.recordsRead += 1;
-      }
+      const listedMessages = await fetchGhlConversationMessages(env, thread.externalId, RECENT_MESSAGE_LIMIT);
+      const rawMessages = await expandGhlMessages(env, listedMessages, { hydrateNewest: true });
+      outcome.recordsRead += rawMessages.length - listedMessages.length;
       for (const rawMessage of rawMessages) {
         outcome.recordsRead += 1;
-        const candidate = rawMessage === newest ? authoritativeNewest : rawMessage;
-        const message = normalizeGhlMessage(candidate, thread.externalId, thread.contactExternalId);
+        const message = normalizeGhlMessage(rawMessage, thread.externalId, thread.contactExternalId);
         if (!message) { outcome.recordsSkipped += 1; continue; }
         await upsertCommunicationEvent(env.CRM_DB, message, threadId, contactId, now);
         outcome.recordsWritten += 1;
@@ -135,7 +159,8 @@ export async function syncGhlConversations(env, limit, now) {
       if (!contactId) { outcome.recordsSkipped += 1; continue; }
       const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
       outcome.recordsWritten += 1;
-      const rawMessages = await fetchGhlConversationMessages(env, thread.externalId);
+      const listedMessages = await fetchGhlConversationMessages(env, thread.externalId);
+      const rawMessages = await expandGhlMessages(env, listedMessages);
       for (const rawMessage of rawMessages) {
         outcome.recordsRead += 1;
         const message = normalizeGhlMessage(rawMessage, thread.externalId, thread.contactExternalId);

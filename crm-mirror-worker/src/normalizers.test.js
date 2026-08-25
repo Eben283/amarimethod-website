@@ -22,6 +22,15 @@ describe("CRM mirror normalizers", () => {
       .toMatchObject({ externalId: "message_1", channel: "sms", direction: "inbound", body: "Can we reschedule?" });
   });
 
+  it("keeps only the current email reply instead of provider CSS and quoted history", () => {
+    expect(normalizeGhlMessage({
+      id: "email_1", messageType: "TYPE_EMAIL", direction: "inbound", dateAdded: "2026-08-25T18:28:06.664Z",
+      body: "<style>P {margin-top:0;margin-bottom:0;}</style>P {margin-top:0;margin-bottom:0;} Thanks, Eben ... I found it in Junk — good call!&nbsp; From: Eben Forrest &lt;eben@amarimethod.com&gt; Sent: Tuesday, August 25, 2026 10:44 AM Previous message",
+    }, "thread_1", "contact_1")).toMatchObject({
+      externalId: "email_1", channel: "email", direction: "inbound", body: "Thanks, Eben ... I found it in Junk — good call!",
+    });
+  });
+
   it("normalizes a GHL contact without treating the pipeline as data", () => {
     expect(normalizeGhlContact({
       id: "ghl_1",

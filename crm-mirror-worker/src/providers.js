@@ -256,6 +256,15 @@ export async function fetchGhlMessage(env, messageExternalId) {
   return payload.message || payload;
 }
 
+// Email threads are represented in the generic message list by one mutable
+// container row. Its meta.email.messageIds entries are the immutable email
+// revisions that must be mirrored individually or a later reply overwrites an
+// earlier one in Staff.
+export async function fetchGhlEmail(env, emailMessageExternalId) {
+  const payload = await ghlGet(env, `/conversations/messages/email/${encodeURIComponent(emailMessageExternalId)}`);
+  return payload.emailMessage || payload.email || payload.message || payload;
+}
+
 export async function fetchGhlMessageExport(env, cursor = null, limit = 50) {
   const params = new URLSearchParams({ locationId: env.GHL_LOCATION_ID, limit: String(Math.min(100, Math.max(10, limit))) });
   if (cursor) params.set("cursor", cursor);
