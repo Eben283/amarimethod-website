@@ -428,6 +428,11 @@ export async function getAutomationFamily(
   return { ...detail, enrollments };
 }
 
+export async function getReliabilitySpine(sourceEventId?: string): Promise<import('../types/staff').ReliabilitySpineResponse> {
+  const suffix = sourceEventId ? `&sourceEventId=${encodeURIComponent(sourceEventId)}` : '';
+  return fetchApi(`/staff-automations?view=reliability${suffix}`);
+}
+
 export async function saveAutomationWorkflowDraft(document: import('../types/staff').CanonicalWorkflow): Promise<{ success: true; document: import('../types/staff').CanonicalWorkflow; publishedVersion: number }> {
   return fetchApi('/staff-automations?view=workflow-draft', { method: 'POST', body: JSON.stringify({ document }) });
 }

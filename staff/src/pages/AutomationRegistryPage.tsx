@@ -23,6 +23,7 @@ import {
   getAutomationFamilies,
   getAutomationFamily,
   getContactAutomationEvidence,
+  getReliabilitySpine,
   publishAutomationWorkflow,
   saveAutomationWorkflowDraft,
   searchOwnedContacts,
@@ -35,6 +36,7 @@ import type {
   CanonicalWorkflow,
   ContactAutomationEvidence,
   ContactAutomationEnrollment,
+  ReliabilitySpineResponse,
 } from '../types/staff';
 const MASTER_MAP_LANES: Array<{ key: AutomationFamily['lifecycle']; label: string; description: string }> = [
   { key: 'platform', label: 'Shared signals', description: 'Events that feed other automations' },
@@ -121,6 +123,8 @@ export default function AutomationRegistryPage() {
   const [personEvidence, setPersonEvidence] = useState<ContactAutomationEvidence | null>(null);
   const [personError, setPersonError] = useState('');
   const [personLoading, setPersonLoading] = useState(false);
+  const [reliability, setReliability] = useState<ReliabilitySpineResponse | null>(null);
+  const [reliabilityDetailLoading, setReliabilityDetailLoading] = useState(false);
 
   const selectedFamilyKey = routeFamilyKey || params.get('family') || '';
   const selectedContactId = params.get('contact') || '';
@@ -147,6 +151,25 @@ export default function AutomationRegistryPage() {
       .then((response) => { if (!cancelled) setFamilyDetail(response); })
       .catch((error) => { if (!cancelled) setRegistryError(error instanceof Error ? error.message : 'Could not open that automation family.'); })
       .finally(() => { if (!cancelled) setFamilyLoading(false); });
+    return () => { cancelled = true; };
+  }, [selectedFamilyKey]);
+
+  useEffect(() => {
+    if (selectedFamilyKey !== 'follow-up-session-reminders') {
+      setReliability(null);
+      return;
+    }
+    let cancelled = false;
+    getReliabilitySpine()
+      .then((response) => { if (!cancelled) setReliability(response); })
+      .catch(() => { if (!cancelled) setReliability({
+        success: true,
+        configured: false,
+        family: 'follow-up-session-reminders',
+        health: { truth: 'Unknown', reason: 'staff_read_failed', checkedAt: Date.now() },
+        sourceEvents: [],
+        exceptions: [],
+      }); });
     return () => { cancelled = true; };
   }, [selectedFamilyKey]);
 
@@ -186,6 +209,12 @@ export default function AutomationRegistryPage() {
 
   function revealAutomationEvidence() {
     document.getElementById('automation-evidence')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  async function openReliabilitySource(sourceEventId: string) {
+    setReliabilityDetailLoading(true);
+    try { setReliability(await getReliabilitySpine(sourceEventId)); }
+    finally { setReliabilityDetailLoading(false); }
   }
 
   // A family with a Worker definition must render that definition, not fall
@@ -239,6 +268,9 @@ export default function AutomationRegistryPage() {
                 personLoading={personLoading}
                 personError={personError}
                 focused={isFocusedInspector}
+                reliability={reliability}
+                reliabilityDetailLoading={reliabilityDetailLoading}
+                onOpenReliabilitySource={openReliabilitySource}
               />
             )}
           </section>
@@ -610,6 +642,9 @@ function FamilyDetail({
   personLoading,
   personError,
   focused,
+  reliability,
+  reliabilityDetailLoading,
+  onOpenReliabilitySource,
 }: {
   detail: AutomationFamilyResponse;
   person: AutomationPerson | null;
@@ -617,6 +652,9 @@ function FamilyDetail({
   personLoading: boolean;
   personError: string;
   focused: boolean;
+  reliability: ReliabilitySpineResponse | null;
+  reliabilityDetailLoading: boolean;
+  onOpenReliabilitySource: (sourceEventId: string) => Promise<void>;
 }) {
   const family = detail.family;
   const isInPersonCutover = family.key === 'initial-session-reminders';
@@ -676,6 +714,55 @@ function FamilyDetail({
       )}
 
       {family.kind === 'evidence_only' && <div className="automation-evidence-banner"><Archive size={17} /><span><strong>Not an operating family.</strong> These test records are retained only so the 82-record inventory remains exact.</span></div>}
+
+      {family.key === 'follow-up-session-reminders' && reliability && (
+        <section className={`automation-reliability-card is-${reliability.health.truth.toLowerCase()}`} aria-label="Follow-Up lifecycle reliability">
+          <header>
+            <div><Database size={18} /><span>Lifecycle reliability</span></div>
+            <strong>{reliability.health.truth}</strong>
+          </header>
+          <p>{reliability.health.truth === 'Known'
+            ? `Authoritative coverage is fresh as of ${exactTime(reliability.health.coveredAt)}.`
+            : `This view cannot prove an empty queue: ${humanize(reliability.health.reason)}. Checked ${exactTime(reliability.health.checkedAt)}.`}</p>
+          <dl>
+            <div><dt>Durable source events</dt><dd>{reliability.access === 'assigned_actions_only'
+              ? 'Restricted'
+              : reliability.health.truth === 'Known' ? reliability.sourceEventTotal ?? 'Unknown' : 'Unknown'}</dd></div>
+            <div><dt>Open exceptions</dt><dd>{reliability.health.truth === 'Known' ? reliability.exceptionTotal ?? 'Unknown' : 'Unknown'}</dd></div>
+          </dl>
+          {reliability.sourceEvents.length > 0 && <details>
+            <summary>Source-event details</summary>
+            <div className="automation-reliability-events">
+              {reliability.sourceEvents.map((event) => <article key={event.source_event_id}>
+                <strong>{event.state === 'accepted' ? 'Durably accepted' : 'Rejected with evidence'}</strong>
+                <span>{exactTime(event.received_at)}</span>
+                <p>Authentication: {humanize(event.authentication_result)} · Normalization: {humanize(event.normalization_state)} · Obligations: {event.obligation_count}</p>
+                <code>{event.source_event_id}</code>
+                {reliability.access === 'evidence_control' && <button type="button" onClick={() => void onOpenReliabilitySource(event.source_event_id)} disabled={reliabilityDetailLoading}>Inspect exact chain</button>}
+              </article>)}
+            </div>
+          </details>}
+          {reliability.sourceEventDetail && <section className="automation-reliability-detail" aria-label="Exact source event chain">
+            <h4>Exact durable chain</h4>
+            <ol>{reliability.sourceEventDetail.transitions.map((item) => <li key={item.source_transition_id}><strong>{humanize(item.transition)}</strong><span>{exactTime(item.occurred_at)}</span></li>)}</ol>
+            <h4>Normalized record</h4>
+            <pre>{(() => { try { return structured(JSON.parse(reliability.sourceEventDetail.sourceEvent.normalized_json || '{}')); } catch { return reliability.sourceEventDetail.sourceEvent.normalized_json || 'No normalized record'; } })()}</pre>
+            <h4>Lifecycle binding</h4>
+            {reliability.sourceEventDetail.lifecycle
+              ? <p>{reliability.sourceEventDetail.lifecycle.family} · {reliability.sourceEventDetail.lifecycle.scope} · {reliability.sourceEventDetail.lifecycle.lifecycle_instance_id}</p>
+              : <p>No lifecycle was created; this source remains an owned exception.</p>}
+            <h4>Expected obligations</h4>
+            {reliability.sourceEventDetail.obligations.length
+              ? <ul>{reliability.sourceEventDetail.obligations.map((item) => <li key={item.obligation_id}><strong>{humanize(item.obligation_key)}</strong> — {humanize(item.state)} by {exactTime(item.deadline_at)}</li>)}</ul>
+              : <p>No obligations were materialized.</p>}
+          </section>}
+          {reliability.exceptions.length > 0 && <div className="automation-reliability-exceptions">
+            {reliability.exceptions.map((item) => <article key={item.exception_id}>
+              <strong>{humanize(item.kind)}</strong><span>{item.accountable_owner}</span><p>{item.next_safe_action}</p>
+            </article>)}
+          </div>}
+        </section>
+      )}
 
       <div className="automation-implementation-strip">
         {family.implementationUnits.map((unit) => <span key={unit}>{IMPLEMENTATION_LABELS[unit] || humanize(unit)}</span>)}

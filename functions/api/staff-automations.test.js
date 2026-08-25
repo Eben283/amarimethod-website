@@ -12,7 +12,7 @@ import { onRequestGet, onRequestPost } from "./staff-automations.js";
 import { requireStaffAuth, requireEbenStaffAuth } from "../lib/endpoint-guards.js";
 
 const deny = () => ({ error: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }) });
-const allow = () => ({ error: null, payload: { role: "staff" } });
+const allow = () => ({ error: null, payload: { role: "staff", user: "Eben" } });
 
 function makeContext(query, env = {}) {
   return {
@@ -67,6 +67,41 @@ describe("staff-automations — views", () => {
       events: [],
     }));
     expect(body.evidence.gaps.map((gap) => gap.code)).toContain("execution_store_unavailable");
+  });
+
+  it("reliability view reports Unknown instead of a healthy empty queue when authority is absent", async () => {
+    const res = await onRequestGet(makeContext("view=reliability", {}));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(expect.objectContaining({
+      success: true,
+      configured: false,
+      family: "follow-up-session-reminders",
+      health: expect.objectContaining({ truth: "Unknown", reason: "authority_unavailable" }),
+      sourceEvents: [],
+      exceptions: [],
+    }));
+  });
+
+  it("rejects an authenticated but unassigned staff identity before reading reliability evidence", async () => {
+    requireStaffAuth.mockResolvedValueOnce({ error: null, payload: { role: "staff", user: "Other" } });
+    const db = { prepare: vi.fn() };
+    const res = await onRequestGet(makeContext("view=reliability", { AUTOMATION_DB: db }));
+    expect(res.status).toBe(403);
+    expect(db.prepare).not.toHaveBeenCalled();
+  });
+
+  it("reliability view stays truthful instead of returning 500 before the additive schema is applied", async () => {
+    requireStaffAuth.mockResolvedValueOnce({ error: null, payload: { role: "staff", user: "Eben" } });
+    const db = { prepare: () => ({ first: async () => { throw new Error("no such table: reliability_schema_versions"); } }) };
+    const res = await onRequestGet(makeContext("view=reliability", { AUTOMATION_DB: db }));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(expect.objectContaining({
+      configured: true,
+      health: expect.objectContaining({ truth: "Unknown", reason: "authority_read_failed" }),
+      sourceEvents: [],
+      exceptions: [],
+      access: "evidence_control",
+    }));
   });
 
   it("registry view is available without D1 and exposes versioned owned definitions", async () => {
