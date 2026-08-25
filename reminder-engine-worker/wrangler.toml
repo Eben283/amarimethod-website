@@ -41,6 +41,11 @@ service = "nurture-engine"
 [vars]
 NURTURE_ENGINE_URL = "https://nurture-engine.eben-fa2.workers.dev"
 
+# Follow-Up reliability capture is deliberately absent from this ordinary deployment config.
+# A separate evidence-capture release must provide all four exact bindings or the path fails closed:
+# FOLLOW_UP_RELIABILITY_SPINE_ENABLED=enabled, FOLLOW_UP_RELIABILITY_SOURCE_VERSION,
+# SOURCE_REVISION, and WORKER_VERSION. Adding the import alone performs no reliability read/write.
+
 [observability]
 enabled = true
 head_sampling_rate = 1

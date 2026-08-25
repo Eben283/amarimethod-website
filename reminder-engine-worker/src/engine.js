@@ -33,15 +33,16 @@ export function mergeExecutionFlows(staticFlows, canonicalFlows) {
   ];
 }
 
-async function executionFlows(env) {
+async function executionFlows(env, workflowOverrides = []) {
+  const overrideById = new Map(workflowOverrides.map((workflow) => [workflow.id, workflow]));
   // The in-person version predates the separately gated release lane. Virtual
   // deliberately does not seed here: an ordinary deployment must not publish,
   // enroll, shadow, backfill, or otherwise change its live behavior.
   const documents = [
     await ensurePublishedWorkflow(env.REMINDER_DB, INITIAL_IN_PERSON_WORKFLOW),
-    await publishedWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW.id),
-    await publishedWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW.id),
-    await publishedWorkflow(env.REMINDER_DB, NO_SHOW_RECOVERY_WORKFLOW.id),
+    overrideById.get(INITIAL_VIRTUAL_WORKFLOW.id) || await publishedWorkflow(env.REMINDER_DB, INITIAL_VIRTUAL_WORKFLOW.id),
+    overrideById.get(FOLLOW_UP_WORKFLOW.id) || await publishedWorkflow(env.REMINDER_DB, FOLLOW_UP_WORKFLOW.id),
+    overrideById.get(NO_SHOW_RECOVERY_WORKFLOW.id) || await publishedWorkflow(env.REMINDER_DB, NO_SHOW_RECOVERY_WORKFLOW.id),
   ].filter(Boolean);
   return mergeExecutionFlows(FLOWS, documents.map(asExecutableWorkflow));
 }
@@ -51,12 +52,12 @@ async function executionFlows(env) {
  * cancelOn matches. Idempotent (saveEnrollment de-dupes a repeated booking). Returns { actions }
  * for the dispatch seam to echo.
  */
-export async function handleEvent(env, event, nowMs) {
+export async function handleEvent(env, event, nowMs, { workflowOverrides = [] } = {}) {
   const db = env.REMINDER_DB;
   const actions = [];
   if (!event || event.recognized !== true) return { actions };
 
-  const flows = (await executionFlows(env)).filter((flow) => flow.calendarIds.includes(event.calendarId));
+  const flows = (await executionFlows(env, workflowOverrides)).filter((flow) => flow.calendarIds.includes(event.calendarId));
   for (const flow of flows) {
     if (flow.enrollOn.statuses.includes(event.type)) {
       const enrollment = enroll(event, flow, nowMs);
