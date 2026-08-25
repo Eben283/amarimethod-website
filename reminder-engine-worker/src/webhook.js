@@ -236,14 +236,6 @@ export async function handleWebhook(request, env, nowMs) {
   } catch {
     return json(503, { error: "Follow-Up reliability receipt unavailable", retryable: true });
   }
-  if (reliability.applicable && reliability.accepted === false) {
-    return json(422, {
-      error: "Follow-Up event rejected by the reliability contract",
-      sourceEventId: reliability.sourceEventId,
-      exceptionId: reliability.exceptionId,
-    });
-  }
-
   try {
     const local = await handleEvent(env, event, nowMs, {
       workflowOverrides: reliability.accepted ? [reliabilityWorkflow] : [],
@@ -269,14 +261,21 @@ export async function handleWebhook(request, env, nowMs) {
   if (fwd.ok && !fwd.skipped) actions.push(...(fwd.actions || []));
   if (!fwd.ok) errors.push(`nurture: ${fwd.error}`);
 
-  // Always 200 once authenticated + parsed: a consumer hiccup must not become a GHL
-  // retry storm; failures are visible on the errors list + automation_events.
+  // Always 200 once authenticated, parsed, and durably classified: an ineligible Follow-Up
+  // status is an accepted transport receipt, not a failed delivery. Its explicit reliability
+  // rejection prevents enrollment while the existing dispatch still handles cancellation,
+  // no-show, and other lifecycle routing. Only a persistence outage above remains retryable.
   return json(200, {
     success: true, actions, errors,
-    ...(reliability.accepted ? {
+    ...(reliability.applicable ? {
       reliability: {
-        sourceEventId: reliability.sourceEvent?.source_event_id,
-        lifecycleInstanceId: reliability.lifecycle?.lifecycle_instance_id,
+        sourceEventId: reliability.sourceEvent?.source_event_id || reliability.sourceEventId,
+        ...(reliability.accepted ? {
+          lifecycleInstanceId: reliability.lifecycle?.lifecycle_instance_id,
+        } : {
+          rejected: true,
+          exceptionId: reliability.exceptionId,
+        }),
         deduplicated: reliability.deduplicated,
       },
     } : {}),
