@@ -110,4 +110,14 @@ export const NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
   ],
 });
 
+// This candidate is inert until the separately gated behavior-release endpoint
+// replaces the already-published v2 shadow document. Keeping the release as a
+// distinct version makes the source, D1 publication, and rollback boundary
+// explicit rather than letting an environment variable silently redefine v2.
+export const NO_SHOW_RECOVERY_RELEASE_WORKFLOW = defineWorkflow({
+  ...NO_SHOW_RECOVERY_WORKFLOW,
+  version: 3,
+  executionMode: "active",
+});
+
 export const NO_SHOW_RECOVERY = executableFlow(NO_SHOW_RECOVERY_WORKFLOW);

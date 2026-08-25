@@ -20,6 +20,7 @@ import { deliverFollowUpStep, followUpDeliveryEligibility, removeFromGhlWorkflow
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
+import { deliverNoShowStep, noShowDeliveryEligibility } from "./no-show-delivery.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
 
 export function mergeExecutionFlows(staticFlows, canonicalFlows) {
@@ -253,6 +254,18 @@ export async function runSweep(env, nowMs, limit = 100) {
       if (followUpCutover.eligible) {
         const result = await deliverFollowUpStep(env, step, enrollment, {}, flow.workflowDocument);
         return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
+      }
+      const noShowCutover = noShowDeliveryEligibility(env, flow, step, enrollment);
+      if (noShowCutover.eligible) {
+        const result = await deliverNoShowStep(env, step, enrollment, {}, flow.workflowDocument);
+        return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
+      }
+      // An active No Show document without its exact delivery release is
+      // paused, not failed and not consumed. This makes rollback ordering
+      // honest: republish GHL first, remove the owned gate second, then
+      // reconcile any still-pending owned steps without losing them.
+      if (flow.flowKey === NO_SHOW_RECOVERY_WORKFLOW.id && flow.mode === "active") {
+        return { handled: true, paused: true, reason: noShowCutover.reason };
       }
       const cutover = assessmentCutoverEligibility(env, flow, step, enrollment);
       if (!cutover.eligible) return null;

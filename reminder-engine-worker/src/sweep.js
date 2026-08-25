@@ -66,6 +66,9 @@ export async function processStep({ enrollment, step, flow }, deps, nowMs) {
   if (deps.controlledDelivery) {
     try {
       const delivered = await deps.controlledDelivery(flow, step, enrollment);
+      if (delivered?.paused) {
+        return { outcome: "skip", reason: delivered.reason || "delivery-paused" };
+      }
       if (delivered?.handled) {
         const ok = delivered.result?.success === true;
         const isTest = delivered.kind === "test";
