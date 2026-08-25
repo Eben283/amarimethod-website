@@ -7,6 +7,7 @@ const GHL_MIN_INTERVAL_MS = 200;
 const GHL_MAX_RETRY_DELAY_MS = 10_000;
 const GHL_FALLBACK_BASE_MS = 250;
 const GHL_SERVER_JITTER_MS = 100;
+const GHL_REQUEST_TIMEOUT_MS = 8_000;
 
 let ghlReadTail = Promise.resolve();
 let lastGhlRequestAt = null;
@@ -19,6 +20,7 @@ function defaultTiming() {
     now: () => Date.now(),
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
     random: () => Math.random(),
+    requestTimeoutMs: GHL_REQUEST_TIMEOUT_MS,
   };
 }
 
@@ -115,9 +117,29 @@ async function ghlResponse(env, path) {
 
     for (let attempt = 1; attempt <= GHL_MAX_ATTEMPTS; attempt += 1) {
       await paceGhlRead(clock);
-      const response = await fetch(`${GHL_BASE}${path}`, {
+      const controller = new AbortController();
+      let timeoutId;
+      const request = fetch(`${GHL_BASE}${path}`, {
         headers: { Authorization: `Bearer ${token}`, Version: "2021-07-28" },
+        signal: controller.signal,
       });
+      const timeout = new Promise((_, reject) => {
+        timeoutId = setTimeout(() => {
+          controller.abort();
+          reject(new Error(`GHL read timed out after ${clock.requestTimeoutMs}ms`));
+        }, clock.requestTimeoutMs);
+      });
+      let response;
+      try {
+        response = await Promise.race([request, timeout]);
+      } catch (error) {
+        if (controller.signal.aborted || error?.name === "AbortError") {
+          throw new Error(`GHL read timed out after ${clock.requestTimeoutMs}ms`);
+        }
+        throw error;
+      } finally {
+        clearTimeout(timeoutId);
+      }
       if (response.status !== 429) return response;
       if (attempt === GHL_MAX_ATTEMPTS) {
         const finalDelay = retryDelayMs(response, attempt, clock);
@@ -224,6 +246,14 @@ export async function fetchGhlConversationMessages(env, conversationExternalId, 
   const payload = await ghlGet(env, `/conversations/${encodeURIComponent(conversationExternalId)}/messages?limit=${Math.min(100, Math.max(1, limit))}`);
   const messages = Array.isArray(payload.messages?.messages) ? payload.messages.messages : (Array.isArray(payload.messages) ? payload.messages : []);
   return messages.slice(0, limit);
+}
+
+// GHL's conversation message-list response can carry the preceding outbound
+// body on a new inbound email. The individual message read is authoritative
+// for the body and metadata shown in Staff.
+export async function fetchGhlMessage(env, messageExternalId) {
+  const payload = await ghlGet(env, `/conversations/messages/${encodeURIComponent(messageExternalId)}`);
+  return payload.message || payload;
 }
 
 export async function fetchGhlMessageExport(env, cursor = null, limit = 50) {

@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   fetchGhlContactsPage: vi.fn(),
   fetchGhlConversationMessages: vi.fn(),
   fetchGhlConversationsPage: vi.fn(),
+  fetchGhlMessage: vi.fn(),
   fetchGhlMessageExport: vi.fn(),
   fetchStripeChargesPage: vi.fn(),
   fetchStripeInvoicesPage: vi.fn(async () => ({ invoices: [{ externalId: "in_1" }], nextCursor: null })),
@@ -46,7 +47,7 @@ vi.mock("./providers.js", () => ({
   fetchGhlAppointmentsForContact: mocks.fetchGhlAppointmentsForContact, fetchGhlContact: mocks.fetchGhlContact,
   fetchGhlContactNotes: mocks.fetchGhlContactNotes, fetchGhlContactTasks: mocks.fetchGhlContactTasks,
   fetchGhlContactsPage: mocks.fetchGhlContactsPage, fetchGhlConversationMessages: mocks.fetchGhlConversationMessages,
-  fetchGhlConversationsPage: mocks.fetchGhlConversationsPage, fetchGhlMessageExport: mocks.fetchGhlMessageExport,
+  fetchGhlConversationsPage: mocks.fetchGhlConversationsPage, fetchGhlMessage: mocks.fetchGhlMessage, fetchGhlMessageExport: mocks.fetchGhlMessageExport,
   fetchStripeChargesPage: mocks.fetchStripeChargesPage, fetchStripeInvoicesPage: mocks.fetchStripeInvoicesPage, fetchStripeCustomer: mocks.fetchStripeCustomer,
 }));
 vi.mock("./normalizers.js", () => ({
@@ -59,7 +60,7 @@ vi.mock("../../functions/lib/ops-last-run.js", () => ({
   writeOpsLastRun: mocks.writeOpsLastRun, OPS_LAST_RUN_KEYS: { crmMirror: "crm" },
 }));
 
-import { backfillGhlClientRecords, syncGhlConversations, syncStripeInvoices } from "./sync.js";
+import { backfillGhlClientRecords, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
 
 describe("GHL conversation mirror cursor", () => {
   it("passes the durable GHL sort cursor through and persists the returned cursor", async () => {
@@ -71,6 +72,26 @@ describe("GHL conversation mirror cursor", () => {
     expect(mocks.fetchGhlConversationsPage).toHaveBeenCalledWith({ CRM_DB: {} }, "2026-07-17T18:03:00.000Z", 50);
     expect(mocks.setSyncCursor).toHaveBeenCalledWith({}, "ghl-conversations", null, "2026-08-20T22:15:00.000Z");
     expect(outcome).toMatchObject({ status: "succeeded", cursorAfter: null });
+  });
+});
+
+describe("recent GHL conversation freshness", () => {
+  it("hydrates the newest provider message before writing the Staff timeline", async () => {
+    mocks.fetchGhlConversationsPage.mockResolvedValueOnce({
+      conversations: [{ externalId: "thread_1", contactExternalId: "contact_1" }], nextCursor: null,
+    });
+    mocks.findContactIdByGhlId.mockResolvedValueOnce("owned_contact_1");
+    mocks.upsertCommunicationThread.mockResolvedValueOnce("owned_thread_1");
+    const stale = { id: "message_1", externalId: "message_1", dateAdded: "2026-08-25T18:28:00.000Z", body: "stale body" };
+    mocks.fetchGhlConversationMessages.mockResolvedValueOnce([stale]);
+    mocks.fetchGhlMessage.mockResolvedValueOnce({ ...stale, body: "authoritative reply" });
+
+    const outcome = await syncRecentGhlConversations({ CRM_DB: {} }, 10, "2026-08-25T19:00:00.000Z");
+
+    expect(mocks.fetchGhlConversationsPage).toHaveBeenCalledWith({ CRM_DB: {} }, null, 10);
+    expect(mocks.fetchGhlMessage).toHaveBeenCalledWith({ CRM_DB: {} }, "message_1");
+    expect(mocks.upsertCommunicationEvent).toHaveBeenCalledWith({}, expect.objectContaining({ body: "authoritative reply" }), "owned_thread_1", "owned_contact_1", "2026-08-25T19:00:00.000Z");
+    expect(outcome.status).toBe("succeeded");
   });
 });
 
