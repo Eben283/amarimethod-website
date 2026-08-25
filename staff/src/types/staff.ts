@@ -337,6 +337,52 @@ export interface AutomationFamilyResponse {
   evidence: { gaps: AutomationEvidenceGap[] };
 }
 
+export interface ReliabilitySourceEvent {
+  source_event_id: string;
+  provider: string;
+  provider_event_id: string | null;
+  occurred_at: number;
+  received_at: number;
+  authentication_result: 'authenticated' | 'rejected';
+  normalization_state: 'normalized' | 'rejected' | 'ambiguous';
+  state: 'accepted' | 'rejected';
+  lifecycle_instance_id: string | null;
+  lifecycle_state: string | null;
+  obligation_count: number;
+  open_exception_count: number;
+}
+
+export interface ReliabilityException {
+  exception_id: string;
+  kind: string;
+  severity: 'info' | 'warning' | 'critical';
+  accountable_owner: string;
+  next_safe_action: string;
+  state: string;
+  opened_at: number;
+}
+
+export interface ReliabilitySourceEventDetail {
+  sourceEvent: ReliabilitySourceEvent & { normalized_json: string | null; identity_key: string; source_version: string; runtime_version: string };
+  lifecycle: null | { lifecycle_instance_id: string; family: string; scope: string; person_id: string; appointment_id: string; definition_version: number; runtime_version: string; state: string };
+  obligations: Array<{ obligation_id: string; obligation_key: string; kind: string; deadline_at: number; owner_role: string; closer: string; state: string }>;
+  transitions: Array<{ source_transition_id: string; sequence: number; transition: 'received' | 'authenticated' | 'normalized' | 'accepted' | 'rejected' | 'deduplicated' | 'dispatched'; occurred_at: number; detail_json: string | null }>;
+  exceptions: ReliabilityException[];
+}
+
+export interface ReliabilitySpineResponse {
+  success: true;
+  configured: boolean;
+  family: 'follow-up-session-reminders';
+  health: { truth: 'Known' | 'Unknown' | 'Degraded'; reason: string; checkedAt: number; coveredAt?: number; authority?: string; sourceVersion?: string; runtimeVersion?: string };
+  sourceEvents: ReliabilitySourceEvent[];
+  exceptions: ReliabilityException[];
+  sourceEventDetail?: ReliabilitySourceEventDetail | null;
+  sourceEventTotal?: number | null;
+  exceptionTotal?: number;
+  access?: 'evidence_control' | 'assigned_actions_only';
+}
+
 export interface CanonicalWorkflow {
   kind?: 'paid_booking';
   id: string;

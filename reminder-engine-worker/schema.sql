@@ -76,3 +76,263 @@ CREATE TABLE IF NOT EXISTS workflow_versions (
 );
 CREATE UNIQUE INDEX IF NOT EXISTS idx_workflow_one_published
 ON workflow_versions (workflow_id) WHERE state = 'published';
+
+-- Reliability spine v1 — additive and inert until a separately reviewed runtime route imports it.
+-- This is the authoritative durable contract for one lifecycle family at a time. Legacy
+-- processed_events, reminder_enrollments, reminder_steps, and automation_events remain migration
+-- evidence only; none is promoted into these tables automatically.
+CREATE TABLE IF NOT EXISTS reliability_schema_versions (
+  version      INTEGER PRIMARY KEY,
+  applied_at   INTEGER NOT NULL,
+  migration_id TEXT NOT NULL,
+  description  TEXT NOT NULL
+);
+INSERT OR IGNORE INTO reliability_schema_versions (version, applied_at, migration_id, description)
+VALUES (1, CAST(strftime('%s','now') AS INTEGER) * 1000, 'reliability-spine-v1',
+        'Durable source events, lifecycle instances, obligations, receipts, reconciliation, and exceptions');
+
+CREATE TABLE IF NOT EXISTS source_events (
+  source_event_id       TEXT PRIMARY KEY,
+  provider              TEXT NOT NULL,
+  family                TEXT NOT NULL,
+  provider_event_id     TEXT,
+  identity_version      INTEGER NOT NULL,
+  identity_key          TEXT NOT NULL UNIQUE,
+  payload_sha256        TEXT NOT NULL,
+  payload_reference     TEXT,
+  raw_retention_until   INTEGER,
+  normalized_retention_until INTEGER NOT NULL,
+  occurred_at           INTEGER NOT NULL,
+  received_at           INTEGER NOT NULL,
+  authentication_result TEXT NOT NULL CHECK (authentication_result IN ('authenticated', 'rejected')),
+  normalization_state   TEXT NOT NULL CHECK (normalization_state IN ('normalized', 'rejected', 'ambiguous')),
+  normalized_json       TEXT,
+  rejection_reason      TEXT,
+  state                 TEXT NOT NULL CHECK (state IN ('accepted', 'rejected')),
+  source_version        TEXT NOT NULL,
+  runtime_version       TEXT NOT NULL,
+  accepted_at           INTEGER,
+  created_at            INTEGER NOT NULL,
+  CHECK ((state = 'accepted' AND authentication_result = 'authenticated' AND normalization_state = 'normalized' AND accepted_at IS NOT NULL)
+      OR (state = 'rejected' AND rejection_reason IS NOT NULL)),
+  CHECK (raw_retention_until IS NULL OR raw_retention_until <= received_at + 2592000000),
+  CHECK (normalized_retention_until <= received_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_source_events_received ON source_events (received_at DESC);
+CREATE INDEX IF NOT EXISTS idx_source_events_provider_event ON source_events (provider, provider_event_id);
+
+CREATE TABLE IF NOT EXISTS source_event_transitions (
+  source_transition_id TEXT PRIMARY KEY,
+  source_event_id      TEXT NOT NULL REFERENCES source_events(source_event_id),
+  sequence             INTEGER NOT NULL,
+  transition           TEXT NOT NULL CHECK (transition IN ('received', 'authenticated', 'normalized', 'accepted', 'rejected', 'deduplicated', 'dispatched')),
+  occurred_at          INTEGER NOT NULL,
+  detail_json          TEXT,
+  retention_until      INTEGER NOT NULL,
+  UNIQUE (source_event_id, sequence),
+  CHECK (sequence > 0),
+  CHECK (retention_until <= occurred_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_source_transitions ON source_event_transitions (source_event_id, sequence);
+CREATE TRIGGER IF NOT EXISTS source_transitions_no_update
+BEFORE UPDATE ON source_event_transitions BEGIN
+  SELECT RAISE(ABORT, 'source_event_transitions is append-only');
+END;
+CREATE TRIGGER IF NOT EXISTS source_transitions_no_delete
+BEFORE DELETE ON source_event_transitions
+WHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN
+  SELECT RAISE(ABORT, 'source_event_transitions retained until retention_until');
+END;
+
+CREATE TRIGGER IF NOT EXISTS source_events_no_update
+BEFORE UPDATE ON source_events BEGIN
+  SELECT RAISE(ABORT, 'source_events is immutable');
+END;
+CREATE TRIGGER IF NOT EXISTS source_events_no_delete
+BEFORE DELETE ON source_events
+WHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.normalized_retention_until BEGIN
+  SELECT RAISE(ABORT, 'source_events is immutable');
+END;
+
+CREATE TABLE IF NOT EXISTS lifecycle_instances (
+  lifecycle_instance_id TEXT PRIMARY KEY,
+  source_event_id        TEXT NOT NULL UNIQUE REFERENCES source_events(source_event_id),
+  family                 TEXT NOT NULL,
+  scope                  TEXT NOT NULL,
+  person_id              TEXT NOT NULL,
+  appointment_id         TEXT NOT NULL,
+  definition_version     INTEGER NOT NULL,
+  runtime_version        TEXT NOT NULL,
+  state                  TEXT NOT NULL CHECK (state IN ('active', 'superseded', 'cancelled', 'completed', 'exception')),
+  retention_until        INTEGER NOT NULL,
+  created_at             INTEGER NOT NULL,
+  updated_at             INTEGER NOT NULL,
+  CHECK (retention_until <= created_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_lifecycle_person ON lifecycle_instances (person_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_lifecycle_appointment ON lifecycle_instances (appointment_id, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_lifecycle_family_state ON lifecycle_instances (family, state, created_at DESC);
+
+CREATE TABLE IF NOT EXISTS lifecycle_obligations (
+  obligation_id          TEXT PRIMARY KEY,
+  lifecycle_instance_id  TEXT NOT NULL REFERENCES lifecycle_instances(lifecycle_instance_id),
+  obligation_key         TEXT NOT NULL,
+  kind                   TEXT NOT NULL,
+  family                 TEXT NOT NULL,
+  deadline_at            INTEGER NOT NULL,
+  owner_role             TEXT NOT NULL,
+  closer                 TEXT NOT NULL,
+  state                  TEXT NOT NULL CHECK (state IN ('pending', 'leased', 'satisfied', 'skipped', 'cancelled', 'overdue_exception')),
+  lease_owner            TEXT,
+  lease_acquired_at      INTEGER,
+  lease_expires_at       INTEGER,
+  retention_until        INTEGER NOT NULL,
+  created_at             INTEGER NOT NULL,
+  updated_at             INTEGER NOT NULL,
+  UNIQUE (lifecycle_instance_id, obligation_key),
+  CHECK ((state = 'leased' AND lease_owner IS NOT NULL AND lease_acquired_at IS NOT NULL AND lease_expires_at IS NOT NULL)
+      OR (state <> 'leased')),
+  CHECK (retention_until <= created_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_obligations_due ON lifecycle_obligations (state, deadline_at);
+CREATE INDEX IF NOT EXISTS idx_obligations_lease ON lifecycle_obligations (state, lease_expires_at);
+
+CREATE TABLE IF NOT EXISTS obligation_lease_events (
+  lease_event_id       TEXT PRIMARY KEY,
+  obligation_id       TEXT NOT NULL REFERENCES lifecycle_obligations(obligation_id),
+  event_type           TEXT NOT NULL CHECK (event_type IN ('acquired', 'taken_over')),
+  previous_owner       TEXT,
+  new_owner            TEXT NOT NULL,
+  lease_acquired_at    INTEGER NOT NULL,
+  lease_expires_at     INTEGER NOT NULL,
+  retention_until      INTEGER NOT NULL,
+  CHECK (retention_until <= lease_acquired_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_lease_events ON obligation_lease_events (obligation_id, lease_acquired_at);
+CREATE TRIGGER IF NOT EXISTS lease_events_no_update
+BEFORE UPDATE ON obligation_lease_events BEGIN
+  SELECT RAISE(ABORT, 'obligation_lease_events is append-only');
+END;
+
+CREATE TABLE IF NOT EXISTS command_attempts (
+  command_attempt_id     TEXT PRIMARY KEY,
+  obligation_id          TEXT NOT NULL REFERENCES lifecycle_obligations(obligation_id),
+  idempotency_key        TEXT NOT NULL,
+  attempt_number         INTEGER NOT NULL,
+  retry_class            TEXT NOT NULL CHECK (retry_class IN ('provider_idempotent', 'amari_reconcile', 'manual_ambiguous')),
+  target                 TEXT NOT NULL,
+  request_sha256         TEXT NOT NULL,
+  rendered_copy_sha256   TEXT,
+  provider_reference     TEXT,
+  state                  TEXT NOT NULL CHECK (state IN ('prepared', 'leased', 'submitted', 'accepted', 'ambiguous', 'failed_retryable', 'failed_terminal', 'reconciled')),
+  error_code             TEXT,
+  retention_until        INTEGER NOT NULL,
+  created_at             INTEGER NOT NULL,
+  updated_at             INTEGER NOT NULL,
+  UNIQUE (idempotency_key, attempt_number),
+  CHECK (retention_until <= created_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_command_obligation ON command_attempts (obligation_id, attempt_number);
+
+CREATE TABLE IF NOT EXISTS provider_receipts (
+  provider_receipt_id    TEXT PRIMARY KEY,
+  command_attempt_id     TEXT NOT NULL REFERENCES command_attempts(command_attempt_id),
+  provider               TEXT NOT NULL,
+  provider_reference     TEXT NOT NULL,
+  proof_level            TEXT NOT NULL CHECK (proof_level IN ('accepted', 'delivered', 'failed', 'bounced', 'unknown')),
+  evidence_sha256        TEXT NOT NULL,
+  observed_at            INTEGER NOT NULL,
+  retention_until        INTEGER NOT NULL,
+  created_at             INTEGER NOT NULL,
+  UNIQUE (provider, provider_reference, proof_level, evidence_sha256),
+  CHECK (retention_until <= created_at + 34560000000)
+);
+
+CREATE TABLE IF NOT EXISTS reconciliation_runs (
+  reconciliation_run_id TEXT PRIMARY KEY,
+  family                 TEXT NOT NULL,
+  authority              TEXT NOT NULL,
+  source_version         TEXT NOT NULL,
+  runtime_version        TEXT NOT NULL,
+  started_at             INTEGER NOT NULL,
+  completed_at           INTEGER,
+  expected_start         INTEGER NOT NULL,
+  expected_end           INTEGER NOT NULL,
+  coverage_start         INTEGER NOT NULL,
+  coverage_end           INTEGER NOT NULL,
+  pagination_complete    INTEGER NOT NULL DEFAULT 0 CHECK (pagination_complete IN (0, 1)),
+  state                  TEXT NOT NULL CHECK (state IN ('running', 'complete', 'degraded', 'failed')),
+  detail_json            TEXT,
+  retention_until        INTEGER NOT NULL,
+  CHECK (retention_until <= started_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_reconciliation_family ON reconciliation_runs (family, started_at DESC);
+
+CREATE TABLE IF NOT EXISTS lifecycle_exceptions (
+  exception_id           TEXT PRIMARY KEY,
+  family                 TEXT NOT NULL,
+  source_event_id        TEXT REFERENCES source_events(source_event_id),
+  lifecycle_instance_id  TEXT REFERENCES lifecycle_instances(lifecycle_instance_id),
+  obligation_id          TEXT REFERENCES lifecycle_obligations(obligation_id),
+  kind                   TEXT NOT NULL,
+  severity               TEXT NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),
+  accountable_owner      TEXT NOT NULL,
+  next_safe_action       TEXT NOT NULL,
+  state                  TEXT NOT NULL CHECK (state IN ('open', 'acknowledged', 'investigating', 'resolved', 'suppressed_with_expiry')),
+  suppression_expires_at INTEGER,
+  retention_until        INTEGER NOT NULL,
+  opened_at              INTEGER NOT NULL,
+  updated_at             INTEGER NOT NULL,
+  CHECK (state <> 'suppressed_with_expiry' OR suppression_expires_at IS NOT NULL),
+  CHECK (retention_until <= opened_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_exceptions_queue ON lifecycle_exceptions (state, severity, opened_at);
+CREATE INDEX IF NOT EXISTS idx_exceptions_family_queue ON lifecycle_exceptions (family, state, severity, opened_at);
+
+CREATE TABLE IF NOT EXISTS exception_events (
+  exception_event_id TEXT PRIMARY KEY,
+  exception_id       TEXT NOT NULL REFERENCES lifecycle_exceptions(exception_id),
+  event_type         TEXT NOT NULL CHECK (event_type IN ('opened', 'acknowledged', 'investigating', 'resolved', 'suppressed', 'reopened')),
+  actor              TEXT NOT NULL,
+  occurred_at        INTEGER NOT NULL,
+  evidence_sha256    TEXT,
+  detail_json        TEXT,
+  retention_until    INTEGER NOT NULL,
+  CHECK (retention_until <= occurred_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_exception_events ON exception_events (exception_id, occurred_at);
+CREATE TRIGGER IF NOT EXISTS exception_events_no_update
+BEFORE UPDATE ON exception_events BEGIN
+  SELECT RAISE(ABORT, 'exception_events is append-only');
+END;
+
+CREATE TABLE IF NOT EXISTS evidence_access_events (
+  access_event_id  TEXT PRIMARY KEY,
+  actor            TEXT NOT NULL,
+  family           TEXT NOT NULL,
+  action           TEXT NOT NULL CHECK (action IN ('view_summary', 'view_source', 'export')),
+  source_event_id  TEXT,
+  occurred_at      INTEGER NOT NULL,
+  retention_until INTEGER NOT NULL,
+  CHECK (retention_until <= occurred_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_evidence_access ON evidence_access_events (family, occurred_at DESC);
+CREATE TRIGGER IF NOT EXISTS evidence_access_no_update
+BEFORE UPDATE ON evidence_access_events BEGIN
+  SELECT RAISE(ABORT, 'evidence_access_events is append-only');
+END;
+CREATE TRIGGER IF NOT EXISTS lease_events_no_delete
+BEFORE DELETE ON obligation_lease_events
+WHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN
+  SELECT RAISE(ABORT, 'obligation_lease_events retained until retention_until');
+END;
+CREATE TRIGGER IF NOT EXISTS evidence_access_no_delete
+BEFORE DELETE ON evidence_access_events
+WHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN
+  SELECT RAISE(ABORT, 'evidence_access_events retained until retention_until');
+END;
+CREATE TRIGGER IF NOT EXISTS exception_events_no_delete
+BEFORE DELETE ON exception_events
+WHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN
+  SELECT RAISE(ABORT, 'exception_events is append-only');
+END;
