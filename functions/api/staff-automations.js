@@ -40,7 +40,7 @@ import {
   readReliabilityCounts,
   recordEvidenceAccess,
 } from "../lib/reliability-store.js";
-import { FOLLOW_UP_FAMILY } from "../lib/reliability-contract.js";
+import { FOLLOW_UP_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE } from "../lib/reliability-contract.js";
 
 const VALID_CONTACT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const VALID_AUTOMATION_KEY = /^[a-z0-9][a-z0-9-]{0,79}$/;
@@ -245,13 +245,13 @@ export async function onRequestGet(context) {
       if (!db) {
         return new Response(JSON.stringify({
           success: true, configured: false, family: FOLLOW_UP_FAMILY, health,
-          sourceEvents: [], exceptions: [], sourceEventDetail: null,
+          route: FOLLOW_UP_RELIABILITY_ROUTE, sourceEvents: [], exceptions: [], sourceEventDetail: null,
         }), { status: 200, headers });
       }
       if (health.reason === "schema_unproven" || health.reason === "authority_read_failed") {
         return new Response(JSON.stringify({
           success: true, configured: true, family: FOLLOW_UP_FAMILY, health,
-          sourceEvents: [], exceptions: [], sourceEventDetail: null,
+          route: FOLLOW_UP_RELIABILITY_ROUTE, sourceEvents: [], exceptions: [], sourceEventDetail: null,
           access: isEben ? "evidence_control" : "assigned_actions_only",
         }), { status: 200, headers });
       }
@@ -285,6 +285,7 @@ export async function onRequestGet(context) {
         success: true,
         configured: true,
         family: FOLLOW_UP_FAMILY,
+        route: FOLLOW_UP_RELIABILITY_ROUTE,
         health,
         sourceEvents: isEben ? await readRecentSourceEvents(db, { family: FOLLOW_UP_FAMILY }) : [],
         exceptions,

@@ -1,4 +1,4 @@
-import { NORMALIZED_RETENTION_MS, RELIABILITY_SCHEMA_VERSION, sha256Hex } from "./reliability-contract.js";
+import { FOLLOW_UP_RELIABILITY_ROUTE, NORMALIZED_RETENTION_MS, RELIABILITY_SCHEMA_VERSION, sha256Hex } from "./reliability-contract.js";
 
 function changesOf(result) {
   return Number(result?.meta?.changes || 0);
@@ -26,10 +26,12 @@ async function transitionStatement(db, sourceEventId, transition, occurredAt, re
 }
 
 async function sourceStateTransitions(db, source, finalTransition, nowMs) {
-  const transitions = ["received"];
-  if (source.authenticationResult === "authenticated") transitions.push("authenticated");
-  if (source.normalizationState === "normalized") transitions.push("normalized");
-  transitions.push(finalTransition);
+  const transitions = finalTransition === "accepted"
+    ? FOLLOW_UP_RELIABILITY_ROUTE.accepted.slice(0, -1).map((stage) => stage.transition)
+    : ["received",
+      ...(source.authenticationResult === "authenticated" ? ["authenticated"] : []),
+      ...(source.normalizationState === "normalized" ? ["normalized"] : []),
+      finalTransition];
   return Promise.all(transitions.map((transition, index) => transitionStatement(
     db, source.sourceEventId, transition,
     transition === "received" ? source.receivedAt : nowMs,

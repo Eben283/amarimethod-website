@@ -374,6 +374,10 @@ export interface ReliabilitySpineResponse {
   success: true;
   configured: boolean;
   family: 'follow-up-session-reminders';
+  route: {
+    accepted: Array<{ id: string; transition: 'received' | 'authenticated' | 'normalized' | 'accepted' | 'dispatched'; label: string; detail: string }>;
+    rejected: { id: string; transition: 'rejected'; label: string; detail: string };
+  };
   health: { truth: 'Known' | 'Unknown' | 'Degraded'; reason: string; checkedAt: number; coveredAt?: number; authority?: string; sourceVersion?: string; runtimeVersion?: string };
   sourceEvents: ReliabilitySourceEvent[];
   exceptions: ReliabilityException[];
