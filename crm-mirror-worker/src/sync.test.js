@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 
 const mocks = vi.hoisted(() => ({
   beginSyncRun: vi.fn(async () => "run_1"),
@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   fetchGhlContactsPage: vi.fn(),
   fetchGhlConversationMessages: vi.fn(),
   fetchGhlConversationsPage: vi.fn(),
+  fetchGhlEmail: vi.fn(),
   fetchGhlMessage: vi.fn(),
   fetchGhlMessageExport: vi.fn(),
   fetchStripeChargesPage: vi.fn(),
@@ -47,7 +48,7 @@ vi.mock("./providers.js", () => ({
   fetchGhlAppointmentsForContact: mocks.fetchGhlAppointmentsForContact, fetchGhlContact: mocks.fetchGhlContact,
   fetchGhlContactNotes: mocks.fetchGhlContactNotes, fetchGhlContactTasks: mocks.fetchGhlContactTasks,
   fetchGhlContactsPage: mocks.fetchGhlContactsPage, fetchGhlConversationMessages: mocks.fetchGhlConversationMessages,
-  fetchGhlConversationsPage: mocks.fetchGhlConversationsPage, fetchGhlMessage: mocks.fetchGhlMessage, fetchGhlMessageExport: mocks.fetchGhlMessageExport,
+  fetchGhlConversationsPage: mocks.fetchGhlConversationsPage, fetchGhlEmail: mocks.fetchGhlEmail, fetchGhlMessage: mocks.fetchGhlMessage, fetchGhlMessageExport: mocks.fetchGhlMessageExport,
   fetchStripeChargesPage: mocks.fetchStripeChargesPage, fetchStripeInvoicesPage: mocks.fetchStripeInvoicesPage, fetchStripeCustomer: mocks.fetchStripeCustomer,
 }));
 vi.mock("./normalizers.js", () => ({
@@ -61,6 +62,10 @@ vi.mock("../../functions/lib/ops-last-run.js", () => ({
 }));
 
 import { backfillGhlClientRecords, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
+
+beforeEach(() => {
+  vi.clearAllMocks();
+});
 
 describe("GHL conversation mirror cursor", () => {
   it("passes the durable GHL sort cursor through and persists the returned cursor", async () => {
@@ -89,8 +94,33 @@ describe("recent GHL conversation freshness", () => {
     const outcome = await syncRecentGhlConversations({ CRM_DB: {} }, 10, "2026-08-25T19:00:00.000Z");
 
     expect(mocks.fetchGhlConversationsPage).toHaveBeenCalledWith({ CRM_DB: {} }, null, 10);
+    expect(mocks.fetchGhlConversationMessages).toHaveBeenCalledWith({ CRM_DB: {} }, "thread_1", 20);
     expect(mocks.fetchGhlMessage).toHaveBeenCalledWith({ CRM_DB: {} }, "message_1");
     expect(mocks.upsertCommunicationEvent).toHaveBeenCalledWith({}, expect.objectContaining({ body: "authoritative reply" }), "owned_thread_1", "owned_contact_1", "2026-08-25T19:00:00.000Z");
+    expect(outcome.status).toBe("succeeded");
+  });
+
+  it("expands a mutable GHL email container into immutable email revisions", async () => {
+    mocks.fetchGhlConversationsPage.mockResolvedValueOnce({
+      conversations: [{ externalId: "thread_1", contactExternalId: "contact_1" }], nextCursor: null,
+    });
+    mocks.findContactIdByGhlId.mockResolvedValueOnce("owned_contact_1");
+    mocks.upsertCommunicationThread.mockResolvedValueOnce("owned_thread_1");
+    mocks.fetchGhlConversationMessages.mockResolvedValueOnce([{
+      id: "mutable_thread_message", type: "TYPE_EMAIL", dateAdded: "2026-08-25T20:20:00.000Z",
+      meta: { email: { messageIds: ["email_inbound_1", "email_outbound_2"] } },
+    }]);
+    mocks.fetchGhlEmail
+      .mockResolvedValueOnce({ id: "email_inbound_1", direction: "inbound", body: "Thanks, I found it.", dateAdded: "2026-08-25T18:28:00.000Z" })
+      .mockResolvedValueOnce({ id: "email_outbound_2", direction: "outbound", body: "I will look into it.", dateAdded: "2026-08-25T20:20:00.000Z" });
+
+    const outcome = await syncRecentGhlConversations({ CRM_DB: {} }, 10, "2026-08-25T21:00:00.000Z");
+
+    expect(mocks.fetchGhlEmail).toHaveBeenNthCalledWith(1, { CRM_DB: {} }, "email_inbound_1");
+    expect(mocks.fetchGhlEmail).toHaveBeenNthCalledWith(2, { CRM_DB: {} }, "email_outbound_2");
+    expect(mocks.fetchGhlMessage).not.toHaveBeenCalledWith({ CRM_DB: {} }, "mutable_thread_message");
+    expect(mocks.upsertCommunicationEvent).toHaveBeenCalledTimes(2);
+    expect(mocks.upsertCommunicationEvent).toHaveBeenCalledWith({}, expect.objectContaining({ id: "email_inbound_1", body: "Thanks, I found it." }), "owned_thread_1", "owned_contact_1", "2026-08-25T21:00:00.000Z");
     expect(outcome.status).toBe("succeeded");
   });
 });
