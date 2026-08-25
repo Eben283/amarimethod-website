@@ -77,6 +77,15 @@ describe("staff-automations — views", () => {
       configured: false,
       family: "follow-up-session-reminders",
       health: expect.objectContaining({ truth: "Unknown", reason: "authority_unavailable" }),
+      route: expect.objectContaining({
+        accepted: expect.arrayContaining([
+          expect.objectContaining({ transition: "received", label: "Record durable source receipt" }),
+          expect.objectContaining({ transition: "authenticated", label: "Verify source authenticity" }),
+          expect.objectContaining({ transition: "accepted", label: "Create lifecycle and obligations" }),
+          expect.objectContaining({ transition: "dispatched", label: "Dispatch the published reminder definition" }),
+        ]),
+        rejected: expect.objectContaining({ transition: "rejected", label: "Open Staff reliability exception" }),
+      }),
       sourceEvents: [],
       exceptions: [],
     }));

@@ -108,6 +108,14 @@ describe('Staff legibility contract', () => {
     expect(registryPage).not.toContain("family.cutoverTree && !isInPersonCutover && !isFollowUpSourceMap");
   });
 
+  it('places the Follow-Up durability contract inside the executable route', () => {
+    const registryPage = css('pages/AutomationRegistryPage.tsx');
+    expect(registryPage).toContain('reliability?.route.accepted');
+    expect(registryPage).toContain('Durable transition · ${stage.transition}');
+    expect(registryPage).toContain('Durability exception path');
+    expect(registryPage).toContain('stops before reminder enrollment');
+  });
+
   it('keeps review-worthy automation evidence reachable without restoring the full event wall', () => {
     const record = css('pages/ClientDetailPage.tsx');
     expect(record).toContain('failedAutomationEvents.slice(0, 3)');

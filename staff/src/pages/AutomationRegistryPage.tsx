@@ -169,6 +169,7 @@ export default function AutomationRegistryPage() {
         health: { truth: 'Unknown', reason: 'staff_read_failed', checkedAt: Date.now() },
         sourceEvents: [],
         exceptions: [],
+        route: { accepted: [], rejected: { id: 'reliability-unavailable', transition: 'rejected', label: 'Reliability route unavailable', detail: 'Staff could not read the canonical reliability contract.' } },
       }); });
     return () => { cancelled = true; };
   }, [selectedFamilyKey]);
@@ -250,6 +251,7 @@ export default function AutomationRegistryPage() {
         onRevealEvidence={revealAutomationEvidence}
         runtimes={mapRuntimes}
         activeEnrollments={mapActiveEnrollments}
+        reliability={reliability}
         detailReady={familyDetail?.family.key === selectedFamilyKey && !familyLoading}
       />}
 
@@ -288,6 +290,7 @@ function AutomationMasterMap({
   onRevealEvidence,
   runtimes,
   activeEnrollments,
+  reliability,
   detailReady,
 }: {
   families: AutomationFamily[];
@@ -297,6 +300,7 @@ function AutomationMasterMap({
   onRevealEvidence: () => void;
   runtimes: RuntimeFlow[];
   activeEnrollments: ContactAutomationEnrollment[];
+  reliability: ReliabilitySpineResponse | null;
   detailReady: boolean;
 }) {
   const selectedFamily = families.find((family) => family.key === selectedKey) || null;
@@ -307,7 +311,7 @@ function AutomationMasterMap({
       {!detailReady
         ? <div className="automation-registry-loading" role="status"><Loader2 className="spin" /> Opening one verified workflow view…</div>
         : hasMap(selectedFamily)
-        ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} runtimes={runtimes} activeEnrollments={activeEnrollments} />
+        ? <AutomationHealthPilot family={selectedFamily} onRevealEvidence={onRevealEvidence} runtimes={runtimes} activeEnrollments={activeEnrollments} reliability={reliability} />
         : <AutomationMapPending family={selectedFamily} />}
     </section>;
   }
@@ -350,11 +354,13 @@ function AutomationHealthPilot({
   onRevealEvidence,
   runtimes,
   activeEnrollments,
+  reliability,
 }: {
   family: AutomationFamily;
   onRevealEvidence: () => void;
   runtimes: RuntimeFlow[];
   activeEnrollments: ContactAutomationEnrollment[];
+  reliability: ReliabilitySpineResponse | null;
 }) {
   const isFollowUp = family.key === 'follow-up-session-reminders';
   const isPaidBooking = family.key === 'commerce-ledger-event-ingest';
@@ -377,7 +383,7 @@ function AutomationHealthPilot({
         : isPaidBooking && matchingRuntimes.length
         ? <PaidBookingWorkflowCanvas runtime={matchingRuntimes.find((runtime) => runtime.flow?.key === 'assessment-paid-booking')!} />
         : matchingRuntimes.length
-        ? <InitialWorkflowCanvas runtimes={matchingRuntimes} activeEnrollments={activeEnrollments} />
+        ? <InitialWorkflowCanvas runtimes={matchingRuntimes} activeEnrollments={activeEnrollments} reliability={isFollowUp ? reliability : null} />
         : family.mapAuthority === 'executable_definition'
           ? <section className="automation-map-pending"><div><span>Executable map unavailable</span><h3>{family.name}</h3><p>The selected family’s published runtime definition could not be read. Staff will not substitute another family’s map or a hand-drawn approximation.</p></div></section>
         : family.cutoverTree ? <CutoverTree tree={family.cutoverTree} compact /> : null}
@@ -444,7 +450,7 @@ function PaidBookingWorkflowCanvas({ runtime }: { runtime: RuntimeFlow }) {
   </section>;
 }
 
-function InitialWorkflowCanvas({ runtimes, activeEnrollments }: { runtimes: RuntimeFlow[]; activeEnrollments: ContactAutomationEnrollment[] }) {
+function InitialWorkflowCanvas({ runtimes, activeEnrollments, reliability = null }: { runtimes: RuntimeFlow[]; activeEnrollments: ContactAutomationEnrollment[]; reliability?: ReliabilitySpineResponse | null }) {
   const available = runtimes.filter((runtime) => runtime.definition && runtime.flow);
   const [selectedFlowKey, setSelectedFlowKey] = useState('initial-in-person');
   useEffect(() => {
@@ -456,7 +462,7 @@ function InitialWorkflowCanvas({ runtimes, activeEnrollments }: { runtimes: Runt
   return <section className="automation-workflow-scope" aria-label="Executable workflow selector">
     <header><span>{available.length > 1 ? 'Format' : 'Workflow'}</span><div>{available.map((runtime) => <button type="button" key={runtime.flow!.key} className={runtime.flow!.key === selected.flow!.key ? 'is-selected' : ''} onClick={() => setSelectedFlowKey(runtime.flow!.key)}><strong>{runtime.flow!.key === 'initial-virtual' ? 'Virtual' : runtime.flow!.name}</strong><small>{runtime.flow!.delivery === 'active' ? 'Live sender' : runtime.flow!.delivery === 'shadow' ? 'Shadow · no sending' : 'Staged · disabled'}</small></button>)}</div></header>
     <p className="automation-workflow-scope-notice"><strong>{selected.flow.delivery === 'active' ? 'Live sender.' : selected.flow.delivery === 'shadow' ? 'Shadow evidence only.' : 'Not sending.'}</strong> The map below is generated from the exact definition returned by the executing Worker.</p>
-    <WorkflowPlaybookPreview workflow={selected.definition} delivery={selected.flow.delivery} activeEnrollments={scopedEnrollments} />
+    <WorkflowPlaybookPreview workflow={selected.definition} delivery={selected.flow.delivery} activeEnrollments={scopedEnrollments} reliability={selected.flow.key === 'follow-up-session-reminders' ? reliability : null} />
   </section>;
 }
 
@@ -562,15 +568,32 @@ function RetiredFollowUpSourceSnapshot() {
   </section>;
 }
 
-function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments }: {
+function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments, reliability }: {
   workflow: CanonicalWorkflow;
   delivery: 'active' | 'shadow' | 'disabled' | 'unpublished';
   activeEnrollments: ContactAutomationEnrollment[];
+  reliability: ReliabilitySpineResponse | null;
 }) {
   const [selectedId, setSelectedId] = useState('trigger');
   useEffect(() => setSelectedId('trigger'), [workflow.id, workflow.version]);
   const timing = (value: string | undefined) => value === 'enroll' ? 'Immediately after enrollment' : value === 'reschedule' ? 'On reschedule' : value === 'start-1440m' ? '24 hours before appointment' : value === 'start-60m' ? '1 hour before appointment' : value || 'Timing recorded in definition';
   const trigger: PreviewNode = { id: 'trigger', owner: 'ghl', kind: 'trigger', label: humanize(String(workflow.trigger.type || workflow.trigger.event || 'appointment event')), timing: 'External event source', detail: structured(workflow.trigger) };
+  const reliabilityNodes: PreviewNode[] = (reliability?.route.accepted || []).map((stage) => ({
+    id: stage.id,
+    owner: 'amari',
+    kind: 'action',
+    label: stage.label,
+    timing: `Durable transition · ${stage.transition}`,
+    detail: stage.detail,
+  }));
+  const reliabilityException: PreviewNode | null = reliability?.route.rejected ? {
+    id: reliability.route.rejected.id,
+    owner: 'amari',
+    kind: 'exit',
+    label: reliability.route.rejected.label,
+    timing: 'Rejected or ambiguous source event',
+    detail: reliability.route.rejected.detail,
+  } : null;
   const groups: Array<{ timingKey: string; nodes: PreviewNode[] }> = [];
   workflow.nodes.forEach((node) => {
     const timingKey = node.at || node.timing || 'definition order';
@@ -599,7 +622,7 @@ function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments }: {
     timing: `On ${humanize(exit.event)}`,
     detail: exit.effect,
   }));
-  const allNodes = [trigger, ...groups.flatMap((group) => group.nodes), ...exitNodes];
+  const allNodes = [trigger, ...reliabilityNodes, ...groups.flatMap((group) => group.nodes), ...exitNodes, ...(reliabilityException ? [reliabilityException] : [])];
   const selected = allNodes.find((node) => node.id === selectedId) || trigger;
   const NodeButton = ({ node }: { node: PreviewNode }) => <button type="button" className={`automation-playbook-node is-${node.owner}${selected.id === node.id ? ' is-selected' : ''}${node.kind === 'wait' ? ' is-wait' : ''}`} onClick={() => setSelectedId(node.id)} aria-pressed={selected.id === node.id}>
     <span>{node.owner === 'ghl' ? 'EXTERNAL EVENT' : 'AMARI'}</span><strong>{node.label}</strong><small>{node.timing}</small>{node.condition && <em>When {node.condition}</em>}<WaitingPeople enrollments={node.waiting || []} />
@@ -612,8 +635,10 @@ function WorkflowPlaybookPreview({ workflow, delivery, activeEnrollments }: {
     <div className="automation-playbook-preview-grid">
       <div className="automation-playbook-flow" aria-label={`${workflow.name} workflow`}>
         <div className="automation-playbook-step"><NodeButton node={trigger} /></div>
+        {reliabilityNodes.map((node) => <div key={node.id} className="automation-playbook-step"><i className="automation-playbook-arrow" aria-hidden="true">↓</i><NodeButton node={node} /></div>)}
         {groups.map((group) => <div key={group.timingKey} className="automation-playbook-step"><i className="automation-playbook-arrow" aria-hidden="true">↓</i><div className={`automation-playbook-parallel is-${group.nodes.length}`}>{group.nodes.map((node) => <NodeButton key={node.id} node={node} />)}</div></div>)}
         {exitNodes.length > 0 && <section className="automation-playbook-side-path"><header><span>Executable exits</span><p>Each exit below is read directly from this definition and can interrupt pending actions when its event occurs.</p></header><div>{exitNodes.map((node) => <span key={node.id}><NodeButton node={node} /></span>)}</div></section>}
+        {reliabilityException && <section className="automation-playbook-side-path automation-reliability-exception-path"><header><span>Durability exception path</span><p>This is the actual rejected-event route. It stops before reminder enrollment and remains visible in Staff until resolved.</p></header><div><span><NodeButton node={reliabilityException} /></span></div></section>}
       </div>
       <aside className="automation-playbook-inspector" aria-live="polite">
         <header><span>{selected.kind === 'trigger' ? 'Trigger' : selected.kind === 'wait' ? 'Wait' : selected.kind === 'exit' ? 'Exit / fallback' : 'Action'}</span><h4>{selected.label}</h4><p>{selected.detail}</p></header>

@@ -4,6 +4,16 @@ const OBLIGATION_STATES = new Set(["pending", "leased", "satisfied", "skipped", 
 export const RELIABILITY_SCHEMA_VERSION = 1;
 export const FOLLOW_UP_FAMILY = "follow-up-session-reminders";
 export const RELIABILITY_FEATURE_FLAG = "FOLLOW_UP_RELIABILITY_SPINE_ENABLED";
+export const FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
+  accepted: Object.freeze([
+    Object.freeze({ id: "durable-receipt", transition: "received", label: "Record durable source receipt", detail: "Amari stores the authenticated GHL event identity and immutable payload hash before enrollment can continue." }),
+    Object.freeze({ id: "authenticate-source", transition: "authenticated", label: "Verify source authenticity", detail: "Amari records that the event passed the authenticated webhook boundary before its contents can control a lifecycle." }),
+    Object.freeze({ id: "normalize-identity", transition: "normalized", label: "Normalize and bind identity", detail: "Amari requires the exact appointment, person, start time, confirmed status, and Normal event type. Incomplete or ineligible events leave the reminder route." }),
+    Object.freeze({ id: "lifecycle-obligations", transition: "accepted", label: "Create lifecycle and obligations", detail: "One atomic D1 transaction creates the lifecycle instance and every expected reminder obligation from the published definition." }),
+    Object.freeze({ id: "dispatch-definition", transition: "dispatched", label: "Dispatch the published reminder definition", detail: "Only a durably accepted lifecycle with obligations can enter the existing Follow-Up reminder engine." }),
+  ]),
+  rejected: Object.freeze({ id: "reliability-exception", transition: "rejected", label: "Open Staff reliability exception", detail: "Rejected or ambiguous events stop before reminder enrollment and enter the named Staff exception queue for resolution." }),
+});
 export const RAW_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 export const NORMALIZED_RETENTION_MS = 400 * 24 * 60 * 60 * 1000;
 
