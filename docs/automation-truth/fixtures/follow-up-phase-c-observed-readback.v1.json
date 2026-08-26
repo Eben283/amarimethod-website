@@ -1,0 +1,74 @@
+{
+  "fixtureVersion": "follow-up-phase-c-observed-readback.v1",
+  "purpose": "Read-only Cloudflare/D1 observation captured 2026-08-26. It is deliberately not a runtime deployment attestation.",
+  "observedAt": "2026-08-26T20:05:00.000Z",
+  "expiresAt": "2026-08-26T20:20:00.000Z",
+  "controlPlane": {
+    "service": "reminder-engine",
+    "deploymentId": "fa1d09eb-a0af-47e9-bc6e-a44652d59dc9",
+    "versionId": "121f69d8-770f-4c58-adab-0574bece9f1d",
+    "trafficPercent": 100,
+    "scriptEtag": "e6c8c42490264694df792f9c5669c0411f0f463631de7763c6999ab0664fec7a",
+    "source": "version_upload"
+  },
+  "runtime": {
+    "sourceRevision": "14e8f5b62ac77e94289757d2ddb088c74b7b2e6b",
+    "bundleSha256": "cb4d513d6de99061f1aa590ffda66722b77f70015c8403c8ef3e8df163f3cf67",
+    "workerVersion": "cb4d513d6de99061f1aa590ffda66722b77f70015c8403c8ef3e8df163f3cf67",
+    "phaseBImported": false
+  },
+  "build": {
+    "cleanBuildSha256": null,
+    "lockfileSha256": null,
+    "compilerArtifactSha256": null,
+    "compiledPlanDigest": null,
+    "handlerArtifactSha256": null,
+    "messageArtifactSha256": null,
+    "bundleSha256": "cb4d513d6de99061f1aa590ffda66722b77f70015c8403c8ef3e8df163f3cf67"
+  },
+  "bindings": {
+    "expected": [
+      { "name": "REMINDER_DB", "kind": "d1", "resourceId": "089d810a-9d2d-43a4-8f1d-dc3620835557" },
+      { "name": "PORTAL_KV", "kind": "kv", "resourceId": "79cff30d0e45419791b0d25cd81961df" },
+      { "name": "NURTURE", "kind": "service", "service": "nurture-engine", "environment": "production" },
+      { "name": "FOLLOW_UP_RELIABILITY_SPINE_ENABLED", "kind": "plain", "valueSha256": "fb9cf75606b4070dd6a9705810906bba28d0e2ea74ff301b999a91dbb68c7d98" },
+      { "name": "FOLLOW_UP_RELIABILITY_SOURCE_VERSION", "kind": "plain", "valueSha256": "b1684fcbf74290ac1004864a9c1a6bbece28203e82d2867555068be15b6e98c9" },
+      { "name": "SOURCE_BUNDLE_SHA256", "kind": "plain", "valueSha256": "bf8aae03edfd421740f4450293947a1a3186625ce5cdb9a83e070045f77a8772" },
+      { "name": "SOURCE_REVISION", "kind": "plain", "valueSha256": "b9150208f960fb117ae226eef9f2cfe795f8f0d25655524c0e86a08bfe8f451c" },
+      { "name": "WORKER_VERSION", "kind": "plain", "valueSha256": "bf8aae03edfd421740f4450293947a1a3186625ce5cdb9a83e070045f77a8772" },
+      { "name": "NURTURE_ENGINE_URL", "kind": "plain", "valueSha256": "7458ff5eac4641a40e4a11fe084e8411303615db69268ed6a974e2d31a2af2da" },
+      { "name": "GHL_WEBHOOK_SECRET", "kind": "secret", "present": true },
+      { "name": "GHL_WEBHOOK_SECRET_REPLACEMENT", "kind": "secret", "present": true },
+      { "name": "GHL_CLIENT_ID", "kind": "secret", "present": true },
+      { "name": "GHL_CLIENT_SECRET", "kind": "secret", "present": true }
+    ],
+    "observed": [
+      { "name": "REMINDER_DB", "kind": "d1", "resourceId": "089d810a-9d2d-43a4-8f1d-dc3620835557" },
+      { "name": "PORTAL_KV", "kind": "kv", "resourceId": "79cff30d0e45419791b0d25cd81961df" },
+      { "name": "NURTURE", "kind": "service", "service": "nurture-engine", "environment": "production" },
+      { "name": "FOLLOW_UP_RELIABILITY_SPINE_ENABLED", "kind": "plain", "valueSha256": "fb9cf75606b4070dd6a9705810906bba28d0e2ea74ff301b999a91dbb68c7d98" },
+      { "name": "FOLLOW_UP_RELIABILITY_SOURCE_VERSION", "kind": "plain", "valueSha256": "b1684fcbf74290ac1004864a9c1a6bbece28203e82d2867555068be15b6e98c9" },
+      { "name": "SOURCE_BUNDLE_SHA256", "kind": "plain", "valueSha256": "bf8aae03edfd421740f4450293947a1a3186625ce5cdb9a83e070045f77a8772" },
+      { "name": "SOURCE_REVISION", "kind": "plain", "valueSha256": "b9150208f960fb117ae226eef9f2cfe795f8f0d25655524c0e86a08bfe8f451c" },
+      { "name": "WORKER_VERSION", "kind": "plain", "valueSha256": "bf8aae03edfd421740f4450293947a1a3186625ce5cdb9a83e070045f77a8772" },
+      { "name": "NURTURE_ENGINE_URL", "kind": "plain", "valueSha256": "7458ff5eac4641a40e4a11fe084e8411303615db69268ed6a974e2d31a2af2da" },
+      { "name": "GHL_WEBHOOK_SECRET", "kind": "secret", "present": true },
+      { "name": "GHL_WEBHOOK_SECRET_REPLACEMENT", "kind": "secret", "present": true },
+      { "name": "GHL_CLIENT_ID", "kind": "secret", "present": true },
+      { "name": "GHL_CLIENT_SECRET", "kind": "secret", "present": true }
+    ]
+  },
+  "schema": {
+    "databaseId": "089d810a-9d2d-43a4-8f1d-dc3620835557",
+    "expectedHead": { "migrationId": "reliability-spine-v1", "version": 1, "sourceSha256": "d5e4648f4f8367245ab17cd137a9854cf1a27c66fcbf7e99d69c64b2df548564" },
+    "remoteHead": { "migrationId": "reliability-spine-v1", "version": 1, "sourceSha256": null },
+    "expectedTables": ["source_events", "lifecycle_instances", "lifecycle_obligations", "command_attempts", "provider_receipts", "lifecycle_exceptions"],
+    "observedTables": ["source_events", "lifecycle_instances", "lifecycle_obligations", "command_attempts", "provider_receipts", "lifecycle_exceptions"]
+  },
+  "phaseB": {
+    "compilerArtifactSha256": "721e97360e624eba9be1a597871a6759868e9d053049559e828a260e194aa591",
+    "compiledPlanDigest": "bcb4d5b17c69b06c4d0101e78a28a7f83a019b9d7cc62fe8a2edcf6faebff415",
+    "releaseManifestDigest": "9becab2f90086f304496d2ac564cd86be2c2b4b36659905f8908f25985a45150",
+    "runtimeReference": false
+  }
+}
