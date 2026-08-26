@@ -15,7 +15,7 @@ const exactEnvelope = Object.freeze({
 });
 const workflowSpec = () => ({
   workflowId: "initial", version: "1", handlers: ["send"], entryNodeIds: ["entry"], exitNodeIds: ["exit"],
-  nodes: [{ id: "entry", kind: "entry" }, { id: "gate", kind: "decision", branchCoverage: "complete" }, { id: "send", kind: "effect", handler: "send", responsibility: "source_receipt_and_exception_evidence", messageRef: "message.confirmation", expectedEvidence: [{ id: "command-attempt", authority: "ExecutionLedger" }] }, { id: "exit", kind: "exit" }],
+  nodes: [{ id: "entry", kind: "entry" }, { id: "gate", kind: "decision", branchCoverage: "complete" }, { id: "send", kind: "effect", handler: "send", responsibility: "source_receipt_and_exception_evidence", at: "start-60m", skipIfPast: true, predicate: { field: "reminderPreference", operator: "oneOf", values: ["some", "full"] }, messageRef: "message.confirmation", expectedEvidence: [{ id: "command-attempt", authority: "ExecutionLedger" }] }, { id: "exit", kind: "exit" }],
   edges: [{ id: "a", from: "entry", to: "gate", condition: "always", priority: 0 }, { id: "b", from: "gate", to: "send", condition: "confirmed", priority: 0 }, { id: "c", from: "gate", to: "exit", condition: "else", priority: 1 }, { id: "d", from: "send", to: "exit", condition: "always", priority: 0 }],
 });
 
@@ -89,5 +89,10 @@ describe("automation truth Phase A contract", () => {
     expect(() => validateSpec({ ...workflowSpec(), nodes: workflowSpec().nodes.map((node) => node.id === "send" ? { ...node, handler: "unknown" } : node) })).toThrow(/unregistered/);
     expect(() => validateSpec({ ...workflowSpec(), nodes: workflowSpec().nodes.map((node) => node.id === "send" ? { ...node, responsibility: "not-owned" } : node) })).toThrow(/responsibility/);
     expect(() => validateSpec({ ...workflowSpec(), nodes: workflowSpec().nodes.map((node) => node.id === "send" ? { ...node, expectedEvidence: [{ id: "provider", authority: "ExternalObservation", value: "embedded-fact" }] } : node) })).toThrow(/not allowed/);
+    expect(() => validateSpec({ ...workflowSpec(), nodes: workflowSpec().nodes.map((node) => node.id === "send" ? { ...node, at: "tomorrow" } : node) })).toThrow(/schedule anchor/);
+    expect(() => validateSpec({ ...workflowSpec(), nodes: workflowSpec().nodes.map((node) => node.id === "send" ? { ...node, skipIfPast: "true" } : node) })).toThrow(/boolean/);
+    expect(() => validateSpec({ ...workflowSpec(), nodes: workflowSpec().nodes.map((node) => node.id === "send" ? { ...node, predicate: { ...node.predicate, operator: "equals", values: ["some", "full"] } } : node) })).toThrow(/exactly one/);
+    expect(() => validateSpec({ ...workflowSpec(), nodes: workflowSpec().nodes.map((node) => node.id === "send" ? { ...node, predicate: { ...node.predicate, values: ["some", "some"] } } : node) })).toThrow(/duplicates/);
+    expect(() => validateSpec({ ...workflowSpec(), nodes: workflowSpec().nodes.map((node) => node.id === "entry" ? { ...node, at: "enroll", skipIfPast: false } : node) })).toThrow(/only effect or transform/);
   });
 });

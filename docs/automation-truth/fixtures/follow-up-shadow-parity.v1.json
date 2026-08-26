@@ -1,0 +1,96 @@
+{
+  "fixtureVersion": "follow-up-shadow-parity.v1",
+  "purpose": "Pure Phase B parity fixture only. It neither invokes the Worker nor proves the current GHL canvas.",
+  "source": {
+    "repository": "Eben283/amarimethod-website",
+    "commit": "f68b995da92e6a1be5f9da123f0d2889788291d8",
+    "runtimeVersion": "follow-up-workflow.v2-shadow",
+    "workflowPath": "reminder-engine-worker/src/follow-up-workflow.js",
+    "workflowSha256": "4d4a3aea7ca907fcbcc23eaa93eca38eefed706ebcd2f8206883426b2db483de",
+    "definitionPath": "reminder-engine-worker/src/workflow-definition.js",
+    "definitionSha256": "1727731e5ef0aebbe606f4ca03ae4f67ad7e779fedea9287862df59cbbb380e6",
+    "liveSender": "Follow up session Confirmation email / reminder flow",
+    "liveSenderOwner": "GHL",
+    "currentWorkerExecutionMode": "shadow"
+  },
+  "limitations": [
+    "The published GHL builder remains the sole Follow-Up sender and is externally owned.",
+    "This fixture is source parity with the committed shadow definition, not a fresh native GHL-canvas readback.",
+    "No deployment identity, D1 schema state, provider receipt, enrollment, or message delivery is asserted by this fixture.",
+    "The source definition contains seven calendar IDs, while earlier GHL documentation contains varying historical counts; Phase B does not resolve that externally owned discrepancy.",
+    "The cancellation entry records only a source-level handoff. Current cancellation-removal workflows remain external GHL owners; their complete live topology is not proven by this fixture.",
+    "The graph's parallel branches mean independently scheduled appointment-relative obligations, not a serial sequence or proof that any message sent."
+  ],
+  "d1SchemaHead": {
+    "migrationId": "reliability-spine-v1",
+    "version": 1,
+    "sourceSha256": "d5e4648f4f8367245ab17cd137a9854cf1a27c66fcbf7e99d69c64b2df548564"
+  },
+  "artifacts": {
+    "compilerArtifactDigest": "721e97360e624eba9be1a597871a6759868e9d053049559e828a260e194aa591",
+    "handlerArtifactDigests": {
+      "observe-followup-node": "4d4a3aea7ca907fcbcc23eaa93eca38eefed706ebcd2f8206883426b2db483de",
+      "observe-no-show-dependency": "1727731e5ef0aebbe606f4ca03ae4f67ad7e779fedea9287862df59cbbb380e6"
+    },
+    "messageArtifacts": {
+      "message.booked-internal": { "audience": "internal", "channel": "email", "subject": "{{firstName}} booked a {{calendarName}}", "body": "Hey there big dog, {{contactName}} booked a {{calendarName}} for {{appointmentDate}} at {{appointmentTime}}. How they'll connect: {{meetingLocation}}" },
+      "message.confirmation": { "audience": "client", "channel": "email", "from": "Amari Method <eben@amarimethod.com>", "subject": "Your follow-up session is confirmed", "preheader": "See you soon. Here are your session details.", "body": "Hi {{firstName}},\n\nYour follow-up session with Garrett is confirmed:\n{{appointmentDate}} at {{appointmentTime}}\nHow we'll connect: {{meetingLocation}}\n\nReschedule: {{rescheduleLink}}\nCancel: {{cancellationLink}}\n\nAdd to Google Calendar: {{addToGoogleCalendar}}\nAdd to iCal/Outlook: {{addToIcalOutlook}}\n\nThe Amari Method Team" },
+      "message.day-before": { "audience": "client", "channel": "email", "from": "Amari Method <eben@amarimethod.com>", "subject": "Your session on {{appointmentDate}} at {{appointmentTime}}", "preheader": "Quick reminder about your session tomorrow.", "body": "Hi {{firstName}},\n\nJust a heads up about your upcoming session with Garrett:\n{{appointmentDate}} at {{appointmentTime}}\nHow we'll connect: {{meetingLocation}}\n\nIf something came up:\nReschedule: {{rescheduleLink}}\nCancel: {{cancellationLink}}\n\nLooking forward to it.\nThe Amari Method Team" },
+      "message.one-hour-email": { "audience": "client", "channel": "email", "from": "Amari Method <eben@amarimethod.com>", "subject": "Your session at {{appointmentTime}}", "preheader": "See you soon.", "body": "Hi {{firstName}},\n\nYour follow-up session with Garrett is at {{appointmentTime}}.\n{{meetingLocation}}\n\nSee you soon.\nThe Amari Method Team" },
+      "message.one-hour-sms": { "audience": "client", "channel": "sms", "body": "Hi {{firstName}}, just a friendly reminder. Your appointment with Garrett is at {{appointmentTime}}. {{meetingLocation}}" },
+      "message.one-hour-internal": { "audience": "internal", "channel": "sms", "body": "{{contactName}}'s {{calendarName}} appointment at {{appointmentTime}}. These were the specific issues this person wanted to address (if applicable): {{additionalInformation}} How they'll connect: {{meetingLocation}}" }
+    }
+  },
+  "effectOwnership": [
+    {
+      "responsibility": "followup_confirmation_and_reminder_send",
+      "owner": "Follow up session Confirmation email / reminder flow",
+      "mode": "live",
+      "effectful": true,
+      "observer": false
+    },
+    {
+      "responsibility": "followup_cancellation_removal",
+      "owner": "GHL Follow-Up cancellation-removal workflows",
+      "mode": "live",
+      "effectful": true,
+      "observer": false
+    }
+  ],
+  "workflowSpec": {
+    "workflowId": "follow-up-session-reminders",
+    "version": "2",
+    "handlers": ["observe-followup-node", "observe-no-show-dependency"],
+    "entryNodeIds": ["confirmed-normal-event", "appointment-cancelled"],
+    "exitNodeIds": ["reminders-complete", "cancellation-handoff"],
+    "nodes": [
+      { "id": "confirmed-normal-event", "kind": "entry" },
+      { "id": "appointment-cancelled", "kind": "entry" },
+      { "id": "remove-no-show-series", "kind": "transform", "handler": "observe-no-show-dependency", "at": "enroll", "skipIfPast": false },
+      { "id": "booked-internal", "kind": "effect", "handler": "observe-followup-node", "responsibility": "followup_confirmation_and_reminder_send", "at": "enroll", "skipIfPast": false, "messageRef": "message.booked-internal", "expectedEvidence": [{ "id": "provider-receipt", "authority": "ExternalObservation" }] },
+      { "id": "confirmation", "kind": "effect", "handler": "observe-followup-node", "responsibility": "followup_confirmation_and_reminder_send", "at": "enroll", "skipIfPast": false, "messageRef": "message.confirmation", "expectedEvidence": [{ "id": "provider-receipt", "authority": "ExternalObservation" }] },
+      { "id": "day-before", "kind": "effect", "handler": "observe-followup-node", "responsibility": "followup_confirmation_and_reminder_send", "at": "start-1440m", "skipIfPast": true, "predicate": { "field": "reminderPreference", "operator": "equals", "values": ["full"] }, "messageRef": "message.day-before", "expectedEvidence": [{ "id": "provider-receipt", "authority": "ExternalObservation" }] },
+      { "id": "one-hour-email", "kind": "effect", "handler": "observe-followup-node", "responsibility": "followup_confirmation_and_reminder_send", "at": "start-60m", "skipIfPast": true, "predicate": { "field": "reminderPreference", "operator": "equals", "values": ["full"] }, "messageRef": "message.one-hour-email", "expectedEvidence": [{ "id": "provider-receipt", "authority": "ExternalObservation" }] },
+      { "id": "one-hour-sms", "kind": "effect", "handler": "observe-followup-node", "responsibility": "followup_confirmation_and_reminder_send", "at": "start-60m", "skipIfPast": true, "predicate": { "field": "reminderPreference", "operator": "oneOf", "values": ["some", "full"] }, "messageRef": "message.one-hour-sms", "expectedEvidence": [{ "id": "provider-receipt", "authority": "ExternalObservation" }] },
+      { "id": "one-hour-internal", "kind": "effect", "handler": "observe-followup-node", "responsibility": "followup_confirmation_and_reminder_send", "at": "start-60m", "skipIfPast": true, "predicate": { "field": "reminderPreference", "operator": "oneOf", "values": ["some", "full"] }, "messageRef": "message.one-hour-internal", "expectedEvidence": [{ "id": "provider-receipt", "authority": "ExternalObservation" }] },
+      { "id": "cancel-pending-reminders", "kind": "effect", "handler": "observe-followup-node", "responsibility": "followup_cancellation_removal", "at": "cancelled", "skipIfPast": false, "expectedEvidence": [{ "id": "cancellation-observation", "authority": "ExternalObservation" }] },
+      { "id": "reminders-complete", "kind": "exit" },
+      { "id": "cancellation-handoff", "kind": "exit" }
+    ],
+    "edges": [
+      { "id": "entry-to-no-show", "from": "confirmed-normal-event", "to": "remove-no-show-series", "condition": "always", "priority": 0 },
+      { "id": "no-show-to-internal", "from": "remove-no-show-series", "to": "booked-internal", "condition": "always", "priority": 0 },
+      { "id": "internal-to-confirmation", "from": "booked-internal", "to": "confirmation", "condition": "always", "priority": 0 },
+      { "id": "confirmation-day-before", "from": "confirmation", "to": "day-before", "condition": "always", "priority": 0 },
+      { "id": "confirmation-one-hour-email", "from": "confirmation", "to": "one-hour-email", "condition": "always", "priority": 1 },
+      { "id": "confirmation-one-hour-sms", "from": "confirmation", "to": "one-hour-sms", "condition": "always", "priority": 2 },
+      { "id": "confirmation-one-hour-internal", "from": "confirmation", "to": "one-hour-internal", "condition": "always", "priority": 3 },
+      { "id": "day-before-complete", "from": "day-before", "to": "reminders-complete", "condition": "always", "priority": 0 },
+      { "id": "email-complete", "from": "one-hour-email", "to": "reminders-complete", "condition": "always", "priority": 0 },
+      { "id": "sms-complete", "from": "one-hour-sms", "to": "reminders-complete", "condition": "always", "priority": 0 },
+      { "id": "internal-complete", "from": "one-hour-internal", "to": "reminders-complete", "condition": "always", "priority": 0 },
+      { "id": "cancel-entry", "from": "appointment-cancelled", "to": "cancel-pending-reminders", "condition": "always", "priority": 0 },
+      { "id": "cancel-handoff", "from": "cancel-pending-reminders", "to": "cancellation-handoff", "condition": "always", "priority": 0 }
+    ]
+  }
+}

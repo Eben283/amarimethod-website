@@ -8,9 +8,12 @@ A `WorkflowSpec` is a closed, immutable directed graph. The Phase A pure validat
 unknown schema fields (including external facts/status/rollback), duplicate IDs, dangling or
 unreachable nodes, invalid entries/exits, missing decision `else` coverage, duplicate outgoing
 priorities, unregistered handlers, and effect nodes without a responsibility registered in the
-compiler-supplied effect-ownership registry. Effect nodes may name a validated `messageRef` and
-must declare validated expected-evidence references (authority plus stable ID), never an external
-observation value. Node IDs, edge IDs, handlers, message references, entry nodes, exits, branch predicates, and expected evidence are validated before
+compiler-supplied effect-ownership registry. Effect and transform nodes must declare a validated
+schedule anchor (`enroll`, `cancelled`, or a start-relative offset), `skipIfPast`, and, when
+applicable, a structured predicate (`field`, `operator`, `values`). Effect nodes may name a
+validated `messageRef` and must declare validated expected-evidence references (authority plus
+stable ID), never an external observation value. Node IDs, edge IDs, handlers, message references,
+entry nodes, exits, scheduling semantics, branch predicates, and expected evidence are validated before
 compile. The compiler rejects duplicate IDs, dangling edges, unreachable effect/exit nodes,
 unsupported handlers, ambiguous priority, missing branch coverage, and an effect node without a
 declared ownership responsibility. Runtime executes only the `CompiledPlan`; Staff renders that
