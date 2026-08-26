@@ -68,15 +68,6 @@
   .axis-closer{margin-top:36px;max-width:72ch}
   .axis-closer strong{color:var(--ink);font-weight:500}
 
-  /* First session in four parts (numbered grid) */
-  .fourparts{padding:clamp(64px,8vw,110px) 0}
-  .fourparts-grid{display:grid;grid-template-columns:1fr 1fr;gap:0;border-top:1px solid var(--line)}
-  .fp{padding:42px clamp(24px,3vw,48px);border-bottom:1px solid var(--line)}
-  .fp:nth-child(odd){border-right:1px solid var(--line)}
-  .fp .num{font-family:var(--serif);font-size:1.1rem;color:var(--peach);letter-spacing:.1em;display:block;margin-bottom:16px}
-  .fp h3{font-size:clamp(1.4rem,2.2vw,1.85rem);font-weight:500;max-width:20ch}
-  .fp p{margin-top:16px;max-width:48ch}
-
   /* The 8 protocols (tan panel) */
   .protocols{padding:clamp(64px,8vw,110px) 0}
   .protocols-panel{background:var(--tan);border-radius:2px;padding:clamp(40px,5vw,72px) clamp(28px,4vw,64px)}
@@ -94,29 +85,14 @@
   .proto-closer cite{display:flex;align-items:center;gap:14px;margin-top:16px;font-style:normal;font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.2em;text-transform:uppercase;color:var(--body)}
   .proto-closer cite::before{content:"";width:30px;height:1px;background:var(--ink);flex:none}
 
-  /* Three rings */
-  .rings{padding:clamp(64px,8vw,110px) 0}
-  .rings-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border-top:1px solid var(--line)}
-  .ring{padding:40px clamp(20px,2.4vw,36px);border-bottom:1px solid var(--line);border-right:1px solid var(--line)}
-  .ring:first-child{border-left:1px solid var(--line)}
-  .ring .rnum{font-family:var(--serif);font-style:normal;font-size:.95rem;color:var(--peach);letter-spacing:.12em;text-transform:uppercase;display:block;margin-bottom:14px}
-  .ring h3{font-size:clamp(1.35rem,2vw,1.7rem);font-weight:500}
-  .ring p{margin-top:14px;font-size:15px;max-width:40ch}
-
-  /* The journey (3 phases) */
+  /* The shared work */
   .journey{padding:clamp(64px,8vw,110px) 0;background:var(--cream-2)}
-  .journey-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:22px}
+  .journey-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:22px}
   .phase{background:var(--cream);padding:40px 32px;min-height:260px;border-radius:1px}
   .phase .ltag{font-family:var(--sans);font-weight:600;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--body);display:block}
   .phase h3{font-size:clamp(1.7rem,2.6vw,2.2rem);font-weight:500;margin-top:12px}
   .phase p{margin-top:14px;font-size:15px}
   .phase p em{font-style:normal;color:var(--ink)}
-
-  /* How it's different (centered prose) */
-  .different{padding:clamp(80px,10vw,130px) 0}
-  .different .sec-head{margin-bottom:clamp(28px,3vw,40px)}
-  .different .body{margin:0 auto;max-width:68ch;font-size:1.05rem;color:var(--body)}
-  .different .body strong{color:var(--ink);font-weight:500}
 
   /* Objections (Q/A list) */
   .obj{padding:clamp(64px,8vw,110px) 0;background:var(--cream-2)}
@@ -173,11 +149,8 @@
   }
 
   @media (max-width:1000px){
-    .principle-grid,.axis-grid,.fourparts-grid,.journey-grid{grid-template-columns:1fr}
-    .fp:nth-child(odd){border-right:none}
+    .principle-grid,.axis-grid,.journey-grid{grid-template-columns:1fr}
     .proto-grid{grid-template-columns:1fr 1fr}
-    .rings-grid{grid-template-columns:1fr}
-    .ring{border-left:1px solid var(--line)}
     .obj-item{grid-template-columns:1fr;gap:14px}
   }
   @media (max-width:640px){
@@ -312,35 +285,6 @@
   </div>
 </section>
 
-<!-- FIRST SESSION IN FOUR PARTS -->
-<section class="fourparts">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">What happens</span>
-      <h2>Your $29 Assessment, in four parts.</h2>
-      <p>Private, in person, and 50 minutes.</p>
-    </div>
-    <div class="fourparts-grid">
-      <div class="fp reveal">
-        <h3>Assessment</h3>
-        <p>Garrett looks at how you move and what is currently getting in the way—not only the place that hurts.</p>
-      </div>
-      <div class="fp reveal">
-        <h3>Hands-on guidance</h3>
-        <p>Using movement, breath, simple props, and physical support when appropriate, Garrett guides a precise setup while you stay active in the work.</p>
-      </div>
-      <div class="fp reveal">
-        <h3>What changes</h3>
-        <p>The work can create a substantial, immediate felt change: less pain, more available movement, or a body that no longer has to hold itself in the same way.</p>
-      </div>
-      <div class="fp reveal">
-        <h3>What comes next</h3>
-        <p>You decide whether to continue. A longer practice gives you time with a skilled teacher as your body changes, plus visual cues to support your work between sessions.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
 <!-- THE 8 PROTOCOLS -->
 <section class="protocols">
   <div class="wrap">
@@ -400,71 +344,25 @@
   </div>
 </section>
 
-<!-- THREE RINGS -->
-<section class="rings">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">What you get</span>
-      <h2>What a session can make possible.</h2>
-    </div>
-    <div class="rings-grid">
-      <div class="ring reveal">
-        <span class="rnum">Ring 01</span>
-        <h3>A change you can feel.</h3>
-        <p>You come in with something that is getting in the way. The first question is whether a precise setup changes how it feels or moves.</p>
-      </div>
-      <div class="ring reveal" style="transition-delay:.06s">
-        <span class="rnum">Ring 02</span>
-        <h3>More available movement.</h3>
-        <p>When the body does not have to organize itself around the same strain, movement can feel more available and less effortful.</p>
-      </div>
-      <div class="ring reveal" style="transition-delay:.12s">
-        <span class="rnum">Ring 03</span>
-        <h3>A learned physical reference.</h3>
-        <p>Over time, you learn what a more capable version of your own body feels like—and how to return to it with less outside help.</p>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- THE JOURNEY -->
+<!-- THE WORK IS SHARED -->
 <section class="journey">
   <div class="wrap">
     <div class="sec-head reveal">
-      <span class="eyebrow">The longer practice</span>
-      <h2>It develops with your body.</h2>
+      <span class="eyebrow">How it works</span>
+      <h2>Garrett guides. You do the work.</h2>
     </div>
     <div class="journey-grid">
       <div class="phase reveal">
-        <span class="ltag">Phase 01</span>
-        <h3>First shift</h3>
-        <p>The Assessment is a chance to experience the work directly. You do not need to know the method before you arrive.</p>
+        <span class="ltag">Garrett brings</span>
+        <h3>Hands, attention, and a precise setup.</h3>
+        <p>He watches how you move, creates a position to work from, and changes the input as your body responds.</p>
       </div>
       <div class="phase reveal" style="transition-delay:.06s">
-        <span class="ltag">Phase 02</span>
-        <h3>Teacher-led practice</h3>
-        <p>As your body changes, Garrett changes the work with you. This is not a fixed sequence to finish or a set of exercises handed over on day one.</p>
-      </div>
-      <div class="phase reveal" style="transition-delay:.12s">
-        <span class="ltag">Phase 03</span>
-        <h3>More self-direction</h3>
-        <p>With time, you can recognize more of what your body needs and use the work you have learned between sessions. Garrett remains the guide as the practice evolves.</p>
+        <span class="ltag">You bring</span>
+        <h3>Movement, attention, and your own experience.</h3>
+        <p>You move, breathe, engage, and notice the difference yourself. The work is not done to you and it is not a routine you are sent home to perform.</p>
       </div>
     </div>
-  </div>
-</section>
-
-<!-- QUIET DIVIDER -->
-<div class="divider-strip" style="background-image:url('/images/photos/materials/wood-floor-grain.jpg')"></div>
-
-<!-- HOW IT'S DIFFERENT -->
-<section class="different">
-  <div class="wrap">
-    <div class="sec-head reveal">
-      <span class="eyebrow">How it's different</span>
-      <h2>This is not a routine you are sent home to perform.</h2>
-    </div>
-    <p class="different-body body reveal">The difference is the work you do together in the room. <strong>You are not passively receiving a treatment, and you are not given a generic exercise list.</strong> Garrett uses his hands, attention, and experience to guide a precise setup; you move, breathe, engage, and notice what changes. The aim is a physical result you can feel—not an abstract idea about your body.</p>
   </div>
 </section>
 
