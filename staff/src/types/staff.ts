@@ -373,7 +373,7 @@ export interface ReliabilitySourceEventDetail {
 export interface ReliabilitySpineResponse {
   success: true;
   configured: boolean;
-  family: 'follow-up-session-reminders';
+  family: 'follow-up-session-reminders' | 'no-show-missed-count';
   route: {
     accepted: Array<{ id: string; transition: 'received' | 'authenticated' | 'normalized' | 'accepted' | 'dispatched'; label: string; detail: string }>;
     rejected: { id: string; transition: 'rejected'; label: string; detail: string };

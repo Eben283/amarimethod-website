@@ -75,14 +75,38 @@ describe("handleWebhook — the GHL appointment ingest on the worker (no Pages n
     [["other"], "false"],
     [[], "false"],
   ])("reads affiliate-partner branching from the canonical contact tags: %j", async (tags, expected) => {
-    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ contact: { tags } }), { status: 200 }));
+    fetchMock.mockResolvedValueOnce(new Response(JSON.stringify({ contact: {
+      tags,
+      customFields: [{ id: "e9COM3UBr7m8GnCTPPYG", fieldValue: "3" }],
+    } }), { status: 200 }));
     const event = {
       recognized: true, type: "noshow", calendarId: "ySmht5hx4uZGEpgZrlCw",
       contactId: "contact-no-show", appointmentId: "appointment-no-show",
     };
     const enriched = await enrichNoShowAffiliateStatus({ PORTAL_KV: {} }, event);
     expect(enriched.context.affiliatePartner).toBe(expected);
+    expect(enriched.context.missedAppointmentsObserved).toBe(3);
     expect(String(fetchMock.mock.calls[0][0])).toContain("/contacts/contact-no-show");
+  });
+
+  it("keeps the live GHL counter path moving when shadow persistence is unavailable", async () => {
+    const payload = {
+      contact_id: "cont_no_show", appointment_id: "appt_no_show",
+      calendar_id: "ySmht5hx4uZGEpgZrlCw", status: "noshow", event_type: "normal",
+      start_time: "2026-08-23T09:00:00-07:00", source: "appointment-events-webhook",
+    };
+    fetchMock.mockImplementation(async (url) => {
+      if (String(url).includes("/contacts/")) return new Response(JSON.stringify({ contact: { tags: [], customFields: [] } }), { status: 200 });
+      return new Response(JSON.stringify({ success: true, actions: [] }), { status: 200 });
+    });
+    const res = await handleWebhook(req(payload, SECRET), {
+      ...env, PORTAL_KV: {}, NO_SHOW_COUNTER_SHADOW_ENABLED: "enabled",
+      NO_SHOW_COUNTER_SOURCE_VERSION: "ghl:no-show-increment:v7", SOURCE_REVISION: "git:test", WORKER_VERSION: "worker-test",
+    }, Date.now());
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.errors).toContain("no-show counter shadow: capture unavailable");
+    expect(env.REMINDER_DB._events.find((row) => row.action === "no_show_counter_shadow_capture")?.outcome).toBe("blocked");
   });
 
   it("surfaces a no-show contact-read failure and creates no client steps", async () => {

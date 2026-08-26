@@ -91,6 +91,26 @@ describe("staff-automations — views", () => {
     }));
   });
 
+  it("serves the allowlisted No Show missed-count shadow route without presenting an empty queue as healthy", async () => {
+    const res = await onRequestGet(makeContext("view=reliability&family=no-show-missed-count", {}));
+    expect(res.status).toBe(200);
+    expect(await res.json()).toEqual(expect.objectContaining({
+      family: "no-show-missed-count",
+      health: expect.objectContaining({ truth: "Unknown", reason: "authority_unavailable" }),
+      route: expect.objectContaining({
+        accepted: expect.arrayContaining([
+          expect.objectContaining({ transition: "accepted", label: "Record expected missed-count increment" }),
+        ]),
+      }),
+    }));
+  });
+
+  it("rejects an unknown reliability family before any evidence read", async () => {
+    const res = await onRequestGet(makeContext("view=reliability&family=anything-else", { AUTOMATION_DB: { prepare: vi.fn() } }));
+    expect(res.status).toBe(400);
+    expect(await res.json()).toEqual({ error: "Unknown reliability family" });
+  });
+
   it("rejects an authenticated but unassigned staff identity before reading reliability evidence", async () => {
     requireStaffAuth.mockResolvedValueOnce({ error: null, payload: { role: "staff", user: "Other" } });
     const db = { prepare: vi.fn() };

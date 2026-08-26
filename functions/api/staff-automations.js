@@ -40,7 +40,15 @@ import {
   readReliabilityCounts,
   recordEvidenceAccess,
 } from "../lib/reliability-store.js";
-import { FOLLOW_UP_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE } from "../lib/reliability-contract.js";
+import {
+  FOLLOW_UP_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE,
+  NO_SHOW_MISSED_COUNT_FAMILY, NO_SHOW_COUNTER_RELIABILITY_ROUTE,
+} from "../lib/reliability-contract.js";
+
+const RELIABILITY_ROUTES = new Map([
+  [FOLLOW_UP_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE],
+  [NO_SHOW_MISSED_COUNT_FAMILY, NO_SHOW_COUNTER_RELIABILITY_ROUTE],
+]);
 
 const VALID_CONTACT_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const VALID_AUTOMATION_KEY = /^[a-z0-9][a-z0-9-]{0,79}$/;
@@ -232,26 +240,31 @@ export async function onRequestGet(context) {
   try {
     if (view === "reliability") {
       const nowMs = Date.now();
+      const requestedFamily = (url.searchParams.get("family") || FOLLOW_UP_FAMILY).trim();
+      const reliabilityRoute = RELIABILITY_ROUTES.get(requestedFamily);
+      if (!reliabilityRoute) {
+        return new Response(JSON.stringify({ error: "Unknown reliability family" }), { status: 400, headers });
+      }
       const isEben = String(payload?.user || "").toLowerCase() === "eben";
       const isGarrett = String(payload?.user || "").toLowerCase() === "garrett";
       if (!isEben && !isGarrett) {
         return new Response(JSON.stringify({ error: "Reliability evidence is restricted to assigned staff" }), { status: 403, headers });
       }
       const health = await readReliabilityHealth(db, {
-        family: FOLLOW_UP_FAMILY,
+        family: requestedFamily,
         nowMs,
         maxAgeMs: 24 * 60 * 60 * 1000,
       });
       if (!db) {
         return new Response(JSON.stringify({
-          success: true, configured: false, family: FOLLOW_UP_FAMILY, health,
-          route: FOLLOW_UP_RELIABILITY_ROUTE, sourceEvents: [], exceptions: [], sourceEventDetail: null,
+          success: true, configured: false, family: requestedFamily, health,
+          route: reliabilityRoute, sourceEvents: [], exceptions: [], sourceEventDetail: null,
         }), { status: 200, headers });
       }
       if (health.reason === "schema_unproven" || health.reason === "authority_read_failed") {
         return new Response(JSON.stringify({
-          success: true, configured: true, family: FOLLOW_UP_FAMILY, health,
-          route: FOLLOW_UP_RELIABILITY_ROUTE, sourceEvents: [], exceptions: [], sourceEventDetail: null,
+          success: true, configured: true, family: requestedFamily, health,
+          route: reliabilityRoute, sourceEvents: [], exceptions: [], sourceEventDetail: null,
           access: isEben ? "evidence_control" : "assigned_actions_only",
         }), { status: 200, headers });
       }
@@ -262,32 +275,32 @@ export async function onRequestGet(context) {
       if (sourceEventId && !isEben) {
         return new Response(JSON.stringify({ error: "Source evidence is restricted to Eben" }), { status: 403, headers });
       }
-      const queue = await readExceptionQueue(db, { family: FOLLOW_UP_FAMILY });
+      const queue = await readExceptionQueue(db, { family: requestedFamily });
       const exceptions = isEben
       ? queue
       : queue.filter((item) => String(item.accountable_owner || "").toLowerCase() === "garrett");
       const counts = await readReliabilityCounts(db, {
-        family: FOLLOW_UP_FAMILY, accountableOwner: isEben ? null : "Garrett",
+        family: requestedFamily, accountableOwner: isEben ? null : "Garrett",
       });
       const actor = isEben ? "Eben" : "Garrett";
       const sourceEventDetail = sourceEventId
-        ? await readSourceEventDetail(db, sourceEventId, { family: FOLLOW_UP_FAMILY })
+        ? await readSourceEventDetail(db, sourceEventId, { family: requestedFamily })
         : null;
       if (sourceEventId && !sourceEventDetail) {
-        return new Response(JSON.stringify({ error: "Follow-Up source event not found" }), { status: 404, headers });
+        return new Response(JSON.stringify({ error: "Reliability source event not found" }), { status: 404, headers });
       }
       await recordEvidenceAccess(db, {
-        actor, family: FOLLOW_UP_FAMILY,
+        actor, family: requestedFamily,
         action: sourceEventId ? "view_source" : "view_summary",
         sourceEventId: sourceEventId || null, occurredAt: nowMs,
       });
       return new Response(JSON.stringify({
         success: true,
         configured: true,
-        family: FOLLOW_UP_FAMILY,
-        route: FOLLOW_UP_RELIABILITY_ROUTE,
+        family: requestedFamily,
+        route: reliabilityRoute,
         health,
-        sourceEvents: isEben ? await readRecentSourceEvents(db, { family: FOLLOW_UP_FAMILY }) : [],
+        sourceEvents: isEben ? await readRecentSourceEvents(db, { family: requestedFamily }) : [],
         exceptions,
         sourceEventDetail,
         sourceEventTotal: isEben ? counts.sourceEventTotal : null,
