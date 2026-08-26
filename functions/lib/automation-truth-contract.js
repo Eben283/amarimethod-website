@@ -17,6 +17,7 @@ const NON_OPTIMISTIC = new Set(["Unknown", "Degraded", "Broken"]);
 const HEALTH = new Set(TRUTH_STATES);
 const EFFECT_MODES = new Set(["draft", "shadow", "live", "retired", "read"]);
 const NODE_KINDS = new Set(["entry", "decision", "wait", "effect", "exit", "transform"]);
+const PREDICATE_OPERATORS = new Set(["equals", "oneOf"]);
 
 function requiredString(value, label) {
   if (typeof value !== "string" || !value.trim()) throw new TypeError(`${label} is required`);
@@ -48,6 +49,24 @@ function requiredDate(value, label) {
 }
 function strictKeys(value, keys, label) {
   for (const key of Object.keys(value)) if (!keys.has(key)) throw new TypeError(`${label}.${key} is not allowed`);
+}
+function validateScheduleAt(value, label) {
+  const at = requiredString(value, label);
+  if (!/^(enroll|cancelled|start-[1-9][0-9]*m)$/.test(at)) throw new TypeError(`${label} is not a supported schedule anchor`);
+  return at;
+}
+function validatePredicate(predicate, label) {
+  if (!predicate || typeof predicate !== "object" || Array.isArray(predicate)) throw new TypeError(`${label} must be an object`);
+  strictKeys(predicate, new Set(["field", "operator", "values"]), label);
+  requiredString(predicate.field, `${label}.field`);
+  oneOf(predicate.operator, PREDICATE_OPERATORS, `${label}.operator`);
+  if (!Array.isArray(predicate.values) || !predicate.values.length || !predicate.values.every((value) => typeof value === "string" && value.trim())) {
+    throw new TypeError(`${label}.values must be a non-empty string list`);
+  }
+  const values = predicate.values.map((value) => value.trim());
+  if (new Set(values).size !== values.length) throw new TypeError(`${label}.values must not contain duplicates`);
+  if (predicate.operator === "equals" && values.length !== 1) throw new TypeError(`${label}.equals requires exactly one value`);
+  return Object.freeze({ field: predicate.field.trim(), operator: predicate.operator, values: Object.freeze(values) });
 }
 function validateCoverage(coverage) {
   if (!coverage || typeof coverage !== "object" || Array.isArray(coverage)) throw new TypeError("coverage is required");
@@ -151,9 +170,14 @@ export function validateWorkflowSpec(spec, { allowedResponsibilities } = {}) {
   const handlers = new Set(spec.handlers); const nodes = new Map();
   for (const node of spec.nodes) {
     if (!node || typeof node !== "object" || Array.isArray(node)) throw new TypeError("WorkflowSpec node must be an object");
-    strictKeys(node, new Set(["id", "kind", "handler", "responsibility", "branchCoverage", "messageRef", "expectedEvidence"]), "WorkflowSpec.node");
+    strictKeys(node, new Set(["id", "kind", "handler", "responsibility", "branchCoverage", "messageRef", "expectedEvidence", "at", "skipIfPast", "predicate"]), "WorkflowSpec.node");
     const id = requiredString(node.id, "node.id"); if (nodes.has(id)) throw new TypeError(`duplicate node id: ${id}`); oneOf(node.kind, NODE_KINDS, "node.kind");
     if (["effect", "transform"].includes(node.kind)) { requiredString(node.handler, "node.handler"); if (!handlers.has(node.handler)) throw new TypeError(`unregistered handler: ${node.handler}`); } else if (node.handler !== undefined) throw new TypeError("only effect or transform nodes may declare handlers");
+    if (["effect", "transform"].includes(node.kind)) {
+      validateScheduleAt(node.at, "node.at");
+      requiredBoolean(node.skipIfPast, "node.skipIfPast");
+      if (node.predicate !== undefined) validatePredicate(node.predicate, "node.predicate");
+    } else if (node.at !== undefined || node.skipIfPast !== undefined || node.predicate !== undefined) throw new TypeError("only effect or transform nodes may declare scheduling or predicate");
     if (node.kind === "effect") {
       requiredString(node.responsibility, "effect responsibility");
       if (!allowedResponsibilities.has(node.responsibility)) throw new TypeError(`unregistered effect responsibility: ${node.responsibility}`);
