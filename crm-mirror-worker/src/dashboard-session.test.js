@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { dashboardSessionActor, dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
+import { dashboardSessionActor, dashboardSessionCookie, dashboardSessionToken, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 
 const env = { WORKER_AUTH_SECRET: "test-secret" };
 
@@ -22,6 +22,13 @@ describe("CRM mirror dashboard sessions", () => {
       .resolves.toBe(false);
     await expect(hasDashboardSession(new Request("https://example.test", { headers: { Cookie: cookie.replace("a", "b") } }), env, 1_001))
       .resolves.toBe(false);
+  });
+
+  it("accepts the signed session header when an embedded browser blocks cookies", async () => {
+    const token = await dashboardSessionToken(env, "Garrett", 1_000);
+    const request = new Request("https://example.test", { headers: { "X-Amari-Dashboard-Session": token } });
+    await expect(hasDashboardSession(request, env, 1_001)).resolves.toBe(true);
+    await expect(dashboardSessionActor(request, env, 1_001)).resolves.toBe("Garrett");
   });
 
   it("keeps a short review session separate from the dashboard session", async () => {

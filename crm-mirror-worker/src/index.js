@@ -1,7 +1,7 @@
 import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-auth.js";
 import { dashboardHtml } from "./dashboard.js";
 import { clientDeskHtml } from "./client-desk.js";
-import { dashboardSessionActor, dashboardSessionCookie, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
+import { dashboardSessionActor, dashboardSessionCookie, dashboardSessionToken, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
 import { CommunicationCommandError, captureCommunicationCommand, communicationReadiness } from "./owned-sender.js";
 import { GmailReplyReadinessError, gmailReplyReadiness } from "./gmail-reply-readiness.js";
 import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
@@ -272,7 +272,8 @@ export default {
       const embed = url.searchParams.get("embed") === "1";
       if (embed) destinationParams.set("embed", "1");
       const parentOrigin = url.searchParams.get("parent_origin");
-      if (embed && TRUSTED_STAFF_PARENT_ORIGINS.has(parentOrigin)) {
+      const trustedEmbed = embed && TRUSTED_STAFF_PARENT_ORIGINS.has(parentOrigin);
+      if (trustedEmbed) {
         destinationParams.set("parent_origin", parentOrigin);
       }
       const requestedContact = url.searchParams.get("contact");
@@ -281,10 +282,15 @@ export default {
       }
       const destinationQuery = destinationParams.size ? `?${destinationParams}` : "";
       const destination = valid.view === "client-desk" ? "/client-desk" : "/";
+      // iOS may decline a third-party iframe cookie. For a trusted Staff embed,
+      // carry the same signed session in a URL fragment; it never reaches the
+      // server or referrers and Desk JS immediately removes it from the URL.
+      const embeddedSession = trustedEmbed ? await dashboardSessionToken(env, valid.actor || "Staff") : null;
+      const fragment = embeddedSession ? `#dashboard_session=${encodeURIComponent(embeddedSession)}` : "";
       return new Response(null, {
         status: 302,
         headers: {
-          Location: `${destination}${destinationQuery}`,
+          Location: `${destination}${destinationQuery}${fragment}`,
           "Set-Cookie": await dashboardSessionCookie(env, valid.actor || "Staff"),
           "Cache-Control": "no-store",
           "Referrer-Policy": "no-referrer",

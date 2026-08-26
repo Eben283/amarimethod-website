@@ -108,6 +108,9 @@ const CLIENT_DESK_HTML = `<!doctype html>
 (() => {
   const workspace = document.getElementById('workspace'), list = document.getElementById('thread-list'), conversation = document.getElementById('conversation'), record = document.getElementById('record'), query = document.getElementById('query'), count = document.getElementById('count'), unread = document.getElementById('unread'), mirrorHealth = document.getElementById('mirror-health');
   const requestedExternalContact = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('contact');
+  const dashboardSession = typeof window === 'undefined' ? null : new URLSearchParams(window.location.hash.slice(1)).get('dashboard_session');
+  if (dashboardSession && typeof history !== 'undefined') history.replaceState(null, '', window.location.pathname + window.location.search);
+  function dashboardFetch(resource, options = {}) { const headers = new Headers(options.headers || {}); if (dashboardSession) headers.set('X-Amari-Dashboard-Session', dashboardSession); return fetch(resource, { ...options, headers, credentials: 'same-origin' }); }
   let requestedContactOpened = false, selected = null, current = [], mirrorFreshness = null, timer, inboxRequest = 0, detailRequest = 0, detailController = null;
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const initials = (name) => String(name || 'Client').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
@@ -334,7 +337,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     if (text.length >= 2) params.set('query', text);
     count.textContent = 'Loading…';
     try {
-      const response = await fetch('/communications/inbox?' + params, { credentials: 'same-origin' });
+      const response = await dashboardFetch('/communications/inbox?' + params);
       if (!response.ok) throw new Error('unavailable');
       const data = await response.json();
       if (requestId !== inboxRequest) return;
@@ -397,7 +400,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     bindMobileBack();
     record.innerHTML = '<div class="conversation-empty" role="status"><div><strong>Loading client record</strong></div></div>';
     try {
-      const response = await fetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '?limit=1000', { credentials: 'same-origin', signal: detailController.signal });
+      const response = await dashboardFetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '?limit=1000', { signal: detailController.signal });
       if (!response.ok) throw new Error('unavailable');
       const data = await response.json();
       if (requestId !== detailRequest || selected !== contactId) return;
@@ -458,7 +461,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       });
       const expand = document.getElementById('show-fields');
       if (expand) expand.addEventListener('click', () => { document.getElementById('field-grid').innerHTML = visibleFieldMarkup(data.fields || []); expand.remove(); });
-      const seen = await fetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '/seen', { method: 'POST', credentials: 'same-origin' });
+      const seen = await dashboardFetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '/seen', { method: 'POST' });
       if (seen.ok && requestId === detailRequest && selected === contactId) {
         current = current.map((row) => row.contact_id === contactId ? { ...row, unread_inbound_count: 0 } : row);
         renderThreads();

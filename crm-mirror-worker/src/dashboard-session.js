@@ -2,6 +2,7 @@ const DASHBOARD_COOKIE_NAME = "amari_crm_dashboard";
 const REVIEW_COOKIE_NAME = "amari_crm_review";
 const DASHBOARD_SESSION_SECONDS = 8 * 60 * 60;
 const REVIEW_SESSION_SECONDS = 15 * 60;
+const DASHBOARD_SESSION_HEADER = "X-Amari-Dashboard-Session";
 const encoder = new TextEncoder();
 
 function base64url(bytes) {
@@ -41,9 +42,8 @@ async function sessionCookie(env, cookieName, durationSeconds, actor = "", nowSe
   return `${cookieName}=${token}; Max-Age=${durationSeconds}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned`;
 }
 
-async function sessionActor(request, env, cookieName, nowSeconds = Math.floor(Date.now() / 1000)) {
+async function sessionValueActor(value, env, cookieName, nowSeconds = Math.floor(Date.now() / 1000)) {
   if (!env.WORKER_AUTH_SECRET) return null;
-  const value = cookieValue(request, cookieName);
   const [expiresRaw, actorSegment, suppliedSignature, ...extra] = (value || "").split(".");
   const expiresAt = Number(expiresRaw);
   if (extra.length || !Number.isSafeInteger(expiresAt) || expiresAt <= nowSeconds || !actorSegment || !suppliedSignature) return null;
@@ -56,11 +56,21 @@ async function sessionActor(request, env, cookieName, nowSeconds = Math.floor(Da
 }
 
 async function hasSession(request, env, cookieName, nowSeconds) {
-  return Boolean(await sessionActor(request, env, cookieName, nowSeconds));
+  return Boolean(await sessionValueActor(cookieValue(request, cookieName), env, cookieName, nowSeconds));
+}
+
+async function dashboardSessionActorFromRequest(request, env, nowSeconds) {
+  const cookieActor = await sessionValueActor(cookieValue(request, DASHBOARD_COOKIE_NAME), env, DASHBOARD_COOKIE_NAME, nowSeconds);
+  return cookieActor || sessionValueActor(request.headers.get(DASHBOARD_SESSION_HEADER), env, DASHBOARD_COOKIE_NAME, nowSeconds);
 }
 
 export function dashboardSessionCookie(env, actor, nowSeconds) {
   return sessionCookie(env, DASHBOARD_COOKIE_NAME, DASHBOARD_SESSION_SECONDS, actor, nowSeconds);
+}
+
+export async function dashboardSessionToken(env, actor, nowSeconds) {
+  const cookie = await dashboardSessionCookie(env, actor, nowSeconds);
+  return cookie ? cookie.split(";", 1)[0].slice(`${DASHBOARD_COOKIE_NAME}=`.length) : null;
 }
 
 export function reviewSessionCookie(env, nowSeconds) {
@@ -68,11 +78,11 @@ export function reviewSessionCookie(env, nowSeconds) {
 }
 
 export function hasDashboardSession(request, env, nowSeconds) {
-  return hasSession(request, env, DASHBOARD_COOKIE_NAME, nowSeconds);
+  return dashboardSessionActorFromRequest(request, env, nowSeconds).then(Boolean);
 }
 
 export function dashboardSessionActor(request, env, nowSeconds) {
-  return sessionActor(request, env, DASHBOARD_COOKIE_NAME, nowSeconds);
+  return dashboardSessionActorFromRequest(request, env, nowSeconds);
 }
 
 export function hasReviewSession(request, env, nowSeconds) {
