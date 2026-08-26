@@ -59,6 +59,17 @@ function fakeD1() {
           for (const s of steps) if (s.enrollment_id === id && s.step_index === step_index) { s.status = status; changes++; }
           return { meta: { changes } };
         }
+        if (/UPDATE reminder_enrollments\s+SET status = 'failed'/.test(sql)) {
+          const [id] = a;
+          const e = enrollments.get(id);
+          const hasFailed = steps.some((step) => step.enrollment_id === id && step.status === "failed");
+          const hasPending = steps.some((step) => step.enrollment_id === id && step.status === "pending");
+          if (!e || e.flow_key !== "no-show-recovery" || e.status !== "active" || !hasFailed || hasPending) {
+            return { meta: { changes: 0 } };
+          }
+          e.status = "failed";
+          return { meta: { changes: 1 } };
+        }
         if (/UPDATE reminder_enrollments SET status = 'cancelled'/.test(sql)) {
           if (/flow_key = \? AND contact_id = \?/.test(sql)) {
             const [flowKey, contactId] = a;
@@ -300,6 +311,37 @@ describe("markStep", () => {
     await saveEnrollment(db, enrollment());
     await markStep(db, "initial-in-person:a1", 0, "sent");
     expect(await loadDueSteps(db, NOW)).toHaveLength(0);
+  });
+
+  it("closes No Show recovery as failed when its final pending step fails", async () => {
+    await saveEnrollment(db, enrollment({
+      flowKey: "no-show-recovery",
+      steps: [{ stepIndex: 0, at: "enroll", type: "sms", template: "affiliate-missed-sms", dueAt: NOW, status: "pending" }],
+    }));
+
+    await markStep(db, "no-show-recovery:a1", 0, "failed");
+
+    expect(db._steps[0].status).toBe("failed");
+    expect(db._enrollments.get("no-show-recovery:a1").status).toBe("failed");
+  });
+
+  it("keeps No Show recovery active while a later step is still pending", async () => {
+    await saveEnrollment(db, enrollment({ flowKey: "no-show-recovery" }));
+
+    await markStep(db, "no-show-recovery:a1", 0, "failed");
+
+    expect(db._enrollments.get("no-show-recovery:a1").status).toBe("active");
+    expect(db._steps.find((step) => step.step_index === 1).status).toBe("pending");
+  });
+
+  it("does not terminally close other reminder families after a final failure", async () => {
+    await saveEnrollment(db, enrollment({
+      steps: [{ stepIndex: 0, at: "enroll", type: "email", template: "confirmation", dueAt: NOW, status: "pending" }],
+    }));
+
+    await markStep(db, "initial-in-person:a1", 0, "failed");
+
+    expect(db._enrollments.get("initial-in-person:a1").status).toBe("active");
   });
 });
 

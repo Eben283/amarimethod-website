@@ -283,10 +283,38 @@ export async function loadDueSteps(db, nowMs, limit = 100) {
 }
 
 export async function markStep(db, id, stepIndex, status) {
-  await db
+  const stepUpdate = db
     .prepare(`UPDATE reminder_steps SET status = ? WHERE enrollment_id = ? AND step_index = ?`)
-    .bind(status, id, stepIndex)
-    .run();
+    .bind(status, id, stepIndex);
+
+  if (status !== "failed") {
+    await stepUpdate.run();
+    return;
+  }
+
+  // No Show recovery is the only active flow whose final delivery failure is itself a
+  // terminal lifecycle outcome. Keep the step transition and enrollment close in one D1
+  // transaction so Staff can never observe a failed final step as an active/no-work run.
+  // Other reminder families remain active because a later reschedule can legitimately add
+  // work to the same appointment enrollment.
+  const enrollmentUpdate = db
+    .prepare(
+      `UPDATE reminder_enrollments
+       SET status = 'failed'
+       WHERE enrollment_id = ?
+         AND flow_key = 'no-show-recovery'
+         AND status = 'active'
+         AND EXISTS (
+           SELECT 1 FROM reminder_steps
+           WHERE enrollment_id = ? AND status = 'failed'
+         )
+         AND NOT EXISTS (
+           SELECT 1 FROM reminder_steps
+           WHERE enrollment_id = ? AND status = 'pending'
+         )`,
+    )
+    .bind(id, id, id);
+  await db.batch([stepUpdate, enrollmentUpdate]);
 }
 
 export async function appendEvent(db, r) {
