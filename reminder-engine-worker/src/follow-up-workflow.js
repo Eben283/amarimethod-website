@@ -1,7 +1,8 @@
 import { defineWorkflow, executableFlow } from "./workflow-definition.js";
 
-// The literal Follow-Up workflow to be stored in D1 before it is ever enabled.
-// GHL remains its sender until the shadow/reconciliation and activation gates are complete.
+// Historical bundled v2 shadow seed; this file is not current runtime authority.
+// Amari executes persisted D1 definition v3 live. The exact GHL workflow is
+// Draft v36 rollback.
 export const FOLLOW_UP_WORKFLOW = defineWorkflow({
   id: "follow-up-session-reminders",
   name: "Follow-up session reminders",

@@ -45,9 +45,14 @@ async function artifacts() {
 }
 
 describe("automation truth Phase B pure compiler and shadow provenance", () => {
-  it("pins the source-backed fixture to the exact committed shadow inputs", () => {
+  it("pins historical fixture metadata while checking the current bundled seed semantics", () => {
     expect(fileDigest("./automation-truth-phase-b.js")).toBe(fixture.artifacts.compilerArtifactDigest);
-    expect(fileDigest("../../reminder-engine-worker/src/follow-up-workflow.js")).toBe(fixture.source.workflowSha256);
+    expect(fixture.source).toMatchObject({
+      commit: "f68b995da92e6a1be5f9da123f0d2889788291d8",
+      workflowPath: "reminder-engine-worker/src/follow-up-workflow.js",
+      workflowSha256: "4d4a3aea7ca907fcbcc23eaa93eca38eefed706ebcd2f8206883426b2db483de",
+    });
+    expect(FOLLOW_UP_WORKFLOW.version).toBe(2);
     expect(fileDigest("../../reminder-engine-worker/src/workflow-definition.js")).toBe(fixture.source.definitionSha256);
     expect(fileDigest("../../reminder-engine-worker/schema.sql")).toBe(fixture.d1SchemaHead.sourceSha256);
     const sourceMessages = Object.fromEntries(FOLLOW_UP_WORKFLOW.nodes

@@ -4,8 +4,11 @@
 
 This is a pure source/test/docs increment.  It does not import into a Worker or
 Staff app; it does not write D1; it does not alter a flag, binding, migration,
-sender, GHL workflow, provider, or deployment.  The only live Follow-Up sender
-remains **Follow up session Confirmation email / reminder flow**.
+sender, GHL workflow, provider, or deployment. At this fixture's historical
+capture point, **Follow up session Confirmation email / reminder flow** was the
+sole live Follow-Up sender. Current reconciled state is Amari's persisted
+Follow-Up definition v3 live, with that exact GHL workflow at Draft v36 as
+rollback.
 
 ## What is now mechanically proven
 
