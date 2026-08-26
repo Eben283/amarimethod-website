@@ -407,9 +407,12 @@ const CLIENT_DESK_HTML = `<!doctype html>
       const timeline = rawTimeline.map((event) => {
         const automationEvent = event.message_ref ? automationByMessageReference.get(String(event.message_ref)) : null;
         return automationEvent ? { ...event, automation_family: automationEvent.family, automation_contact_id: data.automationEvidence.contactId } : event;
-      });
+      }).sort((left, right) => String(left.occurred_at || '').localeCompare(String(right.occurred_at || '')) || String(left.message_ref || left.id || '').localeCompare(String(right.message_ref || right.id || '')));
       let activeTimelineFilter = 'all';
-      conversation.innerHTML = '<header class="client-head"><button class="mobile-back" type="button">← All contacts</button><div class="client-head-row"><span class="avatar">' + esc(initials(c.display_name)) + '</span><div><h2 class="client-name">' + esc(c.display_name || 'Unnamed client') + '</h2><p class="client-address">' + esc(c.email_normalized || c.phone_e164 || 'Client record') + '</p></div></div><p class="send-state">Messages are mirrored here. Sending stays in the approved staff channel.</p></header>' + timelineToolbar(activeTimelineFilter) + '<div class="timeline-scroll"><div class="timeline">' + timelineMarkup(timeline, activeTimelineFilter) + '</div></div>';
+      const allowedParentOrigin = new URLSearchParams(window.location.search).get('parent_origin');
+      const canReplyBySms = window.parent !== window && ['https://amarimethod.com', 'https://www.amarimethod.com'].includes(allowedParentOrigin || '') && /^[A-Za-z0-9]+$/.test(String(c.ghl_contact_id || ''));
+      const composer = canReplyBySms ? '<form class="composer" id="sms-composer"><label for="sms-reply">Reply by SMS<textarea id="sms-reply" maxlength="720" placeholder="Write a reply…" required></textarea></label><div class="composer-actions"><span class="composer-status" id="sms-status">Sends from the current Amari number.</span><button type="submit">Send SMS</button></div></form>' : '<p class="send-state">Messages are mirrored here. SMS reply is unavailable because this record is not linked to an active GHL contact.</p>';
+      conversation.innerHTML = '<header class="client-head"><button class="mobile-back" type="button">← All contacts</button><div class="client-head-row"><span class="avatar">' + esc(initials(c.display_name)) + '</span><div><h2 class="client-name">' + esc(c.display_name || 'Unnamed client') + '</h2><p class="client-address">' + esc(c.email_normalized || c.phone_e164 || 'Client record') + '</p></div></div></header>' + timelineToolbar(activeTimelineFilter) + '<div class="timeline-scroll"><div class="timeline">' + timelineMarkup(timeline, activeTimelineFilter) + '</div></div>' + composer;
       // The API supplies the authoritative next booked/confirmed appointment.
       // Do not let an earlier cancelled future hold replace it in the record UI.
       const profileData = {
@@ -420,12 +423,39 @@ const CLIENT_DESK_HTML = `<!doctype html>
       bindRecordNavigation();
       bindStaffHandoffs(conversation);
       bindMobileBack();
+      const scrollNewestIntoView = () => {
+        const scroll = conversation.querySelector('.timeline-scroll');
+        if (scroll) scroll.scrollTop = scroll.scrollHeight;
+      };
+      scrollNewestIntoView();
       conversation.querySelectorAll('[data-timeline-filter]').forEach((button) => button.addEventListener('click', () => {
         activeTimelineFilter = button.dataset.timelineFilter;
         conversation.querySelector('.timeline').innerHTML = timelineMarkup(timeline, activeTimelineFilter);
         bindStaffHandoffs(conversation);
         conversation.querySelectorAll('[data-timeline-filter]').forEach((item) => item.setAttribute('aria-pressed', String(item === button)));
+        scrollNewestIntoView();
       }));
+      const smsComposer = conversation.querySelector('#sms-composer');
+      smsComposer?.addEventListener('submit', (event) => {
+        event.preventDefault();
+        const textarea = conversation.querySelector('#sms-reply');
+        const button = smsComposer.querySelector('button');
+        const status = conversation.querySelector('#sms-status');
+        const message = textarea?.value.trim() || '';
+        if (!message || !canReplyBySms) return;
+        const requestId = 'sms_' + Date.now() + '_' + Math.random().toString(36).slice(2, 10);
+        button.disabled = true;
+        status.textContent = 'Sending…';
+        const receiveResult = (replyEvent) => {
+          if (replyEvent.origin !== allowedParentOrigin || replyEvent.data?.type !== 'amari:staff-send-sms-result' || replyEvent.data.requestId !== requestId) return;
+          window.removeEventListener('message', receiveResult);
+          button.disabled = false;
+          if (replyEvent.data.ok) { textarea.value = ''; status.textContent = replyEvent.data.deduped ? 'This exact text was already sent recently.' : 'Sent. It will appear here when the GHL mirror refreshes.'; }
+          else status.textContent = replyEvent.data.error || 'Text could not be sent.';
+        };
+        window.addEventListener('message', receiveResult);
+        window.parent.postMessage({ type: 'amari:staff-send-sms', requestId, contactId: c.ghl_contact_id, message }, allowedParentOrigin);
+      });
       const expand = document.getElementById('show-fields');
       if (expand) expand.addEventListener('click', () => { document.getElementById('field-grid').innerHTML = visibleFieldMarkup(data.fields || []); expand.remove(); });
       const seen = await fetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '/seen', { method: 'POST', credentials: 'same-origin' });

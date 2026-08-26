@@ -33,6 +33,7 @@ const MediaPage = lazy(() => import('./pages/MediaPage'));
 const DesignSystemPage = lazy(() => import('./pages/DesignSystemPage'));
 const OperationsPage = lazy(() => import('./pages/OperationsPage'));
 const ClientDeskPage = lazy(() => import('./pages/ClientDeskPage'));
+const CommunicationsPage = lazy(() => import('./pages/CommunicationsPage'));
 const CommunicationPreferencesPage = lazy(() => import('./pages/CommunicationPreferencesPage'));
 const AutomationRegistryPage = lazy(() => import('./pages/AutomationRegistryPage'));
 const PartnerRewardsPage = lazy(() => import('./pages/PartnerRewardsPage'));
@@ -105,6 +106,7 @@ function AppRoutes() {
         <Route path="today" element={<Navigate to="/calendar" replace />} />
         <Route path="clients" element={<Layout><ClientsPage /></Layout>} />
         <Route path="client-desk" element={<Layout><ClientDeskPage /></Layout>} />
+        <Route path="communications" element={<Layout><CommunicationsPage /></Layout>} />
         <Route path="balances" element={<Layout><BalancesPage /></Layout>} />
         <Route path="revenue" element={<Layout><RevenuePage /></Layout>} />
         <Route path="training" element={<Layout><TrainingPage /></Layout>} />

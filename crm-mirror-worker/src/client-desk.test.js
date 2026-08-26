@@ -45,16 +45,25 @@ describe("Client Desk message rendering", () => {
     expect(html).not.toContain("Staff hub");
   });
 
-  it("keeps the Desk read-only until Gmail replies and delivery reconciliation are mirrored", () => {
+  it("keeps SMS reply on the existing parent Staff sender rather than adding a mirror sender", () => {
     const html = clientDeskHtml();
     expect(html).toContain("This mirror does not send messages.");
-    expect(html).toContain("Sending stays in the approved staff channel.");
+    expect(html).toContain('id="sms-composer"');
+    expect(html).toContain("amari:staff-send-sms");
+    expect(html).toContain("amari:staff-send-sms-result");
+    expect(html).toContain("Sends from the current Amari number.");
     expect(html).not.toContain("Email ready.");
     expect(html).not.toContain("emailComposer(");
     expect(html).not.toContain("bindEmailComposer(");
     expect(html).not.toContain('id="email-compose"');
     expect(html).not.toContain("/client-desk/email-senders");
     expect(html).not.toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
+  });
+
+  it("orders the timeline oldest-to-newest and opens at the newest message", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain(".sort((left, right) => String(left.occurred_at || '').localeCompare(String(right.occurred_at || ''))");
+    expect(html).toContain("scroll.scrollTop = scroll.scrollHeight");
   });
 
   it("renders owned outbox commands as not sent with their Communication message reference", () => {

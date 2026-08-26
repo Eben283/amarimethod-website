@@ -536,7 +536,7 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
           <section className="sa-record-overview" aria-label="Member record overview">
             <div><span className="lbl">Relationship</span><strong>{roleWord}</strong><small>Added {fmtDate(client.dateAdded)}</small></div>
             <div><span className="lbl">Agreement</span><strong>{alreadySigned ? 'Signed' : 'Needs signature'}</strong><small>{alreadySigned ? 'Practice agreement is on file' : 'Open the signing handoff below'}</small></div>
-            <div><span className="lbl">Communication</span><strong>{client.messages.length} mirrored</strong><button type="button" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(client.id)}`)}>Open complete chronology <ArrowUpRight size={13} /></button></div>
+            <div><span className="lbl">Communication</span><strong>{client.messages.length} mirrored</strong><button type="button" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(client.id)}`)}>Open complete chronology <ArrowUpRight size={13} /></button><button type="button" onClick={() => navigate(`/communications?contact=${encodeURIComponent(client.id)}`)}>Start a text <ArrowUpRight size={13} /></button></div>
             <div><span className="lbl">Tags</span><strong>{client.tags.length}</strong><small>{client.tags.slice(0, 3).join(' · ') || 'No tags mirrored'}</small></div>
           </section>
         )}
@@ -665,6 +665,7 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
 
           <div className="sa-evidence-actions">
             <button type="button" onClick={() => navigate(`/client-desk?contact=${encodeURIComponent(client.id)}`)}><MessageSquareText size={15} />Open this person in Communication</button>
+            <button type="button" onClick={() => navigate(`/communications?contact=${encodeURIComponent(client.id)}`)}><Send size={15} />Start a text</button>
           </div>
         </section>
         </>}

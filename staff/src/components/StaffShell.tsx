@@ -13,6 +13,7 @@ import {
   MapPinned,
   Menu,
   MessageSquareText,
+  PhoneCall,
   Images,
   Palette,
   Package,
@@ -64,6 +65,7 @@ const PRIMARY_ITEMS: RailItem[] = [
   { label: 'Home', detail: 'Your practice day', to: '/', Icon: House, matches: (path) => path === '/' },
   { label: 'Calendar', detail: 'Day, week, month and services', to: '/calendar', Icon: CalendarDays, matches: (path) => path === '/calendar' || path === '/today' },
   { label: 'Inbox', detail: 'Member communication', to: '/client-desk', Icon: MessageSquareText, badge: 'inbox', matches: (path) => path === '/client-desk' || path === '/messages' },
+  { label: 'Communications', shortLabel: 'Comms', detail: 'Text from the Amari number', to: '/communications', Icon: PhoneCall },
   { label: 'Practice members', shortLabel: 'Members', detail: 'People and records', to: '/clients', Icon: UsersRound, matches: (path) => path === '/clients' || path.startsWith('/client/') },
   { label: 'Outreach', detail: 'Proactive calls, messages and future contact', to: '/outreach', Icon: ListChecks, matches: (path) => path === '/outreach' || path === '/follow-up' },
   { label: 'Pipeline', detail: 'Care flow', to: '/pipeline', Icon: GitBranch, matches: (path) => path === '/pipeline' || path === '/funnel' },
@@ -77,10 +79,10 @@ const PRIMARY_ITEMS: RailItem[] = [
 ];
 
 const PRIMARY_GROUPS = [
-  { label: 'Today', items: PRIMARY_ITEMS.slice(0, 3) },
-  { label: 'People', items: PRIMARY_ITEMS.slice(3, 6) },
-  { label: 'Business', items: PRIMARY_ITEMS.slice(6, 11) },
-  { label: 'System', items: PRIMARY_ITEMS.slice(11) },
+  { label: 'Today', items: PRIMARY_ITEMS.slice(0, 4) },
+  { label: 'People', items: PRIMARY_ITEMS.slice(4, 7) },
+  { label: 'Business', items: PRIMARY_ITEMS.slice(7, 12) },
+  { label: 'System', items: PRIMARY_ITEMS.slice(12) },
 ];
 
 const SPECIALIST_ITEMS: RailItem[] = [

@@ -40,5 +40,7 @@ test.describe('12-week Amari Practice portal', () => {
     await expect(page.getByText('16 visits remaining')).toBeVisible();
     await expect(page.getByRole('link', { name: /Open Living Practice/i })).toBeVisible();
     await expect(page.getByRole('heading', { name: /Your next session/i })).toHaveCount(0);
+    await expect(page.locator('.cp-practice-next')).toHaveCSS('display', 'grid');
+    await expect(page.locator('.cp-topbar-inner')).toHaveCSS('min-height', '92px');
   });
 });

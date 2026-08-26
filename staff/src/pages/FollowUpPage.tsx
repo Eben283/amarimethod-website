@@ -1552,8 +1552,9 @@ function CopyText({ text, channel }: { text: string; channel?: string }) {
   );
 }
 
-// Editable draft only. Staff does not send outreach yet; Communication opens
-// the selected person's complete chronology for context.
+// Editable draft only. The dedicated Call & text page re-loads the selected
+// person, carries this draft in in-memory router state (never the URL), and
+// requires its own explicit review before any GHL SMS send.
 function EditSendText({ contactId, text, channel, onSent }: { contactId: string; text: string; channel?: string; onSent?: () => void }) {
   const [val, setVal] = useState(text);
   const [copied, setCopied] = useState(false);
@@ -1578,9 +1579,9 @@ function EditSendText({ contactId, text, channel, onSent }: { contactId: string;
           className="rounded-lg border border-amari-border px-3 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
           {copied ? '✓ Copied' : 'Copy'}
         </button>
-        <Link to={communicationUrl(contactId)}
+        <Link to={`/communications?contact=${encodeURIComponent(contactId)}`} state={{ draft: val }}
           className="rounded-lg bg-amari-accent-warm px-3 py-1.5 text-xs font-semibold text-white">
-          Open Communication
+          Review and send text
         </Link>
       </div>
     </div>

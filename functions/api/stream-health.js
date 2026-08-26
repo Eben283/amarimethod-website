@@ -21,10 +21,11 @@
 // Returns 200 with { healthy } in all cases (never 5xx — Pages intercepts
 // 502/503 and replaces the body). Returns no token and no secret material.
 
-// "Jaw Align" — a signed (requireSignedURLs=true) Living Practice course video.
-// If this UID is ever deleted, the probe reports reason="test-video-missing"
-// (info, not critical) so it's clear the probe needs maintenance, not the token.
-const TEST_UID = "de9f0388d4c9e987d30ede97eedc84a2";
+// "Welcome to Living Practice" — the first video every member sees. Checking
+// its actual signed HLS manifest catches an unavailable/unready asset as well
+// as a stale signing credential. If this UID is ever deleted, the probe reports
+// reason="test-video-missing" so the monitor can be updated deliberately.
+const TEST_UID = "9072ff146ba6434f9463ae78c6616e3d";
 
 export async function onRequestOptions() {
   return new Response(null, {
@@ -39,8 +40,9 @@ export async function onRequestGet(context) {
   // not CF_ACCOUNT_ID — they differ).
   const CF_ACCOUNT_ID = context.env.CF_STREAM_ACCOUNT_ID;
   const CF_STREAM_TOKEN = context.env.CF_STREAM_TOKEN;
+  const CUSTOMER_CODE = context.env.CF_STREAM_CUSTOMER_CODE;
 
-  if (!CF_ACCOUNT_ID || !CF_STREAM_TOKEN) {
+  if (!CF_ACCOUNT_ID || !CF_STREAM_TOKEN || !CUSTOMER_CODE) {
     return new Response(
       JSON.stringify({ healthy: false, reason: "missing-env", checkedAt: new Date().toISOString() }),
       { status: 200, headers },
@@ -66,9 +68,9 @@ export async function onRequestGet(context) {
     );
   }
 
-  const healthy = !!(res.ok && json && json.success && json.result && json.result.token);
+  const signingHealthy = !!(res.ok && json && json.success && json.result && json.result.token);
   let reason = null;
-  if (!healthy) {
+  if (!signingHealthy) {
     if (res.status === 401 || res.status === 403 || res.status === 400) {
       reason = "token-invalid";          // stale/revoked CF_STREAM_TOKEN — the outage signature
     } else if (res.status === 404) {
@@ -78,15 +80,58 @@ export async function onRequestGet(context) {
     }
   }
 
+  if (!signingHealthy) {
+    return new Response(
+      JSON.stringify({
+        healthy: false,
+        reason,
+        status: res.status,
+        testUid: TEST_UID,
+        checkedAt: new Date().toISOString(),
+        // first CF error message only (no secret material), for the alert detail
+        detail: (json && json.errors && json.errors[0] && json.errors[0].message) || null,
+      }),
+      { status: 200, headers },
+    );
+  }
+
+  // A token alone is not proof that a browser can start playback. Fetch the
+  // exact HLS manifest the player receives, server-side, and return only safe
+  // diagnostics — never the customer code, token, or playlist contents.
+  let manifestRes, manifest;
+  try {
+    const manifestUrl = `https://customer-${CUSTOMER_CODE}.cloudflarestream.com/${json.result.token}/manifest/video.m3u8`;
+    manifestRes = await fetch(manifestUrl, {
+      headers: { Accept: "application/vnd.apple.mpegurl, application/x-mpegURL, */*" },
+    });
+    manifest = await manifestRes.text();
+  } catch (err) {
+    return new Response(
+      JSON.stringify({
+        healthy: false,
+        reason: "manifest-fetch-failed",
+        testUid: TEST_UID,
+        checkedAt: new Date().toISOString(),
+        detail: String(err).slice(0, 160),
+      }),
+      { status: 200, headers },
+    );
+  }
+
+  const playlistValid = manifestRes.ok
+    && manifest.startsWith("#EXTM3U")
+    && (manifest.includes("#EXT-X-STREAM-INF") || manifest.includes("#EXTINF"));
+
   return new Response(
     JSON.stringify({
-      healthy,
-      reason,
+      healthy: playlistValid,
+      reason: playlistValid ? null : "manifest-unavailable",
       status: res.status,
+      manifestStatus: manifestRes.status,
       testUid: TEST_UID,
       checkedAt: new Date().toISOString(),
-      // first CF error message only (no secret material), for the alert detail
-      detail: healthy ? undefined : (json && json.errors && json.errors[0] && json.errors[0].message) || null,
+      // Status/shape only; no playback URL, token, or Stream response body.
+      playlistValid,
     }),
     { status: 200, headers },
   );
