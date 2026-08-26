@@ -1,6 +1,6 @@
 # Phase C — Follow-Up observed deployment readback (shadow only)
 
-Phase C records a *read-only observation* in a canonical, immutable shape. It does not introduce an attested release, deployment, invocation, Staff endpoint, D1 write, Worker import, GHL call, sender, binding, or feature flag. The sole live Follow-Up sender remains **Follow up session Confirmation email / reminder flow** in GHL.
+Phase C records a *read-only observation* in a canonical, immutable shape. It does not introduce an attested release, deployment, invocation, Staff endpoint, D1 write, Worker import, GHL call, sender, binding, or feature flag. At the time this historical observation was captured, **Follow up session Confirmation email / reminder flow** in GHL was the sole live sender. Current state is Amari's persisted Follow-Up definition v3 as the live sender, with that exact GHL workflow at Draft v36 as rollback.
 
 ## Exact observed scope
 
