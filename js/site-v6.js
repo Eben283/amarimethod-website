@@ -109,21 +109,32 @@
       '<footer class="site-footer">\n' +
       '  <section class="footer-directory" aria-label="Amari site directory">\n' +
       '    <div class="wrap">\n' +
-      '      <img class="footer-directory-mark" src="/images/identity/amari-method-wordmark.svg" alt="Amari Method">\n' +
-      '      <nav aria-label="Footer navigation">\n' +
-      '        <a href="/how-it-works">Our Method</a>\n' +
-      '        <a href="/first-visit">First Visit</a>\n' +
-      '        <a href="/blog">Journal</a>\n' +
-      '        <a href="/faq">FAQ</a>\n' +
-      '        <a href="/contact">Contact</a>\n' +
-      '        <a href="/portal/">Client Portal</a>\n' +
-      '      </nav>\n' +
+      '      <div class="footer-identity">\n' +
+      '        <img class="footer-directory-mark" src="/images/identity/amari-method-wordmark.svg" alt="Amari Method">\n' +
+      '        <span class="footer-place">San Francisco, California</span>\n' +
+      '      </div>\n' +
+      '      <div class="footer-links">\n' +
+      '        <nav aria-label="Explore Amari">\n' +
+      '          <h2>Explore</h2>\n' +
+      '          <a href="/how-it-works">Our Method</a>\n' +
+      '          <a href="/amari-practice">The Practice</a>\n' +
+      '          <a href="/first-visit">First Visit</a>\n' +
+      '          <a href="/blog">Journal</a>\n' +
+      '        </nav>\n' +
+      '        <nav aria-label="Visit Amari">\n' +
+      '          <h2>Visit</h2>\n' +
+      '          <a href="/assessment-booking">Book an Assessment</a>\n' +
+      '          <a href="/contact">Contact</a>\n' +
+      '          <a href="/faq">FAQ</a>\n' +
+      '          <a href="/portal/">Client Portal</a>\n' +
+      '        </nav>\n' +
+      '      </div>\n' +
       '    </div>\n' +
       '  </section>\n' +
       '  <div class="footer-cta-slot"></div>\n' +
       '  <section class="footer-utility" aria-label="Legal information">\n' +
       '    <div class="wrap">\n' +
-      '      <nav aria-label="Legal navigation"><a href="/privacy-policy">Privacy</a><a href="/terms-of-use">Terms</a></nav>\n' +
+      '      <nav aria-label="Legal navigation"><a href="/privacy-policy">Privacy Policy</a><a href="/terms-of-use">Terms of Use</a></nav>\n' +
       '      <span>Amari © 2026 · San Francisco, CA</span>\n' +
       '    </div>\n' +
       '  </section>\n' +
