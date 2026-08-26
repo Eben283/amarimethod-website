@@ -7,11 +7,15 @@
    ============================================================ */
 
 :root{
+  /* Text contrast rule: surface tokens (--cream, --cream-2, --paper, --tan,
+     --peach) are never text colors. Use --ink, --body, or --accent-ink, and
+     maintain at least 4.5:1 contrast against the surface behind the text. */
   --cream:#F4F3EE;        /* primary chalk ground */
   --cream-2:#E7E9E4;      /* cooler alternate ground */
   --paper:#FBFBF8;
   --tan:#D0D7D2;          /* mineral field */
-  --peach:#E0E3DE;        /* stone field */
+  --peach:#E0E3DE;        /* surface-only token — never use as text color */
+  --accent-ink:#435B5E;   /* readable text accent on the light Amari surfaces */
   --sage:#71817B;
   --ink:#171A18;          /* carbon: text + buttons */
   --body:#4F544F;         /* readable secondary ink */
