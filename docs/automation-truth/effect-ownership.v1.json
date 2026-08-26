@@ -1,0 +1,19 @@
+{
+  "version": "effect-ownership.v1",
+  "rule": "At most one live effectful owner per responsibility. Additional entries must be explicit non-effectful observers.",
+  "entrySchema": {
+    "required": ["responsibility", "owner", "mode", "effectful", "observer"],
+    "mode": ["draft", "shadow", "live", "retired", "read"],
+    "effectful": "boolean",
+    "observer": "boolean",
+    "uniqueness": "one live effectful owner per responsibility"
+  },
+  "responsibilities": [
+    { "id": "followup_confirmation_and_reminder_send", "currentOwner": "Follow up session Confirmation email / reminder flow", "phaseA": "observed_only", "allowedObservers": ["reliability-spine"] },
+    { "id": "appointment_event_generation", "currentOwner": "GHL", "phaseA": "observed_only", "allowedObservers": ["reliability-spine"] },
+    { "id": "source_receipt_and_exception_evidence", "currentOwner": "existing reliability spine", "phaseA": "existing_authority", "allowedObservers": ["Staff"] },
+    { "id": "provider_receipt_reconciliation", "currentOwner": "provider plus existing reliability spine", "phaseA": "read_only_observation", "allowedObservers": ["Staff"] },
+    { "id": "Staff_status_projection", "currentOwner": "DerivedStatusPolicy", "phaseA": "read_only", "allowedObservers": [] }
+  ],
+  "forbidden": ["dual_live_senders", "observer_effects", "unowned_effect", "implicit_failover"]
+}
