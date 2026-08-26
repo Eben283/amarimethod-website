@@ -16,6 +16,7 @@
 
   var NAV_ITEMS = [
     { key: 'method',     label: 'Our Method',  href: '/how-it-works' },
+    { key: 'practice',   label: 'The Practice', href: '/amari-practice' },
     { key: 'firstvisit', label: 'First Visit', href: '/first-visit' },
     { key: 'stories',    label: 'Stories',     href: '/stories' },
     { key: 'about',      label: 'About',       href: '/about' },
@@ -31,6 +32,7 @@
   var PAGES = [
     { t: 'Home', u: '/' },
     { t: 'Our Method: How It Works', u: '/how-it-works', a: ['method', 'how it works', 'what is amari'] },
+    { t: 'The Amari Practice', u: '/amari-practice', a: ['practice', '12 sessions', '24 sessions', '6 week', '12 week', 'series', 'ongoing practice'] },
     { t: 'Your First Visit', u: '/first-visit', a: ['first session', 'what to expect', 'new client'] },
     { t: 'Book an Amari Assessment', u: '/assessment-booking', a: ['buy', 'buying', 'purchase', 'pricing', 'price', 'cost', 'packages', 'pay', 'payment', 'book', 'booking', 'rates', 'schedule', 'appointment'] },
     { t: 'Client Portal', u: '/portal/', a: ['portal', 'client portal', 'login', 'log in', 'sign in', 'account', 'my account', 'dashboard'] },

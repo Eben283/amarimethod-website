@@ -205,7 +205,8 @@ body.search-open{overflow:hidden}
 header.site.menu-open .hdr-menu span:first-child{transform:translateY(3.25px) rotate(45deg)}
 header.site.menu-open .hdr-menu span:last-child{transform:translateY(-3.25px) rotate(-45deg)}
 .mobile-nav{display:none}
-@media (max-width:860px){
+@media (max-width:1100px){
+  .nav-row{display:none}
   .hdr-menu{display:flex}
   .wordmark{width:190px}
   .hdr-right{gap:12px}
