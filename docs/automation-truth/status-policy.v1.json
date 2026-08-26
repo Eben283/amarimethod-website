@@ -1,0 +1,21 @@
+{
+  "version": "status-policy.v1",
+  "authorities": ["WorkflowSpec", "CompiledPlan", "ReleaseManifest", "DeploymentRecord", "ExecutionLedger", "ExternalObservation", "DerivedStatusPolicy"],
+  "operatingModes": {
+    "Draft": { "requires": ["WorkflowSpec"], "forbids": ["DeploymentRecord"] },
+    "Shadow": { "requires": ["CompiledPlan", "ExecutionLedger"], "forbids": ["effectfulOwner:live"] },
+    "Live": { "requires": ["CompiledPlan", "ReleaseManifest", "DeploymentRecord", "ExecutionLedger"], "forbids": ["humanOrAIAssertion"] },
+    "Unknown": { "when": ["authority_missing", "attestation_missing", "runtime_unavailable", "stale"] }
+  },
+  "health": {
+    "precedence": ["Broken", "Unknown", "Degraded", "Healthy"],
+    "Broken": ["known_safety_violation", "duplicate_effect", "unfenced_effect", "prepared_attempt_missing", "schema_incompatible"],
+    "Unknown": ["authority_missing", "timeout", "permission_denied", "empty_proxy", "watermark_missing"],
+    "Degraded": ["coverage_incomplete", "pagination_incomplete", "sampled", "stale", "backpressure", "slo_breach"],
+    "Healthy": { "all": ["all_required_authorities_exact", "fresh", "pagination_complete", "sample_rate_1", "no_known_safety_violation", "all_required_coverage_complete"] }
+  },
+  "businessMetrics": {
+    "rejectWhen": ["sampleRate != 1", "paginationComplete != true", "expected == null", "observed == null", "denominator <= 0", "freshness != fresh"],
+    "zero": "A zero is valid only with exact complete coverage and a positive, exact denominator."
+  }
+}
