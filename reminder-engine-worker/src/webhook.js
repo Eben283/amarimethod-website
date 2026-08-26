@@ -20,6 +20,7 @@ import { getAccessToken } from "../../functions/lib/ghl-worker-token.js";
 import { handleEvent } from "./engine.js";
 import { appendEvent } from "./store.js";
 import { captureFollowUpReliability } from "./follow-up-reliability.js";
+import { captureNoShowCounterShadow, MISSED_APPOINTMENTS_FIELD } from "./no-show-counter-shadow.js";
 import { publishedWorkflow } from "./workflow-store.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 
@@ -104,6 +105,16 @@ function fieldValue(contact, fieldId) {
   return String(field?.value ?? field?.fieldValue ?? field?.field_value ?? "").trim().toLowerCase();
 }
 
+function numericFieldValue(contact, field) {
+  const fields = contact?.customFields || contact?.custom_fields || [];
+  if (!Array.isArray(fields)) return null;
+  const match = fields.find((item) => item?.id === field.id || item?.key === field.key);
+  const raw = match?.value ?? match?.fieldValue ?? match?.field_value;
+  if (raw === null || raw === undefined || raw === "") return null;
+  const value = Number(raw);
+  return Number.isFinite(value) ? value : null;
+}
+
 // GHL supplies the appointment event during the transition, but the Worker records the branch
 // choice with the enrollment. A later copy edit therefore changes the pending owned node, not a
 // hidden GHL branch. Empty/unknown matches the live workflow's full-reminder fallback.
@@ -130,7 +141,16 @@ export async function enrichNoShowAffiliateStatus(env, event) {
   if (!res.ok) throw new Error(`no-show affiliate lookup ${res.status}`);
   const contact = (await res.json()).contact || {};
   const tags = Array.isArray(contact.tags) ? contact.tags.map((tag) => String(tag).trim().toLowerCase()) : [];
-  return { ...event, context: { ...(event.context || {}), affiliatePartner: tags.includes("affiliate-partner") ? "true" : "false" } };
+  return {
+    ...event,
+    context: {
+      ...(event.context || {}),
+      affiliatePartner: tags.includes("affiliate-partner") ? "true" : "false",
+      // This is an ingest-time observation, not proof of whether GHL's separate live Math
+      // Operation has already executed for this event.
+      missedAppointmentsObserved: numericFieldValue(contact, MISSED_APPOINTMENTS_FIELD),
+    },
+  };
 }
 
 export async function handleWebhook(request, env, nowMs) {
@@ -216,6 +236,20 @@ export async function handleWebhook(request, env, nowMs) {
   const actions = [];
   const errors = [];
 
+  // Shadow evidence is deliberately non-blocking: GHL remains the sole live owner of the
+  // missed-count Math Operation. A capture failure is visible in owned automation evidence,
+  // but never retries the webhook or risks duplicating GHL's increment.
+  let noShowCounterReliability = { enabled: false, applicable: false };
+  try {
+    noShowCounterReliability = await captureNoShowCounterShadow({ env, event, rawPayload: rawBody, nowMs });
+  } catch (err) {
+    await appendEvent(db, {
+      ts: nowMs, engine: "ingest", flowKey: "no-show-missed-count", contactId: event.contactId, appointmentId: event.appointmentId,
+      action: "no_show_counter_shadow_capture", outcome: "blocked", detail: { error: String((err && err.message) || err) },
+    });
+    errors.push("no-show counter shadow: capture unavailable");
+  }
+
   // The import is inert unless the exact feature flag is enabled. In enabled mode, an
   // applicable Follow-Up event must be durably accepted or explicitly rejected before the
   // existing engine dispatches it. A reliability outage returns retryable failure and cannot
@@ -277,6 +311,19 @@ export async function handleWebhook(request, env, nowMs) {
           exceptionId: reliability.exceptionId,
         }),
         deduplicated: reliability.deduplicated,
+      },
+    } : {}),
+    ...(noShowCounterReliability.applicable ? {
+      noShowCounterReliability: {
+        sourceEventId: noShowCounterReliability.sourceEvent?.source_event_id || noShowCounterReliability.sourceEventId,
+        ...(noShowCounterReliability.accepted ? {
+          lifecycleInstanceId: noShowCounterReliability.lifecycle?.lifecycle_instance_id,
+          shadowOnly: true,
+        } : {
+          rejected: true,
+          exceptionId: noShowCounterReliability.exceptionId,
+        }),
+        deduplicated: noShowCounterReliability.deduplicated,
       },
     } : {}),
   });

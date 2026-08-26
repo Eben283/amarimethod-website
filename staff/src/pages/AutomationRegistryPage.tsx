@@ -155,17 +155,20 @@ export default function AutomationRegistryPage() {
   }, [selectedFamilyKey]);
 
   useEffect(() => {
-    if (selectedFamilyKey !== 'follow-up-session-reminders') {
+    const reliabilityFamily = selectedFamilyKey === 'follow-up-session-reminders'
+      ? 'follow-up-session-reminders'
+      : selectedFamilyKey === 'no-show-recovery' ? 'no-show-missed-count' : null;
+    if (!reliabilityFamily) {
       setReliability(null);
       return;
     }
     let cancelled = false;
-    getReliabilitySpine()
+    getReliabilitySpine(reliabilityFamily)
       .then((response) => { if (!cancelled) setReliability(response); })
       .catch(() => { if (!cancelled) setReliability({
         success: true,
         configured: false,
-        family: 'follow-up-session-reminders',
+        family: reliabilityFamily,
         health: { truth: 'Unknown', reason: 'staff_read_failed', checkedAt: Date.now() },
         sourceEvents: [],
         exceptions: [],
@@ -214,7 +217,7 @@ export default function AutomationRegistryPage() {
 
   async function openReliabilitySource(sourceEventId: string) {
     setReliabilityDetailLoading(true);
-    try { setReliability(await getReliabilitySpine(sourceEventId)); }
+    try { setReliability(await getReliabilitySpine(reliability?.family || 'follow-up-session-reminders', sourceEventId)); }
     finally { setReliabilityDetailLoading(false); }
   }
 
@@ -740,8 +743,8 @@ function FamilyDetail({
 
       {family.kind === 'evidence_only' && <div className="automation-evidence-banner"><Archive size={17} /><span><strong>Not an operating family.</strong> These test records are retained only so the 82-record inventory remains exact.</span></div>}
 
-      {family.key === 'follow-up-session-reminders' && reliability && (
-        <section className={`automation-reliability-card is-${reliability.health.truth.toLowerCase()}`} aria-label="Follow-Up lifecycle reliability">
+      {['follow-up-session-reminders', 'no-show-recovery'].includes(family.key) && reliability && (
+        <section className={`automation-reliability-card is-${reliability.health.truth.toLowerCase()}`} aria-label={`${family.name} lifecycle reliability`}>
           <header>
             <div><Database size={18} /><span>Lifecycle reliability</span></div>
             <strong>{reliability.health.truth}</strong>

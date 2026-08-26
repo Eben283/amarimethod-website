@@ -4,6 +4,8 @@ const OBLIGATION_STATES = new Set(["pending", "leased", "satisfied", "skipped", 
 export const RELIABILITY_SCHEMA_VERSION = 1;
 export const FOLLOW_UP_FAMILY = "follow-up-session-reminders";
 export const RELIABILITY_FEATURE_FLAG = "FOLLOW_UP_RELIABILITY_SPINE_ENABLED";
+export const NO_SHOW_MISSED_COUNT_FAMILY = "no-show-missed-count";
+export const NO_SHOW_COUNTER_FEATURE_FLAG = "NO_SHOW_COUNTER_SHADOW_ENABLED";
 export const FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
   accepted: Object.freeze([
     Object.freeze({ id: "durable-receipt", transition: "received", label: "Record durable source receipt", detail: "Amari stores the authenticated GHL event identity and immutable payload hash before enrollment can continue." }),
@@ -14,11 +16,24 @@ export const FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
   ]),
   rejected: Object.freeze({ id: "reliability-exception", transition: "rejected", label: "Open Staff reliability exception", detail: "Rejected or ambiguous events stop before reminder enrollment and enter the named Staff exception queue for resolution." }),
 });
+export const NO_SHOW_COUNTER_RELIABILITY_ROUTE = Object.freeze({
+  accepted: Object.freeze([
+    Object.freeze({ id: "durable-receipt", transition: "received", label: "Record durable no-show receipt", detail: "Amari stores the authenticated GHL no-show identity and payload hash before assessing the counter obligation." }),
+    Object.freeze({ id: "authenticate-source", transition: "authenticated", label: "Verify source authenticity", detail: "The event must pass the authenticated appointment-webhook boundary." }),
+    Object.freeze({ id: "normalize-identity", transition: "normalized", label: "Normalize the exact no-show", detail: "Amari requires the appointment, person, start time, No Show status, Normal event type, and an approved calendar." }),
+    Object.freeze({ id: "expected-increment", transition: "accepted", label: "Record expected missed-count increment", detail: "A durable lifecycle records one expected increment plus the ingest-time GHL field observation. GHL remains the sole live counter owner; the observation is not parity proof." }),
+  ]),
+  rejected: Object.freeze({ id: "reliability-exception", transition: "rejected", label: "Open Staff reliability exception", detail: "Incomplete or ineligible no-show evidence is retained as a named Staff exception and never changes the contact counter." }),
+});
 export const RAW_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 export const NORMALIZED_RETENTION_MS = 400 * 24 * 60 * 60 * 1000;
 
 export function reliabilityEnabled(env = {}) {
   return env[RELIABILITY_FEATURE_FLAG] === "enabled";
+}
+
+export function noShowCounterShadowEnabled(env = {}) {
+  return env[NO_SHOW_COUNTER_FEATURE_FLAG] === "enabled";
 }
 
 export async function sha256Hex(value) {

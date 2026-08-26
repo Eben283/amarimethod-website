@@ -428,9 +428,9 @@ export async function getAutomationFamily(
   return { ...detail, enrollments };
 }
 
-export async function getReliabilitySpine(sourceEventId?: string): Promise<import('../types/staff').ReliabilitySpineResponse> {
+export async function getReliabilitySpine(family = 'follow-up-session-reminders', sourceEventId?: string): Promise<import('../types/staff').ReliabilitySpineResponse> {
   const suffix = sourceEventId ? `&sourceEventId=${encodeURIComponent(sourceEventId)}` : '';
-  return fetchApi(`/staff-automations?view=reliability${suffix}`);
+  return fetchApi(`/staff-automations?view=reliability&family=${encodeURIComponent(family)}${suffix}`);
 }
 
 export async function saveAutomationWorkflowDraft(document: import('../types/staff').CanonicalWorkflow): Promise<{ success: true; document: import('../types/staff').CanonicalWorkflow; publishedVersion: number }> {
