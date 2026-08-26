@@ -7,13 +7,29 @@ import {
   readSourceEventDetail, recordEvidenceAccess, rejectSourceEvent, transitionException,
 } from "../../functions/lib/reliability-store.js";
 
-function d1FromSqlite(raw) {
+const productionV1Fixture = JSON.parse(readFileSync(new URL(
+  "../../docs/automation-truth/fixtures/reliability-v1-production-structure-readback.v1.json",
+  import.meta.url,
+), "utf8"));
+const productionV1Rows = productionV1Fixture.projection.map((row) => ({
+  type: row.type, name: row.name, tbl_name: row.table, sql: row.sql,
+}));
+
+function d1FromSqlite(raw, { sqliteMasterRows = null, schemaMarkers = null } = {}) {
   const statement = (sql) => ({
     sql,
     values: [],
     bind(...values) { this.values = values; return this; },
     first() { return raw.prepare(this.sql).get(...this.values) || null; },
-    all() { return { results: raw.prepare(this.sql).all(...this.values) }; },
+    all() {
+      if (sqliteMasterRows && /\bFROM\s+sqlite_master\b/i.test(this.sql)) {
+        return { results: sqliteMasterRows.map((row) => ({ ...row })) };
+      }
+      if (schemaMarkers && /\bFROM\s+reliability_schema_versions\b/i.test(this.sql)) {
+        return { results: schemaMarkers.map((row) => ({ ...row })) };
+      }
+      return { results: raw.prepare(this.sql).all(...this.values) };
+    },
     run() {
       const result = raw.prepare(this.sql).run(...this.values);
       return { meta: { changes: Number(result.changes) } };
@@ -73,7 +89,9 @@ beforeEach(() => {
   raw = new DatabaseSync(":memory:");
   raw.exec("PRAGMA foreign_keys = ON");
   raw.exec(readFileSync(new URL("../schema.sql", import.meta.url), "utf8"));
-  db = d1FromSqlite(raw);
+  db = d1FromSqlite(raw, {
+    sqliteMasterRows: productionV1Rows, schemaMarkers: productionV1Fixture.marker,
+  });
 });
 
 describe("atomic source acceptance", () => {

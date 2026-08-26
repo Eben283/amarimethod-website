@@ -1,4 +1,5 @@
-import { FOLLOW_UP_RELIABILITY_ROUTE, NORMALIZED_RETENTION_MS, RELIABILITY_SCHEMA_VERSION, sha256Hex } from "./reliability-contract.js";
+import { FOLLOW_UP_RELIABILITY_ROUTE, NORMALIZED_RETENTION_MS, sha256Hex } from "./reliability-contract.js";
+import { readReliabilitySchemaAuthority } from "./reliability-schema-authority.js";
 
 function changesOf(result) {
   return Number(result?.meta?.changes || 0);
@@ -289,11 +290,12 @@ export async function leaseObligation(db, { obligationId, owner, nowMs, leaseMs 
 export async function readReliabilityHealth(db, { family, nowMs, maxAgeMs }) {
   if (!db) return { truth: "Unknown", reason: "authority_unavailable", checkedAt: nowMs };
   try {
-    const schema = await db.prepare(
-      "SELECT version, applied_at, migration_id FROM reliability_schema_versions ORDER BY version DESC LIMIT 1",
-    ).first();
-    if (!schema || Number(schema.version) !== RELIABILITY_SCHEMA_VERSION || schema.migration_id !== "reliability-spine-v1") {
-      return { truth: "Degraded", reason: "schema_unproven", checkedAt: nowMs, schemaVersion: schema?.version ?? null };
+    const schema = await readReliabilitySchemaAuthority(db);
+    if (!schema.proven) {
+      return {
+        truth: "Degraded", reason: "schema_unproven", schemaReason: schema.reason,
+        checkedAt: nowMs, schemaVersion: schema.version,
+      };
     }
     const coverage = await db.prepare(`SELECT * FROM reconciliation_runs
       WHERE family = ? ORDER BY started_at DESC LIMIT 1`).bind(family).first();

@@ -1,10 +1,10 @@
-# Phase D — authenticated Follow-Up deployment attestation (source only)
+# Phase D — authenticated Follow-Up deployment attestation
 
 ## Current result
 
 This phase defines, but does not adopt, a deployment-attestation recorder. The current live sender remains Amari's persisted Follow-Up definition v3. The exact GHL **Follow up session Confirmation email / reminder flow** is Draft v36 rollback.
 
-The committed source is deliberately inert: no Worker/Pages entrypoint imports it; the SQL is not a Wrangler migration; no binding, remote D1 row, deployment, Staff surface, GHL workflow, provider setting, customer, or sender behavior changes. Its top-level truth therefore remains **Unknown** with `runtime_recorder_not_adopted`. It must never be presented as Live or Healthy.
+The recorder and candidate SQL are deliberately inert: no Worker/Pages entrypoint imports the recorder; the SQL is not a Wrangler migration; and no binding, remote D1 row, deployment, GHL workflow, provider setting, customer, or sender behavior changes. One read-only Staff diagnostic helper is intentionally imported: it now proves the exact production-v1 schema and fails closed on every unrecognized shape. The recorder's top-level truth remains **Unknown** with `runtime_recorder_not_adopted`. It must never be presented as Live or Healthy.
 
 ## What is bound
 
@@ -34,7 +34,16 @@ The fourth table is intentional. The deployed v1 `reliability_schema_versions` r
 
 `sqlite-master-required-closure.v1` hashes exact `sqlite_master` SQL after normalizing only CRLF/CR line endings to LF; it does not rewrite whitespace inside SQL literals. Its required closure includes every named object used by the active reminder executor and reliability spine, plus all indexes/triggers attached to those tables. An unexpected trigger or index on a required table invalidates postflight.
 
-Migration markers are last. A future runner must reject conflicting existing v2 markers before beginning, execute in one transaction, compare the exact object catalog and structural digest after execution, then commit. `INSERT OR IGNORE` is not itself conflict proof. The current health reader recognizes only v1 and reports v2 as Degraded/schema-unproven; its coordinated compatibility release is a hard prerequisite to any remote migration.
+The original local candidate was split into two files because D1 cannot compute the SHA-256 structure digest inside SQL and an external JavaScript readback cannot retroactively roll back a committed file:
+
+1. `reliability-spine-v2.local.sql` is a clean-bootstrap physical-install candidate. Its in-file guards require v1 marker state and zero v2 objects (or an idempotent replay), then create all v2 objects without inserting a v2 contract or version marker.
+2. `reliability-spine-v2-promote.local.sql` is the matching clean-bootstrap promotion candidate. It rechecks object names, inserts a structure contract using D1's clock, and inserts the candidate v2 marker last.
+3. Neither file is a production target. The exact remote production-v1 digest is `f7af1024be129a24cb8a68a0c70a4bd3a8820104f9a5e36a58df97bbe7bbdd4f`, while clean-bootstrap v1 is `cd57730cfbf6a04cc3db670e0b299a27041191e880684eb86acd134ab734f5a2`.
+4. Adding the 20 local candidate objects to live v1 yields `8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62`, not the candidate `b289c4022a06c23d2c806d122ef2687077815aea5ae85fde064681250f1c8ed6`. Phase A is therefore explicitly blocked.
+
+Both files use ordinary transaction-scoped guard tables rather than depending on undocumented remote `TEMP` behavior. Neither file is registered, imported, deployed, or authorized for remote execution. Their headers say **DO NOT APPLY** and expose no copy-pastable remote command. A later increment must first design and review an exact live-lineage target; execution-mechanism review comes only after that blocker is resolved.
+
+The coordinated health reader proves only the exact observed production-v1 variant. Wrong v1 metadata/DDL, the distinct clean-bootstrap shape, partial or complete candidate-v2 structure, every v2 marker/contract, and unknown future versions all fail closed. The checked-in sanitized 49-row D1 fixture records the exact live marker/projection, three-row provenance diff, `served_by_primary=true`, and `rows_written=0`. With fresh coverage, the exact live fixture preserves the existing `Known/authoritative_and_fresh` Staff output; no local candidate is accepted as a second production shape.
 
 ## Staged recorder behavior
 
