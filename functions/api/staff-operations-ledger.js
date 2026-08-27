@@ -121,10 +121,69 @@ function projectRead(result, requestedResource) {
   for (const resource of resources) body[resource] = projectCollection(result || {}, resource);
   body.nextCursor = result?.nextCursor || result?.cursor || null;
   if (result?.generatedAt) body.generatedAt = result.generatedAt;
+  // The Staff page uses three concise, metadata-only views. Keep the raw safe
+  // collections above for future filters while deriving the presentation model
+  // here, never from CRM/provider payloads.
+  const tasksById = new Map((result?.tasks || []).map((task) => [task.id, task]));
+  body.activity = (result?.entries || []).map((entry) => ({
+    id: entry.id,
+    taskId: entry.taskId || entry.id,
+    taskLabel: tasksById.get(entry.taskId)?.title || entry.summary || "Operational work",
+    actor: entry.actor?.kind || "automation",
+    requestedBy: "—",
+    outcome: entry.eventType?.includes("failed") ? "failed" : "completed",
+    at: entry.occurredAt ? new Date(entry.occurredAt).toISOString() : null,
+    counts: { total: Number(entry.counts?.total || 1), completed: 1, failed: 0, skipped: 0 },
+  }));
+  body.changes = (result?.releases || []).map((release) => ({
+    id: release.id, taskId: null, taskLabel: null, kind: "release", label: release.summary,
+    from: release.sourceRef || null, to: release.versionRef || release.releaseRef,
+    verification: release.status === "succeeded" || release.status === "active" ? "Observed" : null,
+    rollback: release.status === "rolled_back" ? "Rollback recorded" : null,
+    at: release.updatedAt ? new Date(release.updatedAt).toISOString() : null,
+  }));
   return body;
 }
 
 function safeInput(body, resource) {
+  // Ingest is intentionally narrow. The core validator performs the final
+  // schema/sanitizer checks; this boundary removes actor and arbitrary payload
+  // fields before they can get there.
+  if (resource === "tasks") return {
+    ...(typeof body?.id === "string" ? { id: body.id } : {}),
+    ...(typeof body?.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {}),
+    ...(typeof body?.title === "string" ? { title: body.title } : {}),
+    ...(typeof body?.status === "string" ? { status: body.status } : {}),
+    ...(typeof body?.priority === "string" ? { priority: body.priority } : {}),
+    ...(typeof body?.ownerKind === "string" ? { ownerKind: body.ownerKind } : {}),
+    ...(typeof body?.ownerRef === "string" ? { ownerRef: body.ownerRef } : {}),
+    ...(typeof body?.sourceRef === "string" ? { sourceRef: body.sourceRef } : {}),
+    ...(Number.isSafeInteger(body?.dueAt) ? { dueAt: body.dueAt } : {}),
+  };
+  if (resource === "events") return {
+    ...(typeof body?.id === "string" ? { id: body.id } : {}),
+    ...(typeof body?.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {}),
+    ...(typeof body?.eventType === "string" ? { eventType: body.eventType } : {}),
+    ...(typeof body?.summary === "string" ? { summary: body.summary } : {}),
+    ...(Number.isSafeInteger(body?.occurredAt) ? { occurredAt: body.occurredAt } : {}),
+    ...(typeof body?.correlationRef === "string" ? { correlationRef: body.correlationRef } : {}),
+    ...(typeof body?.taskId === "string" ? { taskId: body.taskId } : {}),
+    ...(typeof body?.releaseId === "string" ? { releaseId: body.releaseId } : {}),
+    ...(Array.isArray(body?.fieldNames) ? { fieldNames: body.fieldNames } : {}),
+    ...(body?.counts && typeof body.counts === "object" && !Array.isArray(body.counts) ? { counts: body.counts } : {}),
+    ...(Array.isArray(body?.subjects) ? { subjects: body.subjects } : {}),
+  };
+  if (resource === "releases") return {
+    ...(typeof body?.id === "string" ? { id: body.id } : {}),
+    ...(typeof body?.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {}),
+    ...(typeof body?.releaseRef === "string" ? { releaseRef: body.releaseRef } : {}),
+    ...(typeof body?.serviceRef === "string" ? { serviceRef: body.serviceRef } : {}),
+    ...(typeof body?.environment === "string" ? { environment: body.environment } : {}),
+    ...(typeof body?.versionRef === "string" ? { versionRef: body.versionRef } : {}),
+    ...(typeof body?.status === "string" ? { status: body.status } : {}),
+    ...(typeof body?.summary === "string" ? { summary: body.summary } : {}),
+    ...(typeof body?.sourceRef === "string" ? { sourceRef: body.sourceRef } : {}),
+  };
   const fields = SAFE_INPUT_FIELDS[resource];
   const input = {};
   for (const key of fields) {
@@ -201,7 +260,7 @@ export async function onRequestPost(context) {
   const ingest = INGESTORS[resource];
   try {
     const result = await ingest(context.env, input, {
-      actor: "service",
+      principal: { kind: "worker", id: "ops-ledger-ingest" },
       source: "staff-operations-ledger-service",
     });
     const projected = projectRecord(result?.entry || result?.record || result, resource === "events" ? "entries" : resource) || {};

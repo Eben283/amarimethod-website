@@ -372,7 +372,7 @@ export type OpsLedger = {
 };
 
 export async function getOpsLedger(): Promise<OpsLedger> {
-  return fetchApi('/ops/ledger');
+  return fetchApi('/staff-operations-ledger');
 }
 
 export type StaffAmariMailReadiness = {

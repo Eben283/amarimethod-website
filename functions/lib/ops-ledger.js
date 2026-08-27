@@ -545,3 +545,48 @@ export const linkOpsIncident = linkIncident;
 export async function listIncidentLinks(db, incidentRef, limit = 50) {
   if (!db) fail("AUTOMATION_DB is required", "ledger_db_missing", 500); const n = Number(limit); if (!Number.isInteger(n) || n < 1 || n > 200) fail("limit must be between 1 and 200"); const result = await prepare(db, "SELECT * FROM ops_incident_links WHERE incident_ref = ? ORDER BY created_at DESC, id DESC LIMIT ?").bind(opaqueRef(incidentRef, "incidentRef"), n).all(); return (result?.results || []).map((row) => ({ id: row.id, incidentRef: row.incident_ref, linkedType: row.linked_type, linkedRef: row.linked_ref, relation: row.relation, createdBy: { kind: row.created_by_kind, ref: row.created_by_ref }, createdAt: Number(row.created_at) }));
 }
+
+// Environment adapters keep HTTP handlers free of ledger SQL. They are deliberately
+// small: the durable tables remain the authority and callers still supply a
+// server-resolved principal rather than an actor string from a request body.
+function ledgerDb(env) {
+  if (!env?.AUTOMATION_DB) fail("AUTOMATION_DB is required", "ledger_db_missing", 503);
+  return env.AUTOMATION_DB;
+}
+
+export async function readOperationsLedger(env, options = {}) {
+  const db = ledgerDb(env);
+  const limit = Math.min(Math.max(Number(options.limit) || 25, 1), 100);
+  const filters = options.filters || {};
+  const [entries, tasks, releases] = await Promise.all([
+    listAuditEvents(db, { limit, ...(filters.eventType ? { eventType: filters.eventType } : {}), ...(filters.releaseId ? { releaseId: filters.releaseId } : {}) }),
+    listTasks(db, { limit, ...(filters.status ? { status: filters.status } : {}) }),
+    listReleases(db, { limit, ...(filters.status && RELEASE_STATUS_SET.has(filters.status) ? { status: filters.status } : {}) }),
+  ]);
+  let incidents = [];
+  try {
+    const rows = await prepare(db, "SELECT id, status, severity, title, opened_at, resolved_at FROM ops_incidents ORDER BY opened_at_ms DESC LIMIT ?").bind(limit).all();
+    incidents = (rows?.results || []).map((row) => ({ id: row.id, status: row.status, severity: row.severity, title: row.title, openedAt: row.opened_at || null, resolvedAt: row.resolved_at || null }));
+  } catch { /* ops visibility schema may be applied independently during source-only rollout */ }
+  return { configured: true, generatedAt: new Date().toISOString(), entries, tasks, releases, incidents, nextCursor: null };
+}
+
+function provenancePrincipal(provenance) {
+  const principal = provenance?.principal;
+  return validatePrincipal(principal);
+}
+
+export async function ingestOperationsLedgerTask(env, input, provenance) {
+  const principal = provenancePrincipal(provenance);
+  return createTask(ledgerDb(env), { ...input, principal }, {});
+}
+
+export async function ingestOperationsLedgerEvent(env, input, provenance) {
+  const principal = provenancePrincipal(provenance);
+  return appendAuditEvent(ledgerDb(env), { ...input, principal }, {});
+}
+
+export async function ingestOperationsLedgerRelease(env, input, provenance) {
+  const principal = provenancePrincipal(provenance);
+  return createRelease(ledgerDb(env), { ...input, principal }, {});
+}

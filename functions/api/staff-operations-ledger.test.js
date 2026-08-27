@@ -133,7 +133,7 @@ describe("staff-operations-ledger service ingest", () => {
     }));
     expect(response.status).toBe(200);
     expect(ingest).toHaveBeenCalledWith(auth, expect.not.objectContaining({ actor: "Evil", user: "Evil", createdBy: "Evil", payload: expect.anything() }), {
-      actor: "service",
+      principal: { kind: "worker", id: "ops-ledger-ingest" },
       source: "staff-operations-ledger-service",
     });
     const output = await response.json();
