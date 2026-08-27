@@ -110,7 +110,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
   const requestedExternalContact = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('contact');
   const dashboardSession = typeof window === 'undefined' ? null : new URLSearchParams(window.location.hash.slice(1)).get('dashboard_session');
   if (dashboardSession && typeof history !== 'undefined') history.replaceState(null, '', window.location.pathname + window.location.search);
-  const staffParentOrigin = new URLSearchParams(window.location.search).get('parent_origin');
+  const staffParentOrigin = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('parent_origin');
   function deskSessionExpired() { if (window.parent !== window && ['https://amarimethod.com', 'https://www.amarimethod.com'].includes(staffParentOrigin || '')) window.parent.postMessage({ type: 'amari:staff-desk-session-expired' }, staffParentOrigin); }
   async function dashboardFetch(resource, options = {}) { const headers = new Headers(options.headers || {}); if (dashboardSession) headers.set('X-Amari-Dashboard-Session', dashboardSession); const response = await fetch(resource, { ...options, headers, credentials: 'same-origin' }); if (response.status === 401) deskSessionExpired(); return response; }
   let requestedContactOpened = false, selected = null, current = [], mirrorFreshness = null, timer, inboxRequest = 0, detailRequest = 0, detailController = null;
@@ -484,9 +484,11 @@ const CLIENT_DESK_HTML = `<!doctype html>
   };
   query.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadInbox, 180); });
   if (typeof window !== 'undefined') {
-    document.addEventListener('visibilitychange', refreshInboxWhenVisible);
-    window.addEventListener('focus', refreshInboxWhenVisible);
-    window.setInterval(refreshInboxWhenVisible, INBOX_REFRESH_MS);
+    document.addEventListener?.('visibilitychange', refreshInboxWhenVisible);
+    if (typeof window !== 'undefined') {
+      window.addEventListener('focus', refreshInboxWhenVisible);
+      window.setInterval(refreshInboxWhenVisible, INBOX_REFRESH_MS);
+    }
   }
   loadInbox();
 })();

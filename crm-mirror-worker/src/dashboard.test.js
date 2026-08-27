@@ -16,6 +16,7 @@ describe("CRM mirror dashboard", () => {
     expect(html).not.toContain('fetch("/dashboard-session"');
     expect(html).toContain('const dashboardSession = hash.get("dashboard_session")');
     expect(html).toContain('headers.set("X-Amari-Dashboard-Session", dashboardSession)');
+    expect(html).toContain('const dashboardFetch = (input, init = {}) =>');
     expect(html).toContain('dashboardFetch("/review-session")');
     expect(html).toContain('dashboardFetch("/status")');
     expect(html).toContain('dashboardFetch("/operations?limit=25")');
