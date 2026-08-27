@@ -316,6 +316,65 @@ export async function getOpsSystemsBoard(): Promise<OpsSystemsBoard> {
   return fetchApi('/ops/systems');
 }
 
+/**
+ * Safe, Staff-facing projection of the operations ledger.
+ *
+ * The API intentionally returns operational metadata only. In particular,
+ * these types have no contact/person, message, or provider-payload fields.
+ */
+export type OpsLedgerActivity = {
+  id: string;
+  taskId: string;
+  taskLabel: string;
+  actor: string;
+  requestedBy: string;
+  outcome: 'completed' | 'failed' | 'blocked' | 'in_progress' | 'unknown' | string;
+  at: string | null;
+  counts: {
+    total: number;
+    completed: number;
+    failed: number;
+    skipped: number;
+  };
+};
+
+export type OpsLedgerChange = {
+  id: string;
+  taskId: string | null;
+  taskLabel: string | null;
+  kind: 'release' | 'config' | string;
+  label: string;
+  from: string | null;
+  to: string | null;
+  verification: string | null;
+  rollback: string | null;
+  at: string | null;
+};
+
+export type OpsLedgerIncident = {
+  id: string;
+  status: 'open' | 'resolved' | string;
+  severity: 'low' | 'medium' | 'high' | 'critical' | string;
+  title: string;
+  taskId: string | null;
+  taskLabel: string | null;
+  releaseId: string | null;
+  releaseLabel: string | null;
+  openedAt: string | null;
+  resolvedAt: string | null;
+};
+
+export type OpsLedger = {
+  generatedAt: string;
+  activity: OpsLedgerActivity[];
+  changes: OpsLedgerChange[];
+  incidents: OpsLedgerIncident[];
+};
+
+export async function getOpsLedger(): Promise<OpsLedger> {
+  return fetchApi('/ops/ledger');
+}
+
 export type StaffAmariMailReadiness = {
   actor: 'Eben' | 'Garrett';
   mailbox: string;
