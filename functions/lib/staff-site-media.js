@@ -36,10 +36,10 @@ const RAW_SITE_ASSETS = [
   ["Current site photography", "/images/photos/materials/wood-floor-grain.jpg"], ["Current site photography", "/images/photos/neck-man-asn47.jpg"], ["Current site photography", "/images/photos/partner-coach.jpg"],
   ["Current site photography", "/images/photos/partner-movement-man-his52.jpg"], ["Current site photography", "/images/photos/partner-trainer.jpg"], ["Current site photography", "/images/photos/partner-woman-his41.jpg"],
   ["Current site photography", "/images/photos/partner-yoga-woman-wht38.jpg"], ["Current site photography", "/images/photos/plantar-woman-multi41.jpg"], ["Current site photography", "/images/photos/sciatica-man-wht50.jpg"], ["Current site photography", "/images/photos/tmj-woman-asn39.jpg"],
-  ["Study materials", "/images/study-flyers-textable/Elbow-Pain-Study-Golfers.png"], ["Study materials", "/images/study-flyers-textable/Elbow-Pain-Study-Lifters.png"],
-  ["Study materials", "/images/study-flyers-textable/Elbow-Pain-Study-Tennis-Pickleball.png"], ["Study materials", "/images/study-flyers-textable/Foot-Pain-On-Feet.png"],
-  ["Study materials", "/images/study-flyers-textable/Foot-Pain-Runners.png"], ["Study materials", "/images/study-flyers-textable/Hand-Pain-Study-Climbers.png"],
-  ["Study materials", "/images/study-flyers-textable/Jaw-Tension-Grinders.png"], ["Study materials", "/images/study-flyers-textable/Jaw-Tension-TMJ.png"], ["Study materials", "/images/study-flyers-textable/Shoulder-Upper-Back-Pain-Study-Coworking.png"],
+  ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Golfers.png"], ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Lifters.png"],
+  ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Tennis-Pickleball.png"], ["Digital share graphics", "/images/study-flyers-textable/Foot-Pain-On-Feet.png"],
+  ["Digital share graphics", "/images/study-flyers-textable/Foot-Pain-Runners.png"], ["Digital share graphics", "/images/study-flyers-textable/Hand-Pain-Study-Climbers.png"],
+  ["Digital share graphics", "/images/study-flyers-textable/Jaw-Tension-Grinders.png"], ["Digital share graphics", "/images/study-flyers-textable/Jaw-Tension-TMJ.png"], ["Digital share graphics", "/images/study-flyers-textable/Shoulder-Upper-Back-Pain-Study-Coworking.png"],
   ["Legacy site imagery", "/images/v6/amari-cutout-journal.png"], ["Legacy site imagery", "/images/v6/amari-cutout-living.png"], ["Legacy site imagery", "/images/v6/amari-cutout-partner.png"], ["Legacy site imagery", "/images/v6/amari-cutout-pricing.png"],
   ["Legacy site imagery", "/images/v6/real/Amari-child.jpg"], ["Legacy site imagery", "/images/v6/real/active-bridge.jpg"], ["Legacy site imagery", "/images/v6/real/back-pain-from-sitting.webp"], ["Legacy site imagery", "/images/v6/real/danielle-testimonial.jpg"],
   ["Legacy site imagery", "/images/v6/real/elbow-reset.jpg"], ["Legacy site imagery", "/images/v6/real/foam-roller-v2.jpg"], ["Legacy site imagery", "/images/v6/real/garrett-face-1200.jpg"], ["Legacy site imagery", "/images/v6/real/garrett-session-img-3348.jpg"],
@@ -98,6 +98,7 @@ export const WEBSITE_IMAGES_FOLDER = "Website images";
 export const PHOTO_LIBRARY_FOLDER = "Photo library";
 export const BRAND_LOGOS_FOLDER = "Brand & logos";
 export const PRINT_MATERIALS_FOLDER = "Print materials";
+export const DIGITAL_SHARE_GRAPHICS_FOLDER = "Digital share graphics";
 export const DOCUMENTS_FOLDER = "Documents";
 const FOLDER_ALIASES = {
   Brand: ["Brand", "Current identity", "Historical logo files"],
@@ -122,6 +123,12 @@ function displayName(path) {
   return decodeURIComponent(path.split("/").pop() || "site-asset");
 }
 
+const STUDY_FLYER_NAMES = new Set(RAW_SITE_ASSETS
+  .filter(([, path]) => path.startsWith("/images/study-flyers-textable/"))
+  .map(([, path]) => normalizeMediaName(displayName(path))));
+const STUDY_PRINT_MASTER_NAMES = new Set([...STUDY_FLYER_NAMES]
+  .map((name) => name.replace(/\.png$/, ".pdf")));
+
 async function ensureFolder(db, folders, name, parentId, actor) {
   const existing = folders.find((folder) => folder.status === "active" && folder.parentId === parentId && folder.name === name);
   if (existing) return existing;
@@ -142,6 +149,17 @@ export function hasLegacyMediaFolders(folders) {
   return folders.some((folder) => folder.status === "active" && RETIRED_LIBRARY_FOLDERS.has(folder.name));
 }
 
+export function hasMisfiledStudyMaterials(library) {
+  const printFolder = library.folders.find((folder) => folder.status === "active" && !folder.parentId && folder.name === PRINT_MATERIALS_FOLDER);
+  const digitalFolder = library.folders.find((folder) => folder.status === "active" && !folder.parentId && folder.name === DIGITAL_SHARE_GRAPHICS_FOLDER);
+  return library.assets.some((asset) => {
+    if (asset.status !== "active") return false;
+    const name = normalizeMediaName(asset.name);
+    return (STUDY_FLYER_NAMES.has(name) && asset.folderId !== digitalFolder?.id)
+      || (STUDY_PRINT_MASTER_NAMES.has(name) && asset.folderId !== printFolder?.id);
+  });
+}
+
 // This is a one-time filing migration. A record exists in one folder only;
 // no original object is copied or deleted.
 export async function organizeMediaByWebsiteUsage({ db, actor }) {
@@ -154,6 +172,7 @@ export async function organizeMediaByWebsiteUsage({ db, actor }) {
     PHOTO_LIBRARY_FOLDER,
     BRAND_LOGOS_FOLDER,
     PRINT_MATERIALS_FOLDER,
+    DIGITAL_SHARE_GRAPHICS_FOLDER,
     DOCUMENTS_FOLDER,
   ]) {
     folders.set(name, await ensureFolder(db, activeFolders, name, null, actor));
@@ -162,12 +181,13 @@ export async function organizeMediaByWebsiteUsage({ db, actor }) {
     .filter((asset) => asset.websiteUsage === "currently_used")
     .map((asset) => normalizeMediaName(displayName(asset.path))));
   const isBrand = (name) => /(?:^amari(?:logo|[-_ ]method[-_ ]logo)?|wordmark|favicon|icon)/i.test(name);
-  const isPrintMaterial = (name, folderId) => /(?:business[-_ ]card|postcard|flyer|sticker|\.pdf\.png$)/i.test(name) || folderNameFor(library.folders, folderId) === "Print collateral";
+  const isPrintMaterial = (name, folderId) => STUDY_PRINT_MASTER_NAMES.has(normalizeMediaName(name)) || /(?:business[-_ ]card|postcard|flyer|sticker)/i.test(name) || folderNameFor(library.folders, folderId) === "Print collateral";
   let moved = 0;
   for (const asset of library.assets) {
     if (asset.status !== "active") continue;
     const targetName = isPrintMaterial(asset.name, asset.folderId) ? PRINT_MATERIALS_FOLDER
-      : asset.kind !== "image" ? DOCUMENTS_FOLDER
+      : STUDY_FLYER_NAMES.has(normalizeMediaName(asset.name)) ? DIGITAL_SHARE_GRAPHICS_FOLDER
+        : asset.kind !== "image" ? DOCUMENTS_FOLDER
         : isBrand(asset.name) ? BRAND_LOGOS_FOLDER
           : usedNames.has(normalizeMediaName(asset.name)) ? WEBSITE_IMAGES_FOLDER : PHOTO_LIBRARY_FOLDER;
     const targetFolderId = folders.get(targetName).id;

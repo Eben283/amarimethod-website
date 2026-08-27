@@ -17,4 +17,10 @@ describe("website image filing list", () => {
     expect(byPath.get("/images/photos/partner-coach.jpg")).toMatchObject({ websiteUsage: "not_used" });
     expect(byPath.get("/images/photos/amari-method-passive-bridge-south-asian-client.png")).toMatchObject({ websiteUsage: "currently_used" });
   });
+
+  it("keeps phone-share flyers separate from print masters", () => {
+    const byPath = new Map(siteAssetCatalog().map((asset) => [asset.path, asset]));
+    expect(byPath.get("/images/study-flyers-textable/Jaw-Tension-TMJ.png")).toMatchObject({ folder: "Digital share graphics" });
+    expect(byPath.get("/images/study-flyers-textable/Elbow-Pain-Study-Golfers.png")).toMatchObject({ folder: "Digital share graphics" });
+  });
 });
