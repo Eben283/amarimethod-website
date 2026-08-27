@@ -10,6 +10,8 @@ vi.mock("../lib/endpoint-guards.js", () => ({
 
 import { onRequestGet, onRequestPost } from "./staff-automations.js";
 import { requireStaffAuth, requireEbenStaffAuth } from "../lib/endpoint-guards.js";
+import { collectFollowUpReconciliation } from "../lib/follow-up-reconciliation.js";
+import { NORMALIZED_RETENTION_MS } from "../lib/reliability-contract.js";
 
 const deny = () => ({ error: new Response(JSON.stringify({ error: "unauthorized" }), { status: 401 }) });
 const allow = () => ({ error: null, payload: { role: "staff", user: "Eben" } });
@@ -131,6 +133,48 @@ describe("staff-automations — views", () => {
       exceptions: [],
       access: "evidence_control",
     }));
+  });
+
+  it("does not read a queue when a valid Unknown envelope also has unproven schema", async () => {
+    let coverage = null;
+    let queueQueries = 0;
+    const db = {
+      prepare(sql) {
+        const statement = { bind() { return this; }, async all() {
+          if (/sqlite_master|reliability_schema_versions|reliability_schema_contracts/.test(sql)) return { results: [] };
+          if (/FROM reconciliation_runs/.test(sql)) return { results: coverage ? [coverage] : [] };
+          queueQueries += 1;
+          throw new Error("no such table: lifecycle_exceptions");
+        } };
+        return statement;
+      },
+      async batch() { throw new Error("local snapshot unavailable"); },
+    };
+    const checkedAt = Date.now() - 1_000;
+    const collected = await collectFollowUpReconciliation({
+      db, expectedStart: checkedAt - 60_000, expectedEnd: checkedAt - 100,
+      startedAt: checkedAt - 50, checkedAt,
+      sourceVersion: "ghl:appointment-events-webhook:v7",
+      runtimeVersion: "b".repeat(40) + "@follow-up-reminder-engine.v3",
+    });
+    const detail = collected.detail;
+    coverage = {
+      reconciliation_run_id: "recon_" + detail.detailDigestSha256,
+      family: detail.family, authority: "SOURCE_ONLY_SELF_REPORTED",
+      source_version: detail.sourceVersion, runtime_version: detail.runtimeVersion,
+      started_at: detail.startedAt, completed_at: detail.checkedAt,
+      expected_start: detail.window.expectedStart, expected_end: detail.window.expectedEnd,
+      coverage_start: detail.window.coverageStart, coverage_end: detail.window.coverageEnd,
+      pagination_complete: 0, state: "degraded", detail_json: collected.detailJson,
+      retention_until: detail.startedAt + NORMALIZED_RETENTION_MS,
+    };
+    const response = await onRequestGet(makeContext("view=reliability", { AUTOMATION_DB: db }));
+    expect(response.status).toBe(200);
+    expect(await response.json()).toMatchObject({
+      health: { truth: "Unknown", reason: "coverage_unknown", schemaProven: false },
+      exceptions: [], sourceEvents: [],
+    });
+    expect(queueQueries).toBe(0);
   });
 
   it("registry view is available without D1 and exposes versioned owned definitions", async () => {

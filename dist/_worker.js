@@ -197,7 +197,7 @@ async function applyTagDelta(context, contactId, { add = [], remove = [] } = {})
 var GHL_API_BASE, GHL_TOKEN_URL, REFRESH_BUFFER_MS, KV_ACCESS_TOKEN, KV_REFRESH_TOKEN, KV_TOKEN_EXPIRY, refreshInFlight;
 var init_ghl = __esm({
   "lib/ghl.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     GHL_API_BASE = "https://services.leadconnectorhq.com";
     GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
     REFRESH_BUFFER_MS = 5 * 60 * 1e3;
@@ -278,7 +278,7 @@ function appointmentEndTime(startTime, durationMinutes) {
 var PACIFIC_TZ, OFFSET_OR_Z, NAIVE_DATETIME;
 var init_datetime = __esm({
   "lib/datetime.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(formatIsoAtOffset, "formatIsoAtOffset");
     PACIFIC_TZ = "America/Los_Angeles";
     OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
@@ -295,7 +295,7 @@ var init_datetime = __esm({
 var FIELD_IDS;
 var init_ghl_fields = __esm({
   "lib/ghl-fields.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     FIELD_IDS = {
       // Session balance — the most contended value in the stack. Raw GHL field,
       // reconciled hourly against the derived ledger (session-ledger.js).
@@ -383,7 +383,7 @@ function safeParse(raw) {
 var OPS_ERR_PREFIX, OPS_ERR_TTL_SECONDS;
 var init_ops_alert = __esm({
   "lib/ops-alert.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     OPS_ERR_PREFIX = "ops:err:";
     OPS_ERR_TTL_SECONDS = 60 * 60 * 24 * 30;
     __name(opsKv, "opsKv");
@@ -402,7 +402,7 @@ function registryPath(pathId) {
 var OPS_SEVERITY, PATH_ASSESSMENT_PAID_BOOK, OPS_ERR_PATH_SOURCES, OPS_REGISTRY, EXTERNAL_MONITOR_PATH_IDS;
 var init_ops_registry = __esm({
   "lib/ops-registry.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     OPS_SEVERITY = Object.freeze({
       MONEY: "money",
       BOOKING: "booking",
@@ -919,7 +919,7 @@ async function sendConversationMessage(context, params) {
 var GHL_MESSAGE_ENDPOINT, SEND_LIMITS, BAD_CHARS, CONTACT_ID;
 var init_ghl_send = __esm({
   "lib/ghl-send.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     GHL_MESSAGE_ENDPOINT = "https://services.leadconnectorhq.com/conversations/messages";
     SEND_LIMITS = Object.freeze({
@@ -1017,7 +1017,7 @@ async function notifyOpsFlip(context, incident) {
 var DEFAULT_OPS_ALERT_CONTACT_ID, SEVERITY_CHANNELS;
 var init_ops_notify = __esm({
   "lib/ops-notify.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl_send();
     DEFAULT_OPS_ALERT_CONTACT_ID = "3jsTC9Cb7hkDpC3FLuFd";
     SEVERITY_CHANNELS = Object.freeze({
@@ -1189,7 +1189,7 @@ async function touchMeta(kv, reason) {
 var EVENTS_PREFIX, INCIDENTS_KEY, META_KEY, MAX_EVENTS, MAX_INCIDENTS, TTL_SECONDS;
 var init_ops_trail_kv = __esm({
   "lib/ops-trail-kv.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     EVENTS_PREFIX = "ops:trail:events:";
     INCIDENTS_KEY = "ops:trail:incidents";
     META_KEY = "ops:trail:meta";
@@ -1628,7 +1628,7 @@ function safeJsonArray(raw) {
 var OUTCOMES;
 var init_ops_events = __esm({
   "lib/ops-events.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_registry();
     init_ops_notify();
     init_ops_trail_kv();
@@ -1839,7 +1839,7 @@ async function recordAssessmentCheckout(env, {
 var SOURCE;
 var init_ops_assessment = __esm({
   "lib/ops-assessment.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -1919,7 +1919,7 @@ function assessmentBookingFromWorkflow(document) {
 var ASSESSMENT_PAID_BOOKING_WORKFLOW_ID, ASSESSMENT_PRODUCT_ID, ASSESSMENT_PAID_BOOKING_WORKFLOW;
 var init_assessment_paid_booking_workflow = __esm({
   "lib/assessment-paid-booking-workflow.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     ASSESSMENT_PAID_BOOKING_WORKFLOW_ID = "assessment-paid-booking";
     ASSESSMENT_PRODUCT_ID = "6a66cf0103821ea09ea13f1b";
     __name(deepFreeze, "deepFreeze");
@@ -1984,7 +1984,7 @@ async function currentAssessmentPaidBookingWorkflow(context) {
 var REMINDER_ENGINE_URL;
 var init_assessment_paid_booking_runtime = __esm({
   "lib/assessment-paid-booking-runtime.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_assessment_paid_booking_workflow();
     REMINDER_ENGINE_URL = "https://reminder-engine.eben-fa2.workers.dev";
     __name(currentAssessmentPaidBookingWorkflow, "currentAssessmentPaidBookingWorkflow");
@@ -2182,7 +2182,7 @@ function paidBookPathForProduct(productId, pkg) {
 }
 var init_ops_path_emit = __esm({
   "lib/ops-path-emit.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_events();
     init_ops_alert();
     init_ops_assessment();
@@ -2282,7 +2282,7 @@ function applyHourPackPreference(slots2, opts) {
 var STUDIO_INTERVAL_MINUTES, WORK_HOURS, SLOT_POLICIES;
 var init_booking_slot_policy = __esm({
   "lib/booking-slot-policy.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     STUDIO_INTERVAL_MINUTES = 60;
     WORK_HOURS = Object.freeze({
       scheduleId: "WIPAUCHQ5WW18vLJ49Gk",
@@ -2572,7 +2572,7 @@ async function assertSlotRespectsAppBuffer(context, startTime, calendarId) {
 var GHL_API_BASE2, GHL_LOCATION_ID, GHL_GARRETT_USER_ID, INACTIVE_STATUSES, APP_BUFFER_CALENDAR_IDS;
 var init_app_owned_buffer = __esm({
   "lib/app-owned-buffer.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_datetime();
     init_booking_slot_policy();
@@ -2674,7 +2674,7 @@ async function createConfirmedAppointment({ request, endpoint, payload, onCreate
 var AppointmentHandoffError;
 var init_ghl_appointment_handoff = __esm({
   "lib/ghl-appointment-handoff.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     AppointmentHandoffError = class extends Error {
       static {
         __name(this, "AppointmentHandoffError");
@@ -2808,7 +2808,7 @@ async function completePaidBookingIntent(db, intentId, appointmentId, options = 
 }
 var init_paid_booking_intents = __esm({
   "lib/paid-booking-intents.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(changesOf2, "changesOf");
     __name(normalize, "normalize");
     __name(sameIntent, "sameIntent");
@@ -2844,7 +2844,7 @@ async function recordPartnerReferralAttribution(db, { partner, contactId, referr
 var PARTNERS;
 var init_partner_referrals = __esm({
   "lib/partner-referrals.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     PARTNERS = Object.freeze({ "vital-ice": Object.freeze({ entityId: "vital-ice", businessName: "Vital Ice", publicCode: "VI-001", entryPath: "/r/vital-ice" }), "zach-taylor": Object.freeze({ entityId: "zach-taylor", businessName: "Zach Taylor Fitness", publicCode: "ZT-001", entryPath: "/r/zach-taylor" }), "teddys-total-body": Object.freeze({ entityId: "teddys-total-body", businessName: "Teddy's Total Body", publicCode: "TTB-001", entryPath: "/r/teddys-total-body" }) });
     __name(resolvePartnerReferral, "resolvePartnerReferral");
     __name(recordPartnerReferralAttribution, "recordPartnerReferralAttribution");
@@ -3341,7 +3341,7 @@ async function onRequestPost(context) {
 var ALLOWED_ORIGINS, DEFAULT_LOCATION_ID, ALLOWED_BOOKINGS;
 var init_create_checkout = __esm({
   "api/book/create-checkout.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_datetime();
     init_ghl_fields();
@@ -3613,7 +3613,7 @@ function applyLookBusy(slots2, opts) {
 var MAX_SLOTS_PER_DAY, MIN_SLOTS_PER_DAY, PINNED_SLOT_TIMES;
 var init_look_busy = __esm({
   "lib/look-busy.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     MAX_SLOTS_PER_DAY = 12;
     MIN_SLOTS_PER_DAY = 2;
     __name(targetFullPercent, "targetFullPercent");
@@ -3656,7 +3656,7 @@ async function writeOpsLastRun(env, key, payload, ttlSeconds = 14 * 86400) {
 var OPS_LAST_RUN_KEYS, OPS_READY_KEYS;
 var init_ops_last_run = __esm({
   "lib/ops-last-run.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(writeOpsLastRun, "writeOpsLastRun");
     OPS_LAST_RUN_KEYS = Object.freeze({
       reminder: "ops:reminder-engine:lastRun",
@@ -3830,7 +3830,7 @@ async function onRequestGet(context) {
 var ALLOWED_ORIGIN, ALLOWED_CALENDARS;
 var init_public_slots = __esm({
   "api/book/public-slots.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_look_busy();
     init_booking_slot_policy();
@@ -3896,7 +3896,7 @@ function verifyWebhookSecret(request, expectedSecret) {
 }
 var init_auth = __esm({
   "lib/auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(verifySessionToken, "verifySessionToken");
     __name(verifyWebhookSecret, "verifyWebhookSecret");
   }
@@ -3915,7 +3915,7 @@ function timingSafeEqual(a, b) {
 }
 var init_safe_equal = __esm({
   "lib/safe-equal.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(timingSafeEqual, "timingSafeEqual");
   }
 });
@@ -3947,7 +3947,7 @@ function requireOpsReadKey(request, env, responseHeaders10 = {}) {
 }
 var init_ops_auth = __esm({
   "lib/ops-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_safe_equal();
     __name(requireOpsReadKey, "requireOpsReadKey");
   }
@@ -4033,7 +4033,7 @@ async function requireStaffOrOpsAuth(context, headers4) {
 var ALLOWED_ORIGINS2, STAFF_SESSION_COOKIE;
 var init_endpoint_guards = __esm({
   "lib/endpoint-guards.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     init_ops_auth();
     ALLOWED_ORIGINS2 = [
@@ -4085,7 +4085,7 @@ function requireWorkerAuth(request, env) {
 }
 var init_worker_auth = __esm({
   "lib/worker-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(timingSafeEqual2, "timingSafeEqual");
     __name(requireWorkerAuth, "requireWorkerAuth");
   }
@@ -4109,7 +4109,7 @@ function isAttentionState(state) {
 var OPS_BOARD_ROLE, OPS_BOARD_META, OPS_ROW_STATE;
 var init_ops_board_meta = __esm({
   "lib/ops-board-meta.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     OPS_BOARD_ROLE = Object.freeze({
       HOT: "hot",
       // pay→book→confirm early warning
@@ -4651,7 +4651,7 @@ async function runOpsFixSweep(env, { buildSystemsBoard: buildSystemsBoard2 } = {
 var HOUR, JOB_TTL_S, REQUEST_TTL_S, OPS_FIX_COOLDOWN_MS, OPS_FIX_MODES;
 var init_ops_fix = __esm({
   "lib/ops-fix.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_board_meta();
     init_ops_board_meta();
     init_ops_registry();
@@ -6062,7 +6062,7 @@ function judgeCallCoachReadiness(ready, last, { maxAgeH = 36 } = {}) {
 var HOUR2, ERR_LOOKBACK_H, HOT_HEALTHY_MAX_AGE_H, EXTERNAL_MONITOR_MAX_AGE_H, EXTERNAL_MONITOR_HEARTBEAT_PATHS, STUCK_REASON_CODES;
 var init_ops_board = __esm({
   "lib/ops-board.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -6207,7 +6207,7 @@ async function onRequestPost2(context) {
 }
 var init_fix = __esm({
   "api/ops/fix.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_worker_auth();
     init_ops_board();
@@ -6260,7 +6260,7 @@ async function onRequestGet3(context) {
 }
 var init_incidents = __esm({
   "api/ops/incidents.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ops_auth();
     init_ops_events();
@@ -6814,7 +6814,7 @@ async function ingestOperationsLedgerRelease(env, input, provenance) {
 var ACTOR_KINDS, TASK_STATUSES, RELEASE_STATUSES, ACTOR_SET, TASK_STATUS_SET, RELEASE_STATUS_SET, PRIORITIES, SENSITIVE_WORDS, EMAIL, PHONE, REF, FIELD, SAFE_FIELD_EXCEPTIONS, OpsLedgerError;
 var init_ops_ledger = __esm({
   "lib/ops-ledger.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     ACTOR_KINDS = Object.freeze(["human", "codex", "worker", "github", "cloudflare"]);
     TASK_STATUSES = Object.freeze(["todo", "open", "in_progress", "blocked", "done", "completed", "cancelled"]);
     RELEASE_STATUSES = Object.freeze(["planned", "pending", "queued", "building", "active", "succeeded", "failed", "rolled_back", "cancelled"]);
@@ -7078,7 +7078,7 @@ async function onRequestPost3(context) {
 var METHODS, MAX_LIMIT, DEFAULT_LIMIT, RESOURCES, INGEST_RESOURCES, SAFE_FIELDS, SAFE_INPUT_FIELDS, INGESTORS;
 var init_staff_operations_ledger = __esm({
   "api/staff-operations-ledger.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_safe_equal();
     init_ops_ledger();
@@ -7183,7 +7183,7 @@ var init_staff_operations_ledger = __esm({
 // api/ops/ledger.js
 var init_ledger = __esm({
   "api/ops/ledger.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_staff_operations_ledger();
   }
 });
@@ -7284,7 +7284,7 @@ async function onRequestPost4(context) {
 var HEADERS, STATES, MAX_NOTE_LENGTH, MAX_FUTURE_SKEW_MS, EXTERNAL_MONITOR_PATHS;
 var init_monitor_event = __esm({
   "api/ops/monitor-event.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_auth();
     init_ops_events();
     init_ops_registry();
@@ -7429,7 +7429,7 @@ async function finishRepairCommand(env, id3, { status, result } = {}) {
 var PREFIX, TTL_S, LEASE_S, COMMAND, APPROVAL_COMMANDS, REPAIR_MODE, AUTO_REPAIR_PATHS, APPROVAL_PATHS, CONFIRM_PATHS, REPAIR_POLICIES;
 var init_ops_repair_command = __esm({
   "lib/ops-repair-command.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_registry();
     init_ops_board_meta();
     PREFIX = "ops:repair:command:";
@@ -7534,7 +7534,7 @@ async function onRequestPost5(context) {
 var HEADERS2, json4;
 var init_repair_command = __esm({
   "api/ops/repair-command.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_auth();
     init_ops_repair_command();
     HEADERS2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -7599,7 +7599,7 @@ async function onRequestGet6(context) {
 }
 var init_systems = __esm({
   "api/ops/systems.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ops_board();
     __name(onRequestOptions6, "onRequestOptions");
@@ -7610,7 +7610,7 @@ var init_systems = __esm({
 // api/staff-operations-ledger/[resource].js
 var init_resource = __esm({
   "api/staff-operations-ledger/[resource].js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_staff_operations_ledger();
   }
 });
@@ -7631,7 +7631,7 @@ async function isContactRevoked(kv, contactId) {
 var REVOKE_PREFIX;
 var init_session_guard = __esm({
   "lib/session-guard.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     REVOKE_PREFIX = "auth-revoked:";
     __name(revokeKey, "revokeKey");
     __name(isContactRevoked, "isContactRevoked");
@@ -7693,7 +7693,7 @@ async function loadOwnedContact(context, headers4, { audience, requireTag, messa
 var GHL_API_BASE3, DEFAULT_MESSAGES;
 var init_owned_access = __esm({
   "lib/owned-access.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     init_session_guard();
     init_ghl();
@@ -7831,7 +7831,7 @@ async function onRequestPost6(context) {
 var GHL_API_BASE4, GHL_LOCATION_ID2, REFERRAL_SOURCE_FIELD_ID, PARTNER_CONTACT_ID_FIELD_ID, REFERRAL_TYPE_FIELD_ID, REFERRAL_FEE_STATUS_FIELD_ID, ALLOWED_ORIGINS3;
 var init_affiliate_refer = __esm({
   "api/affiliate-refer.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     GHL_API_BASE4 = "https://services.leadconnectorhq.com";
@@ -7916,7 +7916,7 @@ function normalizeAppointmentEvent(payload) {
 var APPOINTMENT_EVENT_TYPES, STATUS_TO_TYPE, APPOINTMENT_ID_KEYS, CALENDAR_ID_KEYS, CONTACT_ID_KEYS, START_AT_KEYS, STATUS_KEYS, MODIFIED_BY_KEYS, APPOINTMENT_EVENT_KIND_KEYS, APPOINTMENT_RECURRING_KEYS;
 var init_appointment_event = __esm({
   "lib/appointment-event.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_datetime();
     APPOINTMENT_EVENT_TYPES = Object.freeze({
       BOOKED: "booked",
@@ -7994,7 +7994,7 @@ async function releaseProcessedEvent(db, eventId) {
 }
 var init_processed_events = __esm({
   "lib/processed-events.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(changesOf3, "changesOf");
     __name(claimProcessedEvent, "claimProcessedEvent");
     __name(releaseProcessedEvent, "releaseProcessedEvent");
@@ -8029,7 +8029,7 @@ function emitNurtureEvent(context, event2) {
 }
 var init_engine_forward = __esm({
   "lib/engine-forward.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(forwardEventToEngine, "forwardEventToEngine");
     __name(emitNurtureEvent, "emitNurtureEvent");
   }
@@ -8060,7 +8060,7 @@ async function dispatchAppointmentEvent(context, event2) {
 var CONSUMERS;
 var init_appointment_dispatch = __esm({
   "lib/appointment-dispatch.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_engine_forward();
     CONSUMERS = [
       { name: "reminder", urlVar: "REMINDER_ENGINE_URL" },
@@ -8177,7 +8177,7 @@ async function onRequestPost7(context) {
 var JSON_HEADERS, KEY_TTL_SECONDS;
 var init_appointment_webhook = __esm({
   "api/appointment-webhook.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_appointment_event();
     init_safe_equal();
     init_processed_events();
@@ -8269,7 +8269,7 @@ async function onRequestGet7(context) {
 var PT, KV_CALL_PREFIX, KV_DAILY_PREFIX, KV_LATEST_PREFIX, ALLOWED_ORIGINS4;
 var init_call_coach = __esm({
   "api/call-coach.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     PT = "America/Los_Angeles";
     KV_CALL_PREFIX = "call-coach:";
@@ -8424,7 +8424,7 @@ async function onRequestPost8(context) {
 var GHL_API_BASE5, GHL_LOCATION_ID3, BOOKING_URL, ALLOWED_ORIGINS5;
 var init_client_refer = __esm({
   "api/client-refer.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     GHL_API_BASE5 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID3 = "7pIO7FHVAyBT1jKGhfQM";
@@ -8464,7 +8464,7 @@ async function onRequestGet8(context) {
 var KV_SUMMARY;
 var init_comms_summary = __esm({
   "api/comms-summary.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_auth();
     KV_SUMMARY = "comms:flags:summary";
     __name(onRequestGet8, "onRequestGet");
@@ -8582,7 +8582,7 @@ ${validated.message}`
 var GHL_API_BASE6, GHL_LOCATION_ID4, ALLOWED_ORIGINS6, MAX_NAME, MAX_PHONE, MAX_MESSAGE;
 var init_contact_message = __esm({
   "api/contact-message.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     GHL_API_BASE6 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID4 = "7pIO7FHVAyBT1jKGhfQM";
@@ -8701,7 +8701,7 @@ async function onRequestPost10(context) {
 var ALLOWED_ORIGINS7, COS_QUEUE_USERS;
 var init_cos_actions = __esm({
   "api/cos-actions.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     init_safe_equal();
     ALLOWED_ORIGINS7 = [
@@ -8797,7 +8797,7 @@ async function clearPinAttempts(kv, { ip, scope }) {
 var RATE_LIMITS, PIN_RATE_LIMITS, pinAttemptKey;
 var init_rate_limit = __esm({
   "lib/rate-limit.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     RATE_LIMITS = Object.freeze({
       EMAIL_COOLDOWN_SEC: 5 * 60,
       // one login email per address per 5 min (was 60s)
@@ -8937,7 +8937,7 @@ async function onRequestPost11(context) {
 var ALLOWED_ORIGINS8;
 var init_cos_auth = __esm({
   "api/cos-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_rate_limit();
     init_ops_last_run();
     ALLOWED_ORIGINS8 = [
@@ -9281,7 +9281,7 @@ ${messages.filter(Boolean).join("\n")}`;
 var GOOGLE_TOKEN_URL, REFRESH_BUFFER_MS2, LEGACY_KV_ACCESS_TOKEN, LEGACY_KV_REFRESH_TOKEN, LEGACY_KV_TOKEN_EXPIRY, LEGACY_USER;
 var init_google_api = __esm({
   "lib/google-api.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_datetime();
     GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
     REFRESH_BUFFER_MS2 = 5 * 60 * 1e3;
@@ -9326,7 +9326,7 @@ function hasFoundersCircleTag(tags = []) {
 var FOUNDERS_CIRCLE_TAG;
 var init_portal_helpers = __esm({
   "lib/portal-helpers.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(getCustomField, "getCustomField");
     __name(isChecked, "isChecked");
     __name(computeHasLivingPractice, "computeHasLivingPractice");
@@ -9347,7 +9347,7 @@ function creditsOnPurchase(productId, p2) {
 var PACKAGE_TYPES, CANONICAL_SERIES_BY_GHL_VALUE, SESSION_COUNT_BY_SERIES_TYPE, GHL_PRODUCTS, LEDGER_PRODUCT_MAP, WEBHOOK_PURCHASE_MAP, PRICE_IDS, DRAW_DOWN_PRODUCT_IDS, ID_TO_PRODUCT_ID, productIdForAnyId, PURCHASE_CREDIT_MAP, PACKAGE_MAP, AUDIT_INCREMENT_MAP;
 var init_ghl_products = __esm({
   "lib/ghl-products.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     PACKAGE_TYPES = /* @__PURE__ */ new Set(["4-series", "8-series", "6-week", "12-week", "4-upgrade", "8-upgrade", "4-to-8-upgrade"]);
     CANONICAL_SERIES_BY_GHL_VALUE = Object.freeze({
       "4-session": "4-session",
@@ -9714,7 +9714,7 @@ async function hydrateOrders(fetchOrderDetail2, ordersList, options = {}) {
 var DEFAULT_CONCURRENCY;
 var init_ghl_orders = __esm({
   "lib/ghl-orders.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     DEFAULT_CONCURRENCY = 3;
     __name(hydrateOrders, "hydrateOrders");
   }
@@ -10051,7 +10051,7 @@ async function computeSessionLedger(context, contactId, options = {}) {
 var GHL_API_BASE7, GHL_LOCATION_ID5, ACTIVE_PRODUCTS, SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS, ATTENDED_STATUSES;
 var init_session_ledger = __esm({
   "lib/session-ledger.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_portal_helpers();
     init_ghl_products();
@@ -10318,7 +10318,7 @@ async function geocode(location) {
 var SF_LAT, SF_LON, WEATHER_CODES;
 var init_cos_lookups = __esm({
   "lib/cos-lookups.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_google_api();
     init_ghl();
     SF_LAT = 37.78;
@@ -10724,7 +10724,7 @@ async function handleQueue(context, action) {
 var SPOTIFY_TOKEN_URL, SPOTIFY_API_BASE, REFRESH_BUFFER_MS3, KV_ACCESS_TOKEN2, KV_REFRESH_TOKEN2, KV_TOKEN_EXPIRY2;
 var init_spotify = __esm({
   "lib/spotify.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
     SPOTIFY_API_BASE = "https://api.spotify.com/v1";
     REFRESH_BUFFER_MS3 = 5 * 60 * 1e3;
@@ -10788,7 +10788,7 @@ ${sections.join("\n\n---\n\n")}`;
 var ALWAYS_DOCS, ON_DEMAND_DOCS;
 var init_cos_vault = __esm({
   "lib/cos-vault.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     ALWAYS_DOCS = ["positioning", "garrett-voice", "lifecycles", "technical-reference"];
     ON_DEMAND_DOCS = [
       { name: "messaging-templates", trigger: /email|message|template|copy|write|draft|send/i },
@@ -11293,7 +11293,7 @@ ${schedules}`;
 var HISTORY_CAP, RULES_CAP, HISTORY_KEY, RULES_KEY, SF_SWEEP_KEY, SF_ADDRESS_DATASET, SF_STREET_SEGMENTS_DATASET, STREET_TYPE_ALIASES, CITY_STREET_TYPES, SWEEP_WEEKDAYS;
 var init_cos_parking = __esm({
   "lib/cos-parking.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     HISTORY_CAP = 100;
     RULES_CAP = 300;
     HISTORY_KEY = /* @__PURE__ */ __name((user) => `cos:parking-history:${user}`, "HISTORY_KEY");
@@ -11444,7 +11444,7 @@ async function replaceParkingCalendarReminder({ kv, createEvent, deleteEvent }, 
 var activeReminderKey;
 var init_cos_parking_calendar = __esm({
   "lib/cos-parking-calendar.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_cos_parking();
     activeReminderKey = /* @__PURE__ */ __name((user) => `cos:active-parking-reminder:${user}`, "activeReminderKey");
     __name(retireTrackedEvents, "retireTrackedEvents");
@@ -11613,7 +11613,7 @@ async function listFieldPartners(kv, user, { limit = 25, stage } = {}) {
 var INDEX_KEY, PARTNER_KEY, VISIT_KEY, IMAGE_KEY, MAX_INDEX_ENTRIES, MAX_IMAGES, STAGES, STAGE_RANK;
 var init_cos_field_visits = __esm({
   "lib/cos-field-visits.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     INDEX_KEY = /* @__PURE__ */ __name((user) => `cos:field-partners:${user}:index`, "INDEX_KEY");
     PARTNER_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-partner:${user}:${id3}`, "PARTNER_KEY");
     VISIT_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-visit:${user}:${id3}`, "VISIT_KEY");
@@ -12163,7 +12163,7 @@ async function streamWithTools({ apiKey, requestBody, onTextDelta, executeToolFn
 var OPENROUTER_MESSAGES_API, OPENROUTER_MODEL, LOCATION_ID, MAX_TOOL_ROUNDS, FIELD_SESSIONS_REMAINING, FIELD_SESSIONS_COMPLETED, FIELD_SERIES_TYPE, TOOLS;
 var init_cos_anthropic = __esm({
   "lib/cos-anthropic.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_session_ledger();
     init_ghl_fields();
@@ -12353,7 +12353,7 @@ var init_cos_anthropic = __esm({
 var VOICE_STANDARD;
 var init_voice_standard = __esm({
   "lib/voice-standard.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     VOICE_STANDARD = `# The Amari voice standard
 
 You write copy that a real person would send. Not AI. Not slick. Not clipped.
@@ -12459,7 +12459,7 @@ function mechanicalTells(text6) {
 var HARD_TELLS;
 var init_slop_lint = __esm({
   "lib/slop-lint.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     HARD_TELLS = [
       // Mechanical
       { id: "em-dash", label: "em/en dash \u2014 rewrite as two sentences or a comma", re: /—|–/ },
@@ -12612,7 +12612,7 @@ async function generateOnBrand({ apiKey, userName = "Garrett", messages, maxRoun
 var CHANNELS, DEFAULT_MAX_ROUNDS;
 var init_voice_engine = __esm({
   "lib/voice-engine.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_voice_standard();
     init_cos_anthropic();
     init_slop_lint();
@@ -12644,7 +12644,7 @@ function routeAskAmariRequest({ message, previousMode } = {}) {
 var REWRITE_REQUEST, DRAFT_REQUEST, COPY_TARGET, REQUESTS_COPY, OPERATION_TARGET, SOFT_REWRITE, FACTUAL_OR_OPERATIONS_REQUEST;
 var init_ask_amari_router = __esm({
   "lib/ask-amari-router.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     REWRITE_REQUEST = /\b(?:rewrite|reword|de-?slop|polish|proofread|shorten|lengthen)\b/i;
     DRAFT_REQUEST = /\b(?:draft|write|edit)\b/i;
     COPY_TARGET = /\b(?:text|sms|email|message|subject(?: line)?|caption|ad(?: copy)?|website copy|headline|follow-?up|copy|letter|note)\b/i;
@@ -13756,7 +13756,7 @@ ${actionSummary}`;
 var LEDGER_FIELD_DEFS, ALLOWED_ORIGINS9, SKIP_WORDS;
 var init_cos_chat = __esm({
   "api/cos-chat.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     init_endpoint_guards();
     init_google_api();
@@ -14030,7 +14030,7 @@ async function onRequestPost13(context) {
 var ALLOWED_ORIGINS10;
 var init_cos_daily_sync = __esm({
   "api/cos-daily-sync.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     ALLOWED_ORIGINS10 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -14098,7 +14098,7 @@ async function onRequestPost14(context) {
 var ALLOWED_ORIGINS11;
 var init_cos_ghl_sync = __esm({
   "api/cos-ghl-sync.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     ALLOWED_ORIGINS11 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -14171,7 +14171,7 @@ async function onRequestPost15(context) {
 var AUTH_URL, CALLBACK_URL, GOOGLE_WORKSPACE_SCOPES, STATE_TTL_SECONDS, ALLOWED_ORIGINS12;
 var init_cos_google_auth = __esm({
   "api/cos-google-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
@@ -14259,7 +14259,7 @@ async function onRequestGet10(context) {
 var TOKEN_URL, CALLBACK_URL2, SUCCESS_URL, FAILURE_URL;
 var init_cos_google_callback = __esm({
   "api/cos-google-callback.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     TOKEN_URL = "https://oauth2.googleapis.com/token";
     CALLBACK_URL2 = "https://www.amarimethod.com/api/cos-google-callback";
     SUCCESS_URL = "https://www.amarimethod.com/cos/?google=connected";
@@ -14327,7 +14327,7 @@ async function onRequestGet11(context) {
 var HEADERS3;
 var init_cos_health = __esm({
   "api/cos-health.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_auth();
     init_cos_anthropic();
     init_google_api();
@@ -14392,7 +14392,7 @@ async function onRequestGet12(context) {
 var ALLOWED_ORIGINS13;
 var init_cos_parking_current = __esm({
   "api/cos-parking-current.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     init_cos_parking();
     ALLOWED_ORIGINS13 = ["https://www.amarimethod.com", "https://amarimethod.com"];
@@ -14472,7 +14472,7 @@ function onRequestOptions18() {
 var DATASF_URL, PAGE_SIZE, MAX_PAGES, CORS_HEADERS, JSON_HEADERS2;
 var init_cos_parking_seed = __esm({
   "api/cos-parking-seed.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_cos_parking();
     DATASF_URL = "https://data.sfgov.org/resource/yhqp-riqs.json";
     PAGE_SIZE = 5e3;
@@ -14508,7 +14508,7 @@ async function onRequestGet14(context) {
 var SPOTIFY_AUTH_URL, SCOPES;
 var init_cos_spotify_auth = __esm({
   "api/cos-spotify-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
     SCOPES = [
       "user-read-playback-state",
@@ -14634,7 +14634,7 @@ function errorPage(message) {
 var SPOTIFY_TOKEN_URL2;
 var init_cos_spotify_callback = __esm({
   "api/cos-spotify-callback.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     SPOTIFY_TOKEN_URL2 = "https://accounts.spotify.com/api/token";
     __name(onRequestGet15, "onRequestGet");
     __name(successPage, "successPage");
@@ -14697,7 +14697,7 @@ async function onRequestPost17(context) {
 var ALLOWED_ORIGINS14;
 var init_cos_vault_sync = __esm({
   "api/cos-vault-sync.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     ALLOWED_ORIGINS14 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -14740,7 +14740,7 @@ async function onRequestGet16(context) {
 var PT2, AUDIT_KV_PREFIX;
 var init_daily_audit = __esm({
   "api/daily-audit.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_auth();
     PT2 = "America/Los_Angeles";
     AUDIT_KV_PREFIX = "ops:daily-audit:";
@@ -14780,7 +14780,7 @@ async function onRequestGet17(context) {
 var PT3, SCAN_KV_PREFIX;
 var init_ecosystem_scan = __esm({
   "api/ecosystem-scan.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_auth();
     PT3 = "America/Los_Angeles";
     SCAN_KV_PREFIX = "ops:ecosystem-scan:";
@@ -14866,7 +14866,7 @@ async function onRequestPost18(context) {
 var GHL_API_BASE8, GHL_LOCATION_ID6, ALLOWED_ORIGINS15;
 var init_elbow_study_interest = __esm({
   "api/elbow-study-interest.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     GHL_API_BASE8 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
@@ -14885,7 +14885,7 @@ var init_elbow_study_interest = __esm({
 var STUDIES, STUDY_CALENDAR_ID, STUDY_TAGS;
 var init_studies = __esm({
   "lib/studies.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     STUDIES = {
       "tennis-elbow": {
         slug: "tennis-elbow",
@@ -15000,7 +15000,7 @@ function wantsPublishOptIn(publishOptIn) {
 var STUDY_PUBLISH_OPT_IN_TAG;
 var init_study_consent = __esm({
   "lib/study-consent.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     STUDY_PUBLISH_OPT_IN_TAG = "study-publish-opt-in";
     __name(wantsPublishOptIn, "wantsPublishOptIn");
   }
@@ -15028,7 +15028,7 @@ function legacyStudySignupDisabledResponse(headers4, studySlug) {
 var LIVE_STUDY_SLUGS;
 var init_legacy_study_signup = __esm({
   "lib/legacy-study-signup.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     LIVE_STUDY_SLUGS = /* @__PURE__ */ new Set([
       "tennis-elbow",
       "tmj",
@@ -15155,7 +15155,7 @@ async function onRequestPost19(context) {
 var GHL_API_BASE9, GHL_LOCATION_ID7, STUDY, STUDY_NAME_FIELD_ID, ALLOWED_ORIGINS16;
 var init_elbow_study_signup = __esm({
   "api/elbow-study-signup.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -15292,7 +15292,7 @@ async function onRequestPost20(context) {
 var GHL_API_BASE10, GHL_LOCATION_ID8, STUDY2, STUDY_NAME_FIELD_ID2, ALLOWED_ORIGINS17;
 var init_foot_study_signup = __esm({
   "api/foot-study-signup.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -15361,7 +15361,7 @@ async function onRequestGet18(context) {
 var LOCATION_ID2;
 var init_ghl_export_tokens = __esm({
   "api/ghl-export-tokens.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     LOCATION_ID2 = "7pIO7FHVAyBT1jKGhfQM";
     __name(timingSafeEqual3, "timingSafeEqual");
     __name(onRequestGet18, "onRequestGet");
@@ -15412,7 +15412,7 @@ async function appendAutomationEvent(db, r) {
 var UPGRADE_OFFER_DELAY_MS, GUARD_TAGS;
 var init_upgrade_offer = __esm({
   "lib/upgrade-offer.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     UPGRADE_OFFER_DELAY_MS = 3 * 864e5;
     GUARD_TAGS = ["ambassador-prospect", "affiliate-partner"];
     __name(changesOf4, "changesOf");
@@ -15494,7 +15494,7 @@ async function recordSeriesPurchase(context, { contactId, seriesType, classifica
 var MODE, FROM, FOUNDER_FULFILLMENT_CONFIRMATION;
 var init_purchase_confirmations = __esm({
   "lib/purchase-confirmations.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_upgrade_offer();
     init_ghl_send();
     MODE = "shadow";
@@ -15779,7 +15779,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
 var GHL_API_BASE11, LOCATION_ID3, CURRENCY;
 var init_staff_pos_invoice_bridge = __esm({
   "lib/staff-pos-invoice-bridge.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_ghl_products();
     GHL_API_BASE11 = "https://services.leadconnectorhq.com";
@@ -16089,7 +16089,7 @@ async function writePosSale(kv, sale) {
 var MAX_CART_LINES, MAX_AMOUNT_CENTS, MAX_CUSTOM_LABEL, MAX_LEGS, POS_CATALOG, POS_PAYMENT_METHODS, STRIPE_CHECKOUT_METHODS, POS_SALE_STATUSES, POS_LEG_STATUSES;
 var init_staff_pos = __esm({
   "lib/staff-pos.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     MAX_CART_LINES = 24;
     MAX_AMOUNT_CENTS = 2e6;
     MAX_CUSTOM_LABEL = 120;
@@ -16229,7 +16229,7 @@ async function issueOwnedReceipt(db, sale, { actor = "Staff POS", now, id: id3 }
 }
 var init_staff_pos_receipts = __esm({
   "lib/staff-pos-receipts.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(ownedNoEffectLine, "ownedNoEffectLine");
     __name(ownedNoEffectCart, "ownedNoEffectCart");
     __name(mapReceipt, "mapReceipt");
@@ -16616,7 +16616,7 @@ async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) {
 var KV_TTL_SECONDS;
 var init_staff_pos_fulfill = __esm({
   "lib/staff-pos-fulfill.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_processed_events();
     init_ops_alert();
     init_ops_path_emit();
@@ -17155,7 +17155,7 @@ async function onRequestPost21(context) {
 var GHL_API_BASE12, LOCATION_ID4, KV_TTL_SECONDS2, INVOICE_PURCHASE_PRODUCTS, STAFF_POS_INVOICE_EFFECTS, FIELD_IDS2, TAGS_TO_REMOVE, DOWNSTREAM_TRIGGER_TAG;
 var init_ghl_invoice_webhook = __esm({
   "api/ghl-invoice-webhook.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_purchase_confirmations();
     init_ghl_products();
@@ -17293,7 +17293,7 @@ async function onRequestGet19(context) {
 var GHL_TOKEN_URL2, EXPECTED_LOCATION_ID;
 var init_ghl_oauth_callback = __esm({
   "api/ghl-oauth-callback.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     GHL_TOKEN_URL2 = "https://services.leadconnectorhq.com/oauth/token";
     EXPECTED_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
     __name(isForeignLocationToken, "isForeignLocationToken");
@@ -17315,7 +17315,7 @@ function verifyGhlWebhookSecret(env, provided, dedicatedKey) {
 }
 var init_ghl_webhook_auth = __esm({
   "lib/ghl-webhook-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_safe_equal();
     __name(verifyGhlWebhookSecret, "verifyGhlWebhookSecret");
   }
@@ -17353,7 +17353,7 @@ function checkPackageBalance({ remaining, packageSize, attended = null }) {
 }
 var init_session_consistency = __esm({
   "lib/session-consistency.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(checkPackageBalance, "checkPackageBalance");
   }
 });
@@ -17558,7 +17558,7 @@ async function failBookingOperation(db, opKey, error, options = {}) {
 }
 var init_booking_operations = __esm({
   "lib/booking-operations.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(changesOf6, "changesOf");
     __name(normalizeRow, "normalizeRow");
     __name(sameRequest, "sameRequest");
@@ -18608,7 +18608,7 @@ async function onRequestPost22(context) {
 var GHL_API_BASE13, LOCATION_ID5, PAID_BOOKING_MAP, LEGACY_CREDITS, PRODUCT_MAP, REQUESTED_SLOT_FIELD_IDS, SLOT_ISO_RE, CHECKOUT_NOTE_SLOT_RE, FIELD_IDS3, KV_TTL_SECONDS3;
 var init_ghl_purchase_webhook = __esm({
   "api/ghl-purchase-webhook.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_ghl_products();
     init_ghl_fields();
@@ -18833,7 +18833,7 @@ async function onRequestPost23(context) {
 var GHL_API_BASE14, GHL_LOCATION_ID9, STUDY3, STUDY_NAME_FIELD_ID3, ALLOWED_ORIGINS18;
 var init_hand_study_signup = __esm({
   "api/hand-study-signup.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -18928,7 +18928,7 @@ async function readAndJudgeBeats(kv) {
 var BEAT_PREFIX, HOUR3, HEARTBEAT_JOBS, JOBS_BY_NAME;
 var init_heartbeat = __esm({
   "lib/heartbeat.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     BEAT_PREFIX = "ops:beat:";
     HOUR3 = 3600 * 1e3;
     __name(beatKey, "beatKey");
@@ -19010,7 +19010,7 @@ async function onRequestPost24(context) {
 var JSON_HEADERS3;
 var init_heartbeats = __esm({
   "api/heartbeats.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_auth();
     init_heartbeat();
     JSON_HEADERS3 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -19134,7 +19134,7 @@ async function onRequestPost25(context) {
 var GHL_API_BASE15, GHL_LOCATION_ID10, STUDY4, STUDY_NAME_FIELD_ID4, ALLOWED_ORIGINS19;
 var init_jaw_study_signup = __esm({
   "api/jaw-study-signup.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -19243,7 +19243,7 @@ async function onRequestPost26(context) {
 var GHL_API_BASE16, GHL_LOCATION_ID11, ALLOWED_ORIGINS20;
 var init_newsletter_signup = __esm({
   "api/newsletter-signup.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     GHL_API_BASE16 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID11 = "7pIO7FHVAyBT1jKGhfQM";
@@ -19328,7 +19328,7 @@ async function onRequestGet21(context) {
 var KV_COACH_PREFIX, ALLOWED_ORIGINS21;
 var init_outreach_coach = __esm({
   "api/outreach-coach.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     KV_COACH_PREFIX = "coach:";
     ALLOWED_ORIGINS21 = [
@@ -19544,7 +19544,7 @@ async function onRequestPost27(context) {
 var GHL_API_BASE17, GHL_LOCATION_ID12, ALLOWED_ORIGINS22;
 var init_partner_auth = __esm({
   "api/partner-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_rate_limit();
     GHL_API_BASE17 = "https://services.leadconnectorhq.com";
@@ -19780,7 +19780,7 @@ async function onRequestGet22(context) {
 var GHL_API_BASE18, GHL_LOCATION_ID13, REFERRAL_SOURCE_FIELD_ID2, PARTNER_CONTACT_ID_FIELD_ID2, REFERRAL_TYPE_FIELD_ID2, REFERRAL_FEE_STATUS_FIELD_ID2, ALLOWED_ORIGINS23;
 var init_partner_data = __esm({
   "api/partner-data.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     GHL_API_BASE18 = "https://services.leadconnectorhq.com";
@@ -19981,7 +19981,7 @@ async function onRequestGet23(context) {
 var GHL_API_BASE19, GHL_LOCATION_ID14, REFERRAL_SOURCE_FIELD_ID3, PARTNER_CONTACT_ID_FIELD_ID3, ALLOWED_ORIGINS24;
 var init_partner_stats = __esm({
   "api/partner-stats.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     GHL_API_BASE19 = "https://services.leadconnectorhq.com";
@@ -20135,7 +20135,7 @@ async function onRequestGet24(context) {
 var ALLOWED_ORIGINS25;
 var init_partner_verify = __esm({
   "api/partner-verify.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     ALLOWED_ORIGINS25 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -20373,7 +20373,7 @@ async function onRequestPost28(context) {
 var GHL_API_BASE20, GHL_LOCATION_ID15, ALLOWED_ORIGINS26;
 var init_portal_auth = __esm({
   "api/portal-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_rate_limit();
     init_ops_last_run();
@@ -20697,7 +20697,7 @@ async function onRequestPost29(context) {
 var allowedOrigin, PORTAL_FOLLOWUP_CALENDARS, SESSIONS_REMAINING_FIELD_ID;
 var init_portal_book = __esm({
   "api/portal-book.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -20842,7 +20842,7 @@ async function onRequestPost30(context) {
 var GHL_API_BASE21, ALLOWED_ORIGINS27;
 var init_portal_cancel = __esm({
   "api/portal-cancel.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     GHL_API_BASE21 = "https://services.leadconnectorhq.com";
@@ -20863,7 +20863,7 @@ function countsTowardLifetime(titleAndCalendar) {
 var NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN;
 var init_journey_classification = __esm({
   "lib/journey-classification.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     NON_JOURNEY_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
     NON_PACKAGE_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
     __name(countsTowardLifetime, "countsTowardLifetime");
@@ -21092,7 +21092,7 @@ async function onRequestGet25(context) {
 var GHL_API_BASE22, GHL_LOCATION_ID16, ALLOWED_ORIGINS28;
 var init_portal_data = __esm({
   "api/portal-data.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -21225,7 +21225,7 @@ async function onRequestPost31(context) {
 var allowedOrigin2, PAYMENT_LINK_URL, PAID_FOLLOWUP_CALENDARS;
 var init_portal_pay_followup = __esm({
   "api/portal-pay-followup.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     init_ghl_fields();
@@ -21306,7 +21306,7 @@ async function onRequestPost32(context) {
 var ALLOWED_ORIGINS29;
 var init_portal_progress = __esm({
   "api/portal-progress.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_owned_access();
     ALLOWED_ORIGINS29 = [
       "https://www.amarimethod.com",
@@ -21542,7 +21542,7 @@ function renderInvoice(inv, patientName, patientPhone) {
 var PRACTICE;
 var init_reimbursement_template = __esm({
   "lib/reimbursement-template.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     PRACTICE = {
       name: "Amari Method",
       phone: "(628) 877-7673",
@@ -21658,7 +21658,7 @@ async function onRequestGet27(context) {
 var GHL_API_BASE23, GHL_LOCATION_ID17, ALLOWED_ORIGINS30;
 var init_portal_reimbursement_packet = __esm({
   "api/portal-reimbursement-packet.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     init_reimbursement_template();
@@ -21788,7 +21788,7 @@ async function onRequestGet28(context) {
 var allowedOrigin3;
 var init_portal_slots = __esm({
   "api/portal-slots.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_auth();
     init_look_busy();
@@ -21859,7 +21859,7 @@ async function onRequestPost33(context) {
 var GHL_API_BASE24, REMINDER_PREFERENCE_FIELD_ID, VALID, ALLOWED_ORIGINS31;
 var init_portal_update_preference = __esm({
   "api/portal-update-preference.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_owned_access();
     GHL_API_BASE24 = "https://services.leadconnectorhq.com";
@@ -22018,7 +22018,7 @@ async function onRequestGet29(context) {
 var ALLOWED_ORIGINS32;
 var init_portal_verify = __esm({
   "api/portal-verify.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_last_run();
     ALLOWED_ORIGINS32 = [
       "https://www.amarimethod.com",
@@ -22271,7 +22271,7 @@ async function onRequestPost34(context) {
 var GHL_API_BASE25, GHL_LOCATION_ID18, REFERRAL_MILESTONE;
 var init_referral_complete = __esm({
   "api/referral-complete.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_auth();
     GHL_API_BASE25 = "https://services.leadconnectorhq.com";
@@ -22579,7 +22579,7 @@ async function onRequestPost35(context) {
 var GHL_API_BASE26, GHL_LOCATION_ID19, FIELD_IDS4, ALLOWED_ORIGINS33, TEXT_LIMITS, REFERRAL_SOURCE_RE, TURNSTILE_VERIFY_URL, RATE_LIMIT, RATE_LIMIT_TTL_SECONDS, IDEMPOTENCY_TTL_SECONDS;
 var init_send_to_ghl = __esm({
   "api/send-to-ghl.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_engine_forward();
     GHL_API_BASE26 = "https://services.leadconnectorhq.com";
@@ -22759,7 +22759,7 @@ async function onRequestPost36(context) {
 var GHL_API_BASE27, GHL_LOCATION_ID20, STUDY5, STUDY_NAME_FIELD_ID5, ALLOWED_ORIGINS34;
 var init_shoulder_study_signup = __esm({
   "api/shoulder-study-signup.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -22913,7 +22913,7 @@ async function amariMailGrantReadiness(env, actor) {
 var encoder, AMARI_MAIL_CALLBACK_URL, AMARI_MAIL_SCOPES, AMARI_MAIL_STATE_TTL_SECONDS, STAFF_MAILBOXES;
 var init_amari_mail_oauth = __esm({
   "lib/amari-mail-oauth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     encoder = new TextEncoder();
     AMARI_MAIL_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
     AMARI_MAIL_SCOPES = Object.freeze([
@@ -23002,7 +23002,7 @@ async function onRequestPost37(context) {
 var AUTH_URL2, ALLOWED_ORIGINS35;
 var init_staff_amari_mail_auth = __esm({
   "api/staff-amari-mail-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_amari_mail_oauth();
     AUTH_URL2 = "https://accounts.google.com/o/oauth2/v2/auth";
@@ -23088,7 +23088,7 @@ async function onRequestGet31(context) {
 var TOKEN_URL2, PROFILE_URL, SEND_AS_URL, SUCCESS_URL2, FAILURE_URL2;
 var init_staff_amari_mail_callback = __esm({
   "api/staff-amari-mail-callback.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_amari_mail_oauth();
     TOKEN_URL2 = "https://oauth2.googleapis.com/token";
     PROFILE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/profile";
@@ -23141,7 +23141,7 @@ async function onRequestGet32(context) {
 var WORKER_URL, TIMEOUT_MS, METHODS2;
 var init_staff_appointment_readiness = __esm({
   "api/staff-appointment-readiness.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/readiness";
     TIMEOUT_MS = 1e4;
@@ -23312,7 +23312,7 @@ function createAppointmentCommandStore(db, options = {}) {
 }
 var init_appointment_command_store = __esm({
   "lib/appointment-command-store.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(changes2, "changes");
     __name(parseResult, "parseResult");
     __name(shape, "shape");
@@ -23354,7 +23354,7 @@ function flattenSlots(data) {
 var STAFF_BOOK_TYPES;
 var init_staff_book_calendars = __esm({
   "lib/staff-book-calendars.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     STAFF_BOOK_TYPES = {
       assessment: {
         calendarId: "EM6vB2mq7EAdGCbUb3j1",
@@ -23809,7 +23809,7 @@ async function scheduleAppointmentCommand(input) {
 var INTERNAL_START_INTERVAL_MINUTES, DAY_MS, MANAGEABLE_STATUSES;
 var init_staff_appointment_manage = __esm({
   "lib/staff-appointment-manage.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_datetime();
     init_app_owned_buffer();
     init_booking_slot_policy();
@@ -24111,7 +24111,7 @@ async function onRequestPost38(context) {
 var BASE, LOCATION_ID6, METHODS3, FORBIDDEN_FIELDS;
 var init_staff_appointments = __esm({
   "api/staff-appointments.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ghl();
     init_datetime();
@@ -24210,7 +24210,7 @@ async function onRequestGet33(context) {
 }
 var init_staff_attestation = __esm({
   "api/staff-attestation.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     __name(onRequestOptions46, "onRequestOptions");
     __name(onRequestGet33, "onRequestGet");
@@ -24343,7 +24343,7 @@ async function onRequestPost39(context) {
 var ALLOWED_ORIGINS36;
 var init_staff_auth = __esm({
   "api/staff-auth.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_rate_limit();
     init_endpoint_guards();
     init_ops_last_run();
@@ -24398,7 +24398,7 @@ async function onRequestPost40(context) {
 var WORKER_URL2, WORKER_TIMEOUT_MS;
 var init_staff_automation_watch_access = __esm({
   "api/staff-automation-watch-access.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL2 = "https://reminder-engine.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS = 15e3;
@@ -24505,7 +24505,7 @@ function executableFlow(workflow) {
 var MESSAGE_ACTIONS, CONTROL_ACTIONS, ACTIONS, CHANNELS2, AUDIENCES, TIMING;
 var init_workflow_definition = __esm({
   "../reminder-engine-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_assessment_paid_booking_workflow();
     __name(deepFreeze2, "deepFreeze");
     __name(requireText2, "requireText");
@@ -24525,7 +24525,7 @@ var init_workflow_definition = __esm({
 var INITIAL_IN_PERSON_WORKFLOW, INITIAL_IN_PERSON;
 var init_initial_in_person_workflow = __esm({
   "../reminder-engine-worker/src/initial-in-person-workflow.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_workflow_definition();
     INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
       id: "initial-in-person",
@@ -24558,7 +24558,7 @@ var init_initial_in_person_workflow = __esm({
 var INITIAL_VIRTUAL_WORKFLOW, INITIAL_VIRTUAL;
 var init_initial_virtual_workflow = __esm({
   "../reminder-engine-worker/src/initial-virtual-workflow.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_workflow_definition();
     INITIAL_VIRTUAL_WORKFLOW = defineWorkflow({
       id: "initial-virtual",
@@ -24594,7 +24594,7 @@ var init_initial_virtual_workflow = __esm({
 var NO_SHOW_RECOVERY_WORKFLOW, NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY;
 var init_no_show_recovery_workflow = __esm({
   "../reminder-engine-worker/src/no-show-recovery-workflow.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_workflow_definition();
     NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
       id: "no-show-recovery",
@@ -24721,7 +24721,7 @@ var init_no_show_recovery_workflow = __esm({
 var DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW, FLOWS;
 var init_config = __esm({
   "../reminder-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_initial_in_person_workflow();
     init_initial_in_person_workflow();
     init_initial_virtual_workflow();
@@ -24797,7 +24797,7 @@ var init_config = __esm({
 var DISCOVERY, DISCOVERY_AMBASSADOR, INITIAL_IN_PERSON2, INITIAL_VIRTUAL2, FOLLOWUP_IN_PERSON_PKG, FOLLOWUP_VIRTUAL_PKG, FOLLOWUP_IN_PERSON, FOLLOWUP_VIRTUAL, ENTRAINMENT, PRODUCT_4_SESSION, PRODUCT_8_SESSION, PRODUCT_UPGRADE_4, PRODUCT_UPGRADE_8, TAG_WORKFLOW_2, TAG_WORKFLOW_3, deepFreeze3, FLOW_1_QUIZ, FLOW_2_POST_DISCOVERY, FLOW_3_POST_INITIAL, SEQUENCES;
 var init_config2 = __esm({
   "../nurture-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     DISCOVERY = "USgPsktqRcuomdUgpShL";
     DISCOVERY_AMBASSADOR = "aVE54Qf4lrbYTB0zFqXy";
     INITIAL_IN_PERSON2 = "G7OAnnJuFbMF6nQSlZVQ";
@@ -24958,7 +24958,7 @@ var init_config2 = __esm({
 var COPY, AGENDA_COPY, DEFAULT_FIRST_MINUTES, SECOND_OFFSET_MS, PREP_LEAD_MS, SEND_GRACE_MS;
 var init_schedule = __esm({
   "../morning-sms-worker/src/schedule.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     COPY = Object.freeze({
       prepare: "Good morning, time to prepare for the day.",
       meeting: "Staff meeting"
@@ -25028,7 +25028,7 @@ function defineMorningSmsWorkflow(input) {
 var REQUIRED_HANDLERS, EXECUTABLE_ORDER;
 var init_workflow_definition2 = __esm({
   "../morning-sms-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     REQUIRED_HANDLERS = Object.freeze([
       "scheduled_event",
       "read_todays_appointments",
@@ -25057,7 +25057,7 @@ var init_workflow_definition2 = __esm({
 var MORNING_SMS_DEFINITION;
 var init_config3 = __esm({
   "../morning-sms-worker/src/config.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_schedule();
     init_workflow_definition2();
     MORNING_SMS_DEFINITION = Object.freeze(defineMorningSmsWorkflow({
@@ -25243,7 +25243,7 @@ function eventEvidence(event2, { terminalOutcome = null } = {}) {
 var REGISTRY_VERSION, OWNED_ONLY_GAP, PRE_REGISTRY_HISTORY_GAP, DELIVERY_GAP, DB_UNAVAILABLE_GAP, PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_VIRTUAL_MESSAGE_PREVIEW, ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW, PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_VIRTUAL_CUTOVER_READINESS, ASSESSMENT_NO_SHOW_CUTOVER_READINESS, NO_SHOW_RECOVERY_CUTOVER_READINESS, DEFINITIONS;
 var init_automation_registry = __esm({
   "lib/automation-registry.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_config();
     init_config2();
     init_config3();
@@ -25505,7 +25505,7 @@ function familyRegistryEvidence() {
 var AUTOMATION_INVENTORY_AS_OF, AUTOMATION_INVENTORY_SOURCE, record2, p, d, ASSESSMENT_CUTOVER_TREE, ASSESSMENT_PAID_BOOKING_CUTOVER_TREE, RAW_FAMILIES, OWNED_DEFINITIONS, FAMILIES;
 var init_automation_families = __esm({
   "lib/automation-families.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_automation_registry();
     AUTOMATION_INVENTORY_AS_OF = "2026-08-07";
     AUTOMATION_INVENTORY_SOURCE = "GHL-WORKFLOWS-MASTER.md";
@@ -26243,7 +26243,7 @@ async function failuresView(db, { sinceMs = 0, limit = 100 } = {}) {
 }
 var init_automation_views = __esm({
   "lib/automation-views.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_automation_registry();
     init_automation_families();
     __name(familyReference, "familyReference");
@@ -26277,7 +26277,7 @@ async function sha256Hex(value) {
 var FOLLOW_UP_FAMILY, NO_SHOW_MISSED_COUNT_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE, NO_SHOW_COUNTER_RELIABILITY_ROUTE, RAW_RETENTION_MS, NORMALIZED_RETENTION_MS;
 var init_reliability_contract = __esm({
   "lib/reliability-contract.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     FOLLOW_UP_FAMILY = "follow-up-session-reminders";
     NO_SHOW_MISSED_COUNT_FAMILY = "no-show-missed-count";
     FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
@@ -26458,7 +26458,7 @@ async function readReliabilitySchemaAuthority(db) {
 var RELIABILITY_SCHEMA_V1, RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY, V2_ONLY_OBJECTS, V2_ADDITIVE_TABLES;
 var init_reliability_schema_authority = __esm({
   "lib/reliability-schema-authority.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_reliability_contract();
     RELIABILITY_SCHEMA_V1 = Object.freeze({
       version: 1,
@@ -26640,6 +26640,379 @@ var init_reliability_schema_authority = __esm({
 });
 
 // lib/reliability-store.js
+function plainObject2(value) {
+  return value !== null && typeof value === "object" && !Array.isArray(value) && Object.getPrototypeOf(value) === Object.prototype;
+}
+function exactKeys(value, expected, label) {
+  if (!plainObject2(value)) throw new TypeError(`${label} must be an object`);
+  const actual = Object.keys(value).sort();
+  const required = [...expected].sort();
+  if (JSON.stringify(actual) !== JSON.stringify(required)) {
+    throw new TypeError(`${label} keys are not exact`);
+  }
+}
+function canonicalValue(value) {
+  if (value === null || typeof value === "string" || typeof value === "boolean") return value;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  if (Array.isArray(value)) return value.map(canonicalValue);
+  if (!plainObject2(value)) throw new TypeError("reconciliation detail must be JSON-compatible");
+  return Object.fromEntries(Object.keys(value).sort().map((key) => [key, canonicalValue(value[key])]));
+}
+function canonicalReconciliationJson(value) {
+  return JSON.stringify(canonicalValue(value));
+}
+function nonnegativeInteger(value, label) {
+  if (!Number.isSafeInteger(value) || value < 0) throw new TypeError(`${label} must be a nonnegative integer`);
+  return value;
+}
+function nullableInteger(value, label) {
+  if (value === null) return null;
+  return nonnegativeInteger(value, label);
+}
+function requiredText(value, label) {
+  if (typeof value !== "string" || !value.trim()) throw new TypeError(`${label} is required`);
+  return value;
+}
+function boundedVersionText(value, label) {
+  const text6 = requiredText(value, label);
+  const pattern = label.includes("sourceVersion") ? RECONCILIATION_SOURCE_VERSION_RE : RECONCILIATION_RUNTIME_VERSION_RE;
+  if (text6.length > 160 || text6 !== text6.trim() || !pattern.test(text6)) {
+    throw new TypeError(`${label} is not a bounded canonical version identity`);
+  }
+  return text6;
+}
+function exactPatternId(value, pattern, label) {
+  const text6 = requiredText(value, label);
+  if (!pattern.test(text6)) throw new TypeError(`${label} is not a canonical identifier`);
+  return text6;
+}
+function requiredDigest(value, label) {
+  if (!/^[a-f0-9]{64}$/.test(requiredText(value, label))) throw new TypeError(`${label} must be a SHA-256 digest`);
+  return value;
+}
+function readFailure(component, prefix) {
+  if (component.readStatus === "query_error") return { truth: "Unknown", reason: `${prefix}_query_failed` };
+  if (component.readStatus === "permission_error") return { truth: "Unknown", reason: `${prefix}_permission_denied` };
+  if (component.readStatus === "timeout") return { truth: "Unknown", reason: `${prefix}_timeout` };
+  if (!(/* @__PURE__ */ new Set(["complete", "missing"])).has(component.readStatus)) throw new TypeError(`${prefix} readStatus is unsupported`);
+  return null;
+}
+function declaredComponent(truth, reason, values) {
+  return { truth, reason, ...values };
+}
+function expectedSchemaComponent(component) {
+  const failure3 = readFailure(component, "schema_authority");
+  if (failure3 || component.readStatus === "missing") {
+    for (const key of ["version", "variantId", "migrationId", "migrationState", "structureSha256"]) {
+      if (component[key] !== null) throw new TypeError(`components.schema.${key} must be null when authority was not read`);
+    }
+    return declaredComponent(failure3?.truth || "Degraded", failure3?.reason || "schema_authority_missing_or_unproven", {
+      readStatus: component.readStatus,
+      version: null,
+      variantId: null,
+      migrationId: null,
+      migrationState: null,
+      structureSha256: null
+    });
+  }
+  nonnegativeInteger(component.version, "components.schema.version");
+  if (component.migrationState !== "current_v2") throw new TypeError("components.schema.migrationState is unsupported");
+  requiredDigest(component.structureSha256, "components.schema.structureSha256");
+  const exact = component.version === RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.version && component.variantId === RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.variantId && component.migrationId === RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.migrationId && component.migrationState === "current_v2" && component.structureSha256 === RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.structureSha256;
+  if (!exact) throw new TypeError("complete schema component must equal exact v2 production authority");
+  const truth = "Degraded";
+  const reason = exact ? "schema_authority_self_reported_unverified" : "schema_authority_missing_or_unproven";
+  return declaredComponent(truth, reason, {
+    readStatus: component.readStatus,
+    version: component.version,
+    variantId: component.variantId,
+    migrationId: component.migrationId,
+    migrationState: component.migrationState,
+    structureSha256: component.structureSha256
+  });
+}
+function expectedOwnedLedgerComponent(component) {
+  const failure3 = readFailure(component, "owned_ledger");
+  if (component.queryVersion !== "follow-up-owned-ledger.v1") throw new TypeError("owned ledger query version mismatch");
+  if (failure3) {
+    for (const key of COMPONENT_KEYS.ownedLedger.slice(4)) {
+      if (component[key] !== null) throw new TypeError(`components.ownedLedger.${key} must be null after a failed read`);
+    }
+    return declaredComponent(failure3.truth, failure3.reason, Object.fromEntries(
+      COMPONENT_KEYS.ownedLedger.slice(2).map((key) => [key, component[key]])
+    ));
+  }
+  requiredDigest(component.identityDigest, "components.ownedLedger.identityDigest");
+  requiredDigest(component.obligationSetDigest, "components.ownedLedger.obligationSetDigest");
+  const countFields = COMPONENT_KEYS.ownedLedger.slice(6);
+  for (const key of countFields) nonnegativeInteger(component[key], `components.ownedLedger.${key}`);
+  const consistent = !failure3 && component.readStatus === "complete" && component.acceptedSourceEvents + component.rejectedSourceEvents === component.sourceEvents && component.lifecycleInstances === component.acceptedSourceEvents && component.sourceTransitions >= component.sourceEvents && component.obligations === component.expectedObligations && component.missingObligations === 0 && component.unexpectedObligations === 0 && component.globalOrphanSourceTransitions === 0 && component.globalOrphanLifecycles === 0 && component.globalOrphanObligations === 0 && component.globalOrphanCommandAttempts === 0 && component.invariantViolations === 0;
+  const truth = "Degraded";
+  const reason = consistent ? "owned_ledger_self_reported_unverified" : "owned_ledger_incomplete";
+  return declaredComponent(truth, reason, Object.fromEntries(COMPONENT_KEYS.ownedLedger.slice(2).map((key) => [key, component[key]])));
+}
+function sortedUniqueIds(value, pattern, label) {
+  if (!Array.isArray(value) || value.length > FOLLOW_UP_RECONCILIATION_MAX_ID_ARRAY_ITEMS) {
+    throw new TypeError(`${label} must be a bounded identifier array`);
+  }
+  value.forEach((item, index) => exactPatternId(item, pattern, `${label}[${index}]`));
+  const sorted = [...new Set(value)].sort();
+  if (canonicalReconciliationJson(value) !== canonicalReconciliationJson(sorted)) throw new TypeError(`${label} must be sorted and unique`);
+  return value;
+}
+function expectedRuntimeProvenanceComponent(component, checkedAt) {
+  const failure3 = readFailure(component, "runtime_provenance");
+  if (failure3) {
+    for (const key of COMPONENT_KEYS.runtimeProvenance.slice(3)) {
+      if (component[key] !== null) throw new TypeError(`components.runtimeProvenance.${key} must be null after a failed read`);
+    }
+    return declaredComponent(failure3.truth, failure3.reason, Object.fromEntries(
+      COMPONENT_KEYS.runtimeProvenance.slice(2).map((key) => [key, component[key]])
+    ));
+  }
+  sortedUniqueIds(
+    component.releaseManifestIds,
+    RELEASE_MANIFEST_ID_RE,
+    "components.runtimeProvenance.releaseManifestIds"
+  );
+  sortedUniqueIds(
+    component.deploymentAttestationIds,
+    DEPLOYMENT_ATTESTATION_ID_RE,
+    "components.runtimeProvenance.deploymentAttestationIds"
+  );
+  nullableInteger(component.attestationExpiresAt, "components.runtimeProvenance.attestationExpiresAt");
+  for (const key of ["sourceBindings", "distinctRuntimeVersions", "unboundAcceptedSources", "bindingMismatches"]) {
+    nonnegativeInteger(component[key], `components.runtimeProvenance.${key}`);
+  }
+  if (component.currentDeploymentAttestationId !== null) {
+    exactPatternId(
+      component.currentDeploymentAttestationId,
+      DEPLOYMENT_ATTESTATION_ID_RE,
+      "current deployment attestation id"
+    );
+  }
+  if (typeof component.attestationFresh !== "boolean" || typeof component.runtimeVersionMatch !== "boolean") {
+    throw new TypeError("runtime provenance truth flags must be boolean");
+  }
+  requiredDigest(component.identityDigest, "components.runtimeProvenance.identityDigest");
+  const complete2 = !failure3 && component.readStatus === "complete" && component.releaseManifestIds.length > 0 && component.deploymentAttestationIds.length > 0 && component.currentDeploymentAttestationId !== null && component.deploymentAttestationIds.includes(component.currentDeploymentAttestationId) && component.attestationExpiresAt !== null && component.attestationExpiresAt > checkedAt && component.attestationFresh && component.unboundAcceptedSources === 0 && component.bindingMismatches === 0 && component.runtimeVersionMatch;
+  const missing = component.readStatus === "missing" || component.releaseManifestIds.length === 0 && component.deploymentAttestationIds.length === 0 && component.sourceBindings === 0;
+  const truth = "Degraded";
+  const reason = complete2 ? "runtime_provenance_self_reported_unverified" : missing ? "runtime_provenance_missing" : "runtime_provenance_incomplete";
+  return declaredComponent(
+    truth,
+    reason,
+    Object.fromEntries(COMPONENT_KEYS.runtimeProvenance.slice(2).map((key) => [key, component[key]]))
+  );
+}
+function expectedGhlCoverageComponent(component, window, checkedAt) {
+  const failure3 = readFailure(component, "ghl_appointment_event_source_coverage");
+  if (failure3) {
+    for (const key of COMPONENT_KEYS.ghlAppointmentEventSourceCoverage.slice(3)) {
+      if (component[key] !== null) throw new TypeError(`components.ghlAppointmentEventSourceCoverage.${key} must be null after a failed read`);
+    }
+    return declaredComponent(failure3.truth, failure3.reason, Object.fromEntries(
+      COMPONENT_KEYS.ghlAppointmentEventSourceCoverage.slice(2).map((key) => [key, component[key]])
+    ));
+  }
+  if (component.source !== null && component.source !== "ghl_execution_readback") {
+    throw new TypeError("components.ghlAppointmentEventSourceCoverage.source is unsupported");
+  }
+  for (const key of ["workflowVersion", "pagesRead", "expectedExecutions", "observedExecutions", "joinedExecutions", "unjoinedExecutions", "lookupErrors", "freshnessMs"]) {
+    nullableInteger(component[key], `components.ghlAppointmentEventSourceCoverage.${key}`);
+  }
+  if (component.workflowName !== null && component.workflowName !== "Appointment Events Webhook") {
+    throw new TypeError("components.ghlAppointmentEventSourceCoverage.workflowName is unsupported");
+  }
+  if (component.workflowId !== null && component.workflowId !== GHL_APPOINTMENT_EVENTS_WORKFLOW_ID) {
+    throw new TypeError("components.ghlAppointmentEventSourceCoverage.workflowId is unsupported");
+  }
+  if (component.accountableOwner !== null && component.accountableOwner !== "Eben") {
+    throw new TypeError("components.ghlAppointmentEventSourceCoverage.accountableOwner is unsupported");
+  }
+  if (component.cadence !== null && component.cadence !== "weekly") {
+    throw new TypeError("components.ghlAppointmentEventSourceCoverage.cadence is unsupported");
+  }
+  if (component.limitation !== null && component.limitation !== GHL_SOURCE_LIMITATION) {
+    throw new TypeError("components.ghlAppointmentEventSourceCoverage.limitation is unsupported");
+  }
+  if (component.identityDigest !== null) requiredDigest(component.identityDigest, "components.ghlAppointmentEventSourceCoverage.identityDigest");
+  nullableInteger(component.observedAt, "components.ghlAppointmentEventSourceCoverage.observedAt");
+  nullableInteger(component.coverageStart, "components.ghlAppointmentEventSourceCoverage.coverageStart");
+  nullableInteger(component.coverageEnd, "components.ghlAppointmentEventSourceCoverage.coverageEnd");
+  if (typeof component.cursorExhausted !== "boolean") throw new TypeError("components.ghlAppointmentEventSourceCoverage.cursorExhausted must be boolean");
+  if (component.readStatus === "missing") {
+    for (const key of COMPONENT_KEYS.ghlAppointmentEventSourceCoverage.slice(3)) {
+      if (key === "cursorExhausted") {
+        if (component[key] !== false) throw new TypeError("missing GHL source coverage cannot exhaust a cursor");
+      } else if (component[key] !== null) {
+        throw new TypeError(`components.ghlAppointmentEventSourceCoverage.${key} must be null when readback is missing`);
+      }
+    }
+  }
+  const complete2 = !failure3 && component.readStatus === "complete" && component.source === "ghl_execution_readback" && component.workflowName === "Appointment Events Webhook" && component.workflowId !== null && component.workflowVersion !== null && component.pagesRead > 0 && component.cursorExhausted && component.expectedExecutions === component.observedExecutions && component.joinedExecutions === component.observedExecutions && component.unjoinedExecutions === 0 && component.lookupErrors === 0 && component.identityDigest !== null && component.accountableOwner !== null && component.cadence !== null && component.limitation !== null && component.freshnessMs > 0 && component.observedAt !== null && component.observedAt <= checkedAt && checkedAt - component.observedAt <= component.freshnessMs && component.coverageStart !== null && component.coverageEnd !== null && component.coverageStart <= window.expectedStart && component.coverageEnd >= window.expectedEnd;
+  const missing = component.readStatus === "missing";
+  const truth = "Degraded";
+  const reason = complete2 ? "ghl_appointment_event_source_coverage_self_reported_unverified" : missing ? "ghl_appointment_event_source_coverage_missing" : "ghl_appointment_event_source_coverage_incomplete";
+  return declaredComponent(
+    truth,
+    reason,
+    Object.fromEntries(COMPONENT_KEYS.ghlAppointmentEventSourceCoverage.slice(2).map((key) => [key, component[key]]))
+  );
+}
+function expectedProviderReceiptComponent(component, window, owned, ghl) {
+  const failure3 = readFailure(component, "provider_receipt_coverage");
+  if (failure3) {
+    for (const key of COMPONENT_KEYS.providerReceipts.slice(3)) {
+      if (component[key] !== null) throw new TypeError(`components.providerReceipts.${key} must be null after a failed read`);
+    }
+    return declaredComponent(failure3.truth, failure3.reason, Object.fromEntries(
+      COMPONENT_KEYS.providerReceipts.slice(2).map((key) => [key, component[key]])
+    ));
+  }
+  const countKeys = [
+    "expectedReceiptObligations",
+    "coveredObligations",
+    "acceptedObligations",
+    "deliveredObligations",
+    "failedObligations",
+    "bouncedObligations",
+    "unknownObligations",
+    "lookupErrors"
+  ];
+  for (const key of countKeys) nonnegativeInteger(component[key], `components.providerReceipts.${key}`);
+  if (typeof component.zeroDenominatorProven !== "boolean" || typeof component.cursorExhausted !== "boolean") {
+    throw new TypeError("provider receipt truth flags must be boolean");
+  }
+  if (component.readStatus === "missing" && (component.cursorExhausted !== false || component.zeroDenominatorProven !== false)) {
+    throw new TypeError("missing provider readback cannot prove a cursor or zero denominator");
+  }
+  requiredDigest(component.identityDigest, "components.providerReceipts.identityDigest");
+  requiredDigest(component.obligationSetDigest, "components.providerReceipts.obligationSetDigest");
+  nullableInteger(component.coverageStart, "components.providerReceipts.coverageStart");
+  nullableInteger(component.coverageEnd, "components.providerReceipts.coverageEnd");
+  const classified = component.acceptedObligations + component.deliveredObligations + component.failedObligations + component.bouncedObligations + component.unknownObligations;
+  if (component.coveredObligations > component.expectedReceiptObligations || classified !== component.coveredObligations) {
+    throw new TypeError("provider receipt counts are internally inconsistent");
+  }
+  const denominatorProven = component.expectedReceiptObligations > 0 || component.zeroDenominatorProven && owned.reason === "owned_ledger_self_reported_unverified" && ghl.reason === "ghl_appointment_event_source_coverage_self_reported_unverified";
+  const complete2 = !failure3 && component.readStatus === "complete" && component.cursorExhausted && component.coveredObligations === component.expectedReceiptObligations && classified === component.coveredObligations && component.unknownObligations === 0 && component.lookupErrors === 0 && component.obligationSetDigest === owned.obligationSetDigest && denominatorProven && component.coverageStart !== null && component.coverageEnd !== null && component.coverageStart <= window.expectedStart && component.coverageEnd >= window.expectedEnd;
+  const missing = component.readStatus === "missing" || component.expectedReceiptObligations > 0 && component.coveredObligations === 0 && component.lookupErrors === 0;
+  const truth = "Degraded";
+  const reason = complete2 ? "provider_receipt_coverage_self_reported_unverified" : missing ? "provider_receipt_coverage_missing" : "provider_receipt_coverage_incomplete";
+  return declaredComponent(
+    truth,
+    reason,
+    Object.fromEntries(COMPONENT_KEYS.providerReceipts.slice(2).map((key) => [key, component[key]]))
+  );
+}
+function expectedComponents(components, window, checkedAt) {
+  const schema = expectedSchemaComponent(components.schema);
+  const ownedLedger = expectedOwnedLedgerComponent(components.ownedLedger);
+  const runtimeProvenance = expectedRuntimeProvenanceComponent(components.runtimeProvenance, checkedAt);
+  const ghlAppointmentEventSourceCoverage = expectedGhlCoverageComponent(
+    components.ghlAppointmentEventSourceCoverage,
+    window,
+    checkedAt
+  );
+  const providerReceipts = expectedProviderReceiptComponent(
+    components.providerReceipts,
+    window,
+    ownedLedger,
+    ghlAppointmentEventSourceCoverage
+  );
+  return { schema, ownedLedger, runtimeProvenance, ghlAppointmentEventSourceCoverage, providerReceipts };
+}
+function expectedOverall(detail, components) {
+  const reasons = RECONCILIATION_COMPONENT_KEYS.filter((key) => components[key].truth !== "Known").map((key) => components[key].reason);
+  if (detail.simulation) reasons.push("simulation_only");
+  if (!detail.authority) reasons.push("authority_false");
+  if (!detail.producerAdopted) reasons.push("reconciliation_runtime_not_adopted");
+  const exactReasons = [...new Set(reasons)].sort();
+  return {
+    truth: RECONCILIATION_COMPONENT_KEYS.some((key) => components[key].truth === "Unknown") ? "Unknown" : "Degraded",
+    reasons: exactReasons
+  };
+}
+function followUpReconciliationRunId(detailDigestSha256) {
+  return `recon_${requiredDigest(detailDigestSha256, "reconciliation detail digest")}`;
+}
+async function validateFollowUpReconciliationDetail(detailJson, row = null) {
+  try {
+    requiredText(detailJson, "reconciliation detail_json");
+    if (new TextEncoder().encode(detailJson).byteLength > FOLLOW_UP_RECONCILIATION_MAX_DETAIL_BYTES) {
+      throw new TypeError("reconciliation detail_json exceeds the byte limit");
+    }
+    const detail = JSON.parse(detailJson);
+    exactKeys(detail, DETAIL_KEYS, "reconciliation detail");
+    exactKeys(detail.window, WINDOW_KEYS, "reconciliation detail window");
+    exactKeys(detail.components, RECONCILIATION_COMPONENT_KEYS, "reconciliation detail components");
+    exactKeys(detail.overall, ["truth", "reasons"], "reconciliation detail overall");
+    for (const key of RECONCILIATION_COMPONENT_KEYS) exactKeys(detail.components[key], COMPONENT_KEYS[key], `components.${key}`);
+    if (detail.contractVersion !== FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION) throw new TypeError("reconciliation contract version mismatch");
+    if (detail.runKind !== FOLLOW_UP_RECONCILIATION_RUN_KIND) throw new TypeError("reconciliation run kind mismatch");
+    if (detail.family !== FOLLOW_UP_FAMILY) throw new TypeError("reconciliation family mismatch");
+    boundedVersionText(detail.sourceVersion, "reconciliation detail sourceVersion");
+    boundedVersionText(detail.runtimeVersion, "reconciliation detail runtimeVersion");
+    nonnegativeInteger(detail.startedAt, "reconciliation detail startedAt");
+    nonnegativeInteger(detail.checkedAt, "reconciliation detail checkedAt");
+    if (detail.startedAt > detail.checkedAt || detail.window?.expectedEnd > detail.startedAt || detail.checkedAt - detail.startedAt > FOLLOW_UP_RECONCILIATION_MAX_RUN_MS) {
+      throw new TypeError("reconciliation chronology is invalid");
+    }
+    if (typeof detail.simulation !== "boolean" || typeof detail.authority !== "boolean") throw new TypeError("reconciliation truth flags must be boolean");
+    if (detail.simulation !== true || detail.authority !== false || detail.producerAdopted !== false) {
+      throw new TypeError("reconciliation v1 must remain source-only, simulated, and non-authoritative");
+    }
+    if (detail.evidenceScope !== FOLLOW_UP_RECONCILIATION_EVIDENCE_SCOPE) {
+      throw new TypeError("reconciliation evidence scope mismatch");
+    }
+    for (const key of ["expectedStart", "expectedEnd", "coverageStart", "coverageEnd", "activationWatermark", "continuityStart"]) {
+      nonnegativeInteger(detail.window[key], `reconciliation detail window.${key}`);
+    }
+    if (detail.window.sampleRate !== 1) throw new TypeError("reconciliation sampleRate must be exactly 1");
+    if (typeof detail.window.paginationComplete !== "boolean") {
+      throw new TypeError("reconciliation paginationComplete must be boolean");
+    }
+    if (detail.window.expectedStart >= detail.window.expectedEnd || detail.window.expectedEnd - detail.window.expectedStart > FOLLOW_UP_RECONCILIATION_MAX_WINDOW_MS || detail.checkedAt - detail.window.expectedEnd > FOLLOW_UP_RECONCILIATION_MAX_COMPLETION_LAG_MS || detail.window.expectedEnd > detail.checkedAt || detail.window.coverageEnd > detail.checkedAt || detail.window.activationWatermark > detail.window.expectedStart || detail.window.continuityStart > detail.window.expectedStart) throw new TypeError("reconciliation detail window is invalid");
+    const expected = expectedComponents(detail.components, detail.window, detail.checkedAt);
+    const localKeys = ["ownedLedger", "runtimeProvenance", "providerReceipts"];
+    const localReadFailed = localKeys.map((key) => expected[key].truth === "Unknown" && (/* @__PURE__ */ new Set(["query_error", "permission_error", "timeout"])).has(expected[key].readStatus));
+    if (detail.window.paginationComplete) {
+      if (localReadFailed.some(Boolean) || detail.window.coverageStart > detail.window.expectedStart || detail.window.coverageEnd < detail.window.expectedEnd) {
+        throw new TypeError("complete local pagination requires complete local snapshot coverage");
+      }
+    } else if (!localReadFailed.every(Boolean) || detail.window.coverageStart !== detail.window.expectedStart || detail.window.coverageEnd !== detail.window.expectedStart) {
+      throw new TypeError("incomplete local pagination requires the canonical failed-snapshot shape");
+    }
+    if (canonicalReconciliationJson(detail.components) !== canonicalReconciliationJson(expected)) {
+      throw new TypeError("reconciliation component truth is optimistic or inconsistent");
+    }
+    const overall = expectedOverall(detail, expected);
+    if (canonicalReconciliationJson(detail.overall) !== canonicalReconciliationJson(overall)) {
+      throw new TypeError("reconciliation overall truth is optimistic or inconsistent");
+    }
+    if (detail.overall.truth === "Known" && !detail.window.paginationComplete) {
+      throw new TypeError("known reconciliation requires exhausted pagination");
+    }
+    const { detailDigestSha256, ...unsigned } = detail;
+    if (!/^[a-f0-9]{64}$/.test(detailDigestSha256) || detailDigestSha256 !== await sha256Hex(canonicalReconciliationJson(unsigned))) {
+      throw new TypeError("reconciliation detail digest mismatch");
+    }
+    if (detailJson !== canonicalReconciliationJson(detail)) throw new TypeError("reconciliation detail JSON is not canonical");
+    if (row) {
+      if (row.family !== detail.family || row.detail_json !== detailJson || row.source_version !== detail.sourceVersion || row.runtime_version !== detail.runtimeVersion || Number(row.started_at) !== detail.startedAt || Number(row.completed_at) !== detail.checkedAt || Number(row.expected_start) !== detail.window.expectedStart || Number(row.expected_end) !== detail.window.expectedEnd || Number(row.coverage_start) !== detail.window.coverageStart || Number(row.coverage_end) !== detail.window.coverageEnd || Number(row.pagination_complete) !== Number(detail.window.paginationComplete)) {
+        throw new TypeError("reconciliation row/detail identity mismatch");
+      }
+      const deterministicId = followUpReconciliationRunId(detail.detailDigestSha256);
+      if (row.reconciliation_run_id !== deterministicId || Number(row.started_at) > Number(row.completed_at) || Number(row.retention_until) !== Number(row.started_at) + NORMALIZED_RETENTION_MS || row.state !== "degraded" || row.authority !== "SOURCE_ONLY_SELF_REPORTED") {
+        throw new TypeError("reconciliation row truth is optimistic or unsupported");
+      }
+    }
+    return { valid: true, detail, components: expected, overall };
+  } catch (error) {
+    return { valid: false, reason: String(error?.message || error) };
+  }
+}
 function changesOf7(result) {
   return Number(result?.meta?.changes || 0);
 }
@@ -26651,12 +27024,25 @@ async function readAcceptance(db, sourceEventId) {
   ).bind(lifecycle.lifecycle_instance_id).all()).results || [] : [];
   return { sourceEvent, lifecycle, obligations };
 }
-async function readReliabilityHealth(db, { family, nowMs, maxAgeMs }) {
+async function readReliabilityHealth(db, options) {
+  const authority = { schemaProven: false };
+  const result = await readReliabilityHealthResult(db, options, authority);
+  return { ...result, schemaProven: authority.schemaProven };
+}
+async function readReliabilityHealthResult(db, { family, nowMs, maxAgeMs }, authority) {
   if (!db) return { truth: "Unknown", reason: "authority_unavailable", checkedAt: nowMs };
   try {
     const schema = await readReliabilitySchemaAuthority(db);
-    if (!schema.proven) {
-      return {
+    authority.schemaProven = schema.proven === true;
+    if (family !== FOLLOW_UP_FAMILY) {
+      return schema.proven ? { truth: "Degraded", reason: "coverage_contract_unsupported", checkedAt: nowMs } : { truth: "Degraded", reason: "schema_unproven", schemaReason: schema.reason, checkedAt: nowMs };
+    }
+    const coverageResult = await db.prepare(`SELECT * FROM reconciliation_runs
+      WHERE family = ? ORDER BY started_at DESC, completed_at DESC, reconciliation_run_id DESC LIMIT 2`).bind(family).all();
+    const coverageRows = coverageResult?.results || [];
+    const coverage = coverageRows[0] || null;
+    if (!coverage) {
+      return schema.proven ? { truth: "Degraded", reason: "coverage_missing", checkedAt: nowMs, schemaVersion: schema.version } : {
         truth: "Degraded",
         reason: "schema_unproven",
         schemaReason: schema.reason,
@@ -26664,29 +27050,106 @@ async function readReliabilityHealth(db, { family, nowMs, maxAgeMs }) {
         schemaVersion: schema.version
       };
     }
-    const coverage = await db.prepare(`SELECT * FROM reconciliation_runs
-      WHERE family = ? ORDER BY started_at DESC LIMIT 1`).bind(family).first();
-    if (!coverage) return { truth: "Degraded", reason: "coverage_missing", checkedAt: nowMs, schemaVersion: schema.version };
-    if (coverage.state !== "complete" || Number(coverage.pagination_complete) !== 1 || !coverage.completed_at) {
+    if (coverageRows[1] && Number(coverageRows[1].started_at) === Number(coverage.started_at)) {
+      return { truth: "Degraded", reason: "coverage_ambiguous", checkedAt: nowMs, schemaVersion: schema.version };
+    }
+    if (!(/* @__PURE__ */ new Set(["complete", "degraded"])).has(coverage.state) || !coverage.completed_at) {
       return { truth: "Degraded", reason: "coverage_incomplete", checkedAt: nowMs, schemaVersion: schema.version };
     }
-    const authorityValid = coverage.authority === "AUTOMATION_DB" && typeof coverage.source_version === "string" && coverage.source_version.length > 0 && typeof coverage.runtime_version === "string" && coverage.runtime_version.length > 0;
-    const rangeValid = Number(coverage.expected_start) <= Number(coverage.expected_end) && Number(coverage.coverage_start) <= Number(coverage.expected_start) && Number(coverage.coverage_end) >= Number(coverage.expected_end) && Number(coverage.coverage_end) <= Number(coverage.completed_at) && Number(coverage.completed_at) <= nowMs;
-    if (!authorityValid || !rangeValid) {
-      return { truth: "Degraded", reason: "coverage_unproven", checkedAt: nowMs, schemaVersion: schema.version };
+    const contract = await validateFollowUpReconciliationDetail(coverage.detail_json, coverage);
+    if (!contract.valid) {
+      if (!schema.proven) {
+        return {
+          truth: "Degraded",
+          reason: "schema_unproven",
+          schemaReason: schema.reason,
+          reasons: ["coverage_contract_invalid", "schema_unproven"],
+          contractReason: contract.reason,
+          checkedAt: nowMs,
+          schemaVersion: schema.version
+        };
+      }
+      return {
+        truth: "Degraded",
+        reason: "coverage_contract_invalid",
+        contractReason: contract.reason,
+        checkedAt: nowMs,
+        schemaVersion: schema.version
+      };
     }
-    if (nowMs - Number(coverage.coverage_end) > maxAgeMs || nowMs - Number(coverage.completed_at) > maxAgeMs) {
-      return { truth: "Degraded", reason: "coverage_stale", checkedAt: nowMs, schemaVersion: schema.version, coveredAt: coverage.coverage_end };
+    if (Number(coverage.completed_at) > nowMs || Number(coverage.coverage_end) > nowMs) {
+      return {
+        truth: "Degraded",
+        reason: "coverage_clock_invalid",
+        checkedAt: nowMs,
+        detailCheckedAt: contract.detail.checkedAt,
+        schemaVersion: schema.version
+      };
+    }
+    const schemaMatchesDetail = schema.proven && schema.version === RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.version && schema.variantId === RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.variantId && schema.migrationState === "current_v2" && schema.structure?.digest === RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.structureSha256 && schema.version === contract.components.schema.version && schema.variantId === contract.components.schema.variantId && schema.migrationState === contract.components.schema.migrationState && schema.structure?.digest === contract.components.schema.structureSha256;
+    const componentTruth = Object.fromEntries(RECONCILIATION_COMPONENT_KEYS.map((key) => [key, {
+      truth: contract.components[key].truth,
+      reason: contract.components[key].reason,
+      evidenceScope: contract.detail.evidenceScope
+    }]));
+    const stale2 = nowMs - Number(coverage.coverage_end) > maxAgeMs || nowMs - Number(coverage.completed_at) > maxAgeMs;
+    const annotations = [
+      ...!schema.proven ? ["schema_unproven"] : [],
+      ...!schemaMatchesDetail ? ["coverage_schema_mismatch"] : [],
+      ...stale2 ? ["coverage_stale"] : []
+    ];
+    if (contract.overall.truth === "Unknown") {
+      return {
+        truth: "Unknown",
+        reason: "coverage_unknown",
+        reasons: [.../* @__PURE__ */ new Set([...contract.overall.reasons, ...annotations])].sort(),
+        stale: stale2,
+        schemaMismatch: !schemaMatchesDetail,
+        checkedAt: nowMs,
+        detailCheckedAt: contract.detail.checkedAt,
+        schemaVersion: schema.version,
+        coveredAt: coverage.coverage_end,
+        componentTruth
+      };
+    }
+    if (stale2) {
+      return {
+        truth: "Degraded",
+        reason: "coverage_stale",
+        reasons: [.../* @__PURE__ */ new Set([...contract.overall.reasons, ...annotations])].sort(),
+        stale: true,
+        schemaMismatch: !schemaMatchesDetail,
+        checkedAt: nowMs,
+        detailCheckedAt: contract.detail.checkedAt,
+        schemaVersion: schema.version,
+        coveredAt: coverage.coverage_end,
+        componentTruth
+      };
+    }
+    if (!schemaMatchesDetail) {
+      return {
+        truth: "Degraded",
+        reason: schema.proven ? "coverage_schema_mismatch" : "schema_unproven",
+        reasons: [.../* @__PURE__ */ new Set([...contract.overall.reasons, ...annotations])].sort(),
+        stale: false,
+        schemaMismatch: true,
+        checkedAt: nowMs,
+        detailCheckedAt: contract.detail.checkedAt,
+        schemaVersion: schema.version,
+        schemaReason: schema.proven ? void 0 : schema.reason,
+        coveredAt: coverage.coverage_end,
+        componentTruth
+      };
     }
     return {
-      truth: "Known",
-      reason: "authoritative_and_fresh",
+      truth: "Degraded",
+      reason: "coverage_degraded",
+      reasons: contract.overall.reasons,
       checkedAt: nowMs,
+      detailCheckedAt: contract.detail.checkedAt,
       schemaVersion: schema.version,
       coveredAt: coverage.coverage_end,
-      authority: coverage.authority,
-      sourceVersion: coverage.source_version,
-      runtimeVersion: coverage.runtime_version
+      componentTruth
     };
   } catch (error) {
     return { truth: "Unknown", reason: "authority_read_failed", checkedAt: nowMs, error: String(error?.message || error) };
@@ -26757,14 +27220,172 @@ async function recordEvidenceAccess(db, { actor, family, action, sourceEventId =
   if (changesOf7(result) !== 1) throw new Error("evidence access was not durably audited");
   return accessEventId;
 }
+var FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION, FOLLOW_UP_RECONCILIATION_RUN_KIND, FOLLOW_UP_RECONCILIATION_EVIDENCE_SCOPE, FOLLOW_UP_RECONCILIATION_MAX_WINDOW_MS, FOLLOW_UP_RECONCILIATION_MAX_COMPLETION_LAG_MS, FOLLOW_UP_RECONCILIATION_MAX_RUN_MS, FOLLOW_UP_RECONCILIATION_MAX_DETAIL_BYTES, FOLLOW_UP_RECONCILIATION_MAX_ID_ARRAY_ITEMS, RECONCILIATION_SOURCE_VERSION_RE, RECONCILIATION_RUNTIME_VERSION_RE, RELEASE_MANIFEST_ID_RE, DEPLOYMENT_ATTESTATION_ID_RE, GHL_APPOINTMENT_EVENTS_WORKFLOW_ID, GHL_SOURCE_LIMITATION, RECONCILIATION_COMPONENT_KEYS, DETAIL_KEYS, WINDOW_KEYS, COMPONENT_KEYS;
 var init_reliability_store = __esm({
   "lib/reliability-store.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_reliability_contract();
     init_reliability_schema_authority();
+    FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION = "follow-up-reconciliation.v1";
+    FOLLOW_UP_RECONCILIATION_RUN_KIND = "follow_up_source_only_simulation";
+    FOLLOW_UP_RECONCILIATION_EVIDENCE_SCOPE = "self_reported_integrity_only";
+    FOLLOW_UP_RECONCILIATION_MAX_WINDOW_MS = 31 * 24 * 60 * 60 * 1e3;
+    FOLLOW_UP_RECONCILIATION_MAX_COMPLETION_LAG_MS = 24 * 60 * 60 * 1e3;
+    FOLLOW_UP_RECONCILIATION_MAX_RUN_MS = 15 * 60 * 1e3;
+    FOLLOW_UP_RECONCILIATION_MAX_DETAIL_BYTES = 64 * 1024;
+    FOLLOW_UP_RECONCILIATION_MAX_ID_ARRAY_ITEMS = 128;
+    RECONCILIATION_SOURCE_VERSION_RE = /^ghl:appointment-events-webhook:v[1-9][0-9]*$/;
+    RECONCILIATION_RUNTIME_VERSION_RE = /^[a-f0-9]{40}@follow-up-reminder-engine\.v[1-9][0-9]*$/;
+    RELEASE_MANIFEST_ID_RE = /^relm_[a-f0-9]{64}$/;
+    DEPLOYMENT_ATTESTATION_ID_RE = /^depatt_[a-f0-9]{64}$/;
+    GHL_APPOINTMENT_EVENTS_WORKFLOW_ID = "d03cf500-5fcf-4f7d-8a26-affb06eec97b";
+    GHL_SOURCE_LIMITATION = "appointment_events_webhook_source_execution_only_no_sender_ownership";
+    RECONCILIATION_COMPONENT_KEYS = Object.freeze([
+      "schema",
+      "ownedLedger",
+      "runtimeProvenance",
+      "ghlAppointmentEventSourceCoverage",
+      "providerReceipts"
+    ]);
+    DETAIL_KEYS = Object.freeze([
+      "contractVersion",
+      "runKind",
+      "family",
+      "sourceVersion",
+      "runtimeVersion",
+      "startedAt",
+      "checkedAt",
+      "simulation",
+      "authority",
+      "producerAdopted",
+      "evidenceScope",
+      "window",
+      "components",
+      "overall",
+      "detailDigestSha256"
+    ]);
+    WINDOW_KEYS = Object.freeze([
+      "expectedStart",
+      "expectedEnd",
+      "coverageStart",
+      "coverageEnd",
+      "paginationComplete",
+      "sampleRate",
+      "activationWatermark",
+      "continuityStart"
+    ]);
+    COMPONENT_KEYS = Object.freeze({
+      schema: ["truth", "reason", "readStatus", "version", "variantId", "migrationId", "migrationState", "structureSha256"],
+      ownedLedger: [
+        "truth",
+        "reason",
+        "readStatus",
+        "queryVersion",
+        "identityDigest",
+        "obligationSetDigest",
+        "sourceEvents",
+        "sourceTransitions",
+        "acceptedSourceEvents",
+        "rejectedSourceEvents",
+        "lifecycleInstances",
+        "obligations",
+        "expectedObligations",
+        "missingObligations",
+        "unexpectedObligations",
+        "commandAttempts",
+        "openExceptions",
+        "globalOrphanSourceTransitions",
+        "globalOrphanLifecycles",
+        "globalOrphanObligations",
+        "globalOrphanCommandAttempts",
+        "invariantViolations"
+      ],
+      runtimeProvenance: [
+        "truth",
+        "reason",
+        "readStatus",
+        "releaseManifestIds",
+        "deploymentAttestationIds",
+        "currentDeploymentAttestationId",
+        "attestationExpiresAt",
+        "attestationFresh",
+        "sourceBindings",
+        "distinctRuntimeVersions",
+        "unboundAcceptedSources",
+        "bindingMismatches",
+        "runtimeVersionMatch",
+        "identityDigest"
+      ],
+      ghlAppointmentEventSourceCoverage: [
+        "truth",
+        "reason",
+        "readStatus",
+        "source",
+        "workflowName",
+        "workflowId",
+        "workflowVersion",
+        "pagesRead",
+        "cursorExhausted",
+        "expectedExecutions",
+        "observedExecutions",
+        "joinedExecutions",
+        "unjoinedExecutions",
+        "identityDigest",
+        "lookupErrors",
+        "accountableOwner",
+        "cadence",
+        "freshnessMs",
+        "observedAt",
+        "coverageStart",
+        "coverageEnd",
+        "limitation"
+      ],
+      providerReceipts: [
+        "truth",
+        "reason",
+        "readStatus",
+        "expectedReceiptObligations",
+        "coveredObligations",
+        "acceptedObligations",
+        "deliveredObligations",
+        "failedObligations",
+        "bouncedObligations",
+        "unknownObligations",
+        "zeroDenominatorProven",
+        "lookupErrors",
+        "cursorExhausted",
+        "identityDigest",
+        "obligationSetDigest",
+        "coverageStart",
+        "coverageEnd"
+      ]
+    });
+    __name(plainObject2, "plainObject");
+    __name(exactKeys, "exactKeys");
+    __name(canonicalValue, "canonicalValue");
+    __name(canonicalReconciliationJson, "canonicalReconciliationJson");
+    __name(nonnegativeInteger, "nonnegativeInteger");
+    __name(nullableInteger, "nullableInteger");
+    __name(requiredText, "requiredText");
+    __name(boundedVersionText, "boundedVersionText");
+    __name(exactPatternId, "exactPatternId");
+    __name(requiredDigest, "requiredDigest");
+    __name(readFailure, "readFailure");
+    __name(declaredComponent, "declaredComponent");
+    __name(expectedSchemaComponent, "expectedSchemaComponent");
+    __name(expectedOwnedLedgerComponent, "expectedOwnedLedgerComponent");
+    __name(sortedUniqueIds, "sortedUniqueIds");
+    __name(expectedRuntimeProvenanceComponent, "expectedRuntimeProvenanceComponent");
+    __name(expectedGhlCoverageComponent, "expectedGhlCoverageComponent");
+    __name(expectedProviderReceiptComponent, "expectedProviderReceiptComponent");
+    __name(expectedComponents, "expectedComponents");
+    __name(expectedOverall, "expectedOverall");
+    __name(followUpReconciliationRunId, "followUpReconciliationRunId");
+    __name(validateFollowUpReconciliationDetail, "validateFollowUpReconciliationDetail");
     __name(changesOf7, "changesOf");
     __name(readAcceptance, "readAcceptance");
     __name(readReliabilityHealth, "readReliabilityHealth");
+    __name(readReliabilityHealthResult, "readReliabilityHealthResult");
     __name(readSourceEventDetail, "readSourceEventDetail");
     __name(readExceptionQueue, "readExceptionQueue");
     __name(readRecentSourceEvents, "readRecentSourceEvents");
@@ -26962,7 +27583,7 @@ async function onRequestGet34(context) {
           sourceEventDetail: null
         }), { status: 200, headers: headers4 });
       }
-      if (health.reason === "schema_unproven" || health.reason === "authority_read_failed") {
+      if (!health.schemaProven || health.reason === "authority_read_failed") {
         return new Response(JSON.stringify({
           success: true,
           configured: true,
@@ -27157,7 +27778,7 @@ async function onRequestGet34(context) {
 var RELIABILITY_ROUTES, VALID_CONTACT_ID, VALID_AUTOMATION_KEY, VALID_FAMILY_KEY, VALID_ENGINES, VALID_SOURCE_EVENT_ID, DEFAULT_FAILURE_WINDOW_HOURS, DEFAULT_ACTIVITY_WINDOW_HOURS, CRM_WORKER_CONTACTS_URL, CRM_WORKER_AUTOMATIONS_URL, CRM_WORKER_FAMILIES_URL, CRM_WORKER_TIMEOUT_MS, REMINDER_ENGINE_URL2;
 var init_staff_automations = __esm({
   "api/staff-automations.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_automation_views();
     init_automation_registry();
@@ -27358,7 +27979,7 @@ async function onRequestGet35(context) {
 var GHL_API_BASE28, GHL_LOCATION_ID21, CACHE_KEY, CACHE_TTL_SECONDS, MAX_CONTACT_PAGES, PAGE_SIZE2;
 var init_staff_balances = __esm({
   "api/staff-balances.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
@@ -27575,7 +28196,7 @@ async function onRequestPost42(context) {
 var GHL_API_BASE29, GHL_LOCATION_ID22, METHODS4, CANCELLED;
 var init_staff_book = __esm({
   "api/staff-book.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ghl();
     init_datetime();
@@ -27650,7 +28271,7 @@ function listStaffCalendarDefinitions() {
 var GROUPS, DEFINITIONS2, STAFF_BOOKABLE_IDS;
 var init_staff_calendar_catalog = __esm({
   "lib/staff-calendar-catalog.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_booking_slot_policy();
     init_staff_book_calendars();
     GROUPS = Object.freeze([
@@ -27843,7 +28464,7 @@ async function onRequestGet36(context) {
 var METHODS5;
 var init_staff_calendars = __esm({
   "api/staff-calendars.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_staff_calendar_catalog();
     METHODS5 = "GET, OPTIONS";
@@ -27896,7 +28517,7 @@ async function onRequestPost43(context) {
 var WORKER_BASE;
 var init_staff_call_coach_run = __esm({
   "api/staff-call-coach-run.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_BASE = "https://call-coach.eben-fa2.workers.dev";
     __name(onRequestOptions53, "onRequestOptions");
@@ -27994,7 +28615,7 @@ async function onRequestPost44(context) {
 var GHL_API_BASE30, AGREEMENT_VERSION;
 var init_staff_checkin = __esm({
   "api/staff-checkin.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE30 = "https://services.leadconnectorhq.com";
@@ -28136,7 +28757,7 @@ async function onRequestGet37(context) {
 var CLARITY_ENDPOINT, STUDY_PATH, SIGNAL_METRICS;
 var init_staff_clarity_study = __esm({
   "api/staff-clarity-study.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     CLARITY_ENDPOINT = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
     STUDY_PATH = "/book/study";
@@ -28201,7 +28822,7 @@ async function onRequestPost45(context) {
 var WORKER_URL3;
 var init_staff_coach_one = __esm({
   "api/staff-coach-one.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL3 = "https://call-coach.eben-fa2.workers.dev/coach-one";
     __name(onRequestOptions56, "onRequestOptions");
@@ -28363,7 +28984,7 @@ function communicationPreferencesView({ user, preferences, saved, storageAvailab
 var TEAM_COMMUNICATION_PREFERENCES_VERSION, TEAM_COMMUNICATION_DEFAULT_TIMEZONE, STAFF_USERS, CHANNELS3, CADENCES, CATEGORY_DEFINITIONS, EXTERNAL_ROUTES, CURRENT_CHANNELS, CURRENT_CADENCE;
 var init_team_communication_preferences = __esm({
   "lib/team-communication-preferences.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     TEAM_COMMUNICATION_PREFERENCES_VERSION = 1;
     TEAM_COMMUNICATION_DEFAULT_TIMEZONE = "America/Los_Angeles";
     STAFF_USERS = Object.freeze(["Eben", "Garrett"]);
@@ -28532,7 +29153,7 @@ async function onRequestPut(context) {
 }
 var init_staff_communication_preferences = __esm({
   "api/staff-communication-preferences.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_team_communication_preferences();
     __name(responseHeaders2, "responseHeaders");
@@ -28604,7 +29225,7 @@ async function onRequestGet39(context) {
 var STAGE_RANK2;
 var init_staff_community = __esm({
   "api/staff-community.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGE_RANK2 = { host: 1, engaged_host: 2, partner: 3, workshop_opportunity: 4 };
@@ -28663,7 +29284,7 @@ async function onRequestGet40(context) {
 }
 var init_staff_community_image = __esm({
   "api/staff-community-image.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_cos_field_visits();
     __name(dataUrl, "dataUrl");
@@ -28724,7 +29345,7 @@ async function onRequestPost46(context) {
 var STAGES2;
 var init_staff_community_touch = __esm({
   "api/staff-community-touch.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGES2 = /* @__PURE__ */ new Set(["host", "engaged_host", "partner", "workshop_opportunity"]);
@@ -28827,7 +29448,7 @@ async function listPaymentRecordsForContact(kv, contactId) {
 var PAYMENT_STATUSES, PAYMENT_METHODS, SOURCES, NOTE_MAX, PREFIX2;
 var init_session_payment = __esm({
   "lib/session-payment.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     PAYMENT_STATUSES = Object.freeze([
       "paid",
       // confirmed paid (cash, venmo, a matched Stripe charge, …)
@@ -29228,7 +29849,7 @@ async function onRequestGet41(context) {
 var GHL_API_BASE31, GHL_LOCATION_ID23;
 var init_staff_contact = __esm({
   "api/staff-contact.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -29303,7 +29924,7 @@ async function onRequestGet42(context) {
 var GHL_API_BASE32, GHL_LOCATION_ID24;
 var init_staff_contacts = __esm({
   "api/staff-contacts.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
@@ -29508,7 +30129,7 @@ async function onRequestGet43(context) {
 var GHL_API_BASE33, GHL_LOCATION_ID25, CLOSER_WORD, CLOSER_RE;
 var init_staff_conversations = __esm({
   "api/staff-conversations.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE33 = "https://services.leadconnectorhq.com";
@@ -29593,7 +30214,7 @@ async function onRequestPost47(context) {
 var WORKER_URL4, WORKER_TIMEOUT_MS2;
 var init_staff_crm_mirror_access = __esm({
   "api/staff-crm-mirror-access.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL4 = "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS2 = 15e3;
@@ -29821,7 +30442,7 @@ async function onRequestGet44(context) {
 var GHL_API_BASE34, GHL_LOCATION_ID26, GHL_GARRETT_USER_ID2;
 var init_staff_data = __esm({
   "api/staff-data.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -29922,7 +30543,7 @@ function sessionsDoneCount(record3) {
 var SESSION_COUNT, BODY_PART_VALUES, MAX_TEXT, MAX_WEEKS, MAX_INSTRUMENT_ITEMS, MAX_ITEM_ID, ITEM_ID_RE, STUDY_SESSIONS_DONE_FIELD_ID;
 var init_study_capture = __esm({
   "lib/study-capture.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_studies();
     SESSION_COUNT = 3;
     BODY_PART_VALUES = /* @__PURE__ */ new Set(["left", "right", "both"]);
@@ -30007,7 +30628,7 @@ async function onRequestPost48(context) {
 var GHL_API_BASE35, STUDY_SLUG;
 var init_staff_elbow_study = __esm({
   "api/staff-elbow-study.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
@@ -30087,7 +30708,7 @@ function isOpsErrKey(key) {
 }
 var init_staff_exceptions = __esm({
   "lib/staff-exceptions.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(humanizeOpsError, "humanizeOpsError");
     __name(sourceLabel, "sourceLabel");
     __name(unique, "unique");
@@ -30143,7 +30764,7 @@ async function onRequestPost49(context) {
 var METHODS6;
 var init_staff_exceptions2 = __esm({
   "api/staff-exceptions.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ops_alert();
     init_staff_exceptions();
@@ -30503,7 +31124,7 @@ async function onRequestPost50(context) {
 var GHL_API_BASE36, GHL_LOCATION_ID27, STUDY_NAME_FIELD_ID6, STUDY_SESSIONS_DONE_FIELD_ID2, FIELD_STUDY_TABLE_TAG, INDEX_KEY2, MAX_INDEX, MAX_TEXT2, FIELD_STUDIES;
 var init_staff_field_study = __esm({
   "api/staff-field-study.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ghl();
     init_studies();
@@ -30668,7 +31289,7 @@ async function onRequestPost51(context) {
 var GHL_API_BASE37, GHL_LOCATION_ID28, ANTHROPIC_API, ANTHROPIC_VERSION, MODEL, SYSTEM;
 var init_staff_followup_brief = __esm({
   "api/staff-followup-brief.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE37 = "https://services.leadconnectorhq.com";
@@ -30749,7 +31370,7 @@ async function onRequestPost52(context) {
 var WORKER_URL5, WORKER_TIMEOUT_MS3;
 var init_staff_followups = __esm({
   "api/staff-followups.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL5 = "https://amari-crm-mirror.eben-fa2.workers.dev/owned-followups";
     WORKER_TIMEOUT_MS3 = 15e3;
@@ -30811,7 +31432,7 @@ async function onRequestPost53(context) {
 var GHL_API_BASE38;
 var init_staff_founders_circle = __esm({
   "api/staff-founders-circle.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
@@ -30858,7 +31479,7 @@ async function onRequestGet49(context) {
 var KV_KEY;
 var init_staff_funnel = __esm({
   "api/staff-funnel.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     KV_KEY = "funnel:latest";
     __name(onRequestOptions72, "onRequestOptions");
@@ -30923,7 +31544,7 @@ async function onRequestPost54(context) {
 var WORKER_URL6, WORKER_TIMEOUT_MS4;
 var init_staff_funnel_refresh = __esm({
   "api/staff-funnel-refresh.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL6 = "https://funnel-refresh.eben-fa2.workers.dev/refresh";
     WORKER_TIMEOUT_MS4 = 9e4;
@@ -30979,7 +31600,7 @@ async function onRequestGet50(context) {
 var WORKER_URL7, WORKER_TIMEOUT_MS5, STAFF_ACTORS;
 var init_staff_gmail_reply_readiness = __esm({
   "api/staff-gmail-reply-readiness.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL7 = "https://amari-crm-mirror.eben-fa2.workers.dev/gmail/reply-readiness";
     WORKER_TIMEOUT_MS5 = 1e4;
@@ -31045,7 +31666,7 @@ async function maybeSendLpOnboarding(context, { contactId, seriesType, newRemain
 var MODE2, LP_ONBOARDING_EMAIL;
 var init_lp_onboarding = __esm({
   "lib/lp-onboarding.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_upgrade_offer();
     init_ghl_send();
     MODE2 = "shadow";
@@ -31091,7 +31712,7 @@ async function isDebited(db, appointmentId) {
 }
 var init_attendance_claim = __esm({
   "lib/attendance-claim.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(changesOf9, "changesOf");
     __name(claimDebit, "claimDebit");
     __name(releaseDebit, "releaseDebit");
@@ -31418,7 +32039,7 @@ async function onRequestPost55(context) {
 var GHL_API_BASE39, GHL_LOCATION_ID29, FIELD_IDS5, ENTRAINMENT_CALENDAR_ID, FOLLOWUP_CALENDAR_IDS, PAIR_WINDOW_MS, DISCOVERY_CALENDAR_IDS;
 var init_staff_mark_attended = __esm({
   "api/staff-mark-attended.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_upgrade_offer();
     init_lp_onboarding();
@@ -31472,6 +32093,12 @@ function failure(message, status = 400) {
 }
 function cleanText5(value, max = MAX_NAME_LENGTH) {
   return typeof value === "string" ? value.trim().replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").slice(0, max) : "";
+}
+function cleanChoice(value, allowed, fallback) {
+  const choice = cleanText5(value, 40);
+  if (!choice) return fallback;
+  if (!allowed.has(choice)) throw failure("Choose a valid media classification");
+  return choice;
 }
 function normalizeMediaName(value) {
   return cleanText5(value).toLocaleLowerCase("en-US");
@@ -31532,6 +32159,10 @@ function mapAsset(row) {
     mimeType: row.mime_type,
     kind: STAFF_MEDIA_TYPES[row.mime_type] || "file",
     sizeBytes: Number(row.size_bytes),
+    description: row.internal_description || "",
+    websiteUsage: row.website_usage || "not_used",
+    curationStatus: row.curation_status || "good",
+    sourcePath: row.source_path || null,
     status: row.status,
     version: Number(row.version),
     createdAt: row.created_at,
@@ -31593,14 +32224,18 @@ async function registerMediaAsset(db, input, { actor, now, id: id3, allowSvg = f
   await requireFolder(db, folderId);
   const assetId = id3 || crypto.randomUUID();
   const objectKey = mediaObjectKey(assetId, upload.mimeType);
+  const description = cleanText5(input?.description, MAX_DESCRIPTION_LENGTH);
+  const websiteUsage = cleanChoice(input?.websiteUsage, WEBSITE_USAGES, "not_used");
+  const curationStatus = cleanChoice(input?.curationStatus, CURATION_STATUSES, "good");
+  const sourcePath = cleanText5(input?.sourcePath, 500) || null;
   const timestamp = now || (/* @__PURE__ */ new Date()).toISOString();
   const staffActor = cleanText5(actor, 80) || "Staff";
   try {
     await db.batch([
       db.prepare(`INSERT INTO staff_media_assets
         (id, folder_id, object_key, display_name, original_name, normalized_name, mime_type, size_bytes,
-         status, version, created_at, created_by, updated_at, updated_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, ?, ?)`).bind(assetId, folderId, objectKey, upload.displayName, upload.displayName, upload.normalizedName, upload.mimeType, upload.sizeBytes, timestamp, staffActor, timestamp, staffActor),
+         internal_description, website_usage, curation_status, source_path, status, version, created_at, created_by, updated_at, updated_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, ?, ?)`).bind(assetId, folderId, objectKey, upload.displayName, upload.displayName, upload.normalizedName, upload.mimeType, upload.sizeBytes, description, websiteUsage, curationStatus, sourcePath, timestamp, staffActor, timestamp, staffActor),
       db.prepare(`INSERT INTO staff_media_events (id, asset_id, folder_id, action, actor, occurred_at, detail)
         VALUES (?, ?, ?, 'uploaded', ?, ?, ?)`).bind(crypto.randomUUID(), assetId, folderId, staffActor, timestamp, `${upload.mimeType} \xB7 ${upload.sizeBytes} bytes`)
     ]);
@@ -31608,14 +32243,14 @@ async function registerMediaAsset(db, input, { actor, now, id: id3, allowSvg = f
     if (/unique|constraint/i.test(String(cause))) throw failure("A file with that name already exists in this folder", 409);
     throw cause;
   }
-  return { asset: mapAsset({ id: assetId, folder_id: folderId, object_key: objectKey, display_name: upload.displayName, original_name: upload.displayName, mime_type: upload.mimeType, size_bytes: upload.sizeBytes, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor }), objectKey };
+  return { asset: mapAsset({ id: assetId, folder_id: folderId, object_key: objectKey, display_name: upload.displayName, original_name: upload.displayName, mime_type: upload.mimeType, size_bytes: upload.sizeBytes, internal_description: description, website_usage: websiteUsage, curation_status: curationStatus, source_path: sourcePath, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor }), objectKey };
 }
 async function updateMediaAsset(db, input, { actor, now } = {}) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
-  const allowed = /* @__PURE__ */ new Set(["action", "assetId", "name", "folderId"]);
+  const allowed = /* @__PURE__ */ new Set(["action", "assetId", "name", "folderId", "description", "websiteUsage", "curationStatus", "sourcePath"]);
   for (const key of Object.keys(input || {})) if (!allowed.has(key)) throw failure(`Unknown media field: ${key}`);
   const action = input?.action;
-  if (!["rename_asset", "move_asset", "archive_asset", "restore_asset"].includes(action)) throw failure("Choose a valid media action");
+  if (!["rename_asset", "move_asset", "archive_asset", "restore_asset", "curate_asset"].includes(action)) throw failure("Choose a valid media action");
   const assetId = cleanText5(input?.assetId, 80);
   const current = assetId ? await db.prepare("SELECT * FROM staff_media_assets WHERE id = ?").bind(assetId).first() : null;
   if (!current) throw failure("Media file not found", 404);
@@ -31625,6 +32260,10 @@ async function updateMediaAsset(db, input, { actor, now } = {}) {
   let normalizedName = current.normalized_name;
   let folderId = current.folder_id || null;
   let status = current.status;
+  let description = current.internal_description || "";
+  let websiteUsage = current.website_usage || "not_used";
+  let curationStatus = current.curation_status || "good";
+  let sourcePath = current.source_path || null;
   if (action === "rename_asset") {
     name = cleanText5(input?.name);
     if (!name) throw failure("File name is required");
@@ -31634,22 +32273,27 @@ async function updateMediaAsset(db, input, { actor, now } = {}) {
     await requireFolder(db, folderId);
   } else if (action === "archive_asset") {
     status = "archived";
+  } else if (action === "curate_asset") {
+    description = cleanText5(input?.description, MAX_DESCRIPTION_LENGTH);
+    websiteUsage = cleanChoice(input?.websiteUsage, WEBSITE_USAGES, websiteUsage);
+    curationStatus = cleanChoice(input?.curationStatus, CURATION_STATUSES, curationStatus);
+    sourcePath = cleanText5(input?.sourcePath, 500) || null;
   } else {
     status = "active";
   }
   try {
     await db.batch([
       db.prepare(`UPDATE staff_media_assets
-        SET folder_id = ?, display_name = ?, normalized_name = ?, status = ?, version = version + 1,
-            updated_at = ?, updated_by = ? WHERE id = ?`).bind(folderId, name, normalizedName, status, timestamp, staffActor, assetId),
+        SET folder_id = ?, display_name = ?, normalized_name = ?, internal_description = ?, website_usage = ?,
+            curation_status = ?, source_path = ?, status = ?, version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?`).bind(folderId, name, normalizedName, description, websiteUsage, curationStatus, sourcePath, status, timestamp, staffActor, assetId),
       db.prepare(`INSERT INTO staff_media_events (id, asset_id, folder_id, action, actor, occurred_at, detail)
-        VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), assetId, folderId, action, staffActor, timestamp, name)
+        VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), assetId, folderId, action, staffActor, timestamp, action === "curate_asset" ? `${websiteUsage} \xB7 ${curationStatus} \xB7 ${description || "No description"}` : name)
     ]);
   } catch (cause) {
     if (/unique|constraint/i.test(String(cause))) throw failure("A file with that name already exists in this folder", 409);
     throw cause;
   }
-  return mapAsset({ ...current, folder_id: folderId, display_name: name, normalized_name: normalizedName, status, version: Number(current.version) + 1, updated_at: timestamp, updated_by: staffActor });
+  return mapAsset({ ...current, folder_id: folderId, display_name: name, normalized_name: normalizedName, internal_description: description, website_usage: websiteUsage, curation_status: curationStatus, source_path: sourcePath, status, version: Number(current.version) + 1, updated_at: timestamp, updated_by: staffActor });
 }
 async function getMediaAssetRecord(db, assetId) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
@@ -31658,12 +32302,15 @@ async function getMediaAssetRecord(db, assetId) {
   if (!row || row.status !== "active") throw failure("Media file not found", 404);
   return { public: mapAsset(row), objectKey: row.object_key };
 }
-var MAX_FILE_BYTES, MAX_NAME_LENGTH, STAFF_MEDIA_TYPES;
+var MAX_FILE_BYTES, MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, WEBSITE_USAGES, CURATION_STATUSES, STAFF_MEDIA_TYPES;
 var init_staff_media = __esm({
   "lib/staff-media.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     MAX_FILE_BYTES = 95 * 1024 * 1024;
     MAX_NAME_LENGTH = 160;
+    MAX_DESCRIPTION_LENGTH = 600;
+    WEBSITE_USAGES = /* @__PURE__ */ new Set(["currently_used", "not_used"]);
+    CURATION_STATUSES = /* @__PURE__ */ new Set(["good", "delete_candidate"]);
     STAFF_MEDIA_TYPES = Object.freeze({
       "image/jpeg": "image",
       "image/png": "image",
@@ -31678,6 +32325,7 @@ var init_staff_media = __esm({
     });
     __name(failure, "failure");
     __name(cleanText5, "cleanText");
+    __name(cleanChoice, "cleanChoice");
     __name(normalizeMediaName, "normalizeMediaName");
     __name(validateMediaUpload, "validateMediaUpload");
     __name(mediaObjectKey, "mediaObjectKey");
@@ -31693,6 +32341,11 @@ var init_staff_media = __esm({
 });
 
 // lib/staff-site-media.js
+function internalDescription(path) {
+  if (DESCRIPTIONS[path]) return DESCRIPTIONS[path];
+  const label = displayName(path).replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
+  return `Amari website asset: ${label}. Review its preview in Staff before assigning it to a new placement.`;
+}
 function extensionFor(path) {
   return path.split(".").pop()?.toLowerCase() || "";
 }
@@ -31706,6 +32359,69 @@ async function ensureFolder(db, folders, name, parentId, actor) {
   folders.push(folder);
   return folder;
 }
+function defaultDescription(asset) {
+  return `Library image: ${asset.name}. Review its preview in Staff before using it on the website.`;
+}
+function folderNameFor(folders, folderId) {
+  return folders.find((folder) => folder.id === folderId)?.name || "";
+}
+function findExistingSiteAsset({ assets, folders, siteAsset }) {
+  const activeImages = assets.filter((asset) => asset.status === "active" && asset.kind === "image");
+  const sourceMatches = activeImages.filter((asset) => asset.sourcePath === siteAsset.path);
+  if (sourceMatches.length === 1) return { asset: sourceMatches[0], ambiguous: false };
+  if (sourceMatches.length > 1) return { asset: null, ambiguous: true };
+  const aliases = new Set(FOLDER_ALIASES[siteAsset.folder] || [siteAsset.folder]);
+  const named = activeImages.filter((asset) => normalizeMediaName(asset.name) === normalizeMediaName(displayName(siteAsset.path)) && aliases.has(folderNameFor(folders, asset.folderId)));
+  return named.length === 1 ? { asset: named[0], ambiguous: false } : { asset: null, ambiguous: named.length > 1 };
+}
+async function syncMediaMetadata(db, asset, metadata, actor, action = "site_metadata_synced") {
+  const description = metadata.description || defaultDescription(asset);
+  const websiteUsage = metadata.websiteUsage || "not_used";
+  const curationStatus = metadata.curationStatus || "good";
+  const sourcePath = metadata.sourcePath || null;
+  const needsUpdate = asset.description !== description || asset.websiteUsage !== websiteUsage || asset.curationStatus !== curationStatus || asset.sourcePath !== sourcePath;
+  if (!needsUpdate) return false;
+  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
+  const staffActor = String(actor || "Staff").slice(0, 80);
+  await db.batch([
+    db.prepare(`UPDATE staff_media_assets
+      SET internal_description = ?, website_usage = ?, curation_status = ?, source_path = ?,
+          version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?`).bind(description, websiteUsage, curationStatus, sourcePath, timestamp, staffActor, asset.id),
+    db.prepare(`INSERT INTO staff_media_events (id, asset_id, folder_id, action, actor, occurred_at, detail)
+      VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), asset.id, asset.folderId, action, staffActor, timestamp, `${websiteUsage} \xB7 ${curationStatus} \xB7 ${sourcePath || "library only"}`)
+  ]);
+  return true;
+}
+async function syncSiteMediaCatalog({ db, actor }) {
+  if (!db) throw Object.assign(new Error("Media metadata storage is not configured"), { status: 422 });
+  const library = await listStaffMedia(db);
+  const result = { classified: 0, catalogMatched: 0, defaulted: 0, ambiguous: 0, skippedNonImage: 0 };
+  const catalogMatches = SITE_ASSETS.map((siteAsset) => ({ siteAsset, match: findExistingSiteAsset({ assets: library.assets, folders: library.folders, siteAsset }) }));
+  result.ambiguous = catalogMatches.filter(({ match: match2 }) => match2.ambiguous).length;
+  for (const asset of library.assets) {
+    if (asset.status !== "active") continue;
+    if (asset.kind !== "image") {
+      result.skippedNonImage += 1;
+      continue;
+    }
+    const candidates = catalogMatches.filter(({ match: match2 }) => match2.asset?.id === asset.id).map(({ siteAsset }) => siteAsset);
+    if (candidates.length > 1) {
+      result.ambiguous += 1;
+      continue;
+    }
+    const matched = candidates[0] || null;
+    const changed = await syncMediaMetadata(db, asset, matched ? {
+      description: matched.description,
+      websiteUsage: matched.websiteUsage,
+      curationStatus: matched.curationStatus,
+      sourcePath: matched.path
+    } : { description: asset.description || defaultDescription(asset), websiteUsage: "not_used", curationStatus: "good", sourcePath: asset.sourcePath }, actor, matched ? "site_metadata_synced" : "library_metadata_defaulted");
+    if (changed) result.classified += 1;
+    if (matched) result.catalogMatched += 1;
+    else result.defaulted += 1;
+  }
+  return result;
+}
 async function importSiteMediaBatch({ db, bucket, origin, actor, offset = 0, fetcher = fetch }) {
   if (!db || !bucket) throw Object.assign(new Error("Media upload storage is not configured"), { status: 422 });
   const start = Math.max(0, Number.parseInt(offset, 10) || 0);
@@ -31713,19 +32429,22 @@ async function importSiteMediaBatch({ db, bucket, origin, actor, offset = 0, fet
   const library = await listStaffMedia(db);
   const root = await ensureFolder(db, library.folders, ROOT_FOLDER, null, actor);
   const folders = /* @__PURE__ */ new Map();
-  for (const [folderName] of group) {
-    if (!folders.has(folderName)) folders.set(folderName, await ensureFolder(db, library.folders, folderName, root.id, actor));
-  }
-  const known = new Set(library.assets.filter((asset) => asset.status === "active").map((asset) => `${asset.folderId}:${normalizeMediaName(asset.name)}`));
   const result = { imported: [], skipped: [], failed: [], total: SITE_ASSETS.length, nextOffset: Math.min(start + group.length, SITE_ASSETS.length) };
-  for (const [folderName, path] of group) {
-    const folder = folders.get(folderName);
+  for (const siteAsset of group) {
+    const { folder: folderName, path } = siteAsset;
     const name = displayName(path);
-    const key = `${folder.id}:${normalizeMediaName(name)}`;
-    if (known.has(key)) {
+    const existing = findExistingSiteAsset({ assets: library.assets, folders: library.folders, siteAsset });
+    if (existing.asset) {
+      await syncMediaMetadata(db, existing.asset, { description: siteAsset.description, websiteUsage: siteAsset.websiteUsage, curationStatus: siteAsset.curationStatus, sourcePath: path }, actor);
       result.skipped.push(name);
       continue;
     }
+    if (existing.ambiguous) {
+      result.failed.push({ name, error: "Multiple legacy library images match this site asset; review before importing." });
+      continue;
+    }
+    if (!folders.has(folderName)) folders.set(folderName, await ensureFolder(db, library.folders, folderName, root.id, actor));
+    const folder = folders.get(folderName);
     const mimeType = MIME_BY_EXTENSION[extensionFor(path)];
     if (!mimeType) {
       result.failed.push({ name, error: "Unsupported source file type" });
@@ -31739,8 +32458,17 @@ async function importSiteMediaBatch({ db, bucket, origin, actor, offset = 0, fet
       const objectKey = mediaObjectKey(assetId, mimeType);
       await bucket.put(objectKey, bytes, { httpMetadata: { contentType: mimeType }, customMetadata: { assetId, importedFrom: path, uploadedBy: String(actor || "Staff").slice(0, 80) } });
       try {
-        const registered = await registerMediaAsset(db, { name, mimeType, sizeBytes: bytes.byteLength, folderId: folder.id }, { actor, id: assetId, allowSvg: true });
-        known.add(key);
+        const registered = await registerMediaAsset(db, {
+          name,
+          mimeType,
+          sizeBytes: bytes.byteLength,
+          folderId: folder.id,
+          description: siteAsset.description,
+          websiteUsage: siteAsset.websiteUsage,
+          curationStatus: siteAsset.curationStatus,
+          sourcePath: path
+        }, { actor, id: assetId, allowSvg: true });
+        library.assets.push(registered.asset);
         result.imported.push(registered.asset.name);
       } catch (cause) {
         await bucket.delete(objectKey);
@@ -31753,12 +32481,12 @@ async function importSiteMediaBatch({ db, bucket, origin, actor, offset = 0, fet
   }
   return result;
 }
-var SITE_ASSETS, MIME_BY_EXTENSION, ROOT_FOLDER, CHUNK_SIZE;
+var RAW_SITE_ASSETS, NOT_CURRENTLY_USED, DELETE_CANDIDATES, DESCRIPTIONS, SITE_ASSETS, MIME_BY_EXTENSION, ROOT_FOLDER, CHUNK_SIZE, FOLDER_ALIASES;
 var init_staff_site_media = __esm({
   "lib/staff-site-media.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_staff_media();
-    SITE_ASSETS = [
+    RAW_SITE_ASSETS = [
       ["Brand", "/images/identity/amari-method-wordmark.svg"],
       ["Brand", "/images/AmariLogo.avif"],
       ["Brand", "/images/AmariLogo.jpg"],
@@ -31864,6 +32592,52 @@ var init_staff_site_media = __esm({
       ["Legacy site imagery", "/images/v6/real/putting-it-all-together.jpg"],
       ["Legacy site imagery", "/images/v6/real/spring-step.jpg"]
     ];
+    NOT_CURRENTLY_USED = /* @__PURE__ */ new Set([
+      "/images/AmariLogo.jpg",
+      "/images/amari-icon.png",
+      "/images/amari-method-logo-1200.png",
+      "/images/amari-method-logo-1200x300.png",
+      "/images/v6/logo-icon.png",
+      "/images/v6/real/amari-icon.png",
+      "/images/v6/real/amari-method-logo-1200x300.png",
+      "/images/Dr-Garrett-Headshot-2.avif",
+      "/images/photos/amari-method-active-bridge-ocean-swimmer.png",
+      "/images/photos/amari-method-concept-explanation-athletic-client.png",
+      "/images/photos/amari-method-guided-hand-position-athletic-client.png",
+      "/images/photos/amari-method-sf-hillside-athletic-lifestyle.png",
+      "/images/photos/amari-method-shoulder-athletic-client.jpeg",
+      "/images/photos/amari-method-suspension-squat-athletic-client.png",
+      "/images/photos/condition-base/neck.jpg",
+      "/images/photos/detail-crops/hand-reaching-open.jpg",
+      "/images/photos/jh-myofascial.jpg",
+      "/images/photos/jh-psoas.jpg",
+      "/images/photos/jh-stretching.jpg",
+      "/images/photos/materials/hand-handrail-grip.jpg",
+      "/images/v6/real/foam-roller-v2.jpg",
+      "/images/v6/real/garrett-session-img-3348.jpg",
+      "/images/v6/real/gymnastic-rings.jpg",
+      "/images/v6/real/jaw-align.jpg"
+    ]);
+    DELETE_CANDIDATES = /* @__PURE__ */ new Set([
+      "/images/photos/black-woman38-window-seat.jpg",
+      "/images/photos/black-man42-room-roller.jpg",
+      "/images/photos/living-practice-woman-asn35.jpg",
+      "/images/photos/firstvisit-doorway-woman-wht48.jpg"
+    ]);
+    DESCRIPTIONS = {
+      "/images/photos/black-woman38-window-seat.jpg": "Seated woman by a window in the Amari room; currently used for the homepage method panel.",
+      "/images/photos/black-man42-room-roller.jpg": "Man standing in the Amari room near a foam roller; currently used as the How It Works hero.",
+      "/images/photos/living-practice-woman-asn35.jpg": "Woman doing a seated arm movement in the Amari room; currently used for Living Practice.",
+      "/images/photos/firstvisit-doorway-woman-wht48.jpg": "Woman entering through the Amari doorway; currently used for First Visit and the homepage assessment panel."
+    };
+    __name(internalDescription, "internalDescription");
+    SITE_ASSETS = Object.freeze(RAW_SITE_ASSETS.map(([folder, path]) => Object.freeze({
+      folder,
+      path,
+      description: internalDescription(path),
+      websiteUsage: NOT_CURRENTLY_USED.has(path) ? "not_used" : "currently_used",
+      curationStatus: DELETE_CANDIDATES.has(path) ? "delete_candidate" : "good"
+    })));
     MIME_BY_EXTENSION = {
       avif: "image/avif",
       gif: "image/gif",
@@ -31875,9 +32649,21 @@ var init_staff_site_media = __esm({
     };
     ROOT_FOLDER = "Amari site assets";
     CHUNK_SIZE = 8;
+    FOLDER_ALIASES = {
+      Brand: ["Brand", "Current identity", "Historical logo files"],
+      "Site photography": ["Site photography", "Current site photography", "Current photography"],
+      "Current site photography": ["Current site photography", "Site photography", "Current photography"],
+      "Study materials": ["Study materials", "Study flyers"],
+      "Legacy site imagery": ["Legacy site imagery", "Historical imagery", "Historical logo files"]
+    };
     __name(extensionFor, "extensionFor");
     __name(displayName, "displayName");
     __name(ensureFolder, "ensureFolder");
+    __name(defaultDescription, "defaultDescription");
+    __name(folderNameFor, "folderNameFor");
+    __name(findExistingSiteAsset, "findExistingSiteAsset");
+    __name(syncMediaMetadata, "syncMediaMetadata");
+    __name(syncSiteMediaCatalog, "syncSiteMediaCatalog");
     __name(importSiteMediaBatch, "importSiteMediaBatch");
   }
 });
@@ -31924,6 +32710,10 @@ async function onRequestPost56(context) {
   if (parsed.error) return parsed.error;
   try {
     const actor = auth.payload?.user || "Staff";
+    if (parsed.body.action === "sync_site_catalog") {
+      const synced = await syncSiteMediaCatalog({ db: context.env.ATTEND_DB || null, actor });
+      return json16(synced, 200, headers4);
+    }
     if (parsed.body.action === "import_site_assets") {
       const imported = await importSiteMediaBatch({
         db: context.env.ATTEND_DB || null,
@@ -31948,7 +32738,7 @@ async function onRequestPost56(context) {
 }
 var init_staff_media2 = __esm({
   "api/staff-media.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_staff_media();
     init_staff_site_media();
@@ -32028,7 +32818,7 @@ async function onRequestHead(context) {
 }
 var init_staff_media_file = __esm({
   "api/staff-media-file.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_staff_media();
     __name(baseHeaders, "baseHeaders");
@@ -32108,7 +32898,7 @@ async function onRequestPost57(context) {
 }
 var init_staff_media_upload = __esm({
   "api/staff-media-upload.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_staff_media();
     __name(responseHeaders6, "responseHeaders");
@@ -32199,7 +32989,7 @@ async function onRequestPost58(context) {
 var GHL_API_BASE40, GHL_LOCATION_ID30;
 var init_staff_not_a_fit = __esm({
   "api/staff-not-a-fit.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE40 = "https://services.leadconnectorhq.com";
@@ -32223,7 +33013,7 @@ function isEditableStaffNote(body) {
 var SYSTEM_NOTE_PATTERNS;
 var init_staff_note_policy = __esm({
   "../shared/staff-note-policy.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     SYSTEM_NOTE_PATTERNS = [
       /^migrat/i,
       /^\[?reconciliation/i,
@@ -32334,7 +33124,7 @@ async function onRequestPut2(context) {
 var GHL_API_BASE41;
 var init_staff_note = __esm({
   "api/staff-note.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     init_staff_note_policy();
@@ -32398,7 +33188,7 @@ async function onRequestGet53(context) {
 var KV_KEY2;
 var init_staff_outreach_cards = __esm({
   "api/staff-outreach-cards.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     KV_KEY2 = "outreach-snapshot:current";
     __name(onRequestOptions81, "onRequestOptions");
@@ -32487,7 +33277,7 @@ async function onRequestPost60(context) {
 var KV_KEY3, ALLOWED_ORIGINS37;
 var init_staff_outreach_upload = __esm({
   "api/staff-outreach-upload.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_heartbeat();
     KV_KEY3 = "outreach-snapshot:current";
     ALLOWED_ORIGINS37 = [
@@ -32620,7 +33410,7 @@ function makeStripeClient(secretKey, fetchImpl = fetch) {
 var AMOUNT_TO_SESSIONS, STRIPE_MAX_PAGES;
 var init_stripe_charges = __esm({
   "lib/stripe-charges.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     AMOUNT_TO_SESSIONS = Object.freeze({
       5400: { sessions: 24, label: "The 12-Week Amari Practice" },
       5500: { sessions: 24, label: "The 12-Week Amari Practice" },
@@ -32673,7 +33463,7 @@ function computeOwedStatus({ sessionsPurchased, unknownCount, unknownMax = 0, at
 var ATTENDED, LEGACY_MIN;
 var init_session_owed = __esm({
   "lib/session-owed.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_session_ledger();
     init_datetime();
     ATTENDED = /* @__PURE__ */ new Set(["showed", "completed"]);
@@ -32693,7 +33483,7 @@ function settledReason(contactId) {
 var SETTLED_CONTACT_IDS;
 var init_owed_settled = __esm({
   "lib/owed-settled.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     SETTLED_CONTACT_IDS = /* @__PURE__ */ new Map([
       ["zjewEnCWTi7Q7aY8hHYD", "Igor Khizver \u2014 Garrett comped the session"],
       ["brfGSo7wRyF7MIJT8SmM", "Jon Holsbach \u2014 initial session comped, wasn't a fit"],
@@ -32799,7 +33589,7 @@ async function onRequestGet54(context) {
 var GHL_API_BASE42;
 var init_staff_owed = __esm({
   "api/staff-owed.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_stripe_charges();
     init_session_owed();
@@ -32831,7 +33621,7 @@ function clientNameFromTitle(title) {
 }
 var init_owed_list = __esm({
   "lib/owed-list.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(clientNameFromTitle, "clientNameFromTitle");
   }
 });
@@ -32884,7 +33674,7 @@ async function onRequestGet55(context) {
 var GHL_API_BASE43, GHL_LOCATION_ID31, ROSTER_WINDOW_DAYS, ATTENDED2;
 var init_staff_owed_list = __esm({
   "api/staff-owed-list.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_datetime();
     init_session_ledger();
@@ -32948,7 +33738,7 @@ async function onRequestGet56(context) {
 var WORKER_URL8, TIMEOUT_MS2;
 var init_staff_owned_contacts = __esm({
   "api/staff-owned-contacts.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL8 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
     TIMEOUT_MS2 = 1e4;
@@ -33118,7 +33908,7 @@ async function onRequestGet57(context) {
 var GHL_API_BASE44, GHL_LOCATION_ID32, MAX_EVENTS2, NUMERIC_TYPE_MAP;
 var init_staff_partner_activity = __esm({
   "api/staff-partner-activity.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE44 = "https://services.leadconnectorhq.com";
@@ -33277,7 +34067,7 @@ async function onRequestPost61(context) {
 var GHL_API_BASE45, FIELD_IDS6, VALID_SIGNALS, SIGNAL_TO_STAGE, TOUCH_SIGNALS, SIGNAL_NOTE_LABEL;
 var init_staff_partner_outcome = __esm({
   "api/staff-partner-outcome.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE45 = "https://services.leadconnectorhq.com";
@@ -40254,7 +41044,7 @@ async function getPartnerSheetCache(context) {
 var SPREADSHEET_ID, CACHE_KEY2, REFRESH_AFTER_MS, RANGES;
 var init_partner_sheet = __esm({
   "lib/partner-sheet.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_partner_sheet_cache();
     init_google_api();
     SPREADSHEET_ID = "1uYsTyyMu9NUefscLKORUglNXrhq_ylcUMZr4Ml-nMiw";
@@ -40424,7 +41214,7 @@ function buildCard(dossier, now = Date.now()) {
 var CLOSER_WORD2, CLOSER_RE2, DECLINE_RE, CONNECT_CALL_SEC, ORG_WORDS, UNTEXTABLE, PLACEHOLDER_EMAIL_RE, LINKEDIN_SOURCE_RE, PHONE_UNVERIFIED_NOTE, DAY_MS2;
 var init_build_card = __esm({
   "lib/build-card.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     CLOSER_WORD2 = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE2 = new RegExp(`^(?:${CLOSER_WORD2}[\\s!.,]*)+$`, "i");
     __name(isNonReply2, "isNonReply");
@@ -41013,7 +41803,7 @@ async function onRequestGet58(context) {
 var GHL_API_BASE46, GHL_LOCATION_ID33, FIELD_IDS7, CATEGORY_TAGS, BROAD_PARTNER_TAGS, ALL_PARTNER_TAGS, ALL_STAGES, VM_FOLLOWUP_DAYS, TALKED_FOLLOWUP_DAYS, LINK_FOLLOWUP_DAYS, OFFPLATFORM_FOLLOWUP_DAYS, NOANSWER_RETRY_DAYS, QUIET_NUDGE_DAYS, END_OF_ROPE_TOUCHES, FRESH_TOUCH_SIGNALS, KNOWN_SIGNALS, FORCED_CALL_LINES;
 var init_staff_partner_prospects = __esm({
   "api/staff-partner-prospects.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_partner_sheet();
     init_build_card();
@@ -41191,7 +41981,7 @@ function rewardForPracticePurchase({ referralAt, purchasedAt, sessionCount }) {
 var PARTNER_REWARD_WINDOW_MS, CHARGEBACK_HOLD_MS, REWARD_CENTS, PARTNER_SESSION_ENTITLEMENT, LEGACY_REWARD_LABELS, asObject, dateValue, eventTime;
 var init_partner_reward_ledger = __esm({
   "lib/partner-reward-ledger.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     PARTNER_REWARD_WINDOW_MS = 90 * 24 * 60 * 60 * 1e3;
     CHARGEBACK_HOLD_MS = 30 * 24 * 60 * 60 * 1e3;
     REWARD_CENTS = Object.freeze({ 12: 25e3, 24: 5e4 });
@@ -41303,7 +42093,7 @@ async function onRequestPost62(context) {
 var ID, iso;
 var init_staff_partner_rewards = __esm({
   "api/staff-partner-rewards.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_partner_reward_ledger();
     ID = /^[A-Za-z0-9_-]{1,80}$/;
@@ -41377,7 +42167,7 @@ async function onRequestPost63(context) {
 var GHL_API_BASE47, OUTREACH_VERIFIED_FIELD_ID;
 var init_staff_partner_toggle_verified = __esm({
   "api/staff-partner-toggle-verified.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE47 = "https://services.leadconnectorhq.com";
@@ -41489,7 +42279,7 @@ async function onRequestPost64(context) {
 var GHL_API_BASE48, EDITABLE_FIELDS;
 var init_staff_partner_update_field = __esm({
   "api/staff-partner-update-field.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE48 = "https://services.leadconnectorhq.com";
@@ -41585,7 +42375,7 @@ async function onRequestPost65(context) {
 var GHL_API_BASE49, VERIFIED_TAG, OUTREACH_VERIFIED_FIELD_ID2;
 var init_staff_partner_verify = __esm({
   "api/staff-partner-verify.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE49 = "https://services.leadconnectorhq.com";
@@ -41910,7 +42700,7 @@ async function onRequestGet60(context) {
 var GHL_API_BASE50, GHL_LOCATION_ID34, EXCLUDED_EMAILS, FIELD_IDS8, SIX_MONTHS_MS, OUTREACH_TAGS, SESSION_CALENDARS, PACKAGE_CALENDAR_IDS;
 var init_staff_pipeline = __esm({
   "api/staff-pipeline.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
@@ -42232,7 +43022,7 @@ function posCatalogFromProducts(products) {
 var MAX_NAME2, MAX_DESCRIPTION, MAX_REASON, MAX_AMOUNT_CENTS2, CATEGORIES, BUILT_IN_META;
 var init_staff_products = __esm({
   "lib/staff-products.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_staff_pos();
     init_staff_pos_invoice_bridge();
     init_ghl_products();
@@ -42549,7 +43339,7 @@ async function verifyStripeWebhookSignature(rawBody, signatureHeader, webhookSec
 var STRIPE_API;
 var init_stripe_api = __esm({
   "lib/stripe-api.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     STRIPE_API = "https://api.stripe.com/v1";
     __name(encodeForm, "encodeForm");
     __name(stripeRequest, "stripeRequest");
@@ -42893,7 +43683,7 @@ async function onRequestPost66(context) {
 var POS_PAYMENT_ACTIONS;
 var init_staff_pos_sales = __esm({
   "api/staff-pos-sales.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_staff_pos();
     init_staff_pos_fulfill();
@@ -42992,7 +43782,7 @@ async function onRequestPost67(context) {
 }
 var init_staff_products2 = __esm({
   "api/staff-products.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_staff_products();
     __name(responseHeaders7, "responseHeaders");
@@ -43048,7 +43838,7 @@ async function onRequestPost68(context) {
 var WORKER_URL9;
 var init_staff_refresh_activity = __esm({
   "api/staff-refresh-activity.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     WORKER_URL9 = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
     __name(onRequestOptions96, "onRequestOptions");
@@ -43091,7 +43881,7 @@ async function onRequestPost69(context) {
 var KV_KEY4;
 var init_staff_reply_dismiss = __esm({
   "api/staff-reply-dismiss.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     KV_KEY4 = "reply:dismissed";
     __name(onRequestOptions97, "onRequestOptions");
@@ -43178,7 +43968,7 @@ async function getStaffRevenue(secretKey, { now = /* @__PURE__ */ new Date(), mo
 var TIME_ZONE, MONTH_COUNT, STRIPE_PAGE_LIMIT;
 var init_staff_revenue = __esm({
   "lib/staff-revenue.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     TIME_ZONE = "America/Los_Angeles";
     MONTH_COUNT = 6;
     STRIPE_PAGE_LIMIT = 20;
@@ -43220,7 +44010,7 @@ async function onRequestGet63(context) {
 }
 var init_staff_revenue2 = __esm({
   "api/staff-revenue.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_staff_revenue();
     __name(onRequestOptions98, "onRequestOptions");
@@ -43283,7 +44073,7 @@ async function onRequestPost70(context) {
 var GHL_API_BASE51, MODULE_FIELDS, BODY_FIELDS, YOGA_BLOCK_FIELD;
 var init_staff_save_progress = __esm({
   "api/staff-save-progress.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE51 = "https://services.leadconnectorhq.com";
@@ -43385,7 +44175,7 @@ async function onRequestPost71(context) {
 var GHL_API_BASE52, MAX_SUBJECT, MAX_BODY, DEDUPE_TTL_S, VALID_CONTACT_ID2, BAD_CHARS2, VALID_EMAIL;
 var init_staff_send_email = __esm({
   "api/staff-send-email.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE52 = "https://services.leadconnectorhq.com";
@@ -43496,7 +44286,7 @@ async function onRequestPost72(context) {
 var GHL_API_BASE53, BASE_URL, PAY_LINK_PRODUCTS;
 var init_staff_send_paylink = __esm({
   "api/staff-send-paylink.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE53 = "https://services.leadconnectorhq.com";
@@ -43656,7 +44446,7 @@ ${charge.receipt_url}`;
 var GHL_API_BASE54, METHODS7;
 var init_staff_send_receipt = __esm({
   "api/staff-send-receipt.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ghl();
     init_stripe_charges();
@@ -43746,7 +44536,7 @@ async function onRequestPost74(context) {
 var GHL_API_BASE55, MAX_LEN, DEDUPE_TTL_S2, VALID_CONTACT_ID3, BAD_CHARS3;
 var init_staff_send_text = __esm({
   "api/staff-send-text.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE55 = "https://services.leadconnectorhq.com";
@@ -43859,7 +44649,7 @@ async function onRequestPost75(context) {
 var GHL_API_BASE56, GHL_LOCATION_ID35, TOOLKIT_MESSAGE;
 var init_staff_send_toolkit = __esm({
   "api/staff-send-toolkit.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE56 = "https://services.leadconnectorhq.com";
@@ -43902,7 +44692,7 @@ async function onRequestDelete(context) {
 var MAX_AGE_SECONDS, sessionCookie, responseHeaders8, bearerToken;
 var init_staff_session = __esm({
   "api/staff-session.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
     sessionCookie = /* @__PURE__ */ __name((value, maxAge = MAX_AGE_SECONDS) => `${STAFF_SESSION_COOKIE}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`, "sessionCookie");
@@ -43986,7 +44776,7 @@ async function onRequestPost77(context) {
 var CARDS_KEY, MAX_CARDS, MAX_LEN2, CATEGORIES2;
 var init_staff_sharpen = __esm({
   "api/staff-sharpen.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     CARDS_KEY = "staff:sharpen-cards";
     MAX_CARDS = 200;
@@ -44070,7 +44860,7 @@ async function onRequestGet66(context) {
 }
 var init_staff_stripe_cards = __esm({
   "api/staff-stripe-cards.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_stripe_api();
     init_ops_last_run();
@@ -44151,7 +44941,7 @@ async function onRequestPost78(context) {
 var GHL_API_BASE57;
 var init_staff_study = __esm({
   "api/staff-study.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
@@ -44244,7 +45034,7 @@ async function onRequestPost79(context) {
 var TASKS_KEY, MAX_TASKS, MAX_TEXT_LEN, DEFAULT_GOAL, DEFAULT_RULE;
 var init_staff_tasks = __esm({
   "api/staff-tasks.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     TASKS_KEY = "staff:garrett-tasks";
     MAX_TASKS = 50;
@@ -44302,7 +45092,7 @@ async function onRequestPost80(context) {
 var GHL_API_BASE58, FIELD_ID_SESSION_PREPAID;
 var init_staff_toggle_prepaid = __esm({
   "api/staff-toggle-prepaid.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
@@ -44411,7 +45201,7 @@ async function onRequestGet69(context) {
 var TEST_UID;
 var init_stream_health = __esm({
   "api/stream-health.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     TEST_UID = "9072ff146ba6434f9463ae78c6616e3d";
     __name(onRequestOptions111, "onRequestOptions");
     __name(onRequestGet69, "onRequestGet");
@@ -44551,7 +45341,7 @@ async function onRequestGet70(context) {
 var GHL_API_BASE59, GHL_LOCATION_ID36, ALLOWED_ORIGINS38, TOKEN_TTL_SECONDS;
 var init_stream_token = __esm({
   "api/stream-token.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_auth();
     init_portal_helpers();
@@ -44712,7 +45502,7 @@ async function onRequestPost81(context) {
 }
 var init_stripe_pos_webhook = __esm({
   "api/stripe-pos-webhook.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_processed_events();
     init_staff_pos_fulfill();
     init_staff_pos();
@@ -44760,7 +45550,7 @@ async function ensureStudyBookingConfirmedMarker(context, contactId) {
 var GHL_API_BASE60, STUDY_BOOKING_CONFIRMED_MARKER;
 var init_study_enrollment_marker = __esm({
   "lib/study-enrollment-marker.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     GHL_API_BASE60 = "https://services.leadconnectorhq.com";
     STUDY_BOOKING_CONFIRMED_MARKER = "study-booking-confirmed-before-enrollment";
@@ -44873,7 +45663,7 @@ function resolveStudyBookingRuntime(context, options = {}) {
 var PRODUCTION_ORIGINS, PREVIEW_HOST_SUFFIX, StudyBookingRuntimeError;
 var init_study_booking_runtime = __esm({
   "lib/study-booking-runtime.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     PRODUCTION_ORIGINS = /* @__PURE__ */ new Set([
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -44983,7 +45773,7 @@ function validateStudyBooking(input) {
 var STUDY_NAME_FIELD_ID7, STUDY_BOOKING_KIND, VISIT_QUALIFICATION, LIVE_STUDY_BOOKINGS;
 var init_study_booking = __esm({
   "lib/study-booking.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_studies();
     init_study_consent();
     STUDY_NAME_FIELD_ID7 = "1xhxStKyEN47shwjOKC0";
@@ -45568,7 +46358,7 @@ async function onRequestPost82(context) {
 var GHL_API_BASE61, GHL_LOCATION_ID37, APPOINTMENT_ENDPOINT, RetryableFlowError, ManualReviewError;
 var init_study_book_v2 = __esm({
   "api/study-book-v2.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ghl();
     init_studies();
     init_datetime();
@@ -45653,7 +46443,7 @@ async function onRequestPost83({ request }) {
 var ORIGINS;
 var init_study_book = __esm({
   "api/study-book.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_study_book_v2();
     ORIGINS = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(responseHeaders9, "responseHeaders");
@@ -45744,7 +46534,7 @@ async function onRequestGet72(context) {
 var HOUR4;
 var init_system_health = __esm({
   "api/system-health.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_auth();
     HOUR4 = 3600 * 1e3;
     __name(ageHours3, "ageHours");
@@ -45824,7 +46614,7 @@ async function onRequestGet73(context) {
 var HISTORY_CAP2;
 var init_voice_write = __esm({
   "api/voice-write.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_endpoint_guards();
     init_voice_engine();
     HISTORY_CAP2 = 25;
@@ -45859,7 +46649,7 @@ async function onRequest(context) {
 }
 var init_path = __esm({
   "portal/[[path]].js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(onRequest, "onRequest");
   }
 });
@@ -45885,7 +46675,7 @@ async function onRequest2(context) {
 }
 var init_path2 = __esm({
   "staff/[[path]].js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     __name(isStaticFile, "isStaticFile");
     __name(onRequest2, "onRequest");
   }
@@ -45916,7 +46706,7 @@ function opsEmbedBootScript() {
 var OPS_SURFACE_URLS, OPS_SURFACE_NAV_CSS;
 var init_ops_surface_nav = __esm({
   "lib/ops-surface-nav.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     OPS_SURFACE_URLS = Object.freeze({
       systems: "https://www.amarimethod.com/ops",
       crmMirror: "https://amari-crm-mirror.eben-fa2.workers.dev/",
@@ -45970,7 +46760,7 @@ async function onRequestGet74() {
 var OPS_HTML;
 var init_ops = __esm({
   "ops.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_ops_surface_nav();
     __name(onRequestGet74, "onRequestGet");
     OPS_HTML = `<!doctype html>
@@ -47001,7 +47791,7 @@ async function onRequest3(context) {
 var PUBLIC_STAFF_PATHS;
 var init_middleware = __esm({
   "_middleware.js"() {
-    init_functionsRoutes_0_8372690901872232();
+    init_functionsRoutes_0_5623767148686312();
     init_auth();
     init_endpoint_guards();
     PUBLIC_STAFF_PATHS = /* @__PURE__ */ new Set(["/staff/login", "/staff/access"]);
@@ -47012,10 +47802,10 @@ var init_middleware = __esm({
   }
 });
 
-// ../.wrangler/tmp/pages-ARe2VD/functionsRoutes-0.8372690901872232.mjs
+// ../.wrangler/tmp/pages-koDz9M/functionsRoutes-0.5623767148686312.mjs
 var routes;
-var init_functionsRoutes_0_8372690901872232 = __esm({
-  "../.wrangler/tmp/pages-ARe2VD/functionsRoutes-0.8372690901872232.mjs"() {
+var init_functionsRoutes_0_5623767148686312 = __esm({
+  "../.wrangler/tmp/pages-koDz9M/functionsRoutes-0.5623767148686312.mjs"() {
     init_create_checkout();
     init_create_checkout();
     init_public_slots();
@@ -49309,11 +50099,11 @@ var init_functionsRoutes_0_8372690901872232 = __esm({
   }
 });
 
-// ../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
-init_functionsRoutes_0_8372690901872232();
+// ../../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+init_functionsRoutes_0_5623767148686312();
 
-// ../../../.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
-init_functionsRoutes_0_8372690901872232();
+// ../../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
+init_functionsRoutes_0_5623767148686312();
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -49639,7 +50429,7 @@ function pathToRegexp(path, keys, options) {
 }
 __name(pathToRegexp, "pathToRegexp");
 
-// ../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+// ../../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
 var escapeRegex = /[.+?^${}()|[\]\\]/g;
 function* executeRequest(request) {
   const requestPath = new URL(request.url).pathname;
