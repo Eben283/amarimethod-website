@@ -8,10 +8,14 @@ import {
   RELIABILITY_SCHEMA_V1,
   RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE,
   RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE,
+  RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
   assessReliabilityStructure,
+  assessReliabilityV2InstallCandidatePreflight,
   assessReliabilityV2MigrationPreflight,
+  assessReliabilityV2PromotionCandidatePreflight,
   assertReliabilityV2MigrationPreflight,
   assertReliabilityV2Postflight,
+  reliabilityStructureProjection,
   readReliabilitySchemaAuthority,
 } from "../../functions/lib/reliability-schema-authority.js";
 import { readReliabilityHealth } from "../../functions/lib/reliability-store.js";
@@ -19,8 +23,25 @@ import { readReliabilityHealth } from "../../functions/lib/reliability-store.js"
 const base = readFileSync(new URL("../schema.sql", import.meta.url), "utf8");
 const candidate = readFileSync(new URL("../reliability-spine-v2.local.sql", import.meta.url), "utf8");
 const promotion = readFileSync(new URL("../reliability-spine-v2-promote.local.sql", import.meta.url), "utf8");
-const productionV1Fixture = JSON.parse(readFileSync(new URL(
+const liveLineageInstall = readFileSync(new URL(
+  "../reliability-spine-v2-production-lineage-install.local.sql",
+  import.meta.url,
+), "utf8");
+const liveLineageRollback = readFileSync(new URL(
+  "../reliability-spine-v2-production-lineage-rollback.local.sql",
+  import.meta.url,
+), "utf8");
+const liveLineagePromotionTemplate = readFileSync(new URL(
+  "../reliability-spine-v2-production-lineage-promote.template.sql",
+  import.meta.url,
+), "utf8");
+const productionV1FixtureSource = readFileSync(new URL(
   "../../docs/automation-truth/fixtures/reliability-v1-production-structure-readback.v1.json",
+  import.meta.url,
+), "utf8");
+const productionV1Fixture = JSON.parse(productionV1FixtureSource);
+const productionV2CandidateFixture = JSON.parse(readFileSync(new URL(
+  "../../docs/automation-truth/fixtures/reliability-v2-production-lineage-candidate.v1.json",
   import.meta.url,
 ), "utf8"));
 const MIGRATION_ID = RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.migrationId;
@@ -81,6 +102,33 @@ function productionV1Rows() {
   }));
 }
 
+function productionV1Database() {
+  const db = new DatabaseSync(":memory:");
+  db.exec("PRAGMA foreign_keys=ON");
+  for (const type of ["table", "index", "trigger"]) {
+    for (const row of productionV1Fixture.projection.filter((item) => item.type === type)) db.exec(row.sql);
+  }
+  const marker = productionV1Fixture.marker[0];
+  db.prepare(`INSERT INTO reliability_schema_versions
+    (version,applied_at,migration_id,description) VALUES (?,?,?,?)`).run(
+    marker.version,
+    marker.applied_at,
+    marker.migration_id,
+    marker.description,
+  );
+  return db;
+}
+
+function setExactProductionV1Marker(db) {
+  const marker = productionV1Fixture.marker[0];
+  db.prepare(`UPDATE reliability_schema_versions SET
+    applied_at=?,migration_id=?,description=? WHERE version=1`).run(
+    marker.applied_at,
+    marker.migration_id,
+    marker.description,
+  );
+}
+
 function d1FromSqlite(raw, { sqliteMasterRows = null, schemaMarkers = null } = {}) {
   return {
     prepare(sql) {
@@ -124,6 +172,14 @@ function promoteLocalCandidate(db) {
 function applyLocalCandidate(db) {
   installLocalCandidate(db);
   promoteLocalCandidate(db);
+}
+
+function installLiveLineageCandidate(db) {
+  applyFileTransaction(db, liveLineageInstall);
+}
+
+function rollbackLiveLineageCandidate(db) {
+  applyFileTransaction(db, liveLineageRollback);
 }
 
 function insertFreshCoverage(db, nowMs = Date.now()) {
@@ -317,21 +373,33 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
     });
   });
 
-  it("blocks production preflight because the additive live-v1 result cannot attain the local b289 target", async () => {
+  it("proves the exact live-lineage candidate while keeping install and promotion unauthorized", async () => {
     const raw = database();
     const liveRows = productionV1Rows();
     const liveDb = d1FromSqlite(raw, {
       sqliteMasterRows: liveRows, schemaMarkers: productionV1Fixture.marker,
     });
-    await expect(assessReliabilityV2MigrationPreflight({
+    const exactInput = {
       markers: productionV1Fixture.marker,
       sqliteMaster: liveRows,
       contracts: [],
-    })).resolves.toMatchObject({
-      ready: false, state: "blocked", reason: "schema_v2_target_not_reconciled_with_live_v1",
+    };
+    await expect(assessReliabilityV2InstallCandidatePreflight(exactInput)).resolves.toMatchObject({
+      candidateCompatible: true,
+      authorized: false,
+      state: "exact_live_v1_candidate_input",
+      reason: "schema_v2_install_requires_separate_authorization",
+      target: {
+        variantId: "production-live-lineage-v2-8c7245a",
+        structureSha256: PROSPECTIVE_LIVE_V2_DIGEST,
+      },
+    });
+    await expect(assessReliabilityV2MigrationPreflight(exactInput)).resolves.toMatchObject({
+      ready: false, state: "blocked", reason: "schema_v2_source_only_not_authorized",
+      candidate: { candidateCompatible: true, authorized: false },
     });
     await expect(assertReliabilityV2MigrationPreflight(liveDb))
-      .rejects.toThrow(/schema_v2_target_not_reconciled_with_live_v1/);
+      .rejects.toThrow(/schema_v2_source_only_not_authorized/);
 
     installLocalCandidate(raw);
     const localV2Rows = sqliteMasterRows(raw);
@@ -356,12 +424,316 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
       expectedDigest: "b289c4022a06c23d2c806d122ef2687077815aea5ae85fde064681250f1c8ed6",
     });
     expect(prospective.objects).toHaveLength(69);
+    await expect(assessReliabilityStructure(
+      prospectiveRows, RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    )).resolves.toMatchObject({ proven: true, digest: PROSPECTIVE_LIVE_V2_DIGEST });
     await expect(readReliabilitySchemaAuthority(d1FromSqlite(raw, {
       sqliteMasterRows: prospectiveRows, schemaMarkers: productionV1Fixture.marker,
     })))
       .resolves.toMatchObject({
-        proven: false, reason: "schema_v2_target_not_reconciled_with_live_v1", version: 1,
+        proven: false, reason: "schema_v2_physical_install_awaiting_promotion", version: 1,
+        migrationState: "installed_awaiting_promotion",
       });
+    await expect(assessReliabilityV2PromotionCandidatePreflight({
+      markers: productionV1Fixture.marker,
+      sqliteMaster: prospectiveRows,
+      contracts: [],
+      additiveTableCounts: {
+        automation_deployment_attestations: 0,
+        automation_release_manifests: 0,
+        reliability_schema_contracts: 0,
+        source_event_runtime_provenance: 0,
+      },
+    })).resolves.toMatchObject({
+      candidateCompatible: true,
+      additiveTablesEmpty: true,
+      authorized: false,
+      state: "predicted_shape_requires_primary_readback",
+      reason: "schema_v2_primary_readback_required",
+    });
+  });
+
+  it("pins the exact 49 plus 20 projection and executes Phase A without promoting authority", async () => {
+    expect(createHash("sha256").update(productionV1FixtureSource).digest("hex"))
+      .toBe(productionV2CandidateFixture.baseFixtureSha256);
+    expect(productionV2CandidateFixture).toMatchObject({
+      status: "candidate-only-not-observed",
+      authority: false,
+      remoteObserved: false,
+      variantId: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.variantId,
+      candidateMigrationId: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId,
+      finalMigrationId: null,
+      baseVariantId: RELIABILITY_SCHEMA_V1.variantId,
+      objectCount: 69,
+      additiveObjectCount: 20,
+      structureSha256: PROSPECTIVE_LIVE_V2_DIGEST,
+      matchesCleanBootstrapV2: false,
+    });
+    expect(productionV2CandidateFixture.structureSha256)
+      .not.toBe(RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.structureSha256);
+    expect(RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId)
+      .not.toBe(RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.migrationId);
+    expect(productionV2CandidateFixture.expectedObjects)
+      .toEqual(RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.expectedObjects);
+    expect(productionV2CandidateFixture.projection.map((row) => `${row.type}:${row.name}`))
+      .toEqual(productionV2CandidateFixture.expectedObjects);
+    expect(createHash("sha256").update(JSON.stringify(productionV2CandidateFixture.projection)).digest("hex"))
+      .toBe(PROSPECTIVE_LIVE_V2_DIGEST);
+    expect(productionV2CandidateFixture.additiveObjects).toHaveLength(20);
+    const additiveProjection = productionV2CandidateFixture.projection.filter(
+      (row) => productionV2CandidateFixture.additiveObjects.includes(`${row.type}:${row.name}`),
+    );
+    expect(createHash("sha256").update(JSON.stringify(additiveProjection)).digest("hex"))
+      .toBe(productionV2CandidateFixture.sourceProvenance.additiveProjectionSha256);
+    expect(createHash("sha256").update(candidate).digest("hex"))
+      .toBe(productionV2CandidateFixture.sourceProvenance.additiveDdlSourceSha256);
+
+    const db = productionV1Database();
+    db.exec(`CREATE TABLE unrelated_application_table (id TEXT PRIMARY KEY);
+      CREATE INDEX unrelated_application_index ON unrelated_application_table(id);
+      CREATE TRIGGER unrelated_application_trigger BEFORE INSERT ON unrelated_application_table BEGIN SELECT 1; END;`);
+    insertAcceptedLifecycle(db, { sourceId: "source-preserved", lifecycleId: "lifecycle-preserved" });
+    const before = db.prepare("SELECT state FROM source_events WHERE source_event_id='source-preserved'").get();
+    installLiveLineageCandidate(db);
+
+    const projection = reliabilityStructureProjection(
+      sqliteMasterRows(db), RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    );
+    expect(projection).toEqual(productionV2CandidateFixture.projection);
+    expect(await assessReliabilityStructure(
+      sqliteMasterRows(db), RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    )).toMatchObject({ proven: true, digest: PROSPECTIVE_LIVE_V2_DIGEST });
+    expect(db.prepare("SELECT * FROM reliability_schema_versions ORDER BY version").all())
+      .toEqual(productionV1Fixture.marker);
+    expect(db.prepare("SELECT COUNT(*) count FROM reliability_schema_contracts").get()).toEqual({ count: 0 });
+    expect(db.prepare("SELECT state FROM source_events WHERE source_event_id='source-preserved'").get()).toEqual(before);
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE name='unrelated_application_trigger'").get())
+      .toBeDefined();
+
+    const firstProjection = JSON.stringify(projection);
+    installLiveLineageCandidate(db);
+    expect(JSON.stringify(reliabilityStructureProjection(
+      sqliteMasterRows(db), RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    ))).toBe(firstProjection);
+
+    const nowMs = Date.now();
+    insertFreshCoverage(db, nowMs);
+    await expect(readReliabilityHealth(d1FromSqlite(db), {
+      family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
+    })).resolves.toMatchObject({
+      truth: "Degraded",
+      reason: "schema_unproven",
+      schemaReason: "schema_v2_physical_install_awaiting_promotion",
+      schemaVersion: 1,
+    });
+  });
+
+  it("rolls Phase A back only from an exact empty candidate and preserves v1 rows", async () => {
+    const db = productionV1Database();
+    insertAcceptedLifecycle(db, { sourceId: "source-rollback", lifecycleId: "lifecycle-rollback" });
+    const preserved = db.prepare("SELECT * FROM source_events WHERE source_event_id='source-rollback'").get();
+    installLiveLineageCandidate(db);
+    rollbackLiveLineageCandidate(db);
+
+    const v1 = await assessReliabilityStructure(sqliteMasterRows(db), RELIABILITY_SCHEMA_V1);
+    expect(v1).toMatchObject({ proven: true, digest: RELIABILITY_SCHEMA_V1.structureSha256 });
+    expect(db.prepare("SELECT * FROM reliability_schema_versions ORDER BY version").all())
+      .toEqual(productionV1Fixture.marker);
+    expect(db.prepare("SELECT * FROM source_events WHERE source_event_id='source-rollback'").get()).toEqual(preserved);
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE name='automation_release_manifests'").get())
+      .toBeUndefined();
+
+    installLiveLineageCandidate(db);
+    db.prepare(`INSERT INTO automation_release_manifests
+      (release_manifest_id,release_manifest_digest,family,source_repository,source_revision,source_tree,
+       worker_version,runtime_version,lockfile_sha256,bundle_sha256,modules_digest,compiler_id,
+       compiler_artifact_sha256,spec_digest,compiled_plan_digest,handler_registry_digest,message_catalog_digest,
+       expected_bindings_digest,workflow_id,workflow_version,workflow_state,workflow_document_sha256,
+       schema_database_id,schema_migration_id,schema_version,schema_source_sha256,schema_structure_sha256,
+       follow_up_delivery_release,follow_up_assigned_user_delivery,declared_effect_owner,canonical_json,
+       created_at,retention_until)
+      VALUES ('rollback-block','${"a".repeat(64)}','follow-up-session-reminders','repo','${"b".repeat(40)}',
+        '${"c".repeat(40)}','worker','runtime','${"d".repeat(64)}','${"e".repeat(64)}','${"f".repeat(64)}',
+        'compiler','${"1".repeat(64)}','${"2".repeat(64)}','${"3".repeat(64)}','${"4".repeat(64)}',
+        '${"5".repeat(64)}','${"6".repeat(64)}','workflow',1,'published','${"7".repeat(64)}','db',
+        'reliability-spine-v2-deployment-attestation',2,'${"8".repeat(64)}','${"9".repeat(64)}',
+        'approved','approved','Amari','{}',1,2)`).run();
+    expect(() => rollbackLiveLineageCandidate(db)).toThrow(/CHECK constraint failed/);
+    expect(db.prepare("SELECT release_manifest_id FROM automation_release_manifests").get())
+      .toEqual({ release_manifest_id: "rollback-block" });
+  });
+
+  it("rolls back interrupted candidate files and rejects marker, lineage, partial, wrong-DDL, and extra behavior", async () => {
+    const interrupted = productionV1Database();
+    const brokenInstall = liveLineageInstall.replace(
+      "CREATE TABLE IF NOT EXISTS automation_deployment_attestations",
+      "THIS FAILS;\nCREATE TABLE IF NOT EXISTS automation_deployment_attestations",
+    );
+    expect(() => applyFileTransaction(interrupted, brokenInstall)).toThrow();
+    expect(interrupted.prepare("SELECT name FROM sqlite_master WHERE name='automation_release_manifests'").get())
+      .toBeUndefined();
+    expect(interrupted.prepare("SELECT name FROM sqlite_master WHERE name='reliability_v2_live_lineage_install_gate'").get())
+      .toBeUndefined();
+
+    const wrongMarker = productionV1Database();
+    wrongMarker.prepare("UPDATE reliability_schema_versions SET applied_at=1").run();
+    expect(() => installLiveLineageCandidate(wrongMarker)).toThrow(/CHECK constraint failed/);
+
+    const cleanBootstrap = database();
+    setExactProductionV1Marker(cleanBootstrap);
+    expect(() => installLiveLineageCandidate(cleanBootstrap)).toThrow(/CHECK constraint failed/);
+    expect(cleanBootstrap.prepare("SELECT name FROM sqlite_master WHERE name='automation_release_manifests'").get())
+      .toBeUndefined();
+
+    const partial = productionV1Database();
+    partial.exec("CREATE TABLE automation_release_manifests (wrong TEXT)");
+    expect(() => installLiveLineageCandidate(partial)).toThrow(/CHECK constraint failed/);
+    expect(partial.prepare("SELECT sql FROM sqlite_master WHERE name='automation_release_manifests'").get().sql)
+      .toBe("CREATE TABLE automation_release_manifests (wrong TEXT)");
+
+    const partialNineteen = productionV1Database();
+    installLiveLineageCandidate(partialNineteen);
+    partialNineteen.exec("DROP TRIGGER source_event_runtime_provenance_no_update");
+    expect(() => installLiveLineageCandidate(partialNineteen)).toThrow(/CHECK constraint failed/);
+
+    const cleanBootstrapV2 = database();
+    setExactProductionV1Marker(cleanBootstrapV2);
+    installLocalCandidate(cleanBootstrapV2);
+    expect(structureDigest(cleanBootstrapV2)).toBe(RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.structureSha256);
+    expect(() => installLiveLineageCandidate(cleanBootstrapV2)).toThrow(/CHECK constraint failed/);
+
+    const wrongDdl = productionV1Database();
+    installLiveLineageCandidate(wrongDdl);
+    wrongDdl.exec(`DROP INDEX idx_deployment_attestations_latest;
+      CREATE INDEX idx_deployment_attestations_latest ON automation_deployment_attestations
+        (platform, service, environment, deployment_id, version_id, attested_at DESC);`);
+    expect(() => installLiveLineageCandidate(wrongDdl)).toThrow(/CHECK constraint failed/);
+    await expect(assessReliabilityStructure(
+      sqliteMasterRows(wrongDdl), RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    )).resolves.toMatchObject({ proven: false });
+
+    const extraRequiredBehavior = productionV1Database();
+    extraRequiredBehavior.exec(`CREATE TRIGGER unexpected_source_behavior
+      BEFORE INSERT ON source_events BEGIN SELECT 1; END`);
+    expect(() => installLiveLineageCandidate(extraRequiredBehavior)).toThrow(/CHECK constraint failed/);
+    expect(extraRequiredBehavior.prepare("SELECT name FROM sqlite_master WHERE name='unexpected_source_behavior'").get())
+      .toBeDefined();
+
+    const interruptedRollback = productionV1Database();
+    installLiveLineageCandidate(interruptedRollback);
+    const brokenRollback = liveLineageRollback.replace(
+      "DROP TABLE automation_deployment_attestations;",
+      "THIS FAILS;\nDROP TABLE automation_deployment_attestations;",
+    );
+    expect(() => applyFileTransaction(interruptedRollback, brokenRollback)).toThrow();
+    await expect(assessReliabilityStructure(
+      sqliteMasterRows(interruptedRollback), RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    )).resolves.toMatchObject({ proven: true, digest: PROSPECTIVE_LIVE_V2_DIGEST });
+    expect(interruptedRollback.prepare("SELECT name FROM sqlite_master WHERE name='reliability_v2_live_lineage_rollback_gate'").get())
+      .toBeUndefined();
+  });
+
+  it("keeps Phase B non-executable until primary readback and fails closed on a predicted v2 marker", async () => {
+    expect(liveLineagePromotionTemplate).toMatch(/^-- NOT EXECUTABLE\./);
+    expect(liveLineagePromotionTemplate).toContain("PHASE_B_TEMPLATE_BLOCKED_UNTIL_EXACT_PRIMARY_D1_PHASE_A_READBACK_IS_CHECKED_IN");
+    expect(liveLineagePromotionTemplate).not.toMatch(/INSERT\s+INTO\s+reliability_schema_(?:contracts|versions)/i);
+    expect(() => new DatabaseSync(":memory:").exec(liveLineagePromotionTemplate)).toThrow();
+
+    const staged = productionV1Database();
+    installLiveLineageCandidate(staged);
+    await expect(assessReliabilityV2PromotionCandidatePreflight({
+      markers: productionV1Fixture.marker,
+      sqliteMaster: sqliteMasterRows(staged),
+      contracts: [],
+    })).resolves.toMatchObject({
+      candidateCompatible: false,
+      structureCompatible: true,
+      additiveTablesEmpty: false,
+      authorized: false,
+      reason: "schema_v2_additive_table_emptiness_unproven",
+    });
+    for (const invalidCount of [null, false, "0", 1]) {
+      await expect(assessReliabilityV2PromotionCandidatePreflight({
+        markers: productionV1Fixture.marker,
+        sqliteMaster: sqliteMasterRows(staged),
+        contracts: [],
+        additiveTableCounts: {
+          automation_deployment_attestations: invalidCount,
+          automation_release_manifests: 0,
+          reliability_schema_contracts: 0,
+          source_event_runtime_provenance: 0,
+        },
+      })).resolves.toMatchObject({
+        candidateCompatible: false,
+        authorized: false,
+        reason: "schema_v2_additive_table_emptiness_unproven",
+      });
+    }
+
+    const appliedAt = 1787720000000;
+    staged.prepare(`INSERT INTO reliability_schema_contracts
+      (version,migration_id,canonicalization,structure_sha256,expected_objects_json,applied_at)
+      VALUES (2,?,?,?,?,?)`).run(
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.canonicalization,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.structureSha256,
+      JSON.stringify(RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.expectedObjects),
+      appliedAt,
+    );
+    staged.prepare(`INSERT INTO reliability_schema_versions
+      (version,applied_at,migration_id,description) VALUES (2,?,?,?)`).run(
+      appliedAt,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.description,
+    );
+    const nowMs = Date.now();
+    insertFreshCoverage(staged, nowMs);
+    await expect(readReliabilityHealth(d1FromSqlite(staged), {
+      family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
+    })).resolves.toMatchObject({
+      truth: "Degraded",
+      reason: "schema_unproven",
+      schemaReason: "schema_v2_authority_not_defined",
+      schemaVersion: 2,
+    });
+  });
+
+  it("rejects install replay and rollback after a contract or v2 marker exists", () => {
+    const withContract = productionV1Database();
+    installLiveLineageCandidate(withContract);
+    withContract.prepare(`INSERT INTO reliability_schema_contracts
+      (version,migration_id,canonicalization,structure_sha256,expected_objects_json,applied_at)
+      VALUES (2,?,?,?,?,?)`).run(
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.canonicalization,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.structureSha256,
+      JSON.stringify(RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.expectedObjects),
+      1787720000000,
+    );
+    expect(() => installLiveLineageCandidate(withContract)).toThrow(/CHECK constraint failed/);
+    expect(() => rollbackLiveLineageCandidate(withContract)).toThrow(/CHECK constraint failed/);
+    expect(withContract.prepare("SELECT COUNT(*) count FROM reliability_schema_contracts").get())
+      .toEqual({ count: 1 });
+
+    const withMarker = productionV1Database();
+    installLiveLineageCandidate(withMarker);
+    withMarker.prepare(`INSERT INTO reliability_schema_versions
+      (version,applied_at,migration_id,description) VALUES (2,?,?,?)`).run(
+      1787720000000,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.description,
+    );
+    expect(() => installLiveLineageCandidate(withMarker)).toThrow(/CHECK constraint failed/);
+    expect(() => rollbackLiveLineageCandidate(withMarker)).toThrow(/CHECK constraint failed/);
+    expect(withMarker.prepare("SELECT MAX(version) version FROM reliability_schema_versions").get())
+      .toEqual({ version: 2 });
+
+    const restored = productionV1Database();
+    installLiveLineageCandidate(restored);
+    rollbackLiveLineageCandidate(restored);
+    expect(() => rollbackLiveLineageCandidate(restored)).toThrow(/CHECK constraint failed/);
+    expect(restored.prepare("SELECT * FROM reliability_schema_versions").all())
+      .toEqual(productionV1Fixture.marker);
   });
 
   it("retains local two-file candidate evidence without treating it as production authority", async () => {
@@ -507,18 +879,32 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
     expect(() => db.prepare("DELETE FROM reliability_schema_contracts WHERE version=2").run()).toThrow(/immutable/);
   });
 
-  it("keeps both blocked SQL candidates absent from deployed schema, Wrangler registration, and runtime imports", () => {
+  it("keeps every source-only artifact absent from deployed schema, Wrangler registration, and runtime imports", () => {
     const db = database();
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name='automation_release_manifests'").get()).toBeUndefined();
     expect(base).not.toContain(MIGRATION_ID);
+    expect(base).not.toContain("reliability-spine-v2-production-lineage");
     expect(readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8")).not.toContain("reliability-spine-v2.local.sql");
     expect(readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8")).not.toContain("reliability-spine-v2-promote.local.sql");
-    expect(readFileSync(new URL("../package.json", import.meta.url), "utf8")).not.toMatch(/reliability-spine-v2(?:-promote)?\.local\.sql/);
+    expect(readFileSync(new URL("../wrangler.toml", import.meta.url), "utf8")).not.toContain("reliability-spine-v2-production-lineage");
+    expect(readFileSync(new URL("../package.json", import.meta.url), "utf8"))
+      .not.toMatch(/reliability-spine-v2(?:-promote)?\.local\.sql|reliability-spine-v2-production-lineage/);
+    expect(readFileSync(new URL("../../package.json", import.meta.url), "utf8"))
+      .not.toMatch(/reliability-spine-v2(?:-promote)?\.local\.sql|reliability-spine-v2-production-lineage/);
     expect(candidate).toMatch(/^-- DO NOT APPLY\./);
     expect(promotion).toMatch(/^-- DO NOT APPLY\./);
+    expect(liveLineageInstall).toMatch(/^-- DO NOT APPLY\./);
+    expect(liveLineageRollback).toMatch(/^-- DO NOT APPLY\./);
+    expect(liveLineagePromotionTemplate).toMatch(/^-- NOT EXECUTABLE\./);
     expect(candidate).not.toMatch(/wrangler[^\n]*--remote/i);
     expect(promotion).not.toMatch(/wrangler[^\n]*--remote/i);
+    expect(liveLineageInstall).not.toMatch(/wrangler[^\n]*--remote/i);
+    expect(liveLineageRollback).not.toMatch(/wrangler[^\n]*--remote/i);
+    expect(liveLineagePromotionTemplate).not.toMatch(/wrangler[^\n]*--remote/i);
     expect(candidate).not.toMatch(/INSERT\s+INTO\s+reliability_schema_versions\s*\([^)]*\)\s*(?:VALUES|SELECT)/i);
+    expect(liveLineageInstall).not.toMatch(/INSERT\s+INTO\s+reliability_schema_versions\s*\([^)]*\)\s*(?:VALUES|SELECT)/i);
+    expect(liveLineageRollback).not.toMatch(/INSERT\s+INTO\s+reliability_schema_versions\s*\([^)]*\)\s*(?:VALUES|SELECT)/i);
+    expect(liveLineagePromotionTemplate).not.toMatch(/INSERT\s+INTO\s+reliability_schema_(?:contracts|versions)/i);
     expect(promotion.trim()).toMatch(/INSERT INTO reliability_schema_versions[\s\S]+;$/);
     expect(promotion.slice(promotion.lastIndexOf("INSERT INTO reliability_schema_versions")))
       .not.toMatch(/;\s*(?:INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|REPLACE|WITH|SELECT)\b/i);
@@ -529,7 +915,7 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
       && !path.endsWith("reliability-deployment-attestation-store.js"));
     for (const path of productionFiles) {
       const source = readFileSync(path, "utf8");
-      expect(source, path).not.toMatch(/automation-truth-phase-d|reliability-deployment-attestation-store|reliability-spine-v2(?:-promote)?\.local\.sql/);
+      expect(source, path).not.toMatch(/automation-truth-phase-d|reliability-deployment-attestation-store|reliability-spine-v2(?:-promote)?\.local\.sql|reliability-spine-v2-production-lineage-(?:install|rollback)\.local\.sql|reliability-spine-v2-production-lineage-promote\.template\.sql/);
     }
     expect(readFileSync(new URL("../../functions/lib/reliability-store.js", import.meta.url), "utf8"))
       .toMatch(/from "\.\/reliability-schema-authority\.js"/);
