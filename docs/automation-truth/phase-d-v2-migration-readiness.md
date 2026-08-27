@@ -2,18 +2,22 @@
 
 ## Result and authority boundary
 
-The exact live-lineage v2 source candidate was designed from website `main`
-commit `664affba975bbb5f8c9cc5d638abb240460fc744`. It adds no production-v2
-authority. Exact production v1 remains the only schema that Staff may prove.
-The source helper can distinguish an exact staged candidate from partial
-drift, but both remain fail-closed and unauthorized.
+The exact live-lineage v2 source candidate was reviewed and merged as website
+`main` commit `6076a6feea38b1fc61638d84166ceff1d42202f8`. Under a later, separate
+authorization, the exact reviewed Phase-A file was applied once to the primary
+`amari-automation` D1. The hard-stop readback returned the predicted 69 literal
+rows and digest `8c7245ae…`. This is observed physical installation evidence,
+not production-v2 authority: the exact v1 marker remains the sole marker, no
+v2 contract exists, and Staff remains fail-closed and Degraded.
 
-The Phase-A install and rollback files remain **DO NOT APPLY**, unregistered,
-unimported, and unapplied. Phase B is deliberately a syntactically
-non-executable generator contract, not runnable SQL. The deployment-attestation
-recorder remains unimported and `Unknown/runtime_recorder_not_adopted`.
-Sending, recording, lifecycle enrollment, GHL, providers, Worker deployment,
-and the production database are unchanged.
+The install and rollback source files remain **DO NOT APPLY**, unregistered,
+and unimported. The install file has now been used for the one authorized Phase
+A; it is not authorized for replay. Rollback has not been applied. Phase B is
+still a syntactically non-executable generator contract, not runnable SQL. The
+deployment-attestation recorder remains unimported and
+`Unknown/runtime_recorder_not_adopted`. This observed-fixture source increment
+performs no database, Worker, GHL, provider, sender, recorder, or lifecycle
+action.
 
 ## Proven production-v1 authority
 
@@ -55,7 +59,7 @@ change are recorded as full 40-character SHAs in the fixture.
 | `production-live-v1-f7af1024` | `f7af1024…` | the only current production authority |
 | `clean-bootstrap-v1-cd57730` | `cd57730…` | local candidate evidence only |
 | `clean-bootstrap-v2-b289c40` | `b289c402…` | local candidate evidence only; not production authority |
-| `production-live-lineage-v2-8c7245a` | `8c7245ae…` | predicted 49+20 source candidate; `authority:false`, `remoteObserved:false` |
+| `production-live-lineage-v2-8c7245a` | `8c7245ae…` | exact primary Phase-A physical state observed; still `authority:false`, unpromoted, and fail-closed |
 
 Staff may be eligible for `Known` only for the exact production-v1 variant
 plus existing complete, fresh reconciliation coverage. Wrong marker bytes,
@@ -86,6 +90,13 @@ additions, candidate checker/toolchain, and explicit `authority:false` and
 `remoteObserved:false`. It hashes to `8c7245ae…` and cannot be confused with
 clean-bootstrap b289.
 
+The candidate fixture remains immutable prediction provenance. The separate
+observed-primary fixture at
+`fixtures/reliability-v2-production-lineage-observed-primary.v1.json` records
+the exact matching primary bytes and uses `remoteObserved:true` while retaining
+`authority:false`, `promotionAuthorized:false`, the non-final candidate
+migration identity, and the sole exact v1 marker.
+
 `reliability-spine-v2-production-lineage-install.local.sql` repeats the full
 49-row historical `(type,name,tbl_name,sql)` projection using JSON/EXCEPT
 inside the surrounding officially transactional application, requires the sole exact v1 marker including its trusted
@@ -115,6 +126,31 @@ reuse one trusted D1 timestamp, and make the marker the final SQL statement.
 
 Every artifact contains no remote command and is absent from Wrangler,
 `schema.sql`, package scripts, migrations, and runtime imports.
+
+## Observed primary Phase-A evidence
+
+The authorized Phase-A evidence is pinned as follows:
+
+- source `main`: `6076a6feea38b1fc61638d84166ceff1d42202f8`;
+- reviewed install SHA-256:
+  `ba649a4ccb533583d111450c842f9ea5e5e4d223e401a9be7f691c3b306f43a1`;
+- database ID: `089d810a-9d2d-43a4-8f1d-dc3620835557`;
+- recovery bookmark:
+  `000024cc-00000000-000050d4-2f6dbfafd655c4f7aa2d365265c99d80`;
+- final bookmark:
+  `000024cc-0000000e-000050d4-37d5ac8f2e9cfdadff33c21853674cc0`;
+- primary readback time: `2026-08-27T02:39:38Z`;
+- exact required closure: 69 rows, 20 additions, digest `8c7245ae…`;
+- sole exact v1 marker unchanged, zero schema-contract rows, all four new
+  tables empty, transient gate absent, and all prior table counts unchanged;
+- every postflight query was served by primary `v3-prod` and reported
+  `rows_written=0` and `changed_db=false`.
+
+The checker independently rebuilds literal f7af, applies the reviewed Phase-A
+source in an isolated transaction, compares all 69 projected rows byte for byte
+with both prediction and observed fixtures, recomputes 8c, then proves the
+candidate rollback returns literal f7af. This does not turn the observed shape
+into authority or authorize rollback/promotion.
 
 ## D1 correctness boundary
 
@@ -173,36 +209,39 @@ authorization.
 - [x] The exact predicted 69-row source fixture, candidate checker, Phase-A
   install candidate, and empty-only rollback candidate reproduce 8c then f7af.
 - [x] Phase B is non-executable until an observed primary-D1 readback exists.
-- [ ] Independent source review and CI approve the draft candidate PR.
-- [ ] A separate authorization permits primary-D1 preflight and Phase A; this
-  PR provides no such authorization.
-- [ ] The exact Phase-A primary readback is checked in and independently
-  verified before any Phase-B SQL is generated.
+- [x] Independent review and CI approved source candidate PR #500; it merged as
+  website `main` `6076a6fe…`.
+- [x] Separate authorization permitted exact primary preflight and Phase A;
+  bookmark, apply, and read-only postflight evidence are recorded above.
+- [x] The exact Phase-A primary projection is pinned in a distinct observed
+  fixture and independently recomputed by the source checker.
+- [ ] Independent review and CI approve the observed-fixture draft before it
+  merges. No Phase-B SQL may be generated in this draft.
 - [ ] An ordinary authorized lifecycle and operator exception-resolution drill
   later prove the full reliability contract; a schema is never completion.
 
 ## Future release and recovery drill
 
-The smallest safe next action is independent review of this draft PR only.
-After that, a future separately authorized release must:
+The smallest safe next action is independent review of this observed-fixture
+draft only. Phase A and its readback are complete; no promotion follows from
+that fact. A future separately authorized release must:
 
-1. take a D1 bookmark/backup and record the exact database, primary readback,
-   source SHA, candidate file hash, owner, and rollback decision window;
-2. prove literal f7af, the exact v1 marker, zero v2 objects/contracts, and the
-   required table counts immediately before Phase A;
-3. use one officially transactional D1 application mechanism for Phase A;
-4. stop, read the primary catalog and counts with `rowsWritten=0`, check in the
-   full observed 69-row fixture, and independently recompute its digest;
-5. if anything differs, keep Staff Degraded and open a named exception. Use
-   the Phase-A rollback only if the exact staged shape is empty, no runtime ever
-   adopted it, and the rollback preflight/drill is separately approved;
-6. generate Phase B from the observed fixture—not the 8c prediction—then
-   independently review and authorize it as a separate release;
-7. after promotion, read back the exact marker, contract, catalog, table counts,
-   and provider-independent evidence before proposing runtime reader adoption;
-8. treat Time Travel restore as destructive emergency recovery only, with an
+1. verify the checked-in observed fixture, exact primary bookmark/catalog,
+   unchanged v1 marker, zero contracts, empty additive tables, and lack of
+   runtime adoption immediately before generating anything;
+2. if anything differs, keep Staff Degraded and open a named exception. Use
+   the Phase-A rollback only if the exact staged shape is still empty, no
+   runtime ever adopted it, and rollback is separately approved;
+3. assign a final migration identity and generate Phase B from the observed
+   fixture—not the historical prediction—then independently review and
+   authorize it as a separate release;
+4. after promotion, read back the exact marker, contract, catalog, table
+   counts, and provider-independent evidence before proposing runtime-reader
+   adoption; and
+5. treat Time Travel restore as destructive emergency recovery only, with an
    operator drill that accounts for in-flight cancellation and overwritten DB
    state.
 
-Until all gates pass, keep every candidate unregistered and unapplied, recorder
-adoption off, and Staff fail-closed for every non-v1 shape.
+Until all gates pass, do not reapply Phase A; keep rollback and Phase B
+unregistered and unapplied, recorder adoption off, and Staff fail-closed for
+every non-v1 authority shape.
