@@ -831,6 +831,10 @@ export interface StaffMediaAsset {
   mimeType: string;
   kind: StaffMediaKind;
   sizeBytes: number;
+  description: string;
+  websiteUsage: 'currently_used' | 'not_used';
+  curationStatus: 'good' | 'delete_candidate';
+  sourcePath: string | null;
   status: 'active' | 'archived';
   version: number;
   createdAt: string;

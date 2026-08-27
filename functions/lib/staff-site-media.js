@@ -3,7 +3,7 @@ import { createMediaFolder, listStaffMedia, mediaObjectKey, normalizeMediaName, 
 // This is deliberately an allowlist, not a filesystem or URL crawler. It mirrors
 // the image files presently referenced by the public site, so Staff can keep a
 // private working copy without granting an import endpoint arbitrary fetch access.
-const SITE_ASSETS = [
+const RAW_SITE_ASSETS = [
   ["Brand", "/images/identity/amari-method-wordmark.svg"],
   ["Brand", "/images/AmariLogo.avif"],
   ["Brand", "/images/AmariLogo.jpg"],
@@ -47,6 +47,47 @@ const SITE_ASSETS = [
   ["Legacy site imagery", "/images/v6/real/pull-up-bar.jpg"], ["Legacy site imagery", "/images/v6/real/putting-it-all-together.jpg"], ["Legacy site imagery", "/images/v6/real/spring-step.jpg"],
 ];
 
+// Every fixed site asset has a private, editable record in Staff Media. The
+// import is intentionally explicit rather than a file-system crawl: these are
+// the assets that have been reviewed as part of the website inventory.
+const NOT_CURRENTLY_USED = new Set([
+  "/images/AmariLogo.jpg", "/images/amari-icon.png", "/images/amari-method-logo-1200.png", "/images/amari-method-logo-1200x300.png", "/images/v6/logo-icon.png", "/images/v6/real/amari-icon.png", "/images/v6/real/amari-method-logo-1200x300.png", "/images/Dr-Garrett-Headshot-2.avif",
+  "/images/photos/amari-method-active-bridge-ocean-swimmer.png", "/images/photos/amari-method-concept-explanation-athletic-client.png", "/images/photos/amari-method-guided-hand-position-athletic-client.png", "/images/photos/amari-method-sf-hillside-athletic-lifestyle.png", "/images/photos/amari-method-shoulder-athletic-client.jpeg", "/images/photos/amari-method-suspension-squat-athletic-client.png",
+  "/images/photos/condition-base/neck.jpg", "/images/photos/detail-crops/hand-reaching-open.jpg", "/images/photos/jh-myofascial.jpg", "/images/photos/jh-psoas.jpg", "/images/photos/jh-stretching.jpg", "/images/photos/materials/hand-handrail-grip.jpg",
+  "/images/v6/real/foam-roller-v2.jpg", "/images/v6/real/garrett-session-img-3348.jpg", "/images/v6/real/gymnastic-rings.jpg", "/images/v6/real/jaw-align.jpg",
+]);
+
+// These are deliberately *not* deleted. Eben has rejected them for the public
+// placements currently using them; the record remains searchable and the
+// original is preserved until an owner makes a separate deletion decision.
+const DELETE_CANDIDATES = new Set([
+  "/images/photos/black-woman38-window-seat.jpg",
+  "/images/photos/black-man42-room-roller.jpg",
+  "/images/photos/living-practice-woman-asn35.jpg",
+  "/images/photos/firstvisit-doorway-woman-wht48.jpg",
+]);
+
+const DESCRIPTIONS = {
+  "/images/photos/black-woman38-window-seat.jpg": "Seated woman by a window in the Amari room; currently used for the homepage method panel.",
+  "/images/photos/black-man42-room-roller.jpg": "Man standing in the Amari room near a foam roller; currently used as the How It Works hero.",
+  "/images/photos/living-practice-woman-asn35.jpg": "Woman doing a seated arm movement in the Amari room; currently used for Living Practice.",
+  "/images/photos/firstvisit-doorway-woman-wht48.jpg": "Woman entering through the Amari doorway; currently used for First Visit and the homepage assessment panel.",
+};
+
+function internalDescription(path) {
+  if (DESCRIPTIONS[path]) return DESCRIPTIONS[path];
+  const label = displayName(path).replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
+  return `Amari website asset: ${label}. Review its preview in Staff before assigning it to a new placement.`;
+}
+
+export const SITE_ASSETS = Object.freeze(RAW_SITE_ASSETS.map(([folder, path]) => Object.freeze({
+  folder,
+  path,
+  description: internalDescription(path),
+  websiteUsage: NOT_CURRENTLY_USED.has(path) ? "not_used" : "currently_used",
+  curationStatus: DELETE_CANDIDATES.has(path) ? "delete_candidate" : "good",
+})));
+
 const MIME_BY_EXTENSION = {
   avif: "image/avif", gif: "image/gif", jpg: "image/jpeg", jpeg: "image/jpeg", png: "image/png", svg: "image/svg+xml", webp: "image/webp",
 };
@@ -73,6 +114,10 @@ export function siteAssetTotal() {
   return SITE_ASSETS.length;
 }
 
+export function siteAssetCatalog() {
+  return SITE_ASSETS;
+}
+
 export async function importSiteMediaBatch({ db, bucket, origin, actor, offset = 0, fetcher = fetch }) {
   if (!db || !bucket) throw Object.assign(new Error("Media upload storage is not configured"), { status: 422 });
   const start = Math.max(0, Number.parseInt(offset, 10) || 0);
@@ -80,17 +125,25 @@ export async function importSiteMediaBatch({ db, bucket, origin, actor, offset =
   const library = await listStaffMedia(db);
   const root = await ensureFolder(db, library.folders, ROOT_FOLDER, null, actor);
   const folders = new Map();
-  for (const [folderName] of group) {
+  for (const { folder: folderName } of group) {
     if (!folders.has(folderName)) folders.set(folderName, await ensureFolder(db, library.folders, folderName, root.id, actor));
   }
   const known = new Set(library.assets.filter((asset) => asset.status === "active").map((asset) => `${asset.folderId}:${normalizeMediaName(asset.name)}`));
   const result = { imported: [], skipped: [], failed: [], total: SITE_ASSETS.length, nextOffset: Math.min(start + group.length, SITE_ASSETS.length) };
 
-  for (const [folderName, path] of group) {
+  for (const siteAsset of group) {
+    const { folder: folderName, path } = siteAsset;
     const folder = folders.get(folderName);
     const name = displayName(path);
     const key = `${folder.id}:${normalizeMediaName(name)}`;
-    if (known.has(key)) { result.skipped.push(name); continue; }
+    if (known.has(key)) {
+      const existing = library.assets.find((asset) => `${asset.folderId}:${normalizeMediaName(asset.name)}` === key);
+      if (existing) {
+        await syncImportedSiteMetadata(db, existing, siteAsset, actor);
+      }
+      result.skipped.push(name);
+      continue;
+    }
     const mimeType = MIME_BY_EXTENSION[extensionFor(path)];
     if (!mimeType) { result.failed.push({ name, error: "Unsupported source file type" }); continue; }
     try {
@@ -101,7 +154,11 @@ export async function importSiteMediaBatch({ db, bucket, origin, actor, offset =
       const objectKey = mediaObjectKey(assetId, mimeType);
       await bucket.put(objectKey, bytes, { httpMetadata: { contentType: mimeType }, customMetadata: { assetId, importedFrom: path, uploadedBy: String(actor || "Staff").slice(0, 80) } });
       try {
-        const registered = await registerMediaAsset(db, { name, mimeType, sizeBytes: bytes.byteLength, folderId: folder.id }, { actor, id: assetId, allowSvg: true });
+        const registered = await registerMediaAsset(db, {
+          name, mimeType, sizeBytes: bytes.byteLength, folderId: folder.id,
+          description: siteAsset.description, websiteUsage: siteAsset.websiteUsage,
+          curationStatus: siteAsset.curationStatus, sourcePath: path,
+        }, { actor, id: assetId, allowSvg: true });
         known.add(key);
         result.imported.push(registered.asset.name);
       } catch (cause) {
@@ -114,4 +171,22 @@ export async function importSiteMediaBatch({ db, bucket, origin, actor, offset =
     }
   }
   return result;
+}
+
+async function syncImportedSiteMetadata(db, asset, siteAsset, actor) {
+  const needsUpdate = asset.description !== siteAsset.description
+    || asset.websiteUsage !== siteAsset.websiteUsage
+    || asset.curationStatus !== siteAsset.curationStatus
+    || asset.sourcePath !== siteAsset.path;
+  if (!needsUpdate) return;
+  const timestamp = new Date().toISOString();
+  await db.batch([
+    db.prepare(`UPDATE staff_media_assets
+      SET internal_description = ?, website_usage = ?, curation_status = ?, source_path = ?,
+          version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?`)
+      .bind(siteAsset.description, siteAsset.websiteUsage, siteAsset.curationStatus, siteAsset.path, timestamp, String(actor || "Staff").slice(0, 80), asset.id),
+    db.prepare(`INSERT INTO staff_media_events (id, asset_id, folder_id, action, actor, occurred_at, detail)
+      VALUES (?, ?, ?, 'site_metadata_synced', ?, ?, ?)`)
+      .bind(crypto.randomUUID(), asset.id, asset.folderId, String(actor || "Staff").slice(0, 80), timestamp, `${siteAsset.websiteUsage} · ${siteAsset.curationStatus} · ${siteAsset.path}`),
+  ]);
 }
