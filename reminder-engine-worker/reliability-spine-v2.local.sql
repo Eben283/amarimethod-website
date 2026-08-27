@@ -1,6 +1,53 @@
--- LOCAL-ONLY CANDIDATE. This is not a Wrangler migration and is not loaded by
--- schema.sql or any runtime entrypoint. A future migration runner must perform
--- the documented v2 conflict preflight and sqlite_master structure postflight.
+-- DO NOT APPLY. LOCAL-ONLY PHYSICAL-INSTALL CANDIDATE (phase A of two).
+-- This is not a registered Wrangler migration and is not loaded by schema.sql
+-- or any runtime entrypoint. The exact live-v1 authority digest is f7af1024...
+-- while this candidate was derived from clean-bootstrap v1 cd57730.... Adding
+-- its 20 objects to live v1 produces 8c7245ae..., not the candidate b289c402...
+-- target. Production preflight therefore blocks this file until a live-v1
+-- target is separately designed and reviewed. If this file were applied now,
+-- the sole persisted marker would remain v1 but Staff would deliberately fail
+-- closed as Degraded rather than conceal an unpromoted physical state.
+
+-- This in-transaction guard rejects unknown/conflicting markers and any
+-- partially installed v2 object set. SQLite/D1 has no SHA-256 SQL primitive,
+-- so exact v1/v2 DDL-byte verification remains an external mandatory gate.
+-- These guards are retained as local candidate evidence, not authorization.
+CREATE TABLE reliability_v2_install_gate (
+  accepted INTEGER NOT NULL CHECK (accepted = 1)
+);
+INSERT INTO reliability_v2_install_gate (accepted)
+SELECT CASE WHEN (
+  (SELECT COUNT(*) FROM reliability_schema_versions) = 1
+  AND EXISTS (
+    SELECT 1 FROM reliability_schema_versions
+    WHERE version = 1 AND applied_at > 0 AND migration_id = 'reliability-spine-v1'
+      AND description = 'Durable source events, lifecycle instances, obligations, receipts, reconciliation, and exceptions'
+  )
+) AND (
+  SELECT COUNT(*) FROM sqlite_master
+  WHERE type || ':' || name IN (
+    'index:idx_deployment_attestations_latest',
+    'index:idx_deployment_attestations_release',
+    'index:idx_deployment_attestations_runtime_version',
+    'index:idx_source_runtime_provenance_deployment',
+    'table:automation_deployment_attestations',
+    'table:automation_release_manifests',
+    'table:reliability_schema_contracts',
+    'table:source_event_runtime_provenance',
+    'trigger:automation_deployment_attestations_consistent_insert',
+    'trigger:automation_deployment_attestations_no_delete',
+    'trigger:automation_deployment_attestations_no_overlap_conflict',
+    'trigger:automation_deployment_attestations_no_update',
+    'trigger:automation_deployment_attestations_no_version_identity_conflict',
+    'trigger:automation_release_manifests_no_delete',
+    'trigger:automation_release_manifests_no_update',
+    'trigger:reliability_schema_contracts_no_delete',
+    'trigger:reliability_schema_contracts_no_update',
+    'trigger:source_event_runtime_provenance_consistent_insert',
+    'trigger:source_event_runtime_provenance_no_delete',
+    'trigger:source_event_runtime_provenance_no_update'
+  )
+) IN (0, 20) THEN 1 ELSE 0 END;
 
 CREATE TABLE IF NOT EXISTS reliability_schema_contracts (
   version INTEGER PRIMARY KEY CHECK (version > 0),
@@ -278,14 +325,41 @@ BEFORE UPDATE ON reliability_schema_contracts BEGIN SELECT RAISE(ABORT, 'reliabi
 CREATE TRIGGER IF NOT EXISTS reliability_schema_contracts_no_delete
 BEFORE DELETE ON reliability_schema_contracts BEGIN SELECT RAISE(ABORT, 'reliability_schema_contracts is immutable'); END;
 
--- Marker inserts are intentionally last. A future migration runner must reject
--- a pre-existing conflicting v2 marker before executing this file and verify
--- the exact sqlite_master structure digest after execution.
-INSERT OR IGNORE INTO reliability_schema_versions (version, applied_at, migration_id, description)
-VALUES (2, CAST(strftime('%s','now') AS INTEGER) * 1000, 'reliability-spine-v2-deployment-attestation',
-        'Authenticated release manifests, deployment attestations, and source-event runtime provenance');
-INSERT OR IGNORE INTO reliability_schema_contracts
-  (version, migration_id, canonicalization, structure_sha256, expected_objects_json, applied_at)
-VALUES (2, 'reliability-spine-v2-deployment-attestation', 'sqlite-master-required-closure.v1',
-        'b289c4022a06c23d2c806d122ef2687077815aea5ae85fde064681250f1c8ed6',
-        '["index:idx_command_obligation","index:idx_deployment_attestations_latest","index:idx_deployment_attestations_release","index:idx_deployment_attestations_runtime_version","index:idx_enr_contact","index:idx_evidence_access","index:idx_evt_contact","index:idx_evt_engine_flow","index:idx_evt_flow","index:idx_exception_events","index:idx_exceptions_family_queue","index:idx_exceptions_queue","index:idx_lease_events","index:idx_lifecycle_appointment","index:idx_lifecycle_family_state","index:idx_lifecycle_person","index:idx_obligations_due","index:idx_obligations_lease","index:idx_reconciliation_family","index:idx_source_events_provider_event","index:idx_source_events_received","index:idx_source_runtime_provenance_deployment","index:idx_source_transitions","index:idx_steps_due","index:idx_workflow_one_published","table:automation_deployment_attestations","table:automation_events","table:automation_release_manifests","table:command_attempts","table:evidence_access_events","table:exception_events","table:lifecycle_exceptions","table:lifecycle_instances","table:lifecycle_obligations","table:obligation_lease_events","table:provider_receipts","table:reconciliation_runs","table:reliability_schema_contracts","table:reliability_schema_versions","table:reminder_enrollments","table:reminder_steps","table:source_event_runtime_provenance","table:source_event_transitions","table:source_events","table:workflow_versions","trigger:automation_deployment_attestations_consistent_insert","trigger:automation_deployment_attestations_no_delete","trigger:automation_deployment_attestations_no_overlap_conflict","trigger:automation_deployment_attestations_no_update","trigger:automation_deployment_attestations_no_version_identity_conflict","trigger:automation_events_no_delete","trigger:automation_events_no_update","trigger:automation_release_manifests_no_delete","trigger:automation_release_manifests_no_update","trigger:evidence_access_no_delete","trigger:evidence_access_no_update","trigger:exception_events_no_delete","trigger:exception_events_no_update","trigger:lease_events_no_delete","trigger:lease_events_no_update","trigger:reliability_schema_contracts_no_delete","trigger:reliability_schema_contracts_no_update","trigger:source_event_runtime_provenance_consistent_insert","trigger:source_event_runtime_provenance_no_delete","trigger:source_event_runtime_provenance_no_update","trigger:source_events_no_delete","trigger:source_events_no_update","trigger:source_transitions_no_delete","trigger:source_transitions_no_update"]', CAST(strftime('%s','now') AS INTEGER) * 1000);
+-- All twenty v2-only objects must now exist. A pre-existing wrong object with
+-- one of these names will still be caught by the mandatory external DDL digest
+-- readback before promotion.
+DELETE FROM reliability_v2_install_gate;
+INSERT INTO reliability_v2_install_gate (accepted)
+SELECT CASE WHEN (
+  SELECT COUNT(*) FROM sqlite_master
+  WHERE type || ':' || name IN (
+    'index:idx_deployment_attestations_latest',
+    'index:idx_deployment_attestations_release',
+    'index:idx_deployment_attestations_runtime_version',
+    'index:idx_source_runtime_provenance_deployment',
+    'table:automation_deployment_attestations',
+    'table:automation_release_manifests',
+    'table:reliability_schema_contracts',
+    'table:source_event_runtime_provenance',
+    'trigger:automation_deployment_attestations_consistent_insert',
+    'trigger:automation_deployment_attestations_no_delete',
+    'trigger:automation_deployment_attestations_no_overlap_conflict',
+    'trigger:automation_deployment_attestations_no_update',
+    'trigger:automation_deployment_attestations_no_version_identity_conflict',
+    'trigger:automation_release_manifests_no_delete',
+    'trigger:automation_release_manifests_no_update',
+    'trigger:reliability_schema_contracts_no_delete',
+    'trigger:reliability_schema_contracts_no_update',
+    'trigger:source_event_runtime_provenance_consistent_insert',
+    'trigger:source_event_runtime_provenance_no_delete',
+    'trigger:source_event_runtime_provenance_no_update'
+  )
+) = 20 AND (
+  (SELECT COUNT(*) FROM reliability_schema_versions) = 1
+  AND (SELECT COUNT(*) FROM reliability_schema_contracts) = 0
+) THEN 1 ELSE 0 END;
+DROP TABLE reliability_v2_install_gate;
+
+-- STOP HERE. Read back sqlite_master from remote D1 and prove the exact
+-- 69-object catalog and b289... DDL digest. Only then may the separately
+-- approved promotion file insert the immutable contract and v2 marker.

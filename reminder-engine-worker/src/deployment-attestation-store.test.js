@@ -8,9 +8,11 @@ import {
 import {
   DeploymentAttestationRefusal, prepareSourceRuntimeProvenanceInsert, recordVerifiedDeploymentAttestation,
 } from "../../functions/lib/reliability-deployment-attestation-store.js";
+import { RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE } from "../../functions/lib/reliability-schema-authority.js";
 
 const base = readFileSync(new URL("../schema.sql", import.meta.url), "utf8");
 const candidate = readFileSync(new URL("../reliability-spine-v2.local.sql", import.meta.url), "utf8");
+const promotion = readFileSync(new URL("../reliability-spine-v2-promote.local.sql", import.meta.url), "utf8");
 const D = (character) => character.repeat(64);
 const G = (character) => character.repeat(40);
 const APPROVED_SHA256 = "2687f86ed6784b8a5fca36e6c468e12aa44dc3c7e8137e3160d1a95079bdcd02";
@@ -50,9 +52,7 @@ function d1FromSqlite(raw) {
 }
 
 function structureDigest() {
-  const match = candidate.match(/VALUES \(2, 'reliability-spine-v2-deployment-attestation', 'sqlite-master-required-closure\.v1',\s*'([a-f0-9]{64})'/);
-  if (!match) throw new Error("schema structure digest missing");
-  return match[1];
+  return RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.structureSha256;
 }
 
 const bindingsFor = (sourceRevision = G("a"), workerVersion = WORKER_VERSION) => [
@@ -120,7 +120,22 @@ beforeEach(() => {
   raw = new DatabaseSync(":memory:");
   raw.exec("PRAGMA foreign_keys=ON");
   raw.exec(base);
-  raw.exec(candidate);
+  raw.exec("BEGIN IMMEDIATE");
+  try {
+    raw.exec(candidate);
+    raw.exec("COMMIT");
+  } catch (error) {
+    raw.exec("ROLLBACK");
+    throw error;
+  }
+  raw.exec("BEGIN IMMEDIATE");
+  try {
+    raw.exec(promotion);
+    raw.exec("COMMIT");
+  } catch (error) {
+    raw.exec("ROLLBACK");
+    throw error;
+  }
   db = d1FromSqlite(raw);
 });
 
