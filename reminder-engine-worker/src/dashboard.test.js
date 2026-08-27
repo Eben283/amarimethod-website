@@ -66,12 +66,14 @@ describe("GET /dashboard shell", () => {
     expect(DASHBOARD_HTML).toContain("<title>");
     expect(DASHBOARD_HTML).toContain("Operations");
     expect(DASHBOARD_HTML).not.toContain("flow-1-quiz"); // data arrives only via the gated endpoint
-    expect(DASHBOARD_HTML).not.toMatch(/https?:\/\/(?!reminder-engine|www\.amarimethod\.com)[a-z]/); // no external resources
+    expect(DASHBOARD_HTML).not.toMatch(/https?:\/\/(?!reminder-engine|amarimethod\.com|www\.amarimethod\.com)[a-z]/); // no external resources
   });
 
   it("uses the signed Staff session before asking for a manually stored key", () => {
     expect(DASHBOARD_HTML).toContain("function requestData(key)");
-    expect(DASHBOARD_HTML).toContain('var options = key ? { headers: { Authorization: "Bearer " + key } } : {};');
+    expect(DASHBOARD_HTML).toContain('var headers = key ? { Authorization: "Bearer " + key } : {};');
+    expect(DASHBOARD_HTML).toContain('headers["X-Amari-Automation-Dashboard-Session"] = dashboardSession;');
+    expect(DASHBOARD_HTML).toContain('var options = { headers: headers, credentials: "same-origin" };');
     expect(DASHBOARD_HTML).not.toContain("if (!key) { gate.hidden = false; app.hidden = true; return; }");
   });
 });
