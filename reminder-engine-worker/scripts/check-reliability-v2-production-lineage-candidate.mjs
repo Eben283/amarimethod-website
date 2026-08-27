@@ -17,13 +17,19 @@ const candidateFixtureUrl = new URL(
   "../../docs/automation-truth/fixtures/reliability-v2-production-lineage-candidate.v1.json",
   import.meta.url,
 );
+const observedFixtureUrl = new URL(
+  "../../docs/automation-truth/fixtures/reliability-v2-production-lineage-observed-primary.v1.json",
+  import.meta.url,
+);
 const installUrl = new URL("../reliability-spine-v2-production-lineage-install.local.sql", import.meta.url);
 const rollbackUrl = new URL("../reliability-spine-v2-production-lineage-rollback.local.sql", import.meta.url);
 const additiveDdlUrl = new URL("../reliability-spine-v2.local.sql", import.meta.url);
 
 const baseFixtureSource = readFileSync(baseFixtureUrl, "utf8");
 const baseFixture = JSON.parse(baseFixtureSource);
-const candidateFixture = JSON.parse(readFileSync(candidateFixtureUrl, "utf8"));
+const candidateFixtureSource = readFileSync(candidateFixtureUrl, "utf8");
+const candidateFixture = JSON.parse(candidateFixtureSource);
+const observedFixture = JSON.parse(readFileSync(observedFixtureUrl, "utf8"));
 const installSql = readFileSync(installUrl, "utf8");
 const rollbackSql = readFileSync(rollbackUrl, "utf8");
 const additiveDdlSource = readFileSync(additiveDdlUrl, "utf8");
@@ -42,6 +48,45 @@ if (candidateFixture.candidateMigrationId !== RELIABILITY_SCHEMA_V2_PRODUCTION_L
   || candidateFixture.candidateMigrationId === RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.migrationId
   || candidateFixture.finalMigrationId !== null) {
   fail("candidate migration identity is not distinct and explicitly non-final");
+}
+if (observedFixture.authority !== false || observedFixture.remoteObserved !== true
+  || observedFixture.promotionAuthorized !== false
+  || observedFixture.status !== "observed-primary-physical-install-not-promoted") {
+  fail("observed fixture must remain non-authoritative and unpromoted");
+}
+if (sha256(candidateFixtureSource) !== observedFixture.sourceCandidateFixtureSha256
+  || observedFixture.sourceCandidateFixtureSha256 !== observedFixture.sourceProvenance.sourceCandidateFixtureSha256) {
+  fail("observed fixture source-candidate hash drifted");
+}
+if (observedFixture.physicalVariantId !== candidateFixture.variantId
+  || observedFixture.candidateMigrationId !== candidateFixture.candidateMigrationId
+  || observedFixture.finalMigrationId !== null) {
+  fail("observed fixture physical identity is not the reviewed non-final candidate");
+}
+if (observedFixture.readEvidence?.servedBy !== "v3-prod"
+  || observedFixture.readEvidence?.servedByPrimary !== true
+  || observedFixture.readEvidence?.rowsWritten !== 0
+  || observedFixture.readEvidence?.changedDb !== false) {
+  fail("observed fixture does not pin a read-only primary-D1 readback");
+}
+if (observedFixture.readEvidence?.capturedAtUtc !== "2026-08-27T02:39:38Z"
+  || observedFixture.migrationEvidence?.websiteMain !== "6076a6feea38b1fc61638d84166ceff1d42202f8"
+  || observedFixture.migrationEvidence?.recoveryBookmark !== "000024cc-00000000-000050d4-2f6dbfafd655c4f7aa2d365265c99d80"
+  || observedFixture.migrationEvidence?.finalBookmark !== "000024cc-0000000e-000050d4-37d5ac8f2e9cfdadff33c21853674cc0") {
+  fail("observed fixture migration provenance drifted");
+}
+if (sha256(installSql) !== observedFixture.migrationEvidence?.installSha256
+  || observedFixture.migrationEvidence?.installSha256 !== observedFixture.sourceProvenance?.installSha256) {
+  fail("observed fixture install artifact hash drifted");
+}
+if (JSON.stringify(observedFixture.marker) !== JSON.stringify(baseFixture.marker)
+  || observedFixture.schemaContractRowCount !== 0
+  || observedFixture.transientGatePresent !== false
+  || observedFixture.priorTableCountsUnchanged !== true) {
+  fail("observed fixture authority or postflight invariants drifted");
+}
+for (const value of Object.values(observedFixture.newTableCounts || {})) {
+  if (!Number.isInteger(value) || value !== 0) fail("observed fixture new-table counts must be numeric zeroes");
 }
 if (sha256(additiveDdlSource) !== candidateFixture.sourceProvenance.additiveDdlSourceSha256) {
   fail("reviewed additive DDL source hash drifted");
@@ -97,11 +142,21 @@ if (digest !== RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.structureSha25
 if (JSON.stringify(projection) !== JSON.stringify(candidateFixture.projection)) {
   fail("generated projection differs from pinned fixture");
 }
+if (JSON.stringify(projection) !== JSON.stringify(observedFixture.projection)) {
+  fail("generated projection differs from exact observed primary fixture");
+}
 if (JSON.stringify(keys) !== JSON.stringify(candidateFixture.expectedObjects)) {
   fail("generated object catalog differs from pinned fixture");
 }
 if (JSON.stringify(additiveKeys) !== JSON.stringify(candidateFixture.additiveObjects)) {
   fail("generated additive catalog differs from pinned fixture");
+}
+if (JSON.stringify(keys) !== JSON.stringify(observedFixture.expectedObjects)
+  || JSON.stringify(additiveKeys) !== JSON.stringify(observedFixture.additiveObjects)
+  || observedFixture.objectCount !== projection.length
+  || observedFixture.additiveObjectCount !== additiveKeys.length
+  || observedFixture.structureSha256 !== digest) {
+  fail("observed primary fixture closure or digest drifted");
 }
 if (sha256(JSON.stringify(additiveProjection)) !== candidateFixture.sourceProvenance.additiveProjectionSha256) {
   fail("generated additive projection hash differs from pinned fixture");
@@ -139,9 +194,9 @@ const rollbackMarkers = db.prepare(`SELECT version,applied_at,migration_id,descr
 if (JSON.stringify(rollbackMarkers) !== JSON.stringify(baseFixture.marker)) fail("rollback changed schema authority markers");
 
 console.log(JSON.stringify({
-  status: "candidate_exact",
+  status: "candidate_and_observed_primary_exact",
   authority: false,
-  remoteObserved: false,
+  remoteObserved: true,
   baseVariantId: RELIABILITY_SCHEMA_V1.variantId,
   baseDigest: before.digest,
   variantId: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.variantId,
@@ -151,4 +206,14 @@ console.log(JSON.stringify({
   structureSha256: digest,
   distinctFromCleanBootstrapV2: digest !== RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.structureSha256,
   rollbackStructureSha256: rollback.digest,
+  primaryReadback: {
+    capturedAtUtc: observedFixture.readEvidence.capturedAtUtc,
+    databaseId: observedFixture.readEvidence.databaseId,
+    rowsWritten: observedFixture.readEvidence.rowsWritten,
+    recoveryBookmark: observedFixture.migrationEvidence.recoveryBookmark,
+    finalBookmark: observedFixture.migrationEvidence.finalBookmark,
+    schemaMarkerVersion: observedFixture.marker[0].version,
+    schemaContractRowCount: observedFixture.schemaContractRowCount,
+    promotionAuthorized: observedFixture.promotionAuthorized,
+  },
 }));

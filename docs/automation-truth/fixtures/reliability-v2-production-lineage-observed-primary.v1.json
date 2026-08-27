@@ -1,0 +1,608 @@
+{
+  "fixtureVersion": 1,
+  "purpose": "Sanitized exact observed primary D1 Phase-A physical schema projection; not schema authority",
+  "status": "observed-primary-physical-install-not-promoted",
+  "authority": false,
+  "remoteObserved": true,
+  "promotionAuthorized": false,
+  "physicalVariantId": "production-live-lineage-v2-8c7245a",
+  "sourceCandidateFixture": "docs/automation-truth/fixtures/reliability-v2-production-lineage-candidate.v1.json",
+  "sourceCandidateFixtureSha256": "e30563a997251475f881609eb32bf7eac3891c3d2609ad2a8cc907914110e250",
+  "candidateMigrationId": "reliability-spine-v2-production-lineage-candidate-unobserved",
+  "finalMigrationId": null,
+  "baseVariantId": "production-live-v1-f7af1024",
+  "baseStructureSha256": "f7af1024be129a24cb8a68a0c70a4bd3a8820104f9a5e36a58df97bbe7bbdd4f",
+  "canonicalization": "sqlite-master-required-closure.v1",
+  "objectCount": 69,
+  "additiveObjectCount": 20,
+  "structureSha256": "8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62",
+  "cleanBootstrapV2StructureSha256": "b289c4022a06c23d2c806d122ef2687077815aea5ae85fde064681250f1c8ed6",
+  "matchesCleanBootstrapV2": false,
+  "marker": [
+    {
+      "version": 1,
+      "applied_at": 1787631973000,
+      "migration_id": "reliability-spine-v1",
+      "description": "Durable source events, lifecycle instances, obligations, receipts, reconciliation, and exceptions"
+    }
+  ],
+  "schemaContractRowCount": 0,
+  "newTableCounts": {
+    "automation_deployment_attestations": 0,
+    "automation_release_manifests": 0,
+    "reliability_schema_contracts": 0,
+    "source_event_runtime_provenance": 0
+  },
+  "transientGatePresent": false,
+  "priorTableCounts": {
+    "automation_events": 3260,
+    "command_attempts": 0,
+    "evidence_access_events": 0,
+    "exception_events": 7,
+    "lifecycle_exceptions": 7,
+    "lifecycle_instances": 5,
+    "lifecycle_obligations": 29,
+    "obligation_lease_events": 0,
+    "provider_receipts": 0,
+    "reconciliation_runs": 0,
+    "reliability_schema_versions": 1,
+    "reminder_enrollments": 55,
+    "reminder_steps": 351,
+    "source_event_transitions": 46,
+    "source_events": 12,
+    "workflow_versions": 11
+  },
+  "priorTableCountsUnchanged": true,
+  "readEvidence": {
+    "capturedAtUtc": "2026-08-27T02:39:38Z",
+    "cloudflareAccountId": "fa2b6f2441129b259dd5dea74045721b",
+    "databaseName": "amari-automation",
+    "databaseId": "089d810a-9d2d-43a4-8f1d-dc3620835557",
+    "markerQuery": "SELECT version,applied_at,migration_id,description FROM reliability_schema_versions ORDER BY version",
+    "structureQuery": "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE type IN ('table','index','trigger') ORDER BY type,name",
+    "servedBy": "v3-prod",
+    "servedByPrimary": true,
+    "rowsWritten": 0,
+    "changedDb": false,
+    "requiredProjectionRows": 69,
+    "additiveObjectsPresent": 20,
+    "projectionComparedByteForByteToSourceCandidate": true
+  },
+  "migrationEvidence": {
+    "websiteMain": "6076a6feea38b1fc61638d84166ceff1d42202f8",
+    "reviewedHead": "60a06fcad977006f136bb9cce74b648b363c0bd1",
+    "reviewedTree": "a8004228723a7c3aa15708b1040dbc20f40e5ebf",
+    "installFile": "reminder-engine-worker/reliability-spine-v2-production-lineage-install.local.sql",
+    "installSha256": "ba649a4ccb533583d111450c842f9ea5e5e4d223e401a9be7f691c3b306f43a1",
+    "wranglerVersion": "4.125.0",
+    "recoveryBookmark": "000024cc-00000000-000050d4-2f6dbfafd655c4f7aa2d365265c99d80",
+    "finalBookmark": "000024cc-0000000e-000050d4-37d5ac8f2e9cfdadff33c21853674cc0",
+    "applyStartedAtUtc": "2026-08-27T02:38:55Z",
+    "applySuccess": true,
+    "applyQueriesExecuted": 29,
+    "applyAttempts": 1,
+    "applyRowsRead": 2610,
+    "applyRowsWritten": 42
+  },
+  "sourceProvenance": {
+    "repository": "Eben283/amarimethod-website",
+    "inspectedSourceMain": "6076a6feea38b1fc61638d84166ceff1d42202f8",
+    "productionV1Fixture": "docs/automation-truth/fixtures/reliability-v1-production-structure-readback.v1.json",
+    "productionV1FixtureSha256": "ff5e22ca1c320ac76bf41e87883f49506f581bf7a1643f09219af28308930c7c",
+    "sourceCandidateFixture": "docs/automation-truth/fixtures/reliability-v2-production-lineage-candidate.v1.json",
+    "sourceCandidateFixtureSha256": "e30563a997251475f881609eb32bf7eac3891c3d2609ad2a8cc907914110e250",
+    "installFile": "reminder-engine-worker/reliability-spine-v2-production-lineage-install.local.sql",
+    "installSha256": "ba649a4ccb533583d111450c842f9ea5e5e4d223e401a9be7f691c3b306f43a1",
+    "primaryProjectionMethod": "read sqlite_master from primary, apply the required-table closure, normalize transport line endings, and compare all 69 literal rows byte-for-byte",
+    "independentChecker": "reminder-engine-worker/scripts/check-reliability-v2-production-lineage-candidate.mjs"
+  },
+  "expectedObjects": [
+    "index:idx_command_obligation",
+    "index:idx_deployment_attestations_latest",
+    "index:idx_deployment_attestations_release",
+    "index:idx_deployment_attestations_runtime_version",
+    "index:idx_enr_contact",
+    "index:idx_evidence_access",
+    "index:idx_evt_contact",
+    "index:idx_evt_engine_flow",
+    "index:idx_evt_flow",
+    "index:idx_exception_events",
+    "index:idx_exceptions_family_queue",
+    "index:idx_exceptions_queue",
+    "index:idx_lease_events",
+    "index:idx_lifecycle_appointment",
+    "index:idx_lifecycle_family_state",
+    "index:idx_lifecycle_person",
+    "index:idx_obligations_due",
+    "index:idx_obligations_lease",
+    "index:idx_reconciliation_family",
+    "index:idx_source_events_provider_event",
+    "index:idx_source_events_received",
+    "index:idx_source_runtime_provenance_deployment",
+    "index:idx_source_transitions",
+    "index:idx_steps_due",
+    "index:idx_workflow_one_published",
+    "table:automation_deployment_attestations",
+    "table:automation_events",
+    "table:automation_release_manifests",
+    "table:command_attempts",
+    "table:evidence_access_events",
+    "table:exception_events",
+    "table:lifecycle_exceptions",
+    "table:lifecycle_instances",
+    "table:lifecycle_obligations",
+    "table:obligation_lease_events",
+    "table:provider_receipts",
+    "table:reconciliation_runs",
+    "table:reliability_schema_contracts",
+    "table:reliability_schema_versions",
+    "table:reminder_enrollments",
+    "table:reminder_steps",
+    "table:source_event_runtime_provenance",
+    "table:source_event_transitions",
+    "table:source_events",
+    "table:workflow_versions",
+    "trigger:automation_deployment_attestations_consistent_insert",
+    "trigger:automation_deployment_attestations_no_delete",
+    "trigger:automation_deployment_attestations_no_overlap_conflict",
+    "trigger:automation_deployment_attestations_no_update",
+    "trigger:automation_deployment_attestations_no_version_identity_conflict",
+    "trigger:automation_events_no_delete",
+    "trigger:automation_events_no_update",
+    "trigger:automation_release_manifests_no_delete",
+    "trigger:automation_release_manifests_no_update",
+    "trigger:evidence_access_no_delete",
+    "trigger:evidence_access_no_update",
+    "trigger:exception_events_no_delete",
+    "trigger:exception_events_no_update",
+    "trigger:lease_events_no_delete",
+    "trigger:lease_events_no_update",
+    "trigger:reliability_schema_contracts_no_delete",
+    "trigger:reliability_schema_contracts_no_update",
+    "trigger:source_event_runtime_provenance_consistent_insert",
+    "trigger:source_event_runtime_provenance_no_delete",
+    "trigger:source_event_runtime_provenance_no_update",
+    "trigger:source_events_no_delete",
+    "trigger:source_events_no_update",
+    "trigger:source_transitions_no_delete",
+    "trigger:source_transitions_no_update"
+  ],
+  "additiveObjects": [
+    "index:idx_deployment_attestations_latest",
+    "index:idx_deployment_attestations_release",
+    "index:idx_deployment_attestations_runtime_version",
+    "index:idx_source_runtime_provenance_deployment",
+    "table:automation_deployment_attestations",
+    "table:automation_release_manifests",
+    "table:reliability_schema_contracts",
+    "table:source_event_runtime_provenance",
+    "trigger:automation_deployment_attestations_consistent_insert",
+    "trigger:automation_deployment_attestations_no_delete",
+    "trigger:automation_deployment_attestations_no_overlap_conflict",
+    "trigger:automation_deployment_attestations_no_update",
+    "trigger:automation_deployment_attestations_no_version_identity_conflict",
+    "trigger:automation_release_manifests_no_delete",
+    "trigger:automation_release_manifests_no_update",
+    "trigger:reliability_schema_contracts_no_delete",
+    "trigger:reliability_schema_contracts_no_update",
+    "trigger:source_event_runtime_provenance_consistent_insert",
+    "trigger:source_event_runtime_provenance_no_delete",
+    "trigger:source_event_runtime_provenance_no_update"
+  ],
+  "projection": [
+    {
+      "type": "index",
+      "name": "idx_command_obligation",
+      "table": "command_attempts",
+      "sql": "CREATE INDEX idx_command_obligation ON command_attempts (obligation_id, attempt_number)"
+    },
+    {
+      "type": "index",
+      "name": "idx_deployment_attestations_latest",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE INDEX idx_deployment_attestations_latest\n  ON automation_deployment_attestations(platform, service, environment, deployment_id, version_id, attested_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_deployment_attestations_release",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE INDEX idx_deployment_attestations_release\n  ON automation_deployment_attestations(release_manifest_id, attested_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_deployment_attestations_runtime_version",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE INDEX idx_deployment_attestations_runtime_version\n  ON automation_deployment_attestations(platform, service, environment, version_id, attested_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_enr_contact",
+      "table": "reminder_enrollments",
+      "sql": "CREATE INDEX idx_enr_contact ON reminder_enrollments (contact_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_evidence_access",
+      "table": "evidence_access_events",
+      "sql": "CREATE INDEX idx_evidence_access ON evidence_access_events (family, occurred_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_evt_contact",
+      "table": "automation_events",
+      "sql": "CREATE INDEX idx_evt_contact ON automation_events (contact_id, ts)"
+    },
+    {
+      "type": "index",
+      "name": "idx_evt_engine_flow",
+      "table": "automation_events",
+      "sql": "CREATE INDEX idx_evt_engine_flow\n  ON automation_events (engine, flow_key, ts)"
+    },
+    {
+      "type": "index",
+      "name": "idx_evt_flow",
+      "table": "automation_events",
+      "sql": "CREATE INDEX idx_evt_flow ON automation_events (flow_key, ts)"
+    },
+    {
+      "type": "index",
+      "name": "idx_exception_events",
+      "table": "exception_events",
+      "sql": "CREATE INDEX idx_exception_events ON exception_events (exception_id, occurred_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_exceptions_family_queue",
+      "table": "lifecycle_exceptions",
+      "sql": "CREATE INDEX idx_exceptions_family_queue ON lifecycle_exceptions (family, state, severity, opened_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_exceptions_queue",
+      "table": "lifecycle_exceptions",
+      "sql": "CREATE INDEX idx_exceptions_queue ON lifecycle_exceptions (state, severity, opened_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_lease_events",
+      "table": "obligation_lease_events",
+      "sql": "CREATE INDEX idx_lease_events ON obligation_lease_events (obligation_id, lease_acquired_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_lifecycle_appointment",
+      "table": "lifecycle_instances",
+      "sql": "CREATE INDEX idx_lifecycle_appointment ON lifecycle_instances (appointment_id, created_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_lifecycle_family_state",
+      "table": "lifecycle_instances",
+      "sql": "CREATE INDEX idx_lifecycle_family_state ON lifecycle_instances (family, state, created_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_lifecycle_person",
+      "table": "lifecycle_instances",
+      "sql": "CREATE INDEX idx_lifecycle_person ON lifecycle_instances (person_id, created_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_obligations_due",
+      "table": "lifecycle_obligations",
+      "sql": "CREATE INDEX idx_obligations_due ON lifecycle_obligations (state, deadline_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_obligations_lease",
+      "table": "lifecycle_obligations",
+      "sql": "CREATE INDEX idx_obligations_lease ON lifecycle_obligations (state, lease_expires_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_reconciliation_family",
+      "table": "reconciliation_runs",
+      "sql": "CREATE INDEX idx_reconciliation_family ON reconciliation_runs (family, started_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_source_events_provider_event",
+      "table": "source_events",
+      "sql": "CREATE INDEX idx_source_events_provider_event ON source_events (provider, provider_event_id)"
+    },
+    {
+      "type": "index",
+      "name": "idx_source_events_received",
+      "table": "source_events",
+      "sql": "CREATE INDEX idx_source_events_received ON source_events (received_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_source_runtime_provenance_deployment",
+      "table": "source_event_runtime_provenance",
+      "sql": "CREATE INDEX idx_source_runtime_provenance_deployment\n  ON source_event_runtime_provenance(deployment_attestation_id, bound_at DESC)"
+    },
+    {
+      "type": "index",
+      "name": "idx_source_transitions",
+      "table": "source_event_transitions",
+      "sql": "CREATE INDEX idx_source_transitions ON source_event_transitions (source_event_id, sequence)"
+    },
+    {
+      "type": "index",
+      "name": "idx_steps_due",
+      "table": "reminder_steps",
+      "sql": "CREATE INDEX idx_steps_due ON reminder_steps (status, due_at)"
+    },
+    {
+      "type": "index",
+      "name": "idx_workflow_one_published",
+      "table": "workflow_versions",
+      "sql": "CREATE UNIQUE INDEX idx_workflow_one_published\nON workflow_versions (workflow_id) WHERE state = 'published'"
+    },
+    {
+      "type": "table",
+      "name": "automation_deployment_attestations",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE TABLE automation_deployment_attestations (\n  deployment_attestation_id TEXT PRIMARY KEY,\n  release_manifest_id TEXT NOT NULL REFERENCES automation_release_manifests(release_manifest_id),\n  release_manifest_digest TEXT NOT NULL CHECK (length(release_manifest_digest) = 64 AND release_manifest_digest NOT GLOB '*[^0-9a-f]*'),\n  platform TEXT NOT NULL CHECK (platform = 'cloudflare'),\n  service TEXT NOT NULL CHECK (service = 'reminder-engine'),\n  environment TEXT NOT NULL CHECK (environment = 'production'),\n  deployment_id TEXT NOT NULL,\n  version_id TEXT NOT NULL,\n  traffic_percent INTEGER NOT NULL CHECK (traffic_percent = 100),\n  source_revision TEXT NOT NULL CHECK (length(source_revision) = 40 AND source_revision NOT GLOB '*[^0-9a-f]*'),\n  source_tree TEXT NOT NULL CHECK (length(source_tree) = 40 AND source_tree NOT GLOB '*[^0-9a-f]*'),\n  worker_version TEXT NOT NULL,\n  runtime_version TEXT NOT NULL,\n  bundle_sha256 TEXT NOT NULL CHECK (length(bundle_sha256) = 64 AND bundle_sha256 NOT GLOB '*[^0-9a-f]*'),\n  modules_digest TEXT NOT NULL CHECK (length(modules_digest) = 64 AND modules_digest NOT GLOB '*[^0-9a-f]*'),\n  observed_bindings_digest TEXT NOT NULL CHECK (length(observed_bindings_digest) = 64 AND observed_bindings_digest NOT GLOB '*[^0-9a-f]*'),\n  schema_database_id TEXT NOT NULL,\n  schema_migration_id TEXT NOT NULL,\n  schema_version INTEGER NOT NULL CHECK (schema_version > 0),\n  schema_source_sha256 TEXT NOT NULL CHECK (length(schema_source_sha256) = 64 AND schema_source_sha256 NOT GLOB '*[^0-9a-f]*'),\n  schema_structure_sha256 TEXT NOT NULL CHECK (length(schema_structure_sha256) = 64 AND schema_structure_sha256 NOT GLOB '*[^0-9a-f]*'),\n  workflow_id TEXT NOT NULL,\n  workflow_version INTEGER NOT NULL CHECK (workflow_version > 0),\n  workflow_document_sha256 TEXT NOT NULL CHECK (length(workflow_document_sha256) = 64 AND workflow_document_sha256 NOT GLOB '*[^0-9a-f]*'),\n  follow_up_delivery_release TEXT NOT NULL,\n  follow_up_assigned_user_delivery TEXT NOT NULL,\n  build_evidence_reference TEXT NOT NULL,\n  build_evidence_sha256 TEXT NOT NULL CHECK (length(build_evidence_sha256) = 64 AND build_evidence_sha256 NOT GLOB '*[^0-9a-f]*'),\n  cloudflare_evidence_reference TEXT NOT NULL,\n  cloudflare_evidence_sha256 TEXT NOT NULL CHECK (length(cloudflare_evidence_sha256) = 64 AND cloudflare_evidence_sha256 NOT GLOB '*[^0-9a-f]*'),\n  d1_schema_evidence_reference TEXT NOT NULL,\n  d1_schema_evidence_sha256 TEXT NOT NULL CHECK (length(d1_schema_evidence_sha256) = 64 AND d1_schema_evidence_sha256 NOT GLOB '*[^0-9a-f]*'),\n  d1_workflow_evidence_reference TEXT NOT NULL,\n  d1_workflow_evidence_sha256 TEXT NOT NULL CHECK (length(d1_workflow_evidence_sha256) = 64 AND d1_workflow_evidence_sha256 NOT GLOB '*[^0-9a-f]*'),\n  payload_sha256 TEXT NOT NULL UNIQUE CHECK (length(payload_sha256) = 64 AND payload_sha256 NOT GLOB '*[^0-9a-f]*'),\n  authentication_method TEXT NOT NULL CHECK (authentication_method = 'ed25519'),\n  authentication_key_id TEXT NOT NULL,\n  authentication_signature TEXT NOT NULL CHECK (length(authentication_signature) = 128 AND authentication_signature NOT GLOB '*[^0-9a-f]*'),\n  canonical_json TEXT NOT NULL CHECK (json_valid(canonical_json)),\n  observed_at INTEGER NOT NULL,\n  attested_at INTEGER NOT NULL,\n  recorded_at INTEGER NOT NULL,\n  expires_at INTEGER NOT NULL,\n  retention_until INTEGER NOT NULL,\n  CHECK (observed_at <= attested_at AND attested_at <= recorded_at AND recorded_at < expires_at),\n  CHECK (attested_at - observed_at <= 300000),\n  CHECK (expires_at - attested_at <= 900000),\n  CHECK (retention_until >= expires_at)\n)"
+    },
+    {
+      "type": "table",
+      "name": "automation_events",
+      "table": "automation_events",
+      "sql": "CREATE TABLE automation_events (\n  id             INTEGER PRIMARY KEY AUTOINCREMENT,\n  ts             INTEGER NOT NULL,\n  engine         TEXT,\n  flow_key       TEXT,\n  contact_id     TEXT,\n  appointment_id TEXT,\n  step_index     INTEGER,\n  action         TEXT,     -- enrolled | would_send | send | cancelled | exited\n  outcome        TEXT,     -- would_send | sent | delivered | failed | bounced | cancelled | ...\n  channel        TEXT,     -- sms | email\n  message_ref    TEXT,     -- transport message id (not the body — PII posture, see DASHBOARD-PLAN)\n  detail         TEXT      -- JSON string\n, definition_version INTEGER)"
+    },
+    {
+      "type": "table",
+      "name": "automation_release_manifests",
+      "table": "automation_release_manifests",
+      "sql": "CREATE TABLE automation_release_manifests (\n  release_manifest_id TEXT PRIMARY KEY,\n  release_manifest_digest TEXT NOT NULL UNIQUE CHECK (length(release_manifest_digest) = 64 AND release_manifest_digest NOT GLOB '*[^0-9a-f]*'),\n  family TEXT NOT NULL CHECK (family = 'follow-up-session-reminders'),\n  source_repository TEXT NOT NULL,\n  source_revision TEXT NOT NULL CHECK (length(source_revision) = 40 AND source_revision NOT GLOB '*[^0-9a-f]*'),\n  source_tree TEXT NOT NULL CHECK (length(source_tree) = 40 AND source_tree NOT GLOB '*[^0-9a-f]*'),\n  worker_version TEXT NOT NULL,\n  runtime_version TEXT NOT NULL,\n  lockfile_sha256 TEXT NOT NULL CHECK (length(lockfile_sha256) = 64 AND lockfile_sha256 NOT GLOB '*[^0-9a-f]*'),\n  bundle_sha256 TEXT NOT NULL CHECK (length(bundle_sha256) = 64 AND bundle_sha256 NOT GLOB '*[^0-9a-f]*'),\n  modules_digest TEXT NOT NULL CHECK (length(modules_digest) = 64 AND modules_digest NOT GLOB '*[^0-9a-f]*'),\n  compiler_id TEXT NOT NULL,\n  compiler_artifact_sha256 TEXT NOT NULL CHECK (length(compiler_artifact_sha256) = 64 AND compiler_artifact_sha256 NOT GLOB '*[^0-9a-f]*'),\n  spec_digest TEXT NOT NULL CHECK (length(spec_digest) = 64 AND spec_digest NOT GLOB '*[^0-9a-f]*'),\n  compiled_plan_digest TEXT NOT NULL CHECK (length(compiled_plan_digest) = 64 AND compiled_plan_digest NOT GLOB '*[^0-9a-f]*'),\n  handler_registry_digest TEXT NOT NULL CHECK (length(handler_registry_digest) = 64 AND handler_registry_digest NOT GLOB '*[^0-9a-f]*'),\n  message_catalog_digest TEXT NOT NULL CHECK (length(message_catalog_digest) = 64 AND message_catalog_digest NOT GLOB '*[^0-9a-f]*'),\n  expected_bindings_digest TEXT NOT NULL CHECK (length(expected_bindings_digest) = 64 AND expected_bindings_digest NOT GLOB '*[^0-9a-f]*'),\n  workflow_id TEXT NOT NULL,\n  workflow_version INTEGER NOT NULL CHECK (workflow_version > 0),\n  workflow_state TEXT NOT NULL CHECK (workflow_state = 'published'),\n  workflow_document_sha256 TEXT NOT NULL CHECK (length(workflow_document_sha256) = 64 AND workflow_document_sha256 NOT GLOB '*[^0-9a-f]*'),\n  schema_database_id TEXT NOT NULL,\n  schema_migration_id TEXT NOT NULL,\n  schema_version INTEGER NOT NULL CHECK (schema_version > 0),\n  schema_source_sha256 TEXT NOT NULL CHECK (length(schema_source_sha256) = 64 AND schema_source_sha256 NOT GLOB '*[^0-9a-f]*'),\n  schema_structure_sha256 TEXT NOT NULL CHECK (length(schema_structure_sha256) = 64 AND schema_structure_sha256 NOT GLOB '*[^0-9a-f]*'),\n  follow_up_delivery_release TEXT NOT NULL,\n  follow_up_assigned_user_delivery TEXT NOT NULL,\n  declared_effect_owner TEXT NOT NULL,\n  canonical_json TEXT NOT NULL CHECK (json_valid(canonical_json)),\n  created_at INTEGER NOT NULL,\n  retention_until INTEGER NOT NULL CHECK (retention_until >= created_at)\n)"
+    },
+    {
+      "type": "table",
+      "name": "command_attempts",
+      "table": "command_attempts",
+      "sql": "CREATE TABLE command_attempts (\n  command_attempt_id     TEXT PRIMARY KEY,\n  obligation_id          TEXT NOT NULL REFERENCES lifecycle_obligations(obligation_id),\n  idempotency_key        TEXT NOT NULL,\n  attempt_number         INTEGER NOT NULL,\n  retry_class            TEXT NOT NULL CHECK (retry_class IN ('provider_idempotent', 'amari_reconcile', 'manual_ambiguous')),\n  target                 TEXT NOT NULL,\n  request_sha256         TEXT NOT NULL,\n  rendered_copy_sha256   TEXT,\n  provider_reference     TEXT,\n  state                  TEXT NOT NULL CHECK (state IN ('prepared', 'leased', 'submitted', 'accepted', 'ambiguous', 'failed_retryable', 'failed_terminal', 'reconciled')),\n  error_code             TEXT,\n  retention_until        INTEGER NOT NULL,\n  created_at             INTEGER NOT NULL,\n  updated_at             INTEGER NOT NULL,\n  UNIQUE (idempotency_key, attempt_number),\n  CHECK (retention_until <= created_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "evidence_access_events",
+      "table": "evidence_access_events",
+      "sql": "CREATE TABLE evidence_access_events (\n  access_event_id  TEXT PRIMARY KEY,\n  actor            TEXT NOT NULL,\n  family           TEXT NOT NULL,\n  action           TEXT NOT NULL CHECK (action IN ('view_summary', 'view_source', 'export')),\n  source_event_id  TEXT,\n  occurred_at      INTEGER NOT NULL,\n  retention_until INTEGER NOT NULL,\n  CHECK (retention_until <= occurred_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "exception_events",
+      "table": "exception_events",
+      "sql": "CREATE TABLE exception_events (\n  exception_event_id TEXT PRIMARY KEY,\n  exception_id       TEXT NOT NULL REFERENCES lifecycle_exceptions(exception_id),\n  event_type         TEXT NOT NULL CHECK (event_type IN ('opened', 'acknowledged', 'investigating', 'resolved', 'suppressed', 'reopened')),\n  actor              TEXT NOT NULL,\n  occurred_at        INTEGER NOT NULL,\n  evidence_sha256    TEXT,\n  detail_json        TEXT,\n  retention_until    INTEGER NOT NULL,\n  CHECK (retention_until <= occurred_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "lifecycle_exceptions",
+      "table": "lifecycle_exceptions",
+      "sql": "CREATE TABLE lifecycle_exceptions (\n  exception_id           TEXT PRIMARY KEY,\n  family                 TEXT NOT NULL,\n  source_event_id        TEXT REFERENCES source_events(source_event_id),\n  lifecycle_instance_id  TEXT REFERENCES lifecycle_instances(lifecycle_instance_id),\n  obligation_id          TEXT REFERENCES lifecycle_obligations(obligation_id),\n  kind                   TEXT NOT NULL,\n  severity               TEXT NOT NULL CHECK (severity IN ('info', 'warning', 'critical')),\n  accountable_owner      TEXT NOT NULL,\n  next_safe_action       TEXT NOT NULL,\n  state                  TEXT NOT NULL CHECK (state IN ('open', 'acknowledged', 'investigating', 'resolved', 'suppressed_with_expiry')),\n  suppression_expires_at INTEGER,\n  retention_until        INTEGER NOT NULL,\n  opened_at              INTEGER NOT NULL,\n  updated_at             INTEGER NOT NULL,\n  CHECK (state <> 'suppressed_with_expiry' OR suppression_expires_at IS NOT NULL),\n  CHECK (retention_until <= opened_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "lifecycle_instances",
+      "table": "lifecycle_instances",
+      "sql": "CREATE TABLE lifecycle_instances (\n  lifecycle_instance_id TEXT PRIMARY KEY,\n  source_event_id        TEXT NOT NULL UNIQUE REFERENCES source_events(source_event_id),\n  family                 TEXT NOT NULL,\n  scope                  TEXT NOT NULL,\n  person_id              TEXT NOT NULL,\n  appointment_id         TEXT NOT NULL,\n  definition_version     INTEGER NOT NULL,\n  runtime_version        TEXT NOT NULL,\n  state                  TEXT NOT NULL CHECK (state IN ('active', 'superseded', 'cancelled', 'completed', 'exception')),\n  retention_until        INTEGER NOT NULL,\n  created_at             INTEGER NOT NULL,\n  updated_at             INTEGER NOT NULL,\n  CHECK (retention_until <= created_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "lifecycle_obligations",
+      "table": "lifecycle_obligations",
+      "sql": "CREATE TABLE lifecycle_obligations (\n  obligation_id          TEXT PRIMARY KEY,\n  lifecycle_instance_id  TEXT NOT NULL REFERENCES lifecycle_instances(lifecycle_instance_id),\n  obligation_key         TEXT NOT NULL,\n  kind                   TEXT NOT NULL,\n  family                 TEXT NOT NULL,\n  deadline_at            INTEGER NOT NULL,\n  owner_role             TEXT NOT NULL,\n  closer                 TEXT NOT NULL,\n  state                  TEXT NOT NULL CHECK (state IN ('pending', 'leased', 'satisfied', 'skipped', 'cancelled', 'overdue_exception')),\n  lease_owner            TEXT,\n  lease_acquired_at      INTEGER,\n  lease_expires_at       INTEGER,\n  retention_until        INTEGER NOT NULL,\n  created_at             INTEGER NOT NULL,\n  updated_at             INTEGER NOT NULL,\n  UNIQUE (lifecycle_instance_id, obligation_key),\n  CHECK ((state = 'leased' AND lease_owner IS NOT NULL AND lease_acquired_at IS NOT NULL AND lease_expires_at IS NOT NULL)\n      OR (state <> 'leased')),\n  CHECK (retention_until <= created_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "obligation_lease_events",
+      "table": "obligation_lease_events",
+      "sql": "CREATE TABLE obligation_lease_events (\n  lease_event_id       TEXT PRIMARY KEY,\n  obligation_id       TEXT NOT NULL REFERENCES lifecycle_obligations(obligation_id),\n  event_type           TEXT NOT NULL CHECK (event_type IN ('acquired', 'taken_over')),\n  previous_owner       TEXT,\n  new_owner            TEXT NOT NULL,\n  lease_acquired_at    INTEGER NOT NULL,\n  lease_expires_at     INTEGER NOT NULL,\n  retention_until      INTEGER NOT NULL,\n  CHECK (retention_until <= lease_acquired_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "provider_receipts",
+      "table": "provider_receipts",
+      "sql": "CREATE TABLE provider_receipts (\n  provider_receipt_id    TEXT PRIMARY KEY,\n  command_attempt_id     TEXT NOT NULL REFERENCES command_attempts(command_attempt_id),\n  provider               TEXT NOT NULL,\n  provider_reference     TEXT NOT NULL,\n  proof_level            TEXT NOT NULL CHECK (proof_level IN ('accepted', 'delivered', 'failed', 'bounced', 'unknown')),\n  evidence_sha256        TEXT NOT NULL,\n  observed_at            INTEGER NOT NULL,\n  retention_until        INTEGER NOT NULL,\n  created_at             INTEGER NOT NULL,\n  UNIQUE (provider, provider_reference, proof_level, evidence_sha256),\n  CHECK (retention_until <= created_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "reconciliation_runs",
+      "table": "reconciliation_runs",
+      "sql": "CREATE TABLE reconciliation_runs (\n  reconciliation_run_id TEXT PRIMARY KEY,\n  family                 TEXT NOT NULL,\n  authority              TEXT NOT NULL,\n  source_version         TEXT NOT NULL,\n  runtime_version        TEXT NOT NULL,\n  started_at             INTEGER NOT NULL,\n  completed_at           INTEGER,\n  expected_start         INTEGER NOT NULL,\n  expected_end           INTEGER NOT NULL,\n  coverage_start         INTEGER NOT NULL,\n  coverage_end           INTEGER NOT NULL,\n  pagination_complete    INTEGER NOT NULL DEFAULT 0 CHECK (pagination_complete IN (0, 1)),\n  state                  TEXT NOT NULL CHECK (state IN ('running', 'complete', 'degraded', 'failed')),\n  detail_json            TEXT,\n  retention_until        INTEGER NOT NULL,\n  CHECK (retention_until <= started_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "reliability_schema_contracts",
+      "table": "reliability_schema_contracts",
+      "sql": "CREATE TABLE reliability_schema_contracts (\n  version INTEGER PRIMARY KEY CHECK (version > 0),\n  migration_id TEXT NOT NULL UNIQUE,\n  canonicalization TEXT NOT NULL CHECK (canonicalization = 'sqlite-master-required-closure.v1'),\n  structure_sha256 TEXT NOT NULL CHECK (length(structure_sha256) = 64 AND structure_sha256 NOT GLOB '*[^0-9a-f]*'),\n  expected_objects_json TEXT NOT NULL CHECK (json_valid(expected_objects_json)),\n  applied_at INTEGER NOT NULL\n)"
+    },
+    {
+      "type": "table",
+      "name": "reliability_schema_versions",
+      "table": "reliability_schema_versions",
+      "sql": "CREATE TABLE reliability_schema_versions (\n  version      INTEGER PRIMARY KEY,\n  applied_at   INTEGER NOT NULL,\n  migration_id TEXT NOT NULL,\n  description  TEXT NOT NULL\n)"
+    },
+    {
+      "type": "table",
+      "name": "reminder_enrollments",
+      "table": "reminder_enrollments",
+      "sql": "CREATE TABLE reminder_enrollments (\n  enrollment_id  TEXT PRIMARY KEY,\n  flow_key       TEXT NOT NULL,\n  appointment_id TEXT NOT NULL,\n  contact_id     TEXT NOT NULL,\n  calendar_id    TEXT,\n  start_at       TEXT,\n  start_ms       INTEGER,\n  enrolled_at    INTEGER NOT NULL,\n  status         TEXT NOT NULL DEFAULT 'active'   -- active | cancelled | done\n, definition_version INTEGER)"
+    },
+    {
+      "type": "table",
+      "name": "reminder_steps",
+      "table": "reminder_steps",
+      "sql": "CREATE TABLE reminder_steps (\n  enrollment_id TEXT NOT NULL,\n  step_index    INTEGER NOT NULL,\n  at            TEXT,\n  type          TEXT,\n  template      TEXT,\n  due_at        INTEGER NOT NULL,\n  status        TEXT NOT NULL DEFAULT 'pending', -- pending | sent | would_send | failed | skipped | cancelled\n  PRIMARY KEY (enrollment_id, step_index)\n)"
+    },
+    {
+      "type": "table",
+      "name": "source_event_runtime_provenance",
+      "table": "source_event_runtime_provenance",
+      "sql": "CREATE TABLE source_event_runtime_provenance (\n  source_event_id TEXT PRIMARY KEY REFERENCES source_events(source_event_id),\n  lifecycle_instance_id TEXT NOT NULL UNIQUE REFERENCES lifecycle_instances(lifecycle_instance_id),\n  invocation_id TEXT NOT NULL UNIQUE,\n  deployment_attestation_id TEXT NOT NULL REFERENCES automation_deployment_attestations(deployment_attestation_id),\n  cloudflare_version_id TEXT NOT NULL,\n  workflow_document_sha256_at_bind TEXT NOT NULL CHECK (length(workflow_document_sha256_at_bind) = 64 AND workflow_document_sha256_at_bind NOT GLOB '*[^0-9a-f]*'),\n  schema_structure_sha256_at_bind TEXT NOT NULL CHECK (length(schema_structure_sha256_at_bind) = 64 AND schema_structure_sha256_at_bind NOT GLOB '*[^0-9a-f]*'),\n  follow_up_delivery_release_at_bind TEXT NOT NULL CHECK (follow_up_delivery_release_at_bind = 'approved'),\n  follow_up_assigned_user_delivery_at_bind TEXT NOT NULL CHECK (follow_up_assigned_user_delivery_at_bind = 'approved'),\n  bound_at INTEGER NOT NULL,\n  retention_until INTEGER NOT NULL CHECK (retention_until >= bound_at)\n)"
+    },
+    {
+      "type": "table",
+      "name": "source_event_transitions",
+      "table": "source_event_transitions",
+      "sql": "CREATE TABLE source_event_transitions (\n  source_transition_id TEXT PRIMARY KEY,\n  source_event_id      TEXT NOT NULL REFERENCES source_events(source_event_id),\n  sequence             INTEGER NOT NULL,\n  transition           TEXT NOT NULL CHECK (transition IN ('received', 'authenticated', 'normalized', 'accepted', 'rejected', 'deduplicated', 'dispatched')),\n  occurred_at          INTEGER NOT NULL,\n  detail_json          TEXT,\n  retention_until      INTEGER NOT NULL,\n  UNIQUE (source_event_id, sequence),\n  CHECK (sequence > 0),\n  CHECK (retention_until <= occurred_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "source_events",
+      "table": "source_events",
+      "sql": "CREATE TABLE source_events (\n  source_event_id       TEXT PRIMARY KEY,\n  provider              TEXT NOT NULL,\n  family                TEXT NOT NULL,\n  provider_event_id     TEXT,\n  identity_version      INTEGER NOT NULL,\n  identity_key          TEXT NOT NULL UNIQUE,\n  payload_sha256        TEXT NOT NULL,\n  payload_reference     TEXT,\n  raw_retention_until   INTEGER,\n  normalized_retention_until INTEGER NOT NULL,\n  occurred_at           INTEGER NOT NULL,\n  received_at           INTEGER NOT NULL,\n  authentication_result TEXT NOT NULL CHECK (authentication_result IN ('authenticated', 'rejected')),\n  normalization_state   TEXT NOT NULL CHECK (normalization_state IN ('normalized', 'rejected', 'ambiguous')),\n  normalized_json       TEXT,\n  rejection_reason      TEXT,\n  state                 TEXT NOT NULL CHECK (state IN ('accepted', 'rejected')),\n  source_version        TEXT NOT NULL,\n  runtime_version       TEXT NOT NULL,\n  accepted_at           INTEGER,\n  created_at            INTEGER NOT NULL,\n  CHECK ((state = 'accepted' AND authentication_result = 'authenticated' AND normalization_state = 'normalized' AND accepted_at IS NOT NULL)\n      OR (state = 'rejected' AND rejection_reason IS NOT NULL)),\n  CHECK (raw_retention_until IS NULL OR raw_retention_until <= received_at + 2592000000),\n  CHECK (normalized_retention_until <= received_at + 34560000000)\n)"
+    },
+    {
+      "type": "table",
+      "name": "workflow_versions",
+      "table": "workflow_versions",
+      "sql": "CREATE TABLE workflow_versions (\n  workflow_id  TEXT NOT NULL,\n  version      INTEGER NOT NULL,\n  state        TEXT NOT NULL CHECK (state IN ('draft', 'published', 'retired')),\n  document     TEXT NOT NULL,\n  created_at   INTEGER NOT NULL,\n  published_at INTEGER,\n  PRIMARY KEY (workflow_id, version)\n)"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_deployment_attestations_consistent_insert",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE TRIGGER automation_deployment_attestations_consistent_insert\nBEFORE INSERT ON automation_deployment_attestations\nWHEN NOT EXISTS (\n  SELECT 1 FROM automation_release_manifests manifest\n  JOIN reliability_schema_contracts schema_contract ON schema_contract.version = manifest.schema_version\n  WHERE manifest.release_manifest_id = NEW.release_manifest_id\n    AND manifest.release_manifest_digest = NEW.release_manifest_digest\n    AND manifest.source_revision = NEW.source_revision\n    AND manifest.source_tree = NEW.source_tree\n    AND manifest.worker_version = NEW.worker_version\n    AND manifest.runtime_version = NEW.runtime_version\n    AND manifest.bundle_sha256 = NEW.bundle_sha256\n    AND manifest.modules_digest = NEW.modules_digest\n    AND manifest.expected_bindings_digest = NEW.observed_bindings_digest\n    AND manifest.schema_database_id = NEW.schema_database_id\n    AND manifest.schema_migration_id = NEW.schema_migration_id\n    AND manifest.schema_version = NEW.schema_version\n    AND manifest.schema_source_sha256 = NEW.schema_source_sha256\n    AND manifest.schema_structure_sha256 = NEW.schema_structure_sha256\n    AND schema_contract.migration_id = NEW.schema_migration_id\n    AND schema_contract.structure_sha256 = NEW.schema_structure_sha256\n    AND manifest.workflow_id = NEW.workflow_id\n    AND manifest.workflow_version = NEW.workflow_version\n    AND manifest.workflow_document_sha256 = NEW.workflow_document_sha256\n    AND manifest.follow_up_delivery_release = NEW.follow_up_delivery_release\n    AND manifest.follow_up_assigned_user_delivery = NEW.follow_up_assigned_user_delivery\n) BEGIN\n  SELECT RAISE(ABORT, 'deployment attestation does not match release or schema authority');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_deployment_attestations_no_delete",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE TRIGGER automation_deployment_attestations_no_delete\nBEFORE DELETE ON automation_deployment_attestations\nWHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN\n  SELECT RAISE(ABORT, 'automation_deployment_attestations retained until retention_until');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_deployment_attestations_no_overlap_conflict",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE TRIGGER automation_deployment_attestations_no_overlap_conflict\nBEFORE INSERT ON automation_deployment_attestations\nWHEN EXISTS (\n  SELECT 1 FROM automation_deployment_attestations existing\n  WHERE existing.platform = NEW.platform\n    AND existing.service = NEW.service\n    AND existing.environment = NEW.environment\n    AND existing.deployment_id = NEW.deployment_id\n    AND existing.observed_at < NEW.expires_at\n    AND NEW.observed_at < existing.expires_at\n    AND (\n      existing.version_id <> NEW.version_id\n      OR (\n        existing.version_id = NEW.version_id\n        AND existing.source_revision = NEW.source_revision\n        AND existing.source_tree = NEW.source_tree\n        AND existing.worker_version = NEW.worker_version\n        AND existing.runtime_version = NEW.runtime_version\n        AND existing.bundle_sha256 = NEW.bundle_sha256\n        AND existing.modules_digest = NEW.modules_digest\n        AND existing.observed_bindings_digest = NEW.observed_bindings_digest\n        AND existing.build_evidence_sha256 = NEW.build_evidence_sha256\n        AND (\n          existing.release_manifest_digest <> NEW.release_manifest_digest\n          OR existing.schema_database_id <> NEW.schema_database_id\n          OR existing.schema_migration_id <> NEW.schema_migration_id\n          OR existing.schema_version <> NEW.schema_version\n          OR existing.schema_source_sha256 <> NEW.schema_source_sha256\n          OR existing.schema_structure_sha256 <> NEW.schema_structure_sha256\n          OR existing.workflow_id <> NEW.workflow_id\n          OR existing.workflow_version <> NEW.workflow_version\n          OR existing.workflow_document_sha256 <> NEW.workflow_document_sha256\n          OR existing.follow_up_delivery_release <> NEW.follow_up_delivery_release\n          OR existing.follow_up_assigned_user_delivery <> NEW.follow_up_assigned_user_delivery\n        )\n      )\n    )\n) BEGIN\n  SELECT RAISE(ABORT, 'conflicting authority for overlapping deployment attestation');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_deployment_attestations_no_update",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE TRIGGER automation_deployment_attestations_no_update\nBEFORE UPDATE ON automation_deployment_attestations BEGIN SELECT RAISE(ABORT, 'automation_deployment_attestations is immutable'); END"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_deployment_attestations_no_version_identity_conflict",
+      "table": "automation_deployment_attestations",
+      "sql": "CREATE TRIGGER automation_deployment_attestations_no_version_identity_conflict\nBEFORE INSERT ON automation_deployment_attestations\nWHEN EXISTS (\n  SELECT 1 FROM automation_deployment_attestations existing\n  WHERE existing.platform = NEW.platform\n    AND existing.service = NEW.service\n    AND existing.environment = NEW.environment\n    AND existing.version_id = NEW.version_id\n    AND (\n      existing.source_revision <> NEW.source_revision\n      OR existing.source_tree <> NEW.source_tree\n      OR existing.worker_version <> NEW.worker_version\n      OR existing.runtime_version <> NEW.runtime_version\n      OR existing.bundle_sha256 <> NEW.bundle_sha256\n      OR existing.modules_digest <> NEW.modules_digest\n      OR existing.observed_bindings_digest <> NEW.observed_bindings_digest\n      OR existing.build_evidence_sha256 <> NEW.build_evidence_sha256\n    )\n) BEGIN\n  SELECT RAISE(ABORT, 'conflicting immutable Cloudflare version identity');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_events_no_delete",
+      "table": "automation_events",
+      "sql": "CREATE TRIGGER automation_events_no_delete\nBEFORE DELETE ON automation_events\nBEGIN\n  SELECT RAISE(ABORT, 'automation_events is append-only');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_events_no_update",
+      "table": "automation_events",
+      "sql": "CREATE TRIGGER automation_events_no_update\nBEFORE UPDATE ON automation_events\nBEGIN\n  SELECT RAISE(ABORT, 'automation_events is append-only');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_release_manifests_no_delete",
+      "table": "automation_release_manifests",
+      "sql": "CREATE TRIGGER automation_release_manifests_no_delete\nBEFORE DELETE ON automation_release_manifests\nWHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN\n  SELECT RAISE(ABORT, 'automation_release_manifests retained until retention_until');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "automation_release_manifests_no_update",
+      "table": "automation_release_manifests",
+      "sql": "CREATE TRIGGER automation_release_manifests_no_update\nBEFORE UPDATE ON automation_release_manifests BEGIN SELECT RAISE(ABORT, 'automation_release_manifests is immutable'); END"
+    },
+    {
+      "type": "trigger",
+      "name": "evidence_access_no_delete",
+      "table": "evidence_access_events",
+      "sql": "CREATE TRIGGER evidence_access_no_delete\nBEFORE DELETE ON evidence_access_events\nWHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN\n  SELECT RAISE(ABORT, 'evidence_access_events retained until retention_until');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "evidence_access_no_update",
+      "table": "evidence_access_events",
+      "sql": "CREATE TRIGGER evidence_access_no_update\nBEFORE UPDATE ON evidence_access_events BEGIN\n  SELECT RAISE(ABORT, 'evidence_access_events is append-only');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "exception_events_no_delete",
+      "table": "exception_events",
+      "sql": "CREATE TRIGGER exception_events_no_delete\nBEFORE DELETE ON exception_events\nWHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN\n  SELECT RAISE(ABORT, 'exception_events is append-only');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "exception_events_no_update",
+      "table": "exception_events",
+      "sql": "CREATE TRIGGER exception_events_no_update\nBEFORE UPDATE ON exception_events BEGIN\n  SELECT RAISE(ABORT, 'exception_events is append-only');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "lease_events_no_delete",
+      "table": "obligation_lease_events",
+      "sql": "CREATE TRIGGER lease_events_no_delete\nBEFORE DELETE ON obligation_lease_events\nWHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN\n  SELECT RAISE(ABORT, 'obligation_lease_events retained until retention_until');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "lease_events_no_update",
+      "table": "obligation_lease_events",
+      "sql": "CREATE TRIGGER lease_events_no_update\nBEFORE UPDATE ON obligation_lease_events BEGIN\n  SELECT RAISE(ABORT, 'obligation_lease_events is append-only');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "reliability_schema_contracts_no_delete",
+      "table": "reliability_schema_contracts",
+      "sql": "CREATE TRIGGER reliability_schema_contracts_no_delete\nBEFORE DELETE ON reliability_schema_contracts BEGIN SELECT RAISE(ABORT, 'reliability_schema_contracts is immutable'); END"
+    },
+    {
+      "type": "trigger",
+      "name": "reliability_schema_contracts_no_update",
+      "table": "reliability_schema_contracts",
+      "sql": "CREATE TRIGGER reliability_schema_contracts_no_update\nBEFORE UPDATE ON reliability_schema_contracts BEGIN SELECT RAISE(ABORT, 'reliability_schema_contracts is immutable'); END"
+    },
+    {
+      "type": "trigger",
+      "name": "source_event_runtime_provenance_consistent_insert",
+      "table": "source_event_runtime_provenance",
+      "sql": "CREATE TRIGGER source_event_runtime_provenance_consistent_insert\nBEFORE INSERT ON source_event_runtime_provenance\nWHEN NOT EXISTS (\n  SELECT 1\n  FROM source_events source\n  JOIN lifecycle_instances lifecycle ON lifecycle.source_event_id = source.source_event_id\n  JOIN automation_deployment_attestations attestation ON attestation.deployment_attestation_id = NEW.deployment_attestation_id\n  JOIN automation_release_manifests manifest ON manifest.release_manifest_id = attestation.release_manifest_id\n  WHERE source.source_event_id = NEW.source_event_id\n    AND source.state = 'accepted'\n    AND source.family = manifest.family\n    AND lifecycle.lifecycle_instance_id = NEW.lifecycle_instance_id\n    AND lifecycle.family = manifest.family\n    AND source.runtime_version = lifecycle.runtime_version\n    AND source.runtime_version = manifest.runtime_version\n    AND lifecycle.definition_version = manifest.workflow_version\n    AND EXISTS (\n      SELECT 1 FROM lifecycle_obligations obligation\n      WHERE obligation.lifecycle_instance_id = lifecycle.lifecycle_instance_id\n    )\n    AND attestation.version_id = NEW.cloudflare_version_id\n    AND manifest.workflow_document_sha256 = NEW.workflow_document_sha256_at_bind\n    AND manifest.schema_structure_sha256 = NEW.schema_structure_sha256_at_bind\n    AND manifest.follow_up_delivery_release = NEW.follow_up_delivery_release_at_bind\n    AND manifest.follow_up_assigned_user_delivery = NEW.follow_up_assigned_user_delivery_at_bind\n    AND NEW.bound_at >= source.accepted_at\n    AND NEW.bound_at >= attestation.attested_at\n    AND NEW.bound_at < attestation.expires_at\n    AND NEW.retention_until = MIN(\n      source.normalized_retention_until,\n      lifecycle.retention_until,\n      attestation.retention_until,\n      manifest.retention_until\n    )\n) BEGIN\n  SELECT RAISE(ABORT, 'source runtime provenance cross-links inconsistent or stale authorities');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "source_event_runtime_provenance_no_delete",
+      "table": "source_event_runtime_provenance",
+      "sql": "CREATE TRIGGER source_event_runtime_provenance_no_delete\nBEFORE DELETE ON source_event_runtime_provenance\nWHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN\n  SELECT RAISE(ABORT, 'source_event_runtime_provenance retained until retention_until');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "source_event_runtime_provenance_no_update",
+      "table": "source_event_runtime_provenance",
+      "sql": "CREATE TRIGGER source_event_runtime_provenance_no_update\nBEFORE UPDATE ON source_event_runtime_provenance BEGIN SELECT RAISE(ABORT, 'source_event_runtime_provenance is immutable'); END"
+    },
+    {
+      "type": "trigger",
+      "name": "source_events_no_delete",
+      "table": "source_events",
+      "sql": "CREATE TRIGGER source_events_no_delete\nBEFORE DELETE ON source_events\nWHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.normalized_retention_until BEGIN\n  SELECT RAISE(ABORT, 'source_events is immutable');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "source_events_no_update",
+      "table": "source_events",
+      "sql": "CREATE TRIGGER source_events_no_update\nBEFORE UPDATE ON source_events BEGIN\n  SELECT RAISE(ABORT, 'source_events is immutable');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "source_transitions_no_delete",
+      "table": "source_event_transitions",
+      "sql": "CREATE TRIGGER source_transitions_no_delete\nBEFORE DELETE ON source_event_transitions\nWHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN\n  SELECT RAISE(ABORT, 'source_event_transitions retained until retention_until');\nEND"
+    },
+    {
+      "type": "trigger",
+      "name": "source_transitions_no_update",
+      "table": "source_event_transitions",
+      "sql": "CREATE TRIGGER source_transitions_no_update\nBEFORE UPDATE ON source_event_transitions BEGIN\n  SELECT RAISE(ABORT, 'source_event_transitions is append-only');\nEND"
+    }
+  ]
+}

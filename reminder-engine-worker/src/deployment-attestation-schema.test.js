@@ -40,8 +40,13 @@ const productionV1FixtureSource = readFileSync(new URL(
   import.meta.url,
 ), "utf8");
 const productionV1Fixture = JSON.parse(productionV1FixtureSource);
-const productionV2CandidateFixture = JSON.parse(readFileSync(new URL(
+const productionV2CandidateFixtureSource = readFileSync(new URL(
   "../../docs/automation-truth/fixtures/reliability-v2-production-lineage-candidate.v1.json",
+  import.meta.url,
+), "utf8");
+const productionV2CandidateFixture = JSON.parse(productionV2CandidateFixtureSource);
+const productionV2ObservedFixture = JSON.parse(readFileSync(new URL(
+  "../../docs/automation-truth/fixtures/reliability-v2-production-lineage-observed-primary.v1.json",
   import.meta.url,
 ), "utf8"));
 const MIGRATION_ID = RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.migrationId;
@@ -528,6 +533,84 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
     });
   });
 
+  it("pins the exact observed primary Phase-A projection while keeping Staff fail-closed", async () => {
+    expect(productionV2ObservedFixture).toMatchObject({
+      status: "observed-primary-physical-install-not-promoted",
+      authority: false,
+      remoteObserved: true,
+      promotionAuthorized: false,
+      physicalVariantId: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.variantId,
+      candidateMigrationId: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId,
+      finalMigrationId: null,
+      objectCount: 69,
+      additiveObjectCount: 20,
+      structureSha256: PROSPECTIVE_LIVE_V2_DIGEST,
+      schemaContractRowCount: 0,
+      transientGatePresent: false,
+      priorTableCountsUnchanged: true,
+      readEvidence: {
+        capturedAtUtc: "2026-08-27T02:39:38Z",
+        databaseId: "089d810a-9d2d-43a4-8f1d-dc3620835557",
+        servedBy: "v3-prod",
+        servedByPrimary: true,
+        rowsWritten: 0,
+        changedDb: false,
+      },
+      migrationEvidence: {
+        websiteMain: "6076a6feea38b1fc61638d84166ceff1d42202f8",
+        installSha256: "ba649a4ccb533583d111450c842f9ea5e5e4d223e401a9be7f691c3b306f43a1",
+        recoveryBookmark: "000024cc-00000000-000050d4-2f6dbfafd655c4f7aa2d365265c99d80",
+        finalBookmark: "000024cc-0000000e-000050d4-37d5ac8f2e9cfdadff33c21853674cc0",
+      },
+    });
+    expect(productionV2ObservedFixture.marker).toEqual(productionV1Fixture.marker);
+    expect(productionV2ObservedFixture.newTableCounts).toEqual({
+      automation_deployment_attestations: 0,
+      automation_release_manifests: 0,
+      reliability_schema_contracts: 0,
+      source_event_runtime_provenance: 0,
+    });
+    expect(createHash("sha256").update(productionV2CandidateFixtureSource).digest("hex"))
+      .toBe(productionV2ObservedFixture.sourceCandidateFixtureSha256);
+    expect(productionV2ObservedFixture.projection).toEqual(productionV2CandidateFixture.projection);
+    expect(productionV2ObservedFixture.expectedObjects).toEqual(productionV2CandidateFixture.expectedObjects);
+    expect(productionV2ObservedFixture.additiveObjects).toEqual(productionV2CandidateFixture.additiveObjects);
+    expect(createHash("sha256").update(JSON.stringify(productionV2ObservedFixture.projection)).digest("hex"))
+      .toBe(PROSPECTIVE_LIVE_V2_DIGEST);
+    expect(productionV2ObservedFixture.structureSha256)
+      .not.toBe(RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.structureSha256);
+
+    const observedRows = productionV2ObservedFixture.projection.map((row) => ({
+      type: row.type, name: row.name, tbl_name: row.table, sql: row.sql,
+    }));
+    await expect(assessReliabilityStructure(
+      observedRows, RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    )).resolves.toMatchObject({ proven: true, digest: PROSPECTIVE_LIVE_V2_DIGEST });
+
+    const db = productionV1Database();
+    installLiveLineageCandidate(db);
+    expect(reliabilityStructureProjection(
+      sqliteMasterRows(db), RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    )).toEqual(productionV2ObservedFixture.projection);
+    const nowMs = Date.now();
+    insertFreshCoverage(db, nowMs);
+    const d1 = d1FromSqlite(db);
+    await expect(readReliabilitySchemaAuthority(d1)).resolves.toMatchObject({
+      proven: false,
+      reason: "schema_v2_physical_install_awaiting_promotion",
+      version: 1,
+      migrationState: "installed_awaiting_promotion",
+    });
+    await expect(readReliabilityHealth(d1, {
+      family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
+    })).resolves.toMatchObject({
+      truth: "Degraded",
+      reason: "schema_unproven",
+      schemaReason: "schema_v2_physical_install_awaiting_promotion",
+      schemaVersion: 1,
+    });
+  });
+
   it("rolls Phase A back only from an exact empty candidate and preserves v1 rows", async () => {
     const db = productionV1Database();
     insertAcceptedLifecycle(db, { sourceId: "source-rollback", lifecycleId: "lifecycle-rollback" });
@@ -915,7 +998,7 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
       && !path.endsWith("reliability-deployment-attestation-store.js"));
     for (const path of productionFiles) {
       const source = readFileSync(path, "utf8");
-      expect(source, path).not.toMatch(/automation-truth-phase-d|reliability-deployment-attestation-store|reliability-spine-v2(?:-promote)?\.local\.sql|reliability-spine-v2-production-lineage-(?:install|rollback)\.local\.sql|reliability-spine-v2-production-lineage-promote\.template\.sql/);
+      expect(source, path).not.toMatch(/automation-truth-phase-d|reliability-deployment-attestation-store|reliability-v2-production-lineage-observed-primary|reliability-spine-v2(?:-promote)?\.local\.sql|reliability-spine-v2-production-lineage-(?:install|rollback)\.local\.sql|reliability-spine-v2-production-lineage-promote\.template\.sql/);
     }
     expect(readFileSync(new URL("../../functions/lib/reliability-store.js", import.meta.url), "utf8"))
       .toMatch(/from "\.\/reliability-schema-authority\.js"/);
