@@ -1,4 +1,4 @@
-import { createMediaFolder, listStaffMedia, mediaObjectKey, normalizeMediaName, registerMediaAsset } from "./staff-media.js";
+import { createMediaFolder, listStaffMedia, mediaObjectKey, normalizeMediaName, registerMediaAsset, updateMediaAsset } from "./staff-media.js";
 
 // This is deliberately an allowlist, not a filesystem or URL crawler. It mirrors
 // the image files presently referenced by the public site, so Staff can keep a
@@ -19,7 +19,7 @@ const RAW_SITE_ASSETS = [
   ["Site photography", "/images/foam-roller-v3.webp"], ["Site photography", "/images/gregg-testimonial.jpg"], ["Site photography", "/images/gymnastic-rings.webp"],
   ["Site photography", "/images/kate-testimonial.avif"], ["Site photography", "/images/nina-testimonial.jpg"], ["Site photography", "/images/pull-up-bar.webp"],
   ["Site photography", "/images/samantha-testimonial.avif"], ["Site photography", "/images/terri-testimonial.jpg"], ["Site photography", "/images/tyler-testimonial.jpg"], ["Site photography", "/images/yoga-block.webp"],
-  ["Current site photography", "/images/photos/amari-method-active-bridge-ocean-swimmer.png"], ["Current site photography", "/images/photos/amari-method-concept-explanation-athletic-client.png"], ["Current site photography", "/images/photos/amari-method-elbow-reset-athletic-ceo.png"], ["Current site photography", "/images/photos/amari-method-guided-forearm-position-athletic-client.png"],
+  ["Current site photography", "/images/photos/amari-method-active-bridge-ocean-swimmer.png"], ["Current site photography", "/images/photos/amari-method-passive-bridge-south-asian-client.png"], ["Current site photography", "/images/photos/amari-method-concept-explanation-athletic-client.png"], ["Current site photography", "/images/photos/amari-method-elbow-reset-athletic-ceo.png"], ["Current site photography", "/images/photos/amari-method-guided-forearm-position-athletic-client.png"],
   ["Current site photography", "/images/photos/amari-method-guided-hand-position-athletic-client.png"], ["Current site photography", "/images/photos/amari-method-guided-jaw-position-athletic-client.png"],
   ["Current site photography", "/images/photos/amari-method-power-posture-athletic-client.png"], ["Current site photography", "/images/photos/amari-method-sf-hillside-athletic-lifestyle.png"],
   ["Current site photography", "/images/photos/amari-method-shoulder-athletic-client.jpeg"], ["Current site photography", "/images/photos/amari-method-suspension-squat-athletic-client.png"],
@@ -54,6 +54,7 @@ const NOT_CURRENTLY_USED = new Set([
   "/images/AmariLogo.jpg", "/images/amari-icon.png", "/images/amari-method-logo-1200.png", "/images/amari-method-logo-1200x300.png", "/images/v6/logo-icon.png", "/images/v6/real/amari-icon.png", "/images/v6/real/amari-method-logo-1200x300.png", "/images/Dr-Garrett-Headshot-2.avif",
   "/images/photos/amari-method-active-bridge-ocean-swimmer.png", "/images/photos/amari-method-concept-explanation-athletic-client.png", "/images/photos/amari-method-guided-hand-position-athletic-client.png", "/images/photos/amari-method-sf-hillside-athletic-lifestyle.png", "/images/photos/amari-method-shoulder-athletic-client.jpeg", "/images/photos/amari-method-suspension-squat-athletic-client.png",
   "/images/photos/condition-base/neck.jpg", "/images/photos/detail-crops/hand-reaching-open.jpg", "/images/photos/jh-myofascial.jpg", "/images/photos/jh-psoas.jpg", "/images/photos/jh-stretching.jpg", "/images/photos/materials/hand-handrail-grip.jpg",
+  "/images/photos/partner-coach.jpg",
   "/images/v6/real/foam-roller-v2.jpg", "/images/v6/real/garrett-session-img-3348.jpg", "/images/v6/real/gymnastic-rings.jpg", "/images/v6/real/jaw-align.jpg",
 ]);
 
@@ -93,6 +94,8 @@ const MIME_BY_EXTENSION = {
 };
 const ROOT_FOLDER = "Amari site assets";
 const CHUNK_SIZE = 8;
+export const USED_ON_WEBSITE_FOLDER = "Used on website";
+export const NOT_USED_ON_WEBSITE_FOLDER = "Not used on website";
 const FOLDER_ALIASES = {
   Brand: ["Brand", "Current identity", "Historical logo files"],
   "Site photography": ["Site photography", "Current site photography", "Current photography"],
@@ -123,6 +126,30 @@ export function siteAssetTotal() {
 
 export function siteAssetCatalog() {
   return SITE_ASSETS;
+}
+
+// This is a one-time filing migration, not a recurring classification feature.
+// A media record exists in one folder only; no object is copied or deleted.
+export async function organizeMediaByWebsiteUsage({ db, actor }) {
+  if (!db) throw Object.assign(new Error("Media metadata storage is not configured"), { status: 422 });
+  const library = await listStaffMedia(db);
+  const activeFolders = library.folders.filter((folder) => folder.status === "active");
+  const usedFolder = await ensureFolder(db, activeFolders, USED_ON_WEBSITE_FOLDER, null, actor);
+  const notUsedFolder = await ensureFolder(db, activeFolders, NOT_USED_ON_WEBSITE_FOLDER, null, actor);
+  const usedNames = new Set(SITE_ASSETS
+    .filter((asset) => asset.websiteUsage === "currently_used")
+    .map((asset) => normalizeMediaName(displayName(asset.path))));
+  let movedUsed = 0;
+  let movedNotUsed = 0;
+  for (const asset of library.assets) {
+    if (asset.status !== "active" || asset.kind !== "image") continue;
+    const targetFolderId = usedNames.has(normalizeMediaName(asset.name)) ? usedFolder.id : notUsedFolder.id;
+    if (asset.folderId === targetFolderId) continue;
+    await updateMediaAsset(db, { action: "move_asset", assetId: asset.id, folderId: targetFolderId }, { actor });
+    if (targetFolderId === usedFolder.id) movedUsed += 1;
+    else movedNotUsed += 1;
+  }
+  return { movedUsed, movedNotUsed };
 }
 
 function defaultDescription(asset) {
