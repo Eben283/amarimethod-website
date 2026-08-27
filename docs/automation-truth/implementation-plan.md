@@ -1,6 +1,54 @@
 # Automation truth implementation plan
 
-## Phase A — this PR
+## Current program checkpoint — 2026-08-27
+
+The original Phase A/B plan below is historical sequencing, not a claim that
+the program is still at its first source PR. The compiler/provenance contracts,
+exact promoted-v2 schema authority, inert reconciliation and execution-linkage
+planners, and bounded current-inventory adapter are built. PRs #510, #517,
+#519 and #521 are merged. A separately approved primary production read
+verified the unchanged adapter against the exact required 69-object v2
+closure (`8c7245ae…`) with zero writes. This proves current-inventory read
+compatibility, not production evidence ingestion or completed reminders.
+
+The next source candidate is now built and locally reviewed: an unimported
+transactional effect-evidence store and explicitly unregistered/unapplied
+additive SQL. It binds an existing obligation to its exact prospective attempt,
+preserves observations and receipts append-only, and reads late evidence by
+database-assigned ingestion sequence. All 2,361 repository tests pass, including
+69 real-SQLite/D1-shaped candidate cases. It does not create a parallel execution
+engine, infer historical attempts, resend, close obligations, or lift Staff
+health. It has not been published, installed or adopted by a runtime.
+
+The remaining completion path is:
+
+1. Publish the reviewed source candidate only after explicit approval and verify
+   exact-head public CI/build. Local atomicity, replay, frozen-high-water paging,
+   retention failure and lineage tests are complete; production compatibility,
+   durable consumer checkpoints and inventory/carry/journal composition are not.
+2. Review the exact schema delta and compatibility/readback/recovery plan before
+   any separately approved production installation. This candidate does not
+   register a migration or alter the current schema-authority allowlist.
+3. Adopt authenticated acceptance and executor provenance, exact ingress-to-step
+   bindings, lease fencing, and prepared-before-effect behavior in the existing
+   sender through one separately approved behavior release. Preserve existing
+   customer queues; do not retrofit guessed identities onto historical sends.
+4. Prove independent source/provider coverage and late-receipt reconciliation,
+   then an ordinary authorized lifecycle and an operator resolution that proves
+   its underlying obligation outcome. An in-memory mechanics drill is not this
+   acceptance proof.
+5. Only a separately versioned, adopted and independently verified contract may
+   lift health authority. Reconciliation v1 remains permanently simulated,
+   non-authoritative, and never Known. Broader family migration follows its own
+   ownership and cutover gates.
+
+The detailed current contract and limitations are in
+[Follow-Up reconciliation](phase-e-follow-up-reconciliation.md). Source-only
+completion is not runtime activation, and a passing test is not a provider
+receipt. Production writes, publication, deployment, sender changes and
+customer actions retain their explicit approval boundaries.
+
+## Original Phase A — contract groundwork
 
 Documentation, JSON schemas, pure validators, tests, and a conspicuously fictional static spike.
 No production import, migration, flag, deployment, provider call, Staff endpoint, runtime behavior,
