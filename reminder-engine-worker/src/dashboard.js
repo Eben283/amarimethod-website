@@ -363,6 +363,10 @@ export const DASHBOARD_HTML = `<!doctype html>
     localStorage.setItem(LS, hash.get("k"));
     history.replaceState(null, "", location.pathname);
   }
+  var dashboardSession = hash.get("dashboard_session");
+  if (dashboardSession) history.replaceState(null, "", window.location.pathname + window.location.search);
+  var parentOrigin = new URLSearchParams(window.location.search).get("parent_origin");
+  var trustedParents = ["https://amarimethod.com", "https://www.amarimethod.com"];
   var gate = document.getElementById("gate"), app = document.getElementById("app");
 
   function fmt(ts) {
@@ -447,7 +451,9 @@ export const DASHBOARD_HTML = `<!doctype html>
   }
 
   function requestData(key) {
-    var options = key ? { headers: { Authorization: "Bearer " + key } } : {};
+    var headers = key ? { Authorization: "Bearer " + key } : {};
+    if (dashboardSession) headers["X-Amari-Automation-Dashboard-Session"] = dashboardSession;
+    var options = { headers: headers, credentials: "same-origin" };
     return fetch("/dashboard-data?hours=" + hours, options)
       .then(function (r) {
         if (r.status === 401 && key) {
@@ -455,6 +461,9 @@ export const DASHBOARD_HTML = `<!doctype html>
           return requestData("");
         }
         if (r.status === 401) {
+          if (dashboardSession && window.parent !== window && trustedParents.indexOf(parentOrigin) !== -1) {
+            window.parent.postMessage({ type: "amari:staff-automation-session-expired" }, parentOrigin);
+          }
           gate.hidden = false; app.hidden = true;
           return null;
         }

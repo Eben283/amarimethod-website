@@ -25,6 +25,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   useEffect(() => {
+    window.addEventListener('amari:staff-session-expired', logout);
+    return () => window.removeEventListener('amari:staff-session-expired', logout);
+  }, [logout]);
+
+  useEffect(() => {
     void fetch('/api/staff-session', { credentials: 'same-origin' })
       .then(response => response.ok)
       .then(isAuthenticated => setState({ isAuthenticated, isLoading: false }))

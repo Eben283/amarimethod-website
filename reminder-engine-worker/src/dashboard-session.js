@@ -1,4 +1,5 @@
 const COOKIE_NAME = "amari_automation_dashboard";
+const SESSION_HEADER = "X-Amari-Automation-Dashboard-Session";
 const SESSION_SECONDS = 8 * 60 * 60;
 const encoder = new TextEncoder();
 
@@ -32,20 +33,25 @@ async function signature(secret, expiresAt, actorSegment) {
   return base64url(new Uint8Array(signed));
 }
 
-export async function dashboardSessionCookie(env, actor, nowSeconds = Math.floor(Date.now() / 1000)) {
+export async function dashboardSessionToken(env, actor, nowSeconds = Math.floor(Date.now() / 1000)) {
   if (!env.WORKER_AUTH_SECRET) return null;
   const expiresAt = nowSeconds + SESSION_SECONDS;
   const safeActor = actorValue(actor);
   const actorSegment = safeActor ? base64url(encoder.encode(safeActor)) : "";
   const token = `${expiresAt}.${actorSegment}.${await signature(env.WORKER_AUTH_SECRET, expiresAt, actorSegment)}`;
-  return `${COOKIE_NAME}=${token}; Max-Age=${SESSION_SECONDS}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned`;
+  return token;
+}
+
+export async function dashboardSessionCookie(env, actor, nowSeconds = Math.floor(Date.now() / 1000)) {
+  const token = await dashboardSessionToken(env, actor, nowSeconds);
+  return token ? `${COOKIE_NAME}=${token}; Max-Age=${SESSION_SECONDS}; Path=/; HttpOnly; Secure; SameSite=None; Partitioned` : null;
 }
 
 export async function hasDashboardSession(request, env, nowSeconds = Math.floor(Date.now() / 1000)) {
   if (!env.WORKER_AUTH_SECRET) return false;
-  const [expiresRaw, actorSegment, suppliedSignature, ...extra] = (cookieValue(request) || "").split(".");
+  const supplied = cookieValue(request) || request.headers.get(SESSION_HEADER) || "";
+  const [expiresRaw, actorSegment, suppliedSignature, ...extra] = supplied.split(".");
   const expiresAt = Number(expiresRaw);
   if (extra.length || !Number.isSafeInteger(expiresAt) || expiresAt <= nowSeconds || !actorSegment || !suppliedSignature) return false;
   return suppliedSignature === await signature(env.WORKER_AUTH_SECRET, expiresAt, actorSegment);
 }
-
