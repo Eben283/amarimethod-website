@@ -1,4 +1,5 @@
 import { NavLink } from 'react-router-dom';
+import { Bell } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 interface PortalNavProps {
@@ -42,8 +43,9 @@ export default function PortalNav({ firstName, hasLivingPractice, onOpenSettings
         <div className="cp-account">
           {displayName && <span className="cp-account-name">{displayName}</span>}
           {onOpenSettings && (
-            <button type="button" className="cp-account-settings" onClick={onOpenSettings} aria-label="Settings" title="Settings">
-              <span aria-hidden="true">⚙</span>
+            <button type="button" className="cp-account-settings" onClick={onOpenSettings} aria-label="Reminder preferences" title="Reminder preferences">
+              <Bell size={17} strokeWidth={1.8} aria-hidden="true" />
+              <span>Reminders</span>
             </button>
           )}
           <button type="button" className="cp-account-out" onClick={logout}>Sign out</button>

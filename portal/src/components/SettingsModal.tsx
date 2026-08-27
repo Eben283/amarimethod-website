@@ -60,7 +60,7 @@ export default function SettingsModal({ current, onClose, onSaved }: Props) {
       <div className="cp-modal cp-modal-sm" role="dialog" aria-label="Reminder settings">
         <header className="cp-modal-head">
           <div>
-            <span className="cp-mono">Settings</span>
+            <span className="cp-mono">Reminders</span>
             <h2 className="cp-modal-title">Appointment reminders</h2>
           </div>
           <button type="button" className="cp-modal-close" aria-label="Close" onClick={onClose} disabled={!!saving}>✕</button>

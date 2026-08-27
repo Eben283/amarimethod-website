@@ -31,38 +31,24 @@ function practiceCopy(seriesType: string) {
   if (seriesType === '12-session') {
     return {
       title: <>The 6-Week Amari Practice</>,
-      subtitle: '12 in-person visits, with Living Practice included.',
-      shapeHeading: <>Six weeks, held with room to notice.</>,
-      completeHeading: <>Your six-week practice is complete.</>,
-      showHorizon: true,
-      horizon: [
-        { span: 'Weeks 1–2', strong: 'Begin', p: 'Make room to notice what is here.' },
-        { span: 'Weeks 3–4', strong: 'Deepen', p: 'Give repetition and attention more room.' },
-        { span: 'Weeks 5–6', strong: 'Carry forward', p: 'Notice what you want to bring into ordinary life.' },
-      ],
+      subtitle: '12 in-person visits over 6 weeks. Living Practice is included.',
+      shapeHeading: <>12 visits over 6 weeks.</>,
+      completeHeading: <>Your 12 visits are complete.</>,
     };
   }
   if (seriesType === '24-session') {
     return {
       title: <>The 12-Week Amari Practice</>,
-      subtitle: '24 in-person visits, with Living Practice included.',
-      shapeHeading: <>Twelve weeks, held with room to notice.</>,
-      completeHeading: <>Your twelve-week practice is complete.</>,
-      showHorizon: true,
-      horizon: [
-        { span: 'Weeks 1–4', strong: 'Begin', p: 'Make room to notice what is here.' },
-        { span: 'Weeks 5–8', strong: 'Deepen', p: 'Give repetition and attention more room.' },
-        { span: 'Weeks 9–12', strong: 'Carry forward', p: 'Notice what you want to bring into ordinary life.' },
-      ],
+      subtitle: '24 in-person visits over 12 weeks. Living Practice is included.',
+      shapeHeading: <>24 visits over 12 weeks.</>,
+      completeHeading: <>Your 24 visits are complete.</>,
     };
   }
   return {
     title: <>Your Amari visits</>,
     subtitle: 'Book and manage sessions here. Contact Amari when you want to talk about what comes next.',
-    shapeHeading: <>A calm place to continue.</>,
+    shapeHeading: <>Your visit balance.</>,
     completeHeading: <>No prepaid visits remaining.</>,
-    showHorizon: false,
-    horizon: [],
   };
 }
 
@@ -120,11 +106,11 @@ export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashb
 
         <section className="cp-practice-next" aria-labelledby="next-session-heading">
           <div className="cp-practice-next-title">
-            <span className="cp-mono">{isComplete ? 'Practice complete' : 'Your next session'}</span>
+            <span className="cp-mono">{isComplete ? 'Visits complete' : 'Your next session'}</span>
             {isComplete ? (
               <>
                 <h2 id="next-session-heading">{copy.completeHeading}</h2>
-                <p>Contact Amari when you would like to talk about what comes next.</p>
+                <p>Contact Amari to talk about continuing.</p>
               </>
             ) : nextSession ? (
               <>
@@ -162,7 +148,7 @@ export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashb
         <section className="cp-practice-shape" aria-labelledby="practice-shape-heading">
           <div className="cp-practice-shape-head">
             <div>
-              <span className="cp-mono">The shape of your practice</span>
+              <span className="cp-mono">Your visits</span>
               <h2 id="practice-shape-heading">{copy.shapeHeading}</h2>
             </div>
             {countIsReady ? (
@@ -171,17 +157,6 @@ export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashb
               <p className="cp-practice-balance">Your visit count is being refreshed.</p>
             )}
           </div>
-          {copy.showHorizon && (
-            <ol className="cp-practice-horizon">
-              {copy.horizon.map((item) => (
-                <li key={item.span}>
-                  <span>{item.span}</span>
-                  <strong>{item.strong}</strong>
-                  <p>{item.p}</p>
-                </li>
-              ))}
-            </ol>
-          )}
         </section>
 
         <section className="cp-practice-grid" aria-label="Practice resources">
@@ -189,7 +164,7 @@ export default function PracticeDashboardPage({ data, onRefetch }: PracticeDashb
             <article className="cp-practice-living">
               <span className="cp-mono">Between visits</span>
               <h2>Living Practice</h2>
-              <p>A quiet library to return to when useful.</p>
+              <p>Guided videos and practices to use between visits.</p>
               <Link to="/practice" className="cp-btn cp-btn-ghost">Open Living Practice <span className="cp-arrow">→</span></Link>
             </article>
           )}

@@ -47,7 +47,7 @@
 .cp-topnav-link.cp-current::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:var(--cp-ink)}
 .cp-account{display:flex;align-items:center;gap:14px;justify-self:end}
 .cp-account-name{font-size:14px;font-weight:500;color:var(--cp-ink);font-family:var(--cp-sans);letter-spacing:-0.015em}
-.cp-account-settings{display:grid;place-items:center;width:32px;height:32px;padding:0;color:var(--cp-ink-2);font-size:18px;line-height:1;opacity:.72;transition:color .2s,opacity .2s}
+.cp-account-settings{display:inline-flex;align-items:center;gap:6px;min-height:32px;padding:0;color:var(--cp-ink-2);font:13px var(--cp-sans);line-height:1;opacity:.72;transition:color .2s,opacity .2s}
 .cp-account-settings:hover{color:var(--cp-ink);opacity:1}
 .cp-account-out{font-size:13px;color:var(--cp-ink-2);padding:9px 15px;min-height:38px;border:1px solid var(--cp-line-2);background:transparent;font-family:var(--cp-sans);cursor:pointer;transition:color .2s,background .2s,border-color .2s}
 .cp-account-out:hover{color:var(--cp-ink);background:var(--cp-paper-2);border-color:var(--cp-ink-2)}
@@ -500,6 +500,7 @@
 @container cp (max-width: 480px){
   .cp-account{gap:8px}
   .cp-account-name{display:none}
+  .cp-account-settings span{display:none}
   .cp-hello{font-size:36px}
   .cp-rail-step{flex:0 0 70%;min-width:auto}
 }
