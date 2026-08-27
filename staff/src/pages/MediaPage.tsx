@@ -26,6 +26,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   getStaffMedia,
   importStaffSiteMedia,
+  syncStaffSiteMediaCatalog,
   updateStaffMedia,
   uploadStaffMedia,
   type StaffMediaAsset,
@@ -178,6 +179,7 @@ export default function MediaPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [classifying, setClassifying] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [folderDialog, setFolderDialog] = useState(false);
   const [error, setError] = useState('');
@@ -301,6 +303,20 @@ export default function MediaPage() {
     }
   }
 
+  async function classifyExistingImages() {
+    setClassifying(true);
+    setError('');
+    try {
+      const result = await syncStaffSiteMediaCatalog();
+      await load();
+      setNotice(`Image inventory synchronized: ${result.catalogMatched} catalog matches, ${result.defaulted} library-only images classified${result.ambiguous ? `, ${result.ambiguous} ambiguous matches left for review` : ''}. No originals changed.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The image inventory could not be synchronized.');
+    } finally {
+      setClassifying(false);
+    }
+  }
+
   function openAsset(asset: StaffMediaAsset) {
     setSearchParams({ asset: asset.id });
   }
@@ -311,8 +327,9 @@ export default function MediaPage() {
         <div><span>Owned asset library</span><h1>Media</h1><p>Shared images, videos, and PDFs for the Amari team.</p></div>
         <div className="staff-media-head__actions">
           <button type="button" onClick={() => setFolderDialog(true)}><FolderPlus /> New folder</button>
-          <button type="button" disabled={!uploadReady || uploading || importing} onClick={() => void importPublicSiteAssets()}>{importing ? <Loader2 className="is-spinning" /> : <Images />} {importing ? 'Importing…' : 'Import site assets'}</button>
-          <button type="button" className="is-primary" disabled={!uploadReady || uploading || importing} onClick={() => fileInput.current?.click()}>{uploading ? <Loader2 className="is-spinning" /> : <Upload />} {uploading ? 'Uploading…' : 'Upload files'}</button>
+          <button type="button" disabled={uploading || importing || classifying} onClick={() => void classifyExistingImages()}>{classifying ? <Loader2 className="is-spinning" /> : <Check />} {classifying ? 'Classifying…' : 'Classify library images'}</button>
+          <button type="button" disabled={!uploadReady || uploading || importing || classifying} onClick={() => void importPublicSiteAssets()}>{importing ? <Loader2 className="is-spinning" /> : <Images />} {importing ? 'Importing…' : 'Import site assets'}</button>
+          <button type="button" className="is-primary" disabled={!uploadReady || uploading || importing || classifying} onClick={() => fileInput.current?.click()}>{uploading ? <Loader2 className="is-spinning" /> : <Upload />} {uploading ? 'Uploading…' : 'Upload files'}</button>
           <input ref={fileInput} className="sr-only" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/quicktime,video/webm,application/pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => { if (event.target.files) void uploadFiles(event.target.files); }} />
         </div>
       </header>

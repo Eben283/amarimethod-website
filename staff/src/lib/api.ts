@@ -873,6 +873,18 @@ export async function importStaffSiteMedia(offset = 0): Promise<StaffSiteMediaIm
   return fetchApi('/staff-media', { method: 'POST', body: JSON.stringify({ action: 'import_site_assets', offset }) });
 }
 
+export interface StaffSiteMediaCatalogSync {
+  classified: number;
+  catalogMatched: number;
+  defaulted: number;
+  ambiguous: number;
+  skippedNonImage: number;
+}
+
+export async function syncStaffSiteMediaCatalog(): Promise<StaffSiteMediaCatalogSync> {
+  return fetchApi('/staff-media', { method: 'POST', body: JSON.stringify({ action: 'sync_site_catalog' }) });
+}
+
 export async function uploadStaffMedia(file: File, folderId: string | null): Promise<{ asset: StaffMediaAsset }> {
   const controller = new AbortController();
   const timeout = window.setTimeout(() => controller.abort(), 180_000);
