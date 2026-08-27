@@ -2,6 +2,12 @@ import { describe, expect, it, vi } from "vitest";
 import { clientDeskHtml } from "./client-desk.js";
 
 describe("Client Desk message rendering", () => {
+  it("tells the Staff shell when its embedded session has expired", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("amari:staff-desk-session-expired");
+    expect(html).toContain("if (response.status === 401) deskSessionExpired()");
+  });
+
   it("identifies the desk as the complete chronological communication surface", () => {
     const html = clientDeskHtml();
     expect(html).toContain("Every mirrored contact, ordered by most recent activity.");

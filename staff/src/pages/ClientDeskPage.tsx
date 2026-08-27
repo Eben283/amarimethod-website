@@ -1,41 +1,55 @@
 import { Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getCrmMirrorAccessUrl, sendFollowupText } from '../lib/api';
+import { ApiError, getCrmMirrorAccessUrl, sendFollowupText } from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 import { deskNavigationRoute } from '../lib/desk-navigation';
 
 export default function ClientDeskPage() {
   const navigate = useNavigate();
+  const { logout } = useAuth();
   const [searchParams] = useSearchParams();
   const requestedContact = searchParams.get('contact');
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const openDesk = useCallback(async () => {
+    setError(null);
+    setSrc(null);
+    try {
+      const { url } = await getCrmMirrorAccessUrl('client-desk');
+      const deskUrl = new URL(url);
+      deskUrl.searchParams.set('embed', '1');
+      deskUrl.searchParams.set('parent_origin', window.location.origin);
+      if (requestedContact && /^[A-Za-z0-9_-]{1,80}$/.test(requestedContact)) {
+        deskUrl.searchParams.set('contact', requestedContact);
+      }
+      setSrc(deskUrl.toString());
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        logout();
+        return;
+      }
+      setError(err instanceof Error ? err.message : 'Could not open Practice Member Desk');
+    }
+  }, [logout, requestedContact]);
+
   useEffect(() => {
-    let cancelled = false;
-    void getCrmMirrorAccessUrl('client-desk')
-      .then(({ url }) => {
-        if (cancelled) return;
-        const deskUrl = new URL(url);
-        deskUrl.searchParams.set('embed', '1');
-        deskUrl.searchParams.set('parent_origin', window.location.origin);
-        if (requestedContact && /^[A-Za-z0-9_-]{1,80}$/.test(requestedContact)) {
-          deskUrl.searchParams.set('contact', requestedContact);
-        }
-        setSrc(deskUrl.toString());
-      })
-      .catch((err) => {
-        if (!cancelled) setError(err instanceof Error ? err.message : 'Could not open Practice Member Desk');
-      });
-    return () => { cancelled = true; };
-  }, [requestedContact]);
+    void openDesk();
+  }, [openDesk]);
 
   useEffect(() => {
     if (!src) return;
     const deskOrigin = new URL(src).origin;
     const receiveDeskNavigation = (event: MessageEvent) => {
       if (event.origin !== deskOrigin) return;
+      if (event.data?.type === 'amari:staff-desk-session-expired') {
+        // If the Staff session is still good, mint a new embedded Desk session.
+        // If it is not, openDesk logs out and ProtectedRoute shows Staff login.
+        void openDesk();
+        return;
+      }
       if (event.data?.type === 'amari:staff-send-sms') {
         const { requestId, contactId, message } = event.data;
         if (typeof requestId !== 'string' || !/^[A-Za-z0-9_-]{1,100}$/.test(requestId)) return;
@@ -69,7 +83,7 @@ export default function ClientDeskPage() {
     };
     window.addEventListener('message', receiveDeskNavigation);
     return () => window.removeEventListener('message', receiveDeskNavigation);
-  }, [navigate, src]);
+  }, [navigate, openDesk, src]);
 
   return (
     <main className="client-desk-shell">

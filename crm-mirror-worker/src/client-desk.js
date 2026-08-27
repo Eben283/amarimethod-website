@@ -110,7 +110,9 @@ const CLIENT_DESK_HTML = `<!doctype html>
   const requestedExternalContact = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('contact');
   const dashboardSession = typeof window === 'undefined' ? null : new URLSearchParams(window.location.hash.slice(1)).get('dashboard_session');
   if (dashboardSession && typeof history !== 'undefined') history.replaceState(null, '', window.location.pathname + window.location.search);
-  function dashboardFetch(resource, options = {}) { const headers = new Headers(options.headers || {}); if (dashboardSession) headers.set('X-Amari-Dashboard-Session', dashboardSession); return fetch(resource, { ...options, headers, credentials: 'same-origin' }); }
+  const staffParentOrigin = new URLSearchParams(window.location.search).get('parent_origin');
+  function deskSessionExpired() { if (window.parent !== window && ['https://amarimethod.com', 'https://www.amarimethod.com'].includes(staffParentOrigin || '')) window.parent.postMessage({ type: 'amari:staff-desk-session-expired' }, staffParentOrigin); }
+  async function dashboardFetch(resource, options = {}) { const headers = new Headers(options.headers || {}); if (dashboardSession) headers.set('X-Amari-Dashboard-Session', dashboardSession); const response = await fetch(resource, { ...options, headers, credentials: 'same-origin' }); if (response.status === 401) deskSessionExpired(); return response; }
   let requestedContactOpened = false, selected = null, current = [], mirrorFreshness = null, timer, inboxRequest = 0, detailRequest = 0, detailController = null;
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
   const initials = (name) => String(name || 'Client').split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part[0]).join('').toUpperCase();
