@@ -109,6 +109,8 @@ const FOLDER_ALIASES = {
 const RETIRED_LIBRARY_FOLDERS = new Set([
   ROOT_FOLDER,
   "Print collateral",
+  "Used on website",
+  "Not used on website",
   ...Object.values(FOLDER_ALIASES).flat(),
 ]);
 
@@ -134,6 +136,10 @@ export function siteAssetTotal() {
 
 export function siteAssetCatalog() {
   return SITE_ASSETS;
+}
+
+export function hasLegacyMediaFolders(folders) {
+  return folders.some((folder) => folder.status === "active" && RETIRED_LIBRARY_FOLDERS.has(folder.name));
 }
 
 // This is a one-time filing migration. A record exists in one folder only;

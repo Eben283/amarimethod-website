@@ -1,6 +1,6 @@
 import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-guards.js";
 import { createMediaFolder, listStaffMedia, updateMediaAsset } from "../lib/staff-media.js";
-import { BRAND_LOGOS_FOLDER, DOCUMENTS_FOLDER, organizeMediaByWebsiteUsage, PHOTO_LIBRARY_FOLDER, PRINT_MATERIALS_FOLDER, WEBSITE_IMAGES_FOLDER } from "../lib/staff-site-media.js";
+import { BRAND_LOGOS_FOLDER, DOCUMENTS_FOLDER, hasLegacyMediaFolders, organizeMediaByWebsiteUsage, PHOTO_LIBRARY_FOLDER, PRINT_MATERIALS_FOLDER, WEBSITE_IMAGES_FOLDER } from "../lib/staff-site-media.js";
 
 function responseHeaders(context) {
   return {
@@ -36,7 +36,7 @@ export async function onRequestGet(context) {
     // The filing folders are its durable completion marker.
     const hasUsageFolders = [WEBSITE_IMAGES_FOLDER, PHOTO_LIBRARY_FOLDER, BRAND_LOGOS_FOLDER, PRINT_MATERIALS_FOLDER, DOCUMENTS_FOLDER]
       .every((name) => library.folders.some((folder) => folder.status === "active" && !folder.parentId && folder.name === name));
-    if (!hasUsageFolders && library.assets.some((asset) => asset.status === "active" && asset.kind === "image")) {
+    if ((!hasUsageFolders || hasLegacyMediaFolders(library.folders)) && library.assets.some((asset) => asset.status === "active" && asset.kind === "image")) {
       await organizeMediaByWebsiteUsage({ db: context.env.ATTEND_DB || null, actor: auth.payload?.user || "Staff" });
       library = await listStaffMedia(context.env.ATTEND_DB || null, {
         includeArchived: url.searchParams.get("archived") === "1",
