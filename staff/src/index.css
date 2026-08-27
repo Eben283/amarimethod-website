@@ -575,3 +575,15 @@
     line-height: 1.4;
   }
 }
+
+
+/* Community recovery: operational text must remain readable at ordinary desktop distance. */
+.community-page { color: #18363c; font-family: system-ui, sans-serif; }
+.community-page__head span { color: #365b63; font-size: 18px; line-height: 1.45; }
+.community-page .community-lane > header p { color: #294c53; font-family: system-ui, sans-serif; font-size: 14px; font-weight: 750; letter-spacing: .06em; }
+.community-page .community-lane > header span { color: #46646a; font-size: 14px; line-height: 1.35; }
+.community-page .community-lane > header strong { color: #294c53; font-family: system-ui, sans-serif; font-size: 14px; }
+.community-page .community-lane__empty { color: #365b63; font-size: 16px; line-height: 1.5; }
+.community-page .community-stage, .community-page .community-card__visits, .community-page .community-card footer span { font-family: system-ui, sans-serif; font-size: 13px; line-height: 1.35; }
+.community-page .community-card__visits, .community-page .community-card__location, .community-page .community-card__event, .community-page .community-card footer span { color: #365b63; }
+.community-page .community-card__note { color: #284a51; font-size: 15px; line-height: 1.5; }
