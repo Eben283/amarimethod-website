@@ -151,9 +151,27 @@ export const RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE = Object.freeze({
   ]),
 });
 
-const V2_ONLY_OBJECTS = new Set(RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.expectedObjects.filter(
+// Exact source-only candidate produced by applying the reviewed twenty
+// additive objects to the checked-in historical production-v1 projection.
+// It is not accepted production authority and does not authorize any SQL
+// artifact. Staff continues to prove only RELIABILITY_SCHEMA_V1.
+export const RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE = Object.freeze({
+  ...RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE,
+  variantId: "production-live-lineage-v2-8c7245a",
+  migrationId: "reliability-spine-v2-production-lineage-candidate-unobserved",
+  description: "Predicted production-lineage v2 structure candidate; not observed authority",
+  structureSha256: "8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62",
+});
+
+const V2_ONLY_OBJECTS = new Set(RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.expectedObjects.filter(
   (object) => !RELIABILITY_SCHEMA_V1.expectedObjects.includes(object),
 ));
+const V2_ADDITIVE_TABLES = Object.freeze([
+  "automation_deployment_attestations",
+  "automation_release_manifests",
+  "reliability_schema_contracts",
+  "source_event_runtime_provenance",
+]);
 
 function rowsOf(result) {
   if (Array.isArray(result)) return result;
@@ -241,7 +259,10 @@ export async function assessReliabilitySchemaAuthority(snapshot) {
       return { proven: false, reason: "schema_v1_structure_mismatch", version: 1, structure: v1Structure };
     }
 
-    const v2Projection = reliabilityStructureProjection(snapshot.sqliteMaster, RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE);
+    const v2Projection = reliabilityStructureProjection(
+      snapshot.sqliteMaster,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    );
     const installedV2Objects = v2Projection.map((row) => `${row.type}:${row.name}`)
       .filter((object) => !RELIABILITY_SCHEMA_V1.expectedObjects.includes(object));
     if (installedV2Objects.length === 0) {
@@ -255,15 +276,21 @@ export async function assessReliabilitySchemaAuthority(snapshot) {
       };
     }
 
-    const v2Structure = await assessReliabilityStructure(snapshot.sqliteMaster, RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE);
-    if (installedV2Objects.length === V2_ONLY_OBJECTS.size && snapshot.contracts.length === 0) {
+    const v2Structure = await assessReliabilityStructure(
+      snapshot.sqliteMaster,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    );
+    if (installedV2Objects.length === V2_ONLY_OBJECTS.size
+      && v2Structure.proven
+      && snapshot.contracts.length === 0) {
       return {
         proven: false,
-        reason: "schema_v2_target_not_reconciled_with_live_v1",
+        reason: "schema_v2_physical_install_awaiting_promotion",
         version: 1,
-        migrationState: "blocked",
+        variantId: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.variantId,
+        migrationState: "installed_awaiting_promotion",
         structure: v1Structure,
-        localCandidateStructure: v2Structure,
+        candidateStructure: v2Structure,
         installedV2Objects,
       };
     }
@@ -289,18 +316,83 @@ export async function assessReliabilitySchemaAuthority(snapshot) {
   };
 }
 
-export async function assessReliabilityV2MigrationPreflight(snapshot) {
+export async function assessReliabilityV2InstallCandidatePreflight(snapshot) {
   const authority = await assessReliabilitySchemaAuthority(snapshot);
   if (authority.proven && authority.version === 1) {
     return {
-      ready: false,
-      state: "blocked",
-      reason: "schema_v2_target_not_reconciled_with_live_v1",
+      candidateCompatible: true,
+      authorized: false,
+      state: "exact_live_v1_candidate_input",
+      reason: "schema_v2_install_requires_separate_authorization",
       authority,
       installedV2Objects: [],
+      target: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
     };
   }
-  return { ready: false, state: "blocked", reason: authority.reason, authority };
+  return {
+    candidateCompatible: false,
+    authorized: false,
+    state: "blocked",
+    reason: authority.reason,
+    authority,
+  };
+}
+
+export async function assessReliabilityV2PromotionCandidatePreflight(snapshot) {
+  const authority = await assessReliabilitySchemaAuthority(snapshot);
+  const additiveTablesEmpty = V2_ADDITIVE_TABLES.every(
+    (table) => Number.isInteger(snapshot.additiveTableCounts?.[table])
+      && snapshot.additiveTableCounts[table] === 0,
+  );
+  if (authority.reason === "schema_v2_physical_install_awaiting_promotion"
+    && authority.candidateStructure?.proven
+    && snapshot.contracts.length === 0
+    && additiveTablesEmpty) {
+    return {
+      candidateCompatible: true,
+      structureCompatible: true,
+      additiveTablesEmpty: true,
+      authorized: false,
+      state: "predicted_shape_requires_primary_readback",
+      reason: "schema_v2_primary_readback_required",
+      authority,
+      predictedTarget: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+    };
+  }
+  if (authority.reason === "schema_v2_physical_install_awaiting_promotion"
+    && authority.candidateStructure?.proven
+    && snapshot.contracts.length === 0) {
+    return {
+      candidateCompatible: false,
+      structureCompatible: true,
+      additiveTablesEmpty: false,
+      authorized: false,
+      state: "blocked",
+      reason: "schema_v2_additive_table_emptiness_unproven",
+      authority,
+    };
+  }
+  return {
+    candidateCompatible: false,
+    structureCompatible: false,
+    authorized: false,
+    state: "blocked",
+    reason: authority.reason,
+    authority,
+  };
+}
+
+export async function assessReliabilityV2MigrationPreflight(snapshot) {
+  const candidate = await assessReliabilityV2InstallCandidatePreflight(snapshot);
+  return {
+    ready: false,
+    state: "blocked",
+    reason: candidate.candidateCompatible
+      ? "schema_v2_source_only_not_authorized"
+      : candidate.reason,
+    authority: candidate.authority,
+    candidate,
+  };
 }
 
 export async function assertReliabilityV2MigrationPreflight(db) {

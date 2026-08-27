@@ -1,0 +1,33 @@
+-- NOT EXECUTABLE. PHASE-B GENERATOR CONTRACT ONLY.
+-- DO NOT APPLY. DO NOT REGISTER. DO NOT IMPORT.
+--
+-- The 8c7245ae... 69-row projection is predicted source evidence only. Phase B
+-- must not be generated from it. A separately approved Phase A must first be
+-- applied transactionally, followed by a read-only primary-D1 readback checked
+-- in as a new immutable fixture with remoteObserved=true, authority=false,
+-- servedByPrimary=true, rowsWritten=0, the full exact 69-row sqlite_master
+-- projection, and its independently recomputed digest.
+--
+-- A future generator must require and bind all of these inputs:
+--   1. the exact checked-in primary-D1 Phase-A readback fixture and file hash;
+--   2. the sole exact historical v1 marker, including applied_at=1787631973000;
+--   3. exactly 69 required objects and zero unexpected indexes/triggers on the
+--      required reliability tables;
+--   4. zero rows in reliability_schema_contracts and all four additive tables;
+--   5. an independently approved observed digest, never this prediction alone.
+--   6. a final migration identity assigned after readback; the source-only
+--      candidate identity must never be promoted as production authority.
+--
+-- Generated Phase B must compare every observed (type,name,tbl_name,sql) row
+-- inside its transaction via JSON/EXCEPT, insert one immutable v2 contract
+-- using trusted D1 apply time, revalidate every contract byte, drop its guard,
+-- and make the v2 marker the FINAL SQL statement using that same apply time.
+-- Idempotent replay may be supported only for the exact observed contract and
+-- exact matching v1+v2 marker pair. Any partial, conflicting, extra-on-required-
+-- table, marker-only, contract-only, or future-version state must fail.
+--
+-- Runtime adoption is a later release. Even after a future promotion, current
+-- Staff health must remain fail-closed until an independently reviewed reader
+-- accepts the exact observed contract and catalog.
+
+PHASE_B_TEMPLATE_BLOCKED_UNTIL_EXACT_PRIMARY_D1_PHASE_A_READBACK_IS_CHECKED_IN
