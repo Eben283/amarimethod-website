@@ -1,4 +1,4 @@
-import { createMediaFolder, listStaffMedia, mediaObjectKey, normalizeMediaName, registerMediaAsset, updateMediaAsset } from "./staff-media.js";
+import { archiveMediaFolder, createMediaFolder, listStaffMedia, mediaObjectKey, normalizeMediaName, registerMediaAsset, updateMediaAsset } from "./staff-media.js";
 
 // This is deliberately an allowlist, not a filesystem or URL crawler. It mirrors
 // the image files presently referenced by the public site, so Staff can keep a
@@ -106,6 +106,11 @@ const FOLDER_ALIASES = {
   "Study materials": ["Study materials", "Study flyers"],
   "Legacy site imagery": ["Legacy site imagery", "Historical imagery", "Historical logo files"],
 };
+const RETIRED_LIBRARY_FOLDERS = new Set([
+  ROOT_FOLDER,
+  "Print collateral",
+  ...Object.values(FOLDER_ALIASES).flat(),
+]);
 
 function extensionFor(path) {
   return path.split(".").pop()?.toLowerCase() || "";
@@ -164,7 +169,21 @@ export async function organizeMediaByWebsiteUsage({ db, actor }) {
     await updateMediaAsset(db, { action: "move_asset", assetId: asset.id, folderId: targetFolderId }, { actor });
     moved += 1;
   }
-  return { moved };
+  const depth = (folder) => {
+    let current = folder;
+    let count = 0;
+    while (current?.parentId) {
+      count += 1;
+      current = library.folders.find((candidate) => candidate.id === current.parentId);
+    }
+    return count;
+  };
+  let retired = 0;
+  for (const folder of [...activeFolders].filter((candidate) => RETIRED_LIBRARY_FOLDERS.has(candidate.name)).sort((left, right) => depth(right) - depth(left))) {
+    await archiveMediaFolder(db, folder.id, { actor });
+    retired += 1;
+  }
+  return { moved, retired };
 }
 
 function defaultDescription(asset) {

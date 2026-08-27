@@ -153,6 +153,31 @@ export async function createMediaFolder(db, input, { actor, now, id } = {}) {
   return mapFolder({ id: folderId, parent_id: parentId, name, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor });
 }
 
+// Folders are retired rather than deleted so the library retains a complete
+// audit trail. Only an empty folder with no active children can be retired.
+export async function archiveMediaFolder(db, folderId, { actor, now } = {}) {
+  if (!db) throw failure("Media metadata storage is not configured", 422);
+  const id = cleanText(folderId, 80);
+  const current = id ? await db.prepare("SELECT * FROM staff_media_folders WHERE id = ?").bind(id).first() : null;
+  if (!current) throw failure("Media folder not found", 404);
+  if (current.status === "archived") return mapFolder(current);
+  const [asset, child] = await Promise.all([
+    db.prepare("SELECT id FROM staff_media_assets WHERE folder_id = ? AND status = 'active' LIMIT 1").bind(id).first(),
+    db.prepare("SELECT id FROM staff_media_folders WHERE parent_id = ? AND status = 'active' LIMIT 1").bind(id).first(),
+  ]);
+  if (asset || child) throw failure("Move files and subfolders before retiring this folder", 409);
+  const timestamp = now || new Date().toISOString();
+  const staffActor = cleanText(actor, 80) || "Staff";
+  await db.batch([
+    db.prepare("UPDATE staff_media_folders SET status = 'archived', version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?")
+      .bind(timestamp, staffActor, id),
+    db.prepare(`INSERT INTO staff_media_events (id, folder_id, action, actor, occurred_at, detail)
+      VALUES (?, ?, 'folder_archived', ?, ?, ?)`)
+      .bind(crypto.randomUUID(), id, staffActor, timestamp, `Archived empty folder ${current.name}`),
+  ]);
+  return mapFolder({ ...current, status: "archived", version: Number(current.version) + 1, updated_at: timestamp, updated_by: staffActor });
+}
+
 export async function registerMediaAsset(db, input, { actor, now, id, allowSvg = false } = {}) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
   const upload = validateMediaUpload(input, { allowSvg });
