@@ -18,7 +18,7 @@ import { runAutomationCycle } from "./automation-cycle.js";
 import { reconcileDeliveryReceipts } from "./delivery-receipts.js";
 import { handleWebhook } from "./webhook.js";
 import { handleDashboardPage, handleDashboardData } from "./dashboard.js";
-import { dashboardSessionCookie } from "./dashboard-session.js";
+import { dashboardSessionCookie, dashboardSessionToken } from "./dashboard-session.js";
 import { handleGhlEvent } from "./ghl-events.js";
 import { runtimeStatus } from "./runtime-status.js";
 import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
@@ -32,6 +32,7 @@ import { appendEvent } from "./store.js";
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
 const DASHBOARD_ACCESS_TTL_SECONDS = 5 * 60;
+const TRUSTED_STAFF_PARENT_ORIGINS = new Set(["https://amarimethod.com", "https://www.amarimethod.com"]);
 
 function dashboardAccessCode() {
   const bytes = new Uint8Array(24);
@@ -79,10 +80,18 @@ export default {
       await env.PORTAL_KV.delete(key);
       const cookie = await dashboardSessionCookie(env, access.actor || "Staff");
       if (!cookie) return new Response("Dashboard session is not configured.", { status: 503 });
-      const embed = url0.searchParams.get("embed") === "1" ? "?embed=1" : "";
+      const embed = url0.searchParams.get("embed") === "1";
+      const parentOrigin = url0.searchParams.get("parent_origin");
+      const trustedEmbed = embed && TRUSTED_STAFF_PARENT_ORIGINS.has(parentOrigin);
+      const destinationParams = new URLSearchParams();
+      if (embed) destinationParams.set("embed", "1");
+      if (trustedEmbed) destinationParams.set("parent_origin", parentOrigin);
+      const embeddedSession = trustedEmbed ? await dashboardSessionToken(env, access.actor || "Staff") : null;
+      const destinationQuery = destinationParams.size ? `?${destinationParams}` : "";
+      const fragment = embeddedSession ? `#dashboard_session=${encodeURIComponent(embeddedSession)}` : "";
       return new Response(null, {
         status: 302,
-        headers: { Location: `/dashboard${embed}`, "Set-Cookie": cookie, "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
+        headers: { Location: `/dashboard${destinationQuery}${fragment}`, "Set-Cookie": cookie, "Cache-Control": "no-store", "Referrer-Policy": "no-referrer" },
       });
     }
     // The watch dashboard: a public shell (no data) + a data route gated by its own

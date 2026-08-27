@@ -26,6 +26,10 @@ CREATE TABLE IF NOT EXISTS staff_media_assets (
   normalized_name TEXT NOT NULL,
   mime_type TEXT NOT NULL,
   size_bytes INTEGER NOT NULL CHECK (size_bytes > 0),
+  internal_description TEXT NOT NULL DEFAULT '',
+  website_usage TEXT NOT NULL DEFAULT 'not_used' CHECK (website_usage IN ('currently_used', 'not_used')),
+  curation_status TEXT NOT NULL DEFAULT 'good' CHECK (curation_status IN ('good', 'delete_candidate')),
+  source_path TEXT,
   status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'archived')),
   version INTEGER NOT NULL DEFAULT 1 CHECK (version > 0),
   created_at TEXT NOT NULL,
@@ -36,6 +40,9 @@ CREATE TABLE IF NOT EXISTS staff_media_assets (
 
 CREATE INDEX IF NOT EXISTS staff_media_assets_active
   ON staff_media_assets(status, folder_id, updated_at DESC);
+
+CREATE INDEX IF NOT EXISTS staff_media_assets_curation
+  ON staff_media_assets(website_usage, curation_status, status, updated_at DESC);
 
 CREATE UNIQUE INDEX IF NOT EXISTS staff_media_asset_name_active
   ON staff_media_assets(COALESCE(folder_id, ''), normalized_name)

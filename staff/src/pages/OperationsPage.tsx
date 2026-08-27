@@ -495,7 +495,7 @@ export default function OperationsPage() {
     void getCrmMirrorAccessUrl()
       .then(({ url }) => {
         if (cancelled) return;
-        const joined = url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
+        const joined = `${url}${url.includes('?') ? '&' : '?'}embed=1&parent_origin=${encodeURIComponent(window.location.origin)}`;
         setCrmSrc(joined);
       })
       .catch((err) => {
@@ -520,7 +520,7 @@ export default function OperationsPage() {
     void getAutomationWatchAccessUrl()
       .then(({ url }) => {
         if (cancelled) return;
-        const joined = url.includes('?') ? `${url}&embed=1` : `${url}?embed=1`;
+        const joined = `${url}${url.includes('?') ? '&' : '?'}embed=1&parent_origin=${encodeURIComponent(window.location.origin)}`;
         setAutomationSrc(joined);
       })
       .catch((err) => {
@@ -534,6 +534,19 @@ export default function OperationsPage() {
   // See the CRM handoff above: this effect must outlive its own loading-state
   // update so the resolved one-time access URL can be rendered.
   }, [tab, automationSrc]);
+
+  useEffect(() => {
+    function sessionExpired(event: MessageEvent) {
+      const matches = (src: string | null, type: string) => {
+        if (!src || event.data?.type !== type) return false;
+        try { return event.origin === new URL(src).origin; } catch { return false; }
+      };
+      if (matches(crmSrc, 'amari:staff-crm-session-expired')) setCrmSrc(null);
+      if (matches(automationSrc, 'amari:staff-automation-session-expired')) setAutomationSrc(null);
+    }
+    window.addEventListener('message', sessionExpired);
+    return () => window.removeEventListener('message', sessionExpired);
+  }, [crmSrc, automationSrc]);
 
   function selectTab(next: OpsTab) {
     setParams(next === 'overview' ? {} : { tab: next }, { replace: true });

@@ -24,7 +24,7 @@
     }
   ],
   "triggers": {
-    "crons": ["*/15 * * * *"]
+    "crons": ["*/5 * * * *"]
   },
   "vars": {
     "GHL_LOCATION_ID": "7pIO7FHVAyBT1jKGhfQM"

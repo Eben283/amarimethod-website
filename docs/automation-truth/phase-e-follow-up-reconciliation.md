@@ -1,11 +1,11 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: independently reviewed source-only candidate, 2026-08-27; not merged or adopted. This contract is deliberately unable to make Staff healthy or authoritative.
+Status: independently reviewed source-only candidate, refreshed locally against `43ddd635b2ea225481cd9f1a7793deee9e68905e` on 2026-08-27; not merged or adopted. This contract is deliberately unable to make Staff healthy or authoritative.
 
 ## Source provenance and boundary
 
 - Repository: `https://github.com/Eben283/amarimethod-website.git`
-- Initial inspected base: `61b0f57861355dc80bf0c22a500171ba495086b1`; final source rebased onto `origin/main` at `0cb98cfa55c844c80a24b345349a355eea0e939c`
+- Historical initial inspected base: `61b0f57861355dc80bf0c22a500171ba495086b1`; the reviewed public source head is `9c1b9f1aec520fcfd546b97cf032228f6f8e5654` (previously rebased onto `origin/main` at `0cb98cfa55c844c80a24b345349a355eea0e939c`). The local refresh is the clean two-parent merge of that public head and exact current-main `43ddd635b2ea225481cd9f1a7793deee9e68905e`.
 - Family: `follow-up-session-reminders`
 - Source identity: `ghl:appointment-events-webhook:vN`
 - Runtime identity: `<40-hex source revision>@follow-up-reminder-engine.vN`
@@ -108,10 +108,11 @@ Until then, missing authority, freshness, or coverage is visible as Unknown or D
 
 ## Source verification checkpoint
 
-- Prior-base verification at `45a2cac19ea9877bcc2fb815bd8b3f1112ee9837`: 2,220/2,220 local tests passed on Node 24.13.1 with lockfile-matching Vitest 4.1.10. After rebasing onto `0cb98cfa55c844c80a24b345349a355eea0e939c`, verification totals 2,206 passed and 15 failed (2,221 tests); the short-circuited Morning SMS and Staff suites and portal-release check were run separately and passed. All 15 failures are inherited ClientDesk test-harness `window is not defined` errors in files unchanged by this package. The same failures are present in [main's Node 22.23.2 CI run](https://github.com/Eben283/amarimethod-website/actions/runs/33082633532/job/98553685020), where the full build was skipped. This is a public draft checkpoint, not a full-test-pass, full-build verification, or merge-readiness claim.
-- Build-contract, app-separation, owned-access, field-ID, committed-asset, and diff-whitespace checks passed.
+- Historical checkpoint retained: prior-base verification at `45a2cac19ea9877bcc2fb815bd8b3f1112ee9837` passed 2,220/2,220 local tests on Node 24.13.1 with lockfile-matching Vitest 4.1.10. After the earlier rebase onto `0cb98cfa55c844c80a24b345349a355eea0e939c`, it recorded 2,206 passed and 15 failed (2,221 tests), all inherited ClientDesk test-harness `window is not defined` errors in files unchanged by this package; the Morning SMS and Staff suites and portal-release check were run separately and passed.
+- Refresh checkpoint: on the local clean merge of public draft `9c1b9f1aec520fcfd546b97cf032228f6f8e5654` with exact current-main `43ddd635b2ea225481cd9f1a7793deee9e68905e`, Node 24.13.1 and Vitest 4.1.10 passed 2,221/2,221 tests. This is a local source checkpoint only; it makes no GitHub-CI, full-SPA-build, deployment, or merge-readiness claim.
+- `check:field-ids`, `check:owned-access`, `check:build-contract`, `check:app-separation`, `check:dist-assets`, and `git diff --check` passed locally.
 - Independent collector and Staff-store/API reviews passed after regression fixes for failed batch slots, malformed receipt digests, version bounds, missing authority, future clocks, and schema-safe Unknown responses.
 - Collector SHA-256: `66714f4441c022964656b910d490af0281e58629577a8083b23098de9d3f9f1c`.
 - Staff store SHA-256: `1638ab4f70f214272c17c8b2e5a8d701f1635542a38b824225aea6b5da186d24`.
-- The checked-in Pages bundle was rebuilt using pinned Wrangler 4.125.0 and hashes to `5ad80e7f287a37213ea7bff547deaf12e728ad3de3a255919d70a7ec1150888c`. It matches the compiler output, contains no collector/drill import or release flag, and changes no other module after normalizing generated routing identifiers and tool-path comments.
+- The checked-in Pages bundle was rebuilt using pinned Wrangler 4.125.0 and hashes to `4c45d1d5c23eef754c04f7a1186ddf1e22bc6f777e756539f8338dea58ca5064`. It matches the compiler output for the refreshed tree, contains no collector/drill import or release flag, and preserves the concurrent current-main sources in the generated Pages module.
 - No production D1 write, Worker deployment, sender change, GHL/provider call, customer activity, or message occurred in this source increment.

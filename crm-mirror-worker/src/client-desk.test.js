@@ -1,11 +1,36 @@
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { clientDeskHtml } from "./client-desk.js";
+
+const testWindow = {
+  location: { search: "", hash: "", pathname: "/client-desk" },
+  matchMedia: () => ({ matches: false }),
+  addEventListener() {},
+  removeEventListener() {},
+  postMessage() {},
+};
+testWindow.parent = testWindow;
+
+beforeEach(() => {
+  vi.stubGlobal("window", testWindow);
+  vi.stubGlobal("history", { replaceState() {} });
+});
+
+afterEach(() => vi.unstubAllGlobals());
 
 describe("Client Desk message rendering", () => {
   it("tells the Staff shell when its embedded session has expired", () => {
     const html = clientDeskHtml();
     expect(html).toContain("amari:staff-desk-session-expired");
     expect(html).toContain("if (response.status === 401) deskSessionExpired()");
+  });
+
+  it("uses the hash-only signed Staff dashboard session for protected Desk requests", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("dashboard_session");
+    expect(html).toContain("X-Amari-Dashboard-Session");
+    expect(html).toContain("function deskSessionExpired()");
+    expect(html).toContain("dashboardFetch(resource, options = {})");
+    expect(html).toContain("credentials: 'same-origin'");
   });
 
   it("identifies the desk as the complete chronological communication surface", () => {
@@ -21,6 +46,14 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("row.external_contact_id === requestedExternalContact");
     expect(html).toContain("Degraded · recent messages may be missing");
     expect(html).toContain("Mirror degraded");
+  });
+
+  it("refreshes an open inbox without disturbing the selected conversation", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain('const INBOX_REFRESH_MS = 60_000');
+    expect(html).toContain("document.addEventListener?.('visibilitychange', refreshInboxWhenVisible)");
+    expect(html).toContain("typeof window.setInterval === 'function'");
+    expect(html).toContain("window.setInterval(refreshInboxWhenVisible, INBOX_REFRESH_MS)");
   });
 
   it("shows accurate relative ages and the exact source timestamp on contact cards", () => {

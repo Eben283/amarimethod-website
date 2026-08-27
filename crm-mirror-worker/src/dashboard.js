@@ -152,14 +152,33 @@ const DASHBOARD_HTML = `<!doctype html>
         const state = document.querySelector("#state span:last-child");
         const accessHint = document.getElementById("access-hint");
         const showAccessHint = () => { accessHint.hidden = false; };
+        const hash = new URLSearchParams(window.location.hash.slice(1));
+        const dashboardSession = hash.get("dashboard_session");
+        if (dashboardSession) history.replaceState(null, "", window.location.pathname + window.location.search);
+        const parentOrigin = new URLSearchParams(window.location.search).get("parent_origin");
+        const trustedParents = new Set(["https://amarimethod.com", "https://www.amarimethod.com"]);
+        let sessionExpiryReported = false;
+        const reportSessionExpiry = () => {
+          if (sessionExpiryReported || !dashboardSession || window.parent === window || !trustedParents.has(parentOrigin)) return;
+          sessionExpiryReported = true;
+          window.parent.postMessage({ type: "amari:staff-crm-session-expired" }, parentOrigin);
+        };
+        const dashboardFetch = (input, init = {}) => {
+          const headers = new Headers(init.headers || {});
+          if (dashboardSession) headers.set("X-Amari-Dashboard-Session", dashboardSession);
+          return fetch(input, { ...init, headers, credentials: "same-origin" }).then((response) => {
+            if (response.status === 401) reportSessionExpiry();
+            return response;
+          });
+        };
         try {
           const [statusResponse, operationsResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
-            fetch("/status", { credentials: "same-origin" }),
-            fetch("/operations?limit=25", { credentials: "same-origin" }),
-            fetch("/ledger-cutover?limit=25", { credentials: "same-origin" }),
-            fetch("/reconciliation", { credentials: "same-origin" }),
-            fetch("/reconciliation/review?limit=50", { credentials: "same-origin" }),
-            fetch("/review-session", { credentials: "same-origin" }),
+            dashboardFetch("/status"),
+            dashboardFetch("/operations?limit=25"),
+            dashboardFetch("/ledger-cutover?limit=25"),
+            dashboardFetch("/reconciliation"),
+            dashboardFetch("/reconciliation/review?limit=50"),
+            dashboardFetch("/review-session"),
           ]);
           if (!statusResponse.ok || !operationsResponse.ok || !cutoverResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
@@ -201,7 +220,7 @@ const DASHBOARD_HTML = `<!doctype html>
               actionStatus.textContent = "Enter your reviewer name before making a decision.";
               return;
             }
-            const response = await fetch(path, {
+            const response = await dashboardFetch(path, {
               method: "POST",
               credentials: "same-origin",
               headers: { "Content-Type": "application/json" },
@@ -263,7 +282,7 @@ const DASHBOARD_HTML = `<!doctype html>
           };
           const loadProfile = async (contactId) => {
             contactProfilePanel.replaceChildren(textNode("p", "Loading client profile…", "profile-meta"));
-            const response = await fetch("/contacts/" + encodeURIComponent(contactId) + "?limit=25", { credentials: "same-origin" });
+            const response = await dashboardFetch("/contacts/" + encodeURIComponent(contactId) + "?limit=25");
             if (!response.ok) {
               contactProfilePanel.replaceChildren(textNode("p", "This client profile could not be loaded.", "profile-meta"));
               return;
@@ -314,7 +333,7 @@ const DASHBOARD_HTML = `<!doctype html>
             searchTimer = setTimeout(async () => {
               const requestId = ++searchRequest;
               contactSearchStatus.textContent = "Searching…";
-              const response = await fetch("/contacts?limit=12&query=" + encodeURIComponent(query), { credentials: "same-origin" });
+              const response = await dashboardFetch("/contacts?limit=12&query=" + encodeURIComponent(query));
               if (requestId !== searchRequest) return;
               if (!response.ok) {
                 contactSearchStatus.textContent = "Search is unavailable.";

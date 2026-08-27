@@ -26,6 +26,7 @@ import { useSearchParams } from 'react-router-dom';
 import {
   getStaffMedia,
   importStaffSiteMedia,
+  syncStaffSiteMediaCatalog,
   updateStaffMedia,
   uploadStaffMedia,
   type StaffMediaAsset,
@@ -33,6 +34,7 @@ import {
   type StaffMediaKind,
 } from '../lib/api';
 import './MediaPage.css';
+import './MediaCuration.css';
 
 type ViewMode = 'grid' | 'list';
 type TypeFilter = 'all' | StaffMediaKind;
@@ -94,6 +96,9 @@ function NewFolderDialog({ parentId, onClose, onCreated }: { parentId: string | 
 function AssetDrawer({ asset, folders, onClose, onChanged, onReconcile }: { asset: StaffMediaAsset; folders: StaffMediaFolder[]; onClose: () => void; onChanged: (asset: StaffMediaAsset) => void; onReconcile: (assetId: string) => Promise<StaffMediaAsset | null> }) {
   const [renaming, setRenaming] = useState(false);
   const [name, setName] = useState(asset.name);
+  const [description, setDescription] = useState(asset.description);
+  const [websiteUsage, setWebsiteUsage] = useState(asset.websiteUsage);
+  const [curationStatus, setCurationStatus] = useState(asset.curationStatus);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState('');
   const [error, setError] = useState('');
@@ -142,6 +147,10 @@ function AssetDrawer({ asset, folders, onClose, onChanged, onReconcile }: { asse
         </section>
         <dl>
           <div><dt>Folder</dt><dd><select value={asset.folderId || ''} disabled={busy || asset.status === 'archived'} onChange={async (event) => { await mutate({ action: 'move_asset', assetId: asset.id, folderId: event.target.value || null }); }}><option value="">All media</option>{folders.filter((folder) => folder.status === 'active').map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}</select></dd></div>
+          <div className="media-drawer__curation"><dt>Library note</dt><dd><textarea value={description} maxLength={600} disabled={busy || asset.status === 'archived'} onChange={(event) => setDescription(event.target.value)} placeholder="What is visibly happening and what this asset communicates" /><button type="button" disabled={busy || asset.status === 'archived'} onClick={async () => { const changed = await mutate({ action: 'curate_asset', assetId: asset.id, description, websiteUsage, curationStatus, sourcePath: asset.sourcePath }); if (changed) setNotice('Library description and classification saved.'); }}><Check /> Save classification</button></dd></div>
+          <div><dt>Website use</dt><dd><select value={websiteUsage} disabled={busy || asset.status === 'archived'} onChange={(event) => setWebsiteUsage(event.target.value as StaffMediaAsset['websiteUsage'])}><option value="currently_used">Currently used on website</option><option value="not_used">Not used on website</option></select></dd></div>
+          <div><dt>Curation</dt><dd><select value={curationStatus} disabled={busy || asset.status === 'archived'} onChange={(event) => setCurationStatus(event.target.value as StaffMediaAsset['curationStatus'])}><option value="good">Good — keep in library</option><option value="delete_candidate">Delete candidate — preserve original</option></select></dd></div>
+          {asset.sourcePath ? <div><dt>Site source</dt><dd>{asset.sourcePath}</dd></div> : null}
           <div><dt>Uploaded</dt><dd>{exactTime(asset.createdAt)} by {asset.createdBy}</dd></div>
           <div><dt>Privacy</dt><dd>Staff only · authentication required</dd></div>
         </dl>
@@ -170,6 +179,7 @@ export default function MediaPage() {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [classifying, setClassifying] = useState(false);
   const [dragging, setDragging] = useState(false);
   const [folderDialog, setFolderDialog] = useState(false);
   const [error, setError] = useState('');
@@ -293,6 +303,20 @@ export default function MediaPage() {
     }
   }
 
+  async function classifyExistingImages() {
+    setClassifying(true);
+    setError('');
+    try {
+      const result = await syncStaffSiteMediaCatalog();
+      await load();
+      setNotice(`Image inventory synchronized: ${result.catalogMatched} catalog matches, ${result.defaulted} library-only images classified${result.ambiguous ? `, ${result.ambiguous} ambiguous matches left for review` : ''}. No originals changed.`);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : 'The image inventory could not be synchronized.');
+    } finally {
+      setClassifying(false);
+    }
+  }
+
   function openAsset(asset: StaffMediaAsset) {
     setSearchParams({ asset: asset.id });
   }
@@ -303,8 +327,9 @@ export default function MediaPage() {
         <div><span>Owned asset library</span><h1>Media</h1><p>Shared images, videos, and PDFs for the Amari team.</p></div>
         <div className="staff-media-head__actions">
           <button type="button" onClick={() => setFolderDialog(true)}><FolderPlus /> New folder</button>
-          <button type="button" disabled={!uploadReady || uploading || importing} onClick={() => void importPublicSiteAssets()}>{importing ? <Loader2 className="is-spinning" /> : <Images />} {importing ? 'Importing…' : 'Import site assets'}</button>
-          <button type="button" className="is-primary" disabled={!uploadReady || uploading || importing} onClick={() => fileInput.current?.click()}>{uploading ? <Loader2 className="is-spinning" /> : <Upload />} {uploading ? 'Uploading…' : 'Upload files'}</button>
+          <button type="button" disabled={uploading || importing || classifying} onClick={() => void classifyExistingImages()}>{classifying ? <Loader2 className="is-spinning" /> : <Check />} {classifying ? 'Classifying…' : 'Classify library images'}</button>
+          <button type="button" disabled={!uploadReady || uploading || importing || classifying} onClick={() => void importPublicSiteAssets()}>{importing ? <Loader2 className="is-spinning" /> : <Images />} {importing ? 'Importing…' : 'Import site assets'}</button>
+          <button type="button" className="is-primary" disabled={!uploadReady || uploading || importing || classifying} onClick={() => fileInput.current?.click()}>{uploading ? <Loader2 className="is-spinning" /> : <Upload />} {uploading ? 'Uploading…' : 'Upload files'}</button>
           <input ref={fileInput} className="sr-only" type="file" multiple accept="image/jpeg,image/png,image/webp,image/gif,image/avif,video/mp4,video/quicktime,video/webm,application/pdf" onChange={(event: ChangeEvent<HTMLInputElement>) => { if (event.target.files) void uploadFiles(event.target.files); }} />
         </div>
       </header>
@@ -339,7 +364,7 @@ export default function MediaPage() {
                 {visibleAssets.map((asset) => (
                   <button key={asset.id} type="button" className="staff-media-file" onClick={() => openAsset(asset)}>
                     <div className="staff-media-file__preview"><Preview asset={asset} /><span><MoreHorizontal /></span></div>
-                    <div className="staff-media-file__copy"><strong>{asset.name}</strong><small>{fileSize(asset.sizeBytes)} · {exactTime(asset.updatedAt)}</small></div>
+                    <div className="staff-media-file__copy"><strong>{asset.name}</strong><small>{asset.websiteUsage === 'currently_used' ? 'Used on website' : 'Not used'} · {asset.curationStatus === 'delete_candidate' ? 'Delete candidate' : 'Keep'}</small></div>
                   </button>
                 ))}
               </div>

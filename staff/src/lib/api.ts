@@ -28,6 +28,9 @@ async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({ error: 'Request failed' }));
+      if (response.status === 401 && typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('amari:staff-session-expired'));
+      }
       throw new ApiError(errorData.error || 'Request failed', response.status);
     }
 
@@ -828,6 +831,10 @@ export interface StaffMediaAsset {
   mimeType: string;
   kind: StaffMediaKind;
   sizeBytes: number;
+  description: string;
+  websiteUsage: 'currently_used' | 'not_used';
+  curationStatus: 'good' | 'delete_candidate';
+  sourcePath: string | null;
   status: 'active' | 'archived';
   version: number;
   createdAt: string;
@@ -864,6 +871,18 @@ export interface StaffSiteMediaImport {
 
 export async function importStaffSiteMedia(offset = 0): Promise<StaffSiteMediaImport> {
   return fetchApi('/staff-media', { method: 'POST', body: JSON.stringify({ action: 'import_site_assets', offset }) });
+}
+
+export interface StaffSiteMediaCatalogSync {
+  classified: number;
+  catalogMatched: number;
+  defaulted: number;
+  ambiguous: number;
+  skippedNonImage: number;
+}
+
+export async function syncStaffSiteMediaCatalog(): Promise<StaffSiteMediaCatalogSync> {
+  return fetchApi('/staff-media', { method: 'POST', body: JSON.stringify({ action: 'sync_site_catalog' }) });
 }
 
 export async function uploadStaffMedia(file: File, folderId: string | null): Promise<{ asset: StaffMediaAsset }> {
