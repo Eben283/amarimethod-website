@@ -3,23 +3,23 @@
 ## Result and authority boundary
 
 The exact live-lineage v2 source candidate was reviewed and merged as website
-`main` commit `6076a6feea38b1fc61638d84166ceff1d42202f8`. Under a later, separate
-authorization, the exact reviewed Phase-A file was applied once to the primary
-`amari-automation` D1. The hard-stop readback returned the predicted 69 literal
-rows and digest `8c7245ae…`. This is observed physical installation evidence,
-not production-v2 authority: the exact v1 marker remains the sole marker, no
-v2 contract exists, and Staff remains fail-closed and Degraded.
+`main` commit `6076a6feea38b1fc61638d84166ceff1d42202f8`. Under separate explicit
+authorizations, the reviewed Phase-A physical install and the reviewed Phase-B
+authority promotion were each applied exactly once to primary
+`amari-automation` D1. Primary readback now proves the exact 69 literal rows and
+digest `8c7245ae…`, the exact historical v1 marker, the exact final v2 marker,
+and one byte-exact v2 contract whose trusted D1 `applied_at=1787803363000`
+matches the v2 marker.
 
-The install, rollback, and newly generated Phase-B promotion source files
-remain **DO NOT APPLY**, unregistered, and unimported. The install file has now
-been used for the one authorized Phase A; it is not authorized for replay.
-Rollback and promotion have not been applied. Phase B is executable SQL only
-inside an officially transactional mechanism after a separate live
-authorization; this draft is source review, not that authorization. The
-deployment-attestation recorder remains unimported and
-`Unknown/runtime_recorder_not_adopted`. This Phase-B source increment
-performs no database, Worker, GHL, provider, sender, recorder, or lifecycle
-action.
+The install, rollback, and promotion source files remain **DO NOT APPLY** and
+unregistered. Install and promotion have each exhausted their one
+authorization and are not authorized for replay; rollback was not applied and
+is no longer valid after authority promotion. The deployment-attestation
+recorder remains unimported and `Unknown/runtime_recorder_not_adopted`.
+Schema authority is now exact v2, but reconciliation coverage remains empty,
+so Staff correctly reports `Degraded/coverage_missing` rather than Live or
+Healthy. This observed-evidence source increment performs no database, Worker,
+GHL, provider, sender, recorder, or lifecycle action.
 
 ## Proven production-v1 authority
 
@@ -58,11 +58,11 @@ change are recorded as full 40-character SHAs in the fixture.
 
 | Variant | Digest | Authority |
 | --- | --- | --- |
-| `production-live-v1-f7af1024` | `f7af1024…` | the only current production authority |
+| `production-live-v1-f7af1024` | `f7af1024…` | exact historical production-v1 authority preserved as the v2 base marker |
 | `clean-bootstrap-v1-cd57730` | `cd57730…` | local candidate evidence only |
 | `clean-bootstrap-v2-b289c40` | `b289c402…` | local candidate evidence only; not production authority |
-| `production-live-lineage-v2-8c7245a` | `8c7245ae…` | exact primary Phase-A physical state observed; still `authority:false`, unpromoted, and fail-closed |
-| `production-live-lineage-v2-authority-8c7245a` | `8c7245ae…` | source-defined future authority only; requires exact final marker+contract bytes and is not present in D1 |
+| `production-live-lineage-v2-8c7245a` | `8c7245ae…` | immutable pre-promotion Phase-A physical-state evidence only |
+| `production-live-lineage-v2-authority-8c7245a` | `8c7245ae…` | current primary production schema authority; exact final marker, contract, and catalog are present |
 
 Staff may be eligible for `Known` only for exact production v1 or exact final
 production v2 plus complete, fresh reconciliation coverage. Wrong marker
@@ -72,15 +72,15 @@ or mismatched v2 states, and unknown future versions fail closed as
 `Unknown/authority_read_failed`. Empty reconciliation evidence remains
 `Degraded/coverage_missing`.
 
-There is no production-v2 contract or marker in D1. Source now defines the
-final migration identity
+Primary D1 now has the exact production-v2 contract and marker. The final
+migration identity is
 `reliability-spine-v2-production-lineage-8c7245ae`, distinct from both
-candidate identities. Exact staged 8c returns
-`schema_v2_physical_install_awaiting_promotion`. Staff accepts v2 only when it
-can prove exactly two markers (exact historical v1 plus the final v2 marker),
-one byte-exact final contract with the same `applied_at`, and the exact 69-row
-8c closure. Marker-only, contract-only, candidate IDs, timestamp mismatch,
-wrong or extra required-table objects, and future versions fail closed.
+candidate identities. The source authority assessor now proves
+`schema_v2_exact_authority` only because it reads exactly two markers (the
+historical v1 plus final v2), one byte-exact final contract with the same
+`applied_at`, and the exact 69-row 8c closure. Marker-only, contract-only,
+candidate IDs, timestamp mismatch, wrong or extra required-table objects, and
+future versions continue to fail closed.
 
 ## Exact live-lineage source candidate
 
@@ -112,12 +112,12 @@ apply time, rejects partial/conflicting v2 objects, and installs the reviewed
 leaves the exact v1 marker and an empty contract table, and requires all four
 new physical tables to be empty. It never inserts schema authority.
 
-Candidate compatibility and authorization are separate. Exact f7af input can
-be source-compatible while the production migration preflight remains
-`ready:false/schema_v2_source_only_not_authorized`. Likewise, exact predicted
-8c plus numeric zero-count evidence can be structurally compatible with a
-future promotion while remaining `authorized:false`. The primary readback is
-now pinned; a separate live promotion authorization is still required.
+Candidate compatibility and authorization were separate gates. Exact f7af was
+source-compatible before the one Phase-A authorization, and exact staged 8c
+plus numeric zero-count evidence was structurally compatible before the one
+Phase-B authorization. Those authorizations are now consumed. The immutable
+candidate and pre-promotion fixtures remain provenance; neither authorizes a
+replay.
 
 The rollback candidate accepts only exact staged 8c with the sole exact v1
 marker, zero contracts, and all new tables empty, then removes exactly the 20
@@ -139,7 +139,11 @@ marker, no existing contract, and numeric zero rows in all four additive
 tables. It inserts and byte-revalidates the exact contract first, uses one D1
 timestamp, then inserts the final v2 marker from the contract as the final SQL
 statement. Exact replay and every conflict are deliberately rejected before a
-committed write.
+committed write. Under the one explicit Phase-B authorization, this exact file
+was imported once through pinned Wrangler 4.125.0. The process exited 0 but its
+stdout was not parseable JSON; it was not retried. Success is proven only by
+the independent exact primary postflight described below, not by a claimed
+provider apply receipt.
 
 The inert Phase-D release-manifest and attestation-store modules now consume
 the final production-lineage schema constant instead of the incompatible
@@ -176,6 +180,51 @@ with both prediction and observed fixtures, recomputes 8c, then proves the
 candidate rollback returns literal f7af. This does not turn the observed shape
 into authority or authorize rollback/promotion.
 
+## Observed primary Phase-B authority evidence
+
+The one authorized Phase-B import used exact website source
+`06c4abe956415fe6c736edfcd9cf96365eef739c`, reviewed PR #503 merge
+`54c1595fa39f7b4a924701519f92b4346543d3ef`, tree
+`f7edcce5646b72235181a7a686863ae6aa2c32f6`, and promotion SQL SHA-256
+`8af94319d15c184085b79f22c0b3054546ae59528c51f66f8094909e9b9df55c`.
+It targeted D1 `089d810a-9d2d-43a4-8f1d-dc3620835557` in Cloudflare account
+`fa2b6f2441129b259dd5dea74045721b` through pinned Wrangler 4.125.0.
+
+The recovery boundary is pinned by pre-promotion bookmark
+`000024cc-00000016-000050d4-f8c03021259ccaf75b391cd075661925` and
+post-promotion bookmark
+`000024cc-00000024-000050d4-e61b5dded0148fe961ef9ca82805c1f3`.
+The trusted D1 marker time is `2026-08-27T04:02:43.000Z`; it is not presented
+as the observation time. A fresh SELECT-only evidence capture ran from
+`2026-08-27T04:25:51Z` through `2026-08-27T04:27:31Z`, including the Worker
+deployment readback. Every D1 read in that capture was served by primary
+`v3-prod` and reported
+`rows_written=0` and `changed_db=false`. It proved:
+
+- literal 69-row required closure and digest `8c7245ae…` unchanged;
+- exact v1 and final v2 marker rows;
+- exactly one contract with the full expected-object JSON, final identity,
+  8c digest, and the same `applied_at=1787803363000` as the v2 marker;
+- release-manifest, deployment-attestation, source-runtime-provenance, and
+  reconciliation counts all zero;
+- no transient promotion gate; and
+- standalone reminder Worker deployment unchanged at deployment
+  `fa1d09eb-a0af-47e9-bc6e-a44652d59dc9`, version
+  `121f69d8-770f-4c58-adab-0574bece9f1d`.
+
+The immutable source fixture
+`fixtures/reliability-v2-production-lineage-promotion-observed-primary.v1.json`
+has SHA-256
+`cc9783c2e4ac903ff33307dec3e707a603c194a1d8bfb24e8b02183d0dae9537` and
+records the literal marker and contract rows, full source/apply/readback
+provenance, evidence limitations, bookmarks, counts, authority-assessor
+result, coverage state, and Worker non-deployment proof. It pins rather than
+duplicates the existing immutable 69-row physical projection fixture. Its
+checker also pins the exact postflight and authority-readback script hashes and
+the exact 545-byte count query (SHA-256 `d910319d…`), and rejects any marker,
+contract, catalog, timestamp, primary-read,
+coverage, attempt-count, bookmark, or deployment drift.
+
 ## D1 correctness boundary
 
 Cloudflare documents these relevant semantics:
@@ -196,14 +245,14 @@ transaction can detect mismatch but cannot retroactively roll it back. A future
 migration must preserve a real stop between physical installation and authority
 promotion and must not claim atomicity across that stop.
 
-The intended candidate for a separately authorized Phase-B application is the
-pinned Wrangler 4.125.0 remote D1 file-import path (`d1 execute` with its
-remote and file flags; no runnable command is recorded here). Cloudflare's
-failed-import rollback statement and our disposable local atomicity test are
-supporting evidence, but live promotion remains blocked until the exact pinned
-mechanism and account/database target are freshly proven in preflight. Merely
-accepting a SQL file is not proof of whole-file atomicity, and arbitrary Worker
-`exec()` is not an approved substitute.
+The authorized Phase-B application used pinned Wrangler 4.125.0's remote D1
+file-import path (`d1 execute` with its remote and file flags; no runnable
+command is recorded here) after a fresh account/database, catalog, marker,
+emptiness, and recovery-bookmark preflight. Cloudflare's failed-import rollback
+statement and the disposable local atomicity test were supporting evidence;
+the exact primary postflight is the authority result. The non-JSON stdout is
+not treated as a provider receipt, and no retry occurred. Arbitrary Worker
+`exec()` remains an unapproved substitute.
 
 The local `BEGIN IMMEDIATE` test helper only simulates an officially
 transactional application mechanism. The candidate files contain no
@@ -252,31 +301,25 @@ authorization.
 - [x] The observed-primary fixture merged through PR #501 at exact website
   `main` `cd78ea6f267c65fc31c6c6c85ce6b378bba3216a` after independent review
   and CI.
-- [ ] Independent review and CI approve this generated Phase-B source draft.
-  It must remain unregistered, unimported, and unapplied.
+- [x] Independent review and CI approved generated Phase-B source PR #503 at
+  reviewed head `4702fcf7…`; it merged as `54c1595f…` with reviewed tree
+  `f7edcce5…` and remained unregistered.
+- [x] Separate explicit authorization permitted one exact primary Phase-B
+  import. No replay occurred; exact primary postflight, bookmarks, literal
+  marker/contract rows, catalog, counts, coverage, and Worker non-deployment
+  evidence are pinned in the observed-promotion fixture.
 - [ ] An ordinary authorized lifecycle and operator exception-resolution drill
   later prove the full reliability contract; a schema is never completion.
 
 ## Future release and recovery drill
 
-The smallest safe next action is independent review of this Phase-B source
-draft only. Phase A and its readback are complete; no promotion follows from
-that fact. A future separately authorized release must:
-
-1. verify a fresh primary bookmark/catalog, unchanged v1 marker, zero
-   contracts, empty additive tables, and lack of runtime adoption immediately
-   before applying anything;
-2. if anything differs, keep Staff Degraded and open a named exception. Use
-   the Phase-A rollback only if the exact staged shape is still empty, no
-   runtime ever adopted it, and rollback is separately approved;
-3. verify the generated final identity and SQL against the immutable observed
-   fixture, then independently authorize it as a separate live release;
-4. after promotion, read back the exact marker, contract, catalog, table
-   counts, and provider-independent evidence before proposing runtime-reader
-   adoption; and
-5. treat Time Travel restore as destructive emergency recovery only, with an
-   operator drill that accounts for in-flight cancellation and overwritten DB
-   state.
+The smallest safe next action is independent review of the immutable observed
+promotion evidence source only. The authority promotion is complete; it does
+not authorize recorder adoption. After that evidence merges, the remaining
+behavior gate is an ordinary authorized lifecycle plus provider receipts and
+an operator exception-resolution drill. Any later behavior release must keep
+schema authority and reconciliation coverage separate, prove fresh runtime
+provenance at the effect boundary, and fail closed when either is missing.
 
 After a contract and v2 marker exist, the Phase-A empty-only rollback is no
 longer valid. Default recovery is a reviewed forward repair/new schema version;
@@ -284,6 +327,6 @@ Time Travel remains a separately authorized destructive emergency action.
 Because exact replay is rejected, an ambiguous retry must first read the
 marker, contract, catalog, and bookmark rather than rerunning the SQL.
 
-Until all gates pass, do not reapply Phase A; keep rollback and Phase B
-unregistered and unapplied, recorder adoption off, and Staff fail-closed for
-the current unpromoted physical state.
+Do not reapply Phase A or Phase B. Keep rollback unregistered and unapplied,
+recorder adoption off, and Staff visibly `Degraded/coverage_missing` until a
+separately reviewed reconciliation increment proves complete fresh coverage.

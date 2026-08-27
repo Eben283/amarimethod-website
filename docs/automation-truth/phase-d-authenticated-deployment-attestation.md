@@ -4,7 +4,17 @@
 
 This phase defines, but does not adopt, a deployment-attestation recorder. The current live sender remains Amari's persisted Follow-Up definition v3. The exact GHL **Follow up session Confirmation email / reminder flow** is Draft v36 rollback.
 
-The recorder and Phase-B promotion source are deliberately inert: no Worker/Pages entrypoint imports the recorder; the promotion SQL is not a Wrangler migration and remains **DO NOT APPLY**; and this source draft changes no binding, remote D1 row, deployment, GHL workflow, provider setting, customer, or sender behavior. A separately authorized Phase A previously installed the four empty physical tables while leaving the v1 marker as sole authority. One read-only Staff diagnostic helper is intentionally imported: it reports that current unpromoted 69-row shape as Degraded and accepts v2 only after proving the exact final marker, contract, and catalog together. The recorder's top-level truth remains **Unknown** with `runtime_recorder_not_adopted`. It must never be presented as Live or Healthy.
+The recorder remains deliberately inert: no Worker/Pages entrypoint imports it.
+Under separate explicit authorizations, Phase A installed the four empty
+physical tables and Phase B then promoted the exact production-lineage v2
+schema authority once. The promotion SQL is not a Wrangler migration, remains
+**DO NOT APPLY**, and is not authorized for replay. Exact primary readback now
+proves the final v2 marker, byte-exact contract, and 69-row 8c catalog together.
+This observed-evidence source draft changes no binding, remote D1 row,
+deployment, GHL workflow, provider setting, customer, or sender behavior. The
+recorder's top-level truth remains **Unknown** with
+`runtime_recorder_not_adopted`; zero reconciliation coverage keeps Staff
+`Degraded/coverage_missing`. Neither may be presented as Live or Healthy.
 
 ## What is bound
 
@@ -23,14 +33,20 @@ A signature authenticates the attestor's statement; it does not turn an unsuppor
 
 ## Production-lineage schema source
 
-`reminder-engine-worker/reliability-spine-v2.local.sql` proposes three requested evidence tables plus one supporting authority table:
+`reminder-engine-worker/reliability-spine-v2.local.sql` defines three requested evidence tables plus one supporting authority table:
 
 - `automation_release_manifests`
 - `automation_deployment_attestations`
 - `source_event_runtime_provenance`
 - `reliability_schema_contracts`
 
-The fourth table is intentional. The deployed v1 `reliability_schema_versions` row has no structural digest or object catalog, and altering that existing marker is neither safely idempotent nor enough to prove remote structure. The support table stores the immutable migration ID, named canonicalization, full required object catalog, and non-self-referential structure digest. Any future migration must separately approve this fourth table.
+The fourth table is intentional. The historical v1
+`reliability_schema_versions` row has no structural digest or object catalog,
+and altering that existing marker is neither safely idempotent nor enough to
+prove remote structure. The support table stores the immutable migration ID,
+named canonicalization, full required object catalog, and non-self-referential
+structure digest. The exact production-lineage Phase-B contract now provides
+that separately reviewed authority without modifying the historical v1 row.
 
 `sqlite-master-required-closure.v1` hashes exact `sqlite_master` SQL after normalizing only CRLF/CR line endings to LF; it does not rewrite whitespace inside SQL literals. Its required closure includes every named object used by the active reminder executor and reliability spine, plus all indexes/triggers attached to those tables. An unexpected trigger or index on a required table invalidates postflight.
 
@@ -52,33 +68,41 @@ catalog and additive-object gates, requires all four tables empty, inserts the
 exact contract first with D1 time, revalidates every contract byte, and inserts
 the v2 marker from the same timestamp as the final SQL statement. Re-run,
 candidate IDs, existing evidence, partial/wrong/extra objects, and timestamp
-mismatch fail closed. The source file remains unregistered, unimported,
-unapplied, and separately unauthorized.
+mismatch fail closed. The source file remains unregistered. It was imported
+exactly once under the consumed Phase-B authorization; it is now an immutable
+audited source and must not be replayed.
 
-The coordinated health reader proves exact v1 or exact final v2 only. Current
-physical 8c without the marker/contract remains
-`Degraded/schema_v2_physical_install_awaiting_promotion`; all inconsistent
-states fail closed. Schema authority does not create reconciliation evidence:
-even exact v2 with zero coverage is `Degraded/coverage_missing`, and only a
-separate complete fresh coverage row can yield `Known`.
+The coordinated health reader proves exact v1 or exact final v2 only. Primary
+D1 now returns `schema_v2_exact_authority`; all inconsistent states still fail
+closed. Schema authority does not create reconciliation evidence: exact v2
+with zero coverage is `Degraded/coverage_missing`, and only a separate complete
+fresh coverage row can yield `Known`.
 
 The inert release-manifest and attestation-store modules consume the same final
 production-lineage schema constant, so future records cannot silently retain
-the clean-bootstrap candidate ID. They remain runtime-unimported. A source
-merge is backward-compatible with the current v1 marker but does not authorize
-promotion or recorder adoption.
+the clean-bootstrap candidate ID. They remain runtime-unimported. Schema
+promotion did not authorize recorder adoption or produce a release manifest,
+deployment attestation, or runtime-provenance row.
 
-A future live promotion requires a fresh primary preflight, recovery bookmark,
-the pinned Wrangler 4.125.0 remote D1 file-import candidate (`d1 execute` with
-remote and file flags, with no runnable command recorded here), a fresh proof
-of its documented whole-file failure rollback semantics, and exact
-marker/contract/catalog readback. Merely accepting a file is insufficient and
-arbitrary Worker `exec()` is not approved. Because exact replay is rejected,
-any ambiguous retry must read
-authority state before acting. After promotion the Phase-A empty-only rollback
-is invalid; default recovery is a reviewed forward repair/new schema version,
-with Time Travel reserved for separately authorized destructive emergency
-recovery.
+The authorized promotion used a fresh primary preflight, recovery bookmark,
+pinned Wrangler 4.125.0 remote D1 file import, and exact
+marker/contract/catalog postflight. Its process exited 0 but emitted non-JSON
+stdout, so no provider apply receipt is claimed and no retry occurred. Exact
+primary state—not process output—is the success basis. Pre-promotion bookmark
+`000024cc-00000016-000050d4-f8c03021259ccaf75b391cd075661925` and
+post-promotion bookmark
+`000024cc-00000024-000050d4-e61b5dded0148fe961ef9ca82805c1f3` pin the
+recovery boundary. The literal rows and limitations are recorded in
+`fixtures/reliability-v2-production-lineage-promotion-observed-primary.v1.json`
+(SHA-256
+`cc9783c2e4ac903ff33307dec3e707a603c194a1d8bfb24e8b02183d0dae9537`).
+That fixture keeps the trusted D1 marker time distinct from the later
+SELECT-only observation window (`2026-08-27T04:25:51Z` through
+`2026-08-27T04:27:31Z`), binds the Worker readback to that same window, and
+pins the exact postflight scripts and count query by SHA-256.
+After promotion the Phase-A empty-only rollback is invalid; default recovery is
+a reviewed forward repair/new schema version, with Time Travel reserved for
+separately authorized destructive emergency recovery.
 
 ## Staged recorder behavior
 
@@ -112,4 +136,7 @@ The staged helper is not enough to cut over. All of these gates remain required:
 12. The external attestor must enforce typed allowlists and redaction for every opaque identifier/reference before signing; strict JSON shape alone is not a privacy or secret scanner.
 13. Immutable acceptance provenance for version A cannot authorize a later provider command executed by version B. Command preparation/evidence must bind and verify the current executor/version at effect time under its own fresh authority without rewriting the original acceptance provenance; the original 15-minute attestation is historical evidence and is not expected to remain fresh forever.
 
-Until every gate passes in a separately authorized behavior release, this phase is a tested contract/schema/adapter preview only and production behavior is unchanged.
+Until every runtime-adoption gate passes in a separately authorized behavior
+release, the recorder remains a tested contract/adapter preview only. The
+production schema authority is exact v2, but sender behavior and runtime
+recorder behavior are unchanged.

@@ -1,0 +1,127 @@
+{
+  "fixtureVersion": 1,
+  "purpose": "Sanitized immutable evidence of the one authorized primary-D1 production-lineage v2 authority promotion",
+  "status": "observed-primary-authority-promoted",
+  "authority": true,
+  "remoteObserved": true,
+  "evidenceCapturedAtUtc": "2026-08-27T04:27:31Z",
+  "promotionWasExplicitlyAuthorized": true,
+  "replayAuthorized": false,
+  "runtimeRecorderAdopted": false,
+  "schemaVariantId": "production-live-lineage-v2-authority-8c7245a",
+  "canonicalization": "sqlite-master-required-closure.v1",
+  "objectCount": 69,
+  "structureSha256": "8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62",
+  "physicalProjectionFixture": "docs/automation-truth/fixtures/reliability-v2-production-lineage-observed-primary.v1.json",
+  "physicalProjectionFixtureSha256": "a51924927c49d9981e8fe77cebd66c079acbd4f18413f6a47242f52aee4fcaef",
+  "rawPrimaryRows": {
+    "schemaVersions": [
+      {
+        "version": 1,
+        "applied_at": 1787631973000,
+        "migration_id": "reliability-spine-v1",
+        "description": "Durable source events, lifecycle instances, obligations, receipts, reconciliation, and exceptions"
+      },
+      {
+        "version": 2,
+        "applied_at": 1787803363000,
+        "migration_id": "reliability-spine-v2-production-lineage-8c7245ae",
+        "description": "Authenticated release manifests, deployment attestations, and source-event runtime provenance"
+      }
+    ],
+    "schemaContracts": [
+      {
+        "version": 2,
+        "migration_id": "reliability-spine-v2-production-lineage-8c7245ae",
+        "canonicalization": "sqlite-master-required-closure.v1",
+        "structure_sha256": "8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62",
+        "expected_objects_json": "[\"index:idx_command_obligation\",\"index:idx_deployment_attestations_latest\",\"index:idx_deployment_attestations_release\",\"index:idx_deployment_attestations_runtime_version\",\"index:idx_enr_contact\",\"index:idx_evidence_access\",\"index:idx_evt_contact\",\"index:idx_evt_engine_flow\",\"index:idx_evt_flow\",\"index:idx_exception_events\",\"index:idx_exceptions_family_queue\",\"index:idx_exceptions_queue\",\"index:idx_lease_events\",\"index:idx_lifecycle_appointment\",\"index:idx_lifecycle_family_state\",\"index:idx_lifecycle_person\",\"index:idx_obligations_due\",\"index:idx_obligations_lease\",\"index:idx_reconciliation_family\",\"index:idx_source_events_provider_event\",\"index:idx_source_events_received\",\"index:idx_source_runtime_provenance_deployment\",\"index:idx_source_transitions\",\"index:idx_steps_due\",\"index:idx_workflow_one_published\",\"table:automation_deployment_attestations\",\"table:automation_events\",\"table:automation_release_manifests\",\"table:command_attempts\",\"table:evidence_access_events\",\"table:exception_events\",\"table:lifecycle_exceptions\",\"table:lifecycle_instances\",\"table:lifecycle_obligations\",\"table:obligation_lease_events\",\"table:provider_receipts\",\"table:reconciliation_runs\",\"table:reliability_schema_contracts\",\"table:reliability_schema_versions\",\"table:reminder_enrollments\",\"table:reminder_steps\",\"table:source_event_runtime_provenance\",\"table:source_event_transitions\",\"table:source_events\",\"table:workflow_versions\",\"trigger:automation_deployment_attestations_consistent_insert\",\"trigger:automation_deployment_attestations_no_delete\",\"trigger:automation_deployment_attestations_no_overlap_conflict\",\"trigger:automation_deployment_attestations_no_update\",\"trigger:automation_deployment_attestations_no_version_identity_conflict\",\"trigger:automation_events_no_delete\",\"trigger:automation_events_no_update\",\"trigger:automation_release_manifests_no_delete\",\"trigger:automation_release_manifests_no_update\",\"trigger:evidence_access_no_delete\",\"trigger:evidence_access_no_update\",\"trigger:exception_events_no_delete\",\"trigger:exception_events_no_update\",\"trigger:lease_events_no_delete\",\"trigger:lease_events_no_update\",\"trigger:reliability_schema_contracts_no_delete\",\"trigger:reliability_schema_contracts_no_update\",\"trigger:source_event_runtime_provenance_consistent_insert\",\"trigger:source_event_runtime_provenance_no_delete\",\"trigger:source_event_runtime_provenance_no_update\",\"trigger:source_events_no_delete\",\"trigger:source_events_no_update\",\"trigger:source_transitions_no_delete\",\"trigger:source_transitions_no_update\"]",
+        "applied_at": 1787803363000
+      }
+    ]
+  },
+  "primaryCounts": {
+    "automation_release_manifests": 0,
+    "automation_deployment_attestations": 0,
+    "source_event_runtime_provenance": 0,
+    "reconciliation_runs": 0,
+    "follow_up_reconciliation_runs": 0,
+    "transient_promotion_gate": 0
+  },
+  "authorityAssessment": {
+    "assessor": "functions/lib/reliability-schema-authority.js#assessReliabilitySchemaAuthority",
+    "proven": true,
+    "reason": "schema_v2_exact_authority",
+    "version": 2,
+    "migrationState": "current_v2",
+    "appliedAt": 1787803363000,
+    "structureObjectCount": 69,
+    "structureSha256": "8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62"
+  },
+  "staffHealth": {
+    "truth": "Degraded",
+    "reason": "coverage_missing",
+    "schemaVersion": 2,
+    "coverageRows": 0,
+    "note": "Schema authority promotion does not create reconciliation coverage or adopt the runtime recorder."
+  },
+  "readEvidence": {
+    "trustedD1AppliedAtUtc": "2026-08-27T04:02:43.000Z",
+    "captureStartedAtUtc": "2026-08-27T04:25:51Z",
+    "captureCompletedAtUtc": "2026-08-27T04:27:31Z",
+    "cloudflareAccountId": "fa2b6f2441129b259dd5dea74045721b",
+    "databaseName": "amari-automation",
+    "databaseId": "089d810a-9d2d-43a4-8f1d-dc3620835557",
+    "markerQuery": "SELECT version,applied_at,migration_id,description FROM reliability_schema_versions ORDER BY version",
+    "contractQuery": "SELECT version,migration_id,canonicalization,structure_sha256,expected_objects_json,applied_at FROM reliability_schema_contracts ORDER BY version",
+    "structureQuery": "SELECT type,name,tbl_name,sql FROM sqlite_master WHERE type IN ('table','index','trigger') ORDER BY type,name",
+    "countsQuery": "SELECT (SELECT COUNT(*) FROM automation_release_manifests) AS manifest_count, (SELECT COUNT(*) FROM automation_deployment_attestations) AS attestation_count, (SELECT COUNT(*) FROM source_event_runtime_provenance) AS provenance_count, (SELECT COUNT(*) FROM reconciliation_runs) AS reconciliation_count, (SELECT COUNT(*) FROM reconciliation_runs WHERE family='follow-up-session-reminders') AS follow_up_reconciliation_count, (SELECT COUNT(*) FROM sqlite_master WHERE name='reliability_v2_production_lineage_promotion_gate') AS transient_gate_count",
+    "countsQuerySha256": "d910319d3efb3010f38d8bbc3a4dc0dc40200fe70ea7349cab67f620f77ee26e",
+    "postflightScriptPath": "/private/tmp/amari-phase-b-postflight.mjs",
+    "postflightScriptSha256": "ed541357a8ba2c8186f935e603744b69aba8fada0a37ef2833942caf75ed7fe4",
+    "authorityReadbackScriptPath": "/private/tmp/amari-phase-b-authority-readback.mjs",
+    "authorityReadbackScriptSha256": "310fbaa6aa857959f56361f49c05f273d2339ff786c7ac4e07a3e66f910db382",
+    "servedBy": "v3-prod",
+    "servedByPrimary": true,
+    "rowsWritten": 0,
+    "changedDb": false,
+    "requiredProjectionRows": 69,
+    "projectionComparedByteForByteToPhysicalFixture": true,
+    "markerContractTimestampEqual": true
+  },
+  "promotionEvidence": {
+    "repository": "Eben283/amarimethod-website",
+    "sourceMainAtExecution": "06c4abe956415fe6c736edfcd9cf96365eef739c",
+    "reviewedPullRequest": 503,
+    "reviewedHead": "4702fcf7eafd34fbdf9f42fce1d4dd9fd58dd3f3",
+    "reviewedMerge": "54c1595fa39f7b4a924701519f92b4346543d3ef",
+    "reviewedTree": "f7edcce5646b72235181a7a686863ae6aa2c32f6",
+    "promotionFile": "reminder-engine-worker/reliability-spine-v2-production-lineage-promote.local.sql",
+    "promotionFileGitBlob": "bfc7b48335b8b1e6328f524cd9762fa5546ffa11",
+    "promotionFileBytes": 52835,
+    "promotionFileSha256": "8af94319d15c184085b79f22c0b3054546ae59528c51f66f8094909e9b9df55c",
+    "wranglerVersion": "4.125.0",
+    "executionMechanism": "D1 remote SQL-file import through pinned Wrangler",
+    "processAttempts": 1,
+    "processExitCode": 0,
+    "stdoutWasJson": false,
+    "providerApplyReceiptParsed": false,
+    "blindRetryPerformed": false,
+    "successBasis": "Exact independent primary-D1 postflight, not process stdout",
+    "prePromotionBookmark": "000024cc-00000016-000050d4-f8c03021259ccaf75b391cd075661925",
+    "postPromotionBookmark": "000024cc-00000024-000050d4-e61b5dded0148fe961ef9ca82805c1f3"
+  },
+  "workerEvidence": {
+    "worker": "reminder-engine",
+    "deploymentUnchanged": true,
+    "observedWithinCaptureWindow": true,
+    "latestDeploymentId": "fa1d09eb-a0af-47e9-bc6e-a44652d59dc9",
+    "latestVersionId": "121f69d8-770f-4c58-adab-0574bece9f1d",
+    "latestDeploymentCreatedAtUtc": "2026-08-26T16:09:42.218627Z"
+  },
+  "limitations": [
+    "The successful process exit did not provide parseable JSON, so this fixture does not claim a provider apply receipt, apply query count, or apply row count.",
+    "The promotion proves schema authority only. It does not prove reconciliation coverage, runtime recorder adoption, ordinary lifecycle completion, or an operator exception-resolution drill.",
+    "No replay, rollback, Worker deployment, GHL/provider configuration change, or send was performed."
+  ]
+}
