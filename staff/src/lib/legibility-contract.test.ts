@@ -176,6 +176,19 @@ describe('Staff legibility contract', () => {
     expect(global).toContain('.ops-hub--framed .ops-hub__frame iframe { height:100%; min-height:0; }');
   });
 
+  it('keeps the operations ledger native, bounded, and metadata-only', () => {
+    const operations = css('pages/OperationsPage.tsx');
+    const api = css('lib/api.ts');
+    for (const label of ['Activity', 'Changes', 'Incidents']) expect(operations).toContain(`label: '${label}'`);
+    expect(operations).toContain('getOpsLedger');
+    expect(operations).toContain('Activity by task');
+    expect(operations).toContain('From');
+    expect(operations).toContain('To');
+    expect(operations).toContain('Requested by');
+    expect(operations).toContain('Customer names, contact IDs, message content');
+    expect(api).toContain("return fetchApi('/ops/ledger')");
+  });
+
   it('opens an attention reply on the selected person', () => {
     const home = css('pages/HomePage.tsx');
     expect(home).toContain("`/client-desk?contact=${encodeURIComponent(reply.contactId)}`");

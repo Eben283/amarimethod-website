@@ -1,24 +1,32 @@
-import { Activity, AlertTriangle, CalendarDays, Check, ChevronLeft, ChevronRight, CircleDollarSign, ClipboardPlus, Database, GraduationCap, History, Kanban, Loader2, Mail, MapPinned, MessageSquare, ShoppingBag, Sparkles, TrendingUp, UsersRound, Wallet, Workflow } from 'lucide-react';
+import { Activity, AlertTriangle, CalendarDays, Check, ChevronLeft, ChevronRight, CircleAlert, CircleCheck, CircleDollarSign, ClipboardPlus, Database, GitBranch, GraduationCap, History, Kanban, ListChecks, Loader2, Mail, MapPinned, MessageSquare, RotateCcw, ShieldCheck, ShoppingBag, Sparkles, TrendingUp, UsersRound, Wallet, Workflow } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   getAutomationWatchAccessUrl,
   getCrmMirrorAccessUrl,
+  getOpsLedger,
   getOpsSystemsBoard,
   getStaffAmariMailReadiness,
   getStaffGmailReplyReadiness,
   startStaffAmariMailAuthorization,
   type GmailReplySyncGapReason,
+  type OpsLedger,
+  type OpsLedgerActivity,
+  type OpsLedgerChange,
+  type OpsLedgerIncident,
   type OpsSystemsBoard,
   type StaffAmariMailReadiness,
   type StaffGmailReplyReadiness,
 } from '../lib/api';
 import { currentStaffBuildIdentity } from '../lib/staff-release';
 
-type OpsTab = 'overview' | 'systems' | 'crm' | 'automation';
+type OpsTab = 'overview' | 'activity' | 'changes' | 'incidents' | 'systems' | 'crm' | 'automation';
 
 const TABS: { id: OpsTab; label: string; detail: string; Icon: typeof Activity }[] = [
   { id: 'overview', label: 'Overview', detail: 'What needs attention', Icon: Activity },
+  { id: 'activity', label: 'Activity', detail: 'Tasks and outcomes', Icon: ListChecks },
+  { id: 'changes', label: 'Changes', detail: 'Releases and config', Icon: GitBranch },
+  { id: 'incidents', label: 'Incidents', detail: 'Open and resolved', Icon: CircleAlert },
   { id: 'systems', label: 'Systems', detail: 'Paths · heartbeats · fix', Icon: Activity },
   { id: 'crm', label: 'CRM Mirror', detail: 'GHL + Stripe import', Icon: Database },
   { id: 'automation', label: 'Automation Watch', detail: 'Technical cutover diagnostics', Icon: Workflow },
@@ -69,6 +77,9 @@ const WORKSPACE_GROUPS: { label: string; items: Workspace[] }[] = [
 function tabFromSearch(value: string | null): OpsTab {
   if (value === 'crm' || value === 'crm-mirror') return 'crm';
   if (value === 'automation' || value === 'automation-watch') return 'automation';
+  if (value === 'activity') return 'activity';
+  if (value === 'changes') return 'changes';
+  if (value === 'incidents') return 'incidents';
   return value === 'systems' ? 'systems' : 'overview';
 }
 
@@ -277,6 +288,154 @@ function ReplySyncReview() {
   );
 }
 
+function ledgerTime(value: string | null | undefined) {
+  if (!value) return 'Time unavailable';
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return 'Time unavailable';
+  return parsed.toLocaleString([], { month: 'short', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' });
+}
+
+function readableOutcome(value: string | null | undefined) {
+  if (!value) return 'Unknown';
+  return value.replace(/[_-]+/g, ' ');
+}
+
+function CountSummary({ counts }: { counts: OpsLedgerActivity['counts'] }) {
+  const total = Number(counts?.total) || 0;
+  const completed = Number(counts?.completed) || 0;
+  const failed = Number(counts?.failed) || 0;
+  const skipped = Number(counts?.skipped) || 0;
+  return <span className="ops-ledger__counts">{total} task{total === 1 ? '' : 's'} · {completed} complete{failed ? ` · ${failed} failed` : ''}{skipped ? ` · ${skipped} skipped` : ''}</span>;
+}
+
+function LedgerLoadingState() {
+  return <div className="ops-ledger__state"><Loader2 className="animate-spin" aria-hidden="true" /><span>Reading the operations ledger…</span></div>;
+}
+
+function LedgerEmptyState({ label }: { label: string }) {
+  return <div className="ops-ledger__state"><CircleCheck aria-hidden="true" /><strong>No {label} in this ledger.</strong><span>Only recorded operational metadata appears here.</span></div>;
+}
+
+function ActivityLedger({ activity }: { activity: OpsLedgerActivity[] }) {
+  const groups = new Map<string, { label: string; entries: OpsLedgerActivity[] }>();
+  for (const entry of activity) {
+    const taskId = entry.taskId || entry.taskLabel || entry.id;
+    const existing = groups.get(taskId);
+    if (existing) existing.entries.push(entry);
+    else groups.set(taskId, { label: entry.taskLabel || 'Untitled task', entries: [entry] });
+  }
+
+  if (!groups.size) return <LedgerEmptyState label="activity" />;
+
+  return (
+    <div className="ops-ledger__list" aria-label="Activity by task">
+      {[...groups.values()].map(({ label, entries }) => {
+        const first = entries[0];
+        const counts = entries.reduce((total, item) => ({
+          total: total.total + (Number(item.counts?.total) || 0),
+          completed: total.completed + (Number(item.counts?.completed) || 0),
+          failed: total.failed + (Number(item.counts?.failed) || 0),
+          skipped: total.skipped + (Number(item.counts?.skipped) || 0),
+        }), { total: 0, completed: 0, failed: 0, skipped: 0 });
+        const latest = entries.reduce((current, item) => (Date.parse(item.at || '') > Date.parse(current.at || '') ? item : current), first);
+        return (
+          <details key={first.taskId || first.id} className="ops-ledger__task">
+            <summary>
+              <span className="ops-ledger__summary-main"><strong>{label}</strong><CountSummary counts={counts} /></span>
+              <span className="ops-ledger__summary-meta"><b className={`ops-ledger__outcome ops-ledger__outcome--${latest.outcome || 'unknown'}`}>{readableOutcome(latest.outcome)}</b><time dateTime={latest.at || undefined}>{ledgerTime(latest.at)}</time></span>
+            </summary>
+            <div className="ops-ledger__task-detail">
+              {entries.map((entry) => (
+                <div key={entry.id} className="ops-ledger__event">
+                  <div><span>Actor</span><strong>{entry.actor || 'Unknown'}</strong></div>
+                  <div><span>Requested by</span><strong>{entry.requestedBy || 'Unknown'}</strong></div>
+                  <div><span>Counts</span><CountSummary counts={entry.counts} /></div>
+                  <div><span>Outcome and time</span><strong>{readableOutcome(entry.outcome)} · {ledgerTime(entry.at)}</strong></div>
+                </div>
+              ))}
+            </div>
+          </details>
+        );
+      })}
+    </div>
+  );
+}
+
+function ChangesLedger({ changes }: { changes: OpsLedgerChange[] }) {
+  if (!changes.length) return <LedgerEmptyState label="changes" />;
+  return (
+    <div className="ops-ledger__list" aria-label="Releases and configuration changes">
+      {changes.map((change) => (
+        <article key={change.id} className="ops-ledger__change">
+          <header>
+            <span className="ops-ledger__kind">{readableOutcome(change.kind)}</span>
+            <time dateTime={change.at || undefined}>{ledgerTime(change.at)}</time>
+          </header>
+          <h3>{change.label || 'Recorded change'}</h3>
+          {change.taskLabel ? <p className="ops-ledger__link">Task: {change.taskLabel}</p> : null}
+          <div className="ops-ledger__transition" aria-label="Change from previous state to current state">
+            <span><small>From</small><strong>{change.from || 'Not recorded'}</strong></span>
+            <span className="ops-ledger__arrow" aria-hidden="true">→</span>
+            <span><small>To</small><strong>{change.to || 'Not recorded'}</strong></span>
+          </div>
+          <dl className="ops-ledger__proof">
+            <div><dt><ShieldCheck aria-hidden="true" /> Verification</dt><dd>{change.verification || 'Not recorded'}</dd></div>
+            <div><dt><RotateCcw aria-hidden="true" /> Rollback</dt><dd>{change.rollback || 'Not recorded'}</dd></div>
+          </dl>
+        </article>
+      ))}
+    </div>
+  );
+}
+
+function IncidentGroup({ label, incidents }: { label: string; incidents: OpsLedgerIncident[] }) {
+  if (!incidents.length) return null;
+  return (
+    <section className="ops-ledger__incident-group" aria-labelledby={`ops-ledger-${label.toLowerCase()}-title`}>
+      <h3 id={`ops-ledger-${label.toLowerCase()}-title`}>{label}<span>{incidents.length}</span></h3>
+      <div className="ops-ledger__list">
+        {incidents.map((incident) => (
+          <article key={incident.id} className="ops-ledger__incident">
+            <header><span className={`ops-ledger__status ops-ledger__status--${incident.status}`}>{readableOutcome(incident.status)}</span><span className={`ops-ledger__severity ops-ledger__severity--${incident.severity}`}>{readableOutcome(incident.severity)}</span></header>
+            <h4>{incident.title || 'Operational incident'}</h4>
+            <dl>
+              <div><dt>Task</dt><dd>{incident.taskLabel || 'Not linked'}</dd></div>
+              <div><dt>Release</dt><dd>{incident.releaseLabel || 'Not linked'}</dd></div>
+              <div><dt>{incident.status === 'resolved' ? 'Resolved' : 'Opened'}</dt><dd>{ledgerTime(incident.status === 'resolved' ? incident.resolvedAt : incident.openedAt)}</dd></div>
+            </dl>
+          </article>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function IncidentsLedger({ incidents }: { incidents: OpsLedgerIncident[] }) {
+  if (!incidents.length) return <LedgerEmptyState label="incidents" />;
+  const open = incidents.filter((incident) => incident.status === 'open');
+  const resolved = incidents.filter((incident) => incident.status === 'resolved');
+  return <div className="ops-ledger__incident-groups"><IncidentGroup label="Open" incidents={open} /><IncidentGroup label="Resolved" incidents={resolved} /></div>;
+}
+
+function OperationsLedgerView({ tab, ledger, loading, error }: { tab: 'activity' | 'changes' | 'incidents'; ledger: OpsLedger | null; loading: boolean; error: string | null }) {
+  const title = tab === 'activity' ? 'Activity by task' : tab === 'changes' ? 'Releases and configuration' : 'Incident register';
+  const description = tab === 'activity'
+    ? 'A bounded account of operational work, with task details kept collapsed until needed.'
+    : tab === 'changes'
+      ? 'Release and configuration movement, with verification and rollback evidence alongside each change.'
+      : 'Open and resolved incidents linked to the task or release that owns the work.';
+  return (
+    <section className="ops-ledger" aria-labelledby="ops-ledger-title">
+      <header className="ops-ledger__head">
+        <div><p>Read-only operations ledger</p><h2 id="ops-ledger-title">{title}</h2><span>{description}</span></div>
+        {ledger?.generatedAt ? <time dateTime={ledger.generatedAt}>Updated {ledgerTime(ledger.generatedAt)}</time> : null}
+      </header>
+      {loading ? <LedgerLoadingState /> : error ? <div className="ops-ledger__state ops-ledger__state--error" role="alert"><CircleAlert aria-hidden="true" /><strong>Operations ledger unavailable.</strong><span>{error}</span></div> : !ledger ? <LedgerEmptyState label={tab} /> : tab === 'activity' ? <ActivityLedger activity={ledger.activity || []} /> : tab === 'changes' ? <ChangesLedger changes={ledger.changes || []} /> : <IncidentsLedger incidents={ledger.incidents || []} />}
+      <footer className="ops-ledger__foot">Staff shows operational metadata only. Customer names, contact IDs, message content, and raw provider data are excluded.</footer>
+    </section>
+  );
+}
+
 export default function OperationsPage() {
   const [params, setParams] = useSearchParams();
   const [mailCallbackState] = useState<'connected' | 'failed' | null>(() => {
@@ -287,6 +446,9 @@ export default function OperationsPage() {
   const tab = tabFromSearch(params.get('tab'));
   const [board, setBoard] = useState<OpsSystemsBoard | null>(null);
   const [boardError, setBoardError] = useState<string | null>(null);
+  const [ledger, setLedger] = useState<OpsLedger | null>(null);
+  const [ledgerLoading, setLedgerLoading] = useState(false);
+  const [ledgerError, setLedgerError] = useState<string | null>(null);
   const [crmSrc, setCrmSrc] = useState<string | null>(null);
   const [crmLoading, setCrmLoading] = useState(false);
   const [crmError, setCrmError] = useState<string | null>(null);
@@ -311,6 +473,18 @@ export default function OperationsPage() {
       .catch((err) => { if (!cancelled) setBoardError(err instanceof Error ? err.message : 'Could not load system status'); });
     return () => { cancelled = true; };
   }, [tab, board]);
+
+  useEffect(() => {
+    if (!['activity', 'changes', 'incidents'].includes(tab) || ledger) return;
+    let cancelled = false;
+    setLedgerLoading(true);
+    setLedgerError(null);
+    void getOpsLedger()
+      .then((data) => { if (!cancelled) setLedger(data); })
+      .catch((err) => { if (!cancelled) setLedgerError(err instanceof Error ? err.message : 'Could not load the operations ledger'); })
+      .finally(() => { if (!cancelled) setLedgerLoading(false); });
+    return () => { cancelled = true; };
+  }, [tab, ledger]);
 
   useEffect(() => {
     if (tab !== 'crm') return;
@@ -424,7 +598,10 @@ export default function OperationsPage() {
         </section>
       ) : null}
 
-      {tab !== 'overview' ? <section className="ops-hub__frame" aria-label={TABS.find((item) => item.id === tab)?.label}>
+      {tab !== 'overview' ? <section className={`ops-hub__frame${['activity', 'changes', 'incidents'].includes(tab) ? ' ops-hub__frame--ledger' : ''}`} aria-label={TABS.find((item) => item.id === tab)?.label}>
+        {['activity', 'changes', 'incidents'].includes(tab) ? (
+          <OperationsLedgerView tab={tab as 'activity' | 'changes' | 'incidents'} ledger={ledger} loading={ledgerLoading} error={ledgerError} />
+        ) : null}
         {tab === 'crm' && crmLoading ? (
           <div className="ops-hub__status"><Loader2 className="animate-spin" aria-hidden="true" /> Opening protected CRM session…</div>
         ) : null}
