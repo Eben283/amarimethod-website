@@ -58,6 +58,18 @@ All landscape ~1600×1194. This is the backbone. Filename encodes subject + demo
 
 Keep `journal-base/jh-spinal-wave-refined.jpg` for the Spinal Wave article and Spinal Wave cards. Do not use it as sciatica imagery.
 
+## KEEP — Garrett editorial blog photography (2026-08-26)
+
+These responsive WebP derivatives are from the owner-provided `Photos-1-001 (4).zip` shoot and are intended for Journal cards and general explanatory pieces. They are not substitutes for the hands-on client-guidance hero photography.
+
+| File stem | Depicts | Approved use |
+|---|---|---|
+| `optimized/garrett-editorial-wide-*` | Garrett explaining with a small tool, quiet left-side space | General mechanics/method article card or header |
+| `optimized/garrett-studio-editorial-*` | Garrett in the studio | General mechanics article card |
+| `optimized/garrett-preparing-notes-*` | Garrett preparing notes | Method/editorial article card |
+| `optimized/garrett-shoulder-movement-*` | Garrett demonstrating shoulder movement | Power Posture or self-guided movement article card |
+| `optimized/garrett-neck-awareness-*` | Garrett demonstrating neck awareness | Jaw/neck article card |
+
 ## KEEP — refined condition heroes (clean outputs of the refine pass)
 | File | Depicts |
 |---|---|
