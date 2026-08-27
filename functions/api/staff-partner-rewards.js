@@ -1,6 +1,6 @@
 // Staff-owned manual partner-reward ledger. It never sends, charges, or writes GHL.
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
-import { rewardForPracticePurchase } from "../lib/partner-reward-ledger.js";
+import { rewardForPracticePurchase, summarizePartnerRewardEvents } from "../lib/partner-reward-ledger.js";
 
 const ID = /^[A-Za-z0-9_-]{1,80}$/;
 const iso = (value) => {
@@ -16,9 +16,24 @@ function insert(db, rewardId, actor, type, detail) {
 export async function onRequestOptions(context) { return new Response(null, { status: 204, headers: headers(context) }); }
 export async function onRequestGet(context) {
   const out = headers(context); const auth = await requireStaffAuth(context, out); if (auth.error) return auth.error;
-  const db = context.env.AUTOMATION_DB; if (!db) return new Response(JSON.stringify({ configured: false, rewards: [] }), { headers: out });
-  const rows = await db.prepare("SELECT id, reward_id, ts, actor, type, detail FROM partner_reward_events ORDER BY ts DESC LIMIT 200").all();
-  return new Response(JSON.stringify({ configured: true, rewards: (rows.results || []).map(r => ({ ...r, detail: JSON.parse(r.detail) })) }), { headers: out });
+  const db = context.env.AUTOMATION_DB;
+  if (!db) return new Response(JSON.stringify({
+    error: "Partner reward ledger is unavailable because the AUTOMATION_DB production binding is missing.",
+    code: "automation_db_binding_missing",
+    remediation: "Bind D1 database amari-automation as AUTOMATION_DB in Cloudflare Pages Production, then redeploy.",
+  }), { status: 422, headers: out });
+  try {
+    const rows = await db.prepare("SELECT id, reward_id, ts, actor, type, detail FROM partner_reward_events ORDER BY ts DESC LIMIT 200").all();
+    const events = (rows.results || []).map((row) => ({ ...row, detail: JSON.parse(row.detail) }));
+    return new Response(JSON.stringify({ configured: true, rewards: summarizePartnerRewardEvents(events) }), { headers: out });
+  } catch (error) {
+    console.error("[staff-partner-rewards] ledger read failed", error);
+    return new Response(JSON.stringify({
+      error: "Partner reward ledger could not be read.",
+      code: "partner_reward_ledger_read_failed",
+      remediation: "Verify the AUTOMATION_DB binding points to amari-automation and that partner_reward_events exists.",
+    }), { status: 422, headers: out });
+  }
 }
 export async function onRequestPost(context) {
   const out = headers(context); const auth = await requireStaffAuth(context, out); if (auth.error) return auth.error;
