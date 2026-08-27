@@ -94,8 +94,11 @@ const MIME_BY_EXTENSION = {
 };
 const ROOT_FOLDER = "Amari site assets";
 const CHUNK_SIZE = 8;
-export const USED_ON_WEBSITE_FOLDER = "Used on website";
-export const NOT_USED_ON_WEBSITE_FOLDER = "Not used on website";
+export const WEBSITE_IMAGES_FOLDER = "Website images";
+export const PHOTO_LIBRARY_FOLDER = "Photo library";
+export const BRAND_LOGOS_FOLDER = "Brand & logos";
+export const PRINT_MATERIALS_FOLDER = "Print materials";
+export const DOCUMENTS_FOLDER = "Documents";
 const FOLDER_ALIASES = {
   Brand: ["Brand", "Current identity", "Historical logo files"],
   "Site photography": ["Site photography", "Current site photography", "Current photography"],
@@ -128,28 +131,40 @@ export function siteAssetCatalog() {
   return SITE_ASSETS;
 }
 
-// This is a one-time filing migration, not a recurring classification feature.
-// A media record exists in one folder only; no object is copied or deleted.
+// This is a one-time filing migration. A record exists in one folder only;
+// no original object is copied or deleted.
 export async function organizeMediaByWebsiteUsage({ db, actor }) {
   if (!db) throw Object.assign(new Error("Media metadata storage is not configured"), { status: 422 });
   const library = await listStaffMedia(db);
   const activeFolders = library.folders.filter((folder) => folder.status === "active");
-  const usedFolder = await ensureFolder(db, activeFolders, USED_ON_WEBSITE_FOLDER, null, actor);
-  const notUsedFolder = await ensureFolder(db, activeFolders, NOT_USED_ON_WEBSITE_FOLDER, null, actor);
+  const folders = new Map();
+  for (const name of [
+    WEBSITE_IMAGES_FOLDER,
+    PHOTO_LIBRARY_FOLDER,
+    BRAND_LOGOS_FOLDER,
+    PRINT_MATERIALS_FOLDER,
+    DOCUMENTS_FOLDER,
+  ]) {
+    folders.set(name, await ensureFolder(db, activeFolders, name, null, actor));
+  }
   const usedNames = new Set(SITE_ASSETS
     .filter((asset) => asset.websiteUsage === "currently_used")
     .map((asset) => normalizeMediaName(displayName(asset.path))));
-  let movedUsed = 0;
-  let movedNotUsed = 0;
+  const isBrand = (name) => /(?:^amari(?:logo|[-_ ]method[-_ ]logo)?|wordmark|favicon|icon)/i.test(name);
+  const isPrintMaterial = (name, folderId) => /(?:business[-_ ]card|postcard|flyer|sticker|\.pdf\.png$)/i.test(name) || folderNameFor(library.folders, folderId) === "Print collateral";
+  let moved = 0;
   for (const asset of library.assets) {
-    if (asset.status !== "active" || asset.kind !== "image") continue;
-    const targetFolderId = usedNames.has(normalizeMediaName(asset.name)) ? usedFolder.id : notUsedFolder.id;
+    if (asset.status !== "active") continue;
+    const targetName = isPrintMaterial(asset.name, asset.folderId) ? PRINT_MATERIALS_FOLDER
+      : asset.kind !== "image" ? DOCUMENTS_FOLDER
+        : isBrand(asset.name) ? BRAND_LOGOS_FOLDER
+          : usedNames.has(normalizeMediaName(asset.name)) ? WEBSITE_IMAGES_FOLDER : PHOTO_LIBRARY_FOLDER;
+    const targetFolderId = folders.get(targetName).id;
     if (asset.folderId === targetFolderId) continue;
     await updateMediaAsset(db, { action: "move_asset", assetId: asset.id, folderId: targetFolderId }, { actor });
-    if (targetFolderId === usedFolder.id) movedUsed += 1;
-    else movedNotUsed += 1;
+    moved += 1;
   }
-  return { movedUsed, movedNotUsed };
+  return { moved };
 }
 
 function defaultDescription(asset) {

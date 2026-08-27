@@ -1,6 +1,6 @@
 import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-guards.js";
 import { createMediaFolder, listStaffMedia, updateMediaAsset } from "../lib/staff-media.js";
-import { importSiteMediaBatch, NOT_USED_ON_WEBSITE_FOLDER, organizeMediaByWebsiteUsage, syncSiteMediaCatalog, USED_ON_WEBSITE_FOLDER } from "../lib/staff-site-media.js";
+import { BRAND_LOGOS_FOLDER, DOCUMENTS_FOLDER, organizeMediaByWebsiteUsage, PHOTO_LIBRARY_FOLDER, PRINT_MATERIALS_FOLDER, WEBSITE_IMAGES_FOLDER } from "../lib/staff-site-media.js";
 
 function responseHeaders(context) {
   return {
@@ -33,8 +33,8 @@ export async function onRequestGet(context) {
       includeArchived: url.searchParams.get("archived") === "1",
     });
     // Run the one-time organization when this release first opens Staff Media.
-    // The two destination folders are its durable completion marker.
-    const hasUsageFolders = [USED_ON_WEBSITE_FOLDER, NOT_USED_ON_WEBSITE_FOLDER]
+    // The filing folders are its durable completion marker.
+    const hasUsageFolders = [WEBSITE_IMAGES_FOLDER, PHOTO_LIBRARY_FOLDER, BRAND_LOGOS_FOLDER, PRINT_MATERIALS_FOLDER, DOCUMENTS_FOLDER]
       .every((name) => library.folders.some((folder) => folder.status === "active" && !folder.parentId && folder.name === name));
     if (!hasUsageFolders && library.assets.some((asset) => asset.status === "active" && asset.kind === "image")) {
       await organizeMediaByWebsiteUsage({ db: context.env.ATTEND_DB || null, actor: auth.payload?.user || "Staff" });
@@ -58,20 +58,6 @@ export async function onRequestPost(context) {
   if (parsed.error) return parsed.error;
   try {
     const actor = auth.payload?.user || "Staff";
-    if (parsed.body.action === "sync_site_catalog") {
-      const synced = await syncSiteMediaCatalog({ db: context.env.ATTEND_DB || null, actor });
-      return json(synced, 200, headers);
-    }
-    if (parsed.body.action === "import_site_assets") {
-      const imported = await importSiteMediaBatch({
-        db: context.env.ATTEND_DB || null,
-        bucket: context.env.MEDIA_BUCKET || null,
-        origin: new URL(context.request.url).origin,
-        actor,
-        offset: parsed.body.offset,
-      });
-      return json(imported, 200, headers);
-    }
     if (parsed.body.action === "create_folder") {
       const folder = await createMediaFolder(context.env.ATTEND_DB || null, parsed.body, { actor });
       return json({ folder }, 201, headers);
