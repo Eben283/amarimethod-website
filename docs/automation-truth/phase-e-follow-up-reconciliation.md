@@ -1,6 +1,6 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: independently reviewed source-only candidate, refreshed locally against `43ddd635b2ea225481cd9f1a7793deee9e68905e` on 2026-08-27; not merged or adopted. This contract is deliberately unable to make Staff healthy or authoritative.
+Status: the prior reconciliation increment merged as #510 at `282b9686554dfcf794d09861c0ebff87d78a76dd`; only the execution-evidence linkage increment below remains local, unpublished, and non-authoritative. This contract is deliberately unable to make Staff healthy or authoritative.
 
 ## Source provenance and boundary
 
@@ -89,6 +89,14 @@ The collector/writer and drill remain unimported, so this increment has no produ
 `reminder-engine-worker/src/follow-up-reconciliation-drill.js` is an in-memory, zero-network transition-mechanics drill. It proves a simulated linked exception is visible as open, acknowledged, and investigating, disappears from the active queue only after resolved, and that stale/reused/mid-batch transitions do not append false audit evidence.
 
 It is explicitly `mechanicsOnly: true`, `providerReceiptObserved: false`, and `obligationOutcomeProven: false`. The obligation remains pending and no receipt is invented. Therefore it does **not** satisfy the canonical ordinary lifecycle/operator-resolution acceptance gate and must never be described as a live operator drill.
+
+## Execution-evidence linkage planner
+
+`functions/lib/follow-up-execution-evidence.js` is an unimported, pure, source-only planner (`follow-up-execution-evidence.v1`). It recomputes the existing source/lifecycle/obligation identities, binds one exact Follow-Up workflow document digest, node, legacy enrollment occurrence, and prospective pre-send attempt, and returns only `prospective_linkage`, `historical_unlinked`, or `unknown`. It rejects reschedule reuse, incompatible versions/nodes/clocks, missing or conflicting receipt references, and caller-supplied authority fields. Acceptance-time and executor-time runtime identities are separate and can differ only when each is structurally bound to the same workflow document.
+
+The `legacy.sourceEventId` and effective-start projection are proposed, independently verified bindings for a future adapter; they are **not** columns in current `reminder_enrollments` or `reminder_steps` and must never be synthesized from appointment ID plus step index. Likewise, acceptance and executor projections are caller-supplied structural inputs, not authenticated attestation rows. The document digest detects changed authored content under the same version but does not authenticate the document or provenance.
+
+Every result is permanently `sourceOnly:true`, `simulation:true`, `authority:false`, `dispatchAllowed:false`, and `outcomeProven:false`. Caller-supplied rows and digests are not authenticated; the planner is not an attestor. Historical sent, Gmail-accepted, or GHL-delivered observations never manufacture a pre-send attempt or close an obligation. A future adapter must independently validate and durably write evidence; that is a separate behavior release.
 
 ## Gates before any future authority lift
 
