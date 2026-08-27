@@ -1,6 +1,6 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: reconciliation merged as #510 at `282b9686554dfcf794d09861c0ebff87d78a76dd`, execution-evidence linkage as #517 at `d74308c62f0f38c58ec77f1e486a9fcfbc8a7d49`, and coverage selection as #519 at `d3fdf35368f85409776860fce51a40720528ea2f`. The current-inventory adapter below is the subsequent local, unpublished increment. All contracts remain non-authoritative and deliberately unable to make Staff healthy.
+Status: reconciliation merged as #510 at `282b9686554dfcf794d09861c0ebff87d78a76dd`, execution-evidence linkage as #517 at `d74308c62f0f38c58ec77f1e486a9fcfbc8a7d49`, coverage selection as #519 at `d3fdf35368f85409776860fce51a40720528ea2f`, and current inventory as #521 at `75063c8a7601b13ad30cb6a98683bab55c2b2d99`. The subsequent durable effect-evidence store and additive schema candidate are local source work, not an installed or adopted producer. All contracts remain non-authoritative and deliberately unable to make Staff healthy.
 
 ## Source provenance and boundary
 
@@ -127,6 +127,80 @@ The snapshot digest binds the selected current rows, required-column catalog and
 `lateEvidenceProjection:"unavailable"` and its fixed reason are present in every result. No command/receipt data is queried or projected. Neither provider_receipts.created_at/observed_at, legacy automation_events.ts, mutable updated_at nor readAt is renamed into ingestedAt. An empty evidence array means unprojected, not no receipts. The ingestion window still belongs to the selector input contract, but it yields no ingestion-coverage claim here.
 
 The envelope returns observed/incomplete, current-inventory completeness, capability status, digest and nested selector result; failures contain no replacement set. Every result remains simulation/sourceOnly, authority=false, dispatchAllowed=false, outcomeProven=false, replacementAllowed=false and retainPreviousCarryForward=true. Even a complete current inventory leaves historical deletion/retention gaps, external evidence, ingestion journals, immutable changes, trusted provenance and terminal/operator proof unresolved. No Staff health change, obligation closure, resend or production integration is included.
+
+## Durable effect-evidence candidate — source only
+
+The next local increment is `functions/lib/follow-up-effect-evidence-store.js`
+with `reminder-engine-worker/reliability-effect-evidence.candidate.sql` and a
+real SQLite/D1-shaped test suite. The SQL is **unregistered and unapplied**: it
+is not a migration, is absent from schema loaders and production imports, and
+does not change the promoted-v2 authority definition. Applying it requires its
+own exact-schema review, recovery plan, approval and primary readback.
+
+The storage design adds an immutable binding from an existing canonical command
+attempt to its exact source, lifecycle, obligation, workflow document/node,
+acceptance provenance, executor provenance, provider account scope and lease
+event. It reuses `command_attempts` and `provider_receipts`; it does not introduce
+another execution engine or infer attempts from historical send logs. A separate
+append-only event table receives database-assigned ingestion sequence and time.
+Occurrence/observation time is distinct from ingestion order.
+
+Preparation must atomically persist the canonical prepared attempt, exact
+binding and prepared event before any future caller may attempt an effect.
+Observation and receipt projection must be atomic with their journal evidence;
+a post-commit JavaScript check alone is not a rollback mechanism. Exact replay
+is idempotent, identity/content or ownership collisions refuse, and immutable
+tables reject UPDATE, DELETE and duplicate-identity REPLACE. The candidate does
+not send, authorize retry or mark an obligation satisfied. A lost database
+response is an unknown write outcome, never permission to send or manufacture a
+new attempt.
+
+Late receipt evidence uses the retained original binding, not an assumption
+that the execution lease must still be active. Missing linkage refuses without
+claiming durable retention of that unlinked receipt. Provider reference reuse
+under another attempt must not be hidden by the existing receipt uniqueness
+constraint, which omits attempt/account scope. The reader may conservatively
+refuse such an alias; it must not guess ownership. Accepted followed by delivered
+is progression, while contradictory terminal receipt evidence remains unresolved.
+
+Journal traversal freezes a committed high-water sequence and pages only through
+that boundary. Sequence gaps are legal and occurrence time does not decide
+inclusion. A continuation is diagnostic, not a durable consumer checkpoint or
+an authenticated provider cursor. Missing/expired parents, invalid boundaries,
+partial results or bounded overflow cannot clear prior unresolved work. There
+is no adopted purge or retention-extension policy in this candidate.
+
+This journal is not yet composed with the current-inventory selector. Its
+sequence must never be relabeled as the selector's timestamp `ingestedAt`, nor
+may a time-window filter discard old-occurrence evidence selected by ingestion
+sequence. A future composition must union current inventory, unresolved carry
+and late evidence with exact parent identities, fail closed on incomplete
+traversal, and prove its own bounded retention/consumer-checkpoint law.
+
+Stored provenance and caller-supplied digests are structural evidence only. The
+store is not an attestation verifier or provider authenticator. In particular,
+the legacy GHL transport's conversation-ID fallback is not an independently
+verified message receipt and cannot be adopted as one. All results remain
+source-only/simulated and non-authoritative; no producer adoption, external
+coverage, dispatch permission, replacement permission or outcome proof follows
+from a successful local write or journal traversal.
+
+Local verification on the inspected main base
+`12e361c6e48472f21438c26f866cda99795d5572` passes all 2,361 repository tests,
+including 69 new real-SQLite/D1-shaped cases. The fixture installs the exact
+production-lineage v2 schema in memory, then the candidate; its placeholder
+attestation signatures prove structural constraints only, not authentication.
+The suite exercises two-connection preparation races, transactional rollback,
+projection races, replay/ownership collisions, terminal receipt contradictions,
+late receipts, REPLACE with recursive triggers disabled, allocation gaps,
+fixed-boundary pagination, expired anchors and malformed result privacy.
+
+Independent local catalog comparison finds exactly 15 additive objects (two
+tables, two indexes, eleven triggers), no changed existing object, unchanged
+schema markers/contracts and no foreign-key violation. Source/release guards
+and whitespace checks pass. Production imports and the committed Pages bundle
+are unchanged. These are local source results, not a full production build,
+public CI, installation, deployed D1 compatibility or live outcome proof.
 
 ## Gates before any future authority lift
 
