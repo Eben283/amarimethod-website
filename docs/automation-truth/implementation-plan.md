@@ -11,21 +11,30 @@ verified the unchanged adapter against the exact required 69-object v2
 closure (`8c7245ae…`) with zero writes. This proves current-inventory read
 compatibility, not production evidence ingestion or completed reminders.
 
-The next source candidate is now built and locally reviewed: an unimported
-transactional effect-evidence store and explicitly unregistered/unapplied
+The effect-evidence source candidate is built, reviewed and merged in PR #522:
+an unimported transactional effect-evidence store and explicitly unregistered/unapplied
 additive SQL. It binds an existing obligation to its exact prospective attempt,
 preserves observations and receipts append-only, and reads late evidence by
 database-assigned ingestion sequence. All 2,361 repository tests pass, including
 69 real-SQLite/D1-shaped candidate cases. It does not create a parallel execution
 engine, infer historical attempts, resend, close obligations, or lift Staff
-health. It has not been published, installed or adopted by a runtime.
+health. Exact-current-main integration preserved concurrent Media changes;
+post-merge CI passed all 2,361 tests, guards and the full build, and automatic
+Pages deployment passed for `2266caab0cb9de2b1840cf914eac28936c80fd6a`.
+The SQL remains unregistered/unapplied and no runtime has adopted the store.
 
 The remaining completion path is:
 
-1. Publish the reviewed source candidate only after explicit approval and verify
-   exact-head public CI/build. Local atomicity, replay, frozen-high-water paging,
-   retention failure and lineage tests are complete; production compatibility,
-   durable consumer checkpoints and inventory/carry/journal composition are not.
+1. The source-only inventory/carry/journal composition is now built and
+   independently reviewed. All 2,435 repository tests pass on main
+   `102ed7dec6794253d9c28e6421fe7a9a3a0b27db`, including 74 new composition
+   cases. Full-root fixed-boundary traversal, per-attempt predecessor chains,
+   receipt ownership/conflicts, retention failure and complete carry
+   preservation are covered. No sequence evidence enters the timestamp selector
+   and no shared historical snapshot is claimed. Publish the reviewed six-file
+   follow-on only after approval, then verify exact-head CI/build before any
+   approved merge. Durable consumer checkpoints and production compatibility
+   remain unproven.
 2. Review the exact schema delta and compatibility/readback/recovery plan before
    any separately approved production installation. This candidate does not
    register a migration or alter the current schema-authority allowlist.

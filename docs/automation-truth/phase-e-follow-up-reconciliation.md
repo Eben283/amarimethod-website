@@ -130,7 +130,7 @@ The envelope returns observed/incomplete, current-inventory completeness, capabi
 
 ## Durable effect-evidence candidate — source only
 
-The next local increment is `functions/lib/follow-up-effect-evidence-store.js`
+The merged source candidate is `functions/lib/follow-up-effect-evidence-store.js`
 with `reminder-engine-worker/reliability-effect-evidence.candidate.sql` and a
 real SQLite/D1-shaped test suite. The SQL is **unregistered and unapplied**: it
 is not a migration, is absent from schema loaders and production imports, and
@@ -170,12 +170,12 @@ an authenticated provider cursor. Missing/expired parents, invalid boundaries,
 partial results or bounded overflow cannot clear prior unresolved work. There
 is no adopted purge or retention-extension policy in this candidate.
 
-This journal is not yet composed with the current-inventory selector. Its
+The journal's
 sequence must never be relabeled as the selector's timestamp `ingestedAt`, nor
 may a time-window filter discard old-occurrence evidence selected by ingestion
-sequence. A future composition must union current inventory, unresolved carry
-and late evidence with exact parent identities, fail closed on incomplete
-traversal, and prove its own bounded retention/consumer-checkpoint law.
+sequence. The source-only composition described below unions current inventory,
+unresolved carry and late evidence with exact parent identities. Durable
+consumer checkpoints and an adopted retention law remain separate future work.
 
 Stored provenance and caller-supplied digests are structural evidence only. The
 store is not an attestation verifier or provider authenticator. In particular,
@@ -199,8 +199,88 @@ Independent local catalog comparison finds exactly 15 additive objects (two
 tables, two indexes, eleven triggers), no changed existing object, unchanged
 schema markers/contracts and no foreign-key violation. Source/release guards
 and whitespace checks pass. Production imports and the committed Pages bundle
-are unchanged. These are local source results, not a full production build,
-public CI, installation, deployed D1 compatibility or live outcome proof.
+are unchanged. PR #522 subsequently passed exact-current-main integration and
+merged as `2266caab0cb9de2b1840cf914eac28936c80fd6a`; post-merge Node22.23.2 CI
+passed all 2,361 tests, guards and full production build, and automatic Pages
+deployment passed. These are not proof of installation, deployed D1
+compatibility, authenticated provenance or live customer outcomes.
+
+## Inventory/carry/journal composition — source only
+
+`functions/lib/follow-up-evidence-composition.js` provides
+`observeFollowUpEvidenceComposition(db, options)`, contract
+`follow-up-evidence-composition.v1`. It is an unimported read-orchestrator:
+no schema, writer, network transport, binding acquisition, schedule, sender or
+production entrypoint is changed. The existing journal, inventory adapter and
+timestamp selector remain unchanged.
+
+Options contain `inventoryOptions` (`readAt`, `limit`, the existing seven-field
+`cutoff`), complete `previousCarryForward` (`candidates`, `cursor:null`),
+`journalPageSize`, `maxJournalPages`, and `maxCandidates`. Limits are at most
+200 rows per journal page, 20 journal pages and 200 distinct candidates. Inputs
+are validated and snapshotted before asynchronous work. No caller-supplied
+reader envelope, completeness flag, high-water boundary or arbitrary journal
+cursor is accepted.
+
+The orchestrator invokes the current-inventory reader itself. Only supported
+source/lifecycle/obligation/exception carry enters that reader, with its existing
+`carry_forward` vocabulary; original reason sets and evidence/anomaly carry are
+retained separately. Inventory returns selected candidates, not a complete
+entity map. Absence from that selection cannot establish a missing parent.
+
+Journal reading starts at sequence zero and walks only returned continuations
+under one fixed high-water boundary. Global allocation gaps are legal;
+per-attempt predecessor chains and immutable source/lifecycle/obligation links
+must remain consistent. Membership is decided by sequence, not timestamp.
+Occurrence, observation and ingestion times remain distinct in sanitized
+`journalEvidence`. Every journal event and its exact hashed parents join the
+inventory/prior-carry union, deduplicated by stable kind/identity with sorted
+reason sets. Additional composition reasons are `sequenced_evidence`,
+`journal_linked_parent` and `conflicting_receipt_evidence`.
+
+A provider/reference hash cannot belong to two attempts. A contradiction
+already present in the traversed proof history cannot be marked nonconflicting;
+accepted-to-delivered progression remains valid. A true conflict flag without
+an earlier journal contradiction is conservatively retained because canonical
+receipts outside this journal can explain it. A later nonconflicting receipt
+does not clear an earlier conflict from the unresolved candidate union.
+
+The envelope exposes `composed` or `incomplete`, inventory snapshot digest,
+journal boundary/traversal/pages, candidates, sanitized journal evidence,
+deterministic input digest and reason codes. Its observation scope is explicitly
+`separate_inventory_read_and_fixed_journal_boundary`, never one historical
+snapshot or an exhaustive provider observation. Valid prior carry is retained
+as `retainedPriorCarryForward`; malformed carry is not reflected and requires
+the caller to keep its existing store. Success proposes the same
+`{candidates,cursor:null}` carry shape; failure returns `proposedCarryForward:null`.
+Reader refusal, invalid chains/identity, required missing/expired evidence,
+page/candidate overflow or invalid inputs cannot truncate work into success.
+
+All results retain previous carry and remain simulated/source-only, with
+`authority`, `authoritativeCoverage`, `producerAdopted`, `dispatchAllowed`,
+`outcomeProven`, `replacementAllowed` and `watermarkAdvanceAllowed` false.
+Successful composition is structural selection only, not evidence
+authentication, an adopted checkpoint, a durable replacement set, obligation
+closure, Staff health promotion or runtime activation.
+
+Local verification on exact main
+`102ed7dec6794253d9c28e6421fe7a9a3a0b27db` passes all 2,435 repository tests,
+including 74 new real-SQLite/adversarial composition cases and 205 combined
+composition/journal/inventory/selector cases. Independent final-artifact review
+passed after fixing cross-attempt receipt aliases and hidden proof conflicts.
+The genuine late-observation fixture records the observation after submission,
+then ingests it after a later frozen cutoff; occurrence time is not fabricated
+as a sequence or used to discard it. Bounds, empty journals, page/identity
+tampering, missing schema/expired evidence, carry round trips, getter safety,
+privacy, no writes and no network behavior are covered.
+
+The existing isolation regression was narrowly updated to allow only the
+store/composition source pair while forbidding either module or the candidate
+SQL from every other non-test source/configuration/schema path. All source and
+release guards pass; runtime implementations, candidate SQL, entrypoints and
+the committed Pages bundle are unchanged. No full SPA build or public CI has
+run for this new six-file draft yet; these local checks do not establish
+production compatibility, installation or activation.
 
 ## Gates before any future authority lift
 
