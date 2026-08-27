@@ -1606,4 +1606,117 @@ export async function getAutomationWatchAccessUrl(): Promise<{ url: string; expi
   return fetchApi('/staff-automation-watch-access', { method: 'POST' });
 }
 
+// Staff Operations Ledger is a read-only browser surface. The server returns
+// projections only; raw provider records, contact identity, and event payloads
+// are intentionally absent from these types.
+export type StaffOperationsLedgerResource = 'entries' | 'tasks' | 'releases' | 'incidents';
+
+export interface StaffOperationsLedgerEntry {
+  id?: string;
+  at?: string;
+  atMs?: number;
+  createdAt?: string;
+  timestamp?: string;
+  type?: string;
+  eventType?: string;
+  kind?: string;
+  status?: string;
+  outcome?: string;
+  reason?: string;
+  reasonCode?: string;
+  summary?: string;
+  source?: string;
+  sourceSystem?: string;
+  pathId?: string;
+  taskId?: string;
+  releaseId?: string;
+  incidentId?: string;
+  actor?: string;
+}
+
+export interface StaffOperationsLedgerTask {
+  id?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  dueAt?: string;
+  completedAt?: string;
+  status?: string;
+  priority?: string;
+  title?: string;
+  summary?: string;
+  source?: string;
+  releaseId?: string;
+  incidentId?: string;
+  actor?: string;
+}
+
+export interface StaffOperationsLedgerRelease {
+  id?: string;
+  createdAt?: string;
+  releasedAt?: string;
+  status?: string;
+  version?: string;
+  environment?: string;
+  source?: string;
+  summary?: string;
+  rollback?: boolean;
+  commitSha?: string;
+  changeType?: string;
+  actor?: string;
+}
+
+export interface StaffOperationsLedgerIncident {
+  id?: string;
+  createdAt?: string;
+  openedAt?: string;
+  resolvedAt?: string;
+  status?: string;
+  severity?: string;
+  title?: string;
+  summary?: string;
+  source?: string;
+  pathId?: string;
+  releaseId?: string;
+  actor?: string;
+}
+
+export interface StaffOperationsLedgerResponse {
+  success: true;
+  configured: boolean;
+  nextCursor: string | null;
+  generatedAt?: string;
+  entries?: StaffOperationsLedgerEntry[];
+  tasks?: StaffOperationsLedgerTask[];
+  releases?: StaffOperationsLedgerRelease[];
+  incidents?: StaffOperationsLedgerIncident[];
+}
+
+export interface StaffOperationsLedgerQuery {
+  resource?: StaffOperationsLedgerResource;
+  limit?: number;
+  cursor?: string;
+  status?: string;
+  type?: string;
+  eventType?: string;
+  outcome?: string;
+  source?: string;
+  pathId?: string;
+  releaseId?: string;
+  incidentId?: string;
+  from?: string;
+  to?: string;
+  q?: string;
+}
+
+export async function getStaffOperationsLedger(
+  query: StaffOperationsLedgerQuery = {},
+): Promise<StaffOperationsLedgerResponse> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value !== undefined && value !== null && value !== '') params.set(key, String(value));
+  }
+  const suffix = params.toString() ? `?${params.toString()}` : '';
+  return fetchApi(`/staff-operations-ledger${suffix}`);
+}
+
 export { ApiError };
