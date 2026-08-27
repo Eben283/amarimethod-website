@@ -285,7 +285,7 @@ export default function MediaPage() {
         <aside className="staff-media-folders" aria-label="Media folders">
           <span>Library</span>
           <button type="button" className={!folderId && !showArchived ? 'is-active' : ''} onClick={() => { setFolderId(null); setShowArchived(false); }}><ImageIcon /> All media <small>{assets.filter((asset) => asset.status === 'active').length}</small></button>
-          {folders.filter((folder) => folder.status === 'active' && !folder.parentId).map((folder) => (
+          {folders.filter((folder) => folder.status === 'active' && !folder.parentId && (folderStats.get(folder.id)?.assetCount || 0) > 0).map((folder) => (
             <button key={folder.id} type="button" className={folder.id === folderId && !showArchived ? 'is-active' : ''} onClick={() => { setFolderId(folder.id); setShowArchived(false); }}><Folder /> {folder.name}<small>{folderStats.get(folder.id)?.assetCount || 0}</small></button>
           ))}
           <button type="button" className={showArchived ? 'is-active' : ''} onClick={() => { setShowArchived(true); setFolderId(null); }}><Archive /> Archived <small>{assets.filter((asset) => asset.status === 'archived').length}</small></button>
