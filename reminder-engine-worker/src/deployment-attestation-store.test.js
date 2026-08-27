@@ -8,11 +8,20 @@ import {
 import {
   DeploymentAttestationRefusal, prepareSourceRuntimeProvenanceInsert, recordVerifiedDeploymentAttestation,
 } from "../../functions/lib/reliability-deployment-attestation-store.js";
-import { RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE } from "../../functions/lib/reliability-schema-authority.js";
+import { RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY } from "../../functions/lib/reliability-schema-authority.js";
 
-const base = readFileSync(new URL("../schema.sql", import.meta.url), "utf8");
-const candidate = readFileSync(new URL("../reliability-spine-v2.local.sql", import.meta.url), "utf8");
-const promotion = readFileSync(new URL("../reliability-spine-v2-promote.local.sql", import.meta.url), "utf8");
+const productionV1Fixture = JSON.parse(readFileSync(new URL(
+  "../../docs/automation-truth/fixtures/reliability-v1-production-structure-readback.v1.json",
+  import.meta.url,
+), "utf8"));
+const liveLineageInstall = readFileSync(new URL(
+  "../reliability-spine-v2-production-lineage-install.local.sql",
+  import.meta.url,
+), "utf8");
+const liveLineagePromotion = readFileSync(new URL(
+  "../reliability-spine-v2-production-lineage-promote.local.sql",
+  import.meta.url,
+), "utf8");
 const D = (character) => character.repeat(64);
 const G = (character) => character.repeat(40);
 const APPROVED_SHA256 = "2687f86ed6784b8a5fca36e6c468e12aa44dc3c7e8137e3160d1a95079bdcd02";
@@ -52,7 +61,7 @@ function d1FromSqlite(raw) {
 }
 
 function structureDigest() {
-  return RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.structureSha256;
+  return RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.structureSha256;
 }
 
 const bindingsFor = (sourceRevision = G("a"), workerVersion = WORKER_VERSION) => [
@@ -83,7 +92,9 @@ const releaseInput = (patch = {}) => {
   },
   expectedBindings: patch.expectedBindings || bindingsFor(source.revision, runtimeIdentity.workerVersion),
   requiredSchema: {
-    databaseId: "reminder-db-fixture", migrationId: "reliability-spine-v2-deployment-attestation", version: 2,
+    databaseId: "reminder-db-fixture",
+    migrationId: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.migrationId,
+    version: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.version,
     sourceSha256: D("6"), structureSha256: structureDigest(),
   },
   deliveryGuards: { followUpDeliveryRelease: "approved", followUpAssignedUserDelivery: "approved" },
@@ -119,22 +130,23 @@ beforeAll(async () => { keys = await crypto.subtle.generateKey("Ed25519", false,
 beforeEach(() => {
   raw = new DatabaseSync(":memory:");
   raw.exec("PRAGMA foreign_keys=ON");
-  raw.exec(base);
-  raw.exec("BEGIN IMMEDIATE");
-  try {
-    raw.exec(candidate);
-    raw.exec("COMMIT");
-  } catch (error) {
-    raw.exec("ROLLBACK");
-    throw error;
+  for (const type of ["table", "index", "trigger"]) {
+    for (const row of productionV1Fixture.projection.filter((item) => item.type === type)) raw.exec(row.sql);
   }
-  raw.exec("BEGIN IMMEDIATE");
-  try {
-    raw.exec(promotion);
-    raw.exec("COMMIT");
-  } catch (error) {
-    raw.exec("ROLLBACK");
-    throw error;
+  const marker = productionV1Fixture.marker[0];
+  raw.prepare(`INSERT INTO reliability_schema_versions
+    (version,applied_at,migration_id,description) VALUES (?,?,?,?)`).run(
+    marker.version, marker.applied_at, marker.migration_id, marker.description,
+  );
+  for (const sql of [liveLineageInstall, liveLineagePromotion]) {
+    raw.exec("BEGIN IMMEDIATE");
+    try {
+      raw.exec(sql);
+      raw.exec("COMMIT");
+    } catch (error) {
+      raw.exec("ROLLBACK");
+      throw error;
+    }
   }
   db = d1FromSqlite(raw);
 });

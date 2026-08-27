@@ -4,7 +4,7 @@
 
 This phase defines, but does not adopt, a deployment-attestation recorder. The current live sender remains Amari's persisted Follow-Up definition v3. The exact GHL **Follow up session Confirmation email / reminder flow** is Draft v36 rollback.
 
-The recorder and candidate SQL are deliberately inert: no Worker/Pages entrypoint imports the recorder; the SQL is not a Wrangler migration; and no binding, remote D1 row, deployment, GHL workflow, provider setting, customer, or sender behavior changes. One read-only Staff diagnostic helper is intentionally imported: it now proves the exact production-v1 schema and fails closed on every unrecognized shape. The recorder's top-level truth remains **Unknown** with `runtime_recorder_not_adopted`. It must never be presented as Live or Healthy.
+The recorder and Phase-B promotion source are deliberately inert: no Worker/Pages entrypoint imports the recorder; the promotion SQL is not a Wrangler migration and remains **DO NOT APPLY**; and this source draft changes no binding, remote D1 row, deployment, GHL workflow, provider setting, customer, or sender behavior. A separately authorized Phase A previously installed the four empty physical tables while leaving the v1 marker as sole authority. One read-only Staff diagnostic helper is intentionally imported: it reports that current unpromoted 69-row shape as Degraded and accepts v2 only after proving the exact final marker, contract, and catalog together. The recorder's top-level truth remains **Unknown** with `runtime_recorder_not_adopted`. It must never be presented as Live or Healthy.
 
 ## What is bound
 
@@ -21,7 +21,7 @@ The observation has four separate authority references and digests:
 
 A signature authenticates the attestor's statement; it does not turn an unsupported caller assertion into evidence. Missing/permission-denied/incomplete/stale authority projects Unknown. An authenticated known mismatch projects Broken, even when the same envelope is stale.
 
-## Local-only schema candidate
+## Production-lineage schema source
 
 `reminder-engine-worker/reliability-spine-v2.local.sql` proposes three requested evidence tables plus one supporting authority table:
 
@@ -34,16 +34,51 @@ The fourth table is intentional. The deployed v1 `reliability_schema_versions` r
 
 `sqlite-master-required-closure.v1` hashes exact `sqlite_master` SQL after normalizing only CRLF/CR line endings to LF; it does not rewrite whitespace inside SQL literals. Its required closure includes every named object used by the active reminder executor and reliability spine, plus all indexes/triggers attached to those tables. An unexpected trigger or index on a required table invalidates postflight.
 
-The original local candidate was split into two files because D1 cannot compute the SHA-256 structure digest inside SQL and an external JavaScript readback cannot retroactively roll back a committed file:
+The original clean-bootstrap source remains local evidence only. Historical
+production v1 hashes to `f7af1024…`, while clean bootstrap hashes to
+`cd57730…`; adding the same 20 objects produces exact production-lineage
+`8c7245ae…`, not clean-bootstrap `b289c402…`. The separately authorized Phase A
+and primary readback proved all 69 literal rows, the sole unchanged v1 marker,
+zero contracts, empty additive tables, and no transient gate. The immutable
+observed fixture file hashes to
+`a51924927c49d9981e8fe77cebd66c079acbd4f18413f6a47242f52aee4fcaef`.
 
-1. `reliability-spine-v2.local.sql` is a clean-bootstrap physical-install candidate. Its in-file guards require v1 marker state and zero v2 objects (or an idempotent replay), then create all v2 objects without inserting a v2 contract or version marker.
-2. `reliability-spine-v2-promote.local.sql` is the matching clean-bootstrap promotion candidate. It rechecks object names, inserts a structure contract using D1's clock, and inserts the candidate v2 marker last.
-3. Neither file is a production target. The exact remote production-v1 digest is `f7af1024be129a24cb8a68a0c70a4bd3a8820104f9a5e36a58df97bbe7bbdd4f`, while clean-bootstrap v1 is `cd57730cfbf6a04cc3db670e0b299a27041191e880684eb86acd134ab734f5a2`.
-4. Adding the 20 local candidate objects to live v1 yields `8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62`, not the candidate `b289c4022a06c23d2c806d122ef2687077815aea5ae85fde064681250f1c8ed6`. Phase A is therefore explicitly blocked.
+The deterministic generator accepts only that fixture and emits promotion SQL
+with SHA-256
+`8af94319d15c184085b79f22c0b3054546ae59528c51f66f8094909e9b9df55c`.
+It binds final migration identity
+`reliability-spine-v2-production-lineage-8c7245ae`, repeats the complete
+catalog and additive-object gates, requires all four tables empty, inserts the
+exact contract first with D1 time, revalidates every contract byte, and inserts
+the v2 marker from the same timestamp as the final SQL statement. Re-run,
+candidate IDs, existing evidence, partial/wrong/extra objects, and timestamp
+mismatch fail closed. The source file remains unregistered, unimported,
+unapplied, and separately unauthorized.
 
-Both files use ordinary transaction-scoped guard tables rather than depending on undocumented remote `TEMP` behavior. Neither file is registered, imported, deployed, or authorized for remote execution. Their headers say **DO NOT APPLY** and expose no copy-pastable remote command. A later increment must first design and review an exact live-lineage target; execution-mechanism review comes only after that blocker is resolved.
+The coordinated health reader proves exact v1 or exact final v2 only. Current
+physical 8c without the marker/contract remains
+`Degraded/schema_v2_physical_install_awaiting_promotion`; all inconsistent
+states fail closed. Schema authority does not create reconciliation evidence:
+even exact v2 with zero coverage is `Degraded/coverage_missing`, and only a
+separate complete fresh coverage row can yield `Known`.
 
-The coordinated health reader proves only the exact observed production-v1 variant. Wrong v1 metadata/DDL, the distinct clean-bootstrap shape, partial or complete candidate-v2 structure, every v2 marker/contract, and unknown future versions all fail closed. The checked-in sanitized 49-row D1 fixture records the exact live marker/projection, three-row provenance diff, `served_by_primary=true`, and `rows_written=0`. With fresh coverage, the exact live fixture preserves the existing `Known/authoritative_and_fresh` Staff output; no local candidate is accepted as a second production shape.
+The inert release-manifest and attestation-store modules consume the same final
+production-lineage schema constant, so future records cannot silently retain
+the clean-bootstrap candidate ID. They remain runtime-unimported. A source
+merge is backward-compatible with the current v1 marker but does not authorize
+promotion or recorder adoption.
+
+A future live promotion requires a fresh primary preflight, recovery bookmark,
+the pinned Wrangler 4.125.0 remote D1 file-import candidate (`d1 execute` with
+remote and file flags, with no runnable command recorded here), a fresh proof
+of its documented whole-file failure rollback semantics, and exact
+marker/contract/catalog readback. Merely accepting a file is insufficient and
+arbitrary Worker `exec()` is not approved. Because exact replay is rejected,
+any ambiguous retry must read
+authority state before acting. After promotion the Phase-A empty-only rollback
+is invalid; default recovery is a reviewed forward repair/new schema version,
+with Time Travel reserved for separately authorized destructive emergency
+recovery.
 
 ## Staged recorder behavior
 

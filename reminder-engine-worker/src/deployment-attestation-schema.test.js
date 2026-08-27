@@ -8,6 +8,7 @@ import {
   RELIABILITY_SCHEMA_V1,
   RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE,
   RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE,
+  RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY,
   RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
   assessReliabilityStructure,
   assessReliabilityV2InstallCandidatePreflight,
@@ -19,6 +20,12 @@ import {
   readReliabilitySchemaAuthority,
 } from "../../functions/lib/reliability-schema-authority.js";
 import { readReliabilityHealth } from "../../functions/lib/reliability-store.js";
+import {
+  FINAL_DESCRIPTION,
+  FINAL_MIGRATION_ID,
+  OBSERVED_FIXTURE_SHA256,
+  generatePromotionSql,
+} from "../scripts/generate-reliability-v2-production-lineage-promotion.mjs";
 
 const base = readFileSync(new URL("../schema.sql", import.meta.url), "utf8");
 const candidate = readFileSync(new URL("../reliability-spine-v2.local.sql", import.meta.url), "utf8");
@@ -31,8 +38,8 @@ const liveLineageRollback = readFileSync(new URL(
   "../reliability-spine-v2-production-lineage-rollback.local.sql",
   import.meta.url,
 ), "utf8");
-const liveLineagePromotionTemplate = readFileSync(new URL(
-  "../reliability-spine-v2-production-lineage-promote.template.sql",
+const liveLineagePromotion = readFileSync(new URL(
+  "../reliability-spine-v2-production-lineage-promote.local.sql",
   import.meta.url,
 ), "utf8");
 const productionV1FixtureSource = readFileSync(new URL(
@@ -49,6 +56,10 @@ const productionV2ObservedFixture = JSON.parse(readFileSync(new URL(
   "../../docs/automation-truth/fixtures/reliability-v2-production-lineage-observed-primary.v1.json",
   import.meta.url,
 ), "utf8"));
+const productionV2ObservedFixtureSource = readFileSync(new URL(
+  "../../docs/automation-truth/fixtures/reliability-v2-production-lineage-observed-primary.v1.json",
+  import.meta.url,
+), "utf8");
 const MIGRATION_ID = RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.migrationId;
 const MIGRATION_DESCRIPTION = RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.description;
 const EXPECTED_OBJECTS = RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.expectedObjects;
@@ -185,6 +196,10 @@ function installLiveLineageCandidate(db) {
 
 function rollbackLiveLineageCandidate(db) {
   applyFileTransaction(db, liveLineageRollback);
+}
+
+function promoteLiveLineageAuthority(db, sql = liveLineagePromotion) {
+  applyFileTransaction(db, sql);
 }
 
 function insertFreshCoverage(db, nowMs = Date.now()) {
@@ -453,8 +468,12 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
       candidateCompatible: true,
       additiveTablesEmpty: true,
       authorized: false,
-      state: "predicted_shape_requires_primary_readback",
-      reason: "schema_v2_primary_readback_required",
+      state: "observed_primary_shape_source_ready",
+      reason: "schema_v2_promotion_requires_separate_authorization",
+      promotionTarget: {
+        migrationId: FINAL_MIGRATION_ID,
+        structureSha256: PROSPECTIVE_LIVE_V2_DIGEST,
+      },
     });
   });
 
@@ -716,11 +735,40 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
       .toBeUndefined();
   });
 
-  it("keeps Phase B non-executable until primary readback and fails closed on a predicted v2 marker", async () => {
-    expect(liveLineagePromotionTemplate).toMatch(/^-- NOT EXECUTABLE\./);
-    expect(liveLineagePromotionTemplate).toContain("PHASE_B_TEMPLATE_BLOCKED_UNTIL_EXACT_PRIMARY_D1_PHASE_A_READBACK_IS_CHECKED_IN");
-    expect(liveLineagePromotionTemplate).not.toMatch(/INSERT\s+INTO\s+reliability_schema_(?:contracts|versions)/i);
-    expect(() => new DatabaseSync(":memory:").exec(liveLineagePromotionTemplate)).toThrow();
+  it("generates Phase B only from the immutable observed-primary fixture", async () => {
+    expect(createHash("sha256").update(productionV2ObservedFixtureSource).digest("hex"))
+      .toBe(OBSERVED_FIXTURE_SHA256);
+    expect(generatePromotionSql({
+      observedFixtureSource: productionV2ObservedFixtureSource,
+      baseFixtureSource: productionV1FixtureSource,
+    })).toBe(liveLineagePromotion);
+    expect(createHash("sha256").update(liveLineagePromotion).digest("hex"))
+      .toBe("8af94319d15c184085b79f22c0b3054546ae59528c51f66f8094909e9b9df55c");
+    expect(Buffer.byteLength(liveLineagePromotion)).toBeLessThan(100_000);
+    expect(liveLineagePromotion).toMatch(/^-- DO NOT APPLY\./);
+    expect(liveLineagePromotion).toContain(OBSERVED_FIXTURE_SHA256);
+    expect(liveLineagePromotion).toContain(FINAL_MIGRATION_ID);
+    expect(liveLineagePromotion).toContain(FINAL_DESCRIPTION);
+    expect(liveLineagePromotion).not.toMatch(/wrangler[^\n]*--remote/i);
+    expect(liveLineagePromotion).not.toMatch(/^\s*BEGIN(?:\s+(?:IMMEDIATE|TRANSACTION))?\s*;/mi);
+    expect(liveLineagePromotion).not.toMatch(/^\s*COMMIT\s*;/mi);
+    const markerOffset = liveLineagePromotion.lastIndexOf("INSERT INTO reliability_schema_versions");
+    expect(markerOffset).toBeGreaterThan(0);
+    expect(liveLineagePromotion.slice(markerOffset).trim()).toMatch(/;$/);
+    expect(liveLineagePromotion.slice(markerOffset).replace(/^[\s\S]*?;/, "").trim()).toBe("");
+
+    const changedFixture = productionV2ObservedFixtureSource.replace(
+      '"promotionAuthorized": false',
+      '"promotionAuthorized": true',
+    );
+    expect(() => generatePromotionSql({
+      observedFixtureSource: changedFixture,
+      baseFixtureSource: productionV1FixtureSource,
+    })).toThrow(/observed fixture file hash mismatch/);
+    expect(() => generatePromotionSql({
+      observedFixtureSource: productionV2CandidateFixtureSource,
+      baseFixtureSource: productionV1FixtureSource,
+    })).toThrow(/observed fixture file hash mismatch/);
 
     const staged = productionV1Database();
     installLiveLineageCandidate(staged);
@@ -752,32 +800,172 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
         reason: "schema_v2_additive_table_emptiness_unproven",
       });
     }
+  });
 
-    const appliedAt = 1787720000000;
-    staged.prepare(`INSERT INTO reliability_schema_contracts
+  it("promotes only exact empty 8c state, makes the marker final, and separates schema authority from coverage", async () => {
+    const promoted = productionV1Database();
+    installLiveLineageCandidate(promoted);
+    promoteLiveLineageAuthority(promoted);
+    const markers = promoted.prepare("SELECT * FROM reliability_schema_versions ORDER BY version").all();
+    const contracts = promoted.prepare("SELECT * FROM reliability_schema_contracts ORDER BY version").all();
+    expect(markers).toHaveLength(2);
+    expect(contracts).toHaveLength(1);
+    expect(markers[0]).toEqual(productionV1Fixture.marker[0]);
+    expect(markers[1]).toMatchObject({
+      version: 2,
+      migration_id: FINAL_MIGRATION_ID,
+      description: FINAL_DESCRIPTION,
+    });
+    expect(contracts[0]).toMatchObject({
+      version: 2,
+      migration_id: FINAL_MIGRATION_ID,
+      canonicalization: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.canonicalization,
+      structure_sha256: PROSPECTIVE_LIVE_V2_DIGEST,
+      expected_objects_json: JSON.stringify(RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.expectedObjects),
+    });
+    expect(markers[1].applied_at).toBe(contracts[0].applied_at);
+    await expect(readReliabilitySchemaAuthority(d1FromSqlite(promoted))).resolves.toMatchObject({
+      proven: true,
+      reason: "schema_v2_exact_authority",
+      version: 2,
+      variantId: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.variantId,
+      migrationState: "current_v2",
+      appliedAt: contracts[0].applied_at,
+    });
+    await expect(assertReliabilityV2Postflight(d1FromSqlite(promoted))).resolves.toMatchObject({
+      proven: true,
+      version: 2,
+    });
+
+    const nowMs = Date.now();
+    await expect(readReliabilityHealth(d1FromSqlite(promoted), {
+      family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
+    })).resolves.toMatchObject({
+      truth: "Degraded", reason: "coverage_missing", schemaVersion: 2,
+    });
+    insertFreshCoverage(promoted, nowMs);
+    await expect(readReliabilityHealth(d1FromSqlite(promoted), {
+      family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
+    })).resolves.toMatchObject({
+      truth: "Known", reason: "authoritative_and_fresh", schemaVersion: 2,
+    });
+    expect(() => promoteLiveLineageAuthority(promoted)).toThrow(/CHECK constraint failed/);
+
+    const interrupted = productionV1Database();
+    installLiveLineageCandidate(interrupted);
+    const brokenPromotion = liveLineagePromotion.replace(
+      "DROP TABLE reliability_v2_production_lineage_promotion_gate;",
+      "THIS FAILS;\nDROP TABLE reliability_v2_production_lineage_promotion_gate;",
+    );
+    expect(() => promoteLiveLineageAuthority(interrupted, brokenPromotion)).toThrow();
+    expect(interrupted.prepare("SELECT COUNT(*) count FROM reliability_schema_contracts").get()).toEqual({ count: 0 });
+    expect(interrupted.prepare("SELECT MAX(version) version FROM reliability_schema_versions").get()).toEqual({ version: 1 });
+  });
+
+  it("fails Phase B and Staff authority closed on conflicting, partial, stale, and future states", async () => {
+    const wrongDdl = productionV1Database();
+    installLiveLineageCandidate(wrongDdl);
+    wrongDdl.exec(`DROP INDEX idx_deployment_attestations_latest;
+      CREATE INDEX idx_deployment_attestations_latest ON automation_deployment_attestations
+        (platform,service,environment,deployment_id,version_id,attested_at DESC);`);
+    expect(() => promoteLiveLineageAuthority(wrongDdl)).toThrow(/CHECK constraint failed/);
+    expect(wrongDdl.prepare("SELECT COUNT(*) count FROM reliability_schema_contracts").get()).toEqual({ count: 0 });
+
+    const partial = productionV1Database();
+    installLiveLineageCandidate(partial);
+    partial.exec("DROP TRIGGER source_event_runtime_provenance_no_update");
+    expect(() => promoteLiveLineageAuthority(partial)).toThrow(/CHECK constraint failed/);
+
+    const extra = productionV1Database();
+    installLiveLineageCandidate(extra);
+    extra.exec("CREATE TRIGGER unexpected_source_behavior BEFORE INSERT ON source_events BEGIN SELECT 1; END");
+    expect(() => promoteLiveLineageAuthority(extra)).toThrow(/CHECK constraint failed/);
+
+    const nonempty = productionV1Database();
+    installLiveLineageCandidate(nonempty);
+    insertRelease(nonempty, { schemaStructure: PROSPECTIVE_LIVE_V2_DIGEST });
+    expect(() => promoteLiveLineageAuthority(nonempty)).toThrow(/CHECK constraint failed/);
+
+    const markerOnly = productionV1Database();
+    installLiveLineageCandidate(markerOnly);
+    markerOnly.prepare(`INSERT INTO reliability_schema_versions
+      (version,applied_at,migration_id,description) VALUES (2,?,?,?)`).run(
+      1787720000000, FINAL_MIGRATION_ID, FINAL_DESCRIPTION,
+    );
+    await expect(readReliabilitySchemaAuthority(d1FromSqlite(markerOnly))).resolves.toMatchObject({
+      proven: false, reason: "schema_v2_contract_missing_or_conflicting", version: 2,
+    });
+
+    const contractOnly = productionV1Database();
+    installLiveLineageCandidate(contractOnly);
+    contractOnly.prepare(`INSERT INTO reliability_schema_contracts
+      (version,migration_id,canonicalization,structure_sha256,expected_objects_json,applied_at)
+      VALUES (2,?,?,?,?,?)`).run(
+      FINAL_MIGRATION_ID,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.canonicalization,
+      PROSPECTIVE_LIVE_V2_DIGEST,
+      JSON.stringify(RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.expectedObjects),
+      1787720000000,
+    );
+    await expect(readReliabilitySchemaAuthority(d1FromSqlite(contractOnly))).resolves.toMatchObject({
+      proven: false, reason: "schema_v2_partial_or_conflicting", version: 1,
+    });
+
+    const wrongTime = productionV1Database();
+    installLiveLineageCandidate(wrongTime);
+    wrongTime.prepare(`INSERT INTO reliability_schema_contracts
+      (version,migration_id,canonicalization,structure_sha256,expected_objects_json,applied_at)
+      VALUES (2,?,?,?,?,?)`).run(
+      FINAL_MIGRATION_ID,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.canonicalization,
+      PROSPECTIVE_LIVE_V2_DIGEST,
+      JSON.stringify(RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.expectedObjects),
+      1787720000000,
+    );
+    wrongTime.prepare(`INSERT INTO reliability_schema_versions
+      (version,applied_at,migration_id,description) VALUES (2,?,?,?)`).run(
+      1787720001000, FINAL_MIGRATION_ID, FINAL_DESCRIPTION,
+    );
+    await expect(readReliabilitySchemaAuthority(d1FromSqlite(wrongTime))).resolves.toMatchObject({
+      proven: false, reason: "schema_v2_contract_mismatch", version: 2,
+    });
+
+    const staleCandidate = productionV1Database();
+    installLiveLineageCandidate(staleCandidate);
+    const staleTime = 1787720000000;
+    staleCandidate.prepare(`INSERT INTO reliability_schema_contracts
       (version,migration_id,canonicalization,structure_sha256,expected_objects_json,applied_at)
       VALUES (2,?,?,?,?,?)`).run(
       RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId,
       RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.canonicalization,
-      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.structureSha256,
+      PROSPECTIVE_LIVE_V2_DIGEST,
       JSON.stringify(RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.expectedObjects),
-      appliedAt,
+      staleTime,
     );
-    staged.prepare(`INSERT INTO reliability_schema_versions
+    staleCandidate.prepare(`INSERT INTO reliability_schema_versions
       (version,applied_at,migration_id,description) VALUES (2,?,?,?)`).run(
-      appliedAt,
+      staleTime,
       RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.migrationId,
       RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.description,
     );
-    const nowMs = Date.now();
-    insertFreshCoverage(staged, nowMs);
-    await expect(readReliabilityHealth(d1FromSqlite(staged), {
-      family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
-    })).resolves.toMatchObject({
-      truth: "Degraded",
-      reason: "schema_unproven",
-      schemaReason: "schema_v2_authority_not_defined",
-      schemaVersion: 2,
+    await expect(readReliabilitySchemaAuthority(d1FromSqlite(staleCandidate))).resolves.toMatchObject({
+      proven: false, reason: "schema_v2_marker_mismatch", version: 2,
+    });
+
+    const extraAfterPromotion = productionV1Database();
+    installLiveLineageCandidate(extraAfterPromotion);
+    promoteLiveLineageAuthority(extraAfterPromotion);
+    extraAfterPromotion.exec("CREATE TRIGGER unexpected_source_behavior BEFORE INSERT ON source_events BEGIN SELECT 1; END");
+    await expect(readReliabilitySchemaAuthority(d1FromSqlite(extraAfterPromotion))).resolves.toMatchObject({
+      proven: false, reason: "schema_v2_structure_mismatch", version: 2,
+    });
+
+    const future = productionV1Database();
+    installLiveLineageCandidate(future);
+    promoteLiveLineageAuthority(future);
+    future.prepare("INSERT INTO reliability_schema_versions VALUES (3,1,'future','future')").run();
+    await expect(readReliabilitySchemaAuthority(d1FromSqlite(future))).resolves.toMatchObject({
+      proven: false, reason: "schema_version_unknown", version: 3,
     });
   });
 
@@ -841,10 +1029,10 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
     expect(applied.version_applied_at).toBe(applied.contract_applied_at);
     expect(db.prepare("SELECT name FROM sqlite_master WHERE name='reliability_v2_promotion_gate'").get()).toBeUndefined();
     await expect(readReliabilitySchemaAuthority(d1FromSqlite(db))).resolves.toMatchObject({
-      proven: false, reason: "schema_v2_authority_not_defined", version: 2,
+      proven: false, reason: "schema_v2_marker_mismatch", version: 2,
     });
     await expect(assertReliabilityV2Postflight(d1FromSqlite(db)))
-      .rejects.toThrow(/schema_v2_authority_not_defined/);
+      .rejects.toThrow(/schema_v2_marker_mismatch/);
   });
 
   it("rolls local candidate files back on interruption and their SQL guards reject conflicting states", async () => {
@@ -978,16 +1166,19 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
     expect(promotion).toMatch(/^-- DO NOT APPLY\./);
     expect(liveLineageInstall).toMatch(/^-- DO NOT APPLY\./);
     expect(liveLineageRollback).toMatch(/^-- DO NOT APPLY\./);
-    expect(liveLineagePromotionTemplate).toMatch(/^-- NOT EXECUTABLE\./);
+    expect(liveLineagePromotion).toMatch(/^-- DO NOT APPLY\./);
     expect(candidate).not.toMatch(/wrangler[^\n]*--remote/i);
     expect(promotion).not.toMatch(/wrangler[^\n]*--remote/i);
     expect(liveLineageInstall).not.toMatch(/wrangler[^\n]*--remote/i);
     expect(liveLineageRollback).not.toMatch(/wrangler[^\n]*--remote/i);
-    expect(liveLineagePromotionTemplate).not.toMatch(/wrangler[^\n]*--remote/i);
+    expect(liveLineagePromotion).not.toMatch(/wrangler[^\n]*--remote/i);
     expect(candidate).not.toMatch(/INSERT\s+INTO\s+reliability_schema_versions\s*\([^)]*\)\s*(?:VALUES|SELECT)/i);
     expect(liveLineageInstall).not.toMatch(/INSERT\s+INTO\s+reliability_schema_versions\s*\([^)]*\)\s*(?:VALUES|SELECT)/i);
     expect(liveLineageRollback).not.toMatch(/INSERT\s+INTO\s+reliability_schema_versions\s*\([^)]*\)\s*(?:VALUES|SELECT)/i);
-    expect(liveLineagePromotionTemplate).not.toMatch(/INSERT\s+INTO\s+reliability_schema_(?:contracts|versions)/i);
+    expect(liveLineagePromotion).toMatch(/INSERT\s+INTO\s+reliability_schema_contracts/i);
+    expect(liveLineagePromotion.trim()).toMatch(/INSERT INTO reliability_schema_versions[\s\S]+;$/);
+    expect(liveLineagePromotion.slice(liveLineagePromotion.lastIndexOf("INSERT INTO reliability_schema_versions")))
+      .not.toMatch(/;\s*(?:INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|REPLACE|WITH|SELECT)\b/i);
     expect(promotion.trim()).toMatch(/INSERT INTO reliability_schema_versions[\s\S]+;$/);
     expect(promotion.slice(promotion.lastIndexOf("INSERT INTO reliability_schema_versions")))
       .not.toMatch(/;\s*(?:INSERT|UPDATE|DELETE|CREATE|DROP|ALTER|REPLACE|WITH|SELECT)\b/i);
@@ -998,7 +1189,7 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
       && !path.endsWith("reliability-deployment-attestation-store.js"));
     for (const path of productionFiles) {
       const source = readFileSync(path, "utf8");
-      expect(source, path).not.toMatch(/automation-truth-phase-d|reliability-deployment-attestation-store|reliability-v2-production-lineage-observed-primary|reliability-spine-v2(?:-promote)?\.local\.sql|reliability-spine-v2-production-lineage-(?:install|rollback)\.local\.sql|reliability-spine-v2-production-lineage-promote\.template\.sql/);
+      expect(source, path).not.toMatch(/automation-truth-phase-d|reliability-deployment-attestation-store|reliability-v2-production-lineage-observed-primary|reliability-spine-v2(?:-promote)?\.local\.sql|reliability-spine-v2-production-lineage-(?:install|rollback|promote)\.local\.sql|generate-reliability-v2-production-lineage-promotion/);
     }
     expect(readFileSync(new URL("../../functions/lib/reliability-store.js", import.meta.url), "utf8"))
       .toMatch(/from "\.\/reliability-schema-authority\.js"/);
@@ -1014,17 +1205,17 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
       family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
     })).resolves.toMatchObject({
       truth: "Degraded", reason: "schema_unproven",
-      schemaReason: "schema_v2_authority_not_defined", schemaVersion: 2,
+      schemaReason: "schema_v2_marker_mismatch", schemaVersion: 2,
     });
     await expect(readReliabilitySchemaAuthority(db)).resolves.toMatchObject({
-      proven: false, reason: "schema_v2_authority_not_defined", version: 2,
+      proven: false, reason: "schema_v2_marker_mismatch", version: 2,
     });
 
     raw.exec("CREATE TRIGGER unexpected_source_behavior BEFORE INSERT ON source_events BEGIN SELECT 1; END");
     await expect(readReliabilityHealth(db, {
       family: "follow-up-session-reminders", nowMs: Date.now(), maxAgeMs: 60_000,
     })).resolves.toMatchObject({
-      truth: "Degraded", reason: "schema_unproven", schemaReason: "schema_v2_authority_not_defined", schemaVersion: 2,
+      truth: "Degraded", reason: "schema_unproven", schemaReason: "schema_v2_marker_mismatch", schemaVersion: 2,
     });
 
     const markerOnly = database();
@@ -1034,7 +1225,7 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
     await expect(readReliabilityHealth(d1FromSqlite(markerOnly), {
       family: "follow-up-session-reminders", nowMs: Date.now(), maxAgeMs: 60_000,
     })).resolves.toMatchObject({
-      truth: "Degraded", reason: "schema_unproven", schemaReason: "schema_v2_authority_not_defined", schemaVersion: 2,
+      truth: "Degraded", reason: "schema_unproven", schemaReason: "schema_v2_marker_mismatch", schemaVersion: 2,
     });
 
     const future = database();

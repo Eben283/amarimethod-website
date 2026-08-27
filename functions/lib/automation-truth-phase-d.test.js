@@ -8,6 +8,7 @@ import {
   signDeploymentAttestationEnvelope,
   verifyDeploymentAttestationEnvelope,
 } from "./automation-truth-phase-d.js";
+import { RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY } from "./reliability-schema-authority.js";
 
 const D = (character) => character.repeat(64);
 const G = (character) => character.repeat(40);
@@ -54,7 +55,13 @@ const releaseInput = (patch = {}) => {
     moduleCatalog: { algorithm: "esbuild-metafile-inputs.v1", complete: true },
   },
   expectedBindings: patch.expectedBindings || bindingsFor(source.revision, runtimeIdentity.workerVersion),
-  requiredSchema: { databaseId: "reminder-db-fixture", migrationId: "reliability-spine-v2-deployment-attestation", version: 2, sourceSha256: D("6"), structureSha256: D("7") },
+  requiredSchema: {
+    databaseId: "reminder-db-fixture",
+    migrationId: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.migrationId,
+    version: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.version,
+    sourceSha256: D("6"),
+    structureSha256: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.structureSha256,
+  },
   deliveryGuards: { followUpDeliveryRelease: "approved", followUpAssignedUserDelivery: "approved" },
   effectOwner: { system: "Amari", mode: "live", effectful: true },
   canonicalization: "amari-canonical-json.v1",
@@ -180,7 +187,7 @@ describe("Phase D authenticated deployment attestation contract", () => {
     }));
     expect(first.releaseManifestDigest).toBe(reordered.releaseManifestDigest);
     expect(first.canonicalization).toBe("amari-canonical-json.v1");
-    expect(first.releaseManifestDigest).toBe("4c448c1feceaea1eddfb7cbcdc882cc42fa095ee747db966973322e4bbda1496");
+    expect(first.releaseManifestDigest).toBe("78fcfe837d56f8cf3188c0755a7468b32fd69d75ba1c87ab557644cc4b0b00fa");
     await expect(createAttestedReleaseManifest(releaseInput({
       artifacts: { ...releaseInput().artifacts, modules: [...releaseInput().artifacts.modules, releaseInput().artifacts.modules[0]] },
     }))).rejects.toThrow(/duplicate paths/);
@@ -203,11 +210,20 @@ describe("Phase D authenticated deployment attestation contract", () => {
       releaseInput({ compiledPlan: { ...releaseInput().compiledPlan, compiledPlanDigest: D("8") } }),
       releaseInput({ compiledPlan: { ...releaseInput().compiledPlan, handlerRegistryDigest: D("8") } }),
       releaseInput({ compiledPlan: { ...releaseInput().compiledPlan, messageCatalogDigest: D("8") } }),
-      releaseInput({ requiredSchema: { ...releaseInput().requiredSchema, structureSha256: D("8") } }),
+      releaseInput({ requiredSchema: { ...releaseInput().requiredSchema, sourceSha256: D("8") } }),
       releaseInput({ artifacts: { ...releaseInput().artifacts, bundle: { ...releaseInput().artifacts.bundle, sha256: D("8") } } }),
     ];
     const digests = await Promise.all(variants.map((variant) => createAttestedReleaseManifest(variant).then((item) => item.releaseManifestDigest)));
     expect(new Set(digests).size).toBe(digests.length);
+    await expect(createAttestedReleaseManifest(releaseInput({
+      requiredSchema: { ...releaseInput().requiredSchema, structureSha256: D("8") },
+    }))).rejects.toThrow(/structureSha256 must be/);
+    await expect(createAttestedReleaseManifest(releaseInput({
+      requiredSchema: {
+        ...releaseInput().requiredSchema,
+        migrationId: "reliability-spine-v2-deployment-attestation",
+      },
+    }))).rejects.toThrow(/migrationId must be/);
   });
 
   it("fails closed on malformed bindings, secret expansion, evidence references, and nested unknown keys", async () => {
