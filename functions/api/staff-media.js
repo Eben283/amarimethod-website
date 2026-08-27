@@ -1,6 +1,6 @@
 import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-guards.js";
 import { createMediaFolder, listStaffMedia, updateMediaAsset } from "../lib/staff-media.js";
-import { importSiteMediaBatch } from "../lib/staff-site-media.js";
+import { importSiteMediaBatch, syncSiteMediaCatalog } from "../lib/staff-site-media.js";
 
 function responseHeaders(context) {
   return {
@@ -48,6 +48,10 @@ export async function onRequestPost(context) {
   if (parsed.error) return parsed.error;
   try {
     const actor = auth.payload?.user || "Staff";
+    if (parsed.body.action === "sync_site_catalog") {
+      const synced = await syncSiteMediaCatalog({ db: context.env.ATTEND_DB || null, actor });
+      return json(synced, 200, headers);
+    }
     if (parsed.body.action === "import_site_assets") {
       const imported = await importSiteMediaBatch({
         db: context.env.ATTEND_DB || null,
