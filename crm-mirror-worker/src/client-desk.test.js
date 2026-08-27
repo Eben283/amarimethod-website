@@ -48,6 +48,14 @@ describe("Client Desk message rendering", () => {
     expect(html).toContain("Mirror degraded");
   });
 
+  it("refreshes an open inbox without disturbing the selected conversation", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain('const INBOX_REFRESH_MS = 60_000');
+    expect(html).toContain("document.addEventListener?.('visibilitychange', refreshInboxWhenVisible)");
+    expect(html).toContain("typeof window.setInterval === 'function'");
+    expect(html).toContain("window.setInterval(refreshInboxWhenVisible, INBOX_REFRESH_MS)");
+  });
+
   it("shows accurate relative ages and the exact source timestamp on contact cards", () => {
     const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
     const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };

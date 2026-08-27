@@ -1,6 +1,6 @@
 # Amari CRM mirror worker
 
-This Worker is the read-only GHL and Stripe import foundation for the internal Amari CRM. A bounded 15-minute cron sweep reads those providers into its own D1 database and never writes back to either. The authenticated Staff Client Desk is intentionally read-only until Gmail inbound replies and delivery reconciliation are mirrored end-to-end; it has no SMS sender.
+This Worker is the read-only GHL and Stripe import foundation for the internal Amari CRM. A bounded five-minute cron sweep reads those providers into its own D1 database and never writes back to either. The authenticated Staff Client Desk mirrors those records and relays an approved SMS reply through the signed Staff sender; the mirror itself never sends to GHL.
 
 ## What it mirrors
 
@@ -14,6 +14,16 @@ Stripe charges that cannot be linked to a mirrored GHL contact are retained as u
 An email candidate is evidence for staff review, not a purchase link. The importer never turns it into `purchases.contact_id`, never posts a ledger entry, and never sends a message.
 
 ## Provisioning and deployment
+
+**Do not run `wrangler deploy` directly.** Every CRM Mirror release must use the repository-root command below from a clean checkout at the exact reviewed `origin/main` SHA:
+
+```bash
+npm run deploy:crm-mirror -- --deploy --approved-revision <full-origin-main-sha>
+```
+
+The command refuses a dirty or non-`origin/main` checkout, SHA-256 hashes the exact archived `crm-mirror-worker` source, deploys with `--strict --keep-vars`, then reads the resulting Worker version back. The Cloudflare Worker version tag/message are the durable release record and must contain both `git_sha=<40-char SHA>` and `artifact_sha256=<64-char SHA-256>`. A missing or mismatched record fails the release. `npm run deploy:crm-mirror` without `--deploy` is a non-writing preflight.
+
+This repository guard deprecates arbitrary local Wrangler releases. It cannot prevent a user who deliberately bypasses the command and retains broad Cloudflare deploy credentials; enforce that boundary by moving the Worker deploy identity to scoped GitHub Actions and withdrawing broad local Worker-deploy authority in a separately approved Cloudflare access change.
 
 The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its initial schema migration has been applied. The scheduled sweep advances each provider cursor with a bounded read. An authenticated `POST /sync` remains available for an operator-requested import.
 
