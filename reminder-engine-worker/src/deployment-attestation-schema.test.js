@@ -303,7 +303,7 @@ function insertAcceptedLifecycle(db, {
 }
 
 describe("local-only reliability spine v2 deployment-attestation candidate", () => {
-  it("proves only the exact observed production-v1 variant and keeps current Staff health output equivalent", async () => {
+  it("proves only the exact observed production-v1 variant and rejects legacy count-only health as authority", async () => {
     const raw = database();
     const liveRows = productionV1Rows();
     const liveDb = d1FromSqlite(raw, {
@@ -340,7 +340,10 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
     insertFreshCoverage(raw, nowMs);
     await expect(readReliabilityHealth(liveDb, {
       family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
-    })).resolves.toMatchObject({ truth: "Known", reason: "authoritative_and_fresh", schemaVersion: 1 });
+    })).resolves.toMatchObject({
+      truth: "Degraded", reason: "coverage_contract_invalid", schemaVersion: 1,
+      contractReason: expect.stringMatching(/detail_json|required/i),
+    });
 
     const localStructure = await assessReliabilityStructure(
       sqliteMasterRows(raw), RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE,
@@ -847,7 +850,8 @@ describe("local-only reliability spine v2 deployment-attestation candidate", () 
     await expect(readReliabilityHealth(d1FromSqlite(promoted), {
       family: "follow-up-session-reminders", nowMs, maxAgeMs: 60_000,
     })).resolves.toMatchObject({
-      truth: "Known", reason: "authoritative_and_fresh", schemaVersion: 2,
+      truth: "Degraded", reason: "coverage_contract_invalid", schemaVersion: 2,
+      contractReason: expect.stringMatching(/detail_json|required/i),
     });
     expect(() => promoteLiveLineageAuthority(promoted)).toThrow(/CHECK constraint failed/);
 

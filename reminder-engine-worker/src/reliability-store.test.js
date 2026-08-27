@@ -281,9 +281,9 @@ describe("rejections, leases, and operator truth", () => {
       NOW - 500 + 400 * 24 * 60 * 60 * 1000,
     );
     expect(await readReliabilityHealth(db, { family: FOLLOW_UP_FAMILY, nowMs: NOW, maxAgeMs: 1_000 }))
-      .toMatchObject({ truth: "Known", reason: "authoritative_and_fresh" });
-    expect(await readReliabilityHealth(db, { family: FOLLOW_UP_FAMILY, nowMs: NOW + 2_000, maxAgeMs: 1_000 }))
-      .toMatchObject({ truth: "Degraded", reason: "coverage_stale" });
+      .toMatchObject({ truth: "Degraded", reason: "coverage_contract_invalid" });
+    expect(await readReliabilityHealth(db, { family: "no-show-missed-count", nowMs: NOW, maxAgeMs: 1_000 }))
+      .toMatchObject({ truth: "Degraded", reason: "coverage_contract_unsupported" });
   });
 
   it("enforces immutable source and exception evidence in SQLite", async () => {
@@ -316,6 +316,14 @@ describe("rejections, leases, and operator truth", () => {
     });
     expect(resolved.state).toBe("resolved");
     expect(await readExceptionQueue(db)).toEqual([]);
+    const countAfterResolve = raw.prepare("SELECT COUNT(*) count FROM exception_events").get().count;
+    await expect(transitionException(db, {
+      exceptionId: record.exception.exceptionId, fromState: "investigating", toState: "resolved",
+      actor: "Eben", occurredAt: NOW + 4, transitionId: "drill-stale-fresh-id",
+      evidenceSha256: "e".repeat(64),
+    })).rejects.toThrow(/changed during transition/);
+    expect(raw.prepare("SELECT COUNT(*) count FROM exception_events").get().count).toBe(countAfterResolve);
+    expect(raw.prepare("SELECT state FROM lifecycle_exceptions").get()).toEqual({ state: "resolved" });
     expect(raw.prepare("SELECT event_type, actor FROM exception_events ORDER BY occurred_at").all()).toEqual([
       { event_type: "opened", actor: "system" },
       { event_type: "acknowledged", actor: "Eben" },
@@ -339,6 +347,75 @@ describe("rejections, leases, and operator truth", () => {
     })).rejects.toThrow();
     expect(raw.prepare("SELECT state FROM lifecycle_exceptions WHERE exception_id=?").get(record.exception.exceptionId).state)
       .toBe("acknowledged");
+  });
+
+  it("rejects backwards audit clocks, invalid resolution evidence, and expired suppression before batching", async () => {
+    const record = await buildRejectedSource({
+      ...acceptedInput(), rejectionReason: "audit guard", nextSafeAction: "inspect evidence",
+    });
+    await rejectSourceEvent(db, record, NOW);
+    await transitionException(db, {
+      exceptionId: record.exception.exceptionId, fromState: "open", toState: "acknowledged",
+      actor: "Eben", occurredAt: NOW + 10, transitionId: "guard-ack",
+    });
+    const before = raw.prepare("SELECT COUNT(*) count FROM exception_events").get().count;
+    await expect(transitionException(db, {
+      exceptionId: record.exception.exceptionId, fromState: "acknowledged", toState: "investigating",
+      actor: "Eben", occurredAt: NOW + 9, transitionId: "guard-backwards",
+    })).rejects.toThrow(/changed during transition/);
+    await expect(transitionException(db, {
+      exceptionId: record.exception.exceptionId, fromState: "acknowledged", toState: "resolved",
+      actor: "Eben", occurredAt: NOW + 11, transitionId: "guard-no-evidence",
+    })).rejects.toThrow(/requires evidenceSha256/);
+    await expect(transitionException(db, {
+      exceptionId: record.exception.exceptionId, fromState: "acknowledged", toState: "suppressed_with_expiry",
+      actor: "Eben", occurredAt: NOW + 11, transitionId: "guard-expired-suppression",
+      suppressionExpiresAt: NOW + 11,
+    })).rejects.toThrow(/suppression expiry/);
+    expect(raw.prepare("SELECT COUNT(*) count FROM exception_events").get().count).toBe(before);
+    expect(raw.prepare("SELECT state,updated_at FROM lifecycle_exceptions").get())
+      .toEqual({ state: "acknowledged", updated_at: NOW + 10 });
+  });
+
+  it("rolls back the inserted audit event when the state update fails mid-batch", async () => {
+    const record = await buildRejectedSource({
+      ...acceptedInput(), rejectionReason: "forced update failure", nextSafeAction: "inspect evidence",
+    });
+    await rejectSourceEvent(db, record, NOW);
+    const eventCount = raw.prepare("SELECT COUNT(*) count FROM exception_events").get().count;
+    raw.exec(`CREATE TRIGGER test_exception_update_abort BEFORE UPDATE ON lifecycle_exceptions
+      BEGIN SELECT RAISE(ABORT, 'forced exception update failure'); END`);
+    await expect(transitionException(db, {
+      exceptionId: record.exception.exceptionId, fromState: "open", toState: "acknowledged",
+      actor: "Eben", occurredAt: NOW + 1, transitionId: "forced-mid-batch-failure",
+    })).rejects.toThrow(/forced exception update failure/);
+    expect(raw.prepare("SELECT state FROM lifecycle_exceptions").get()).toEqual({ state: "open" });
+    expect(raw.prepare("SELECT COUNT(*) count FROM exception_events").get().count).toBe(eventCount);
+  });
+
+  it("retains the exact suppression expiry in immutable audit after reopen", async () => {
+    const record = await buildRejectedSource({
+      ...acceptedInput(), rejectionReason: "temporary suppression", nextSafeAction: "inspect after expiry",
+    });
+    await rejectSourceEvent(db, record, NOW);
+    const expiresAt = NOW + 60_000;
+    await transitionException(db, {
+      exceptionId: record.exception.exceptionId, fromState: "open", toState: "suppressed_with_expiry",
+      actor: "Eben", occurredAt: NOW + 1, transitionId: "suppress-with-expiry",
+      suppressionExpiresAt: expiresAt, detail: { reasonCode: "awaiting_provider" },
+    });
+    await transitionException(db, {
+      exceptionId: record.exception.exceptionId, fromState: "suppressed_with_expiry", toState: "open",
+      actor: "Eben", occurredAt: expiresAt, transitionId: "reopen-after-expiry",
+    });
+    expect(raw.prepare("SELECT state,suppression_expires_at FROM lifecycle_exceptions").get())
+      .toEqual({ state: "open", suppression_expires_at: null });
+    const suppressed = raw.prepare("SELECT detail_json FROM exception_events WHERE exception_event_id='suppress-with-expiry'").get();
+    expect(JSON.parse(suppressed.detail_json)).toEqual({
+      reasonCode: "awaiting_provider", suppressionExpiresAt: expiresAt,
+    });
+    expect(() => raw.prepare("UPDATE exception_events SET detail_json='{}' WHERE exception_event_id='suppress-with-expiry'").run())
+      .toThrow(/append-only/);
   });
 
   it("scopes counts, queues, and source detail to the requested lifecycle family", async () => {

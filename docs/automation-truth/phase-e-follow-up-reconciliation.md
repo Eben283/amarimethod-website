@@ -1,0 +1,117 @@
+# Follow-Up reconciliation v1 — source-only contract
+
+Status: independently reviewed source-only candidate, 2026-08-27; not merged or adopted. This contract is deliberately unable to make Staff healthy or authoritative.
+
+## Source provenance and boundary
+
+- Repository: `https://github.com/Eben283/amarimethod-website.git`
+- Initial inspected base: `61b0f57861355dc80bf0c22a500171ba495086b1`; final source rebased onto `origin/main` at `0cb98cfa55c844c80a24b345349a355eea0e939c`
+- Family: `follow-up-session-reminders`
+- Source identity: `ghl:appointment-events-webhook:vN`
+- Runtime identity: `<40-hex source revision>@follow-up-reminder-engine.vN`
+- Contract: `follow-up-reconciliation.v1`
+- Row authority label: `SOURCE_ONLY_SELF_REPORTED`. This identifies a non-authoritative source-only row; it is not evidence authority.
+- Evidence scope: `self_reported_integrity_only`.
+
+`functions/lib/follow-up-reconciliation.js` and the local drill are not imported by any production Worker, Pages function, scheduler, route, or package script. `FOLLOW_UP_RECONCILIATION_SOURCE_ONLY_RELEASE` is absent from Wrangler and production entrypoints. Its exact reviewed value exists only as a second source-code guard; it does not authorize deployment or scheduling. The already-live `reliability-store.js` Staff read path is deliberately hardened by this PR: legacy count-only rows cannot become Known, v1 is capped, and unsupported families fail closed. Deploying website/Pages bytes can therefore change Staff's read-only health wording, although the current empty reconciliation table remains Degraded with `coverage_missing`. This PR does not send, enroll, change GHL, call a provider, deploy the reminder Worker, or write production D1.
+
+The production D1 read-only audit on 2026-08-26 observed exact schema v2 and 12 source events, 46 transitions, 5 lifecycle instances, 29 obligations, 7 open exceptions, and 7 exception events. It observed zero release manifests, deployment attestations, source-runtime provenance bindings, command attempts, provider receipts, and reconciliation runs. Those are observations, not proof of a completed lifecycle.
+
+## Permanent v1 truth cap
+
+Every valid v1 detail must say:
+
+- `simulation: true`
+- `authority: false`
+- `producerAdopted: false`
+- `state: degraded`
+- `evidenceScope: self_reported_integrity_only`
+
+No input or component count can lift v1 to Known. Component evaluations that are internally consistent remain Degraded with an explicit self-reported/unverified reason. Query, permission, or timeout failures remain Unknown. Staff recomputes schema authority, validates exact canonical bytes and row bindings, detects same-clock ambiguity and staleness, and never trusts narrative prose. The SHA-256 detail digest proves byte integrity and deterministic replay only; it is neither authentication nor provenance.
+
+`reconciliation_runs` does not yet have database no-update/no-delete triggers. That is acceptable only because v1 is permanently non-authoritative and never Known. Append-only database enforcement is a required promotion gate.
+
+## Exact local collection law
+
+The owned cohort is `[expectedStart, expectedEnd)`, selected by `source_events.received_at`. The 14 cohort, owned-ledger, exception-audit, runtime-provenance, and local-receipt queries execute in one D1 batch/snapshot; schema authority is read separately and remains Degraded/self-reported in v1. Linked source, lifecycle, obligation, command, provenance, and receipt evidence is cutoff-bounded. Exception audit events are read through the current snapshot so the mutable exception state can be checked against its immutable route. Invalid, open, zero-width, future, or over-31-day windows fail before a database read.
+
+The cutoff controls cohort and evidence inclusion, not historical reconstruction. Mutable obligation, command, exception, and workflow-version state is whatever the database holds when the collector reads it. V1 does not claim that those mutable fields are an as-of-`expectedEnd` snapshot.
+
+The batch boundary uses Cloudflare's documented [D1 batch transaction semantics](https://developers.cloudflare.com/d1/worker-api/d1-database/#batch). A missing, falsy, sparse, failed, or malformed result slot fails the whole local snapshot closed.
+
+The local collector verifies:
+
+- exact source version/runtime bindings;
+- contiguous, monotonic receipt routes, including the legal accepted replay interleaving around one durable `dispatched` transition;
+- source receipt and acceptance clocks;
+- one active accepted lifecycle, no rejected lifecycle, and exact family/scope/runtime links;
+- the current published/retired workflow row, its document digest, and a `published_at` no later than lifecycle creation;
+- deterministic obligation identity plus exact key, family, kind, owner, closer, due time, and skip direction, using the same `defineWorkflow`, `executableFlow`, and `enroll` functions as the runtime rather than a parallel schedule evaluator;
+- pending or leased deadlines overdue before the cutoff, and expired leases;
+- prohibited command effects on skipped/cancelled obligations;
+- cohort-linked exception state backed by its immutable opened/transition route, including the exact rejected-source opening evidence;
+- conservative global orphan guards, explicitly named `globalOrphan*` because an orphan cannot be family-attributed after its parent is missing.
+
+The owned identity digest binds every assertion-driving selected source, transition, lifecycle, actual obligation, command, cohort exception, workflow identity, and global-orphan fact. The expected-obligation digest binds the executable definition-derived obligation set. Neither digest contains raw person, appointment, provider reference, or normalized payload text; sensitive inputs are omitted or hashed. Detail bytes, arrays, version identities, and opaque identifiers are bounded and grammar-checked.
+
+Because `workflow_versions` has no `retired_at` history and is not immutable, a retired row plus `published_at` cannot prove that the definition was still active when a lifecycle was created. This remains an explicit v1 limitation and promotion gate; the current published Follow-Up v3 row can satisfy only the narrower current-row integrity check above.
+
+Top-level `window.paginationComplete` means only that the single local D1 batch completed. It says nothing about GHL or provider pagination.
+
+A failed batch records Unknown owned/runtime/provider components with null evidence, `paginationComplete:false`, and `coverageStart=coverageEnd=expectedStart`; it never records an empty successful cohort or full coverage. Staff validates this failed-snapshot contract before range checks and preserves Unknown plus objective stale/schema annotations.
+
+V1 accepts only active lifecycle rows because no audited lifecycle-state transition writer exists yet. Completed, cancelled, superseded, and exception lifecycle states remain incomplete until an explicit terminal-state evidence law is implemented. Exception queue transitions are a separate, already audited state machine.
+
+No recurrence, overlap, or late-evidence carry-forward law is authorized. Non-overlapping source-receipt windows could omit later receipts or far-future obligations belonging to older sources. Runtime adoption therefore requires a separately designed active-lifecycle and late-evidence window law; this source-only collector is not cadence-ready.
+
+## Component evidence scopes
+
+| Component | v1 evidence | Truth boundary |
+|---|---|---|
+| Schema | Current D1 schema authority read, then reader-side cross-check | Still Degraded/self-reported in v1; a read failure is Unknown |
+| Owned ledger | One bounded D1 cohort snapshot and exact local invariants | Degraded even when internally consistent |
+| Runtime provenance | Local release/attestation/binding rows only | Missing/incomplete unless exact durable records exist; never authenticates v1 overall |
+| GHL appointment-event source coverage | No readback adapter in this increment | Missing; cursor false; proves neither sender ownership nor delivery |
+| Provider receipts | Local D1 receipt ledger only | External cursor remains false; local counts cannot prove provider coverage |
+
+Current ownership is not inferred from a GHL component: Amari persisted Follow-Up definition v3 is live, and GHL **Follow up session Confirmation email / reminder flow** v36 is rollback. Any future GHL evidence here is limited to the **Appointment Events Webhook source execution/readback**. It cannot establish who sent a reminder, whether a provider accepted it, or whether a client received it.
+
+The GHL accountability vocabulary is fixed and bounded: owner `Eben`, documented cadence `weekly`, and limitation code `appointment_events_webhook_source_execution_only_no_sender_ownership`. These fields describe evidence governance only and do not authorize a schedule. Staff currently uses a 24-hour freshness limit, so a weekly producer would honestly show stale for most of the week unless a separately reviewed policy changes. Cadence remains a proposal, not authorization.
+
+## Insert-only writer and rollback boundary
+
+The source-only writer collects before one INSERT, uses `recon_<detail SHA-256>` as deterministic identity, performs exact post-insert readback, treats byte-identical races as replay, and fails a conflicting identity with a typed error. It has no UPDATE, DELETE, provider adapter, network call, or fallback/random identity.
+
+The collector/writer and drill remain unimported, so this increment has no production sending, provider, GHL, or D1-write behavior to roll back. The Staff read-model truth change is live if Pages deploys and rolls back by reverting this PR. Enabling a collector runtime import, binding, cron, route, or production write is a separate behavior release and cutover decision.
+
+## Local operator drill
+
+`reminder-engine-worker/src/follow-up-reconciliation-drill.js` is an in-memory, zero-network transition-mechanics drill. It proves a simulated linked exception is visible as open, acknowledged, and investigating, disappears from the active queue only after resolved, and that stale/reused/mid-batch transitions do not append false audit evidence.
+
+It is explicitly `mechanicsOnly: true`, `providerReceiptObserved: false`, and `obligationOutcomeProven: false`. The obligation remains pending and no receipt is invented. Therefore it does **not** satisfy the canonical ordinary lifecycle/operator-resolution acceptance gate and must never be described as a live operator drill.
+
+## Gates before any future authority lift
+
+A separately versioned future contract may become Known only after all of these are proven:
+
+1. append-only reconciliation schema enforcement and an adopted, attested producer identity;
+2. an authorized runtime import/schedule with an explicit cadence and freshness law;
+3. reader-side recomputation of local facts rather than trust in a self-authored envelope;
+4. authenticated, exhaustive GHL Appointment Events Webhook execution readback;
+5. independent provider reconciliation with exhaustive cursors and receipt/obligation identity binding;
+6. exact release manifest, deployment attestation, source-runtime provenance, and freshness match;
+7. an ordinary authorized Follow-Up lifecycle proving source event → durable receipt → lifecycle → obligations → provider evidence → terminal outcome;
+8. a canonical exception-resolution drill that proves the underlying obligation outcome before resolution;
+9. explicit behavior release, rollback, production readback, and Staff Unknown/Degraded verification.
+
+Until then, missing authority, freshness, or coverage is visible as Unknown or Degraded. An empty queue never masquerades as health.
+
+## Source verification checkpoint
+
+- Prior-base verification at `45a2cac19ea9877bcc2fb815bd8b3f1112ee9837`: 2,220/2,220 local tests passed on Node 24.13.1 with lockfile-matching Vitest 4.1.10. After rebasing onto `0cb98cfa55c844c80a24b345349a355eea0e939c`, verification totals 2,206 passed and 15 failed (2,221 tests); the short-circuited Morning SMS and Staff suites and portal-release check were run separately and passed. All 15 failures are inherited ClientDesk test-harness `window is not defined` errors in files unchanged by this package. The same failures are present in [main's Node 22.23.2 CI run](https://github.com/Eben283/amarimethod-website/actions/runs/33082633532/job/98553685020), where the full build was skipped. This is a public draft checkpoint, not a full-test-pass, full-build verification, or merge-readiness claim.
+- Build-contract, app-separation, owned-access, field-ID, committed-asset, and diff-whitespace checks passed.
+- Independent collector and Staff-store/API reviews passed after regression fixes for failed batch slots, malformed receipt digests, version bounds, missing authority, future clocks, and schema-safe Unknown responses.
+- Collector SHA-256: `66714f4441c022964656b910d490af0281e58629577a8083b23098de9d3f9f1c`.
+- Staff store SHA-256: `1638ab4f70f214272c17c8b2e5a8d701f1635542a38b824225aea6b5da186d24`.
+- The checked-in Pages bundle was rebuilt using pinned Wrangler 4.125.0 and hashes to `5ad80e7f287a37213ea7bff547deaf12e728ad3de3a255919d70a7ec1150888c`. It matches the compiler output, contains no collector/drill import or release flag, and changes no other module after normalizing generated routing identifiers and tool-path comments.
+- No production D1 write, Worker deployment, sender change, GHL/provider call, customer activity, or message occurred in this source increment.
