@@ -34,8 +34,16 @@ jobs:
           git fetch origin main
           test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
       - run: npm run check:crm-mirror-release
+      # The Cloudflare credential is never stored in GitHub. This read-only
+      # Bitwarden machine-account bootstrap may retrieve only the immutable
+      # secret ID configured as a production environment variable.
+      - name: Retrieve CRM Mirror deploy credential from Bitwarden
+        uses: bitwarden/sm-action@v2
+        with:
+          access_token: ${{ secrets.BWS_CRM_MIRROR_READ_TOKEN }}
+          secrets: |
+            ${{ vars.BWS_CRM_MIRROR_DEPLOY_SECRET_ID }} > CLOUDFLARE_API_TOKEN
       - name: Deploy and verify exact source provenance
         run: npm run deploy:crm-mirror -- --deploy --approved-revision "$GITHUB_SHA"
         env:
-          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_CRM_MIRROR_DEPLOY_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
