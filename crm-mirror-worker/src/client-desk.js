@@ -476,7 +476,19 @@ const CLIENT_DESK_HTML = `<!doctype html>
     }
   }
 
-  query.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadInbox, 180); }); loadInbox();
+  // Keep an open Desk aligned with the read-only mirror without disturbing the
+  // selected record, timeline position, or an in-progress SMS reply.
+  const INBOX_REFRESH_MS = 60_000;
+  const refreshInboxWhenVisible = () => {
+    if (document.visibilityState === 'visible') loadInbox();
+  };
+  query.addEventListener('input', () => { clearTimeout(timer); timer = setTimeout(loadInbox, 180); });
+  if (typeof window !== 'undefined') {
+    document.addEventListener('visibilitychange', refreshInboxWhenVisible);
+    window.addEventListener('focus', refreshInboxWhenVisible);
+    window.setInterval(refreshInboxWhenVisible, INBOX_REFRESH_MS);
+  }
+  loadInbox();
 })();
 </script></body></html>`;
 
