@@ -10,6 +10,11 @@ import { ghlFetch } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
+// The Staff UI is an external client/partner communication surface. Do not let
+// the active GHL thread choose the originating number: that can be the private
+// Operations line. Internal operational notifications use their own paths and
+// do not call this endpoint.
+export const PRACTICE_SMS_FROM_NUMBER = "+16288777673";
 // The personalized coach drafts are warm + full (Garrett's voice, "never clipped") and run
 // ~480-520 chars; the old 480 cap silently 400'd them ("Message too long" hidden behind a
 // generic UI error). 720 ≈ 5 concatenated SMS segments — covers the drafts with headroom
@@ -33,6 +38,10 @@ function normalizePhone(s) {
 // Small stable hash for the idempotency key (dedup is per-contact + 5-min TTL, so
 // collision risk is irrelevant — this just has to be stable for the same text).
 function hashKey(s) { let h = 5381; for (let i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) >>> 0; return h.toString(36); }
+
+export function buildStaffSmsPayload(contactId, message) {
+  return { type: "SMS", contactId, message, fromNumber: PRACTICE_SMS_FROM_NUMBER };
+}
 
 
 export async function onRequestOptions(context) {
@@ -78,7 +87,7 @@ export async function onRequestPost(context) {
 
   const smsRes = await ghlFetch(context, `${GHL_API_BASE}/conversations/messages`, {
     method: "POST",
-    body: JSON.stringify({ type: "SMS", contactId, message }),
+    body: JSON.stringify(buildStaffSmsPayload(contactId, message)),
   });
   if (!smsRes.ok) {
     await releaseDedupe(); // let the staffer retry a genuinely-failed send
