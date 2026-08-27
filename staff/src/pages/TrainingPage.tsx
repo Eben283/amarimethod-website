@@ -4,11 +4,13 @@ import {
   Compass,
   FileText,
   GraduationCap,
+  MessageCircle,
   Palette,
   Zap,
 } from 'lucide-react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import SharpenDeck from '../components/SharpenDeck';
+import AmariDescriptionLab from '../components/AmariDescriptionLab';
 import {
   trainingPath,
   trainingPlaybookFromSearch,
@@ -20,6 +22,7 @@ import PlaybookPage from './PlaybookPage';
 import './TrainingPage.css';
 
 const SECTIONS: { id: TrainingSection; label: string; detail: string; Icon: typeof Zap }[] = [
+  { id: 'amari', label: 'Describe Amari', detail: 'Practice, edit, and improve the words', Icon: MessageCircle },
   { id: 'sharpen', label: 'Sharpen', detail: 'Five call-craft cards', Icon: Zap },
   { id: 'playbooks', label: 'Playbooks & scripts', detail: 'Exact words with the reason behind them', Icon: BookOpenText },
   { id: 'reference', label: 'Reference', detail: 'Positioning and language standards', Icon: Compass },
@@ -78,6 +81,8 @@ export default function TrainingPage() {
           <SharpenDeck />
         </section>
       ) : null}
+
+      {section === 'amari' ? <AmariDescriptionLab /> : null}
 
       {section === 'playbooks' ? (
         <section className="training-panel training-panel--playbooks" aria-labelledby="training-playbooks-title">

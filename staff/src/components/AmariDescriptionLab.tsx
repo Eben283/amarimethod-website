@@ -1,0 +1,46 @@
+import { useEffect, useMemo, useState } from 'react';
+import { Check, ChevronRight, MessageCircle, Pencil, RotateCcw, Sparkles } from 'lucide-react';
+import './AmariDescriptionLab.css';
+
+type Card = { id: string; module: string; prompt: string; answer: string; beats: string[]; next: string };
+type Store = { overrides: Record<string, { answer: string; note: string; updatedAt: string }>; feedback: Array<{ type: string; cardId: string; note?: string }> };
+
+const CARDS: Card[] = [
+  { id: 'core', module: 'The core', prompt: 'What is Amari?', answer: 'Amari is private, guided movement that changes how your body moves and feels.', beats: ['Private and individual', 'Guided movement', 'A felt, physical difference'], next: 'Pause. Let the person ask what that looks like.' },
+  { id: 'session', module: 'Inside a session', prompt: 'What actually happens in a session?', answer: 'Garrett guides a precise setup while you move, breathe, sense, and participate. The work responds to what is present in your body that day.', beats: ['Garrett guides', 'You actively participate', 'The session is specific to that day'], next: 'Ask what they are noticing in their own body.' },
+  { id: 'not-pt', module: 'What it is not', prompt: 'Is it like chiropractic or PT?', answer: 'It is different from a fixed exercise plan or passive treatment. Amari is an active, guided experience you can feel for yourself; it does not ask you to reject the care you already use.', beats: ['Do not argue categories', 'Active and guided', 'No need to choose sides'], next: 'Invite direct experience rather than a debate.' },
+  { id: 'fit', module: 'Why people come', prompt: 'What is it good for?', answer: 'People often come because pain, tension, or restriction is getting in the way of work, training, or ordinary life. The Assessment is where you see whether the work is relevant to you.', beats: ['Name the interruption', 'No blanket promise', 'Assessment is the first experience'], next: 'Ask what has become harder to do.' },
+  { id: 'practice', module: 'The Practice', prompt: 'Why is one session only the beginning?', answer: 'A first shift gives you something real to work from. The larger practice develops as you learn more about your body and Garrett keeps working with what changes.', beats: ['First shift is real', 'Not the finish line', 'The work evolves'], next: 'Keep the explanation tied to their actual goal.' },
+  { id: 'lower-back', module: 'Objection handling', prompt: 'Will it help my lower back?', answer: 'Lower-back discomfort can be a reason to come in, but Garrett would need to see what is present for you. The Assessment lets you experience the work before deciding what comes next.', beats: ['Acknowledge the reason', 'Do not promise', 'Offer an Assessment'], next: 'Ask what the lower back is keeping them from doing.' },
+  { id: 'already-pt', module: 'Objection handling', prompt: 'I already go to PT.', answer: 'You do not have to stop doing something that is helping. Amari is a different guided experience; come feel it and decide whether it gives you something useful alongside what you already do.', beats: ['Respect existing care', 'Explain difference without comparison', 'Let experience decide'], next: 'Ask what they still feel is unresolved.' },
+  { id: 'nothing-works', module: 'Objection handling', prompt: 'Nothing works for me.', answer: 'That sounds exhausting. You do not need to believe a big promise or make a long commitment today. Start with the Assessment, pay attention to what you experience, then decide.', beats: ['Meet the frustration', 'No big promise', 'Low-pressure next step'], next: 'Slow down; do not try to overcome their skepticism.' },
+  { id: 'partner', module: 'Partner conversation', prompt: 'How do I explain Amari to a trainer or therapist?', answer: 'Start with the people they work with and what remains difficult. Then explain Amari literally as private guided movement that helps a person participate more actively in their own body.', beats: ['Listen before describing', 'Connect to a real gap', 'Keep it literal'], next: 'Invite them to experience it before discussing a partnership.' },
+];
+
+async function request(path: string, options?: RequestInit) {
+  const response = await fetch(`/api/${path}`, { credentials: 'same-origin', headers: { 'Content-Type': 'application/json' }, ...options });
+  if (!response.ok) throw new Error('Could not save your feedback.');
+  return response.json() as Promise<Store>;
+}
+
+export default function AmariDescriptionLab() {
+  const [store, setStore] = useState<Store>({ overrides: {}, feedback: [] });
+  const [index, setIndex] = useState(0); const [revealed, setRevealed] = useState(false); const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(''); const [note, setNote] = useState(''); const [status, setStatus] = useState('');
+  useEffect(() => { request('staff-amari-description-lab').then(setStore).catch(() => setStatus('Feedback storage is unavailable right now.')); }, []);
+  const card = CARDS[index]; const answer = store.overrides[card.id]?.answer || card.answer;
+  const edited = Boolean(store.overrides[card.id]); const feedbackCount = store.feedback.length;
+  const openEdit = () => { setDraft(answer); setNote(store.overrides[card.id]?.note || ''); setEditing(true); setStatus(''); };
+  const save = async () => { try { const next = await request('staff-amari-description-lab', { method: 'POST', body: JSON.stringify({ action: 'save', cardId: card.id, answer: draft, note }) }); setStore(next); setEditing(false); setStatus('Saved. This is now the version you will practice.'); } catch (error) { setStatus(error instanceof Error ? error.message : 'Could not save.'); } };
+  const react = async (sentiment: 'keep' | 'rewrite') => { try { setStore(await request('staff-amari-description-lab', { method: 'POST', body: JSON.stringify({ action: 'feedback', cardId: card.id, sentiment, note: '' }) })); setStatus(sentiment === 'keep' ? 'Marked as worth keeping.' : 'Marked for a rewrite.'); } catch { setStatus('Could not save your feedback.'); } };
+  const modules = useMemo(() => [...new Set(CARDS.map((item) => item.module))], []);
+  return <section className="amari-lab" aria-labelledby="amari-lab-title">
+    <header className="amari-lab__head"><div><span>WORKSHOP · DRAFT LANGUAGE</span><h2 id="amari-lab-title">Describe Amari</h2><p>Practice the words, then change them when they do not sound right. Your edits save here for review.</p></div><div className="amari-lab__count"><MessageCircle size={16} /> {feedbackCount} notes saved</div></header>
+    <div className="amari-lab__path" aria-label="Course modules">{modules.map((module) => <span key={module}>{module}</span>)}</div>
+    <div className="amari-lab__progress"><i style={{ width: `${((index + 1) / CARDS.length) * 100}%` }} /><span>{index + 1} of {CARDS.length}</span></div>
+    <article className="amari-lab__card"><div className="amari-lab__label"><Sparkles size={15} /> {card.module}</div><p className="amari-lab__prompt">“{card.prompt}”</p>{!revealed ? <button className="amari-lab__primary" type="button" onClick={() => setRevealed(true)}>Show the draft answer</button> : <><div className="amari-lab__answer"><span>{edited ? 'YOUR EDITED VERSION' : 'STARTING DRAFT'}</span><p>{answer}</p></div><div className="amari-lab__beats"><strong>Keep these ideas:</strong>{card.beats.map((beat) => <span key={beat}><Check size={14} />{beat}</span>)}</div><p className="amari-lab__next"><b>Then:</b> {card.next}</p><div className="amari-lab__actions"><button type="button" onClick={() => react('keep')}><Check size={16} /> Keep</button><button type="button" onClick={() => react('rewrite')}><RotateCcw size={16} /> Needs rewrite</button><button type="button" onClick={openEdit}><Pencil size={16} /> Edit language</button></div></>}</article>
+    {editing && <section className="amari-lab__editor" aria-label="Edit this answer"><label>Make it sound like Amari<textarea value={draft} onChange={(event) => setDraft(event.target.value)} rows={5} /></label><label>Why this change? <small>Optional, but useful for the next revision.</small><textarea value={note} onChange={(event) => setNote(event.target.value)} rows={2} /></label><div><button type="button" onClick={() => setEditing(false)}>Cancel</button><button type="button" className="amari-lab__primary" onClick={save}>Save this version</button></div></section>}
+    {status && <p className="amari-lab__status" role="status">{status}</p>}
+    <footer><button type="button" onClick={() => { setIndex((index + 1) % CARDS.length); setRevealed(false); setEditing(false); setStatus(''); }}>Next prompt <ChevronRight size={16} /></button></footer>
+  </section>;
+}
