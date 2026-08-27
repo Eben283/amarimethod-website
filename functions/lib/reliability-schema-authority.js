@@ -163,6 +163,17 @@ export const RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE = Object.freeze(
   structureSha256: "8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62",
 });
 
+// Final production-lineage v2 authority contract. Defining the exact bytes in
+// source does not promote the database: authority exists only when the reader
+// proves the exact v1+v2 markers, exact immutable contract, and exact observed
+// 69-row structure together.
+export const RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY = Object.freeze({
+  ...RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+  variantId: "production-live-lineage-v2-authority-8c7245a",
+  migrationId: "reliability-spine-v2-production-lineage-8c7245ae",
+  description: "Authenticated release manifests, deployment attestations, and source-event runtime provenance",
+});
+
 const V2_ONLY_OBJECTS = new Set(RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.expectedObjects.filter(
   (object) => !RELIABILITY_SCHEMA_V1.expectedObjects.includes(object),
 ));
@@ -246,6 +257,17 @@ function exactMarker(marker, contract) {
     && (contract.appliedAt == null || Number(marker.applied_at) === contract.appliedAt);
 }
 
+function exactSchemaContract(row, contract) {
+  return row
+    && Number(row.version) === contract.version
+    && row.migration_id === contract.migrationId
+    && row.canonicalization === contract.canonicalization
+    && row.structure_sha256 === contract.structureSha256
+    && row.expected_objects_json === JSON.stringify(contract.expectedObjects)
+    && Number.isInteger(Number(row.applied_at))
+    && Number(row.applied_at) > 0;
+}
+
 export async function assessReliabilitySchemaAuthority(snapshot) {
   const latest = snapshot.markers.at(-1) || null;
   if (!latest) return { proven: false, reason: "schema_marker_missing", version: null };
@@ -305,14 +327,49 @@ export async function assessReliabilitySchemaAuthority(snapshot) {
     };
   }
 
-  if (Number(latest.version) !== RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE.version) {
+  if (Number(latest.version) !== RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.version) {
     return { proven: false, reason: "schema_version_unknown", version: Number(latest.version) };
   }
+
+  if (snapshot.markers.length !== 2
+    || !exactMarker(snapshot.markers[0], RELIABILITY_SCHEMA_V1)
+    || !exactMarker(snapshot.markers[1], RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY)) {
+    return { proven: false, reason: "schema_v2_marker_mismatch", version: 2, migrationState: "blocked" };
+  }
+  if (snapshot.contracts.length !== 1) {
+    return {
+      proven: false,
+      reason: "schema_v2_contract_missing_or_conflicting",
+      version: 2,
+      migrationState: "blocked",
+    };
+  }
+  const v2Contract = snapshot.contracts[0];
+  if (!exactSchemaContract(v2Contract, RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY)
+    || Number(v2Contract.applied_at) !== Number(snapshot.markers[1].applied_at)) {
+    return { proven: false, reason: "schema_v2_contract_mismatch", version: 2, migrationState: "blocked" };
+  }
+  const v2Structure = await assessReliabilityStructure(
+    snapshot.sqliteMaster,
+    RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY,
+  );
+  if (!v2Structure.proven) {
+    return {
+      proven: false,
+      reason: "schema_v2_structure_mismatch",
+      version: 2,
+      migrationState: "blocked",
+      structure: v2Structure,
+    };
+  }
   return {
-    proven: false,
-    reason: "schema_v2_authority_not_defined",
+    proven: true,
+    reason: "schema_v2_exact_authority",
     version: 2,
-    migrationState: "blocked",
+    variantId: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.variantId,
+    migrationState: "current_v2",
+    appliedAt: Number(v2Contract.applied_at),
+    structure: v2Structure,
   };
 }
 
@@ -353,10 +410,11 @@ export async function assessReliabilityV2PromotionCandidatePreflight(snapshot) {
       structureCompatible: true,
       additiveTablesEmpty: true,
       authorized: false,
-      state: "predicted_shape_requires_primary_readback",
-      reason: "schema_v2_primary_readback_required",
+      state: "observed_primary_shape_source_ready",
+      reason: "schema_v2_promotion_requires_separate_authorization",
       authority,
       predictedTarget: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+      promotionTarget: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY,
     };
   }
   if (authority.reason === "schema_v2_physical_install_awaiting_promotion"

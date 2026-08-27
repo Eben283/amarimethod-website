@@ -4,6 +4,7 @@
  * Function, Staff, or any other runtime entrypoint.
  */
 import { canonicalJson, sha256 } from "./automation-truth-phase-b.js";
+import { RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY } from "./reliability-schema-authority.js";
 
 export const FOLLOW_UP_RELEASE_MANIFEST_VERSION = "follow-up-release-manifest.v2";
 export const FOLLOW_UP_DEPLOYMENT_ATTESTATION_VERSION = "follow-up-deployment-attestation.v1";
@@ -15,8 +16,9 @@ const GIT_SHA = /^[a-f0-9]{40}$/;
 const RFC3339_MILLIS_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
 const FOLLOW_UP_WORKFLOW_ID = "follow-up-session-reminders";
 const FOLLOW_UP_WORKFLOW_VERSION = 3;
-const FOLLOW_UP_SCHEMA_MIGRATION = "reliability-spine-v2-deployment-attestation";
-const FOLLOW_UP_SCHEMA_VERSION = 2;
+const FOLLOW_UP_SCHEMA_MIGRATION = RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.migrationId;
+const FOLLOW_UP_SCHEMA_VERSION = RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.version;
+const FOLLOW_UP_SCHEMA_STRUCTURE_SHA256 = RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.structureSha256;
 const MAX_OBSERVATION_AGE_MS = 5 * 60 * 1000;
 const MAX_ATTESTATION_TTL_MS = 15 * 60 * 1000;
 const MAX_FUTURE_CLOCK_SKEW_MS = 60 * 1000;
@@ -53,6 +55,12 @@ function exact(value, expected, label) {
 function digest(value, label) {
   const normalized = text(value, label).replace(/^sha256:/, "").toLowerCase();
   if (!SHA256.test(normalized)) throw new TypeError(`${label} must be a SHA-256 digest`);
+  return normalized;
+}
+
+function exactDigest(value, expected, label) {
+  const normalized = digest(value, label);
+  if (normalized !== expected) throw new TypeError(`${label} must be ${expected}`);
   return normalized;
 }
 
@@ -161,7 +169,11 @@ function normalizeSchema(schema, label) {
       ? schema.version
       : (() => { throw new TypeError(`${label}.version must be ${FOLLOW_UP_SCHEMA_VERSION}`); })(),
     sourceSha256: digest(schema.sourceSha256, `${label}.sourceSha256`),
-    structureSha256: digest(schema.structureSha256, `${label}.structureSha256`),
+    structureSha256: exactDigest(
+      schema.structureSha256,
+      FOLLOW_UP_SCHEMA_STRUCTURE_SHA256,
+      `${label}.structureSha256`,
+    ),
   };
 }
 

@@ -6,8 +6,9 @@
  */
 import { canonicalJson, sha256 } from "./automation-truth-phase-b.js";
 import { verifyDeploymentAttestationEnvelope } from "./automation-truth-phase-d.js";
+import { RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY } from "./reliability-schema-authority.js";
 
-const MIGRATION_ID = "reliability-spine-v2-deployment-attestation";
+const MIGRATION_ID = RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.migrationId;
 const STRUCTURE_CANONICALIZATION = "sqlite-master-required-closure.v1";
 const SHA256 = /^[a-f0-9]{64}$/;
 const RFC3339_MILLIS_UTC = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
