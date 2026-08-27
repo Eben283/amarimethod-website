@@ -9,9 +9,9 @@ var __esm = (fn, res, err) => function __init() {
     throw err = [e], e;
   }
 };
-var __export = (target, all) => {
-  for (var name in all)
-    __defProp(target, name, { get: all[name], enumerable: true });
+var __export = (target, all2) => {
+  for (var name in all2)
+    __defProp(target, name, { get: all2[name], enumerable: true });
 };
 
 // lib/ghl.js
@@ -197,7 +197,7 @@ async function applyTagDelta(context, contactId, { add = [], remove = [] } = {})
 var GHL_API_BASE, GHL_TOKEN_URL, REFRESH_BUFFER_MS, KV_ACCESS_TOKEN, KV_REFRESH_TOKEN, KV_TOKEN_EXPIRY, refreshInFlight;
 var init_ghl = __esm({
   "lib/ghl.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     GHL_API_BASE = "https://services.leadconnectorhq.com";
     GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
     REFRESH_BUFFER_MS = 5 * 60 * 1e3;
@@ -278,7 +278,7 @@ function appointmentEndTime(startTime, durationMinutes) {
 var PACIFIC_TZ, OFFSET_OR_Z, NAIVE_DATETIME;
 var init_datetime = __esm({
   "lib/datetime.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(formatIsoAtOffset, "formatIsoAtOffset");
     PACIFIC_TZ = "America/Los_Angeles";
     OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
@@ -295,7 +295,7 @@ var init_datetime = __esm({
 var FIELD_IDS;
 var init_ghl_fields = __esm({
   "lib/ghl-fields.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     FIELD_IDS = {
       // Session balance — the most contended value in the stack. Raw GHL field,
       // reconciled hourly against the derived ledger (session-ledger.js).
@@ -383,7 +383,7 @@ function safeParse(raw) {
 var OPS_ERR_PREFIX, OPS_ERR_TTL_SECONDS;
 var init_ops_alert = __esm({
   "lib/ops-alert.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     OPS_ERR_PREFIX = "ops:err:";
     OPS_ERR_TTL_SECONDS = 60 * 60 * 24 * 30;
     __name(opsKv, "opsKv");
@@ -402,7 +402,7 @@ function registryPath(pathId) {
 var OPS_SEVERITY, PATH_ASSESSMENT_PAID_BOOK, OPS_ERR_PATH_SOURCES, OPS_REGISTRY, EXTERNAL_MONITOR_PATH_IDS;
 var init_ops_registry = __esm({
   "lib/ops-registry.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     OPS_SEVERITY = Object.freeze({
       MONEY: "money",
       BOOKING: "booking",
@@ -862,7 +862,7 @@ var init_ops_registry = __esm({
 // lib/ghl-send.js
 function validateSend(params) {
   if (params == null || typeof params !== "object") return { ok: false, error: "missing params" };
-  const { channel, contactId, subject, html, message } = params;
+  const { channel, contactId, subject: subject2, html, message } = params;
   if (channel !== "sms" && channel !== "email") return { ok: false, error: "channel must be 'sms' or 'email'" };
   if (typeof contactId !== "string" || !CONTACT_ID.test(contactId)) return { ok: false, error: "invalid contactId" };
   if (channel === "sms") {
@@ -871,11 +871,11 @@ function validateSend(params) {
     if (BAD_CHARS.test(message)) return { ok: false, error: "sms message contains disallowed characters" };
     return { ok: true };
   }
-  if (typeof subject !== "string" || subject.trim() === "") return { ok: false, error: "email subject is required" };
+  if (typeof subject2 !== "string" || subject2.trim() === "") return { ok: false, error: "email subject is required" };
   if (typeof html !== "string" || html.trim() === "") return { ok: false, error: "email body is required" };
-  if (subject.length > SEND_LIMITS.EMAIL_SUBJECT_MAX) return { ok: false, error: `email subject exceeds ${SEND_LIMITS.EMAIL_SUBJECT_MAX} chars` };
+  if (subject2.length > SEND_LIMITS.EMAIL_SUBJECT_MAX) return { ok: false, error: `email subject exceeds ${SEND_LIMITS.EMAIL_SUBJECT_MAX} chars` };
   if (html.length > SEND_LIMITS.EMAIL_BODY_MAX) return { ok: false, error: `email body exceeds ${SEND_LIMITS.EMAIL_BODY_MAX} chars` };
-  if (BAD_CHARS.test(subject) || BAD_CHARS.test(html)) return { ok: false, error: "email contains disallowed characters" };
+  if (BAD_CHARS.test(subject2) || BAD_CHARS.test(html)) return { ok: false, error: "email contains disallowed characters" };
   return { ok: true };
 }
 function buildPayload(params) {
@@ -919,7 +919,7 @@ async function sendConversationMessage(context, params) {
 var GHL_MESSAGE_ENDPOINT, SEND_LIMITS, BAD_CHARS, CONTACT_ID;
 var init_ghl_send = __esm({
   "lib/ghl-send.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     GHL_MESSAGE_ENDPOINT = "https://services.leadconnectorhq.com/conversations/messages";
     SEND_LIMITS = Object.freeze({
@@ -952,7 +952,7 @@ function buildFlipCopy(incident) {
   const opsUrl = `https://www.amarimethod.com/ops#path/${encodeURIComponent(path)}`;
   const command = path ? ` Reply FIX ${path}.` : "";
   const sms = `Amari Ops \xB7 ${title} \u2014 ${who}${hop}.${command} ${opsUrl}`;
-  const subject = `Amari Ops \xB7 ${title}`;
+  const subject2 = `Amari Ops \xB7 ${title}`;
   const html = [
     `<p><strong>${escapeHtml(title)}</strong></p>`,
     `<p>${escapeHtml(who)}${hop ? escapeHtml(hop) : ""}</p>`,
@@ -962,7 +962,7 @@ function buildFlipCopy(incident) {
     `<p>Incident: <code>${escapeHtml(incident.id || "")}</code></p>`,
     `<p><a href="${escapeHtml(opsUrl)}">Open in Amari Ops</a></p>`
   ].filter(Boolean).join("\n");
-  return { sms: sms.slice(0, 720), subject, html };
+  return { sms: sms.slice(0, 720), subject: subject2, html };
 }
 function escapeHtml(s) {
   return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -1017,7 +1017,7 @@ async function notifyOpsFlip(context, incident) {
 var DEFAULT_OPS_ALERT_CONTACT_ID, SEVERITY_CHANNELS;
 var init_ops_notify = __esm({
   "lib/ops-notify.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl_send();
     DEFAULT_OPS_ALERT_CONTACT_ID = "3jsTC9Cb7hkDpC3FLuFd";
     SEVERITY_CHANNELS = Object.freeze({
@@ -1049,9 +1049,9 @@ async function readJson(kv, key, fallback) {
     return fallback;
   }
 }
-function trailEventFromInput(evt, id2, at, atMs) {
+function trailEventFromInput(evt, id3, at, atMs) {
   return {
-    id: id2,
+    id: id3,
     at,
     atMs,
     pathId: evt.pathId,
@@ -1189,7 +1189,7 @@ async function touchMeta(kv, reason) {
 var EVENTS_PREFIX, INCIDENTS_KEY, META_KEY, MAX_EVENTS, MAX_INCIDENTS, TTL_SECONDS;
 var init_ops_trail_kv = __esm({
   "lib/ops-trail-kv.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     EVENTS_PREFIX = "ops:trail:events:";
     INCIDENTS_KEY = "ops:trail:incidents";
     META_KEY = "ops:trail:meta";
@@ -1229,8 +1229,8 @@ async function recordOpsEvent(env, evt) {
     if (!OUTCOMES.has(evt.outcome)) return { recorded: false, reason: "bad-outcome" };
     const at = evt.at || (/* @__PURE__ */ new Date()).toISOString();
     const atMs = evt.atMs != null ? evt.atMs : Date.parse(at) || Date.now();
-    const id2 = evt.id || newId("evt");
-    const shaped = trailEventFromInput(evt, id2, at, atMs);
+    const id3 = evt.id || newId("evt");
+    const shaped = trailEventFromInput(evt, id3, at, atMs);
     const db = automationDb(env);
     if (db) {
       await db.prepare(
@@ -1240,7 +1240,7 @@ async function recordOpsEvent(env, evt) {
             condition_expected, condition_observed, message_json, money_json, source)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
       ).bind(
-        id2,
+        id3,
         at,
         atMs,
         evt.pathId,
@@ -1267,7 +1267,7 @@ async function recordOpsEvent(env, evt) {
       );
       return { recorded: false, reason: "no-store" };
     }
-    return { recorded: true, id: id2, at, atMs, via: db ? "d1" : "kv" };
+    return { recorded: true, id: id3, at, atMs, via: db ? "d1" : "kv" };
   } catch (err) {
     console.error(`[ops-events] record failed: ${err && err.message}`);
     return { recorded: false, reason: "threw" };
@@ -1314,9 +1314,9 @@ async function openOpsIncident(env, inc, { context = null, alert: alert2 = true 
         }
         return { opened: false, attached: true, id: existingKv.id, flipped: false, alert: alertResult3, via: "kv" };
       }
-      const id3 = inc.id || newId("inc");
+      const id4 = inc.id || newId("inc");
       const shaped2 = {
-        id: id3,
+        id: id4,
         pathId: inc.pathId,
         status: "open",
         severity,
@@ -1336,7 +1336,7 @@ async function openOpsIncident(env, inc, { context = null, alert: alert2 = true 
       let alertResult2 = null;
       if (alert2) {
         alertResult2 = await notifyOpsFlip(context || { env }, {
-          id: id3,
+          id: id4,
           pathId: inc.pathId,
           severity,
           title: inc.title,
@@ -1353,7 +1353,7 @@ async function openOpsIncident(env, inc, { context = null, alert: alert2 = true 
           });
         }
       }
-      return { opened: true, id: id3, flipped: true, alert: alertResult2, via: "kv" };
+      return { opened: true, id: id4, flipped: true, alert: alertResult2, via: "kv" };
     }
     let existing = null;
     if (inc.correlationId) {
@@ -1393,7 +1393,7 @@ async function openOpsIncident(env, inc, { context = null, alert: alert2 = true 
       }
       return { opened: false, attached: true, id: existing.id, flipped: false, alert: alertResult2 };
     }
-    const id2 = inc.id || newId("inc");
+    const id3 = inc.id || newId("inc");
     await db.prepare(
       `INSERT INTO ops_incidents
            (id, path_id, status, severity, opened_at, opened_at_ms, resolved_at,
@@ -1401,7 +1401,7 @@ async function openOpsIncident(env, inc, { context = null, alert: alert2 = true 
             failed_hop_id, event_ids_json, law_id)
          VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
     ).bind(
-      id2,
+      id3,
       inc.pathId,
       "open",
       severity,
@@ -1418,7 +1418,7 @@ async function openOpsIncident(env, inc, { context = null, alert: alert2 = true 
       inc.lawId ?? null
     ).run();
     const shaped = {
-      id: id2,
+      id: id3,
       pathId: inc.pathId,
       status: "open",
       severity,
@@ -1438,7 +1438,7 @@ async function openOpsIncident(env, inc, { context = null, alert: alert2 = true 
     let alertResult = null;
     if (alert2) {
       alertResult = await notifyOpsFlip(context || { env }, {
-        id: id2,
+        id: id3,
         pathId: inc.pathId,
         severity,
         title: inc.title,
@@ -1450,11 +1450,11 @@ async function openOpsIncident(env, inc, { context = null, alert: alert2 = true 
       });
       if (alertResult?.sent || alertResult?.shadowed) {
         const lastAlertedAt = (/* @__PURE__ */ new Date()).toISOString();
-        await db.prepare(`UPDATE ops_incidents SET last_alerted_at = ? WHERE id = ?`).bind(lastAlertedAt, id2).run();
+        await db.prepare(`UPDATE ops_incidents SET last_alerted_at = ? WHERE id = ?`).bind(lastAlertedAt, id3).run();
         await upsertTrailIncident(env, { ...shaped, lastAlertedAt });
       }
     }
-    return { opened: true, id: id2, flipped: true, alert: alertResult };
+    return { opened: true, id: id3, flipped: true, alert: alertResult };
   } catch (err) {
     console.error(`[ops-events] openIncident failed: ${err && err.message}`);
     return { opened: false, reason: "threw" };
@@ -1628,7 +1628,7 @@ function safeJsonArray(raw) {
 var OUTCOMES;
 var init_ops_events = __esm({
   "lib/ops-events.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_registry();
     init_ops_notify();
     init_ops_trail_kv();
@@ -1699,7 +1699,7 @@ async function recordAssessmentBookPath(context, {
   if (pay.id) eventIds.push(pay.id);
   const apptId = appointment?.id || appointment?.appointment?.id || (typeof appointment === "string" ? appointment : null);
   if (bookError) {
-    const fail = await recordOpsEvent(env, {
+    const fail2 = await recordOpsEvent(env, {
       pathId: PATH_ASSESSMENT_PAID_BOOK,
       hopId: "create_appointment",
       outcome: "fail",
@@ -1715,7 +1715,7 @@ async function recordAssessmentBookPath(context, {
       money: money2,
       source: SOURCE
     });
-    if (fail.id) eventIds.push(fail.id);
+    if (fail2.id) eventIds.push(fail2.id);
     await openOpsIncident(
       env,
       {
@@ -1735,7 +1735,7 @@ async function recordAssessmentBookPath(context, {
       contactId,
       product: productName,
       error: String(bookError.message || bookError).slice(0, 300),
-      opsEventId: fail.id || null,
+      opsEventId: fail2.id || null,
       correlationId
     });
     return { eventIds, outcome: "fail" };
@@ -1839,7 +1839,7 @@ async function recordAssessmentCheckout(env, {
 var SOURCE;
 var init_ops_assessment = __esm({
   "lib/ops-assessment.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -1919,7 +1919,7 @@ function assessmentBookingFromWorkflow(document) {
 var ASSESSMENT_PAID_BOOKING_WORKFLOW_ID, ASSESSMENT_PRODUCT_ID, ASSESSMENT_PAID_BOOKING_WORKFLOW;
 var init_assessment_paid_booking_workflow = __esm({
   "lib/assessment-paid-booking-workflow.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     ASSESSMENT_PAID_BOOKING_WORKFLOW_ID = "assessment-paid-booking";
     ASSESSMENT_PRODUCT_ID = "6a66cf0103821ea09ea13f1b";
     __name(deepFreeze, "deepFreeze");
@@ -1984,7 +1984,7 @@ async function currentAssessmentPaidBookingWorkflow(context) {
 var REMINDER_ENGINE_URL;
 var init_assessment_paid_booking_runtime = __esm({
   "lib/assessment-paid-booking-runtime.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_assessment_paid_booking_workflow();
     REMINDER_ENGINE_URL = "https://reminder-engine.eben-fa2.workers.dev";
     __name(currentAssessmentPaidBookingWorkflow, "currentAssessmentPaidBookingWorkflow");
@@ -2031,7 +2031,7 @@ async function recordPaidBookPath(context, {
   if (pay.id) eventIds.push(pay.id);
   const apptId = appointment?.id || appointment?.appointment?.id || (typeof appointment === "string" ? appointment : null);
   if (bookError) {
-    const fail = await recordOpsEvent(env, {
+    const fail2 = await recordOpsEvent(env, {
       pathId,
       hopId: "create_appointment",
       outcome: "fail",
@@ -2047,7 +2047,7 @@ async function recordPaidBookPath(context, {
       money: moneyPayload,
       source
     });
-    if (fail.id) eventIds.push(fail.id);
+    if (fail2.id) eventIds.push(fail2.id);
     await openOpsIncident(
       env,
       {
@@ -2068,7 +2068,7 @@ async function recordPaidBookPath(context, {
       product: productName,
       pathId,
       error: String(bookError.message || bookError).slice(0, 300),
-      opsEventId: fail.id || null,
+      opsEventId: fail2.id || null,
       correlationId
     });
     return { eventIds, outcome: "fail" };
@@ -2182,7 +2182,7 @@ function paidBookPathForProduct(productId, pkg) {
 }
 var init_ops_path_emit = __esm({
   "lib/ops-path-emit.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_events();
     init_ops_alert();
     init_ops_assessment();
@@ -2198,9 +2198,9 @@ function blockMinutes(policy) {
   return Number(policy.durationMinutes || 0) + Number(policy.bufferMinutes || 0);
 }
 function policyForCalendarId(calendarId) {
-  const id2 = String(calendarId || "");
+  const id3 = String(calendarId || "");
   for (const policy of Object.values(SLOT_POLICIES)) {
-    if (policy.calendarIds.includes(id2)) return policy;
+    if (policy.calendarIds.includes(id3)) return policy;
   }
   return null;
 }
@@ -2282,7 +2282,7 @@ function applyHourPackPreference(slots2, opts) {
 var STUDIO_INTERVAL_MINUTES, WORK_HOURS, SLOT_POLICIES;
 var init_booking_slot_policy = __esm({
   "lib/booking-slot-policy.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     STUDIO_INTERVAL_MINUTES = 60;
     WORK_HOURS = Object.freeze({
       scheduleId: "WIPAUCHQ5WW18vLJ49Gk",
@@ -2545,9 +2545,9 @@ async function fetchGarrettScheduleEvents(context, startTime, endTime) {
   const events = data.events || data.appointments || [];
   const seen = /* @__PURE__ */ new Set();
   return events.filter((event2) => {
-    const id2 = String(event2?.id || "");
-    if (!id2 || seen.has(id2)) return false;
-    seen.add(id2);
+    const id3 = String(event2?.id || "");
+    if (!id3 || seen.has(id3)) return false;
+    seen.add(id3);
     return true;
   });
 }
@@ -2572,7 +2572,7 @@ async function assertSlotRespectsAppBuffer(context, startTime, calendarId) {
 var GHL_API_BASE2, GHL_LOCATION_ID, GHL_GARRETT_USER_ID, INACTIVE_STATUSES, APP_BUFFER_CALENDAR_IDS;
 var init_app_owned_buffer = __esm({
   "lib/app-owned-buffer.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_datetime();
     init_booking_slot_policy();
@@ -2674,7 +2674,7 @@ async function createConfirmedAppointment({ request, endpoint, payload, onCreate
 var AppointmentHandoffError;
 var init_ghl_appointment_handoff = __esm({
   "lib/ghl-appointment-handoff.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     AppointmentHandoffError = class extends Error {
       static {
         __name(this, "AppointmentHandoffError");
@@ -2808,7 +2808,7 @@ async function completePaidBookingIntent(db, intentId, appointmentId, options = 
 }
 var init_paid_booking_intents = __esm({
   "lib/paid-booking-intents.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(changesOf2, "changesOf");
     __name(normalize, "normalize");
     __name(sameIntent, "sameIntent");
@@ -2844,7 +2844,7 @@ async function recordPartnerReferralAttribution(db, { partner, contactId, referr
 var PARTNERS;
 var init_partner_referrals = __esm({
   "lib/partner-referrals.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     PARTNERS = Object.freeze({ "vital-ice": Object.freeze({ entityId: "vital-ice", businessName: "Vital Ice", publicCode: "VI-001", entryPath: "/r/vital-ice" }), "zach-taylor": Object.freeze({ entityId: "zach-taylor", businessName: "Zach Taylor Fitness", publicCode: "ZT-001", entryPath: "/r/zach-taylor" }), "teddys-total-body": Object.freeze({ entityId: "teddys-total-body", businessName: "Teddy's Total Body", publicCode: "TTB-001", entryPath: "/r/teddys-total-body" }) });
     __name(resolvePartnerReferral, "resolvePartnerReferral");
     __name(recordPartnerReferralAttribution, "recordPartnerReferralAttribution");
@@ -2879,8 +2879,8 @@ async function findContactIdByEmail(context, locationId, email) {
   try {
     const lookupRes = await ghlFetch(context, lookupUrl);
     if (lookupRes.ok) {
-      const id2 = contactIdFromLookup(await lookupRes.json());
-      if (id2) return id2;
+      const id3 = contactIdFromLookup(await lookupRes.json());
+      if (id3) return id3;
     } else {
       const errText = await lookupRes.text();
       console.error(
@@ -3062,9 +3062,9 @@ async function upsertContact(context, GHL_API_KEY, locationId, payload, booking)
     throw new Error(`GHL contact create failed (${createRes.status}): ${errText}`);
   }
   const createData = await createRes.json();
-  const id2 = createData?.contact?.id || createData?.id;
-  if (!id2) throw new Error("GHL contact create returned no id");
-  return id2;
+  const id3 = createData?.contact?.id || createData?.id;
+  if (!id3) throw new Error("GHL contact create returned no id");
+  return id3;
 }
 async function recordPreCheckoutAudit(context, contactId, payload, ip, ua, booking) {
   const tags = ["native-booking-started"];
@@ -3341,7 +3341,7 @@ async function onRequestPost(context) {
 var ALLOWED_ORIGINS, DEFAULT_LOCATION_ID, ALLOWED_BOOKINGS;
 var init_create_checkout = __esm({
   "api/book/create-checkout.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_datetime();
     init_ghl_fields();
@@ -3613,7 +3613,7 @@ function applyLookBusy(slots2, opts) {
 var MAX_SLOTS_PER_DAY, MIN_SLOTS_PER_DAY, PINNED_SLOT_TIMES;
 var init_look_busy = __esm({
   "lib/look-busy.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     MAX_SLOTS_PER_DAY = 12;
     MIN_SLOTS_PER_DAY = 2;
     __name(targetFullPercent, "targetFullPercent");
@@ -3656,7 +3656,7 @@ async function writeOpsLastRun(env, key, payload, ttlSeconds = 14 * 86400) {
 var OPS_LAST_RUN_KEYS, OPS_READY_KEYS;
 var init_ops_last_run = __esm({
   "lib/ops-last-run.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(writeOpsLastRun, "writeOpsLastRun");
     OPS_LAST_RUN_KEYS = Object.freeze({
       reminder: "ops:reminder-engine:lastRun",
@@ -3830,7 +3830,7 @@ async function onRequestGet(context) {
 var ALLOWED_ORIGIN, ALLOWED_CALENDARS;
 var init_public_slots = __esm({
   "api/book/public-slots.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_look_busy();
     init_booking_slot_policy();
@@ -3896,7 +3896,7 @@ function verifyWebhookSecret(request, expectedSecret) {
 }
 var init_auth = __esm({
   "lib/auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(verifySessionToken, "verifySessionToken");
     __name(verifyWebhookSecret, "verifyWebhookSecret");
   }
@@ -3915,14 +3915,14 @@ function timingSafeEqual(a, b) {
 }
 var init_safe_equal = __esm({
   "lib/safe-equal.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(timingSafeEqual, "timingSafeEqual");
   }
 });
 
 // lib/ops-auth.js
-function requireOpsReadKey(request, env, responseHeaders9 = {}) {
-  const headers4 = { ...responseHeaders9, "Content-Type": "application/json" };
+function requireOpsReadKey(request, env, responseHeaders10 = {}) {
+  const headers4 = { ...responseHeaders10, "Content-Type": "application/json" };
   const key = env.OPS_READ_KEY;
   if (!key) {
     console.error(
@@ -3947,7 +3947,7 @@ function requireOpsReadKey(request, env, responseHeaders9 = {}) {
 }
 var init_ops_auth = __esm({
   "lib/ops-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_safe_equal();
     __name(requireOpsReadKey, "requireOpsReadKey");
   }
@@ -4033,7 +4033,7 @@ async function requireStaffOrOpsAuth(context, headers4) {
 var ALLOWED_ORIGINS2, STAFF_SESSION_COOKIE;
 var init_endpoint_guards = __esm({
   "lib/endpoint-guards.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     init_ops_auth();
     ALLOWED_ORIGINS2 = [
@@ -4085,7 +4085,7 @@ function requireWorkerAuth(request, env) {
 }
 var init_worker_auth = __esm({
   "lib/worker-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(timingSafeEqual2, "timingSafeEqual");
     __name(requireWorkerAuth, "requireWorkerAuth");
   }
@@ -4109,7 +4109,7 @@ function isAttentionState(state) {
 var OPS_BOARD_ROLE, OPS_BOARD_META, OPS_ROW_STATE;
 var init_ops_board_meta = __esm({
   "lib/ops-board-meta.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     OPS_BOARD_ROLE = Object.freeze({
       HOT: "hot",
       // pay→book→confirm early warning
@@ -4413,9 +4413,9 @@ async function readFixJob(env, pathId) {
 async function listActiveFixJobs(env, pathIds = []) {
   const out = {};
   await Promise.all(
-    pathIds.map(async (id2) => {
-      const job = await readFixJob(env, id2);
-      if (job) out[id2] = job;
+    pathIds.map(async (id3) => {
+      const job = await readFixJob(env, id3);
+      if (job) out[id3] = job;
     })
   );
   return out;
@@ -4613,8 +4613,8 @@ async function runOpsFixSweep(env, { buildSystemsBoard: buildSystemsBoard2 } = {
       do {
         const page = await kv.list({ prefix: "ops:fix:request:", cursor });
         for (const k of page.keys || []) {
-          const id2 = k.name.replace(/^ops:fix:request:/, "");
-          if (id2) requestedIds.add(id2);
+          const id3 = k.name.replace(/^ops:fix:request:/, "");
+          if (id3) requestedIds.add(id3);
         }
         cursor = page.list_complete ? void 0 : page.cursor;
       } while (cursor);
@@ -4625,11 +4625,11 @@ async function runOpsFixSweep(env, { buildSystemsBoard: buildSystemsBoard2 } = {
   const byId = Object.fromEntries((board.systems || []).map((s) => [s.id, s]));
   const candidates = /* @__PURE__ */ new Map();
   for (const row of attention) candidates.set(row.id, { row, requested: false });
-  for (const id2 of requestedIds) {
-    if (!candidates.has(id2) && byId[id2]) {
-      candidates.set(id2, { row: byId[id2], requested: true });
-    } else if (candidates.has(id2)) {
-      candidates.get(id2).requested = true;
+  for (const id3 of requestedIds) {
+    if (!candidates.has(id3) && byId[id3]) {
+      candidates.set(id3, { row: byId[id3], requested: true });
+    } else if (candidates.has(id3)) {
+      candidates.get(id3).requested = true;
     }
   }
   for (const { row, requested } of candidates.values()) {
@@ -4651,7 +4651,7 @@ async function runOpsFixSweep(env, { buildSystemsBoard: buildSystemsBoard2 } = {
 var HOUR, JOB_TTL_S, REQUEST_TTL_S, OPS_FIX_COOLDOWN_MS, OPS_FIX_MODES;
 var init_ops_fix = __esm({
   "lib/ops-fix.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_board_meta();
     init_ops_board_meta();
     init_ops_registry();
@@ -4719,11 +4719,11 @@ function judgeLastRun(rec, { maxAgeH, okPredicate, detail }) {
     detail: rec
   };
 }
-function signalFromJudged(id2, judged, why) {
+function signalFromJudged(id3, judged, why) {
   return {
     ...judged,
     why: why || judged.note,
-    log: lastRunAsLog(id2, judged),
+    log: lastRunAsLog(id3, judged),
     detail: judged.detail
   };
 }
@@ -5285,8 +5285,8 @@ async function buildPersonTimeline(env, { pathId, contactId, correlationId } = {
 async function indexRecentOpsErrors(env) {
   const byPath = {};
   try {
-    const all = await listOpsErrors(env, { limit: 100 });
-    for (const e of all) {
+    const all2 = await listOpsErrors(env, { limit: 100 });
+    for (const e of all2) {
       const age = ageHours(e.at);
       if (age != null && age > ERR_LOOKBACK_H) continue;
       const pathId = OPS_ERR_PATH_SOURCES[e.source];
@@ -5300,8 +5300,8 @@ async function indexRecentOpsErrors(env) {
 }
 async function relatedOpsErrors(env, pathId) {
   try {
-    const all = await listOpsErrors(env, { limit: 80 });
-    const sourceForPath = Object.entries(OPS_ERR_PATH_SOURCES).filter(([, id2]) => id2 === pathId).map(([src]) => src);
+    const all2 = await listOpsErrors(env, { limit: 80 });
+    const sourceForPath = Object.entries(OPS_ERR_PATH_SOURCES).filter(([, id3]) => id3 === pathId).map(([src]) => src);
     const needles = {
       assessment_paid_book: ["assessment", "ghl-purchase", "checkout"],
       intro_paid_book: ["intro", "purchase"],
@@ -5330,7 +5330,7 @@ async function relatedOpsErrors(env, pathId) {
       reminder_engine: ["reminder"],
       nurture_engine: ["nurture"]
     }[pathId] || [pathId];
-    return all.filter((e) => {
+    return all2.filter((e) => {
       if (sourceForPath.includes(e.source)) return true;
       const hay = `${e.source || ""} ${e.summary || ""}`.toLowerCase();
       return needles.some((n) => hay.includes(String(n).toLowerCase()));
@@ -6062,7 +6062,7 @@ function judgeCallCoachReadiness(ready, last, { maxAgeH = 36 } = {}) {
 var HOUR2, ERR_LOOKBACK_H, HOT_HEALTHY_MAX_AGE_H, EXTERNAL_MONITOR_MAX_AGE_H, EXTERNAL_MONITOR_HEARTBEAT_PATHS, STUCK_REASON_CODES;
 var init_ops_board = __esm({
   "lib/ops-board.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -6207,7 +6207,7 @@ async function onRequestPost2(context) {
 }
 var init_fix = __esm({
   "api/ops/fix.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_worker_auth();
     init_ops_board();
@@ -6260,7 +6260,7 @@ async function onRequestGet3(context) {
 }
 var init_incidents = __esm({
   "api/ops/incidents.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ops_auth();
     init_ops_events();
@@ -6269,8 +6269,927 @@ var init_incidents = __esm({
   }
 });
 
+// lib/ops-ledger.js
+function fail(message, code = "invalid_ledger_input", status = 400) {
+  throw new OpsLedgerError(message, code, status);
+}
+function plainObject(value, label) {
+  if (!value || typeof value !== "object" || Array.isArray(value)) fail(`${label} must be an object`);
+  return value;
+}
+function strictKeys(value, allowed, label) {
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) fail(`${label}.${key} is not an allowed field`, "disallowed_field");
+  }
+}
+function text(value, label, max = 200) {
+  if (typeof value !== "string") fail(`${label} must be a string`);
+  const result = value.trim().replace(/[\t\r\n ]+/g, " ");
+  if (!result || result.length > max) fail(`${label} must be between 1 and ${max} characters`);
+  return result;
+}
+function opaqueRef(value, label, max = 200) {
+  const result = text(value, label, max);
+  if (!REF.test(result)) fail(`${label} must be an opaque, single-line reference`);
+  return result;
+}
+function sanitizeSummary(value, label = "summary") {
+  const result = text(value, label, 280);
+  if (EMAIL.test(result) || PHONE.test(result) || SENSITIVE_WORDS.test(result)) {
+    fail(`${label} appears to contain personal data, a secret, or a raw record field`, "unsafe_summary");
+  }
+  return result;
+}
+function actorKind(principal) {
+  return principal.kind || principal.type || principal.actorKind;
+}
+function validatePrincipal(principal) {
+  if (!principal || typeof principal !== "object" || Array.isArray(principal)) {
+    fail("principal must be a server-resolved object", "invalid_principal");
+  }
+  if (Object.prototype.hasOwnProperty.call(principal, "actor")) {
+    fail("raw actor strings are not accepted; provide a resolved principal", "raw_actor_rejected");
+  }
+  strictKeys(principal, /* @__PURE__ */ new Set(["kind", "type", "actorKind", "id", "ref", "actorId"]), "principal");
+  const kind = actorKind(principal);
+  if (!ACTOR_SET.has(kind)) fail("principal kind is unsupported", "invalid_principal");
+  const ref = principal.id ?? principal.ref ?? principal.actorId;
+  return { kind, ref: opaqueRef(ref, "principal.id") };
+}
+function fieldNames(value, label = "fieldNames") {
+  if (value == null) return [];
+  if (!Array.isArray(value) || value.length > 50) fail(`${label} must be an array of at most 50 names`);
+  const output = [];
+  for (const item of value) {
+    const name = text(item, `${label}[]`, 80).toLowerCase();
+    if (!FIELD.test(name)) fail(`${label} contains an invalid field name`);
+    if (SENSITIVE_WORDS.test(`.${name}.`) && !SAFE_FIELD_EXCEPTIONS.has(name)) {
+      fail(`${label} contains a sensitive field name`, "sensitive_field_name");
+    }
+    if (!output.includes(name)) output.push(name);
+  }
+  return output;
+}
+function counts(value, label = "counts") {
+  if (value == null) return {};
+  plainObject(value, label);
+  const keys = Object.keys(value);
+  if (keys.length > 50) fail(`${label} has too many keys`);
+  const output = {};
+  for (const key of keys) {
+    const names = fieldNames([key], `${label} key`);
+    const name = names[0];
+    const count = value[key];
+    if (!Number.isSafeInteger(count) || count < 0 || count > 1e6) {
+      fail(`${label}.${name} must be a non-negative integer`);
+    }
+    output[name] = count;
+  }
+  return output;
+}
+function eventType(value) {
+  const type = text(value, "eventType", 100).toLowerCase();
+  if (!/^[a-z][a-z0-9_.:-]{1,99}$/.test(type)) fail("eventType has an invalid format");
+  return type;
+}
+function subject(value, index) {
+  plainObject(value, `subjects[${index}]`);
+  strictKeys(value, /* @__PURE__ */ new Set(["type", "subjectType", "ref", "subjectRef", "fieldNames", "counts"]), `subjects[${index}]`);
+  const type = text(value.type ?? value.subjectType, `subjects[${index}].type`, 80).toLowerCase();
+  if (!/^[a-z][a-z0-9_.:-]{0,79}$/.test(type)) fail(`subjects[${index}].type has an invalid format`);
+  return {
+    type,
+    ref: opaqueRef(value.ref ?? value.subjectRef, `subjects[${index}].ref`),
+    fieldNames: fieldNames(value.fieldNames, `subjects[${index}].fieldNames`),
+    counts: counts(value.counts, `subjects[${index}].counts`)
+  };
+}
+function validateAuditEvent(input) {
+  plainObject(input, "event");
+  strictKeys(input, /* @__PURE__ */ new Set([
+    "eventId",
+    "id",
+    "eventType",
+    "type",
+    "summary",
+    "occurredAt",
+    "idempotencyKey",
+    "principal",
+    "correlationRef",
+    "correlationId",
+    "taskId",
+    "releaseId",
+    "fieldNames",
+    "counts",
+    "subjects"
+  ]), "event");
+  const principal = validatePrincipal(input.principal);
+  const key = opaqueRef(input.idempotencyKey, "idempotencyKey");
+  const occurredAt = input.occurredAt == null ? null : Number(input.occurredAt);
+  if (occurredAt != null && (!Number.isSafeInteger(occurredAt) || occurredAt < 0)) fail("occurredAt must be a timestamp in milliseconds");
+  const subjects = input.subjects == null ? [] : input.subjects;
+  if (!Array.isArray(subjects) || subjects.length > 20) fail("subjects must contain at most 20 references");
+  return {
+    id: input.eventId || input.id || null,
+    idempotencyKey: key,
+    eventType: eventType(input.eventType ?? input.type),
+    summary: sanitizeSummary(input.summary),
+    occurredAt,
+    principal,
+    correlationRef: input.correlationRef == null ? input.correlationId == null ? null : opaqueRef(input.correlationId, "correlationId") : opaqueRef(input.correlationRef, "correlationRef"),
+    taskId: input.taskId == null ? null : opaqueRef(input.taskId, "taskId"),
+    releaseId: input.releaseId == null ? null : opaqueRef(input.releaseId, "releaseId"),
+    fieldNames: fieldNames(input.fieldNames),
+    counts: counts(input.counts),
+    subjects: subjects.map(subject)
+  };
+}
+function id(prefix) {
+  const uuid2 = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID() : `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
+  return `${prefix}:${uuid2}`;
+}
+function stable(value) {
+  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
+  if (value && typeof value === "object") return `{${Object.keys(value).sort().map((key) => `${JSON.stringify(key)}:${stable(value[key])}`).join(",")}}`;
+  return JSON.stringify(value);
+}
+async function digest(value) {
+  const bytes = new TextEncoder().encode(stable(value));
+  if (typeof crypto !== "undefined" && crypto.subtle) {
+    const hash = await crypto.subtle.digest("SHA-256", bytes);
+    return [...new Uint8Array(hash)].map((n) => n.toString(16).padStart(2, "0")).join("");
+  }
+  let h = 2166136261;
+  for (const byte of bytes) h = Math.imul(h ^ byte, 16777619);
+  return `${(h >>> 0).toString(16).padStart(8, "0")}${"0".repeat(56)}`;
+}
+function changes(result) {
+  return Number(result?.meta?.changes ?? result?.changes ?? 0);
+}
+function prepare(db, sql) {
+  const raw = db.prepare(sql);
+  if (typeof raw.bind === "function") return raw;
+  return {
+    bind(...args) {
+      return {
+        run: /* @__PURE__ */ __name(() => raw.run(...args), "run"),
+        first: /* @__PURE__ */ __name(() => raw.get(...args), "first"),
+        all: /* @__PURE__ */ __name(() => ({ results: raw.all(...args) }), "all")
+      };
+    }
+  };
+}
+function parseJson(value, fallback) {
+  if (value == null) return fallback;
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+}
+async function runBatch(db, statements) {
+  if (typeof db.batch === "function") return db.batch(statements);
+  const output = [];
+  for (const statement of statements) output.push(await statement.run());
+  return output;
+}
+function shapeSubject(row) {
+  return {
+    id: row.id,
+    eventId: row.event_id,
+    type: row.subject_type,
+    ref: row.subject_ref,
+    fieldNames: parseJson(row.field_names_json, []),
+    counts: parseJson(row.counts_json, {}),
+    createdAt: Number(row.created_at)
+  };
+}
+async function subjectsFor(db, eventId) {
+  const result = await prepare(
+    db,
+    "SELECT * FROM ops_audit_subjects WHERE event_id = ? ORDER BY id"
+  ).bind(eventId).all();
+  return (result?.results || []).map(shapeSubject);
+}
+async function shapeEvent2(db, row, includeSubjects = true) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    idempotencyKey: row.idempotency_key,
+    eventType: row.event_type,
+    summary: row.summary,
+    fieldNames: parseJson(row.field_names_json, []),
+    counts: parseJson(row.counts_json, {}),
+    correlationRef: row.correlation_ref || null,
+    taskId: row.task_id || null,
+    releaseId: row.release_id || null,
+    actor: { kind: row.actor_kind, ref: row.actor_ref },
+    occurredAt: Number(row.occurred_at),
+    recordedAt: Number(row.recorded_at),
+    subjects: includeSubjects ? await subjectsFor(db, row.id) : []
+  };
+}
+function eventHashInput(event2) {
+  return {
+    eventType: event2.eventType,
+    summary: event2.summary,
+    // A caller that omits occurredAt is saying "record when accepted";
+    // retries must not conflict merely because they arrived milliseconds
+    // apart. Explicit timestamps remain part of the idempotent payload.
+    occurredAt: event2.occurredAtProvided ? event2.occurredAt : null,
+    principal: event2.principal,
+    correlationRef: event2.correlationRef,
+    taskId: event2.taskId,
+    releaseId: event2.releaseId,
+    fieldNames: event2.fieldNames,
+    counts: event2.counts,
+    subjects: event2.subjects
+  };
+}
+async function appendAuditEvent(db, input, options = {}) {
+  if (!db) fail("AUTOMATION_DB is required", "ledger_db_missing", 500);
+  const now = Number(options.now ?? Date.now());
+  if (!Number.isSafeInteger(now) || now < 0) fail("now must be a timestamp in milliseconds");
+  const event2 = {
+    ...validateAuditEvent(input),
+    occurredAtProvided: input.occurredAt != null,
+    occurredAt: input.occurredAt == null ? now : Number(input.occurredAt)
+  };
+  const requestHash = await digest(eventHashInput(event2));
+  const eventId = event2.id ? opaqueRef(event2.id, "eventId") : id("ops-event");
+  const insert2 = prepare(
+    db,
+    `INSERT INTO ops_audit_events
+      (id, idempotency_key, event_type, summary, field_names_json, counts_json,
+       correlation_ref, task_id, release_id, actor_kind, actor_ref, occurred_at,
+       recorded_at, request_hash)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(idempotency_key) DO NOTHING`
+  ).bind(
+    eventId,
+    event2.idempotencyKey,
+    event2.eventType,
+    event2.summary,
+    JSON.stringify(event2.fieldNames),
+    JSON.stringify(event2.counts),
+    event2.correlationRef,
+    event2.taskId,
+    event2.releaseId,
+    event2.principal.kind,
+    event2.principal.ref,
+    event2.occurredAt,
+    now,
+    requestHash
+  );
+  const result = await insert2.run();
+  if (changes(result) === 0) {
+    const existing = await prepare(db, "SELECT * FROM ops_audit_events WHERE idempotency_key = ?").bind(event2.idempotencyKey).first();
+    if (!existing) fail("idempotency claim could not be read", "idempotency_read_failed", 500);
+    if (existing.request_hash !== requestHash) fail("idempotency key was used for different event data", "idempotency_conflict", 409);
+    return { state: "existing", event: await shapeEvent2(db, existing) };
+  }
+  const subjectStatements = event2.subjects.map((item, index) => prepare(
+    db,
+    `INSERT INTO ops_audit_subjects
+      (id, event_id, subject_type, subject_ref, field_names_json, counts_json, created_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(event_id, subject_type, subject_ref) DO NOTHING`
+  ).bind(
+    `${eventId}:subject:${index}`,
+    eventId,
+    item.type,
+    item.ref,
+    JSON.stringify(item.fieldNames),
+    JSON.stringify(item.counts),
+    now
+  ));
+  if (subjectStatements.length) await runBatch(db, subjectStatements);
+  const saved = await prepare(db, "SELECT * FROM ops_audit_events WHERE id = ?").bind(eventId).first();
+  return { state: "created", event: await shapeEvent2(db, saved) };
+}
+async function listAuditEvents(db, filters = {}) {
+  if (!db) fail("AUTOMATION_DB is required", "ledger_db_missing", 500);
+  plainObject(filters, "filters");
+  strictKeys(filters, /* @__PURE__ */ new Set(["eventType", "taskId", "releaseId", "correlationRef", "limit", "before"]), "filters");
+  const where = [];
+  const args = [];
+  if (filters.eventType != null) {
+    where.push("event_type = ?");
+    args.push(eventType(filters.eventType));
+  }
+  if (filters.taskId != null) {
+    where.push("task_id = ?");
+    args.push(opaqueRef(filters.taskId, "taskId"));
+  }
+  if (filters.releaseId != null) {
+    where.push("release_id = ?");
+    args.push(opaqueRef(filters.releaseId, "releaseId"));
+  }
+  if (filters.correlationRef != null) {
+    where.push("correlation_ref = ?");
+    args.push(opaqueRef(filters.correlationRef, "correlationRef"));
+  }
+  if (filters.before != null) {
+    where.push("occurred_at < ?");
+    args.push(Number(filters.before));
+  }
+  const limit = filters.limit == null ? 50 : Number(filters.limit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 200) fail("limit must be between 1 and 200");
+  args.push(limit);
+  const query = `SELECT * FROM ops_audit_events ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY occurred_at DESC, id DESC LIMIT ?`;
+  const result = await prepare(db, query).bind(...args).all();
+  return Promise.all((result?.results || []).map((row) => shapeEvent2(db, row)));
+}
+function taskInput(input) {
+  plainObject(input, "task");
+  strictKeys(input, /* @__PURE__ */ new Set(["id", "taskId", "idempotencyKey", "title", "status", "priority", "ownerKind", "ownerRef", "sourceRef", "dueAt", "principal"]), "task");
+  const principal = validatePrincipal(input.principal);
+  const status = input.status == null ? "open" : text(input.status, "status", 30).toLowerCase();
+  if (!TASK_STATUS_SET.has(status)) fail("task status is unsupported");
+  const priority = input.priority == null ? "normal" : text(input.priority, "priority", 20).toLowerCase();
+  if (!PRIORITIES.has(priority)) fail("task priority is unsupported");
+  const dueAt = input.dueAt == null ? null : Number(input.dueAt);
+  if (dueAt != null && (!Number.isSafeInteger(dueAt) || dueAt < 0)) fail("dueAt must be a timestamp in milliseconds");
+  return {
+    id: input.id || input.taskId || null,
+    idempotencyKey: opaqueRef(input.idempotencyKey, "idempotencyKey"),
+    title: sanitizeSummary(input.title, "title"),
+    status,
+    priority,
+    ownerKind: input.ownerKind == null ? null : text(input.ownerKind, "ownerKind", 40).toLowerCase(),
+    ownerRef: input.ownerRef == null ? null : opaqueRef(input.ownerRef, "ownerRef"),
+    sourceRef: input.sourceRef == null ? null : opaqueRef(input.sourceRef, "sourceRef"),
+    dueAt,
+    principal
+  };
+}
+function shapeTask(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    idempotencyKey: row.idempotency_key,
+    title: row.title,
+    status: row.status,
+    priority: row.priority,
+    owner: row.owner_ref ? { kind: row.owner_kind, ref: row.owner_ref } : null,
+    sourceRef: row.source_ref || null,
+    dueAt: row.due_at == null ? null : Number(row.due_at),
+    createdBy: { kind: row.created_by_kind, ref: row.created_by_ref },
+    createdAt: Number(row.created_at),
+    updatedAt: Number(row.updated_at)
+  };
+}
+async function createTask(db, input, options = {}) {
+  if (!db) fail("AUTOMATION_DB is required", "ledger_db_missing", 500);
+  const task = taskInput(input);
+  const now = Number(options.now ?? Date.now());
+  const requestHash = await digest({ ...task, principal: task.principal });
+  const taskId = task.id ? opaqueRef(task.id, "taskId") : id("ops-task");
+  const result = await prepare(
+    db,
+    `INSERT INTO ops_tasks
+      (id, idempotency_key, title, status, priority, owner_kind, owner_ref, source_ref,
+       due_at, request_hash, created_by_kind, created_by_ref, created_at, updated_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(idempotency_key) DO NOTHING`
+  ).bind(
+    taskId,
+    task.idempotencyKey,
+    task.title,
+    task.status,
+    task.priority,
+    task.ownerKind,
+    task.ownerRef,
+    task.sourceRef,
+    task.dueAt,
+    requestHash,
+    task.principal.kind,
+    task.principal.ref,
+    now,
+    now
+  ).run();
+  const row = await prepare(db, "SELECT * FROM ops_tasks WHERE idempotency_key = ?").bind(task.idempotencyKey).first();
+  if (!row) fail("task could not be read after insert", "task_read_failed", 500);
+  if (changes(result) === 0 && row.request_hash !== requestHash) fail("idempotency key was used for different task data", "idempotency_conflict", 409);
+  if (changes(result) === 1) {
+    await appendAuditEvent(db, {
+      eventType: "task.created",
+      summary: "Task created",
+      idempotencyKey: `task-created:${task.idempotencyKey}`,
+      principal: input.principal,
+      taskId: row.id,
+      fieldNames: ["status", "priority"],
+      subjects: [{ type: "task", ref: row.id, fieldNames: ["status", "priority"] }]
+    }, { now });
+  }
+  return { state: changes(result) === 1 ? "created" : "existing", task: shapeTask(row) };
+}
+async function listTasks(db, filters = {}) {
+  if (!db) fail("AUTOMATION_DB is required", "ledger_db_missing", 500);
+  plainObject(filters, "filters");
+  strictKeys(filters, /* @__PURE__ */ new Set(["status", "ownerKind", "ownerRef", "limit"]), "filters");
+  const where = [];
+  const args = [];
+  if (filters.status != null) {
+    const status = text(filters.status, "status", 30).toLowerCase();
+    if (!TASK_STATUS_SET.has(status)) fail("task status is unsupported");
+    where.push("status = ?");
+    args.push(status);
+  }
+  if (filters.ownerKind != null) {
+    where.push("owner_kind = ?");
+    args.push(text(filters.ownerKind, "ownerKind", 40).toLowerCase());
+  }
+  if (filters.ownerRef != null) {
+    where.push("owner_ref = ?");
+    args.push(opaqueRef(filters.ownerRef, "ownerRef"));
+  }
+  const limit = filters.limit == null ? 50 : Number(filters.limit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 200) fail("limit must be between 1 and 200");
+  args.push(limit);
+  const result = await prepare(db, `SELECT * FROM ops_tasks ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY updated_at DESC, id DESC LIMIT ?`).bind(...args).all();
+  return (result?.results || []).map(shapeTask);
+}
+function releaseInput(input) {
+  plainObject(input, "release");
+  strictKeys(input, /* @__PURE__ */ new Set(["id", "releaseId", "idempotencyKey", "releaseRef", "serviceRef", "environment", "versionRef", "status", "summary", "sourceRef", "principal"]), "release");
+  const principal = validatePrincipal(input.principal);
+  const status = input.status == null ? "planned" : text(input.status, "status", 30).toLowerCase();
+  if (!RELEASE_STATUS_SET.has(status)) fail("release status is unsupported");
+  return {
+    id: input.id || input.releaseId || null,
+    idempotencyKey: opaqueRef(input.idempotencyKey, "idempotencyKey"),
+    releaseRef: opaqueRef(input.releaseRef, "releaseRef"),
+    serviceRef: opaqueRef(input.serviceRef, "serviceRef", 120),
+    environment: opaqueRef(input.environment, "environment", 80),
+    versionRef: opaqueRef(input.versionRef, "versionRef"),
+    status,
+    summary: sanitizeSummary(input.summary, "summary"),
+    sourceRef: input.sourceRef == null ? null : opaqueRef(input.sourceRef, "sourceRef"),
+    principal
+  };
+}
+function shapeRelease(row) {
+  if (!row) return null;
+  return { id: row.id, idempotencyKey: row.idempotency_key, releaseRef: row.release_ref, serviceRef: row.service_ref, environment: row.environment, versionRef: row.version_ref, status: row.status, summary: row.summary, sourceRef: row.source_ref || null, createdBy: { kind: row.created_by_kind, ref: row.created_by_ref }, createdAt: Number(row.created_at), updatedAt: Number(row.updated_at) };
+}
+async function createRelease(db, input, options = {}) {
+  if (!db) fail("AUTOMATION_DB is required", "ledger_db_missing", 500);
+  const release = releaseInput(input);
+  const now = Number(options.now ?? Date.now());
+  const requestHash = await digest(release);
+  const releaseId = release.id ? opaqueRef(release.id, "releaseId") : id("ops-release");
+  const result = await prepare(db, `INSERT INTO ops_releases
+    (id, idempotency_key, release_ref, service_ref, environment, version_ref, status, summary, source_ref, request_hash, created_by_kind, created_by_ref, created_at, updated_at)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?) ON CONFLICT(idempotency_key) DO NOTHING`).bind(releaseId, release.idempotencyKey, release.releaseRef, release.serviceRef, release.environment, release.versionRef, release.status, release.summary, release.sourceRef, requestHash, release.principal.kind, release.principal.ref, now, now).run();
+  const row = await prepare(db, "SELECT * FROM ops_releases WHERE idempotency_key = ?").bind(release.idempotencyKey).first();
+  if (!row) fail("release could not be read after insert", "release_read_failed", 500);
+  if (changes(result) === 0 && row.request_hash !== requestHash) fail("idempotency key was used for different release data", "idempotency_conflict", 409);
+  if (changes(result) === 1) await appendAuditEvent(db, { eventType: "release.created", summary: "Release created", idempotencyKey: `release-created:${release.idempotencyKey}`, principal: input.principal, releaseId: row.id, fieldNames: ["status", "service_ref", "environment", "version_ref"], subjects: [{ type: "release", ref: row.id, fieldNames: ["status", "service_ref", "environment", "version_ref"] }] }, { now });
+  return { state: changes(result) === 1 ? "created" : "existing", release: shapeRelease(row) };
+}
+async function listReleases(db, filters = {}) {
+  if (!db) fail("AUTOMATION_DB is required", "ledger_db_missing", 500);
+  plainObject(filters, "filters");
+  strictKeys(filters, /* @__PURE__ */ new Set(["status", "serviceRef", "environment", "limit"]), "filters");
+  const where = [];
+  const args = [];
+  if (filters.status != null) {
+    const value = text(filters.status, "status", 30).toLowerCase();
+    if (!RELEASE_STATUS_SET.has(value)) fail("release status is unsupported");
+    where.push("status = ?");
+    args.push(value);
+  }
+  if (filters.serviceRef != null) {
+    where.push("service_ref = ?");
+    args.push(opaqueRef(filters.serviceRef, "serviceRef", 120));
+  }
+  if (filters.environment != null) {
+    where.push("environment = ?");
+    args.push(opaqueRef(filters.environment, "environment", 80));
+  }
+  const limit = filters.limit == null ? 50 : Number(filters.limit);
+  if (!Number.isInteger(limit) || limit < 1 || limit > 200) fail("limit must be between 1 and 200");
+  args.push(limit);
+  const result = await prepare(db, `SELECT * FROM ops_releases ${where.length ? `WHERE ${where.join(" AND ")}` : ""} ORDER BY updated_at DESC, id DESC LIMIT ?`).bind(...args).all();
+  return (result?.results || []).map(shapeRelease);
+}
+function ledgerDb(env) {
+  if (!env?.AUTOMATION_DB) fail("AUTOMATION_DB is required", "ledger_db_missing", 503);
+  return env.AUTOMATION_DB;
+}
+async function readOperationsLedger(env, options = {}) {
+  const db = ledgerDb(env);
+  const limit = Math.min(Math.max(Number(options.limit) || 25, 1), 100);
+  const filters = options.filters || {};
+  const [entries, tasks, releases] = await Promise.all([
+    listAuditEvents(db, { limit, ...filters.eventType ? { eventType: filters.eventType } : {}, ...filters.releaseId ? { releaseId: filters.releaseId } : {} }),
+    listTasks(db, { limit, ...filters.status ? { status: filters.status } : {} }),
+    listReleases(db, { limit, ...filters.status && RELEASE_STATUS_SET.has(filters.status) ? { status: filters.status } : {} })
+  ]);
+  let incidents = [];
+  try {
+    const rows2 = await prepare(db, "SELECT id, status, severity, title, opened_at, resolved_at FROM ops_incidents ORDER BY opened_at_ms DESC LIMIT ?").bind(limit).all();
+    incidents = (rows2?.results || []).map((row) => ({ id: row.id, status: row.status, severity: row.severity, title: row.title, openedAt: row.opened_at || null, resolvedAt: row.resolved_at || null }));
+  } catch {
+  }
+  return { configured: true, generatedAt: (/* @__PURE__ */ new Date()).toISOString(), entries, tasks, releases, incidents, nextCursor: null };
+}
+function provenancePrincipal(provenance) {
+  const principal = provenance?.principal;
+  return validatePrincipal(principal);
+}
+async function ingestOperationsLedgerTask(env, input, provenance) {
+  const principal = provenancePrincipal(provenance);
+  return createTask(ledgerDb(env), { ...input, principal }, {});
+}
+async function ingestOperationsLedgerEvent(env, input, provenance) {
+  const principal = provenancePrincipal(provenance);
+  return appendAuditEvent(ledgerDb(env), { ...input, principal }, {});
+}
+async function ingestOperationsLedgerRelease(env, input, provenance) {
+  const principal = provenancePrincipal(provenance);
+  return createRelease(ledgerDb(env), { ...input, principal }, {});
+}
+var ACTOR_KINDS, TASK_STATUSES, RELEASE_STATUSES, ACTOR_SET, TASK_STATUS_SET, RELEASE_STATUS_SET, PRIORITIES, SENSITIVE_WORDS, EMAIL, PHONE, REF, FIELD, SAFE_FIELD_EXCEPTIONS, OpsLedgerError;
+var init_ops_ledger = __esm({
+  "lib/ops-ledger.js"() {
+    init_functionsRoutes_0_8372690901872232();
+    ACTOR_KINDS = Object.freeze(["human", "codex", "worker", "github", "cloudflare"]);
+    TASK_STATUSES = Object.freeze(["todo", "open", "in_progress", "blocked", "done", "completed", "cancelled"]);
+    RELEASE_STATUSES = Object.freeze(["planned", "pending", "queued", "building", "active", "succeeded", "failed", "rolled_back", "cancelled"]);
+    ACTOR_SET = new Set(ACTOR_KINDS);
+    TASK_STATUS_SET = new Set(TASK_STATUSES);
+    RELEASE_STATUS_SET = new Set(RELEASE_STATUSES);
+    PRIORITIES = /* @__PURE__ */ new Set(["low", "normal", "high", "urgent"]);
+    SENSITIVE_WORDS = /(?:^|[._\s-])(email|e-mail|phone|mobile|tel|telephone|name|full_name|first_name|last_name|body|message|content|payload|raw|value|values|secret|token|password|passwd|api[_ -]?key|authorization|cookie|jwt|bearer|ssn|social[_ -]?security|dob|birth(?:day|date)?|address|street|medical|diagnosis|patient|client[_ -]?name|note|notes)(?:$|[._\s-])/i;
+    EMAIL = /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/i;
+    PHONE = /(?:\+?\d[\d .()/-]{7,}\d)/;
+    REF = /^[^\s\u0000-\u001f\u007f]{1,200}$/;
+    FIELD = /^[A-Za-z][A-Za-z0-9_.-]{0,79}$/;
+    SAFE_FIELD_EXCEPTIONS = /* @__PURE__ */ new Set(["contact_id", "appointment_id", "order_id", "invoice_id", "provider_id", "record_id", "subject_ref"]);
+    OpsLedgerError = class extends Error {
+      static {
+        __name(this, "OpsLedgerError");
+      }
+      constructor(message, code = "invalid_ledger_input", status = 400) {
+        super(message);
+        this.name = "OpsLedgerError";
+        this.code = code;
+        this.status = status;
+      }
+    };
+    __name(fail, "fail");
+    __name(plainObject, "plainObject");
+    __name(strictKeys, "strictKeys");
+    __name(text, "text");
+    __name(opaqueRef, "opaqueRef");
+    __name(sanitizeSummary, "sanitizeSummary");
+    __name(actorKind, "actorKind");
+    __name(validatePrincipal, "validatePrincipal");
+    __name(fieldNames, "fieldNames");
+    __name(counts, "counts");
+    __name(eventType, "eventType");
+    __name(subject, "subject");
+    __name(validateAuditEvent, "validateAuditEvent");
+    __name(id, "id");
+    __name(stable, "stable");
+    __name(digest, "digest");
+    __name(changes, "changes");
+    __name(prepare, "prepare");
+    __name(parseJson, "parseJson");
+    __name(runBatch, "runBatch");
+    __name(shapeSubject, "shapeSubject");
+    __name(subjectsFor, "subjectsFor");
+    __name(shapeEvent2, "shapeEvent");
+    __name(eventHashInput, "eventHashInput");
+    __name(appendAuditEvent, "appendAuditEvent");
+    __name(listAuditEvents, "listAuditEvents");
+    __name(taskInput, "taskInput");
+    __name(shapeTask, "shapeTask");
+    __name(createTask, "createTask");
+    __name(listTasks, "listTasks");
+    __name(releaseInput, "releaseInput");
+    __name(shapeRelease, "shapeRelease");
+    __name(createRelease, "createRelease");
+    __name(listReleases, "listReleases");
+    __name(ledgerDb, "ledgerDb");
+    __name(readOperationsLedger, "readOperationsLedger");
+    __name(provenancePrincipal, "provenancePrincipal");
+    __name(ingestOperationsLedgerTask, "ingestOperationsLedgerTask");
+    __name(ingestOperationsLedgerEvent, "ingestOperationsLedgerEvent");
+    __name(ingestOperationsLedgerRelease, "ingestOperationsLedgerRelease");
+  }
+});
+
+// api/staff-operations-ledger.js
+function responseHeaders(context) {
+  return {
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS),
+    "Content-Type": "application/json; charset=utf-8",
+    "Cache-Control": "private, no-store"
+  };
+}
+function boundedLimit(value) {
+  const parsed = Number.parseInt(value || String(DEFAULT_LIMIT), 10);
+  if (!Number.isFinite(parsed)) return DEFAULT_LIMIT;
+  return Math.min(Math.max(parsed, 1), MAX_LIMIT);
+}
+function resourceFrom(context) {
+  const url = new URL(context.request.url);
+  const routeResource = context.params?.resource;
+  const queryResource = url.searchParams.get("resource") || url.searchParams.get("kind");
+  return String(routeResource || queryResource || "").trim().toLowerCase();
+}
+function filtersFrom(url) {
+  const filters = {};
+  for (const key of ["status", "type", "eventType", "outcome", "source", "pathId", "releaseId", "incidentId", "from", "to", "q"]) {
+    const value = url.searchParams.get(key);
+    if (value) filters[key] = value.slice(0, 160);
+  }
+  return filters;
+}
+function safePrimitive(value) {
+  return value === null || typeof value === "string" || typeof value === "number" || typeof value === "boolean" ? value : void 0;
+}
+function projectRecord(record3, resource) {
+  if (!record3 || typeof record3 !== "object" || Array.isArray(record3)) return null;
+  const fields = SAFE_FIELDS[resource] || SAFE_FIELDS.entries;
+  const projected = {};
+  for (const key of fields) {
+    const value = safePrimitive(record3[key]);
+    if (value !== void 0) projected[key] = typeof value === "string" ? value.slice(0, 1e3) : value;
+  }
+  return projected;
+}
+function projectCollection(result, resource) {
+  const source = result?.[resource];
+  if (Array.isArray(source)) return source.map((row) => projectRecord(row, resource)).filter(Boolean);
+  if (Array.isArray(source?.items)) return source.items.map((row) => projectRecord(row, resource)).filter(Boolean);
+  if (Array.isArray(result?.items) && resource === result?.resource) {
+    return result.items.map((row) => projectRecord(row, resource)).filter(Boolean);
+  }
+  return [];
+}
+function projectRead(result, requestedResource) {
+  const resources = requestedResource ? [requestedResource] : [...RESOURCES];
+  const body = {
+    success: true,
+    configured: result?.configured !== false
+  };
+  for (const resource of resources) body[resource] = projectCollection(result || {}, resource);
+  body.nextCursor = result?.nextCursor || result?.cursor || null;
+  if (result?.generatedAt) body.generatedAt = result.generatedAt;
+  const tasksById = new Map((result?.tasks || []).map((task) => [task.id, task]));
+  body.activity = (result?.entries || []).map((entry) => ({
+    id: entry.id,
+    taskId: entry.taskId || entry.id,
+    taskLabel: tasksById.get(entry.taskId)?.title || entry.summary || "Operational work",
+    actor: entry.actor?.kind || "automation",
+    requestedBy: "\u2014",
+    outcome: entry.eventType?.includes("failed") ? "failed" : "completed",
+    at: entry.occurredAt ? new Date(entry.occurredAt).toISOString() : null,
+    counts: { total: Number(entry.counts?.total || 1), completed: 1, failed: 0, skipped: 0 }
+  }));
+  body.changes = (result?.releases || []).map((release) => ({
+    id: release.id,
+    taskId: null,
+    taskLabel: null,
+    kind: "release",
+    label: release.summary,
+    from: release.sourceRef || null,
+    to: release.versionRef || release.releaseRef,
+    verification: release.status === "succeeded" || release.status === "active" ? "Observed" : null,
+    rollback: release.status === "rolled_back" ? "Rollback recorded" : null,
+    at: release.updatedAt ? new Date(release.updatedAt).toISOString() : null
+  }));
+  return body;
+}
+function safeInput(body, resource) {
+  if (resource === "tasks") return {
+    ...typeof body?.id === "string" ? { id: body.id } : {},
+    ...typeof body?.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {},
+    ...typeof body?.title === "string" ? { title: body.title } : {},
+    ...typeof body?.status === "string" ? { status: body.status } : {},
+    ...typeof body?.priority === "string" ? { priority: body.priority } : {},
+    ...typeof body?.ownerKind === "string" ? { ownerKind: body.ownerKind } : {},
+    ...typeof body?.ownerRef === "string" ? { ownerRef: body.ownerRef } : {},
+    ...typeof body?.sourceRef === "string" ? { sourceRef: body.sourceRef } : {},
+    ...Number.isSafeInteger(body?.dueAt) ? { dueAt: body.dueAt } : {}
+  };
+  if (resource === "events") return {
+    ...typeof body?.id === "string" ? { id: body.id } : {},
+    ...typeof body?.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {},
+    ...typeof body?.eventType === "string" ? { eventType: body.eventType } : {},
+    ...typeof body?.summary === "string" ? { summary: body.summary } : {},
+    ...Number.isSafeInteger(body?.occurredAt) ? { occurredAt: body.occurredAt } : {},
+    ...typeof body?.correlationRef === "string" ? { correlationRef: body.correlationRef } : {},
+    ...typeof body?.taskId === "string" ? { taskId: body.taskId } : {},
+    ...typeof body?.releaseId === "string" ? { releaseId: body.releaseId } : {},
+    ...Array.isArray(body?.fieldNames) ? { fieldNames: body.fieldNames } : {},
+    ...body?.counts && typeof body.counts === "object" && !Array.isArray(body.counts) ? { counts: body.counts } : {},
+    ...Array.isArray(body?.subjects) ? { subjects: body.subjects } : {}
+  };
+  if (resource === "releases") return {
+    ...typeof body?.id === "string" ? { id: body.id } : {},
+    ...typeof body?.idempotencyKey === "string" ? { idempotencyKey: body.idempotencyKey } : {},
+    ...typeof body?.releaseRef === "string" ? { releaseRef: body.releaseRef } : {},
+    ...typeof body?.serviceRef === "string" ? { serviceRef: body.serviceRef } : {},
+    ...typeof body?.environment === "string" ? { environment: body.environment } : {},
+    ...typeof body?.versionRef === "string" ? { versionRef: body.versionRef } : {},
+    ...typeof body?.status === "string" ? { status: body.status } : {},
+    ...typeof body?.summary === "string" ? { summary: body.summary } : {},
+    ...typeof body?.sourceRef === "string" ? { sourceRef: body.sourceRef } : {}
+  };
+  const fields = SAFE_INPUT_FIELDS[resource];
+  const input = {};
+  for (const key of fields) {
+    const value = safePrimitive(body?.[key]);
+    if (value !== void 0) input[key] = typeof value === "string" ? value.trim().slice(0, 1e3) : value;
+  }
+  return input;
+}
+function requireLedgerIngestKey(context, headers4) {
+  const configured = context.env.OPS_LEDGER_INGEST_KEY;
+  if (!configured) {
+    console.error("[staff-operations-ledger] OPS_LEDGER_INGEST_KEY is not configured; denying service write");
+    return new Response(JSON.stringify({ error: "Operations Ledger ingest is not configured" }), { status: 500, headers: headers4 });
+  }
+  const provided = context.request.headers.get("OPS_LEDGER_INGEST_KEY") || "";
+  if (!provided || !timingSafeEqual(provided, configured)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: headers4 });
+  }
+  return null;
+}
+async function onRequestOptions5(context) {
+  return new Response(null, { status: 204, headers: responseHeaders(context) });
+}
+async function onRequestGet4(context) {
+  const headers4 = responseHeaders(context);
+  const auth = await requireStaffAuth(context, headers4);
+  if (auth.error) return auth.error;
+  const url = new URL(context.request.url);
+  const requestedResource = resourceFrom(context);
+  if (requestedResource && !RESOURCES.has(requestedResource)) {
+    return new Response(JSON.stringify({ error: "Unknown ledger resource" }), { status: 400, headers: headers4 });
+  }
+  try {
+    const result = await readOperationsLedger(context.env, {
+      resource: requestedResource || "all",
+      limit: boundedLimit(url.searchParams.get("limit")),
+      cursor: (url.searchParams.get("cursor") || "").slice(0, 512) || null,
+      filters: filtersFrom(url)
+    });
+    return new Response(JSON.stringify(projectRead(result, requestedResource || null)), { status: 200, headers: headers4 });
+  } catch (error) {
+    console.error("[staff-operations-ledger] read failed:", error instanceof Error ? error.message : String(error));
+    return new Response(JSON.stringify({ error: "Operations Ledger is unavailable" }), { status: 503, headers: headers4 });
+  }
+}
+async function onRequestPost3(context) {
+  const headers4 = responseHeaders(context);
+  const denied = requireLedgerIngestKey(context, headers4);
+  if (denied) return denied;
+  const resource = resourceFrom(context);
+  if (!INGEST_RESOURCES.has(resource)) {
+    return new Response(JSON.stringify({ error: "Ingest resource must be tasks, events, or releases" }), { status: 400, headers: headers4 });
+  }
+  const { body, error } = await parseJsonBody(context.request, headers4);
+  if (error) return error;
+  const input = safeInput(body, resource);
+  const ingest = INGESTORS[resource];
+  try {
+    const result = await ingest(context.env, input, {
+      principal: { kind: "worker", id: "ops-ledger-ingest" },
+      source: "staff-operations-ledger-service"
+    });
+    const projected = projectRecord(result?.entry || result?.record || result, resource === "events" ? "entries" : resource) || {};
+    projected.actor = "service";
+    return new Response(JSON.stringify({
+      success: true,
+      resource,
+      result: projected
+    }), { status: 200, headers: headers4 });
+  } catch (error2) {
+    console.error("[staff-operations-ledger] ingest failed:", error2 instanceof Error ? error2.message : String(error2));
+    return new Response(JSON.stringify({ error: "Operations Ledger ingest failed" }), { status: 503, headers: headers4 });
+  }
+}
+var METHODS, MAX_LIMIT, DEFAULT_LIMIT, RESOURCES, INGEST_RESOURCES, SAFE_FIELDS, SAFE_INPUT_FIELDS, INGESTORS;
+var init_staff_operations_ledger = __esm({
+  "api/staff-operations-ledger.js"() {
+    init_functionsRoutes_0_8372690901872232();
+    init_endpoint_guards();
+    init_safe_equal();
+    init_ops_ledger();
+    METHODS = "GET, POST, OPTIONS";
+    MAX_LIMIT = 100;
+    DEFAULT_LIMIT = 25;
+    RESOURCES = /* @__PURE__ */ new Set(["entries", "tasks", "releases", "incidents"]);
+    INGEST_RESOURCES = /* @__PURE__ */ new Set(["tasks", "events", "releases"]);
+    SAFE_FIELDS = {
+      entries: /* @__PURE__ */ new Set([
+        "id",
+        "at",
+        "atMs",
+        "createdAt",
+        "timestamp",
+        "type",
+        "eventType",
+        "kind",
+        "status",
+        "outcome",
+        "reason",
+        "reasonCode",
+        "summary",
+        "source",
+        "sourceSystem",
+        "pathId",
+        "taskId",
+        "releaseId",
+        "incidentId",
+        "actor"
+      ]),
+      tasks: /* @__PURE__ */ new Set([
+        "id",
+        "createdAt",
+        "updatedAt",
+        "dueAt",
+        "completedAt",
+        "status",
+        "priority",
+        "title",
+        "summary",
+        "source",
+        "releaseId",
+        "incidentId",
+        "actor"
+      ]),
+      releases: /* @__PURE__ */ new Set([
+        "id",
+        "createdAt",
+        "releasedAt",
+        "status",
+        "version",
+        "environment",
+        "source",
+        "summary",
+        "rollback",
+        "commitSha",
+        "changeType",
+        "actor"
+      ]),
+      incidents: /* @__PURE__ */ new Set([
+        "id",
+        "createdAt",
+        "openedAt",
+        "resolvedAt",
+        "status",
+        "severity",
+        "title",
+        "summary",
+        "source",
+        "pathId",
+        "releaseId",
+        "actor"
+      ])
+    };
+    SAFE_INPUT_FIELDS = {
+      tasks: /* @__PURE__ */ new Set(["id", "createdAt", "updatedAt", "dueAt", "completedAt", "status", "priority", "title", "summary", "source", "releaseId", "incidentId"]),
+      events: /* @__PURE__ */ new Set(["id", "at", "atMs", "createdAt", "timestamp", "type", "eventType", "kind", "status", "outcome", "reason", "reasonCode", "summary", "source", "sourceSystem", "pathId", "taskId", "releaseId", "incidentId"]),
+      releases: /* @__PURE__ */ new Set(["id", "createdAt", "releasedAt", "status", "version", "environment", "source", "summary", "rollback", "commitSha", "changeType"])
+    };
+    __name(responseHeaders, "responseHeaders");
+    __name(boundedLimit, "boundedLimit");
+    __name(resourceFrom, "resourceFrom");
+    __name(filtersFrom, "filtersFrom");
+    __name(safePrimitive, "safePrimitive");
+    __name(projectRecord, "projectRecord");
+    __name(projectCollection, "projectCollection");
+    __name(projectRead, "projectRead");
+    __name(safeInput, "safeInput");
+    INGESTORS = {
+      tasks: ingestOperationsLedgerTask,
+      events: ingestOperationsLedgerEvent,
+      releases: ingestOperationsLedgerRelease
+    };
+    __name(requireLedgerIngestKey, "requireLedgerIngestKey");
+    __name(onRequestOptions5, "onRequestOptions");
+    __name(onRequestGet4, "onRequestGet");
+    __name(onRequestPost3, "onRequestPost");
+  }
+});
+
+// api/ops/ledger.js
+var init_ledger = __esm({
+  "api/ops/ledger.js"() {
+    init_functionsRoutes_0_8372690901872232();
+    init_staff_operations_ledger();
+  }
+});
+
 // api/ops/monitor-event.js
-function text(value, max = MAX_NOTE_LENGTH) {
+function text2(value, max = MAX_NOTE_LENGTH) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 async function readBody(request) {
@@ -6281,7 +7200,7 @@ async function readBody(request) {
   }
 }
 function monitorTimestamp(value) {
-  const raw = text(value, 64);
+  const raw = text2(value, 64);
   if (!raw) return (/* @__PURE__ */ new Date()).toISOString();
   const atMs = Date.parse(raw);
   if (!Number.isFinite(atMs) || atMs > Date.now() + MAX_FUTURE_SKEW_MS) return null;
@@ -6301,13 +7220,13 @@ async function latestMonitorTimestamp(env, pathId) {
   const atMs = latest?.atMs ?? Date.parse(latest?.at || "");
   return Number.isFinite(atMs) ? atMs : null;
 }
-async function onRequestPost3(context) {
+async function onRequestPost4(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const body = await readBody(context.request);
-  const pathId = text(body?.pathId, 100);
-  const state = text(body?.state, 20).toLowerCase();
-  const note = text(body?.note) || "external health monitor reported no detail";
+  const pathId = text2(body?.pathId, 100);
+  const state = text2(body?.state, 20).toLowerCase();
+  const note = text2(body?.note) || "external health monitor reported no detail";
   const observedAt = monitorTimestamp(body?.observedAt);
   const heartbeat = body?.heartbeat === true && state === "green";
   const path = registryPath(pathId);
@@ -6365,7 +7284,7 @@ async function onRequestPost3(context) {
 var HEADERS, STATES, MAX_NOTE_LENGTH, MAX_FUTURE_SKEW_MS, EXTERNAL_MONITOR_PATHS;
 var init_monitor_event = __esm({
   "api/ops/monitor-event.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_auth();
     init_ops_events();
     init_ops_registry();
@@ -6374,12 +7293,12 @@ var init_monitor_event = __esm({
     MAX_NOTE_LENGTH = 500;
     MAX_FUTURE_SKEW_MS = 5 * 60 * 1e3;
     EXTERNAL_MONITOR_PATHS = new Set(EXTERNAL_MONITOR_PATH_IDS);
-    __name(text, "text");
+    __name(text2, "text");
     __name(readBody, "readBody");
     __name(monitorTimestamp, "monitorTimestamp");
     __name(persistenceFailure, "persistenceFailure");
     __name(latestMonitorTimestamp, "latestMonitorTimestamp");
-    __name(onRequestPost3, "onRequestPost");
+    __name(onRequestPost4, "onRequestPost");
   }
 });
 
@@ -6397,13 +7316,13 @@ function verificationFor(pathId, mode) {
   if (mode === REPAIR_MODE.REPAIR_DEPLOY) return "Run the path-specific test/probe; only the independent monitor may resolve its incident.";
   return "Return evidence and the exact next approval/confirmation required; do not resolve the incident.";
 }
-function repairCommandKey(id2) {
-  return `${PREFIX}${id2}`;
+function repairCommandKey(id3) {
+  return `${PREFIX}${id3}`;
 }
 function policyFor(pathId) {
   return REPAIR_POLICIES[pathId] || null;
 }
-function id() {
+function id2() {
   const raw = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function" ? crypto.randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase() : Math.random().toString(36).slice(2, 10).toUpperCase();
   return `OPS-${raw}`;
 }
@@ -6414,7 +7333,7 @@ async function createRepairCommand(env, { command, pathId, requestedBy = "ops" }
   if (!policy) return { ok: false, error: "path-not-authorized" };
   const kv = env?.PORTAL_KV;
   if (!kv) return { ok: false, error: "no-kv" };
-  const commandId2 = id();
+  const commandId2 = id2();
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const entry = {
     id: commandId2,
@@ -6447,7 +7366,7 @@ async function authorizeRepairCommand(env, sourceId, { command, requestedBy = "o
   if (!["completed", "blocked"].includes(original.status)) return { ok: false, error: "not-ready" };
   const executionMode = authorizationModeFor(original, action);
   if (!executionMode) return { ok: false, error: "wrong-authorization" };
-  const commandId2 = id();
+  const commandId2 = id2();
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const entry = {
     id: commandId2,
@@ -6491,26 +7410,26 @@ async function claimNextRepairCommand(env, { runnerId } = {}) {
   }
   return { ok: true, command: null };
 }
-async function getRepairCommand(env, id2) {
-  if (!id2) return { ok: false, error: "missing-id" };
+async function getRepairCommand(env, id3) {
+  if (!id3) return { ok: false, error: "missing-id" };
   const kv = env?.PORTAL_KV;
   if (!kv) return { ok: false, error: "no-kv" };
-  const command = await kv.get(repairCommandKey(id2), "json");
+  const command = await kv.get(repairCommandKey(id3), "json");
   return command ? { ok: true, command } : { ok: false, error: "not-found" };
 }
-async function finishRepairCommand(env, id2, { status, result } = {}) {
-  if (!id2 || !["completed", "blocked", "failed"].includes(status)) return { ok: false, error: "bad-finish" };
+async function finishRepairCommand(env, id3, { status, result } = {}) {
+  if (!id3 || !["completed", "blocked", "failed"].includes(status)) return { ok: false, error: "bad-finish" };
   const kv = env?.PORTAL_KV;
-  const current = await kv?.get(repairCommandKey(id2), "json");
+  const current = await kv?.get(repairCommandKey(id3), "json");
   if (!current) return { ok: false, error: "not-found" };
   const finished = { ...current, status, finishedAt: (/* @__PURE__ */ new Date()).toISOString(), result: String(result || "").slice(0, 2e3) };
-  await kv.put(repairCommandKey(id2), JSON.stringify(finished), { expirationTtl: TTL_S });
+  await kv.put(repairCommandKey(id3), JSON.stringify(finished), { expirationTtl: TTL_S });
   return { ok: true, command: finished };
 }
 var PREFIX, TTL_S, LEASE_S, COMMAND, APPROVAL_COMMANDS, REPAIR_MODE, AUTO_REPAIR_PATHS, APPROVAL_PATHS, CONFIRM_PATHS, REPAIR_POLICIES;
 var init_ops_repair_command = __esm({
   "lib/ops-repair-command.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_registry();
     init_ops_board_meta();
     PREFIX = "ops:repair:command:";
@@ -6568,7 +7487,7 @@ var init_ops_repair_command = __esm({
     })));
     __name(repairCommandKey, "repairCommandKey");
     __name(policyFor, "policyFor");
-    __name(id, "id");
+    __name(id2, "id");
     __name(createRepairCommand, "createRepairCommand");
     __name(authorizationModeFor, "authorizationModeFor");
     __name(authorizeRepairCommand, "authorizeRepairCommand");
@@ -6579,20 +7498,20 @@ var init_ops_repair_command = __esm({
 });
 
 // api/ops/repair-command.js
-async function onRequestGet4(context) {
+async function onRequestGet5(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const url = new URL(context.request.url);
-  const id2 = url.searchParams.get("id");
-  if (id2) {
-    const result2 = await getRepairCommand(context.env, id2);
+  const id3 = url.searchParams.get("id");
+  if (id3) {
+    const result2 = await getRepairCommand(context.env, id3);
     return json4(result2, result2.ok ? 200 : 404);
   }
   if (url.searchParams.get("claim") !== "1") return json4({ error: "claim=1 required" }, 400);
   const result = await claimNextRepairCommand(context.env, { runnerId: url.searchParams.get("runner") || "local-codex" });
   return json4(result, result.ok ? 200 : 500);
 }
-async function onRequestPost4(context) {
+async function onRequestPost5(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   let body;
@@ -6615,24 +7534,24 @@ async function onRequestPost4(context) {
 var HEADERS2, json4;
 var init_repair_command = __esm({
   "api/ops/repair-command.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_auth();
     init_ops_repair_command();
     HEADERS2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
     json4 = /* @__PURE__ */ __name((body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS2 }), "json");
-    __name(onRequestGet4, "onRequestGet");
-    __name(onRequestPost4, "onRequestPost");
+    __name(onRequestGet5, "onRequestGet");
+    __name(onRequestPost5, "onRequestPost");
   }
 });
 
 // api/ops/systems.js
-async function onRequestOptions5(context) {
+async function onRequestOptions6(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin") || "", "GET, OPTIONS")
   });
 }
-async function onRequestGet5(context) {
+async function onRequestGet6(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = {
     ...corsHeaders3(origin, "GET, OPTIONS"),
@@ -6680,11 +7599,19 @@ async function onRequestGet5(context) {
 }
 var init_systems = __esm({
   "api/ops/systems.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ops_board();
-    __name(onRequestOptions5, "onRequestOptions");
-    __name(onRequestGet5, "onRequestGet");
+    __name(onRequestOptions6, "onRequestOptions");
+    __name(onRequestGet6, "onRequestGet");
+  }
+});
+
+// api/staff-operations-ledger/[resource].js
+var init_resource = __esm({
+  "api/staff-operations-ledger/[resource].js"() {
+    init_functionsRoutes_0_8372690901872232();
+    init_staff_operations_ledger();
   }
 });
 
@@ -6704,7 +7631,7 @@ async function isContactRevoked(kv, contactId) {
 var REVOKE_PREFIX;
 var init_session_guard = __esm({
   "lib/session-guard.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     REVOKE_PREFIX = "auth-revoked:";
     __name(revokeKey, "revokeKey");
     __name(isContactRevoked, "isContactRevoked");
@@ -6714,23 +7641,23 @@ var init_session_guard = __esm({
 // lib/owned-access.js
 async function requireOwner(context, headers4, { audience, messages = {} } = {}) {
   const msg = { ...DEFAULT_MESSAGES, ...messages };
-  const fail = /* @__PURE__ */ __name((status, message) => ({
+  const fail2 = /* @__PURE__ */ __name((status, message) => ({
     error: new Response(JSON.stringify({ error: message }), { status, headers: headers4 })
   }), "fail");
   const secret = context.env.JWT_SECRET;
-  if (!secret) return fail(500, msg.misconfigured);
+  if (!secret) return fail2(500, msg.misconfigured);
   const auth = context.request.headers.get("Authorization");
-  if (!auth || !auth.startsWith("Bearer ")) return fail(401, msg.notAuthenticated);
+  if (!auth || !auth.startsWith("Bearer ")) return fail2(401, msg.notAuthenticated);
   let tokenPayload;
   try {
     tokenPayload = await verifySessionToken(auth.slice(7), secret);
   } catch {
-    return fail(401, msg.invalidToken);
+    return fail2(401, msg.invalidToken);
   }
-  if (audience && tokenPayload.type !== audience) return fail(403, msg.wrongAudience);
+  if (audience && tokenPayload.type !== audience) return fail2(403, msg.wrongAudience);
   const contactId = tokenPayload.contactId;
-  if (!contactId) return fail(401, msg.missingContactId);
-  if (await isContactRevoked(context.env.PORTAL_KV, contactId)) return fail(401, msg.revoked);
+  if (!contactId) return fail2(401, msg.missingContactId);
+  if (await isContactRevoked(context.env.PORTAL_KV, contactId)) return fail2(401, msg.revoked);
   return { tokenPayload, contactId };
 }
 async function loadOwnedContact(context, headers4, { audience, requireTag, messages = {} } = {}) {
@@ -6766,7 +7693,7 @@ async function loadOwnedContact(context, headers4, { audience, requireTag, messa
 var GHL_API_BASE3, DEFAULT_MESSAGES;
 var init_owned_access = __esm({
   "lib/owned-access.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     init_session_guard();
     init_ghl();
@@ -6796,13 +7723,13 @@ function corsHeaders4(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions6(context) {
+async function onRequestOptions7(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders4(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost5(context) {
+async function onRequestPost6(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders4(origin);
   headers4["Content-Type"] = "application/json";
@@ -6904,7 +7831,7 @@ async function onRequestPost5(context) {
 var GHL_API_BASE4, GHL_LOCATION_ID2, REFERRAL_SOURCE_FIELD_ID, PARTNER_CONTACT_ID_FIELD_ID, REFERRAL_TYPE_FIELD_ID, REFERRAL_FEE_STATUS_FIELD_ID, ALLOWED_ORIGINS3;
 var init_affiliate_refer = __esm({
   "api/affiliate-refer.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     GHL_API_BASE4 = "https://services.leadconnectorhq.com";
@@ -6918,8 +7845,8 @@ var init_affiliate_refer = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders4, "corsHeaders");
-    __name(onRequestOptions6, "onRequestOptions");
-    __name(onRequestPost5, "onRequestPost");
+    __name(onRequestOptions7, "onRequestOptions");
+    __name(onRequestPost6, "onRequestPost");
   }
 });
 
@@ -6989,7 +7916,7 @@ function normalizeAppointmentEvent(payload) {
 var APPOINTMENT_EVENT_TYPES, STATUS_TO_TYPE, APPOINTMENT_ID_KEYS, CALENDAR_ID_KEYS, CONTACT_ID_KEYS, START_AT_KEYS, STATUS_KEYS, MODIFIED_BY_KEYS, APPOINTMENT_EVENT_KIND_KEYS, APPOINTMENT_RECURRING_KEYS;
 var init_appointment_event = __esm({
   "lib/appointment-event.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_datetime();
     APPOINTMENT_EVENT_TYPES = Object.freeze({
       BOOKED: "booked",
@@ -7067,7 +7994,7 @@ async function releaseProcessedEvent(db, eventId) {
 }
 var init_processed_events = __esm({
   "lib/processed-events.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(changesOf3, "changesOf");
     __name(claimProcessedEvent, "claimProcessedEvent");
     __name(releaseProcessedEvent, "releaseProcessedEvent");
@@ -7102,7 +8029,7 @@ function emitNurtureEvent(context, event2) {
 }
 var init_engine_forward = __esm({
   "lib/engine-forward.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(forwardEventToEngine, "forwardEventToEngine");
     __name(emitNurtureEvent, "emitNurtureEvent");
   }
@@ -7133,7 +8060,7 @@ async function dispatchAppointmentEvent(context, event2) {
 var CONSUMERS;
 var init_appointment_dispatch = __esm({
   "lib/appointment-dispatch.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_engine_forward();
     CONSUMERS = [
       { name: "reminder", urlVar: "REMINDER_ENGINE_URL" },
@@ -7152,7 +8079,7 @@ function alert(context, summary, detail) {
     context.waitUntil(recordOpsError(context.env, "appointment-webhook", summary, detail));
   }
 }
-async function onRequestPost6(context) {
+async function onRequestPost7(context) {
   try {
     const expected = context.env.GHL_APPOINTMENT_WEBHOOK_SECRET || context.env.GHL_WEBHOOK_SECRET;
     if (!expected) return json5(500, { error: "webhook secret not configured" });
@@ -7250,7 +8177,7 @@ async function onRequestPost6(context) {
 var JSON_HEADERS, KEY_TTL_SECONDS;
 var init_appointment_webhook = __esm({
   "api/appointment-webhook.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_appointment_event();
     init_safe_equal();
     init_processed_events();
@@ -7261,7 +8188,7 @@ var init_appointment_webhook = __esm({
     KEY_TTL_SECONDS = 30 * 24 * 3600;
     __name(json5, "json");
     __name(alert, "alert");
-    __name(onRequestPost6, "onRequestPost");
+    __name(onRequestPost7, "onRequestPost");
   }
 });
 
@@ -7279,13 +8206,13 @@ function yesterdayPacific() {
   const d2 = new Date(Date.now() - 864e5);
   return new Intl.DateTimeFormat("en-CA", { timeZone: PT }).format(d2);
 }
-async function onRequestOptions7(context) {
+async function onRequestOptions8(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders5(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet6(context) {
+async function onRequestGet7(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders5(origin), "Content-Type": "application/json" };
   try {
@@ -7325,14 +8252,14 @@ async function onRequestGet6(context) {
       return new Response(JSON.stringify(record3), { status: 200, headers: headers4 });
     }
     const date2 = dateParam || yesterdayPacific();
-    const digest = await kv.get(`${KV_DAILY_PREFIX}${date2}`, "json");
-    if (!digest) {
+    const digest2 = await kv.get(`${KV_DAILY_PREFIX}${date2}`, "json");
+    if (!digest2) {
       return new Response(
         JSON.stringify({ date: date2, count: 0, items: [], message: "No coaching digest for this date" }),
         { status: 200, headers: headers4 }
       );
     }
-    return new Response(JSON.stringify(digest), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(digest2), { status: 200, headers: headers4 });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[call-coach] reader failed:", detail);
@@ -7342,7 +8269,7 @@ async function onRequestGet6(context) {
 var PT, KV_CALL_PREFIX, KV_DAILY_PREFIX, KV_LATEST_PREFIX, ALLOWED_ORIGINS4;
 var init_call_coach = __esm({
   "api/call-coach.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     PT = "America/Los_Angeles";
     KV_CALL_PREFIX = "call-coach:";
@@ -7354,8 +8281,8 @@ var init_call_coach = __esm({
     ];
     __name(corsHeaders5, "corsHeaders");
     __name(yesterdayPacific, "yesterdayPacific");
-    __name(onRequestOptions7, "onRequestOptions");
-    __name(onRequestGet6, "onRequestGet");
+    __name(onRequestOptions8, "onRequestOptions");
+    __name(onRequestGet7, "onRequestGet");
   }
 });
 
@@ -7387,13 +8314,13 @@ async function fetchFieldDefs(apiKey) {
     return {};
   }
 }
-async function onRequestOptions8(context) {
+async function onRequestOptions9(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders6(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost7(context) {
+async function onRequestPost8(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders6(origin);
   headers4["Content-Type"] = "application/json";
@@ -7497,7 +8424,7 @@ async function onRequestPost7(context) {
 var GHL_API_BASE5, GHL_LOCATION_ID3, BOOKING_URL, ALLOWED_ORIGINS5;
 var init_client_refer = __esm({
   "api/client-refer.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     GHL_API_BASE5 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID3 = "7pIO7FHVAyBT1jKGhfQM";
@@ -7508,13 +8435,13 @@ var init_client_refer = __esm({
     ];
     __name(corsHeaders6, "corsHeaders");
     __name(fetchFieldDefs, "fetchFieldDefs");
-    __name(onRequestOptions8, "onRequestOptions");
-    __name(onRequestPost7, "onRequestPost");
+    __name(onRequestOptions9, "onRequestOptions");
+    __name(onRequestPost8, "onRequestPost");
   }
 });
 
 // api/comms-summary.js
-async function onRequestGet7(context) {
+async function onRequestGet8(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers4 = { "Content-Type": "application/json" };
@@ -7537,10 +8464,10 @@ async function onRequestGet7(context) {
 var KV_SUMMARY;
 var init_comms_summary = __esm({
   "api/comms-summary.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_auth();
     KV_SUMMARY = "comms:flags:summary";
-    __name(onRequestGet7, "onRequestGet");
+    __name(onRequestGet8, "onRequestGet");
   }
 });
 
@@ -7578,13 +8505,13 @@ function validateContactMessage(body) {
   if (!message || message.length > MAX_MESSAGE) return { error: "Message required (4000 characters max)" };
   return { name, email: email.slice(0, 200), phone, message };
 }
-async function onRequestOptions9(context) {
+async function onRequestOptions10(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders7(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost8(context) {
+async function onRequestPost9(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders7(origin);
   headers4["Content-Type"] = "application/json";
@@ -7655,7 +8582,7 @@ ${validated.message}`
 var GHL_API_BASE6, GHL_LOCATION_ID4, ALLOWED_ORIGINS6, MAX_NAME, MAX_PHONE, MAX_MESSAGE;
 var init_contact_message = __esm({
   "api/contact-message.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     GHL_API_BASE6 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID4 = "7pIO7FHVAyBT1jKGhfQM";
@@ -7674,8 +8601,8 @@ var init_contact_message = __esm({
     __name(corsHeaders7, "corsHeaders");
     __name(isValidEmail, "isValidEmail");
     __name(validateContactMessage, "validateContactMessage");
-    __name(onRequestOptions9, "onRequestOptions");
-    __name(onRequestPost8, "onRequestPost");
+    __name(onRequestOptions10, "onRequestOptions");
+    __name(onRequestPost9, "onRequestPost");
   }
 });
 
@@ -7719,13 +8646,13 @@ function queueUser(requestedUser, auth) {
   if (requestedUser && requestedUser !== auth.user) return null;
   return auth.user;
 }
-async function onRequestOptions10(context) {
+async function onRequestOptions11(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders8(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet8(context) {
+async function onRequestGet9(context) {
   const origin = context.request.headers.get("Origin") || "";
   const auth = await authenticate(context);
   if (!auth) return jsonResponse({ error: "Unauthorized" }, 401, origin);
@@ -7740,7 +8667,7 @@ async function onRequestGet8(context) {
   const actions = raw ? JSON.parse(raw) : [];
   return jsonResponse({ actions }, 200, origin);
 }
-async function onRequestPost9(context) {
+async function onRequestPost10(context) {
   const origin = context.request.headers.get("Origin") || "";
   const auth = await authenticate(context);
   if (!auth) return jsonResponse({ error: "Unauthorized" }, 401, origin);
@@ -7774,7 +8701,7 @@ async function onRequestPost9(context) {
 var ALLOWED_ORIGINS7, COS_QUEUE_USERS;
 var init_cos_actions = __esm({
   "api/cos-actions.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     init_safe_equal();
     ALLOWED_ORIGINS7 = [
@@ -7786,9 +8713,9 @@ var init_cos_actions = __esm({
     __name(jsonResponse, "jsonResponse");
     __name(authenticate, "authenticate");
     __name(queueUser, "queueUser");
-    __name(onRequestOptions10, "onRequestOptions");
-    __name(onRequestGet8, "onRequestGet");
-    __name(onRequestPost9, "onRequestPost");
+    __name(onRequestOptions11, "onRequestOptions");
+    __name(onRequestGet9, "onRequestGet");
+    __name(onRequestPost10, "onRequestPost");
   }
 });
 
@@ -7870,7 +8797,7 @@ async function clearPinAttempts(kv, { ip, scope }) {
 var RATE_LIMITS, PIN_RATE_LIMITS, pinAttemptKey;
 var init_rate_limit = __esm({
   "lib/rate-limit.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     RATE_LIMITS = Object.freeze({
       EMAIL_COOLDOWN_SEC: 5 * 60,
       // one login email per address per 5 min (was 60s)
@@ -7924,13 +8851,13 @@ async function createToken(payload, secret) {
   const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
   return `${data}.${sig}`;
 }
-async function onRequestOptions11(context) {
+async function onRequestOptions12(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders9(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost10(context) {
+async function onRequestPost11(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders9(origin), "Content-Type": "application/json" };
   try {
@@ -8010,7 +8937,7 @@ async function onRequestPost10(context) {
 var ALLOWED_ORIGINS8;
 var init_cos_auth = __esm({
   "api/cos-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_rate_limit();
     init_ops_last_run();
     ALLOWED_ORIGINS8 = [
@@ -8019,8 +8946,8 @@ var init_cos_auth = __esm({
     ];
     __name(corsHeaders9, "corsHeaders");
     __name(createToken, "createToken");
-    __name(onRequestOptions11, "onRequestOptions");
-    __name(onRequestPost10, "onRequestPost");
+    __name(onRequestOptions12, "onRequestOptions");
+    __name(onRequestPost11, "onRequestPost");
   }
 });
 
@@ -8330,18 +9257,18 @@ async function getRecentEmails(context, user) {
       return "No new emails in the last 24 hours.";
     }
     const messages = await Promise.all(
-      messageIds.map(async ({ id: id2 }) => {
+      messageIds.map(async ({ id: id3 }) => {
         const msgResp = await fetch(
-          `https://www.googleapis.com/gmail/v1/users/me/messages/${id2}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
+          `https://www.googleapis.com/gmail/v1/users/me/messages/${id3}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!msgResp.ok) return null;
         const msg = await msgResp.json();
         const headers4 = msg.payload?.headers || [];
-        const subject = headers4.find((h) => h.name === "Subject")?.value || "(no subject)";
+        const subject2 = headers4.find((h) => h.name === "Subject")?.value || "(no subject)";
         const from = headers4.find((h) => h.name === "From")?.value || "Unknown";
         const fromName = from.includes("<") ? from.split("<")[0].trim().replace(/"/g, "") : from;
-        return `- ${fromName}: ${subject}`;
+        return `- ${fromName}: ${subject2}`;
       })
     );
     return `Recent emails (last 24h):
@@ -8354,7 +9281,7 @@ ${messages.filter(Boolean).join("\n")}`;
 var GOOGLE_TOKEN_URL, REFRESH_BUFFER_MS2, LEGACY_KV_ACCESS_TOKEN, LEGACY_KV_REFRESH_TOKEN, LEGACY_KV_TOKEN_EXPIRY, LEGACY_USER;
 var init_google_api = __esm({
   "lib/google-api.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_datetime();
     GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
     REFRESH_BUFFER_MS2 = 5 * 60 * 1e3;
@@ -8399,7 +9326,7 @@ function hasFoundersCircleTag(tags = []) {
 var FOUNDERS_CIRCLE_TAG;
 var init_portal_helpers = __esm({
   "lib/portal-helpers.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(getCustomField, "getCustomField");
     __name(isChecked, "isChecked");
     __name(computeHasLivingPractice, "computeHasLivingPractice");
@@ -8420,7 +9347,7 @@ function creditsOnPurchase(productId, p2) {
 var PACKAGE_TYPES, CANONICAL_SERIES_BY_GHL_VALUE, SESSION_COUNT_BY_SERIES_TYPE, GHL_PRODUCTS, LEDGER_PRODUCT_MAP, WEBHOOK_PURCHASE_MAP, PRICE_IDS, DRAW_DOWN_PRODUCT_IDS, ID_TO_PRODUCT_ID, productIdForAnyId, PURCHASE_CREDIT_MAP, PACKAGE_MAP, AUDIT_INCREMENT_MAP;
 var init_ghl_products = __esm({
   "lib/ghl-products.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     PACKAGE_TYPES = /* @__PURE__ */ new Set(["4-series", "8-series", "6-week", "12-week", "4-upgrade", "8-upgrade", "4-to-8-upgrade"]);
     CANONICAL_SERIES_BY_GHL_VALUE = Object.freeze({
       "4-session": "4-session",
@@ -8612,14 +9539,14 @@ var init_ghl_products = __esm({
       }
     };
     LEDGER_PRODUCT_MAP = Object.fromEntries(
-      Object.entries(GHL_PRODUCTS).map(([id2, p2]) => [
-        id2,
+      Object.entries(GHL_PRODUCTS).map(([id3, p2]) => [
+        id3,
         { type: p2.classification, sessions: p2.sessions }
       ])
     );
     WEBHOOK_PURCHASE_MAP = Object.fromEntries(
-      Object.entries(GHL_PRODUCTS).filter(([, p2]) => p2.isPackagePurchase).map(([id2, p2]) => [
-        id2,
+      Object.entries(GHL_PRODUCTS).filter(([, p2]) => p2.isPackagePurchase).map(([id3, p2]) => [
+        id3,
         {
           name: p2.name,
           sessionsRemaining: p2.sessionsRemaining,
@@ -8689,8 +9616,8 @@ var init_ghl_products = __esm({
     productIdForAnyId = /* @__PURE__ */ __name((anyId) => ID_TO_PRODUCT_ID[anyId] || null, "productIdForAnyId");
     __name(creditsOnPurchase, "creditsOnPurchase");
     PURCHASE_CREDIT_MAP = Object.fromEntries(
-      Object.entries(GHL_PRODUCTS).filter(([id2, p2]) => creditsOnPurchase(id2, p2)).map(([id2, p2]) => [
-        id2,
+      Object.entries(GHL_PRODUCTS).filter(([id3, p2]) => creditsOnPurchase(id3, p2)).map(([id3, p2]) => [
+        id3,
         p2.isPackagePurchase ? {
           name: p2.name,
           sessionsToAdd: p2.sessionsRemaining,
@@ -8702,8 +9629,8 @@ var init_ghl_products = __esm({
       ])
     );
     PACKAGE_MAP = Object.fromEntries(
-      Object.entries(GHL_PRODUCTS).filter(([, p2]) => p2.isPackagePurchase).map(([id2, p2]) => [
-        id2,
+      Object.entries(GHL_PRODUCTS).filter(([, p2]) => p2.isPackagePurchase).map(([id3, p2]) => [
+        id3,
         {
           name: p2.name,
           sessionsToSet: p2.sessionsRemaining,
@@ -8787,7 +9714,7 @@ async function hydrateOrders(fetchOrderDetail2, ordersList, options = {}) {
 var DEFAULT_CONCURRENCY;
 var init_ghl_orders = __esm({
   "lib/ghl-orders.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     DEFAULT_CONCURRENCY = 3;
     __name(hydrateOrders, "hydrateOrders");
   }
@@ -9124,7 +10051,7 @@ async function computeSessionLedger(context, contactId, options = {}) {
 var GHL_API_BASE7, GHL_LOCATION_ID5, ACTIVE_PRODUCTS, SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS, ATTENDED_STATUSES;
 var init_session_ledger = __esm({
   "lib/session-ledger.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_portal_helpers();
     init_ghl_products();
@@ -9283,20 +10210,20 @@ async function getPackageTracking(context, user) {
     const messageIds = (data.messages || []).slice(0, 8);
     if (!messageIds.length) return "No recent shipping notifications found.";
     const messages = await Promise.all(
-      messageIds.map(async ({ id: id2 }) => {
+      messageIds.map(async ({ id: id3 }) => {
         const msgResp = await fetch(
-          `https://www.googleapis.com/gmail/v1/users/me/messages/${id2}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
+          `https://www.googleapis.com/gmail/v1/users/me/messages/${id3}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         if (!msgResp.ok) return null;
         const msg = await msgResp.json();
         const headers4 = msg.payload?.headers || [];
-        const subject = headers4.find((h) => h.name === "Subject")?.value || "(no subject)";
+        const subject2 = headers4.find((h) => h.name === "Subject")?.value || "(no subject)";
         const from = headers4.find((h) => h.name === "From")?.value || "Unknown";
         const date2 = headers4.find((h) => h.name === "Date")?.value || "";
         const fromName = from.includes("<") ? from.split("<")[0].trim().replace(/"/g, "") : from;
         const shortDate = date2 ? new Date(date2).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
-        return `- ${shortDate}: ${fromName} \u2014 ${subject}`;
+        return `- ${shortDate}: ${fromName} \u2014 ${subject2}`;
       })
     );
     const valid = messages.filter(Boolean);
@@ -9391,7 +10318,7 @@ async function geocode(location) {
 var SF_LAT, SF_LON, WEATHER_CODES;
 var init_cos_lookups = __esm({
   "lib/cos-lookups.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_google_api();
     init_ghl();
     SF_LAT = 37.78;
@@ -9797,7 +10724,7 @@ async function handleQueue(context, action) {
 var SPOTIFY_TOKEN_URL, SPOTIFY_API_BASE, REFRESH_BUFFER_MS3, KV_ACCESS_TOKEN2, KV_REFRESH_TOKEN2, KV_TOKEN_EXPIRY2;
 var init_spotify = __esm({
   "lib/spotify.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
     SPOTIFY_API_BASE = "https://api.spotify.com/v1";
     REFRESH_BUFFER_MS3 = 5 * 60 * 1e3;
@@ -9861,7 +10788,7 @@ ${sections.join("\n\n---\n\n")}`;
 var ALWAYS_DOCS, ON_DEMAND_DOCS;
 var init_cos_vault = __esm({
   "lib/cos-vault.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     ALWAYS_DOCS = ["positioning", "garrett-voice", "lifecycles", "technical-reference"];
     ON_DEMAND_DOCS = [
       { name: "messaging-templates", trigger: /email|message|template|copy|write|draft|send/i },
@@ -9984,10 +10911,10 @@ function formatMoveByLabel(date2) {
   }).format(date2);
 }
 function parseSweepDetail(detail) {
-  const text5 = String(detail || "");
-  const weekdayMatch = text5.match(/\b(sun(?:day)?|mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?)\b/i);
-  const weeks = [...text5.matchAll(/\b([1-5])(?:st|nd|rd|th)\b/gi)].map((match2) => Number(match2[1]));
-  const timeMatch = text5.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
+  const text6 = String(detail || "");
+  const weekdayMatch = text6.match(/\b(sun(?:day)?|mon(?:day)?|tue(?:sday)?|wed(?:nesday)?|thu(?:rsday)?|fri(?:day)?|sat(?:urday)?)\b/i);
+  const weeks = [...text6.matchAll(/\b([1-5])(?:st|nd|rd|th)\b/gi)].map((match2) => Number(match2[1]));
+  const timeMatch = text6.match(/\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i);
   if (!weekdayMatch || weeks.length === 0 || !timeMatch) return null;
   const weekdayName = weekdayMatch[1].toLowerCase();
   const weekday2 = SWEEP_WEEKDAYS[Object.keys(SWEEP_WEEKDAYS).find((day) => day.startsWith(weekdayName.slice(0, 3)))];
@@ -10366,7 +11293,7 @@ ${schedules}`;
 var HISTORY_CAP, RULES_CAP, HISTORY_KEY, RULES_KEY, SF_SWEEP_KEY, SF_ADDRESS_DATASET, SF_STREET_SEGMENTS_DATASET, STREET_TYPE_ALIASES, CITY_STREET_TYPES, SWEEP_WEEKDAYS;
 var init_cos_parking = __esm({
   "lib/cos-parking.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     HISTORY_CAP = 100;
     RULES_CAP = 300;
     HISTORY_KEY = /* @__PURE__ */ __name((user) => `cos:parking-history:${user}`, "HISTORY_KEY");
@@ -10463,12 +11390,12 @@ var init_cos_parking = __esm({
 // lib/cos-parking-calendar.js
 async function retireTrackedEvents(deleteEvent, ids) {
   const failed = [];
-  for (const id2 of [...new Set(ids.filter(Boolean))]) {
+  for (const id3 of [...new Set(ids.filter(Boolean))]) {
     try {
-      const result = await deleteEvent(id2);
-      if (result !== true && result?.ok !== true) failed.push(id2);
+      const result = await deleteEvent(id3);
+      if (result !== true && result?.ok !== true) failed.push(id3);
     } catch {
-      failed.push(id2);
+      failed.push(id3);
     }
   }
   return failed;
@@ -10517,7 +11444,7 @@ async function replaceParkingCalendarReminder({ kv, createEvent, deleteEvent }, 
 var activeReminderKey;
 var init_cos_parking_calendar = __esm({
   "lib/cos-parking-calendar.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_cos_parking();
     activeReminderKey = /* @__PURE__ */ __name((user) => `cos:active-parking-reminder:${user}`, "activeReminderKey");
     __name(retireTrackedEvents, "retireTrackedEvents");
@@ -10686,10 +11613,10 @@ async function listFieldPartners(kv, user, { limit = 25, stage } = {}) {
 var INDEX_KEY, PARTNER_KEY, VISIT_KEY, IMAGE_KEY, MAX_INDEX_ENTRIES, MAX_IMAGES, STAGES, STAGE_RANK;
 var init_cos_field_visits = __esm({
   "lib/cos-field-visits.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     INDEX_KEY = /* @__PURE__ */ __name((user) => `cos:field-partners:${user}:index`, "INDEX_KEY");
-    PARTNER_KEY = /* @__PURE__ */ __name((user, id2) => `cos:field-partner:${user}:${id2}`, "PARTNER_KEY");
-    VISIT_KEY = /* @__PURE__ */ __name((user, id2) => `cos:field-visit:${user}:${id2}`, "VISIT_KEY");
+    PARTNER_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-partner:${user}:${id3}`, "PARTNER_KEY");
+    VISIT_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-visit:${user}:${id3}`, "VISIT_KEY");
     IMAGE_KEY = /* @__PURE__ */ __name((user, visitId, number2) => `cos:field-visit-image:${user}:${visitId}:${number2}`, "IMAGE_KEY");
     MAX_INDEX_ENTRIES = 500;
     MAX_IMAGES = 3;
@@ -10957,7 +11884,7 @@ async function executeTool(context, toolName, input, user = "Eben", fieldVisitIm
       const endMs = (/* @__PURE__ */ new Date(`${input.end_date}T23:59:59${endOffset}`)).getTime();
       const eventsUrl = /* @__PURE__ */ __name((calId) => `https://services.leadconnectorhq.com/calendars/events?locationId=${LOCATION_ID}&calendarId=${calId}&startTime=${startMs}&endTime=${endMs}`, "eventsUrl");
       const calResps = await Promise.all(
-        CALENDAR_IDS.map((id2) => ghlFetch(context, eventsUrl(id2)).catch(() => null))
+        CALENDAR_IDS.map((id3) => ghlFetch(context, eventsUrl(id3)).catch(() => null))
       );
       const eventsById = /* @__PURE__ */ new Map();
       for (const resp of calResps) {
@@ -11236,7 +12163,7 @@ async function streamWithTools({ apiKey, requestBody, onTextDelta, executeToolFn
 var OPENROUTER_MESSAGES_API, OPENROUTER_MODEL, LOCATION_ID, MAX_TOOL_ROUNDS, FIELD_SESSIONS_REMAINING, FIELD_SESSIONS_COMPLETED, FIELD_SERIES_TYPE, TOOLS;
 var init_cos_anthropic = __esm({
   "lib/cos-anthropic.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_session_ledger();
     init_ghl_fields();
@@ -11426,7 +12353,7 @@ var init_cos_anthropic = __esm({
 var VOICE_STANDARD;
 var init_voice_standard = __esm({
   "lib/voice-standard.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     VOICE_STANDARD = `# The Amari voice standard
 
 You write copy that a real person would send. Not AI. Not slick. Not clipped.
@@ -11525,14 +12452,14 @@ Good: "You left a voicemail 8 days ago and haven't heard back. Text them, they'r
 });
 
 // lib/slop-lint.js
-function mechanicalTells(text5) {
-  if (!text5) return [];
-  return HARD_TELLS.filter((t) => t.re.test(text5)).map(({ id: id2, label }) => ({ id: id2, label }));
+function mechanicalTells(text6) {
+  if (!text6) return [];
+  return HARD_TELLS.filter((t) => t.re.test(text6)).map(({ id: id3, label }) => ({ id: id3, label }));
 }
 var HARD_TELLS;
 var init_slop_lint = __esm({
   "lib/slop-lint.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     HARD_TELLS = [
       // Mechanical
       { id: "em-dash", label: "em/en dash \u2014 rewrite as two sentences or a comma", re: /—|–/ },
@@ -11563,7 +12490,7 @@ async function complete(apiKey, system, messages, maxTokens) {
     includeTools: false,
     maxTokens
   });
-  const { text: text5 } = await streamWithTools({
+  const { text: text6 } = await streamWithTools({
     apiKey,
     requestBody,
     onTextDelta: /* @__PURE__ */ __name(() => {
@@ -11572,7 +12499,7 @@ async function complete(apiKey, system, messages, maxTokens) {
     executeToolFn: /* @__PURE__ */ __name(async () => "", "executeToolFn")
     // no tools are ever offered, so this is unreachable
   });
-  return (text5 || "").trim();
+  return (text6 || "").trim();
 }
 function generatorSystem(userName) {
   return `${VOICE_STANDARD}
@@ -11624,25 +12551,25 @@ DRAFT TO AUDIT:
 ${copy}${tellBlock}` }
   ];
 }
-function parseGenerated(text5) {
-  const channelMatch = text5.match(/CHANNEL:\s*([a-z]+)/i);
-  const copyMatch = text5.match(/COPY:\s*([\s\S]*)$/i);
+function parseGenerated(text6) {
+  const channelMatch = text6.match(/CHANNEL:\s*([a-z]+)/i);
+  const copyMatch = text6.match(/COPY:\s*([\s\S]*)$/i);
   const channelRaw = channelMatch ? channelMatch[1].toLowerCase() : "";
   return {
     channel: CHANNELS.includes(channelRaw) ? channelRaw : "unknown",
     // If the model ignored the format, fall back to the whole text as the copy so
     // we never lose the draft — the auditor will still clean whatever we pass it.
-    copy: (copyMatch ? copyMatch[1] : text5).trim()
+    copy: (copyMatch ? copyMatch[1] : text6).trim()
   };
 }
-function parseAudit(text5) {
-  const verdictMatch = text5.match(/VERDICT:\s*(PASS|REVISE)/i);
-  const fixedMatch = text5.match(/FIXED:\s*(.+)/i);
-  const copyMatch = text5.match(/COPY:\s*([\s\S]*)$/i);
+function parseAudit(text6) {
+  const verdictMatch = text6.match(/VERDICT:\s*(PASS|REVISE)/i);
+  const fixedMatch = text6.match(/FIXED:\s*(.+)/i);
+  const copyMatch = text6.match(/COPY:\s*([\s\S]*)$/i);
   return {
     verdict: verdictMatch ? verdictMatch[1].toUpperCase() : "REVISE",
     fixed: fixedMatch ? fixedMatch[1].trim() : "",
-    copy: (copyMatch ? copyMatch[1] : text5).trim()
+    copy: (copyMatch ? copyMatch[1] : text6).trim()
   };
 }
 async function generateOnBrand({ apiKey, userName = "Garrett", messages, maxRounds = DEFAULT_MAX_ROUNDS }) {
@@ -11685,7 +12612,7 @@ async function generateOnBrand({ apiKey, userName = "Garrett", messages, maxRoun
 var CHANNELS, DEFAULT_MAX_ROUNDS;
 var init_voice_engine = __esm({
   "lib/voice-engine.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_voice_standard();
     init_cos_anthropic();
     init_slop_lint();
@@ -11703,21 +12630,21 @@ var init_voice_engine = __esm({
 
 // lib/ask-amari-router.js
 function routeAskAmariRequest({ message, previousMode } = {}) {
-  const text5 = typeof message === "string" ? message.trim() : "";
-  if (!text5) return "ask";
-  if (previousMode === "write" && /\b(?:make it|shorter|longer|warmer|friendlier|more direct|try again|another version|change (?:it|that))\b/i.test(text5)) {
+  const text6 = typeof message === "string" ? message.trim() : "";
+  if (!text6) return "ask";
+  if (previousMode === "write" && /\b(?:make it|shorter|longer|warmer|friendlier|more direct|try again|another version|change (?:it|that))\b/i.test(text6)) {
     return "write";
   }
-  if (COPY_TARGET.test(text5) || REQUESTS_COPY.test(text5) || SOFT_REWRITE.test(text5)) return "write";
-  if (OPERATION_TARGET.test(text5) || FACTUAL_OR_OPERATIONS_REQUEST.test(text5)) return "ask";
-  if (REWRITE_REQUEST.test(text5) || DRAFT_REQUEST.test(text5)) return "write";
-  if (/^(?:please\s+)?(?:text|email|message)\s+\S+/i.test(text5)) return "write";
+  if (COPY_TARGET.test(text6) || REQUESTS_COPY.test(text6) || SOFT_REWRITE.test(text6)) return "write";
+  if (OPERATION_TARGET.test(text6) || FACTUAL_OR_OPERATIONS_REQUEST.test(text6)) return "ask";
+  if (REWRITE_REQUEST.test(text6) || DRAFT_REQUEST.test(text6)) return "write";
+  if (/^(?:please\s+)?(?:text|email|message)\s+\S+/i.test(text6)) return "write";
   return "ask";
 }
 var REWRITE_REQUEST, DRAFT_REQUEST, COPY_TARGET, REQUESTS_COPY, OPERATION_TARGET, SOFT_REWRITE, FACTUAL_OR_OPERATIONS_REQUEST;
 var init_ask_amari_router = __esm({
   "lib/ask-amari-router.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     REWRITE_REQUEST = /\b(?:rewrite|reword|de-?slop|polish|proofread|shorten|lengthen)\b/i;
     DRAFT_REQUEST = /\b(?:draft|write|edit)\b/i;
     COPY_TARGET = /\b(?:text|sms|email|message|subject(?: line)?|caption|ad(?: copy)?|website copy|headline|follow-?up|copy|letter|note)\b/i;
@@ -11748,11 +12675,11 @@ function jsonResponse2(data, status, origin) {
 function todayKey() {
   return (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
 }
-function parseActions(text5) {
+function parseActions(text6) {
   const actions = [];
   const regex = /<!--ACTION:(.*?)-->/gs;
   let match2;
-  while ((match2 = regex.exec(text5)) !== null) {
+  while ((match2 = regex.exec(text6)) !== null) {
     try {
       const parsed = JSON.parse(match2[1]);
       actions.push({
@@ -11766,14 +12693,14 @@ function parseActions(text5) {
   }
   return actions;
 }
-function stripActions(text5) {
-  return text5.replace(/<!--ACTION:.*?-->/gs, "").trim();
+function stripActions(text6) {
+  return text6.replace(/<!--ACTION:.*?-->/gs, "").trim();
 }
-function parseContextUpdates(text5) {
+function parseContextUpdates(text6) {
   const updates = [];
   const regex = /<!--CONTEXT:(.*?)-->/gs;
   let match2;
-  while ((match2 = regex.exec(text5)) !== null) {
+  while ((match2 = regex.exec(text6)) !== null) {
     try {
       updates.push(JSON.parse(match2[1]));
     } catch {
@@ -11781,14 +12708,14 @@ function parseContextUpdates(text5) {
   }
   return updates;
 }
-function stripContext(text5) {
-  return text5.replace(/<!--CONTEXT:.*?-->/gs, "").trim();
+function stripContext(text6) {
+  return text6.replace(/<!--CONTEXT:.*?-->/gs, "").trim();
 }
-function parseReminders(text5) {
+function parseReminders(text6) {
   const reminders = [];
   const regex = /<!--REMINDER:(.*?)-->/gs;
   let match2;
-  while ((match2 = regex.exec(text5)) !== null) {
+  while ((match2 = regex.exec(text6)) !== null) {
     try {
       reminders.push(JSON.parse(match2[1]));
     } catch {
@@ -11796,14 +12723,14 @@ function parseReminders(text5) {
   }
   return reminders;
 }
-function stripReminders(text5) {
-  return text5.replace(/<!--REMINDER:.*?-->/gs, "").trim();
+function stripReminders(text6) {
+  return text6.replace(/<!--REMINDER:.*?-->/gs, "").trim();
 }
-function parseSpotifyActions(text5) {
+function parseSpotifyActions(text6) {
   const actions = [];
   const regex = /<!--SPOTIFY:(.*?)-->/gs;
   let match2;
-  while ((match2 = regex.exec(text5)) !== null) {
+  while ((match2 = regex.exec(text6)) !== null) {
     try {
       actions.push(JSON.parse(match2[1]));
     } catch {
@@ -11811,8 +12738,8 @@ function parseSpotifyActions(text5) {
   }
   return actions;
 }
-function stripSpotify(text5) {
-  return text5.replace(/<!--SPOTIFY:.*?-->/gs, "").trim();
+function stripSpotify(text6) {
+  return text6.replace(/<!--SPOTIFY:.*?-->/gs, "").trim();
 }
 function writerHistory(messages) {
   let first = messages.length - 1;
@@ -12158,7 +13085,7 @@ async function getGhlSummary(context) {
     const eventsUrl = /* @__PURE__ */ __name((calId) => `https://services.leadconnectorhq.com/calendars/events?locationId=${locationId}&calendarId=${calId}&startTime=${String(dayStartMs)}&endTime=${String(dayEndMs)}`, "eventsUrl");
     const [pipeResp, ...calResps] = await Promise.all([
       ghlFetch(context, `https://services.leadconnectorhq.com/opportunities/search?location_id=${locationId}&limit=100`),
-      ...CALENDAR_IDS.map((id2) => ghlFetch(context, eventsUrl(id2)).catch(() => null))
+      ...CALENDAR_IDS.map((id3) => ghlFetch(context, eventsUrl(id3)).catch(() => null))
     ]);
     const lines = [];
     const eventsById = /* @__PURE__ */ new Map();
@@ -12399,28 +13326,28 @@ function extractParkingLocation(message) {
 function findParkingLocationInHistory(messages) {
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
-    const text5 = m.content || "";
-    if (!mentionsParking(text5)) continue;
-    const loc = extractParkingLocation(text5);
+    const text6 = m.content || "";
+    if (!mentionsParking(text6)) continue;
+    const loc = extractParkingLocation(text6);
     if (loc) return loc;
   }
   for (let i = messages.length - 1; i >= 0; i--) {
     const m = messages[i];
     if (m.role !== "assistant") continue;
-    const text5 = m.content || "";
-    if (!mentionsParking(text5)) continue;
-    const streetMatch = text5.match(/(?:at|on|near)\s+([\w\s]+?(?:street|st|ave|avenue|blvd|boulevard|road|rd|way|drive|dr|place|pl|court|ct|lane|ln)\b[\w\s]*?(?:at|and|&|\/)\s*[\w\s]+)/i);
+    const text6 = m.content || "";
+    if (!mentionsParking(text6)) continue;
+    const streetMatch = text6.match(/(?:at|on|near)\s+([\w\s]+?(?:street|st|ave|avenue|blvd|boulevard|road|rd|way|drive|dr|place|pl|court|ct|lane|ln)\b[\w\s]*?(?:at|and|&|\/)\s*[\w\s]+)/i);
     if (streetMatch) return streetMatch[1].trim();
   }
   return null;
 }
-async function onRequestOptions12(context) {
+async function onRequestOptions13(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders10(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost11(context) {
+async function onRequestPost12(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders10(origin);
   const authHeader = context.request.headers.get("Authorization") || "";
@@ -12829,7 +13756,7 @@ ${actionSummary}`;
 var LEDGER_FIELD_DEFS, ALLOWED_ORIGINS9, SKIP_WORDS;
 var init_cos_chat = __esm({
   "api/cos-chat.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     init_endpoint_guards();
     init_google_api();
@@ -13050,8 +13977,8 @@ var init_cos_chat = __esm({
     __name(mentionsParking, "mentionsParking");
     __name(extractParkingLocation, "extractParkingLocation");
     __name(findParkingLocationInHistory, "findParkingLocationInHistory");
-    __name(onRequestOptions12, "onRequestOptions");
-    __name(onRequestPost11, "onRequestPost");
+    __name(onRequestOptions13, "onRequestOptions");
+    __name(onRequestPost12, "onRequestPost");
   }
 });
 
@@ -13071,13 +13998,13 @@ function jsonResponse3(data, status, origin) {
     headers: { ...corsHeaders11(origin), "Content-Type": "application/json" }
   });
 }
-async function onRequestOptions13(context) {
+async function onRequestOptions14(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders11(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost12(context) {
+async function onRequestPost13(context) {
   const origin = context.request.headers.get("Origin") || "";
   const serviceKey = context.request.headers.get("X-Service-Key");
   if (!serviceKey || serviceKey !== context.env.COS_SERVICE_KEY) {
@@ -13103,15 +14030,15 @@ async function onRequestPost12(context) {
 var ALLOWED_ORIGINS10;
 var init_cos_daily_sync = __esm({
   "api/cos-daily-sync.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     ALLOWED_ORIGINS10 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
     ];
     __name(corsHeaders11, "corsHeaders");
     __name(jsonResponse3, "jsonResponse");
-    __name(onRequestOptions13, "onRequestOptions");
-    __name(onRequestPost12, "onRequestPost");
+    __name(onRequestOptions14, "onRequestOptions");
+    __name(onRequestPost13, "onRequestPost");
   }
 });
 
@@ -13131,13 +14058,13 @@ function jsonResponse4(data, status, origin) {
     headers: { ...corsHeaders12(origin), "Content-Type": "application/json" }
   });
 }
-async function onRequestOptions14(context) {
+async function onRequestOptions15(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders12(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost13(context) {
+async function onRequestPost14(context) {
   const origin = context.request.headers.get("Origin") || "";
   const serviceKey = context.request.headers.get("X-Service-Key");
   if (!serviceKey || serviceKey !== context.env.COS_SERVICE_KEY) {
@@ -13171,15 +14098,15 @@ async function onRequestPost13(context) {
 var ALLOWED_ORIGINS11;
 var init_cos_ghl_sync = __esm({
   "api/cos-ghl-sync.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     ALLOWED_ORIGINS11 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
     ];
     __name(corsHeaders12, "corsHeaders");
     __name(jsonResponse4, "jsonResponse");
-    __name(onRequestOptions14, "onRequestOptions");
-    __name(onRequestPost13, "onRequestPost");
+    __name(onRequestOptions15, "onRequestOptions");
+    __name(onRequestPost14, "onRequestPost");
   }
 });
 
@@ -13204,10 +14131,10 @@ function response(data, status, origin) {
     headers: { ...cors(origin), "Content-Type": "application/json" }
   });
 }
-async function onRequestOptions15(context) {
+async function onRequestOptions16(context) {
   return new Response(null, { status: 204, headers: cors(context.request.headers.get("Origin") || "") });
 }
-async function onRequestPost14(context) {
+async function onRequestPost15(context) {
   const origin = context.request.headers.get("Origin") || "";
   const token = context.request.headers.get("Authorization")?.replace(/^Bearer\s+/i, "");
   if (!token || !context.env.JWT_SECRET) return response({ error: "Unauthorized" }, 401, origin);
@@ -13244,7 +14171,7 @@ async function onRequestPost14(context) {
 var AUTH_URL, CALLBACK_URL, GOOGLE_WORKSPACE_SCOPES, STATE_TTL_SECONDS, ALLOWED_ORIGINS12;
 var init_cos_google_auth = __esm({
   "api/cos-google-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
@@ -13258,8 +14185,8 @@ var init_cos_google_auth = __esm({
     __name(cors, "cors");
     __name(stateValue, "stateValue");
     __name(response, "response");
-    __name(onRequestOptions15, "onRequestOptions");
-    __name(onRequestPost14, "onRequestPost");
+    __name(onRequestOptions16, "onRequestOptions");
+    __name(onRequestPost15, "onRequestPost");
   }
 });
 
@@ -13273,7 +14200,7 @@ function redirect(url) {
     headers: { Location: url, "Cache-Control": "no-store" }
   });
 }
-async function onRequestGet9(context) {
+async function onRequestGet10(context) {
   const url = new URL(context.request.url);
   const state = url.searchParams.get("state") || "";
   const code = url.searchParams.get("code") || "";
@@ -13332,14 +14259,14 @@ async function onRequestGet9(context) {
 var TOKEN_URL, CALLBACK_URL2, SUCCESS_URL, FAILURE_URL;
 var init_cos_google_callback = __esm({
   "api/cos-google-callback.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     TOKEN_URL = "https://oauth2.googleapis.com/token";
     CALLBACK_URL2 = "https://www.amarimethod.com/api/cos-google-callback";
     SUCCESS_URL = "https://www.amarimethod.com/cos/?google=connected";
     FAILURE_URL = "https://www.amarimethod.com/cos/?google=failed";
     __name(todayKey2, "todayKey");
     __name(redirect, "redirect");
-    __name(onRequestGet9, "onRequestGet");
+    __name(onRequestGet10, "onRequestGet");
   }
 });
 
@@ -13354,7 +14281,7 @@ async function probeGoogleCalendar(context) {
   });
   if (!response2.ok) throw new Error(`Google Calendar ${response2.status} readiness probe failed`);
 }
-async function onRequestGet10(context) {
+async function onRequestGet11(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const checkedAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -13400,7 +14327,7 @@ async function onRequestGet10(context) {
 var HEADERS3;
 var init_cos_health = __esm({
   "api/cos-health.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_auth();
     init_cos_anthropic();
     init_google_api();
@@ -13408,7 +14335,7 @@ var init_cos_health = __esm({
     HEADERS3 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
     __name(record, "record");
     __name(probeGoogleCalendar, "probeGoogleCalendar");
-    __name(onRequestGet10, "onRequestGet");
+    __name(onRequestGet11, "onRequestGet");
   }
 });
 
@@ -13443,13 +14370,13 @@ async function authenticate2(request, env) {
     return null;
   }
 }
-function onRequestOptions16(context) {
+function onRequestOptions17(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders13(context.request.headers.get("Origin") || "")
   });
 }
-async function onRequestGet11(context) {
+async function onRequestGet12(context) {
   const origin = context.request.headers.get("Origin") || "";
   const auth = await authenticate2(context.request, context.env);
   if (!auth) return jsonResponse5({ error: "Unauthorized" }, 401, origin);
@@ -13465,20 +14392,20 @@ async function onRequestGet11(context) {
 var ALLOWED_ORIGINS13;
 var init_cos_parking_current = __esm({
   "api/cos-parking-current.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     init_cos_parking();
     ALLOWED_ORIGINS13 = ["https://www.amarimethod.com", "https://amarimethod.com"];
     __name(corsHeaders13, "corsHeaders");
     __name(jsonResponse5, "jsonResponse");
     __name(authenticate2, "authenticate");
-    __name(onRequestOptions16, "onRequestOptions");
-    __name(onRequestGet11, "onRequestGet");
+    __name(onRequestOptions17, "onRequestOptions");
+    __name(onRequestGet12, "onRequestGet");
   }
 });
 
 // api/cos-parking-seed.js
-async function onRequestPost15(context) {
+async function onRequestPost16(context) {
   const { request, env } = context;
   const provided = request.headers.get("X-Service-Key") || "";
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
@@ -13524,7 +14451,7 @@ async function onRequestPost15(context) {
     headers: JSON_HEADERS2
   });
 }
-async function onRequestGet12(context) {
+async function onRequestGet13(context) {
   const { request, env } = context;
   const provided = request.headers.get("X-Service-Key") || "";
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
@@ -13539,13 +14466,13 @@ async function onRequestGet12(context) {
     headers: JSON_HEADERS2
   });
 }
-function onRequestOptions17() {
+function onRequestOptions18() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
 var DATASF_URL, PAGE_SIZE, MAX_PAGES, CORS_HEADERS, JSON_HEADERS2;
 var init_cos_parking_seed = __esm({
   "api/cos-parking-seed.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_cos_parking();
     DATASF_URL = "https://data.sfgov.org/resource/yhqp-riqs.json";
     PAGE_SIZE = 5e3;
@@ -13556,14 +14483,14 @@ var init_cos_parking_seed = __esm({
       "Access-Control-Allow-Headers": "Content-Type, X-Service-Key"
     };
     JSON_HEADERS2 = { "content-type": "application/json", ...CORS_HEADERS };
-    __name(onRequestPost15, "onRequestPost");
-    __name(onRequestGet12, "onRequestGet");
-    __name(onRequestOptions17, "onRequestOptions");
+    __name(onRequestPost16, "onRequestPost");
+    __name(onRequestGet13, "onRequestGet");
+    __name(onRequestOptions18, "onRequestOptions");
   }
 });
 
 // api/cos-spotify-auth.js
-async function onRequestGet13(context) {
+async function onRequestGet14(context) {
   const clientId = context.env.SPOTIFY_CLIENT_ID;
   if (!clientId) {
     return new Response("SPOTIFY_CLIENT_ID not configured", { status: 500 });
@@ -13581,7 +14508,7 @@ async function onRequestGet13(context) {
 var SPOTIFY_AUTH_URL, SCOPES;
 var init_cos_spotify_auth = __esm({
   "api/cos-spotify-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
     SCOPES = [
       "user-read-playback-state",
@@ -13592,12 +14519,12 @@ var init_cos_spotify_auth = __esm({
       "playlist-modify-private",
       "user-library-read"
     ].join(" ");
-    __name(onRequestGet13, "onRequestGet");
+    __name(onRequestGet14, "onRequestGet");
   }
 });
 
 // api/cos-spotify-callback.js
-async function onRequestGet14(context) {
+async function onRequestGet15(context) {
   const url = new URL(context.request.url);
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
@@ -13707,9 +14634,9 @@ function errorPage(message) {
 var SPOTIFY_TOKEN_URL2;
 var init_cos_spotify_callback = __esm({
   "api/cos-spotify-callback.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     SPOTIFY_TOKEN_URL2 = "https://accounts.spotify.com/api/token";
-    __name(onRequestGet14, "onRequestGet");
+    __name(onRequestGet15, "onRequestGet");
     __name(successPage, "successPage");
     __name(errorPage, "errorPage");
   }
@@ -13731,13 +14658,13 @@ function jsonResponse6(data, status, origin) {
     headers: { ...corsHeaders14(origin), "Content-Type": "application/json" }
   });
 }
-async function onRequestOptions18(context) {
+async function onRequestOptions19(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders14(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost16(context) {
+async function onRequestPost17(context) {
   const origin = context.request.headers.get("Origin") || "";
   const serviceKey = context.request.headers.get("X-Service-Key");
   if (!serviceKey || serviceKey !== context.env.COS_SERVICE_KEY) {
@@ -13770,15 +14697,15 @@ async function onRequestPost16(context) {
 var ALLOWED_ORIGINS14;
 var init_cos_vault_sync = __esm({
   "api/cos-vault-sync.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     ALLOWED_ORIGINS14 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
     ];
     __name(corsHeaders14, "corsHeaders");
     __name(jsonResponse6, "jsonResponse");
-    __name(onRequestOptions18, "onRequestOptions");
-    __name(onRequestPost16, "onRequestPost");
+    __name(onRequestOptions19, "onRequestOptions");
+    __name(onRequestPost17, "onRequestPost");
   }
 });
 
@@ -13786,7 +14713,7 @@ var init_cos_vault_sync = __esm({
 function todayPacific() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: PT2 }).format(/* @__PURE__ */ new Date());
 }
-async function onRequestGet15(context) {
+async function onRequestGet16(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers4 = {
@@ -13813,12 +14740,12 @@ async function onRequestGet15(context) {
 var PT2, AUDIT_KV_PREFIX;
 var init_daily_audit = __esm({
   "api/daily-audit.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_auth();
     PT2 = "America/Los_Angeles";
     AUDIT_KV_PREFIX = "ops:daily-audit:";
     __name(todayPacific, "todayPacific");
-    __name(onRequestGet15, "onRequestGet");
+    __name(onRequestGet16, "onRequestGet");
   }
 });
 
@@ -13826,7 +14753,7 @@ var init_daily_audit = __esm({
 function todayPacific2() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: PT3 }).format(/* @__PURE__ */ new Date());
 }
-async function onRequestGet16(context) {
+async function onRequestGet17(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers4 = {
@@ -13853,12 +14780,12 @@ async function onRequestGet16(context) {
 var PT3, SCAN_KV_PREFIX;
 var init_ecosystem_scan = __esm({
   "api/ecosystem-scan.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_auth();
     PT3 = "America/Los_Angeles";
     SCAN_KV_PREFIX = "ops:ecosystem-scan:";
     __name(todayPacific2, "todayPacific");
-    __name(onRequestGet16, "onRequestGet");
+    __name(onRequestGet17, "onRequestGet");
   }
 });
 
@@ -13875,13 +14802,13 @@ function corsHeaders15(origin) {
 function isValidEmail2(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""));
 }
-async function onRequestOptions19(context) {
+async function onRequestOptions20(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders15(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost17(context) {
+async function onRequestPost18(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders15(origin);
   headers4["Content-Type"] = "application/json";
@@ -13939,7 +14866,7 @@ async function onRequestPost17(context) {
 var GHL_API_BASE8, GHL_LOCATION_ID6, ALLOWED_ORIGINS15;
 var init_elbow_study_interest = __esm({
   "api/elbow-study-interest.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     GHL_API_BASE8 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
@@ -13949,8 +14876,8 @@ var init_elbow_study_interest = __esm({
     ];
     __name(corsHeaders15, "corsHeaders");
     __name(isValidEmail2, "isValidEmail");
-    __name(onRequestOptions19, "onRequestOptions");
-    __name(onRequestPost17, "onRequestPost");
+    __name(onRequestOptions20, "onRequestOptions");
+    __name(onRequestPost18, "onRequestPost");
   }
 });
 
@@ -13958,7 +14885,7 @@ var init_elbow_study_interest = __esm({
 var STUDIES, STUDY_CALENDAR_ID, STUDY_TAGS;
 var init_studies = __esm({
   "lib/studies.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     STUDIES = {
       "tennis-elbow": {
         slug: "tennis-elbow",
@@ -14073,7 +15000,7 @@ function wantsPublishOptIn(publishOptIn) {
 var STUDY_PUBLISH_OPT_IN_TAG;
 var init_study_consent = __esm({
   "lib/study-consent.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     STUDY_PUBLISH_OPT_IN_TAG = "study-publish-opt-in";
     __name(wantsPublishOptIn, "wantsPublishOptIn");
   }
@@ -14101,7 +15028,7 @@ function legacyStudySignupDisabledResponse(headers4, studySlug) {
 var LIVE_STUDY_SLUGS;
 var init_legacy_study_signup = __esm({
   "lib/legacy-study-signup.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     LIVE_STUDY_SLUGS = /* @__PURE__ */ new Set([
       "tennis-elbow",
       "tmj",
@@ -14136,13 +15063,13 @@ function isValidPhone(phone) {
 function isValidEmail3(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
 }
-async function onRequestOptions20(context) {
+async function onRequestOptions21(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders16(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost18(context) {
+async function onRequestPost19(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders16(origin);
   headers4["Content-Type"] = "application/json";
@@ -14228,7 +15155,7 @@ async function onRequestPost18(context) {
 var GHL_API_BASE9, GHL_LOCATION_ID7, STUDY, STUDY_NAME_FIELD_ID, ALLOWED_ORIGINS16;
 var init_elbow_study_signup = __esm({
   "api/elbow-study-signup.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -14245,8 +15172,8 @@ var init_elbow_study_signup = __esm({
     __name(splitName, "splitName");
     __name(isValidPhone, "isValidPhone");
     __name(isValidEmail3, "isValidEmail");
-    __name(onRequestOptions20, "onRequestOptions");
-    __name(onRequestPost18, "onRequestPost");
+    __name(onRequestOptions21, "onRequestOptions");
+    __name(onRequestPost19, "onRequestPost");
   }
 });
 
@@ -14273,13 +15200,13 @@ function isValidPhone2(phone) {
 function isValidEmail4(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
 }
-async function onRequestOptions21(context) {
+async function onRequestOptions22(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders17(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost19(context) {
+async function onRequestPost20(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders17(origin);
   headers4["Content-Type"] = "application/json";
@@ -14365,7 +15292,7 @@ async function onRequestPost19(context) {
 var GHL_API_BASE10, GHL_LOCATION_ID8, STUDY2, STUDY_NAME_FIELD_ID2, ALLOWED_ORIGINS17;
 var init_foot_study_signup = __esm({
   "api/foot-study-signup.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -14382,8 +15309,8 @@ var init_foot_study_signup = __esm({
     __name(splitName2, "splitName");
     __name(isValidPhone2, "isValidPhone");
     __name(isValidEmail4, "isValidEmail");
-    __name(onRequestOptions21, "onRequestOptions");
-    __name(onRequestPost19, "onRequestPost");
+    __name(onRequestOptions22, "onRequestOptions");
+    __name(onRequestPost20, "onRequestPost");
   }
 });
 
@@ -14398,7 +15325,7 @@ function timingSafeEqual3(a, b) {
   }
   return mismatch === 0;
 }
-async function onRequestGet17(context) {
+async function onRequestGet18(context) {
   if (context.env.GHL_TOKEN_EXPORT_ENABLED !== "true") {
     return new Response("Not found", { status: 404 });
   }
@@ -14434,10 +15361,10 @@ async function onRequestGet17(context) {
 var LOCATION_ID2;
 var init_ghl_export_tokens = __esm({
   "api/ghl-export-tokens.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     LOCATION_ID2 = "7pIO7FHVAyBT1jKGhfQM";
     __name(timingSafeEqual3, "timingSafeEqual");
-    __name(onRequestGet17, "onRequestGet");
+    __name(onRequestGet18, "onRequestGet");
   }
 });
 
@@ -14485,7 +15412,7 @@ async function appendAutomationEvent(db, r) {
 var UPGRADE_OFFER_DELAY_MS, GUARD_TAGS;
 var init_upgrade_offer = __esm({
   "lib/upgrade-offer.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     UPGRADE_OFFER_DELAY_MS = 3 * 864e5;
     GUARD_TAGS = ["ambassador-prospect", "affiliate-partner"];
     __name(changesOf4, "changesOf");
@@ -14567,7 +15494,7 @@ async function recordSeriesPurchase(context, { contactId, seriesType, classifica
 var MODE, FROM, FOUNDER_FULFILLMENT_CONFIRMATION;
 var init_purchase_confirmations = __esm({
   "lib/purchase-confirmations.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_upgrade_offer();
     init_ghl_send();
     MODE = "shadow";
@@ -14852,7 +15779,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
 var GHL_API_BASE11, LOCATION_ID3, CURRENCY;
 var init_staff_pos_invoice_bridge = __esm({
   "lib/staff-pos-invoice-bridge.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_ghl_products();
     GHL_API_BASE11 = "https://services.leadconnectorhq.com";
@@ -14879,9 +15806,9 @@ function cleanText(value, max) {
 function validCents(value) {
   return Number.isSafeInteger(value) && value > 0 && value <= MAX_AMOUNT_CENTS;
 }
-function knownFields(value, allowed, subject = "cart") {
+function knownFields(value, allowed, subject2 = "cart") {
   for (const key of Object.keys(value || {})) {
-    if (!allowed.has(key)) throw new Error(`Unknown ${subject} field: ${key}`);
+    if (!allowed.has(key)) throw new Error(`Unknown ${subject2} field: ${key}`);
   }
 }
 function normalizeCart(rawCart, catalog = POS_CATALOG) {
@@ -14934,15 +15861,15 @@ function cartTotal(cart) {
 }
 function normalizeClient(raw) {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("A client is required");
-  const id2 = cleanText(raw.id, 100);
+  const id3 = cleanText(raw.id, 100);
   const name = cleanText(raw.name, 160);
   const phone = cleanText(raw.phone, 40);
   const email = cleanText(raw.email, 160).toLowerCase();
-  if (!/^[A-Za-z0-9_-]{8,100}$/.test(id2)) throw new Error("Invalid client");
+  if (!/^[A-Za-z0-9_-]{8,100}$/.test(id3)) throw new Error("Invalid client");
   if (!name) throw new Error("Client name is required");
   if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Client email is invalid");
   if (!phone && !email) throw new Error("Add a phone number or email address");
-  return Object.freeze({ id: id2, name, phone: phone || null, email: email || null });
+  return Object.freeze({ id: id3, name, phone: phone || null, email: email || null });
 }
 function normalizePaymentLegs(rawLegs, totalCents) {
   if (!Array.isArray(rawLegs)) throw new Error("Payment allocations are required");
@@ -15067,11 +15994,11 @@ function posSessionKey(sessionId) {
   if (!/^cs_[A-Za-z0-9_]+$/.test(sessionId || "")) throw new Error("Invalid Checkout Session id");
   return `staff-pos:session:${sessionId}`;
 }
-function posSaleKey(id2) {
-  if (!/^pos_[a-z0-9-]{8,80}$/i.test(id2 || "")) throw new Error("Invalid POS sale id");
-  return `staff-pos:sale:${id2}`;
+function posSaleKey(id3) {
+  if (!/^pos_[a-z0-9-]{8,80}$/i.test(id3 || "")) throw new Error("Invalid POS sale id");
+  return `staff-pos:sale:${id3}`;
 }
-function buildPosSale({ id: id2, client, cart, paymentLegs, reviewer, now, catalog }) {
+function buildPosSale({ id: id3, client, cart, paymentLegs, reviewer, now, catalog }) {
   const normalizedClient = normalizeClient(client);
   const normalizedCart = normalizeCart(cart, catalog);
   const totalCents = cartTotal(normalizedCart);
@@ -15079,7 +16006,7 @@ function buildPosSale({ id: id2, client, cart, paymentLegs, reviewer, now, catal
   const at = now || (/* @__PURE__ */ new Date()).toISOString();
   const reviewerName = cleanText(reviewer, 80) || "Staff";
   return {
-    id: id2,
+    id: id3,
     status: "draft",
     version: 1,
     client: normalizedClient,
@@ -15150,9 +16077,9 @@ function buildInactiveTextPreview(sale, reviewer, now) {
     preview: { recipient: sale.client.phone, amountCents: linkLeg.amountCents, message, sendingEnabled: false }
   };
 }
-async function readPosSale(kv, id2) {
+async function readPosSale(kv, id3) {
   if (!kv) throw new Error("POS storage is not configured");
-  return kv.get(posSaleKey(id2), "json");
+  return kv.get(posSaleKey(id3), "json");
 }
 async function writePosSale(kv, sale) {
   if (!kv) throw new Error("POS storage is not configured");
@@ -15162,7 +16089,7 @@ async function writePosSale(kv, sale) {
 var MAX_CART_LINES, MAX_AMOUNT_CENTS, MAX_CUSTOM_LABEL, MAX_LEGS, POS_CATALOG, POS_PAYMENT_METHODS, STRIPE_CHECKOUT_METHODS, POS_SALE_STATUSES, POS_LEG_STATUSES;
 var init_staff_pos = __esm({
   "lib/staff-pos.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     MAX_CART_LINES = 24;
     MAX_AMOUNT_CENTS = 2e6;
     MAX_CUSTOM_LABEL = 120;
@@ -15226,7 +16153,7 @@ function mapReceipt(row) {
     issuedBy: row.issued_by
   };
 }
-async function issueOwnedReceipt(db, sale, { actor = "Staff POS", now, id: id2 } = {}) {
+async function issueOwnedReceipt(db, sale, { actor = "Staff POS", now, id: id3 } = {}) {
   if (!db) throw new Error("Owned receipt storage is not configured");
   if (!sale?.id || sale.status !== "paid") throw new Error("Only a paid sale can receive a receipt");
   if (!ownedNoEffectCart(sale.cart)) throw new Error("Owned receipts accept only no-effect product carts");
@@ -15242,7 +16169,7 @@ async function issueOwnedReceipt(db, sale, { actor = "Staff POS", now, id: id2 }
   if (existing) return mapReceipt(existing);
   const issuedAt = now || (/* @__PURE__ */ new Date()).toISOString();
   const paidAt = (sale.paymentLegs || []).filter((leg) => leg?.status === "paid" && leg?.paidAt).map((leg) => leg.paidAt).sort().at(-1) || issuedAt;
-  const receiptId = id2 || `receipt-${crypto.randomUUID()}`;
+  const receiptId = id3 || `receipt-${crypto.randomUUID()}`;
   const issuedBy = String(actor || "Staff POS").trim().slice(0, 80) || "Staff POS";
   const statements = [
     db.prepare(`
@@ -15302,7 +16229,7 @@ async function issueOwnedReceipt(db, sale, { actor = "Staff POS", now, id: id2 }
 }
 var init_staff_pos_receipts = __esm({
   "lib/staff-pos-receipts.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(ownedNoEffectLine, "ownedNoEffectLine");
     __name(ownedNoEffectCart, "ownedNoEffectCart");
     __name(mapReceipt, "mapReceipt");
@@ -15311,8 +16238,8 @@ var init_staff_pos_receipts = __esm({
 });
 
 // lib/staff-pos-fulfill.js
-function contactField(contact, id2) {
-  const field = contact?.customFields?.find((candidate) => candidate.id === id2);
+function contactField(contact, id3) {
+  const field = contact?.customFields?.find((candidate) => candidate.id === id3);
   return field ? field.value ?? field.field_value ?? null : null;
 }
 function checkedField(value) {
@@ -15689,7 +16616,7 @@ async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) {
 var KV_TTL_SECONDS;
 var init_staff_pos_fulfill = __esm({
   "lib/staff-pos-fulfill.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_processed_events();
     init_ops_alert();
     init_ops_path_emit();
@@ -15773,7 +16700,7 @@ function extractField(body, keys) {
   }
   return null;
 }
-async function onRequestPost20(context) {
+async function onRequestPost21(context) {
   const headers4 = { "Content-Type": "application/json" };
   let wonD1ClaimKey = null;
   const releaseWonD1Claim = /* @__PURE__ */ __name(async () => {
@@ -16120,7 +17047,7 @@ async function onRequestPost20(context) {
         money: { product: pkg.name }
       });
     }
-    const canonicalProductId = Object.keys(GHL_PRODUCTS).find((id2) => GHL_PRODUCTS[id2].classification === pkg.classification) || null;
+    const canonicalProductId = Object.keys(GHL_PRODUCTS).find((id3) => GHL_PRODUCTS[id3].classification === pkg.classification) || null;
     if (canonicalProductId && !posSaleId) {
       emitNurtureEvent(context, { kind: "purchase", contactId: sanitizedContactId, productId: canonicalProductId });
     }
@@ -16228,7 +17155,7 @@ async function onRequestPost20(context) {
 var GHL_API_BASE12, LOCATION_ID4, KV_TTL_SECONDS2, INVOICE_PURCHASE_PRODUCTS, STAFF_POS_INVOICE_EFFECTS, FIELD_IDS2, TAGS_TO_REMOVE, DOWNSTREAM_TRIGGER_TAG;
 var init_ghl_invoice_webhook = __esm({
   "api/ghl-invoice-webhook.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_purchase_confirmations();
     init_ghl_products();
@@ -16274,7 +17201,7 @@ var init_ghl_invoice_webhook = __esm({
     __name(selectSeriesInvoice, "selectSeriesInvoice");
     __name(posSaleIdFromInvoice, "posSaleIdFromInvoice");
     __name(extractField, "extractField");
-    __name(onRequestPost20, "onRequestPost");
+    __name(onRequestPost21, "onRequestPost");
   }
 });
 
@@ -16282,7 +17209,7 @@ var init_ghl_invoice_webhook = __esm({
 function isForeignLocationToken(data, expectedLocationId = EXPECTED_LOCATION_ID) {
   return Boolean(data && data.locationId && data.locationId !== expectedLocationId);
 }
-async function onRequestGet18(context) {
+async function onRequestGet19(context) {
   try {
     const url = new URL(context.request.url);
     const code = url.searchParams.get("code");
@@ -16366,11 +17293,11 @@ async function onRequestGet18(context) {
 var GHL_TOKEN_URL2, EXPECTED_LOCATION_ID;
 var init_ghl_oauth_callback = __esm({
   "api/ghl-oauth-callback.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     GHL_TOKEN_URL2 = "https://services.leadconnectorhq.com/oauth/token";
     EXPECTED_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
     __name(isForeignLocationToken, "isForeignLocationToken");
-    __name(onRequestGet18, "onRequestGet");
+    __name(onRequestGet19, "onRequestGet");
   }
 });
 
@@ -16388,7 +17315,7 @@ function verifyGhlWebhookSecret(env, provided, dedicatedKey) {
 }
 var init_ghl_webhook_auth = __esm({
   "lib/ghl-webhook-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_safe_equal();
     __name(verifyGhlWebhookSecret, "verifyGhlWebhookSecret");
   }
@@ -16426,7 +17353,7 @@ function checkPackageBalance({ remaining, packageSize, attended = null }) {
 }
 var init_session_consistency = __esm({
   "lib/session-consistency.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(checkPackageBalance, "checkPackageBalance");
   }
 });
@@ -16631,7 +17558,7 @@ async function failBookingOperation(db, opKey, error, options = {}) {
 }
 var init_booking_operations = __esm({
   "lib/booking-operations.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(changesOf6, "changesOf");
     __name(normalizeRow, "normalizeRow");
     __name(sameRequest, "sameRequest");
@@ -16982,7 +17909,7 @@ function extractField2(body, keys) {
   }
   return null;
 }
-async function onRequestPost21(context) {
+async function onRequestPost22(context) {
   const headers4 = { "Content-Type": "application/json" };
   let assessmentOperationKey = null;
   let assessmentOperationClaimed = false;
@@ -17681,7 +18608,7 @@ async function onRequestPost21(context) {
 var GHL_API_BASE13, LOCATION_ID5, PAID_BOOKING_MAP, LEGACY_CREDITS, PRODUCT_MAP, REQUESTED_SLOT_FIELD_IDS, SLOT_ISO_RE, CHECKOUT_NOTE_SLOT_RE, FIELD_IDS3, KV_TTL_SECONDS3;
 var init_ghl_purchase_webhook = __esm({
   "api/ghl-purchase-webhook.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_ghl_products();
     init_ghl_fields();
@@ -17751,8 +18678,8 @@ var init_ghl_purchase_webhook = __esm({
     };
     PRODUCT_MAP = (() => {
       const m = { ...LEGACY_CREDITS };
-      for (const [id2, entry] of Object.entries(PURCHASE_CREDIT_MAP)) {
-        m[id2] = PAID_BOOKING_MAP[id2] ? { ...entry, ...PAID_BOOKING_MAP[id2] } : { ...entry };
+      for (const [id3, entry] of Object.entries(PURCHASE_CREDIT_MAP)) {
+        m[id3] = PAID_BOOKING_MAP[id3] ? { ...entry, ...PAID_BOOKING_MAP[id3] } : { ...entry };
       }
       return m;
     })();
@@ -17787,7 +18714,7 @@ var init_ghl_purchase_webhook = __esm({
     __name(fetchRecentOrder, "fetchRecentOrder");
     __name(fetchOrderDetail, "fetchOrderDetail");
     __name(extractField2, "extractField");
-    __name(onRequestPost21, "onRequestPost");
+    __name(onRequestPost22, "onRequestPost");
   }
 });
 
@@ -17814,13 +18741,13 @@ function isValidPhone3(phone) {
 function isValidEmail5(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
 }
-async function onRequestOptions22(context) {
+async function onRequestOptions23(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders18(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost22(context) {
+async function onRequestPost23(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders18(origin);
   headers4["Content-Type"] = "application/json";
@@ -17906,7 +18833,7 @@ async function onRequestPost22(context) {
 var GHL_API_BASE14, GHL_LOCATION_ID9, STUDY3, STUDY_NAME_FIELD_ID3, ALLOWED_ORIGINS18;
 var init_hand_study_signup = __esm({
   "api/hand-study-signup.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -17923,8 +18850,8 @@ var init_hand_study_signup = __esm({
     __name(splitName3, "splitName");
     __name(isValidPhone3, "isValidPhone");
     __name(isValidEmail5, "isValidEmail");
-    __name(onRequestOptions22, "onRequestOptions");
-    __name(onRequestPost22, "onRequestPost");
+    __name(onRequestOptions23, "onRequestOptions");
+    __name(onRequestPost23, "onRequestPost");
   }
 });
 
@@ -18001,7 +18928,7 @@ async function readAndJudgeBeats(kv) {
 var BEAT_PREFIX, HOUR3, HEARTBEAT_JOBS, JOBS_BY_NAME;
 var init_heartbeat = __esm({
   "lib/heartbeat.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     BEAT_PREFIX = "ops:beat:";
     HOUR3 = 3600 * 1e3;
     __name(beatKey, "beatKey");
@@ -18038,7 +18965,7 @@ var init_heartbeat = __esm({
 });
 
 // api/heartbeats.js
-async function onRequestGet19(context) {
+async function onRequestGet20(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const kv = context.env.PORTAL_KV;
@@ -18053,7 +18980,7 @@ async function onRequestGet19(context) {
   }
   return new Response(JSON.stringify(result), { status: 200, headers: JSON_HEADERS3 });
 }
-async function onRequestPost23(context) {
+async function onRequestPost24(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const kv = context.env.PORTAL_KV;
@@ -18083,12 +19010,12 @@ async function onRequestPost23(context) {
 var JSON_HEADERS3;
 var init_heartbeats = __esm({
   "api/heartbeats.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_auth();
     init_heartbeat();
     JSON_HEADERS3 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
-    __name(onRequestGet19, "onRequestGet");
-    __name(onRequestPost23, "onRequestPost");
+    __name(onRequestGet20, "onRequestGet");
+    __name(onRequestPost24, "onRequestPost");
   }
 });
 
@@ -18115,13 +19042,13 @@ function isValidPhone4(phone) {
 function isValidEmail6(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
 }
-async function onRequestOptions23(context) {
+async function onRequestOptions24(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders19(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost24(context) {
+async function onRequestPost25(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders19(origin);
   headers4["Content-Type"] = "application/json";
@@ -18207,7 +19134,7 @@ async function onRequestPost24(context) {
 var GHL_API_BASE15, GHL_LOCATION_ID10, STUDY4, STUDY_NAME_FIELD_ID4, ALLOWED_ORIGINS19;
 var init_jaw_study_signup = __esm({
   "api/jaw-study-signup.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -18224,8 +19151,8 @@ var init_jaw_study_signup = __esm({
     __name(splitName4, "splitName");
     __name(isValidPhone4, "isValidPhone");
     __name(isValidEmail6, "isValidEmail");
-    __name(onRequestOptions23, "onRequestOptions");
-    __name(onRequestPost24, "onRequestPost");
+    __name(onRequestOptions24, "onRequestOptions");
+    __name(onRequestPost25, "onRequestPost");
   }
 });
 
@@ -18252,13 +19179,13 @@ function corsHeaders20(origin) {
 function isValidEmail7(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""));
 }
-async function onRequestOptions24(context) {
+async function onRequestOptions25(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders20(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost25(context) {
+async function onRequestPost26(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders20(origin);
   headers4["Content-Type"] = "application/json";
@@ -18316,7 +19243,7 @@ async function onRequestPost25(context) {
 var GHL_API_BASE16, GHL_LOCATION_ID11, ALLOWED_ORIGINS20;
 var init_newsletter_signup = __esm({
   "api/newsletter-signup.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     GHL_API_BASE16 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID11 = "7pIO7FHVAyBT1jKGhfQM";
@@ -18331,8 +19258,8 @@ var init_newsletter_signup = __esm({
     __name(isAllowedOrigin2, "isAllowedOrigin");
     __name(corsHeaders20, "corsHeaders");
     __name(isValidEmail7, "isValidEmail");
-    __name(onRequestOptions24, "onRequestOptions");
-    __name(onRequestPost25, "onRequestPost");
+    __name(onRequestOptions25, "onRequestOptions");
+    __name(onRequestPost26, "onRequestPost");
   }
 });
 
@@ -18346,13 +19273,13 @@ function corsHeaders21(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions25(context) {
+async function onRequestOptions26(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders21(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet20(context) {
+async function onRequestGet21(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders21(origin), "Content-Type": "application/json" };
   try {
@@ -18401,7 +19328,7 @@ async function onRequestGet20(context) {
 var KV_COACH_PREFIX, ALLOWED_ORIGINS21;
 var init_outreach_coach = __esm({
   "api/outreach-coach.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     KV_COACH_PREFIX = "coach:";
     ALLOWED_ORIGINS21 = [
@@ -18409,8 +19336,8 @@ var init_outreach_coach = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders21, "corsHeaders");
-    __name(onRequestOptions25, "onRequestOptions");
-    __name(onRequestGet20, "onRequestGet");
+    __name(onRequestOptions26, "onRequestOptions");
+    __name(onRequestGet21, "onRequestGet");
   }
 });
 
@@ -18493,13 +19420,13 @@ async function findContactByEmail(email, apiKey) {
   }
   return null;
 }
-async function onRequestOptions26(context) {
+async function onRequestOptions27(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders22(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost26(context) {
+async function onRequestPost27(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders22(origin);
   headers4["Content-Type"] = "application/json";
@@ -18617,7 +19544,7 @@ async function onRequestPost26(context) {
 var GHL_API_BASE17, GHL_LOCATION_ID12, ALLOWED_ORIGINS22;
 var init_partner_auth = __esm({
   "api/partner-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_rate_limit();
     GHL_API_BASE17 = "https://services.leadconnectorhq.com";
@@ -18629,8 +19556,8 @@ var init_partner_auth = __esm({
     __name(corsHeaders22, "corsHeaders");
     __name(createToken2, "createToken");
     __name(findContactByEmail, "findContactByEmail");
-    __name(onRequestOptions26, "onRequestOptions");
-    __name(onRequestPost26, "onRequestPost");
+    __name(onRequestOptions27, "onRequestOptions");
+    __name(onRequestPost27, "onRequestPost");
   }
 });
 
@@ -18646,13 +19573,13 @@ function corsHeaders23(origin) {
   }
   return headers4;
 }
-async function onRequestOptions27(context) {
+async function onRequestOptions28(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders23(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet21(context) {
+async function onRequestGet22(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders23(origin);
   headers4["Content-Type"] = "application/json";
@@ -18853,7 +19780,7 @@ async function onRequestGet21(context) {
 var GHL_API_BASE18, GHL_LOCATION_ID13, REFERRAL_SOURCE_FIELD_ID2, PARTNER_CONTACT_ID_FIELD_ID2, REFERRAL_TYPE_FIELD_ID2, REFERRAL_FEE_STATUS_FIELD_ID2, ALLOWED_ORIGINS23;
 var init_partner_data = __esm({
   "api/partner-data.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     GHL_API_BASE18 = "https://services.leadconnectorhq.com";
@@ -18867,8 +19794,8 @@ var init_partner_data = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders23, "corsHeaders");
-    __name(onRequestOptions27, "onRequestOptions");
-    __name(onRequestGet21, "onRequestGet");
+    __name(onRequestOptions28, "onRequestOptions");
+    __name(onRequestGet22, "onRequestGet");
   }
 });
 
@@ -18894,13 +19821,13 @@ function corsHeaders24(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions28(context) {
+async function onRequestOptions29(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders24(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet22(context) {
+async function onRequestGet23(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders24(origin);
   headers4["Content-Type"] = "application/json";
@@ -19054,7 +19981,7 @@ async function onRequestGet22(context) {
 var GHL_API_BASE19, GHL_LOCATION_ID14, REFERRAL_SOURCE_FIELD_ID3, PARTNER_CONTACT_ID_FIELD_ID3, ALLOWED_ORIGINS24;
 var init_partner_stats = __esm({
   "api/partner-stats.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     GHL_API_BASE19 = "https://services.leadconnectorhq.com";
@@ -19067,8 +19994,8 @@ var init_partner_stats = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders24, "corsHeaders");
-    __name(onRequestOptions28, "onRequestOptions");
-    __name(onRequestGet22, "onRequestGet");
+    __name(onRequestOptions29, "onRequestOptions");
+    __name(onRequestGet23, "onRequestGet");
   }
 });
 
@@ -19119,13 +20046,13 @@ async function createSessionToken(payload, secret) {
   const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
   return `${data}.${sig}`;
 }
-async function onRequestOptions29(context) {
+async function onRequestOptions30(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders25(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet23(context) {
+async function onRequestGet24(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders25(origin);
   headers4["Content-Type"] = "application/json";
@@ -19208,7 +20135,7 @@ async function onRequestGet23(context) {
 var ALLOWED_ORIGINS25;
 var init_partner_verify = __esm({
   "api/partner-verify.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     ALLOWED_ORIGINS25 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -19216,8 +20143,8 @@ var init_partner_verify = __esm({
     __name(corsHeaders25, "corsHeaders");
     __name(verifyToken, "verifyToken");
     __name(createSessionToken, "createSessionToken");
-    __name(onRequestOptions29, "onRequestOptions");
-    __name(onRequestGet23, "onRequestGet");
+    __name(onRequestOptions30, "onRequestOptions");
+    __name(onRequestGet24, "onRequestGet");
   }
 });
 
@@ -19319,13 +20246,13 @@ async function findContactByEmail2(email, apiKey) {
   }
   return null;
 }
-async function onRequestOptions30(context) {
+async function onRequestOptions31(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders26(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost27(context) {
+async function onRequestPost28(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders26(origin);
   headers4["Content-Type"] = "application/json";
@@ -19446,7 +20373,7 @@ async function onRequestPost27(context) {
 var GHL_API_BASE20, GHL_LOCATION_ID15, ALLOWED_ORIGINS26;
 var init_portal_auth = __esm({
   "api/portal-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_rate_limit();
     init_ops_last_run();
@@ -19459,8 +20386,8 @@ var init_portal_auth = __esm({
     __name(corsHeaders26, "corsHeaders");
     __name(createToken3, "createToken");
     __name(findContactByEmail2, "findContactByEmail");
-    __name(onRequestOptions30, "onRequestOptions");
-    __name(onRequestPost27, "onRequestPost");
+    __name(onRequestOptions31, "onRequestOptions");
+    __name(onRequestPost28, "onRequestPost");
   }
 });
 
@@ -19542,11 +20469,11 @@ async function confirmAppointment(appointment, token) {
   }
   return { ...appointment, appointmentStatus: "confirmed" };
 }
-async function onRequestOptions31({ request }) {
+async function onRequestOptions32({ request }) {
   const origin = request.headers.get("Origin") || "";
   return new Response(null, { status: 204, headers: cors2(origin) });
 }
-async function onRequestPost28(context) {
+async function onRequestPost29(context) {
   const { request, env } = context;
   const origin = request.headers.get("Origin") || "";
   const GHL_API_KEY = await getGhlToken(context);
@@ -19770,7 +20697,7 @@ async function onRequestPost28(context) {
 var allowedOrigin, PORTAL_FOLLOWUP_CALENDARS, SESSIONS_REMAINING_FIELD_ID;
 var init_portal_book = __esm({
   "api/portal-book.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -19797,8 +20724,8 @@ var init_portal_book = __esm({
     __name(matchingPortalAppointments, "matchingPortalAppointments");
     __name(listContactAppointments, "listContactAppointments");
     __name(confirmAppointment, "confirmAppointment");
-    __name(onRequestOptions31, "onRequestOptions");
-    __name(onRequestPost28, "onRequestPost");
+    __name(onRequestOptions32, "onRequestOptions");
+    __name(onRequestPost29, "onRequestPost");
   }
 });
 
@@ -19812,13 +20739,13 @@ function corsHeaders27(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions32(context) {
+async function onRequestOptions33(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders27(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost29(context) {
+async function onRequestPost30(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders27(origin);
   headers4["Content-Type"] = "application/json";
@@ -19915,7 +20842,7 @@ async function onRequestPost29(context) {
 var GHL_API_BASE21, ALLOWED_ORIGINS27;
 var init_portal_cancel = __esm({
   "api/portal-cancel.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     GHL_API_BASE21 = "https://services.leadconnectorhq.com";
@@ -19924,8 +20851,8 @@ var init_portal_cancel = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders27, "corsHeaders");
-    __name(onRequestOptions32, "onRequestOptions");
-    __name(onRequestPost29, "onRequestPost");
+    __name(onRequestOptions33, "onRequestOptions");
+    __name(onRequestPost30, "onRequestPost");
   }
 });
 
@@ -19936,7 +20863,7 @@ function countsTowardLifetime(titleAndCalendar) {
 var NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN;
 var init_journey_classification = __esm({
   "lib/journey-classification.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     NON_JOURNEY_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
     NON_PACKAGE_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
     __name(countsTowardLifetime, "countsTowardLifetime");
@@ -19965,13 +20892,13 @@ function countLifetimeCompleted(appointments, nowMs) {
     return countsTowardLifetime(title);
   }).length;
 }
-async function onRequestOptions33(context) {
+async function onRequestOptions34(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders28(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet24(context) {
+async function onRequestGet25(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders28(origin);
   headers4["Content-Type"] = "application/json";
@@ -20165,7 +21092,7 @@ async function onRequestGet24(context) {
 var GHL_API_BASE22, GHL_LOCATION_ID16, ALLOWED_ORIGINS28;
 var init_portal_data = __esm({
   "api/portal-data.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -20181,8 +21108,8 @@ var init_portal_data = __esm({
     ];
     __name(corsHeaders28, "corsHeaders");
     __name(countLifetimeCompleted, "countLifetimeCompleted");
-    __name(onRequestOptions33, "onRequestOptions");
-    __name(onRequestGet24, "onRequestGet");
+    __name(onRequestOptions34, "onRequestOptions");
+    __name(onRequestGet25, "onRequestGet");
   }
 });
 
@@ -20201,11 +21128,11 @@ function json7(data, status = 200, requestOrigin = "") {
     headers: { ...cors3(requestOrigin), "Content-Type": "application/json" }
   });
 }
-async function onRequestOptions34({ request }) {
+async function onRequestOptions35({ request }) {
   const origin = request.headers.get("Origin") || "";
   return new Response(null, { status: 204, headers: cors3(origin) });
 }
-async function onRequestPost30(context) {
+async function onRequestPost31(context) {
   const { request } = context;
   const origin = request.headers.get("Origin") || "";
   const gateHeaders = { ...cors3(origin), "Content-Type": "application/json" };
@@ -20298,7 +21225,7 @@ async function onRequestPost30(context) {
 var allowedOrigin2, PAYMENT_LINK_URL, PAID_FOLLOWUP_CALENDARS;
 var init_portal_pay_followup = __esm({
   "api/portal-pay-followup.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     init_ghl_fields();
@@ -20312,8 +21239,8 @@ var init_portal_pay_followup = __esm({
     };
     __name(cors3, "cors");
     __name(json7, "json");
-    __name(onRequestOptions34, "onRequestOptions");
-    __name(onRequestPost30, "onRequestPost");
+    __name(onRequestOptions35, "onRequestOptions");
+    __name(onRequestPost31, "onRequestPost");
   }
 });
 
@@ -20339,13 +21266,13 @@ async function requirePortalAuth(context, headers4) {
   if (gate.error) return { error: gate.error };
   return { payload: gate.tokenPayload };
 }
-async function onRequestOptions35(context) {
+async function onRequestOptions36(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders29(context.request.headers.get("Origin") || "")
   });
 }
-async function onRequestGet25(context) {
+async function onRequestGet26(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders29(origin), "Content-Type": "application/json" };
   const { error, payload } = await requirePortalAuth(context, headers4);
@@ -20356,7 +21283,7 @@ async function onRequestGet25(context) {
   const stored = await context.env.PORTAL_KV.get(kvKey(payload.contactId), "json").catch(() => null);
   return new Response(JSON.stringify({ progress: stored }), { status: 200, headers: headers4 });
 }
-async function onRequestPost31(context) {
+async function onRequestPost32(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders29(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requirePortalAuth(context, headers4);
@@ -20379,7 +21306,7 @@ async function onRequestPost31(context) {
 var ALLOWED_ORIGINS29;
 var init_portal_progress = __esm({
   "api/portal-progress.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_owned_access();
     ALLOWED_ORIGINS29 = [
       "https://www.amarimethod.com",
@@ -20388,9 +21315,9 @@ var init_portal_progress = __esm({
     __name(corsHeaders29, "corsHeaders");
     __name(kvKey, "kvKey");
     __name(requirePortalAuth, "requirePortalAuth");
-    __name(onRequestOptions35, "onRequestOptions");
-    __name(onRequestGet25, "onRequestGet");
-    __name(onRequestPost31, "onRequestPost");
+    __name(onRequestOptions36, "onRequestOptions");
+    __name(onRequestGet26, "onRequestGet");
+    __name(onRequestPost32, "onRequestPost");
   }
 });
 
@@ -20615,7 +21542,7 @@ function renderInvoice(inv, patientName, patientPhone) {
 var PRACTICE;
 var init_reimbursement_template = __esm({
   "lib/reimbursement-template.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     PRACTICE = {
       name: "Amari Method",
       phone: "(628) 877-7673",
@@ -20652,13 +21579,13 @@ function isPaid(inv) {
   const total = Number(inv.total) || 0;
   return status === "paid" || paid > 0 && paid >= total;
 }
-async function onRequestOptions36(context) {
+async function onRequestOptions37(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders30(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet26(context) {
+async function onRequestGet27(context) {
   const origin = context.request.headers.get("Origin") || "";
   const baseHeaders2 = corsHeaders30(origin);
   const jsonError = /* @__PURE__ */ __name((status, message) => new Response(JSON.stringify({ error: message }), {
@@ -20731,7 +21658,7 @@ async function onRequestGet26(context) {
 var GHL_API_BASE23, GHL_LOCATION_ID17, ALLOWED_ORIGINS30;
 var init_portal_reimbursement_packet = __esm({
   "api/portal-reimbursement-packet.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     init_reimbursement_template();
@@ -20743,8 +21670,8 @@ var init_portal_reimbursement_packet = __esm({
     ];
     __name(corsHeaders30, "corsHeaders");
     __name(isPaid, "isPaid");
-    __name(onRequestOptions36, "onRequestOptions");
-    __name(onRequestGet26, "onRequestGet");
+    __name(onRequestOptions37, "onRequestOptions");
+    __name(onRequestGet27, "onRequestGet");
   }
 });
 
@@ -20763,11 +21690,11 @@ function json8(data, status = 200, requestOrigin = "") {
     headers: { ...cors4(requestOrigin), "Content-Type": "application/json" }
   });
 }
-async function onRequestOptions37({ request }) {
+async function onRequestOptions38({ request }) {
   const origin = request.headers.get("Origin") || "";
   return new Response(null, { status: 204, headers: cors4(origin) });
 }
-async function onRequestGet27(context) {
+async function onRequestGet28(context) {
   const { request, env } = context;
   const origin = request.headers.get("Origin") || "";
   const GHL_API_KEY = await getGhlToken(context);
@@ -20861,7 +21788,7 @@ async function onRequestGet27(context) {
 var allowedOrigin3;
 var init_portal_slots = __esm({
   "api/portal-slots.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_auth();
     init_look_busy();
@@ -20870,8 +21797,8 @@ var init_portal_slots = __esm({
     allowedOrigin3 = "https://www.amarimethod.com";
     __name(cors4, "cors");
     __name(json8, "json");
-    __name(onRequestOptions37, "onRequestOptions");
-    __name(onRequestGet27, "onRequestGet");
+    __name(onRequestOptions38, "onRequestOptions");
+    __name(onRequestGet28, "onRequestGet");
   }
 });
 
@@ -20887,13 +21814,13 @@ function corsHeaders31(origin) {
   }
   return headers4;
 }
-async function onRequestOptions38(context) {
+async function onRequestOptions39(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders31(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost32(context) {
+async function onRequestPost33(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders31(origin), "Content-Type": "application/json" };
   const jsonError = /* @__PURE__ */ __name((status, error) => new Response(JSON.stringify({ error }), { status, headers: headers4 }), "jsonError");
@@ -20932,7 +21859,7 @@ async function onRequestPost32(context) {
 var GHL_API_BASE24, REMINDER_PREFERENCE_FIELD_ID, VALID, ALLOWED_ORIGINS31;
 var init_portal_update_preference = __esm({
   "api/portal-update-preference.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_owned_access();
     GHL_API_BASE24 = "https://services.leadconnectorhq.com";
@@ -20943,8 +21870,8 @@ var init_portal_update_preference = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders31, "corsHeaders");
-    __name(onRequestOptions38, "onRequestOptions");
-    __name(onRequestPost32, "onRequestPost");
+    __name(onRequestOptions39, "onRequestOptions");
+    __name(onRequestPost33, "onRequestPost");
   }
 });
 
@@ -21005,13 +21932,13 @@ async function createSessionToken2(payload, secret) {
   const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
   return `${data}.${sig}`;
 }
-async function onRequestOptions39(context) {
+async function onRequestOptions40(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders32(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet28(context) {
+async function onRequestGet29(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders32(origin);
   headers4["Content-Type"] = "application/json";
@@ -21091,7 +22018,7 @@ async function onRequestGet28(context) {
 var ALLOWED_ORIGINS32;
 var init_portal_verify = __esm({
   "api/portal-verify.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_last_run();
     ALLOWED_ORIGINS32 = [
       "https://www.amarimethod.com",
@@ -21101,8 +22028,8 @@ var init_portal_verify = __esm({
     __name(corsHeaders32, "corsHeaders");
     __name(verifyToken2, "verifyToken");
     __name(createSessionToken2, "createSessionToken");
-    __name(onRequestOptions39, "onRequestOptions");
-    __name(onRequestGet28, "onRequestGet");
+    __name(onRequestOptions40, "onRequestOptions");
+    __name(onRequestGet29, "onRequestGet");
   }
 });
 
@@ -21183,7 +22110,7 @@ async function createGhlCoupon(apiKey, code) {
     return false;
   }
 }
-async function onRequestPost33(context) {
+async function onRequestPost34(context) {
   const headers4 = { "Content-Type": "application/json" };
   try {
     if (!verifyWebhookSecret(context.request, context.env.GHL_WEBHOOK_SECRET)) {
@@ -21344,7 +22271,7 @@ async function onRequestPost33(context) {
 var GHL_API_BASE25, GHL_LOCATION_ID18, REFERRAL_MILESTONE;
 var init_referral_complete = __esm({
   "api/referral-complete.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_auth();
     GHL_API_BASE25 = "https://services.leadconnectorhq.com";
@@ -21355,7 +22282,7 @@ var init_referral_complete = __esm({
     __name(putContactFields, "putContactFields");
     __name(addContactTag, "addContactTag");
     __name(createGhlCoupon, "createGhlCoupon");
-    __name(onRequestPost33, "onRequestPost");
+    __name(onRequestPost34, "onRequestPost");
   }
 });
 
@@ -21396,8 +22323,8 @@ async function verifyTurnstile(token, secret, remoteIp) {
 }
 async function submissionKey(body) {
   const bytes = new TextEncoder().encode(JSON.stringify(body));
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+  const digest2 = await crypto.subtle.digest("SHA-256", bytes);
+  return Array.from(new Uint8Array(digest2), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 function normalizeQuizSubmission(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
@@ -21485,13 +22412,13 @@ function buildResultsSummary(body) {
   if (body.healthConditions) lines.push(`Health Conditions: ${body.healthConditions}`);
   return lines.join("\n");
 }
-async function onRequestOptions40(context) {
+async function onRequestOptions41(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders33(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost34(context) {
+async function onRequestPost35(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders33(origin);
   headers4["Content-Type"] = "application/json";
@@ -21652,7 +22579,7 @@ async function onRequestPost34(context) {
 var GHL_API_BASE26, GHL_LOCATION_ID19, FIELD_IDS4, ALLOWED_ORIGINS33, TEXT_LIMITS, REFERRAL_SOURCE_RE, TURNSTILE_VERIFY_URL, RATE_LIMIT, RATE_LIMIT_TTL_SECONDS, IDEMPOTENCY_TTL_SECONDS;
 var init_send_to_ghl = __esm({
   "api/send-to-ghl.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_engine_forward();
     GHL_API_BASE26 = "https://services.leadconnectorhq.com";
@@ -21712,8 +22639,8 @@ var init_send_to_ghl = __esm({
     __name(submissionKey, "submissionKey");
     __name(normalizeQuizSubmission, "normalizeQuizSubmission");
     __name(buildResultsSummary, "buildResultsSummary");
-    __name(onRequestOptions40, "onRequestOptions");
-    __name(onRequestPost34, "onRequestPost");
+    __name(onRequestOptions41, "onRequestOptions");
+    __name(onRequestPost35, "onRequestPost");
   }
 });
 
@@ -21740,13 +22667,13 @@ function isValidPhone5(phone) {
 function isValidEmail8(email) {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
 }
-async function onRequestOptions41(context) {
+async function onRequestOptions42(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders34(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost35(context) {
+async function onRequestPost36(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders34(origin);
   headers4["Content-Type"] = "application/json";
@@ -21832,7 +22759,7 @@ async function onRequestPost35(context) {
 var GHL_API_BASE27, GHL_LOCATION_ID20, STUDY5, STUDY_NAME_FIELD_ID5, ALLOWED_ORIGINS34;
 var init_shoulder_study_signup = __esm({
   "api/shoulder-study-signup.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -21849,8 +22776,8 @@ var init_shoulder_study_signup = __esm({
     __name(splitName5, "splitName");
     __name(isValidPhone5, "isValidPhone");
     __name(isValidEmail8, "isValidEmail");
-    __name(onRequestOptions41, "onRequestOptions");
-    __name(onRequestPost35, "onRequestPost");
+    __name(onRequestOptions42, "onRequestOptions");
+    __name(onRequestPost36, "onRequestPost");
   }
 });
 
@@ -21986,7 +22913,7 @@ async function amariMailGrantReadiness(env, actor) {
 var encoder, AMARI_MAIL_CALLBACK_URL, AMARI_MAIL_SCOPES, AMARI_MAIL_STATE_TTL_SECONDS, STAFF_MAILBOXES;
 var init_amari_mail_oauth = __esm({
   "lib/amari-mail-oauth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     encoder = new TextEncoder();
     AMARI_MAIL_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
     AMARI_MAIL_SCOPES = Object.freeze([
@@ -22016,10 +22943,10 @@ var init_amari_mail_oauth = __esm({
 function json10(data, status, headers4) {
   return new Response(JSON.stringify(data), { status, headers: headers4 });
 }
-async function onRequestOptions42(context) {
+async function onRequestOptions43(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet29(context) {
+async function onRequestGet30(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error, payload } = await requireStaffAuth(context, headers4);
@@ -22041,7 +22968,7 @@ async function onRequestGet29(context) {
     }, 500, headers4);
   }
 }
-async function onRequestPost36(context) {
+async function onRequestPost37(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   if (!ALLOWED_ORIGINS35.has(origin)) return json10({ error: "Untrusted origin" }, 403, headers4);
@@ -22075,15 +23002,15 @@ async function onRequestPost36(context) {
 var AUTH_URL2, ALLOWED_ORIGINS35;
 var init_staff_amari_mail_auth = __esm({
   "api/staff-amari-mail-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_amari_mail_oauth();
     AUTH_URL2 = "https://accounts.google.com/o/oauth2/v2/auth";
     ALLOWED_ORIGINS35 = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(json10, "json");
-    __name(onRequestOptions42, "onRequestOptions");
-    __name(onRequestGet29, "onRequestGet");
-    __name(onRequestPost36, "onRequestPost");
+    __name(onRequestOptions43, "onRequestOptions");
+    __name(onRequestGet30, "onRequestGet");
+    __name(onRequestPost37, "onRequestPost");
   }
 });
 
@@ -22099,7 +23026,7 @@ function hasVerifiedSendAs(payload, requiredSender) {
   const accepted = new Set((payload?.sendAs || []).filter((identity2) => identity2?.isPrimary || String(identity2?.verificationStatus || "").toLowerCase() === "accepted").map((identity2) => String(identity2.sendAsEmail || "").trim().toLowerCase()));
   return accepted.has(requiredSender);
 }
-async function onRequestGet30(context) {
+async function onRequestGet31(context) {
   const url = new URL(context.request.url);
   if (!amariMailOAuthConfigured(context.env)) return redirect2(FAILURE_URL2);
   const state = url.searchParams.get("state") || "";
@@ -22161,7 +23088,7 @@ async function onRequestGet30(context) {
 var TOKEN_URL2, PROFILE_URL, SEND_AS_URL, SUCCESS_URL2, FAILURE_URL2;
 var init_staff_amari_mail_callback = __esm({
   "api/staff-amari-mail-callback.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_amari_mail_oauth();
     TOKEN_URL2 = "https://oauth2.googleapis.com/token";
     PROFILE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/profile";
@@ -22171,20 +23098,20 @@ var init_staff_amari_mail_callback = __esm({
     __name(redirect2, "redirect");
     __name(json11, "json");
     __name(hasVerifiedSendAs, "hasVerifiedSendAs");
-    __name(onRequestGet30, "onRequestGet");
+    __name(onRequestGet31, "onRequestGet");
   }
 });
 
 // api/staff-appointment-readiness.js
-async function onRequestOptions43(context) {
+async function onRequestOptions44(context) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS)
+    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS2)
   });
 }
-async function onRequestGet31(context) {
+async function onRequestGet32(context) {
   const headers4 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS2),
     "Content-Type": "application/json",
     "Cache-Control": "private, no-store"
   };
@@ -22211,21 +23138,21 @@ async function onRequestGet31(context) {
     clearTimeout(timer);
   }
 }
-var WORKER_URL, TIMEOUT_MS, METHODS;
+var WORKER_URL, TIMEOUT_MS, METHODS2;
 var init_staff_appointment_readiness = __esm({
   "api/staff-appointment-readiness.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/readiness";
     TIMEOUT_MS = 1e4;
-    METHODS = "GET, OPTIONS";
-    __name(onRequestOptions43, "onRequestOptions");
-    __name(onRequestGet31, "onRequestGet");
+    METHODS2 = "GET, OPTIONS";
+    __name(onRequestOptions44, "onRequestOptions");
+    __name(onRequestGet32, "onRequestGet");
   }
 });
 
 // lib/appointment-command-store.js
-function changes(result) {
+function changes2(result) {
   return result?.meta?.changes ?? result?.changes ?? 0;
 }
 function parseResult(value) {
@@ -22271,8 +23198,8 @@ function eventStatement(db, command, phase, detail, now) {
     now
   );
 }
-async function read(db, id2) {
-  return db.prepare("SELECT * FROM appointment_commands WHERE id = ?").bind(id2).first();
+async function read(db, id3) {
+  return db.prepare("SELECT * FROM appointment_commands WHERE id = ?").bind(id3).first();
 }
 function createAppointmentCommandStore(db, options = {}) {
   if (!db) throw new Error("ATTEND_DB appointment command state is unavailable");
@@ -22281,7 +23208,7 @@ function createAppointmentCommandStore(db, options = {}) {
   return Object.freeze({
     async claim(input) {
       const now = clock();
-      const id2 = commandId(input.actor, input.idempotencyKey);
+      const id3 = commandId(input.actor, input.idempotencyKey);
       const inserted = await db.prepare(
         `INSERT INTO appointment_commands
           (id, actor, idempotency_key, action, contact_id, source_appointment_id,
@@ -22290,7 +23217,7 @@ function createAppointmentCommandStore(db, options = {}) {
          VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'processing', NULL, ?, 1, NULL, ?, ?)
          ON CONFLICT(actor, idempotency_key) DO NOTHING`
       ).bind(
-        id2,
+        id3,
         input.actor,
         input.idempotencyKey,
         input.action,
@@ -22301,8 +23228,8 @@ function createAppointmentCommandStore(db, options = {}) {
         now,
         now
       ).run();
-      let row = await read(db, id2);
-      if (changes(inserted) === 1) {
+      let row = await read(db, id3);
+      if (changes2(inserted) === 1) {
         await eventStatement(db, row, "claimed", { action: input.action }, now).run();
         return { state: "acquired", command: shape(row) };
       }
@@ -22315,44 +23242,44 @@ function createAppointmentCommandStore(db, options = {}) {
             SET status = 'processing', lease_until = ?, attempts = attempts + 1,
                 last_error = NULL, updated_at = ?
           WHERE id = ? AND status IN ('processing', 'retryable') AND lease_until <= ?`
-      ).bind(now + leaseMs, now, id2, now).run();
-      if (changes(resumed) !== 1) return { state: "in_progress", command: shape(await read(db, id2)) };
-      row = await read(db, id2);
+      ).bind(now + leaseMs, now, id3, now).run();
+      if (changes2(resumed) !== 1) return { state: "in_progress", command: shape(await read(db, id3)) };
+      row = await read(db, id3);
       await eventStatement(db, row, "resumed", null, now).run();
       return { state: "acquired", command: shape(row) };
     },
-    async checkpointReplacement(id2, replacementAppointmentId) {
+    async checkpointReplacement(id3, replacementAppointmentId) {
       const now = clock();
-      const row = await read(db, id2);
+      const row = await read(db, id3);
       if (!row) throw new Error("appointment command not found");
       const update = db.prepare(
         `UPDATE appointment_commands
             SET replacement_appointment_id = ?, lease_until = ?, updated_at = ?
           WHERE id = ? AND status = 'processing'
             AND (replacement_appointment_id IS NULL OR replacement_appointment_id = ?)`
-      ).bind(replacementAppointmentId, now + leaseMs, now, id2, replacementAppointmentId);
+      ).bind(replacementAppointmentId, now + leaseMs, now, id3, replacementAppointmentId);
       const [updated] = await db.batch([
         update,
         eventStatement(db, row, "replacement_created", { replacementAppointmentId }, now)
       ]);
-      if (changes(updated) !== 1) throw new Error("replacement checkpoint was not accepted");
+      if (changes2(updated) !== 1) throw new Error("replacement checkpoint was not accepted");
     },
-    async clearReplacement(id2, replacementAppointmentId) {
+    async clearReplacement(id3, replacementAppointmentId) {
       const now = clock();
-      const row = await read(db, id2);
+      const row = await read(db, id3);
       if (!row) throw new Error("appointment command not found");
       const [updated] = await db.batch([
         db.prepare(
           `UPDATE appointment_commands SET replacement_appointment_id = NULL, updated_at = ?
             WHERE id = ? AND status = 'processing' AND replacement_appointment_id = ?`
-        ).bind(now, id2, replacementAppointmentId),
+        ).bind(now, id3, replacementAppointmentId),
         eventStatement(db, row, "replacement_compensated", { replacementAppointmentId }, now)
       ]);
-      if (changes(updated) !== 1) throw new Error("replacement checkpoint could not be cleared");
+      if (changes2(updated) !== 1) throw new Error("replacement checkpoint could not be cleared");
     },
-    async complete(id2, result) {
+    async complete(id3, result) {
       const now = clock();
-      const row = await read(db, id2);
+      const row = await read(db, id3);
       if (!row) throw new Error("appointment command not found");
       const [updated] = await db.batch([
         db.prepare(
@@ -22360,14 +23287,14 @@ function createAppointmentCommandStore(db, options = {}) {
               SET status = 'completed', result_json = ?, lease_until = 0,
                   last_error = NULL, updated_at = ?
             WHERE id = ? AND status = 'processing'`
-        ).bind(JSON.stringify(result), now, id2),
+        ).bind(JSON.stringify(result), now, id3),
         eventStatement(db, row, "completed", result, now)
       ]);
-      if (changes(updated) !== 1) throw new Error("appointment command completion was not accepted");
+      if (changes2(updated) !== 1) throw new Error("appointment command completion was not accepted");
     },
-    async fail(id2, error, options2 = {}) {
+    async fail(id3, error, options2 = {}) {
       const now = clock();
-      const row = await read(db, id2);
+      const row = await read(db, id3);
       if (!row) return null;
       const status = options2.manualReview ? "manual_review" : "retryable";
       const message = String(error?.message || error || "unknown error").slice(0, 1e3);
@@ -22376,17 +23303,17 @@ function createAppointmentCommandStore(db, options = {}) {
           `UPDATE appointment_commands
               SET status = ?, lease_until = 0, last_error = ?, updated_at = ?
             WHERE id = ? AND status = 'processing'`
-        ).bind(status, message, now, id2),
+        ).bind(status, message, now, id3),
         eventStatement(db, row, status, { code: error?.code || "appointment_command_failed", message }, now)
       ]);
-      return { ok: changes(updated) === 1, status };
+      return { ok: changes2(updated) === 1, status };
     }
   });
 }
 var init_appointment_command_store = __esm({
   "lib/appointment-command-store.js"() {
-    init_functionsRoutes_0_5773764037964985();
-    __name(changes, "changes");
+    init_functionsRoutes_0_8372690901872232();
+    __name(changes2, "changes");
     __name(parseResult, "parseResult");
     __name(shape, "shape");
     __name(sameCommand, "sameCommand");
@@ -22403,8 +23330,8 @@ function resolveStaffBookType(sessionType) {
   return STAFF_BOOK_TYPES[key] || null;
 }
 function listStaffBookTypes() {
-  return Object.entries(STAFF_BOOK_TYPES).map(([id2, value]) => ({
-    id: id2,
+  return Object.entries(STAFF_BOOK_TYPES).map(([id3, value]) => ({
+    id: id3,
     label: value.label,
     durationMinutes: value.durationMinutes
   }));
@@ -22427,7 +23354,7 @@ function flattenSlots(data) {
 var STAFF_BOOK_TYPES;
 var init_staff_book_calendars = __esm({
   "lib/staff-book-calendars.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     STAFF_BOOK_TYPES = {
       assessment: {
         calendarId: "EM6vB2mq7EAdGCbUb3j1",
@@ -22882,7 +23809,7 @@ async function scheduleAppointmentCommand(input) {
 var INTERNAL_START_INTERVAL_MINUTES, DAY_MS, MANAGEABLE_STATUSES;
 var init_staff_appointment_manage = __esm({
   "lib/staff-appointment-manage.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_datetime();
     init_app_owned_buffer();
     init_booking_slot_policy();
@@ -23021,12 +23948,12 @@ function scheduleStore(db, { actor, contactId, sessionType, idempotencyKey, star
     fail: /* @__PURE__ */ __name((error, options) => failBookingOperation(db, opKey, error?.message || error, options), "fail")
   });
 }
-async function onRequestOptions44(context) {
-  return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), METHODS2) });
+async function onRequestOptions45(context) {
+  return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), METHODS3) });
 }
-async function onRequestPost37(context) {
+async function onRequestPost38(context) {
   const headers4 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS2),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS3),
     "Content-Type": "application/json",
     "Cache-Control": "private, no-store"
   };
@@ -23181,10 +24108,10 @@ async function onRequestPost37(context) {
     return json12({ error: error?.message || "Appointment change failed.", code: error?.code || "appointment_change_failed" }, status, headers4);
   }
 }
-var BASE, LOCATION_ID6, METHODS2, FORBIDDEN_FIELDS;
+var BASE, LOCATION_ID6, METHODS3, FORBIDDEN_FIELDS;
 var init_staff_appointments = __esm({
   "api/staff-appointments.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ghl();
     init_datetime();
@@ -23199,7 +24126,7 @@ var init_staff_appointments = __esm({
     init_ops_alert();
     BASE = "https://services.leadconnectorhq.com";
     LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
-    METHODS2 = "POST, OPTIONS";
+    METHODS3 = "POST, OPTIONS";
     FORBIDDEN_FIELDS = ["calendarId", "title", "appointmentStatus", "status", "replacementAppointmentId", "timezone", "actor", "user"];
     __name(json12, "json");
     __name(clean2, "clean");
@@ -23210,19 +24137,19 @@ var init_staff_appointments = __esm({
     __name(cancelProviderAppointment, "cancelProviderAppointment");
     __name(providerFor, "providerFor");
     __name(scheduleStore, "scheduleStore");
-    __name(onRequestOptions44, "onRequestOptions");
-    __name(onRequestPost37, "onRequestPost");
+    __name(onRequestOptions45, "onRequestOptions");
+    __name(onRequestPost38, "onRequestPost");
   }
 });
 
 // api/staff-attestation.js
-async function onRequestOptions45(context) {
+async function onRequestOptions46(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet32(context) {
+async function onRequestGet33(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -23283,10 +24210,10 @@ async function onRequestGet32(context) {
 }
 var init_staff_attestation = __esm({
   "api/staff-attestation.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
-    __name(onRequestOptions45, "onRequestOptions");
-    __name(onRequestGet32, "onRequestGet");
+    __name(onRequestOptions46, "onRequestOptions");
+    __name(onRequestGet33, "onRequestGet");
   }
 });
 
@@ -23318,13 +24245,13 @@ async function createToken4(payload, secret) {
   const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
   return `${data}.${sig}`;
 }
-async function onRequestOptions46(context) {
+async function onRequestOptions47(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders35(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost38(context) {
+async function onRequestPost39(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders35(origin), "Content-Type": "application/json" };
   try {
@@ -23416,7 +24343,7 @@ async function onRequestPost38(context) {
 var ALLOWED_ORIGINS36;
 var init_staff_auth = __esm({
   "api/staff-auth.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_rate_limit();
     init_endpoint_guards();
     init_ops_last_run();
@@ -23426,16 +24353,16 @@ var init_staff_auth = __esm({
     ];
     __name(corsHeaders35, "corsHeaders");
     __name(createToken4, "createToken");
-    __name(onRequestOptions46, "onRequestOptions");
-    __name(onRequestPost38, "onRequestPost");
+    __name(onRequestOptions47, "onRequestOptions");
+    __name(onRequestPost39, "onRequestPost");
   }
 });
 
 // api/staff-automation-watch-access.js
-async function onRequestOptions47(context) {
+async function onRequestOptions48(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestPost39(context) {
+async function onRequestPost40(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin") || ""), "Content-Type": "application/json" };
   try {
     const { error, payload } = await requireStaffAuth(context, headers4);
@@ -23471,12 +24398,12 @@ async function onRequestPost39(context) {
 var WORKER_URL2, WORKER_TIMEOUT_MS;
 var init_staff_automation_watch_access = __esm({
   "api/staff-automation-watch-access.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL2 = "https://reminder-engine.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS = 15e3;
-    __name(onRequestOptions47, "onRequestOptions");
-    __name(onRequestPost39, "onRequestPost");
+    __name(onRequestOptions48, "onRequestOptions");
+    __name(onRequestPost40, "onRequestPost");
   }
 });
 
@@ -23578,7 +24505,7 @@ function executableFlow(workflow) {
 var MESSAGE_ACTIONS, CONTROL_ACTIONS, ACTIONS, CHANNELS2, AUDIENCES, TIMING;
 var init_workflow_definition = __esm({
   "../reminder-engine-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_assessment_paid_booking_workflow();
     __name(deepFreeze2, "deepFreeze");
     __name(requireText2, "requireText");
@@ -23598,7 +24525,7 @@ var init_workflow_definition = __esm({
 var INITIAL_IN_PERSON_WORKFLOW, INITIAL_IN_PERSON;
 var init_initial_in_person_workflow = __esm({
   "../reminder-engine-worker/src/initial-in-person-workflow.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_workflow_definition();
     INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
       id: "initial-in-person",
@@ -23631,7 +24558,7 @@ var init_initial_in_person_workflow = __esm({
 var INITIAL_VIRTUAL_WORKFLOW, INITIAL_VIRTUAL;
 var init_initial_virtual_workflow = __esm({
   "../reminder-engine-worker/src/initial-virtual-workflow.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_workflow_definition();
     INITIAL_VIRTUAL_WORKFLOW = defineWorkflow({
       id: "initial-virtual",
@@ -23667,7 +24594,7 @@ var init_initial_virtual_workflow = __esm({
 var NO_SHOW_RECOVERY_WORKFLOW, NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY;
 var init_no_show_recovery_workflow = __esm({
   "../reminder-engine-worker/src/no-show-recovery-workflow.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_workflow_definition();
     NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
       id: "no-show-recovery",
@@ -23794,7 +24721,7 @@ var init_no_show_recovery_workflow = __esm({
 var DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW, FLOWS;
 var init_config = __esm({
   "../reminder-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_initial_in_person_workflow();
     init_initial_in_person_workflow();
     init_initial_virtual_workflow();
@@ -23870,7 +24797,7 @@ var init_config = __esm({
 var DISCOVERY, DISCOVERY_AMBASSADOR, INITIAL_IN_PERSON2, INITIAL_VIRTUAL2, FOLLOWUP_IN_PERSON_PKG, FOLLOWUP_VIRTUAL_PKG, FOLLOWUP_IN_PERSON, FOLLOWUP_VIRTUAL, ENTRAINMENT, PRODUCT_4_SESSION, PRODUCT_8_SESSION, PRODUCT_UPGRADE_4, PRODUCT_UPGRADE_8, TAG_WORKFLOW_2, TAG_WORKFLOW_3, deepFreeze3, FLOW_1_QUIZ, FLOW_2_POST_DISCOVERY, FLOW_3_POST_INITIAL, SEQUENCES;
 var init_config2 = __esm({
   "../nurture-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     DISCOVERY = "USgPsktqRcuomdUgpShL";
     DISCOVERY_AMBASSADOR = "aVE54Qf4lrbYTB0zFqXy";
     INITIAL_IN_PERSON2 = "G7OAnnJuFbMF6nQSlZVQ";
@@ -24031,7 +24958,7 @@ var init_config2 = __esm({
 var COPY, AGENDA_COPY, DEFAULT_FIRST_MINUTES, SECOND_OFFSET_MS, PREP_LEAD_MS, SEND_GRACE_MS;
 var init_schedule = __esm({
   "../morning-sms-worker/src/schedule.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     COPY = Object.freeze({
       prepare: "Good morning, time to prepare for the day.",
       meeting: "Staff meeting"
@@ -24051,19 +24978,19 @@ var init_schedule = __esm({
 });
 
 // ../morning-sms-worker/src/workflow-definition.js
-function text2(value, label) {
+function text3(value, label) {
   if (typeof value !== "string" || !value.trim()) throw new Error(`${label} is required`);
 }
 function defineMorningSmsWorkflow(input) {
-  text2(input?.id, "workflow id");
+  text3(input?.id, "workflow id");
   if (!Number.isInteger(input?.definitionVersion) || input.definitionVersion < 1) {
     throw new Error("workflow definitionVersion must be a positive integer");
   }
   if (input?.authority !== "executable_definition") throw new Error("workflow authority must be executable_definition");
-  text2(input?.trigger?.cron, "workflow cron");
-  text2(input?.trigger?.timeZone, "workflow timezone");
+  text3(input?.trigger?.cron, "workflow cron");
+  text3(input?.trigger?.timeZone, "workflow timezone");
   for (const field of ["unavailable", "empty", "header", "appointmentLine", "footer"]) {
-    text2(input?.agendaCopy?.[field], `workflow agendaCopy.${field}`);
+    text3(input?.agendaCopy?.[field], `workflow agendaCopy.${field}`);
   }
   if (!input.agendaCopy.appointmentLine.includes("{{time}}") || !input.agendaCopy.appointmentLine.includes("{{label}}")) {
     throw new Error("workflow agendaCopy.appointmentLine must include {{time}} and {{label}}");
@@ -24072,20 +24999,20 @@ function defineMorningSmsWorkflow(input) {
   const ids = /* @__PURE__ */ new Set();
   const handlers = /* @__PURE__ */ new Set();
   for (const step of input.steps) {
-    text2(step.id, "workflow step id");
-    text2(step.label, `workflow step ${step.id} label`);
-    text2(step.handler, `workflow step ${step.id} handler`);
+    text3(step.id, "workflow step id");
+    text3(step.label, `workflow step ${step.id} label`);
+    text3(step.handler, `workflow step ${step.id} handler`);
     if (ids.has(step.id)) throw new Error(`duplicate workflow step ${step.id}`);
     ids.add(step.id);
     handlers.add(step.handler);
     if (step.parentId != null && !ids.has(step.parentId)) throw new Error(`workflow step ${step.id} has an unknown or forward parent`);
     if (step.handler === "send_due_sms") {
       if (!(/* @__PURE__ */ new Set(["prepare", "meeting"])).has(step.messageKind)) throw new Error(`workflow step ${step.id} needs a supported messageKind`);
-      text2(step.copy, `workflow step ${step.id} copy`);
-      text2(step.idempotency, `workflow step ${step.id} idempotency`);
+      text3(step.copy, `workflow step ${step.id} copy`);
+      text3(step.idempotency, `workflow step ${step.id} idempotency`);
       if (step.messageKind === "prepare") {
         if (!Array.isArray(step.logic) || step.logic.length === 0) throw new Error(`workflow step ${step.id} needs inspectable logic`);
-        step.logic.forEach((line, index) => text2(line, `workflow step ${step.id} logic ${index}`));
+        step.logic.forEach((line, index) => text3(line, `workflow step ${step.id} logic ${index}`));
       }
     }
   }
@@ -24101,7 +25028,7 @@ function defineMorningSmsWorkflow(input) {
 var REQUIRED_HANDLERS, EXECUTABLE_ORDER;
 var init_workflow_definition2 = __esm({
   "../morning-sms-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     REQUIRED_HANDLERS = Object.freeze([
       "scheduled_event",
       "read_todays_appointments",
@@ -24121,7 +25048,7 @@ var init_workflow_definition2 = __esm({
       "send_due_sms:meeting",
       "record_run_result"
     ]);
-    __name(text2, "text");
+    __name(text3, "text");
     __name(defineMorningSmsWorkflow, "defineMorningSmsWorkflow");
   }
 });
@@ -24130,7 +25057,7 @@ var init_workflow_definition2 = __esm({
 var MORNING_SMS_DEFINITION;
 var init_config3 = __esm({
   "../morning-sms-worker/src/config.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_schedule();
     init_workflow_definition2();
     MORNING_SMS_DEFINITION = Object.freeze(defineMorningSmsWorkflow({
@@ -24316,7 +25243,7 @@ function eventEvidence(event2, { terminalOutcome = null } = {}) {
 var REGISTRY_VERSION, OWNED_ONLY_GAP, PRE_REGISTRY_HISTORY_GAP, DELIVERY_GAP, DB_UNAVAILABLE_GAP, PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_VIRTUAL_MESSAGE_PREVIEW, ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW, PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_VIRTUAL_CUTOVER_READINESS, ASSESSMENT_NO_SHOW_CUTOVER_READINESS, NO_SHOW_RECOVERY_CUTOVER_READINESS, DEFINITIONS;
 var init_automation_registry = __esm({
   "lib/automation-registry.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_config();
     init_config2();
     init_config3();
@@ -24543,8 +25470,8 @@ function automationFamily(key) {
   return family ? clone2(family) : null;
 }
 function familyForDefinition(engine, key) {
-  const id2 = `${engine}:${key}`;
-  const family = FAMILIES.find((item) => item.ownedDefinitionIds.includes(id2));
+  const id3 = `${engine}:${key}`;
+  const family = FAMILIES.find((item) => item.ownedDefinitionIds.includes(id3));
   return family ? clone2(family) : null;
 }
 function automationInventorySummary() {
@@ -24578,7 +25505,7 @@ function familyRegistryEvidence() {
 var AUTOMATION_INVENTORY_AS_OF, AUTOMATION_INVENTORY_SOURCE, record2, p, d, ASSESSMENT_CUTOVER_TREE, ASSESSMENT_PAID_BOOKING_CUTOVER_TREE, RAW_FAMILIES, OWNED_DEFINITIONS, FAMILIES;
 var init_automation_families = __esm({
   "lib/automation-families.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_automation_registry();
     AUTOMATION_INVENTORY_AS_OF = "2026-08-07";
     AUTOMATION_INVENTORY_SOURCE = "GHL-WORKFLOWS-MASTER.md";
@@ -24973,7 +25900,7 @@ var init_automation_families = __esm({
     __name(clone2, "clone");
     __name(familyEvidence, "familyEvidence");
     FAMILIES = Object.freeze(RAW_FAMILIES.map((raw) => {
-      const ownedDefinitions = raw.definitionIds.map((id2) => OWNED_DEFINITIONS.get(id2)).filter(Boolean);
+      const ownedDefinitions = raw.definitionIds.map((id3) => OWNED_DEFINITIONS.get(id3)).filter(Boolean);
       return Object.freeze({
         key: raw.key,
         name: raw.name,
@@ -25316,7 +26243,7 @@ async function failuresView(db, { sinceMs = 0, limit = 100 } = {}) {
 }
 var init_automation_views = __esm({
   "lib/automation-views.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_automation_registry();
     init_automation_families();
     __name(familyReference, "familyReference");
@@ -25344,14 +26271,13 @@ var init_automation_views = __esm({
 // lib/reliability-contract.js
 async function sha256Hex(value) {
   const bytes = new TextEncoder().encode(String(value));
-  const digest = await crypto.subtle.digest("SHA-256", bytes);
-  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+  const digest2 = await crypto.subtle.digest("SHA-256", bytes);
+  return [...new Uint8Array(digest2)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
-var RELIABILITY_SCHEMA_VERSION, FOLLOW_UP_FAMILY, NO_SHOW_MISSED_COUNT_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE, NO_SHOW_COUNTER_RELIABILITY_ROUTE, RAW_RETENTION_MS, NORMALIZED_RETENTION_MS;
+var FOLLOW_UP_FAMILY, NO_SHOW_MISSED_COUNT_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE, NO_SHOW_COUNTER_RELIABILITY_ROUTE, RAW_RETENTION_MS, NORMALIZED_RETENTION_MS;
 var init_reliability_contract = __esm({
   "lib/reliability-contract.js"() {
-    init_functionsRoutes_0_5773764037964985();
-    RELIABILITY_SCHEMA_VERSION = 1;
+    init_functionsRoutes_0_8372690901872232();
     FOLLOW_UP_FAMILY = "follow-up-session-reminders";
     NO_SHOW_MISSED_COUNT_FAMILY = "no-show-missed-count";
     FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
@@ -25379,6 +26305,340 @@ var init_reliability_contract = __esm({
   }
 });
 
+// lib/reliability-schema-authority.js
+function rowsOf(result) {
+  if (Array.isArray(result)) return result;
+  return Array.isArray(result?.results) ? result.results : [];
+}
+async function all(db, sql, ...bindings) {
+  const statement = db.prepare(sql);
+  const bound = bindings.length ? statement.bind(...bindings) : statement;
+  return rowsOf(await bound.all());
+}
+function normalizeDdl(sql) {
+  return String(sql).replace(/\r\n?/g, "\n").trim();
+}
+function reliabilityStructureProjection(sqliteMasterRows, schemaContract) {
+  const tables = new Set(schemaContract.expectedObjects.filter((object) => object.startsWith("table:")).map((object) => object.slice("table:".length)));
+  return sqliteMasterRows.filter((row) => !String(row.name || "").startsWith("sqlite_autoindex")).filter((row) => row.type === "table" && tables.has(row.name) || (row.type === "index" || row.type === "trigger") && tables.has(row.tbl_name)).map((row) => ({
+    type: row.type,
+    name: row.name,
+    table: row.tbl_name,
+    sql: normalizeDdl(row.sql)
+  })).sort((left, right) => {
+    if (left.type !== right.type) return left.type < right.type ? -1 : 1;
+    if (left.name === right.name) return 0;
+    return left.name < right.name ? -1 : 1;
+  });
+}
+async function assessReliabilityStructure(sqliteMasterRows, schemaContract) {
+  const projection = reliabilityStructureProjection(sqliteMasterRows, schemaContract);
+  const objects = projection.map((row) => `${row.type}:${row.name}`);
+  const digest2 = await sha256Hex(JSON.stringify(projection));
+  return {
+    proven: JSON.stringify(objects) === JSON.stringify(schemaContract.expectedObjects) && digest2 === schemaContract.structureSha256,
+    objects,
+    digest: digest2,
+    expectedObjects: schemaContract.expectedObjects,
+    expectedDigest: schemaContract.structureSha256
+  };
+}
+async function readReliabilitySchemaSnapshot(db) {
+  const markers = await all(db, `SELECT version,applied_at,migration_id,description
+    FROM reliability_schema_versions ORDER BY version`);
+  const sqliteMaster = await all(db, `SELECT type,name,tbl_name,sql FROM sqlite_master
+    WHERE type IN ('table','index','trigger') ORDER BY type,name`);
+  const hasContractTable = sqliteMaster.some((row) => row.type === "table" && row.name === "reliability_schema_contracts");
+  const contracts = hasContractTable ? await all(db, `SELECT version,migration_id,canonicalization,structure_sha256,expected_objects_json,applied_at
+      FROM reliability_schema_contracts ORDER BY version`) : [];
+  return { markers, sqliteMaster, contracts };
+}
+function exactMarker(marker, contract) {
+  return marker && Number(marker.version) === contract.version && marker.migration_id === contract.migrationId && marker.description === contract.description && Number.isInteger(Number(marker.applied_at)) && Number(marker.applied_at) > 0 && (contract.appliedAt == null || Number(marker.applied_at) === contract.appliedAt);
+}
+function exactSchemaContract(row, contract) {
+  return row && Number(row.version) === contract.version && row.migration_id === contract.migrationId && row.canonicalization === contract.canonicalization && row.structure_sha256 === contract.structureSha256 && row.expected_objects_json === JSON.stringify(contract.expectedObjects) && Number.isInteger(Number(row.applied_at)) && Number(row.applied_at) > 0;
+}
+async function assessReliabilitySchemaAuthority(snapshot) {
+  const latest = snapshot.markers.at(-1) || null;
+  if (!latest) return { proven: false, reason: "schema_marker_missing", version: null };
+  if (Number(latest.version) === RELIABILITY_SCHEMA_V1.version) {
+    if (snapshot.markers.length !== 1 || !exactMarker(latest, RELIABILITY_SCHEMA_V1)) {
+      return { proven: false, reason: "schema_v1_marker_mismatch", version: 1 };
+    }
+    const v1Structure = await assessReliabilityStructure(snapshot.sqliteMaster, RELIABILITY_SCHEMA_V1);
+    if (!v1Structure.proven) {
+      return { proven: false, reason: "schema_v1_structure_mismatch", version: 1, structure: v1Structure };
+    }
+    const v2Projection = reliabilityStructureProjection(
+      snapshot.sqliteMaster,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE
+    );
+    const installedV2Objects = v2Projection.map((row) => `${row.type}:${row.name}`).filter((object) => !RELIABILITY_SCHEMA_V1.expectedObjects.includes(object));
+    if (installedV2Objects.length === 0) {
+      return {
+        proven: true,
+        reason: "schema_v1_exact_authority",
+        version: 1,
+        variantId: RELIABILITY_SCHEMA_V1.variantId,
+        migrationState: "current_v1",
+        structure: v1Structure
+      };
+    }
+    const v2Structure2 = await assessReliabilityStructure(
+      snapshot.sqliteMaster,
+      RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE
+    );
+    if (installedV2Objects.length === V2_ONLY_OBJECTS.size && v2Structure2.proven && snapshot.contracts.length === 0) {
+      return {
+        proven: false,
+        reason: "schema_v2_physical_install_awaiting_promotion",
+        version: 1,
+        variantId: RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.variantId,
+        migrationState: "installed_awaiting_promotion",
+        structure: v1Structure,
+        candidateStructure: v2Structure2,
+        installedV2Objects
+      };
+    }
+    return {
+      proven: false,
+      reason: "schema_v2_partial_or_conflicting",
+      version: 1,
+      migrationState: "blocked",
+      structure: v1Structure,
+      stagedStructure: v2Structure2,
+      installedV2Objects
+    };
+  }
+  if (Number(latest.version) !== RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.version) {
+    return { proven: false, reason: "schema_version_unknown", version: Number(latest.version) };
+  }
+  if (snapshot.markers.length !== 2 || !exactMarker(snapshot.markers[0], RELIABILITY_SCHEMA_V1) || !exactMarker(snapshot.markers[1], RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY)) {
+    return { proven: false, reason: "schema_v2_marker_mismatch", version: 2, migrationState: "blocked" };
+  }
+  if (snapshot.contracts.length !== 1) {
+    return {
+      proven: false,
+      reason: "schema_v2_contract_missing_or_conflicting",
+      version: 2,
+      migrationState: "blocked"
+    };
+  }
+  const v2Contract = snapshot.contracts[0];
+  if (!exactSchemaContract(v2Contract, RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY) || Number(v2Contract.applied_at) !== Number(snapshot.markers[1].applied_at)) {
+    return { proven: false, reason: "schema_v2_contract_mismatch", version: 2, migrationState: "blocked" };
+  }
+  const v2Structure = await assessReliabilityStructure(
+    snapshot.sqliteMaster,
+    RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY
+  );
+  if (!v2Structure.proven) {
+    return {
+      proven: false,
+      reason: "schema_v2_structure_mismatch",
+      version: 2,
+      migrationState: "blocked",
+      structure: v2Structure
+    };
+  }
+  return {
+    proven: true,
+    reason: "schema_v2_exact_authority",
+    version: 2,
+    variantId: RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY.variantId,
+    migrationState: "current_v2",
+    appliedAt: Number(v2Contract.applied_at),
+    structure: v2Structure
+  };
+}
+async function readReliabilitySchemaAuthority(db) {
+  return assessReliabilitySchemaAuthority(await readReliabilitySchemaSnapshot(db));
+}
+var RELIABILITY_SCHEMA_V1, RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY, V2_ONLY_OBJECTS, V2_ADDITIVE_TABLES;
+var init_reliability_schema_authority = __esm({
+  "lib/reliability-schema-authority.js"() {
+    init_functionsRoutes_0_8372690901872232();
+    init_reliability_contract();
+    RELIABILITY_SCHEMA_V1 = Object.freeze({
+      version: 1,
+      variantId: "production-live-v1-f7af1024",
+      appliedAt: 1787631973e3,
+      migrationId: "reliability-spine-v1",
+      description: "Durable source events, lifecycle instances, obligations, receipts, reconciliation, and exceptions",
+      canonicalization: "sqlite-master-required-closure.v1",
+      structureSha256: "f7af1024be129a24cb8a68a0c70a4bd3a8820104f9a5e36a58df97bbe7bbdd4f",
+      expectedObjects: Object.freeze([
+        "index:idx_command_obligation",
+        "index:idx_enr_contact",
+        "index:idx_evidence_access",
+        "index:idx_evt_contact",
+        "index:idx_evt_engine_flow",
+        "index:idx_evt_flow",
+        "index:idx_exception_events",
+        "index:idx_exceptions_family_queue",
+        "index:idx_exceptions_queue",
+        "index:idx_lease_events",
+        "index:idx_lifecycle_appointment",
+        "index:idx_lifecycle_family_state",
+        "index:idx_lifecycle_person",
+        "index:idx_obligations_due",
+        "index:idx_obligations_lease",
+        "index:idx_reconciliation_family",
+        "index:idx_source_events_provider_event",
+        "index:idx_source_events_received",
+        "index:idx_source_transitions",
+        "index:idx_steps_due",
+        "index:idx_workflow_one_published",
+        "table:automation_events",
+        "table:command_attempts",
+        "table:evidence_access_events",
+        "table:exception_events",
+        "table:lifecycle_exceptions",
+        "table:lifecycle_instances",
+        "table:lifecycle_obligations",
+        "table:obligation_lease_events",
+        "table:provider_receipts",
+        "table:reconciliation_runs",
+        "table:reliability_schema_versions",
+        "table:reminder_enrollments",
+        "table:reminder_steps",
+        "table:source_event_transitions",
+        "table:source_events",
+        "table:workflow_versions",
+        "trigger:automation_events_no_delete",
+        "trigger:automation_events_no_update",
+        "trigger:evidence_access_no_delete",
+        "trigger:evidence_access_no_update",
+        "trigger:exception_events_no_delete",
+        "trigger:exception_events_no_update",
+        "trigger:lease_events_no_delete",
+        "trigger:lease_events_no_update",
+        "trigger:source_events_no_delete",
+        "trigger:source_events_no_update",
+        "trigger:source_transitions_no_delete",
+        "trigger:source_transitions_no_update"
+      ])
+    });
+    RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE = Object.freeze({
+      ...RELIABILITY_SCHEMA_V1,
+      variantId: "clean-bootstrap-v1-cd57730",
+      structureSha256: "cd57730cfbf6a04cc3db670e0b299a27041191e880684eb86acd134ab734f5a2"
+    });
+    RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE = Object.freeze({
+      version: 2,
+      variantId: "clean-bootstrap-v2-b289c40",
+      migrationId: "reliability-spine-v2-deployment-attestation",
+      description: "Authenticated release manifests, deployment attestations, and source-event runtime provenance",
+      canonicalization: "sqlite-master-required-closure.v1",
+      structureSha256: "b289c4022a06c23d2c806d122ef2687077815aea5ae85fde064681250f1c8ed6",
+      expectedObjects: Object.freeze([
+        "index:idx_command_obligation",
+        "index:idx_deployment_attestations_latest",
+        "index:idx_deployment_attestations_release",
+        "index:idx_deployment_attestations_runtime_version",
+        "index:idx_enr_contact",
+        "index:idx_evidence_access",
+        "index:idx_evt_contact",
+        "index:idx_evt_engine_flow",
+        "index:idx_evt_flow",
+        "index:idx_exception_events",
+        "index:idx_exceptions_family_queue",
+        "index:idx_exceptions_queue",
+        "index:idx_lease_events",
+        "index:idx_lifecycle_appointment",
+        "index:idx_lifecycle_family_state",
+        "index:idx_lifecycle_person",
+        "index:idx_obligations_due",
+        "index:idx_obligations_lease",
+        "index:idx_reconciliation_family",
+        "index:idx_source_events_provider_event",
+        "index:idx_source_events_received",
+        "index:idx_source_runtime_provenance_deployment",
+        "index:idx_source_transitions",
+        "index:idx_steps_due",
+        "index:idx_workflow_one_published",
+        "table:automation_deployment_attestations",
+        "table:automation_events",
+        "table:automation_release_manifests",
+        "table:command_attempts",
+        "table:evidence_access_events",
+        "table:exception_events",
+        "table:lifecycle_exceptions",
+        "table:lifecycle_instances",
+        "table:lifecycle_obligations",
+        "table:obligation_lease_events",
+        "table:provider_receipts",
+        "table:reconciliation_runs",
+        "table:reliability_schema_contracts",
+        "table:reliability_schema_versions",
+        "table:reminder_enrollments",
+        "table:reminder_steps",
+        "table:source_event_runtime_provenance",
+        "table:source_event_transitions",
+        "table:source_events",
+        "table:workflow_versions",
+        "trigger:automation_deployment_attestations_consistent_insert",
+        "trigger:automation_deployment_attestations_no_delete",
+        "trigger:automation_deployment_attestations_no_overlap_conflict",
+        "trigger:automation_deployment_attestations_no_update",
+        "trigger:automation_deployment_attestations_no_version_identity_conflict",
+        "trigger:automation_events_no_delete",
+        "trigger:automation_events_no_update",
+        "trigger:automation_release_manifests_no_delete",
+        "trigger:automation_release_manifests_no_update",
+        "trigger:evidence_access_no_delete",
+        "trigger:evidence_access_no_update",
+        "trigger:exception_events_no_delete",
+        "trigger:exception_events_no_update",
+        "trigger:lease_events_no_delete",
+        "trigger:lease_events_no_update",
+        "trigger:reliability_schema_contracts_no_delete",
+        "trigger:reliability_schema_contracts_no_update",
+        "trigger:source_event_runtime_provenance_consistent_insert",
+        "trigger:source_event_runtime_provenance_no_delete",
+        "trigger:source_event_runtime_provenance_no_update",
+        "trigger:source_events_no_delete",
+        "trigger:source_events_no_update",
+        "trigger:source_transitions_no_delete",
+        "trigger:source_transitions_no_update"
+      ])
+    });
+    RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE = Object.freeze({
+      ...RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE,
+      variantId: "production-live-lineage-v2-8c7245a",
+      migrationId: "reliability-spine-v2-production-lineage-candidate-unobserved",
+      description: "Predicted production-lineage v2 structure candidate; not observed authority",
+      structureSha256: "8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62"
+    });
+    RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY = Object.freeze({
+      ...RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE,
+      variantId: "production-live-lineage-v2-authority-8c7245a",
+      migrationId: "reliability-spine-v2-production-lineage-8c7245ae",
+      description: "Authenticated release manifests, deployment attestations, and source-event runtime provenance"
+    });
+    V2_ONLY_OBJECTS = new Set(RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE.expectedObjects.filter(
+      (object) => !RELIABILITY_SCHEMA_V1.expectedObjects.includes(object)
+    ));
+    V2_ADDITIVE_TABLES = Object.freeze([
+      "automation_deployment_attestations",
+      "automation_release_manifests",
+      "reliability_schema_contracts",
+      "source_event_runtime_provenance"
+    ]);
+    __name(rowsOf, "rowsOf");
+    __name(all, "all");
+    __name(normalizeDdl, "normalizeDdl");
+    __name(reliabilityStructureProjection, "reliabilityStructureProjection");
+    __name(assessReliabilityStructure, "assessReliabilityStructure");
+    __name(readReliabilitySchemaSnapshot, "readReliabilitySchemaSnapshot");
+    __name(exactMarker, "exactMarker");
+    __name(exactSchemaContract, "exactSchemaContract");
+    __name(assessReliabilitySchemaAuthority, "assessReliabilitySchemaAuthority");
+    __name(readReliabilitySchemaAuthority, "readReliabilitySchemaAuthority");
+  }
+});
+
 // lib/reliability-store.js
 function changesOf7(result) {
   return Number(result?.meta?.changes || 0);
@@ -25394,11 +26654,15 @@ async function readAcceptance(db, sourceEventId) {
 async function readReliabilityHealth(db, { family, nowMs, maxAgeMs }) {
   if (!db) return { truth: "Unknown", reason: "authority_unavailable", checkedAt: nowMs };
   try {
-    const schema = await db.prepare(
-      "SELECT version, applied_at, migration_id FROM reliability_schema_versions ORDER BY version DESC LIMIT 1"
-    ).first();
-    if (!schema || Number(schema.version) !== RELIABILITY_SCHEMA_VERSION || schema.migration_id !== "reliability-spine-v1") {
-      return { truth: "Degraded", reason: "schema_unproven", checkedAt: nowMs, schemaVersion: schema?.version ?? null };
+    const schema = await readReliabilitySchemaAuthority(db);
+    if (!schema.proven) {
+      return {
+        truth: "Degraded",
+        reason: "schema_unproven",
+        schemaReason: schema.reason,
+        checkedAt: nowMs,
+        schemaVersion: schema.version
+      };
     }
     const coverage = await db.prepare(`SELECT * FROM reconciliation_runs
       WHERE family = ? ORDER BY started_at DESC LIMIT 1`).bind(family).first();
@@ -25495,8 +26759,9 @@ async function recordEvidenceAccess(db, { actor, family, action, sourceEventId =
 }
 var init_reliability_store = __esm({
   "lib/reliability-store.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_reliability_contract();
+    init_reliability_schema_authority();
     __name(changesOf7, "changesOf");
     __name(readAcceptance, "readAcceptance");
     __name(readReliabilityHealth, "readReliabilityHealth");
@@ -25592,7 +26857,7 @@ function normalizeWorkerPersonEvents(events = []) {
     };
     const refreshed = eventEvidence(raw, { terminalOutcome: terminalByRef.get(event2.messageRef) || null });
     const retained = (event2.evidence?.gaps || []).filter((gap) => !deliveryGapCodes.has(gap.code));
-    const gaps = [...retained, ...refreshed.gaps].filter((gap, index, all) => all.findIndex((candidate) => candidate.code === gap.code) === index);
+    const gaps = [...retained, ...refreshed.gaps].filter((gap, index, all2) => all2.findIndex((candidate) => candidate.code === gap.code) === index);
     const displayOutcome2 = event2.action === "send" && event2.outcome === "sent" ? event2.channel === "email" ? "Accepted by Gmail" : "Accepted by SMS provider" : event2.action === "delivery_status" && event2.outcome === "delivered" ? "Delivered" : event2.displayOutcome;
     return { ...event2, displayOutcome: displayOutcome2, evidence: { ...event2.evidence || {}, source: refreshed.source, gaps } };
   });
@@ -25635,10 +26900,10 @@ function windowHours(url, fallback) {
     24 * 90
   );
 }
-async function onRequestOptions48(context) {
+async function onRequestOptions49(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestPost40(context) {
+async function onRequestPost41(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireEbenStaffAuth(context, headers4);
   if (error) return error;
@@ -25655,7 +26920,7 @@ async function onRequestPost40(context) {
   const result = await response2.text();
   return new Response(result, { status: response2.status, headers: headers4 });
 }
-async function onRequestGet33(context) {
+async function onRequestGet34(context) {
   const headers4 = {
     ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"),
     "Content-Type": "application/json"
@@ -25719,7 +26984,7 @@ async function onRequestGet33(context) {
       }
       const queue = await readExceptionQueue(db, { family: requestedFamily });
       const exceptions = isEben ? queue : queue.filter((item) => String(item.accountable_owner || "").toLowerCase() === "garrett");
-      const counts = await readReliabilityCounts(db, {
+      const counts2 = await readReliabilityCounts(db, {
         family: requestedFamily,
         accountableOwner: isEben ? null : "Garrett"
       });
@@ -25744,8 +27009,8 @@ async function onRequestGet33(context) {
         sourceEvents: isEben ? await readRecentSourceEvents(db, { family: requestedFamily }) : [],
         exceptions,
         sourceEventDetail,
-        sourceEventTotal: isEben ? counts.sourceEventTotal : null,
-        exceptionTotal: counts.exceptionTotal,
+        sourceEventTotal: isEben ? counts2.sourceEventTotal : null,
+        exceptionTotal: counts2.exceptionTotal,
         access: isEben ? "evidence_control" : "assigned_actions_only"
       }), { status: 200, headers: headers4 });
     }
@@ -25892,7 +27157,7 @@ async function onRequestGet33(context) {
 var RELIABILITY_ROUTES, VALID_CONTACT_ID, VALID_AUTOMATION_KEY, VALID_FAMILY_KEY, VALID_ENGINES, VALID_SOURCE_EVENT_ID, DEFAULT_FAILURE_WINDOW_HOURS, DEFAULT_ACTIVITY_WINDOW_HOURS, CRM_WORKER_CONTACTS_URL, CRM_WORKER_AUTOMATIONS_URL, CRM_WORKER_FAMILIES_URL, CRM_WORKER_TIMEOUT_MS, REMINDER_ENGINE_URL2;
 var init_staff_automations = __esm({
   "api/staff-automations.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_automation_views();
     init_automation_registry();
@@ -25923,20 +27188,20 @@ var init_staff_automations = __esm({
     __name(workerFamilyAutomationEvidence, "workerFamilyAutomationEvidence");
     __name(contactIdentityGaps, "contactIdentityGaps");
     __name(windowHours, "windowHours");
-    __name(onRequestOptions48, "onRequestOptions");
-    __name(onRequestPost40, "onRequestPost");
-    __name(onRequestGet33, "onRequestGet");
+    __name(onRequestOptions49, "onRequestOptions");
+    __name(onRequestPost41, "onRequestPost");
+    __name(onRequestGet34, "onRequestGet");
   }
 });
 
 // api/staff-balances.js
-async function onRequestOptions49(context) {
+async function onRequestOptions50(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet34(context) {
+async function onRequestGet35(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -26093,7 +27358,7 @@ async function onRequestGet34(context) {
 var GHL_API_BASE28, GHL_LOCATION_ID21, CACHE_KEY, CACHE_TTL_SECONDS, MAX_CONTACT_PAGES, PAGE_SIZE2;
 var init_staff_balances = __esm({
   "api/staff-balances.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
@@ -26103,8 +27368,8 @@ var init_staff_balances = __esm({
     CACHE_TTL_SECONDS = 300;
     MAX_CONTACT_PAGES = 10;
     PAGE_SIZE2 = 100;
-    __name(onRequestOptions49, "onRequestOptions");
-    __name(onRequestGet34, "onRequestGet");
+    __name(onRequestOptions50, "onRequestOptions");
+    __name(onRequestGet35, "onRequestGet");
   }
 });
 
@@ -26168,15 +27433,15 @@ async function findUpcomingOnCalendar(context, contactId, calendarId) {
   })).filter((appt) => appt.id && appt.startTime && !CANCELLED.has(appt.status) && Date.parse(appt.startTime) >= now - 60 * 60 * 1e3).sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
   return upcoming[0] || null;
 }
-async function onRequestOptions50(context) {
+async function onRequestOptions51(context) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS3)
+    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS4)
   });
 }
-async function onRequestPost41(context) {
+async function onRequestPost42(context) {
   const headers4 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS3),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS4),
     "Content-Type": "application/json"
   };
   const { error } = await requireStaffAuth(context, headers4);
@@ -26307,10 +27572,10 @@ async function onRequestPost41(context) {
   }
   return json13({ error: "Unknown action" }, 400, headers4);
 }
-var GHL_API_BASE29, GHL_LOCATION_ID22, METHODS3, CANCELLED;
+var GHL_API_BASE29, GHL_LOCATION_ID22, METHODS4, CANCELLED;
 var init_staff_book = __esm({
   "api/staff-book.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ghl();
     init_datetime();
@@ -26321,15 +27586,15 @@ var init_staff_book = __esm({
     init_ghl_appointment_handoff();
     GHL_API_BASE29 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID22 = "7pIO7FHVAyBT1jKGhfQM";
-    METHODS3 = "POST, OPTIONS";
+    METHODS4 = "POST, OPTIONS";
     CANCELLED = /* @__PURE__ */ new Set(["cancelled", "canceled"]);
     __name(json13, "json");
     __name(cleanText3, "cleanText");
     __name(validDateRange, "validDateRange");
     __name(freeSlots, "freeSlots");
     __name(findUpcomingOnCalendar, "findUpcomingOnCalendar");
-    __name(onRequestOptions50, "onRequestOptions");
-    __name(onRequestPost41, "onRequestPost");
+    __name(onRequestOptions51, "onRequestOptions");
+    __name(onRequestPost42, "onRequestPost");
   }
 });
 
@@ -26385,7 +27650,7 @@ function listStaffCalendarDefinitions() {
 var GROUPS, DEFINITIONS2, STAFF_BOOKABLE_IDS;
 var init_staff_calendar_catalog = __esm({
   "lib/staff-calendar-catalog.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_booking_slot_policy();
     init_staff_book_calendars();
     GROUPS = Object.freeze([
@@ -26559,15 +27824,15 @@ var init_staff_calendar_catalog = __esm({
 });
 
 // api/staff-calendars.js
-async function onRequestOptions51(context) {
+async function onRequestOptions52(context) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS4)
+    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS5)
   });
 }
-async function onRequestGet35(context) {
+async function onRequestGet36(context) {
   const headers4 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS4),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS5),
     "Content-Type": "application/json",
     "Cache-Control": "private, no-store"
   };
@@ -26575,26 +27840,26 @@ async function onRequestGet35(context) {
   if (error) return error;
   return new Response(JSON.stringify(listStaffCalendarDefinitions()), { status: 200, headers: headers4 });
 }
-var METHODS4;
+var METHODS5;
 var init_staff_calendars = __esm({
   "api/staff-calendars.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_staff_calendar_catalog();
-    METHODS4 = "GET, OPTIONS";
-    __name(onRequestOptions51, "onRequestOptions");
-    __name(onRequestGet35, "onRequestGet");
+    METHODS5 = "GET, OPTIONS";
+    __name(onRequestOptions52, "onRequestOptions");
+    __name(onRequestGet36, "onRequestGet");
   }
 });
 
 // api/staff-call-coach-run.js
-async function onRequestOptions52(context) {
+async function onRequestOptions53(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost42(context) {
+async function onRequestPost43(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -26631,22 +27896,22 @@ async function onRequestPost42(context) {
 var WORKER_BASE;
 var init_staff_call_coach_run = __esm({
   "api/staff-call-coach-run.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_BASE = "https://call-coach.eben-fa2.workers.dev";
-    __name(onRequestOptions52, "onRequestOptions");
-    __name(onRequestPost42, "onRequestPost");
+    __name(onRequestOptions53, "onRequestOptions");
+    __name(onRequestPost43, "onRequestPost");
   }
 });
 
 // api/staff-checkin.js
-async function onRequestOptions53(context) {
+async function onRequestOptions54(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost43(context) {
+async function onRequestPost44(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -26729,13 +27994,13 @@ async function onRequestPost43(context) {
 var GHL_API_BASE30, AGREEMENT_VERSION;
 var init_staff_checkin = __esm({
   "api/staff-checkin.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE30 = "https://services.leadconnectorhq.com";
     AGREEMENT_VERSION = "practice-member-v2026-04-17";
-    __name(onRequestOptions53, "onRequestOptions");
-    __name(onRequestPost43, "onRequestPost");
+    __name(onRequestOptions54, "onRequestOptions");
+    __name(onRequestPost44, "onRequestPost");
   }
 });
 
@@ -26831,10 +28096,10 @@ function summarizeClarity(payload, days) {
     interactionSignals: Array.from(signals.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
   };
 }
-async function onRequestOptions54(context) {
+async function onRequestOptions55(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet36(context) {
+async function onRequestGet37(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers4);
@@ -26871,7 +28136,7 @@ async function onRequestGet36(context) {
 var CLARITY_ENDPOINT, STUDY_PATH, SIGNAL_METRICS;
 var init_staff_clarity_study = __esm({
   "api/staff-clarity-study.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     CLARITY_ENDPOINT = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
     STUDY_PATH = "/book/study";
@@ -26889,19 +28154,19 @@ var init_staff_clarity_study = __esm({
     __name(rowsForStudy, "rowsForStudy");
     __name(firstText, "firstText");
     __name(summarizeClarity, "summarizeClarity");
-    __name(onRequestOptions54, "onRequestOptions");
-    __name(onRequestGet36, "onRequestGet");
+    __name(onRequestOptions55, "onRequestOptions");
+    __name(onRequestGet37, "onRequestGet");
   }
 });
 
 // api/staff-coach-one.js
-async function onRequestOptions55(context) {
+async function onRequestOptions56(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost44(context) {
+async function onRequestPost45(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -26936,11 +28201,11 @@ async function onRequestPost44(context) {
 var WORKER_URL3;
 var init_staff_coach_one = __esm({
   "api/staff-coach-one.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL3 = "https://call-coach.eben-fa2.workers.dev/coach-one";
-    __name(onRequestOptions55, "onRequestOptions");
-    __name(onRequestPost44, "onRequestPost");
+    __name(onRequestOptions56, "onRequestOptions");
+    __name(onRequestPost45, "onRequestPost");
   }
 });
 
@@ -27031,8 +28296,8 @@ function normalizeTeamCommunicationPreferences(input, userValue) {
   const incomingCategories = input.categories ?? {};
   if (!incomingCategories || typeof incomingCategories !== "object" || Array.isArray(incomingCategories)) throw new Error("Categories must be an object");
   const knownIds = new Set(CATEGORY_DEFINITIONS.map((category) => category.id));
-  for (const id2 of Object.keys(incomingCategories)) {
-    if (!knownIds.has(id2)) throw new Error(`Unknown event category: ${id2}`);
+  for (const id3 of Object.keys(incomingCategories)) {
+    if (!knownIds.has(id3)) throw new Error(`Unknown event category: ${id3}`);
   }
   const categories = {};
   for (const category of CATEGORY_DEFINITIONS) {
@@ -27098,7 +28363,7 @@ function communicationPreferencesView({ user, preferences, saved, storageAvailab
 var TEAM_COMMUNICATION_PREFERENCES_VERSION, TEAM_COMMUNICATION_DEFAULT_TIMEZONE, STAFF_USERS, CHANNELS3, CADENCES, CATEGORY_DEFINITIONS, EXTERNAL_ROUTES, CURRENT_CHANNELS, CURRENT_CADENCE;
 var init_team_communication_preferences = __esm({
   "lib/team-communication-preferences.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     TEAM_COMMUNICATION_PREFERENCES_VERSION = 1;
     TEAM_COMMUNICATION_DEFAULT_TIMEZONE = "America/Los_Angeles";
     STAFF_USERS = Object.freeze(["Eben", "Garrett"]);
@@ -27179,7 +28444,7 @@ var init_team_communication_preferences = __esm({
 });
 
 // api/staff-communication-preferences.js
-function responseHeaders(origin) {
+function responseHeaders2(origin) {
   return {
     ...corsHeaders3(origin, "GET, PUT, OPTIONS"),
     "Content-Type": "application/json",
@@ -27209,11 +28474,11 @@ async function readRecord(kv, user) {
     return null;
   }
 }
-async function onRequestOptions56(context) {
+async function onRequestOptions57(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, PUT, OPTIONS") });
 }
-async function onRequestGet37(context) {
-  const headers4 = responseHeaders(context.request.headers.get("Origin"));
+async function onRequestGet38(context) {
+  const headers4 = responseHeaders2(context.request.headers.get("Origin"));
   const auth = await authenticate3(context, headers4);
   if (auth.error) return auth.error;
   try {
@@ -27231,7 +28496,7 @@ async function onRequestGet37(context) {
   }
 }
 async function onRequestPut(context) {
-  const headers4 = responseHeaders(context.request.headers.get("Origin"));
+  const headers4 = responseHeaders2(context.request.headers.get("Origin"));
   const auth = await authenticate3(context, headers4);
   if (auth.error) return auth.error;
   if (!context.env.PORTAL_KV) return json14({ error: "Communication preference storage is not configured" }, 422, headers4);
@@ -27267,15 +28532,15 @@ async function onRequestPut(context) {
 }
 var init_staff_communication_preferences = __esm({
   "api/staff-communication-preferences.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_team_communication_preferences();
-    __name(responseHeaders, "responseHeaders");
+    __name(responseHeaders2, "responseHeaders");
     __name(json14, "json");
     __name(authenticate3, "authenticate");
     __name(readRecord, "readRecord");
-    __name(onRequestOptions56, "onRequestOptions");
-    __name(onRequestGet37, "onRequestGet");
+    __name(onRequestOptions57, "onRequestOptions");
+    __name(onRequestGet38, "onRequestGet");
     __name(onRequestPut, "onRequestPut");
   }
 });
@@ -27287,10 +28552,10 @@ function identity(partner) {
 function preferred(a, b) {
   return String(a.latest_visit_at || "").localeCompare(String(b.latest_visit_at || "")) >= 0 ? a : b;
 }
-async function onRequestOptions57(context) {
+async function onRequestOptions58(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet38(context) {
+async function onRequestGet39(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
   try {
     const { error, payload } = await requireStaffAuth(context, headers4);
@@ -27339,14 +28604,14 @@ async function onRequestGet38(context) {
 var STAGE_RANK2;
 var init_staff_community = __esm({
   "api/staff-community.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGE_RANK2 = { host: 1, engaged_host: 2, partner: 3, workshop_opportunity: 4 };
     __name(identity, "identity");
     __name(preferred, "preferred");
-    __name(onRequestOptions57, "onRequestOptions");
-    __name(onRequestGet38, "onRequestGet");
+    __name(onRequestOptions58, "onRequestOptions");
+    __name(onRequestGet39, "onRequestGet");
   }
 });
 
@@ -27362,10 +28627,10 @@ function dataUrl(buffer) {
   const mime = isPng ? "image/png" : isWebp ? "image/webp" : "image/jpeg";
   return `data:${mime};base64,${btoa(binary)}`;
 }
-async function onRequestOptions58(context) {
+async function onRequestOptions59(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet39(context) {
+async function onRequestGet40(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
   try {
     const { error, payload } = await requireStaffAuth(context, headers4);
@@ -27398,27 +28663,27 @@ async function onRequestGet39(context) {
 }
 var init_staff_community_image = __esm({
   "api/staff-community-image.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_cos_field_visits();
     __name(dataUrl, "dataUrl");
-    __name(onRequestOptions58, "onRequestOptions");
-    __name(onRequestGet39, "onRequestGet");
+    __name(onRequestOptions59, "onRequestOptions");
+    __name(onRequestGet40, "onRequestGet");
   }
 });
 
 // api/staff-community-touch.js
-function text3(value, limit) {
+function text4(value, limit) {
   return typeof value === "string" ? value.trim().slice(0, limit) : "";
 }
 function date(value) {
-  const valueText = text3(value, 20);
+  const valueText = text4(value, 20);
   return /^\d{4}-\d{2}-\d{2}$/.test(valueText) ? valueText : "";
 }
-async function onRequestOptions59(context) {
+async function onRequestOptions60(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost45(context) {
+async function onRequestPost46(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
     const { error, payload } = await requireStaffAuth(context, headers4);
@@ -27426,29 +28691,29 @@ async function onRequestPost45(context) {
     const { body, error: bodyError } = await parseJsonBody(context.request, headers4);
     if (bodyError) return bodyError;
     const relationship = body.relationship && typeof body.relationship === "object" ? body.relationship : {};
-    const businessName = text3(relationship.business_name, 180);
-    const relationshipId = text3(relationship.id, 300);
-    const notes = text3(body.notes, 2e3);
+    const businessName = text4(relationship.business_name, 180);
+    const relationshipId = text4(relationship.id, 300);
+    const notes = text4(body.notes, 2e3);
     if (!businessName) return new Response(JSON.stringify({ error: "Business name required" }), { status: 400, headers: headers4 });
     if (!notes) return new Response(JSON.stringify({ error: "A short touch note is required" }), { status: 400, headers: headers4 });
-    const requestedStage = text3(body.relationship_stage, 80);
+    const requestedStage = text4(body.relationship_stage, 80);
     const stage = STAGES2.has(requestedStage) ? requestedStage : "host";
     const users = [...new Set([payload.user, "Eben", "Staff"].filter(Boolean))];
     const ownerLists = await Promise.all(users.map(async (user) => ({ user, partners: await listFieldPartners(context.env.PORTAL_KV, user, { limit: 500 }) })));
     const owner = ownerLists.find(({ partners }) => partners.some((partner2) => partner2.id === relationshipId))?.user || payload.user || "Staff";
     const { partner } = await recordFieldVisit(context.env.PORTAL_KV, owner, {
       business_name: businessName,
-      location: text3(relationship.location, 280),
-      study: text3(relationship.study, 160),
-      flyer_location: text3(relationship.flyer_location, 280),
+      location: text4(relationship.location, 280),
+      study: text4(relationship.study, 160),
+      flyer_location: text4(relationship.flyer_location, 280),
       contact: relationship.contact && typeof relationship.contact === "object" ? relationship.contact : {},
       relationship_stage: stage,
       workshop_signal: Boolean(body.workshop_signal),
       notes,
       next_visit_on: date(body.next_visit_on),
       event_on: date(body.event_on),
-      event_title: text3(body.event_title, 240),
-      event_details: text3(body.event_details, 1200)
+      event_title: text4(body.event_title, 240),
+      event_details: text4(body.event_details, 1200)
     });
     return new Response(JSON.stringify({ partner: { ...partner, image_keys: void 0 } }), { status: 200, headers: headers4 });
   } catch (err) {
@@ -27459,14 +28724,14 @@ async function onRequestPost45(context) {
 var STAGES2;
 var init_staff_community_touch = __esm({
   "api/staff-community-touch.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGES2 = /* @__PURE__ */ new Set(["host", "engaged_host", "partner", "workshop_opportunity"]);
-    __name(text3, "text");
+    __name(text4, "text");
     __name(date, "date");
-    __name(onRequestOptions59, "onRequestOptions");
-    __name(onRequestPost45, "onRequestPost");
+    __name(onRequestOptions60, "onRequestOptions");
+    __name(onRequestPost46, "onRequestPost");
   }
 });
 
@@ -27562,7 +28827,7 @@ async function listPaymentRecordsForContact(kv, contactId) {
 var PAYMENT_STATUSES, PAYMENT_METHODS, SOURCES, NOTE_MAX, PREFIX2;
 var init_session_payment = __esm({
   "lib/session-payment.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     PAYMENT_STATUSES = Object.freeze([
       "paid",
       // confirmed paid (cash, venmo, a matched Stripe charge, …)
@@ -27598,13 +28863,13 @@ var init_session_payment = __esm({
 });
 
 // api/staff-contact.js
-async function onRequestOptions60(context) {
+async function onRequestOptions61(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet40(context) {
+async function onRequestGet41(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -27963,7 +29228,7 @@ async function onRequestGet40(context) {
 var GHL_API_BASE31, GHL_LOCATION_ID23;
 var init_staff_contact = __esm({
   "api/staff-contact.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -27973,19 +29238,19 @@ var init_staff_contact = __esm({
     init_datetime();
     GHL_API_BASE31 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID23 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions60, "onRequestOptions");
-    __name(onRequestGet40, "onRequestGet");
+    __name(onRequestOptions61, "onRequestOptions");
+    __name(onRequestGet41, "onRequestGet");
   }
 });
 
 // api/staff-contacts.js
-async function onRequestOptions61(context) {
+async function onRequestOptions62(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet41(context) {
+async function onRequestGet42(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -28038,19 +29303,19 @@ async function onRequestGet41(context) {
 var GHL_API_BASE32, GHL_LOCATION_ID24;
 var init_staff_contacts = __esm({
   "api/staff-contacts.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
     GHL_API_BASE32 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID24 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions61, "onRequestOptions");
-    __name(onRequestGet41, "onRequestGet");
+    __name(onRequestOptions62, "onRequestOptions");
+    __name(onRequestGet42, "onRequestGet");
   }
 });
 
 // api/staff-conversations.js
-async function onRequestOptions62(context) {
+async function onRequestOptions63(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -28084,15 +29349,15 @@ function buildContactName(conv) {
   if (combined) return combined;
   return conv.email || conv.phone || "Unknown";
 }
-function isNonReply(text5) {
-  const t = String(text5 || "").trim();
+function isNonReply(text6) {
+  const t = String(text6 || "").trim();
   if (!t) return true;
   if (/please type your reply above this line|^#{2}-|-#{2}$/i.test(t)) return true;
   if (/\bverification code\b|\bis your\b[^.]*\bcode\b|\byour\b[^.]*\bcode is\b|\bone[- ]?time (code|password)\b|\bOTP\b|do not share/i.test(t)) return true;
   if (t.length <= 40 && CLOSER_RE.test(t)) return true;
   return false;
 }
-async function onRequestGet42(context) {
+async function onRequestGet43(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -28243,12 +29508,12 @@ async function onRequestGet42(context) {
 var GHL_API_BASE33, GHL_LOCATION_ID25, CLOSER_WORD, CLOSER_RE;
 var init_staff_conversations = __esm({
   "api/staff-conversations.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE33 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID25 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions62, "onRequestOptions");
+    __name(onRequestOptions63, "onRequestOptions");
     __name(isInbound, "isInbound");
     __name(normalizeMessageType, "normalizeMessageType");
     __name(isCallType, "isCallType");
@@ -28257,18 +29522,18 @@ var init_staff_conversations = __esm({
     CLOSER_WORD = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE = new RegExp(`^(?:${CLOSER_WORD}[\\s!.,]*)+$`, "i");
     __name(isNonReply, "isNonReply");
-    __name(onRequestGet42, "onRequestGet");
+    __name(onRequestGet43, "onRequestGet");
   }
 });
 
 // api/staff-crm-mirror-access.js
-async function onRequestOptions63(context) {
+async function onRequestOptions64(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost46(context) {
+async function onRequestPost47(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -28328,23 +29593,23 @@ async function onRequestPost46(context) {
 var WORKER_URL4, WORKER_TIMEOUT_MS2;
 var init_staff_crm_mirror_access = __esm({
   "api/staff-crm-mirror-access.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL4 = "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS2 = 15e3;
-    __name(onRequestOptions63, "onRequestOptions");
-    __name(onRequestPost46, "onRequestPost");
+    __name(onRequestOptions64, "onRequestOptions");
+    __name(onRequestPost47, "onRequestPost");
   }
 });
 
 // api/staff-data.js
-async function onRequestOptions64(context) {
+async function onRequestOptions65(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet43(context) {
+async function onRequestGet44(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -28556,7 +29821,7 @@ async function onRequestGet43(context) {
 var GHL_API_BASE34, GHL_LOCATION_ID26, GHL_GARRETT_USER_ID2;
 var init_staff_data = __esm({
   "api/staff-data.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -28567,8 +29832,8 @@ var init_staff_data = __esm({
     GHL_API_BASE34 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID26 = "7pIO7FHVAyBT1jKGhfQM";
     GHL_GARRETT_USER_ID2 = "P5b0oSTaVYfULDjZ6YyG";
-    __name(onRequestOptions64, "onRequestOptions");
-    __name(onRequestGet43, "onRequestGet");
+    __name(onRequestOptions65, "onRequestOptions");
+    __name(onRequestGet44, "onRequestGet");
   }
 });
 
@@ -28657,7 +29922,7 @@ function sessionsDoneCount(record3) {
 var SESSION_COUNT, BODY_PART_VALUES, MAX_TEXT, MAX_WEEKS, MAX_INSTRUMENT_ITEMS, MAX_ITEM_ID, ITEM_ID_RE, STUDY_SESSIONS_DONE_FIELD_ID;
 var init_study_capture = __esm({
   "lib/study-capture.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_studies();
     SESSION_COUNT = 3;
     BODY_PART_VALUES = /* @__PURE__ */ new Set(["left", "right", "both"]);
@@ -28682,13 +29947,13 @@ var init_study_capture = __esm({
 });
 
 // api/staff-elbow-study.js
-async function onRequestOptions65({ request }) {
+async function onRequestOptions66({ request }) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet44(context) {
+async function onRequestGet45(context) {
   const { request, env } = context;
   const origin = request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
@@ -28706,7 +29971,7 @@ async function onRequestGet44(context) {
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
   }
 }
-async function onRequestPost47(context) {
+async function onRequestPost48(context) {
   const { request, env } = context;
   const origin = request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
@@ -28742,15 +30007,15 @@ async function onRequestPost47(context) {
 var GHL_API_BASE35, STUDY_SLUG;
 var init_staff_elbow_study = __esm({
   "api/staff-elbow-study.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
     GHL_API_BASE35 = "https://services.leadconnectorhq.com";
     STUDY_SLUG = "tennis-elbow";
-    __name(onRequestOptions65, "onRequestOptions");
-    __name(onRequestGet44, "onRequestGet");
-    __name(onRequestPost47, "onRequestPost");
+    __name(onRequestOptions66, "onRequestOptions");
+    __name(onRequestGet45, "onRequestGet");
+    __name(onRequestPost48, "onRequestPost");
   }
 });
 
@@ -28822,7 +30087,7 @@ function isOpsErrKey(key) {
 }
 var init_staff_exceptions = __esm({
   "lib/staff-exceptions.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(humanizeOpsError, "humanizeOpsError");
     __name(sourceLabel, "sourceLabel");
     __name(unique, "unique");
@@ -28831,15 +30096,15 @@ var init_staff_exceptions = __esm({
 });
 
 // api/staff-exceptions.js
-async function onRequestOptions66(context) {
+async function onRequestOptions67(context) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS5)
+    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS6)
   });
 }
-async function onRequestGet45(context) {
+async function onRequestGet46(context) {
   const headers4 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS5),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
     "Content-Type": "application/json"
   };
   const { error } = await requireStaffAuth(context, headers4);
@@ -28855,9 +30120,9 @@ async function onRequestGet45(context) {
     { status: 200, headers: headers4 }
   );
 }
-async function onRequestPost48(context) {
+async function onRequestPost49(context) {
   const headers4 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS5),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
     "Content-Type": "application/json"
   };
   const { error } = await requireStaffAuth(context, headers4);
@@ -28875,23 +30140,23 @@ async function onRequestPost48(context) {
   await clearOpsError(context.env, key);
   return new Response(JSON.stringify({ ok: true, key }), { status: 200, headers: headers4 });
 }
-var METHODS5;
+var METHODS6;
 var init_staff_exceptions2 = __esm({
   "api/staff-exceptions.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ops_alert();
     init_staff_exceptions();
-    METHODS5 = "GET, POST, OPTIONS";
-    __name(onRequestOptions66, "onRequestOptions");
-    __name(onRequestGet45, "onRequestGet");
-    __name(onRequestPost48, "onRequestPost");
+    METHODS6 = "GET, POST, OPTIONS";
+    __name(onRequestOptions67, "onRequestOptions");
+    __name(onRequestGet46, "onRequestGet");
+    __name(onRequestPost49, "onRequestPost");
   }
 });
 
 // api/staff-field-study.js
-function recordKey(id2) {
-  return `field_study:${id2}`;
+function recordKey(id3) {
+  return `field_study:${id3}`;
 }
 function cleanText4(value, max = MAX_TEXT2) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -28987,17 +30252,17 @@ function isCompleteBaseline(baseline) {
   return baseline.discomfortNow !== null && baseline.worstPastSevenDays !== null && Boolean(baseline.easierActivity) && baseline.activityDifficulty !== null && baseline.dayLimit !== null && baseline.activityAvoidance !== null && baseline.bodyLocations.some(Boolean);
 }
 function indexIds(raw) {
-  return Array.isArray(raw?.ids) ? raw.ids.filter((id2) => typeof id2 === "string").slice(0, MAX_INDEX) : [];
+  return Array.isArray(raw?.ids) ? raw.ids.filter((id3) => typeof id3 === "string").slice(0, MAX_INDEX) : [];
 }
-async function addToIndex(kv, id2) {
+async function addToIndex(kv, id3) {
   const current = await kv.get(INDEX_KEY2, "json");
-  const ids = indexIds(current).filter((existing) => existing !== id2);
-  ids.unshift(id2);
+  const ids = indexIds(current).filter((existing) => existing !== id3);
+  ids.unshift(id3);
   await kv.put(INDEX_KEY2, JSON.stringify({ ids: ids.slice(0, MAX_INDEX) }));
 }
 async function findSameDayDuplicate(kv, { phone, email, fieldStudyKey, paperDate }) {
   const index = await kv.get(INDEX_KEY2, "json");
-  const records = await Promise.all(indexIds(index).map((id2) => kv.get(recordKey(id2), "json")));
+  const records = await Promise.all(indexIds(index).map((id3) => kv.get(recordKey(id3), "json")));
   return records.find((record3) => record3 && record3.fieldStudyKey === fieldStudyKey && record3.paperDate === paperDate && (record3.phone === phone || record3.email === email)) || null;
 }
 function studyAppointments(rawAppointments) {
@@ -29052,13 +30317,13 @@ function summarize(record3) {
 function json15(data, status, headers4) {
   return new Response(JSON.stringify(data), { status, headers: headers4 });
 }
-async function onRequestOptions67({ request }) {
+async function onRequestOptions68({ request }) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet46(context) {
+async function onRequestGet47(context) {
   const { request, env } = context;
   const headers4 = { ...corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error } = await requireStaffAuth(context, headers4);
@@ -29073,7 +30338,7 @@ async function onRequestGet46(context) {
     }
     const index = await env.PORTAL_KV.get(INDEX_KEY2, "json");
     const ids = indexIds(index);
-    let records = (await Promise.all(ids.map((id2) => env.PORTAL_KV.get(recordKey(id2), "json")))).filter(Boolean).map(summarize);
+    let records = (await Promise.all(ids.map((id3) => env.PORTAL_KV.get(recordKey(id3), "json")))).filter(Boolean).map(summarize);
     if (includeBookings) records = await enrichBookings(context, records);
     return json15({ records }, 200, headers4);
   } catch (err) {
@@ -29081,7 +30346,7 @@ async function onRequestGet46(context) {
     return json15({ error: "Internal server error" }, 500, headers4);
   }
 }
-async function onRequestPost49(context) {
+async function onRequestPost50(context) {
   const { request, env } = context;
   const headers4 = { ...corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error } = await requireStaffAuth(context, headers4);
@@ -29238,7 +30503,7 @@ async function onRequestPost49(context) {
 var GHL_API_BASE36, GHL_LOCATION_ID27, STUDY_NAME_FIELD_ID6, STUDY_SESSIONS_DONE_FIELD_ID2, FIELD_STUDY_TABLE_TAG, INDEX_KEY2, MAX_INDEX, MAX_TEXT2, FIELD_STUDIES;
 var init_staff_field_study = __esm({
   "api/staff-field-study.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ghl();
     init_studies();
@@ -29281,9 +30546,9 @@ var init_staff_field_study = __esm({
     __name(enrichBookings, "enrichBookings");
     __name(summarize, "summarize");
     __name(json15, "json");
-    __name(onRequestOptions67, "onRequestOptions");
-    __name(onRequestGet46, "onRequestGet");
-    __name(onRequestPost49, "onRequestPost");
+    __name(onRequestOptions68, "onRequestOptions");
+    __name(onRequestGet47, "onRequestGet");
+    __name(onRequestPost50, "onRequestPost");
   }
 });
 
@@ -29312,8 +30577,8 @@ function buildUserPrompt(contact, thread) {
   lines.push("Produce the brief as strict JSON.");
   return lines.join("\n");
 }
-function parseBrief(text5) {
-  let t = (text5 || "").trim();
+function parseBrief(text6) {
+  let t = (text6 || "").trim();
   t = t.replace(/^```(?:json)?\s*/i, "").replace(/\s*```$/i, "").trim();
   const obj = JSON.parse(t);
   return {
@@ -29322,10 +30587,10 @@ function parseBrief(text5) {
     drafts: Array.isArray(obj.drafts) ? obj.drafts.filter((d2) => d2 && typeof d2.text === "string").map((d2) => ({ channel: ["text", "call", "email"].includes(d2.channel) ? d2.channel : "text", text: d2.text })) : []
   };
 }
-async function onRequestOptions68(context) {
+async function onRequestOptions69(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost50(context) {
+async function onRequestPost51(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
@@ -29385,12 +30650,12 @@ async function onRequestPost50(context) {
       return new Response(JSON.stringify({ error: "Couldn't build the brief \u2014 model error. Try again." }), { status: 422, headers: headers4 });
     }
     const aiData = await aiRes.json();
-    const text5 = aiData?.content?.[0]?.text || "";
+    const text6 = aiData?.content?.[0]?.text || "";
     let brief;
     try {
-      brief = parseBrief(text5);
+      brief = parseBrief(text6);
     } catch {
-      console.error("[staff-followup-brief] JSON parse failed:", text5.slice(0, 300));
+      console.error("[staff-followup-brief] JSON parse failed:", text6.slice(0, 300));
       return new Response(JSON.stringify({ error: "Couldn't read the brief. Try again." }), { status: 422, headers: headers4 });
     }
     return new Response(JSON.stringify({ contactId, generatedAt: (/* @__PURE__ */ new Date()).toISOString(), ...brief }), { status: 200, headers: headers4 });
@@ -29403,7 +30668,7 @@ async function onRequestPost50(context) {
 var GHL_API_BASE37, GHL_LOCATION_ID28, ANTHROPIC_API, ANTHROPIC_VERSION, MODEL, SYSTEM;
 var init_staff_followup_brief = __esm({
   "api/staff-followup-brief.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE37 = "https://services.leadconnectorhq.com";
@@ -29428,24 +30693,24 @@ OUTPUT: strict JSON only, no prose, no code fences. Shape exactly:
 Give 2-3 drafts. Prefer "text" channel unless the thread suggests a call or email fits better. Use the prospect's real details (name, what they do, where) \u2014 never invent facts you weren't given.`;
     __name(buildUserPrompt, "buildUserPrompt");
     __name(parseBrief, "parseBrief");
-    __name(onRequestOptions68, "onRequestOptions");
-    __name(onRequestPost50, "onRequestPost");
+    __name(onRequestOptions69, "onRequestOptions");
+    __name(onRequestPost51, "onRequestPost");
   }
 });
 
 // api/staff-followups.js
-function responseHeaders2(context) {
+function responseHeaders3(context) {
   return {
     ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"),
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store"
   };
 }
-async function onRequestOptions69(context) {
-  return new Response(null, { status: 204, headers: responseHeaders2(context) });
+async function onRequestOptions70(context) {
+  return new Response(null, { status: 204, headers: responseHeaders3(context) });
 }
 async function proxy(context, method) {
-  const headers4 = responseHeaders2(context);
+  const headers4 = responseHeaders3(context);
   const { error, payload } = await requireStaffAuth(context, headers4);
   if (error) return error;
   const secret = context.env.WORKER_AUTH_SECRET;
@@ -29475,35 +30740,35 @@ async function proxy(context, method) {
     clearTimeout(timer);
   }
 }
-async function onRequestGet47(context) {
+async function onRequestGet48(context) {
   return proxy(context, "GET");
 }
-async function onRequestPost51(context) {
+async function onRequestPost52(context) {
   return proxy(context, "POST");
 }
 var WORKER_URL5, WORKER_TIMEOUT_MS3;
 var init_staff_followups = __esm({
   "api/staff-followups.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL5 = "https://amari-crm-mirror.eben-fa2.workers.dev/owned-followups";
     WORKER_TIMEOUT_MS3 = 15e3;
-    __name(responseHeaders2, "responseHeaders");
-    __name(onRequestOptions69, "onRequestOptions");
+    __name(responseHeaders3, "responseHeaders");
+    __name(onRequestOptions70, "onRequestOptions");
     __name(proxy, "proxy");
-    __name(onRequestGet47, "onRequestGet");
-    __name(onRequestPost51, "onRequestPost");
+    __name(onRequestGet48, "onRequestGet");
+    __name(onRequestPost52, "onRequestPost");
   }
 });
 
 // api/staff-founders-circle.js
-async function onRequestOptions70(context) {
+async function onRequestOptions71(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost52(context) {
+async function onRequestPost53(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -29546,24 +30811,24 @@ async function onRequestPost52(context) {
 var GHL_API_BASE38;
 var init_staff_founders_circle = __esm({
   "api/staff-founders-circle.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
     GHL_API_BASE38 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions70, "onRequestOptions");
-    __name(onRequestPost52, "onRequestPost");
+    __name(onRequestOptions71, "onRequestOptions");
+    __name(onRequestPost53, "onRequestPost");
   }
 });
 
 // api/staff-funnel.js
-async function onRequestOptions71(context) {
+async function onRequestOptions72(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet48(context) {
+async function onRequestGet49(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -29593,22 +30858,22 @@ async function onRequestGet48(context) {
 var KV_KEY;
 var init_staff_funnel = __esm({
   "api/staff-funnel.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     KV_KEY = "funnel:latest";
-    __name(onRequestOptions71, "onRequestOptions");
-    __name(onRequestGet48, "onRequestGet");
+    __name(onRequestOptions72, "onRequestOptions");
+    __name(onRequestGet49, "onRequestGet");
   }
 });
 
 // api/staff-funnel-refresh.js
-async function onRequestOptions72(context) {
+async function onRequestOptions73(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost53(context) {
+async function onRequestPost54(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -29658,28 +30923,28 @@ async function onRequestPost53(context) {
 var WORKER_URL6, WORKER_TIMEOUT_MS4;
 var init_staff_funnel_refresh = __esm({
   "api/staff-funnel-refresh.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL6 = "https://funnel-refresh.eben-fa2.workers.dev/refresh";
     WORKER_TIMEOUT_MS4 = 9e4;
-    __name(onRequestOptions72, "onRequestOptions");
-    __name(onRequestPost53, "onRequestPost");
+    __name(onRequestOptions73, "onRequestOptions");
+    __name(onRequestPost54, "onRequestPost");
   }
 });
 
 // api/staff-gmail-reply-readiness.js
-function responseHeaders3(context) {
+function responseHeaders4(context) {
   return {
     ...corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS"),
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "no-store"
   };
 }
-async function onRequestOptions73(context) {
-  return new Response(null, { status: 204, headers: responseHeaders3(context) });
+async function onRequestOptions74(context) {
+  return new Response(null, { status: 204, headers: responseHeaders4(context) });
 }
-async function onRequestGet49(context) {
-  const headers4 = responseHeaders3(context);
+async function onRequestGet50(context) {
+  const headers4 = responseHeaders4(context);
   const { error, payload } = await requireStaffAuth(context, headers4);
   if (error) return error;
   const actor = String(payload?.user || "");
@@ -29714,14 +30979,14 @@ async function onRequestGet49(context) {
 var WORKER_URL7, WORKER_TIMEOUT_MS5, STAFF_ACTORS;
 var init_staff_gmail_reply_readiness = __esm({
   "api/staff-gmail-reply-readiness.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL7 = "https://amari-crm-mirror.eben-fa2.workers.dev/gmail/reply-readiness";
     WORKER_TIMEOUT_MS5 = 1e4;
     STAFF_ACTORS = /* @__PURE__ */ new Set(["Eben", "Garrett"]);
-    __name(responseHeaders3, "responseHeaders");
-    __name(onRequestOptions73, "onRequestOptions");
-    __name(onRequestGet49, "onRequestGet");
+    __name(responseHeaders4, "responseHeaders");
+    __name(onRequestOptions74, "onRequestOptions");
+    __name(onRequestGet50, "onRequestGet");
   }
 });
 
@@ -29780,7 +31045,7 @@ async function maybeSendLpOnboarding(context, { contactId, seriesType, newRemain
 var MODE2, LP_ONBOARDING_EMAIL;
 var init_lp_onboarding = __esm({
   "lib/lp-onboarding.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_upgrade_offer();
     init_ghl_send();
     MODE2 = "shadow";
@@ -29826,7 +31091,7 @@ async function isDebited(db, appointmentId) {
 }
 var init_attendance_claim = __esm({
   "lib/attendance-claim.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(changesOf9, "changesOf");
     __name(claimDebit, "claimDebit");
     __name(releaseDebit, "releaseDebit");
@@ -29842,13 +31107,13 @@ function isAlreadyProcessed(apptStatus, needsFields, alreadyDebited) {
   if (!needsFields) return true;
   return !!alreadyDebited;
 }
-async function onRequestOptions74(context) {
+async function onRequestOptions75(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost54(context) {
+async function onRequestPost55(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -30153,7 +31418,7 @@ async function onRequestPost54(context) {
 var GHL_API_BASE39, GHL_LOCATION_ID29, FIELD_IDS5, ENTRAINMENT_CALENDAR_ID, FOLLOWUP_CALENDAR_IDS, PAIR_WINDOW_MS, DISCOVERY_CALENDAR_IDS;
 var init_staff_mark_attended = __esm({
   "api/staff-mark-attended.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_upgrade_offer();
     init_lp_onboarding();
@@ -30196,8 +31461,8 @@ var init_staff_mark_attended = __esm({
       // Ambassador Prospect Discovery Call
     ]);
     __name(isAlreadyProcessed, "isAlreadyProcessed");
-    __name(onRequestOptions74, "onRequestOptions");
-    __name(onRequestPost54, "onRequestPost");
+    __name(onRequestOptions75, "onRequestOptions");
+    __name(onRequestPost55, "onRequestPost");
   }
 });
 
@@ -30296,7 +31561,7 @@ async function listStaffMedia(db, { includeArchived = false } = {}) {
     assets: (assetsResult?.results || []).map(mapAsset)
   };
 }
-async function createMediaFolder(db, input, { actor, now, id: id2 } = {}) {
+async function createMediaFolder(db, input, { actor, now, id: id3 } = {}) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
   const allowed = /* @__PURE__ */ new Set(["action", "name", "parentId"]);
   for (const key of Object.keys(input || {})) if (!allowed.has(key)) throw failure(`Unknown folder field: ${key}`);
@@ -30304,7 +31569,7 @@ async function createMediaFolder(db, input, { actor, now, id: id2 } = {}) {
   if (!name) throw failure("Folder name is required");
   const parentId = cleanText5(input?.parentId, 80) || null;
   await requireFolder(db, parentId);
-  const folderId = id2 || crypto.randomUUID();
+  const folderId = id3 || crypto.randomUUID();
   const timestamp = now || (/* @__PURE__ */ new Date()).toISOString();
   const staffActor = cleanText5(actor, 80) || "Staff";
   try {
@@ -30321,12 +31586,12 @@ async function createMediaFolder(db, input, { actor, now, id: id2 } = {}) {
   }
   return mapFolder({ id: folderId, parent_id: parentId, name, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor });
 }
-async function registerMediaAsset(db, input, { actor, now, id: id2, allowSvg = false } = {}) {
+async function registerMediaAsset(db, input, { actor, now, id: id3, allowSvg = false } = {}) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
   const upload = validateMediaUpload(input, { allowSvg });
   const folderId = cleanText5(input?.folderId, 80) || null;
   await requireFolder(db, folderId);
-  const assetId = id2 || crypto.randomUUID();
+  const assetId = id3 || crypto.randomUUID();
   const objectKey = mediaObjectKey(assetId, upload.mimeType);
   const timestamp = now || (/* @__PURE__ */ new Date()).toISOString();
   const staffActor = cleanText5(actor, 80) || "Staff";
@@ -30388,15 +31653,15 @@ async function updateMediaAsset(db, input, { actor, now } = {}) {
 }
 async function getMediaAssetRecord(db, assetId) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
-  const id2 = cleanText5(assetId, 80);
-  const row = id2 ? await db.prepare("SELECT * FROM staff_media_assets WHERE id = ?").bind(id2).first() : null;
+  const id3 = cleanText5(assetId, 80);
+  const row = id3 ? await db.prepare("SELECT * FROM staff_media_assets WHERE id = ?").bind(id3).first() : null;
   if (!row || row.status !== "active") throw failure("Media file not found", 404);
   return { public: mapAsset(row), objectKey: row.object_key };
 }
 var MAX_FILE_BYTES, MAX_NAME_LENGTH, STAFF_MEDIA_TYPES;
 var init_staff_media = __esm({
   "lib/staff-media.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     MAX_FILE_BYTES = 95 * 1024 * 1024;
     MAX_NAME_LENGTH = 160;
     STAFF_MEDIA_TYPES = Object.freeze({
@@ -30491,7 +31756,7 @@ async function importSiteMediaBatch({ db, bucket, origin, actor, offset = 0, fet
 var SITE_ASSETS, MIME_BY_EXTENSION, ROOT_FOLDER, CHUNK_SIZE;
 var init_staff_site_media = __esm({
   "lib/staff-site-media.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_staff_media();
     SITE_ASSETS = [
       ["Brand", "/images/identity/amari-method-wordmark.svg"],
@@ -30619,7 +31884,7 @@ var init_staff_site_media = __esm({
 });
 
 // api/staff-media.js
-function responseHeaders4(context) {
+function responseHeaders5(context) {
   return {
     ...corsHeaders3(context.request.headers.get("Origin") || "", "GET, POST, OPTIONS"),
     "Content-Type": "application/json",
@@ -30633,11 +31898,11 @@ function safeStatus(cause) {
   const status = Number(cause?.status) || 500;
   return [400, 404, 409, 422].includes(status) ? status : 500;
 }
-async function onRequestOptions75(context) {
-  return new Response(null, { status: 204, headers: responseHeaders4(context) });
+async function onRequestOptions76(context) {
+  return new Response(null, { status: 204, headers: responseHeaders5(context) });
 }
-async function onRequestGet50(context) {
-  const headers4 = responseHeaders4(context);
+async function onRequestGet51(context) {
+  const headers4 = responseHeaders5(context);
   const auth = await requireStaffAuth(context, headers4);
   if (auth.error) return auth.error;
   try {
@@ -30652,8 +31917,8 @@ async function onRequestGet50(context) {
     return json16({ error: cause instanceof Error ? cause.message : "Media library could not be loaded" }, status, headers4);
   }
 }
-async function onRequestPost55(context) {
-  const headers4 = responseHeaders4(context);
+async function onRequestPost56(context) {
+  const headers4 = responseHeaders5(context);
   const auth = await requireStaffAuth(context, headers4);
   if (auth.error) return auth.error;
   const parsed = await parseJsonBody(context.request, headers4);
@@ -30684,16 +31949,16 @@ async function onRequestPost55(context) {
 }
 var init_staff_media2 = __esm({
   "api/staff-media.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_staff_media();
     init_staff_site_media();
-    __name(responseHeaders4, "responseHeaders");
+    __name(responseHeaders5, "responseHeaders");
     __name(json16, "json");
     __name(safeStatus, "safeStatus");
-    __name(onRequestOptions75, "onRequestOptions");
-    __name(onRequestGet50, "onRequestGet");
-    __name(onRequestPost55, "onRequestPost");
+    __name(onRequestOptions76, "onRequestOptions");
+    __name(onRequestGet51, "onRequestGet");
+    __name(onRequestPost56, "onRequestPost");
   }
 });
 
@@ -30731,19 +31996,19 @@ async function serve(context, headOnly = false) {
     const range = parseRange(context.request.headers.get("Range"), record3.public.sizeBytes);
     const object = headOnly ? await context.env.MEDIA_BUCKET.head(record3.objectKey) : await context.env.MEDIA_BUCKET.get(record3.objectKey, range ? { range: { offset: range.offset, length: range.length } } : void 0);
     if (!object) return new Response("File not found", { status: 404, headers: headers4 });
-    const responseHeaders9 = new Headers(headers4);
-    responseHeaders9.set("Content-Type", record3.public.mimeType);
-    if (record3.public.mimeType === "image/svg+xml") responseHeaders9.set("Content-Security-Policy", "sandbox");
-    responseHeaders9.set("Accept-Ranges", "bytes");
-    responseHeaders9.set("Content-Disposition", contentDisposition(record3.public.name, url.searchParams.get("download") === "1"));
-    if (object.etag) responseHeaders9.set("ETag", object.etag);
+    const responseHeaders10 = new Headers(headers4);
+    responseHeaders10.set("Content-Type", record3.public.mimeType);
+    if (record3.public.mimeType === "image/svg+xml") responseHeaders10.set("Content-Security-Policy", "sandbox");
+    responseHeaders10.set("Accept-Ranges", "bytes");
+    responseHeaders10.set("Content-Disposition", contentDisposition(record3.public.name, url.searchParams.get("download") === "1"));
+    if (object.etag) responseHeaders10.set("ETag", object.etag);
     if (range) {
-      responseHeaders9.set("Content-Length", String(range.length));
-      responseHeaders9.set("Content-Range", `bytes ${range.offset}-${range.end}/${record3.public.sizeBytes}`);
+      responseHeaders10.set("Content-Length", String(range.length));
+      responseHeaders10.set("Content-Range", `bytes ${range.offset}-${range.end}/${record3.public.sizeBytes}`);
     } else {
-      responseHeaders9.set("Content-Length", String(record3.public.sizeBytes));
+      responseHeaders10.set("Content-Length", String(record3.public.sizeBytes));
     }
-    return new Response(headOnly ? null : object.body, { status: range ? 206 : 200, headers: responseHeaders9 });
+    return new Response(headOnly ? null : object.body, { status: range ? 206 : 200, headers: responseHeaders10 });
   } catch (cause) {
     const status = [400, 404, 422].includes(Number(cause?.status)) ? Number(cause.status) : 500;
     if (status === 500) console.error("[staff-media-file]", cause);
@@ -30753,10 +32018,10 @@ async function serve(context, headOnly = false) {
     });
   }
 }
-async function onRequestOptions76(context) {
+async function onRequestOptions77(context) {
   return new Response(null, { status: 204, headers: baseHeaders(context) });
 }
-async function onRequestGet51(context) {
+async function onRequestGet52(context) {
   return serve(context, false);
 }
 async function onRequestHead(context) {
@@ -30764,21 +32029,21 @@ async function onRequestHead(context) {
 }
 var init_staff_media_file = __esm({
   "api/staff-media-file.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_staff_media();
     __name(baseHeaders, "baseHeaders");
     __name(contentDisposition, "contentDisposition");
     __name(parseRange, "parseRange");
     __name(serve, "serve");
-    __name(onRequestOptions76, "onRequestOptions");
-    __name(onRequestGet51, "onRequestGet");
+    __name(onRequestOptions77, "onRequestOptions");
+    __name(onRequestGet52, "onRequestGet");
     __name(onRequestHead, "onRequestHead");
   }
 });
 
 // api/staff-media-upload.js
-function responseHeaders5(context) {
+function responseHeaders6(context) {
   return {
     ...corsHeaders3(context.request.headers.get("Origin") || "", "POST, OPTIONS"),
     "Access-Control-Allow-Headers": "Content-Type, Authorization, X-Amari-File-Name, X-Amari-Folder-Id, X-Amari-File-Size",
@@ -30797,11 +32062,11 @@ function decodedHeader(request, key) {
     return "";
   }
 }
-async function onRequestOptions77(context) {
-  return new Response(null, { status: 204, headers: responseHeaders5(context) });
+async function onRequestOptions78(context) {
+  return new Response(null, { status: 204, headers: responseHeaders6(context) });
 }
-async function onRequestPost56(context) {
-  const headers4 = responseHeaders5(context);
+async function onRequestPost57(context) {
+  const headers4 = responseHeaders6(context);
   const auth = await requireStaffAuth(context, headers4);
   if (auth.error) return auth.error;
   if (!context.env.MEDIA_BUCKET || !context.env.ATTEND_DB) {
@@ -30844,25 +32109,25 @@ async function onRequestPost56(context) {
 }
 var init_staff_media_upload = __esm({
   "api/staff-media-upload.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_staff_media();
-    __name(responseHeaders5, "responseHeaders");
+    __name(responseHeaders6, "responseHeaders");
     __name(json17, "json");
     __name(decodedHeader, "decodedHeader");
-    __name(onRequestOptions77, "onRequestOptions");
-    __name(onRequestPost56, "onRequestPost");
+    __name(onRequestOptions78, "onRequestOptions");
+    __name(onRequestPost57, "onRequestPost");
   }
 });
 
 // api/staff-not-a-fit.js
-async function onRequestOptions78(context) {
+async function onRequestOptions79(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost57(context) {
+async function onRequestPost58(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -30935,20 +32200,20 @@ async function onRequestPost57(context) {
 var GHL_API_BASE40, GHL_LOCATION_ID30;
 var init_staff_not_a_fit = __esm({
   "api/staff-not-a-fit.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE40 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID30 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions78, "onRequestOptions");
-    __name(onRequestPost57, "onRequestPost");
+    __name(onRequestOptions79, "onRequestOptions");
+    __name(onRequestPost58, "onRequestPost");
   }
 });
 
 // ../shared/staff-note-policy.js
 function isSystemNote(body) {
-  const text5 = typeof body === "string" ? body.trim() : "";
-  return SYSTEM_NOTE_PATTERNS.some((pattern) => pattern.test(text5));
+  const text6 = typeof body === "string" ? body.trim() : "";
+  return SYSTEM_NOTE_PATTERNS.some((pattern) => pattern.test(text6));
 }
 function hasNoteSignature(body) {
   return /<img[^>]*\bsrc=["']data:image\//i.test(typeof body === "string" ? body : "");
@@ -30959,7 +32224,7 @@ function isEditableStaffNote(body) {
 var SYSTEM_NOTE_PATTERNS;
 var init_staff_note_policy = __esm({
   "../shared/staff-note-policy.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     SYSTEM_NOTE_PATTERNS = [
       /^migrat/i,
       /^\[?reconciliation/i,
@@ -31001,13 +32266,13 @@ function editableExistingNote(noteResponse) {
 function validationResponse(validation, headers4) {
   return new Response(JSON.stringify({ error: validation.error }), { status: 400, headers: headers4 });
 }
-async function onRequestOptions79(context) {
+async function onRequestOptions80(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "POST, PUT, OPTIONS")
   });
 }
-async function onRequestPost58(context) {
+async function onRequestPost59(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31070,7 +32335,7 @@ async function onRequestPut2(context) {
 var GHL_API_BASE41;
 var init_staff_note = __esm({
   "api/staff-note.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     init_staff_note_policy();
@@ -31080,20 +32345,20 @@ var init_staff_note = __esm({
     __name(validateNoteUpdate, "validateNoteUpdate");
     __name(editableExistingNote, "editableExistingNote");
     __name(validationResponse, "validationResponse");
-    __name(onRequestOptions79, "onRequestOptions");
-    __name(onRequestPost58, "onRequestPost");
+    __name(onRequestOptions80, "onRequestOptions");
+    __name(onRequestPost59, "onRequestPost");
     __name(onRequestPut2, "onRequestPut");
   }
 });
 
 // api/staff-outreach-cards.js
-async function onRequestOptions80(context) {
+async function onRequestOptions81(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS")
   });
 }
-async function onRequestGet52(context) {
+async function onRequestGet53(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
   try {
@@ -31134,11 +32399,11 @@ async function onRequestGet52(context) {
 var KV_KEY2;
 var init_staff_outreach_cards = __esm({
   "api/staff-outreach-cards.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     KV_KEY2 = "outreach-snapshot:current";
-    __name(onRequestOptions80, "onRequestOptions");
-    __name(onRequestGet52, "onRequestGet");
+    __name(onRequestOptions81, "onRequestOptions");
+    __name(onRequestGet53, "onRequestGet");
   }
 });
 
@@ -31152,13 +32417,13 @@ function corsHeaders36(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions81(context) {
+async function onRequestOptions82(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders36(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost59(context) {
+async function onRequestPost60(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders36(origin), "Content-Type": "application/json" };
   try {
@@ -31223,7 +32488,7 @@ async function onRequestPost59(context) {
 var KV_KEY3, ALLOWED_ORIGINS37;
 var init_staff_outreach_upload = __esm({
   "api/staff-outreach-upload.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_heartbeat();
     KV_KEY3 = "outreach-snapshot:current";
     ALLOWED_ORIGINS37 = [
@@ -31231,8 +32496,8 @@ var init_staff_outreach_upload = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders36, "corsHeaders");
-    __name(onRequestOptions81, "onRequestOptions");
-    __name(onRequestPost59, "onRequestPost");
+    __name(onRequestOptions82, "onRequestOptions");
+    __name(onRequestPost60, "onRequestPost");
   }
 });
 
@@ -31307,42 +32572,42 @@ function makeStripeClient(secretKey, fetchImpl = fetch) {
     return res.json();
   }, "get");
   const getList = /* @__PURE__ */ __name(async (label, buildPath) => {
-    const all = [];
+    const all2 = [];
     let cursor = null;
     for (let page = 0; page < STRIPE_MAX_PAGES; page++) {
       const r = await get(buildPath(cursor));
       if (!r || r.error) {
-        if (all.length === 0) return r;
+        if (all2.length === 0) return r;
         break;
       }
       const data = r.data || [];
-      all.push(...data);
+      all2.push(...data);
       if (!r.has_more || data.length === 0) break;
       cursor = data[data.length - 1].id;
       if (page === STRIPE_MAX_PAGES - 1 && r.has_more) {
         console.warn(`[stripe-charges] ${label}: hit ${STRIPE_MAX_PAGES}-page cap with has_more=true \u2014 charge list may be truncated`);
       }
     }
-    return { data: all };
+    return { data: all2 };
   }, "getList");
   const searchCharges = /* @__PURE__ */ __name(async (query) => {
-    const all = [];
+    const all2 = [];
     let pageToken = null;
     for (let page = 0; page < STRIPE_MAX_PAGES; page++) {
       const pageParam = pageToken ? `&page=${encodeURIComponent(pageToken)}` : "";
       const r = await get(`/charges/search?query=${encodeURIComponent(query)}&limit=100${pageParam}`);
       if (!r || r.error) {
-        if (all.length === 0) return r;
+        if (all2.length === 0) return r;
         break;
       }
-      all.push(...r.data || []);
+      all2.push(...r.data || []);
       if (!r.has_more || !r.next_page) break;
       pageToken = r.next_page;
       if (page === STRIPE_MAX_PAGES - 1 && r.has_more) {
         console.warn(`[stripe-charges] searchCharges: hit ${STRIPE_MAX_PAGES}-page cap with has_more=true \u2014 search results may be truncated`);
       }
     }
-    return { data: all };
+    return { data: all2 };
   }, "searchCharges");
   return {
     searchCharges,
@@ -31356,7 +32621,7 @@ function makeStripeClient(secretKey, fetchImpl = fetch) {
 var AMOUNT_TO_SESSIONS, STRIPE_MAX_PAGES;
 var init_stripe_charges = __esm({
   "lib/stripe-charges.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     AMOUNT_TO_SESSIONS = Object.freeze({
       5400: { sessions: 24, label: "The 12-Week Amari Practice" },
       5500: { sessions: 24, label: "The 12-Week Amari Practice" },
@@ -31409,7 +32674,7 @@ function computeOwedStatus({ sessionsPurchased, unknownCount, unknownMax = 0, at
 var ATTENDED, LEGACY_MIN;
 var init_session_owed = __esm({
   "lib/session-owed.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_session_ledger();
     init_datetime();
     ATTENDED = /* @__PURE__ */ new Set(["showed", "completed"]);
@@ -31429,7 +32694,7 @@ function settledReason(contactId) {
 var SETTLED_CONTACT_IDS;
 var init_owed_settled = __esm({
   "lib/owed-settled.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     SETTLED_CONTACT_IDS = /* @__PURE__ */ new Map([
       ["zjewEnCWTi7Q7aY8hHYD", "Igor Khizver \u2014 Garrett comped the session"],
       ["brfGSo7wRyF7MIJT8SmM", "Jon Holsbach \u2014 initial session comped, wasn't a fit"],
@@ -31445,10 +32710,10 @@ var init_owed_settled = __esm({
 });
 
 // api/staff-owed.js
-async function onRequestOptions82(context) {
+async function onRequestOptions83(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet53(context) {
+async function onRequestGet54(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31535,7 +32800,7 @@ async function onRequestGet53(context) {
 var GHL_API_BASE42;
 var init_staff_owed = __esm({
   "api/staff-owed.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_stripe_charges();
     init_session_owed();
@@ -31543,8 +32808,8 @@ var init_staff_owed = __esm({
     init_session_payment();
     init_endpoint_guards();
     GHL_API_BASE42 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions82, "onRequestOptions");
-    __name(onRequestGet53, "onRequestGet");
+    __name(onRequestOptions83, "onRequestOptions");
+    __name(onRequestGet54, "onRequestGet");
   }
 });
 
@@ -31567,16 +32832,16 @@ function clientNameFromTitle(title) {
 }
 var init_owed_list = __esm({
   "lib/owed-list.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(clientNameFromTitle, "clientNameFromTitle");
   }
 });
 
 // api/staff-owed-list.js
-async function onRequestOptions83(context) {
+async function onRequestOptions84(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet54(context) {
+async function onRequestGet55(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31620,7 +32885,7 @@ async function onRequestGet54(context) {
 var GHL_API_BASE43, GHL_LOCATION_ID31, ROSTER_WINDOW_DAYS, ATTENDED2;
 var init_staff_owed_list = __esm({
   "api/staff-owed-list.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_datetime();
     init_session_ledger();
@@ -31630,8 +32895,8 @@ var init_staff_owed_list = __esm({
     GHL_LOCATION_ID31 = "7pIO7FHVAyBT1jKGhfQM";
     ROSTER_WINDOW_DAYS = 540;
     ATTENDED2 = /* @__PURE__ */ new Set(["showed", "completed"]);
-    __name(onRequestOptions83, "onRequestOptions");
-    __name(onRequestGet54, "onRequestGet");
+    __name(onRequestOptions84, "onRequestOptions");
+    __name(onRequestGet55, "onRequestGet");
   }
 });
 
@@ -31643,18 +32908,18 @@ function headers(origin) {
     "Cache-Control": "private, no-store"
   };
 }
-async function onRequestOptions84(context) {
+async function onRequestOptions85(context) {
   return new Response(null, { status: 204, headers: headers(context.request.headers.get("Origin")) });
 }
-async function onRequestGet55(context) {
-  const responseHeaders9 = headers(context.request.headers.get("Origin"));
-  const { error } = await requireStaffAuth(context, responseHeaders9);
+async function onRequestGet56(context) {
+  const responseHeaders10 = headers(context.request.headers.get("Origin"));
+  const { error } = await requireStaffAuth(context, responseHeaders10);
   if (error) return error;
   if (!context.env.WORKER_AUTH_SECRET) {
-    return new Response(JSON.stringify({ error: "Owned contact search is not configured" }), { status: 422, headers: responseHeaders9 });
+    return new Response(JSON.stringify({ error: "Owned contact search is not configured" }), { status: 422, headers: responseHeaders10 });
   }
   const query = (new URL(context.request.url).searchParams.get("query") || "").trim();
-  if (query.length < 2 || query.length > 120) return new Response(JSON.stringify([]), { status: 200, headers: responseHeaders9 });
+  if (query.length < 2 || query.length > 120) return new Response(JSON.stringify([]), { status: 200, headers: responseHeaders10 });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS2);
   try {
@@ -31664,7 +32929,7 @@ async function onRequestGet55(context) {
     });
     const body = await upstream.json().catch(() => ({}));
     if (!upstream.ok) {
-      return new Response(JSON.stringify({ error: "Owned contact search is unavailable" }), { status: 422, headers: responseHeaders9 });
+      return new Response(JSON.stringify({ error: "Owned contact search is unavailable" }), { status: 422, headers: responseHeaders10 });
     }
     const contacts = Array.isArray(body.contacts) ? body.contacts : [];
     return new Response(JSON.stringify(contacts.map((contact) => ({
@@ -31673,10 +32938,10 @@ async function onRequestGet55(context) {
       name: String(contact.display_name || "Unknown"),
       email: String(contact.email_normalized || ""),
       phone: String(contact.phone_e164 || "")
-    })).filter((contact) => contact.id)), { status: 200, headers: responseHeaders9 });
+    })).filter((contact) => contact.id)), { status: 200, headers: responseHeaders10 });
   } catch (cause) {
     const errorMessage = cause instanceof Error && cause.name === "AbortError" ? "Owned contact search timed out" : "Owned contact search is unavailable";
-    return new Response(JSON.stringify({ error: errorMessage }), { status: 422, headers: responseHeaders9 });
+    return new Response(JSON.stringify({ error: errorMessage }), { status: 422, headers: responseHeaders10 });
   } finally {
     clearTimeout(timer);
   }
@@ -31684,13 +32949,13 @@ async function onRequestGet55(context) {
 var WORKER_URL8, TIMEOUT_MS2;
 var init_staff_owned_contacts = __esm({
   "api/staff-owned-contacts.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL8 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
     TIMEOUT_MS2 = 1e4;
     __name(headers, "headers");
-    __name(onRequestOptions84, "onRequestOptions");
-    __name(onRequestGet55, "onRequestGet");
+    __name(onRequestOptions85, "onRequestOptions");
+    __name(onRequestGet56, "onRequestGet");
   }
 });
 
@@ -31736,13 +33001,13 @@ function mapMessageType(typeRaw) {
   if (t.includes("SMS")) return "sms";
   return null;
 }
-async function onRequestOptions85(context) {
+async function onRequestOptions86(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet56(context) {
+async function onRequestGet57(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31854,7 +33119,7 @@ async function onRequestGet56(context) {
 var GHL_API_BASE44, GHL_LOCATION_ID32, MAX_EVENTS2, NUMERIC_TYPE_MAP;
 var init_staff_partner_activity = __esm({
   "api/staff-partner-activity.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE44 = "https://services.leadconnectorhq.com";
@@ -31877,19 +33142,19 @@ var init_staff_partner_activity = __esm({
     };
     __name(callOutcomeLabel, "callOutcomeLabel");
     __name(mapMessageType, "mapMessageType");
-    __name(onRequestOptions85, "onRequestOptions");
-    __name(onRequestGet56, "onRequestGet");
+    __name(onRequestOptions86, "onRequestOptions");
+    __name(onRequestGet57, "onRequestGet");
   }
 });
 
 // api/staff-partner-outcome.js
-async function onRequestOptions86(context) {
+async function onRequestOptions87(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost60(context) {
+async function onRequestPost61(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31966,8 +33231,8 @@ async function onRequestPost60(context) {
         body: JSON.stringify({ customFields })
       });
       if (!updateRes.ok) {
-        const text5 = await updateRes.text().catch(() => "");
-        throw new Error(`GHL PUT /contacts/${contactId} ${updateRes.status}: ${text5.slice(0, 250)}`);
+        const text6 = await updateRes.text().catch(() => "");
+        throw new Error(`GHL PUT /contacts/${contactId} ${updateRes.status}: ${text6.slice(0, 250)}`);
       }
     }
     const notePrefix = signal === "note" ? "Note" : signal === "skip" ? "Skip" : TOUCH_SIGNALS.has(signal) ? "Touch" : "Outcome";
@@ -31979,8 +33244,8 @@ async function onRequestPost60(context) {
       body: JSON.stringify({ body: noteBody })
     });
     if (!noteRes.ok) {
-      const text5 = await noteRes.text().catch(() => "");
-      console.error(`[staff-partner-outcome] note write failed: ${noteRes.status} ${text5.slice(0, 200)}`);
+      const text6 = await noteRes.text().catch(() => "");
+      console.error(`[staff-partner-outcome] note write failed: ${noteRes.status} ${text6.slice(0, 200)}`);
     }
     if ((newStage === "dropped" || newStage === "future-potential") && context.env.PORTAL_KV) {
       context.env.PORTAL_KV.delete(`coach:${contactId}`).catch((err) => {
@@ -32013,7 +33278,7 @@ async function onRequestPost60(context) {
 var GHL_API_BASE45, FIELD_IDS6, VALID_SIGNALS, SIGNAL_TO_STAGE, TOUCH_SIGNALS, SIGNAL_NOTE_LABEL;
 var init_staff_partner_outcome = __esm({
   "api/staff-partner-outcome.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE45 = "https://services.leadconnectorhq.com";
@@ -32095,8 +33360,8 @@ var init_staff_partner_outcome = __esm({
       "skip": "Skipped \u2014 not a fit",
       "note": "Note"
     };
-    __name(onRequestOptions86, "onRequestOptions");
-    __name(onRequestPost60, "onRequestPost");
+    __name(onRequestOptions87, "onRequestOptions");
+    __name(onRequestPost61, "onRequestPost");
   }
 });
 
@@ -38990,7 +40255,7 @@ async function getPartnerSheetCache(context) {
 var SPREADSHEET_ID, CACHE_KEY2, REFRESH_AFTER_MS, RANGES;
 var init_partner_sheet = __esm({
   "lib/partner-sheet.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_partner_sheet_cache();
     init_google_api();
     SPREADSHEET_ID = "1uYsTyyMu9NUefscLKORUglNXrhq_ylcUMZr4Ml-nMiw";
@@ -39012,16 +40277,16 @@ var init_partner_sheet = __esm({
 });
 
 // lib/build-card.js
-function isNonReply2(text5) {
-  const t = String(text5 || "").trim();
+function isNonReply2(text6) {
+  const t = String(text6 || "").trim();
   if (!t) return true;
   if (/please type your reply above this line|^#{2}-|-#{2}$/i.test(t)) return true;
   if (/\bverification code\b|\bis your\b[^.]*\bcode\b|\byour\b[^.]*\bcode is\b|\bone[- ]?time (code|password)\b|\bOTP\b|do not share/i.test(t)) return true;
   if (t.length <= 40 && CLOSER_RE2.test(t)) return true;
   return false;
 }
-function looksLikeDecline(text5) {
-  const t = String(text5 || "").trim();
+function looksLikeDecline(text6) {
+  const t = String(text6 || "").trim();
   if (!t) return false;
   return DECLINE_RE.test(t);
 }
@@ -39160,7 +40425,7 @@ function buildCard(dossier, now = Date.now()) {
 var CLOSER_WORD2, CLOSER_RE2, DECLINE_RE, CONNECT_CALL_SEC, ORG_WORDS, UNTEXTABLE, PLACEHOLDER_EMAIL_RE, LINKEDIN_SOURCE_RE, PHONE_UNVERIFIED_NOTE, DAY_MS2;
 var init_build_card = __esm({
   "lib/build-card.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     CLOSER_WORD2 = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE2 = new RegExp(`^(?:${CLOSER_WORD2}[\\s!.,]*)+$`, "i");
     __name(isNonReply2, "isNonReply");
@@ -39555,7 +40820,7 @@ function toProspect(contact, sheetCache) {
   };
 }
 async function fetchByTag(ghlToken, tag, pageLimit = 100) {
-  const all = [];
+  const all2 = [];
   let pageOffset = 0;
   while (true) {
     const body = {
@@ -39570,24 +40835,24 @@ async function fetchByTag(ghlToken, tag, pageLimit = 100) {
       body: JSON.stringify(body)
     });
     if (!res.ok) {
-      const text5 = await res.text().catch(() => "");
-      throw new Error(`GHL contacts/search ${res.status}: ${text5.slice(0, 200)}`);
+      const text6 = await res.text().catch(() => "");
+      throw new Error(`GHL contacts/search ${res.status}: ${text6.slice(0, 200)}`);
     }
     const data = await res.json();
     const contacts = data.contacts || [];
-    all.push(...contacts);
+    all2.push(...contacts);
     if (contacts.length < pageLimit) break;
     pageOffset += pageLimit;
   }
-  return all;
+  return all2;
 }
-async function onRequestOptions87(context) {
+async function onRequestOptions88(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet57(context) {
+async function onRequestGet58(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -39632,7 +40897,7 @@ async function onRequestGet57(context) {
         const sk = await context.env.PORTAL_KV.get("coach:skip", "json");
         if (sk && typeof sk === "object") skipSet = new Set(Object.keys(sk));
         const lt = await context.env.PORTAL_KV.get("contact:linetype", "json");
-        if (lt && typeof lt === "object") for (const [id2, rec] of Object.entries(lt)) lineTypeMap.set(id2, rec?.type || null);
+        if (lt && typeof lt === "object") for (const [id3, rec] of Object.entries(lt)) lineTypeMap.set(id3, rec?.type || null);
       }
     } catch (err) {
       console.error("[staff-partner-prospects] coach KV read failed (derive falls back to no-elig):", err);
@@ -39642,9 +40907,9 @@ async function onRequestGet57(context) {
       if (context.env.PORTAL_KV) {
         const idsToFetch = new Set(prospects.map((p2) => p2.contactId));
         const entries = await Promise.all(
-          [...idsToFetch].map(async (id2) => [id2, await context.env.PORTAL_KV.get(`conv:${id2}`, "json")])
+          [...idsToFetch].map(async (id3) => [id3, await context.env.PORTAL_KV.get(`conv:${id3}`, "json")])
         );
-        for (const [id2, rec] of entries) if (rec) convMap.set(id2, rec);
+        for (const [id3, rec] of entries) if (rec) convMap.set(id3, rec);
       }
     } catch (err) {
       console.error("[staff-partner-prospects] conv batch read failed:", err);
@@ -39658,9 +40923,9 @@ async function onRequestGet57(context) {
             await context.env.PORTAL_KV.get(`call-coach:latest:${p2.contactId}`, "json").catch(() => null)
           ])
         );
-        for (const [id2, rec] of coachEntries) {
+        for (const [id3, rec] of coachEntries) {
           if (rec?.coaching) {
-            callCoachMap.set(id2, rec.coaching.actionLine || (rec.coaching.summary || "").slice(0, 100) || null);
+            callCoachMap.set(id3, rec.coaching.actionLine || (rec.coaching.summary || "").slice(0, 100) || null);
           }
         }
       }
@@ -39749,7 +41014,7 @@ async function onRequestGet57(context) {
 var GHL_API_BASE46, GHL_LOCATION_ID33, FIELD_IDS7, CATEGORY_TAGS, BROAD_PARTNER_TAGS, ALL_PARTNER_TAGS, ALL_STAGES, VM_FOLLOWUP_DAYS, TALKED_FOLLOWUP_DAYS, LINK_FOLLOWUP_DAYS, OFFPLATFORM_FOLLOWUP_DAYS, NOANSWER_RETRY_DAYS, QUIET_NUDGE_DAYS, END_OF_ROPE_TOUCHES, FRESH_TOUCH_SIGNALS, KNOWN_SIGNALS, FORCED_CALL_LINES;
 var init_staff_partner_prospects = __esm({
   "api/staff-partner-prospects.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_partner_sheet();
     init_build_card();
@@ -39862,12 +41127,54 @@ var init_staff_partner_prospects = __esm({
     __name(lookupSheetRow, "lookupSheetRow");
     __name(toProspect, "toProspect");
     __name(fetchByTag, "fetchByTag");
-    __name(onRequestOptions87, "onRequestOptions");
-    __name(onRequestGet57, "onRequestGet");
+    __name(onRequestOptions88, "onRequestOptions");
+    __name(onRequestGet58, "onRequestGet");
   }
 });
 
 // lib/partner-reward-ledger.js
+function summarizePartnerRewardEvents(events, { now = Date.now(), labels = LEGACY_REWARD_LABELS } = {}) {
+  const byReward = /* @__PURE__ */ new Map();
+  for (const event2 of events || []) {
+    if (!event2?.reward_id) continue;
+    const group = byReward.get(event2.reward_id) || [];
+    group.push({ ...event2, detail: asObject(event2.detail) });
+    byReward.set(event2.reward_id, group);
+  }
+  return [...byReward.entries()].map(([rewardId, history]) => {
+    history.sort((a, b) => eventTime(a) - eventTime(b));
+    const attributed = history.find((event2) => event2.type === "attributed");
+    const purchase = history.find((event2) => event2.type === "qualifying_purchase");
+    const corrections = history.filter((event2) => event2.type === "correction");
+    const paid = history.filter((event2) => event2.type === "paid").at(-1);
+    const blocked = history.filter((event2) => ["expired", "refunded", "disputed", "voided"].includes(event2.type)).at(-1);
+    const effective = [purchase, ...history.filter((event2) => event2.type === "chargeback_hold"), ...corrections].filter(Boolean).reduce((state, event2) => ({ ...state, ...event2.detail }), {});
+    const display = { ...labels[rewardId] || {}, ...asObject(attributed?.detail) };
+    const holdUntil = dateValue(effective.holdUntil);
+    const paidDetail = asObject(paid?.detail);
+    const blockedType = blocked?.type || null;
+    const paidAt = dateValue(paidDetail.paidAt);
+    const holdElapsed = Boolean(holdUntil) && now >= Date.parse(holdUntil);
+    const status = paid ? "paid" : blockedType ? blockedType : holdElapsed ? "payable" : "chargeback_hold";
+    return {
+      rewardId,
+      partnerName: display.partnerName || "Partner identity needs review",
+      partnerOrganization: display.partnerOrganization || null,
+      referredName: display.referredName || "Referred person needs review",
+      referralAt: dateValue(attributed?.detail?.referralAt),
+      purchasedAt: dateValue(effective.purchasedAt),
+      sessionCount: Number(effective.sessionCount) || null,
+      amountCents: Number.isFinite(effective.amountCents) ? effective.amountCents : null,
+      sessionEntitlement: typeof effective.sessionEntitlement === "string" ? effective.sessionEntitlement : null,
+      holdUntil,
+      status,
+      canRecordPayout: status === "payable",
+      payoutReference: typeof paidDetail.payoutReference === "string" ? paidDetail.payoutReference : null,
+      paidAt,
+      corrected: corrections.length > 0
+    };
+  }).sort((a, b) => Date.parse(b.purchasedAt || b.referralAt || 0) - Date.parse(a.purchasedAt || a.referralAt || 0));
+}
 function rewardForPracticePurchase({ referralAt, purchasedAt, sessionCount }) {
   const referred = Date.parse(referralAt);
   const purchased = Date.parse(purchasedAt);
@@ -39882,14 +41189,25 @@ function rewardForPracticePurchase({ referralAt, purchasedAt, sessionCount }) {
     holdUntil: new Date(purchased + CHARGEBACK_HOLD_MS).toISOString()
   };
 }
-var PARTNER_REWARD_WINDOW_MS, CHARGEBACK_HOLD_MS, REWARD_CENTS, PARTNER_SESSION_ENTITLEMENT;
+var PARTNER_REWARD_WINDOW_MS, CHARGEBACK_HOLD_MS, REWARD_CENTS, PARTNER_SESSION_ENTITLEMENT, LEGACY_REWARD_LABELS, asObject, dateValue, eventTime;
 var init_partner_reward_ledger = __esm({
   "lib/partner-reward-ledger.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     PARTNER_REWARD_WINDOW_MS = 90 * 24 * 60 * 60 * 1e3;
     CHARGEBACK_HOLD_MS = 30 * 24 * 60 * 60 * 1e3;
     REWARD_CENTS = Object.freeze({ 12: 25e3, 24: 5e4 });
     PARTNER_SESSION_ENTITLEMENT = "one Amari session";
+    LEGACY_REWARD_LABELS = Object.freeze({
+      "bryan-chung-geoff-papilion-20260729": Object.freeze({
+        partnerName: "Bryan Chung",
+        partnerOrganization: "City Racquet Shop",
+        referredName: "Geoff Papilion"
+      })
+    });
+    asObject = /* @__PURE__ */ __name((value) => value && typeof value === "object" && !Array.isArray(value) ? value : {}, "asObject");
+    dateValue = /* @__PURE__ */ __name((value) => Number.isFinite(Date.parse(value)) ? new Date(value).toISOString() : null, "dateValue");
+    eventTime = /* @__PURE__ */ __name((event2) => Number(event2.ts) || 0, "eventTime");
+    __name(summarizePartnerRewardEvents, "summarizePartnerRewardEvents");
     __name(rewardForPracticePurchase, "rewardForPracticePurchase");
   }
 });
@@ -39898,25 +41216,39 @@ var init_partner_reward_ledger = __esm({
 function headers2(context) {
   return { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
 }
-function event(id2, rewardId, actor, type, detail) {
-  return [id2, rewardId, Date.now(), actor, type, JSON.stringify(detail)];
+function event(id3, rewardId, actor, type, detail) {
+  return [id3, rewardId, Date.now(), actor, type, JSON.stringify(detail)];
 }
 function insert(db, rewardId, actor, type, detail) {
   return db.prepare("INSERT INTO partner_reward_events (id,reward_id,ts,actor,type,detail) VALUES (?,?,?,?,?,?)").bind(...event(crypto.randomUUID(), rewardId, actor, type, detail));
 }
-async function onRequestOptions88(context) {
+async function onRequestOptions89(context) {
   return new Response(null, { status: 204, headers: headers2(context) });
 }
-async function onRequestGet58(context) {
+async function onRequestGet59(context) {
   const out = headers2(context);
   const auth = await requireStaffAuth(context, out);
   if (auth.error) return auth.error;
   const db = context.env.AUTOMATION_DB;
-  if (!db) return new Response(JSON.stringify({ configured: false, rewards: [] }), { headers: out });
-  const rows2 = await db.prepare("SELECT id, reward_id, ts, actor, type, detail FROM partner_reward_events ORDER BY ts DESC LIMIT 200").all();
-  return new Response(JSON.stringify({ configured: true, rewards: (rows2.results || []).map((r) => ({ ...r, detail: JSON.parse(r.detail) })) }), { headers: out });
+  if (!db) return new Response(JSON.stringify({
+    error: "Partner reward ledger is unavailable because the AUTOMATION_DB production binding is missing.",
+    code: "automation_db_binding_missing",
+    remediation: "Bind D1 database amari-automation as AUTOMATION_DB in Cloudflare Pages Production, then redeploy."
+  }), { status: 422, headers: out });
+  try {
+    const rows2 = await db.prepare("SELECT id, reward_id, ts, actor, type, detail FROM partner_reward_events ORDER BY ts DESC LIMIT 200").all();
+    const events = (rows2.results || []).map((row) => ({ ...row, detail: JSON.parse(row.detail) }));
+    return new Response(JSON.stringify({ configured: true, rewards: summarizePartnerRewardEvents(events) }), { headers: out });
+  } catch (error) {
+    console.error("[staff-partner-rewards] ledger read failed", error);
+    return new Response(JSON.stringify({
+      error: "Partner reward ledger could not be read.",
+      code: "partner_reward_ledger_read_failed",
+      remediation: "Verify the AUTOMATION_DB binding points to amari-automation and that partner_reward_events exists."
+    }), { status: 422, headers: out });
+  }
 }
-async function onRequestPost61(context) {
+async function onRequestPost62(context) {
   const out = headers2(context);
   const auth = await requireStaffAuth(context, out);
   if (auth.error) return auth.error;
@@ -39972,7 +41304,7 @@ async function onRequestPost61(context) {
 var ID, iso;
 var init_staff_partner_rewards = __esm({
   "api/staff-partner-rewards.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_partner_reward_ledger();
     ID = /^[A-Za-z0-9_-]{1,80}$/;
@@ -39983,20 +41315,20 @@ var init_staff_partner_rewards = __esm({
     __name(headers2, "headers");
     __name(event, "event");
     __name(insert, "insert");
-    __name(onRequestOptions88, "onRequestOptions");
-    __name(onRequestGet58, "onRequestGet");
-    __name(onRequestPost61, "onRequestPost");
+    __name(onRequestOptions89, "onRequestOptions");
+    __name(onRequestGet59, "onRequestGet");
+    __name(onRequestPost62, "onRequestPost");
   }
 });
 
 // api/staff-partner-toggle-verified.js
-async function onRequestOptions89(context) {
+async function onRequestOptions90(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost62(context) {
+async function onRequestPost63(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -40027,8 +41359,8 @@ async function onRequestPost62(context) {
       })
     });
     if (!updateRes.ok) {
-      const text5 = await updateRes.text().catch(() => "");
-      throw new Error(`GHL PUT /contacts/${contactId} ${updateRes.status}: ${text5.slice(0, 250)}`);
+      const text6 = await updateRes.text().catch(() => "");
+      throw new Error(`GHL PUT /contacts/${contactId} ${updateRes.status}: ${text6.slice(0, 250)}`);
     }
     return new Response(
       JSON.stringify({ success: true, contactId, verified }),
@@ -40046,18 +41378,18 @@ async function onRequestPost62(context) {
 var GHL_API_BASE47, OUTREACH_VERIFIED_FIELD_ID;
 var init_staff_partner_toggle_verified = __esm({
   "api/staff-partner-toggle-verified.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE47 = "https://services.leadconnectorhq.com";
     OUTREACH_VERIFIED_FIELD_ID = "PVftrxrmNRPmfdlQAwzl";
-    __name(onRequestOptions89, "onRequestOptions");
-    __name(onRequestPost62, "onRequestPost");
+    __name(onRequestOptions90, "onRequestOptions");
+    __name(onRequestPost63, "onRequestPost");
   }
 });
 
 // api/staff-partner-update-field.js
-async function onRequestOptions90(context) {
+async function onRequestOptions91(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
 function validateValue(field, value) {
@@ -40074,7 +41406,7 @@ function validateValue(field, value) {
   }
   return null;
 }
-async function onRequestPost63(context) {
+async function onRequestPost64(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -40135,8 +41467,8 @@ async function onRequestPost63(context) {
       body: JSON.stringify(body)
     });
     if (!updateRes.ok) {
-      const text5 = await updateRes.text().catch(() => "");
-      throw new Error(`GHL PUT ${updateRes.status}: ${text5.slice(0, 250)}`);
+      const text6 = await updateRes.text().catch(() => "");
+      throw new Error(`GHL PUT ${updateRes.status}: ${text6.slice(0, 250)}`);
     }
     const noteBody = value ? `Field edit: ${spec.label} = "${value}"${previousValue ? ` (was "${previousValue}")` : ""}` : `Field cleared: ${spec.label}${previousValue ? ` (was "${previousValue}")` : ""}`;
     try {
@@ -40158,7 +41490,7 @@ async function onRequestPost63(context) {
 var GHL_API_BASE48, EDITABLE_FIELDS;
 var init_staff_partner_update_field = __esm({
   "api/staff-partner-update-field.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE48 = "https://services.leadconnectorhq.com";
@@ -40178,17 +41510,17 @@ var init_staff_partner_update_field = __esm({
       partnerOtherUrls: { kind: "custom", id: "7KvhcBornVP0k0vT2h68", label: "Other URLs" },
       partnerRundown: { kind: "custom", id: "Yd3lsw6fAxl0HVCxr1cD", label: "Rundown" }
     };
-    __name(onRequestOptions90, "onRequestOptions");
+    __name(onRequestOptions91, "onRequestOptions");
     __name(validateValue, "validateValue");
-    __name(onRequestPost63, "onRequestPost");
+    __name(onRequestPost64, "onRequestPost");
   }
 });
 
 // api/staff-partner-verify.js
-async function onRequestOptions91(context) {
+async function onRequestOptions92(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost64(context) {
+async function onRequestPost65(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
@@ -40254,14 +41586,14 @@ async function onRequestPost64(context) {
 var GHL_API_BASE49, VERIFIED_TAG, OUTREACH_VERIFIED_FIELD_ID2;
 var init_staff_partner_verify = __esm({
   "api/staff-partner-verify.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE49 = "https://services.leadconnectorhq.com";
     VERIFIED_TAG = "dm-verified";
     OUTREACH_VERIFIED_FIELD_ID2 = "PVftrxrmNRPmfdlQAwzl";
-    __name(onRequestOptions91, "onRequestOptions");
-    __name(onRequestPost64, "onRequestPost");
+    __name(onRequestOptions92, "onRequestOptions");
+    __name(onRequestPost65, "onRequestPost");
   }
 });
 
@@ -40314,7 +41646,7 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap, purchas
   return null;
 }
 async function fetchByTag2(ghlToken, tag) {
-  const all = [];
+  const all2 = [];
   let page = 1;
   while (page <= 20) {
     const res = await fetch(`${GHL_API_BASE50}/contacts/search`, {
@@ -40330,11 +41662,11 @@ async function fetchByTag2(ghlToken, tag) {
     if (!res.ok) break;
     const data = await res.json();
     const contacts = data.contacts || [];
-    all.push(...contacts);
+    all2.push(...contacts);
     if (contacts.length < 100) break;
     page += 1;
   }
-  return all;
+  return all2;
 }
 async function fetchSessionAttendance(ghlToken) {
   const start = (/* @__PURE__ */ new Date("2024-01-01")).getTime();
@@ -40397,7 +41729,7 @@ async function fetchDiscoveryStatus(ghlToken) {
   return { statusMap, events };
 }
 async function fetchAllContacts(ghlToken) {
-  const all = [];
+  const all2 = [];
   let page = 1;
   while (page <= 10) {
     const res = await fetch(`${GHL_API_BASE50}/contacts/search`, {
@@ -40412,11 +41744,11 @@ async function fetchAllContacts(ghlToken) {
     if (!res.ok) break;
     const data = await res.json();
     const contacts = data.contacts || [];
-    all.push(...contacts);
+    all2.push(...contacts);
     if (contacts.length < 100) break;
     page += 1;
   }
-  return all;
+  return all2;
 }
 async function fetchStripePurchaseHistory(stripeKey, contacts = []) {
   const purchases = /* @__PURE__ */ new Map();
@@ -40494,13 +41826,13 @@ function buildCohortMetrics(snapshot, discoveryEvents, purchasesByContact) {
     repeatPurchasers: repeatPurchasers.size
   };
 }
-async function onRequestOptions92(context) {
+async function onRequestOptions93(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet59(context) {
+async function onRequestGet60(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
@@ -40579,7 +41911,7 @@ async function onRequestGet59(context) {
 var GHL_API_BASE50, GHL_LOCATION_ID34, EXCLUDED_EMAILS, FIELD_IDS8, SIX_MONTHS_MS, OUTREACH_TAGS, SESSION_CALENDARS, PACKAGE_CALENDAR_IDS;
 var init_staff_pipeline = __esm({
   "api/staff-pipeline.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
@@ -40652,13 +41984,13 @@ var init_staff_pipeline = __esm({
     __name(fetchAllContacts, "fetchAllContacts");
     __name(fetchStripePurchaseHistory, "fetchStripePurchaseHistory");
     __name(buildCohortMetrics, "buildCohortMetrics");
-    __name(onRequestOptions92, "onRequestOptions");
-    __name(onRequestGet59, "onRequestGet");
+    __name(onRequestOptions93, "onRequestOptions");
+    __name(onRequestGet60, "onRequestGet");
   }
 });
 
 // lib/staff-products.js
-function text4(value, max) {
+function text5(value, max) {
   return typeof value === "string" ? value.trim().replace(/\s+/g, " ").slice(0, max) : "";
 }
 function failure2(message, status = 400) {
@@ -40804,17 +42136,17 @@ async function listStaffProducts(db) {
     coverage: productDefinitionCoverage(builtIns, configured ? custom.length : null)
   };
 }
-async function createStaffProduct(db, input, { actor, id: id2, now } = {}) {
+async function createStaffProduct(db, input, { actor, id: id3, now } = {}) {
   if (!db) throw failure2("Product storage is not configured", 503);
   const allowed = /* @__PURE__ */ new Set(["requestId", "name", "amountCents", "category", "description", "internalReason", "availableInPos"]);
   for (const key of Object.keys(input || {})) {
     if (!allowed.has(key)) throw failure2(`Unknown product field: ${key}`);
   }
-  const requestId = text4(input?.requestId, 80);
-  const name = text4(input?.name, MAX_NAME2);
-  const description = text4(input?.description, MAX_DESCRIPTION);
-  const internalReason = text4(input?.internalReason, MAX_REASON);
-  const category = text4(input?.category, 40);
+  const requestId = text5(input?.requestId, 80);
+  const name = text5(input?.name, MAX_NAME2);
+  const description = text5(input?.description, MAX_DESCRIPTION);
+  const internalReason = text5(input?.internalReason, MAX_REASON);
+  const category = text5(input?.category, 40);
   const amountCents = input?.amountCents;
   if (!/^[a-f0-9-]{32,80}$/i.test(requestId)) throw failure2("A valid create request ID is required");
   if (name.length < 2) throw failure2("Product name is required");
@@ -40842,11 +42174,11 @@ async function createStaffProduct(db, input, { actor, id: id2, now } = {}) {
      LIMIT 1
   `).bind(name, amountCents).first();
   if (duplicate?.product_id) throw failure2("That product and price already exist", 409);
-  const rawId = id2 || crypto.randomUUID();
+  const rawId = id3 || crypto.randomUUID();
   if (!/^[a-f0-9-]{32,40}$/i.test(rawId)) throw failure2("Could not create a product ID", 500);
   const productId = `custom-${rawId}`;
   const createdAt = now || (/* @__PURE__ */ new Date()).toISOString();
-  const createdBy = text4(actor, 80) || "Eben";
+  const createdBy = text5(actor, 80) || "Eben";
   try {
     await db.batch([
       db.prepare(`
@@ -40901,7 +42233,7 @@ function posCatalogFromProducts(products) {
 var MAX_NAME2, MAX_DESCRIPTION, MAX_REASON, MAX_AMOUNT_CENTS2, CATEGORIES, BUILT_IN_META;
 var init_staff_products = __esm({
   "lib/staff-products.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_staff_pos();
     init_staff_pos_invoice_bridge();
     init_ghl_products();
@@ -40923,7 +42255,7 @@ var init_staff_products = __esm({
       "upgrade-4-to-8": { name: "Upgrade: 4-Session \u2192 8-Session", category: "service", detail: "Founding members only", salesPolicy: "legacy", effect: "Adds 4 sessions \xB7 Living Practice" },
       "entrainment": { name: "Founders Circle Entrainment", category: "service", detail: "Founding members only", salesPolicy: "legacy", effect: "No prepaid-session effect" }
     });
-    __name(text4, "text");
+    __name(text5, "text");
     __name(failure2, "failure");
     __name(builtInProducts, "builtInProducts");
     __name(purchaseBehavior, "purchaseBehavior");
@@ -41218,7 +42550,7 @@ async function verifyStripeWebhookSignature(rawBody, signatureHeader, webhookSec
 var STRIPE_API;
 var init_stripe_api = __esm({
   "lib/stripe-api.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     STRIPE_API = "https://api.stripe.com/v1";
     __name(encodeForm, "encodeForm");
     __name(stripeRequest, "stripeRequest");
@@ -41281,17 +42613,17 @@ async function rememberCustomer(env, contactId, customerId) {
   } catch {
   }
 }
-async function onRequestOptions93(context) {
+async function onRequestOptions94(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet60(context) {
+async function onRequestGet61(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers4);
   if (error) return error;
-  const id2 = new URL(context.request.url).searchParams.get("id") || "";
+  const id3 = new URL(context.request.url).searchParams.get("id") || "";
   try {
-    const sale = await readPosSale(context.env.PORTAL_KV, id2);
+    const sale = await readPosSale(context.env.PORTAL_KV, id3);
     return sale ? json18({ sale }, 200, headers4) : json18({ error: "Saved cart not found" }, 404, headers4);
   } catch (error2) {
     console.error("[staff-pos-sales] GET", error2 instanceof Error ? error2.message : error2);
@@ -41299,9 +42631,9 @@ async function onRequestGet60(context) {
   }
 }
 async function ensureSale(context, body, reviewer, catalog) {
-  const id2 = typeof body.id === "string" ? body.id : "";
-  if (id2) {
-    const existing = await readPosSale(context.env.PORTAL_KV, id2);
+  const id3 = typeof body.id === "string" ? body.id : "";
+  if (id3) {
+    const existing = await readPosSale(context.env.PORTAL_KV, id3);
     if (!existing) throw Object.assign(new Error("Saved cart not found"), { status: 404 });
     if (body.version !== void 0 && body.version !== existing.version) {
       throw Object.assign(new Error("This cart changed elsewhere. Reload it before saving."), { status: 409 });
@@ -41469,7 +42801,7 @@ async function chargeSavedCardLeg(context, sale, reviewer, { paymentMethodId, pa
     }
   };
 }
-async function onRequestPost65(context) {
+async function onRequestPost66(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error, payload } = await requireStaffAuth(context, headers4);
@@ -41529,8 +42861,8 @@ async function onRequestPost65(context) {
       return json18({ sale: next }, 200, headers4);
     }
     if (action === "fulfill") {
-      const id3 = typeof body.id === "string" ? body.id : "";
-      const existing2 = await readPosSale(context.env.PORTAL_KV, id3);
+      const id4 = typeof body.id === "string" ? body.id : "";
+      const existing2 = await readPosSale(context.env.PORTAL_KV, id4);
       if (!existing2) return json18({ error: "Saved cart not found" }, 404, headers4);
       if (!posPaymentActionAvailable(context.env, action, existing2)) return unavailablePaymentResponse(headers4);
       if (existing2.status !== "paid") return json18({ error: "Sale must be fully paid before fulfillment" }, 400, headers4);
@@ -41538,8 +42870,8 @@ async function onRequestPost65(context) {
       await writePosSale(context.env.PORTAL_KV, fulfilled);
       return json18({ sale: fulfilled, fulfillment: result }, 200, headers4);
     }
-    const id2 = typeof body.id === "string" ? body.id : "";
-    const existing = await readPosSale(context.env.PORTAL_KV, id2);
+    const id3 = typeof body.id === "string" ? body.id : "";
+    const existing = await readPosSale(context.env.PORTAL_KV, id3);
     if (!existing) return json18({ error: "Saved cart not found" }, 404, headers4);
     if (action === "save") {
       if (body.version !== void 0 && body.version !== existing.version) return json18({ error: "This cart changed elsewhere. Reload it before saving." }, 409, headers4);
@@ -41562,7 +42894,7 @@ async function onRequestPost65(context) {
 var POS_PAYMENT_ACTIONS;
 var init_staff_pos_sales = __esm({
   "api/staff-pos-sales.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_staff_pos();
     init_staff_pos_fulfill();
@@ -41582,17 +42914,17 @@ var init_staff_pos_sales = __esm({
     __name(siteOrigin, "siteOrigin");
     __name(storedCustomerId, "storedCustomerId");
     __name(rememberCustomer, "rememberCustomer");
-    __name(onRequestOptions93, "onRequestOptions");
-    __name(onRequestGet60, "onRequestGet");
+    __name(onRequestOptions94, "onRequestOptions");
+    __name(onRequestGet61, "onRequestGet");
     __name(ensureSale, "ensureSale");
     __name(openStripeLegs, "openStripeLegs");
     __name(chargeSavedCardLeg, "chargeSavedCardLeg");
-    __name(onRequestPost65, "onRequestPost");
+    __name(onRequestPost66, "onRequestPost");
   }
 });
 
 // api/staff-products.js
-function responseHeaders6(context, methods) {
+function responseHeaders7(context, methods) {
   return {
     ...corsHeaders3(context.request.headers.get("Origin") || "", methods),
     "Content-Type": "application/json",
@@ -41626,11 +42958,11 @@ function publicCoverage(coverage) {
     }))
   };
 }
-async function onRequestOptions94(context) {
-  return new Response(null, { status: 204, headers: responseHeaders6(context, "GET, POST, OPTIONS") });
+async function onRequestOptions95(context) {
+  return new Response(null, { status: 204, headers: responseHeaders7(context, "GET, POST, OPTIONS") });
 }
-async function onRequestGet61(context) {
-  const headers4 = responseHeaders6(context, "GET, POST, OPTIONS");
+async function onRequestGet62(context) {
+  const headers4 = responseHeaders7(context, "GET, POST, OPTIONS");
   const { error, payload } = await requireStaffAuth(context, headers4);
   if (error) return error;
   const result = await listStaffProducts(context.env.ATTEND_DB || null);
@@ -41641,8 +42973,8 @@ async function onRequestGet61(context) {
     canCreate: result.canCreate && payload?.user === "Eben"
   }, 200, headers4);
 }
-async function onRequestPost66(context) {
-  const headers4 = responseHeaders6(context, "GET, POST, OPTIONS");
+async function onRequestPost67(context) {
+  const headers4 = responseHeaders7(context, "GET, POST, OPTIONS");
   const auth = await requireEbenStaffAuth(context, headers4);
   if (auth.error) return auth.error;
   const parsed = await parseJsonBody(context.request, headers4);
@@ -41661,27 +42993,27 @@ async function onRequestPost66(context) {
 }
 var init_staff_products2 = __esm({
   "api/staff-products.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_staff_products();
-    __name(responseHeaders6, "responseHeaders");
+    __name(responseHeaders7, "responseHeaders");
     __name(json19, "json");
     __name(publicProduct, "publicProduct");
     __name(publicCoverage, "publicCoverage");
-    __name(onRequestOptions94, "onRequestOptions");
-    __name(onRequestGet61, "onRequestGet");
-    __name(onRequestPost66, "onRequestPost");
+    __name(onRequestOptions95, "onRequestOptions");
+    __name(onRequestGet62, "onRequestGet");
+    __name(onRequestPost67, "onRequestPost");
   }
 });
 
 // api/staff-refresh-activity.js
-async function onRequestOptions95(context) {
+async function onRequestOptions96(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost67(context) {
+async function onRequestPost68(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -41717,22 +43049,22 @@ async function onRequestPost67(context) {
 var WORKER_URL9;
 var init_staff_refresh_activity = __esm({
   "api/staff-refresh-activity.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     WORKER_URL9 = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
-    __name(onRequestOptions95, "onRequestOptions");
-    __name(onRequestPost67, "onRequestPost");
+    __name(onRequestOptions96, "onRequestOptions");
+    __name(onRequestPost68, "onRequestPost");
   }
 });
 
 // api/staff-reply-dismiss.js
-async function onRequestOptions96({ request }) {
+async function onRequestOptions97({ request }) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(request.headers.get("Origin") || "", "POST, OPTIONS")
   });
 }
-async function onRequestPost68(context) {
+async function onRequestPost69(context) {
   const { request, env } = context;
   const origin = request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
@@ -41760,11 +43092,11 @@ async function onRequestPost68(context) {
 var KV_KEY4;
 var init_staff_reply_dismiss = __esm({
   "api/staff-reply-dismiss.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     KV_KEY4 = "reply:dismissed";
-    __name(onRequestOptions96, "onRequestOptions");
-    __name(onRequestPost68, "onRequestPost");
+    __name(onRequestOptions97, "onRequestOptions");
+    __name(onRequestPost69, "onRequestPost");
   }
 });
 
@@ -41847,7 +43179,7 @@ async function getStaffRevenue(secretKey, { now = /* @__PURE__ */ new Date(), mo
 var TIME_ZONE, MONTH_COUNT, STRIPE_PAGE_LIMIT;
 var init_staff_revenue = __esm({
   "lib/staff-revenue.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     TIME_ZONE = "America/Los_Angeles";
     MONTH_COUNT = 6;
     STRIPE_PAGE_LIMIT = 20;
@@ -41861,13 +43193,13 @@ var init_staff_revenue = __esm({
 });
 
 // api/staff-revenue.js
-async function onRequestOptions97(context) {
+async function onRequestOptions98(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet62(context) {
+async function onRequestGet63(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -41889,22 +43221,22 @@ async function onRequestGet62(context) {
 }
 var init_staff_revenue2 = __esm({
   "api/staff-revenue.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_staff_revenue();
-    __name(onRequestOptions97, "onRequestOptions");
-    __name(onRequestGet62, "onRequestGet");
+    __name(onRequestOptions98, "onRequestOptions");
+    __name(onRequestGet63, "onRequestGet");
   }
 });
 
 // api/staff-save-progress.js
-async function onRequestOptions98(context) {
+async function onRequestOptions99(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost69(context) {
+async function onRequestPost70(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -41952,7 +43284,7 @@ async function onRequestPost69(context) {
 var GHL_API_BASE51, MODULE_FIELDS, BODY_FIELDS, YOGA_BLOCK_FIELD;
 var init_staff_save_progress = __esm({
   "api/staff-save-progress.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE51 = "https://services.leadconnectorhq.com";
@@ -41974,8 +43306,8 @@ var init_staff_save_progress = __esm({
       lower: "yeiKwwcNnuUsAAz1LpQt"
     };
     YOGA_BLOCK_FIELD = "dRiVGU2Q2lRbCAaPIQai";
-    __name(onRequestOptions98, "onRequestOptions");
-    __name(onRequestPost69, "onRequestPost");
+    __name(onRequestOptions99, "onRequestOptions");
+    __name(onRequestPost70, "onRequestPost");
   }
 });
 
@@ -41989,10 +43321,10 @@ function maskEmail(e) {
   const [u, d2] = String(e).split("@");
   return `${u.slice(0, 2)}***@${d2 || ""}`;
 }
-async function onRequestOptions99(context) {
+async function onRequestOptions100(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost70(context) {
+async function onRequestPost71(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
   if (error) return error;
@@ -42003,15 +43335,15 @@ async function onRequestPost70(context) {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
   }
   const contactId = (body.contactId || "").trim();
-  const subject = (body.subject || "").trim();
+  const subject2 = (body.subject || "").trim();
   const html = (body.html || "").trim();
   if (!contactId || !VALID_CONTACT_ID2.test(contactId)) return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers4 });
-  if (!subject) return new Response(JSON.stringify({ error: "subject is required" }), { status: 400, headers: headers4 });
+  if (!subject2) return new Response(JSON.stringify({ error: "subject is required" }), { status: 400, headers: headers4 });
   if (!html) return new Response(JSON.stringify({ error: "body is required" }), { status: 400, headers: headers4 });
-  if (subject.length > MAX_SUBJECT || html.length > MAX_BODY) return new Response(JSON.stringify({ error: "Email too long" }), { status: 400, headers: headers4 });
-  if (BAD_CHARS2.test(subject) || BAD_CHARS2.test(html)) return new Response(JSON.stringify({ error: "Email has invalid characters" }), { status: 400, headers: headers4 });
+  if (subject2.length > MAX_SUBJECT || html.length > MAX_BODY) return new Response(JSON.stringify({ error: "Email too long" }), { status: 400, headers: headers4 });
+  if (BAD_CHARS2.test(subject2) || BAD_CHARS2.test(html)) return new Response(JSON.stringify({ error: "Email has invalid characters" }), { status: 400, headers: headers4 });
   const kv = context.env.PORTAL_KV;
-  const dedupeKey = `sentmail:${contactId}:${hashKey(subject + html)}`;
+  const dedupeKey = `sentmail:${contactId}:${hashKey(subject2 + html)}`;
   if (kv) {
     if (await kv.get(dedupeKey)) return new Response(JSON.stringify({ success: true, deduped: true }), { status: 200, headers: headers4 });
     try {
@@ -42040,7 +43372,7 @@ async function onRequestPost70(context) {
   }
   const sendRes = await ghlFetch(context, `${GHL_API_BASE52}/conversations/messages`, {
     method: "POST",
-    body: JSON.stringify({ type: "Email", contactId, subject, html })
+    body: JSON.stringify({ type: "Email", contactId, subject: subject2, html })
   });
   if (!sendRes.ok) {
     await releaseDedupe();
@@ -42048,13 +43380,13 @@ async function onRequestPost70(context) {
     console.error(`[staff-send-email] send failed: ${sendRes.status} ${errText}`);
     return new Response(JSON.stringify({ error: "Failed to send email" }), { status: 422, headers: headers4 });
   }
-  console.log(`[staff-send-email] sent by ${tokenPayload.user || "staff"} to ${contactId} (${maskEmail(email)}, subj ${subject.length}c, body ${html.length}c)`);
+  console.log(`[staff-send-email] sent by ${tokenPayload.user || "staff"} to ${contactId} (${maskEmail(email)}, subj ${subject2.length}c, body ${html.length}c)`);
   return new Response(JSON.stringify({ success: true, sentTo: maskEmail(email) }), { status: 200, headers: headers4 });
 }
 var GHL_API_BASE52, MAX_SUBJECT, MAX_BODY, DEDUPE_TTL_S, VALID_CONTACT_ID2, BAD_CHARS2, VALID_EMAIL;
 var init_staff_send_email = __esm({
   "api/staff-send-email.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE52 = "https://services.leadconnectorhq.com";
@@ -42066,8 +43398,8 @@ var init_staff_send_email = __esm({
     VALID_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     __name(hashKey, "hashKey");
     __name(maskEmail, "maskEmail");
-    __name(onRequestOptions99, "onRequestOptions");
-    __name(onRequestPost70, "onRequestPost");
+    __name(onRequestOptions100, "onRequestOptions");
+    __name(onRequestPost71, "onRequestPost");
   }
 });
 
@@ -42077,13 +43409,13 @@ function buildMessage(product) {
 
 ${BASE_URL}${product.path}`;
 }
-async function onRequestOptions100(context) {
+async function onRequestOptions101(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost71(context) {
+async function onRequestPost72(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   let claimedDedupeKey = null;
@@ -42165,7 +43497,7 @@ async function onRequestPost71(context) {
 var GHL_API_BASE53, BASE_URL, PAY_LINK_PRODUCTS;
 var init_staff_send_paylink = __esm({
   "api/staff-send-paylink.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE53 = "https://services.leadconnectorhq.com";
@@ -42233,8 +43565,8 @@ var init_staff_send_paylink = __esm({
       }
     };
     __name(buildMessage, "buildMessage");
-    __name(onRequestOptions100, "onRequestOptions");
-    __name(onRequestPost71, "onRequestPost");
+    __name(onRequestOptions101, "onRequestOptions");
+    __name(onRequestPost72, "onRequestPost");
   }
 });
 
@@ -42242,15 +43574,15 @@ var init_staff_send_paylink = __esm({
 function json20(body, status, headers4) {
   return new Response(JSON.stringify(body), { status, headers: headers4 });
 }
-async function onRequestOptions101(context) {
+async function onRequestOptions102(context) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS6)
+    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS7)
   });
 }
-async function onRequestPost72(context) {
+async function onRequestPost73(context) {
   const headers4 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS7),
     "Content-Type": "application/json"
   };
   const { error } = await requireStaffAuth(context, headers4);
@@ -42322,18 +43654,18 @@ ${charge.receipt_url}`;
     chargeId: charge.id
   }, 200, headers4);
 }
-var GHL_API_BASE54, METHODS6;
+var GHL_API_BASE54, METHODS7;
 var init_staff_send_receipt = __esm({
   "api/staff-send-receipt.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ghl();
     init_stripe_charges();
     GHL_API_BASE54 = "https://services.leadconnectorhq.com";
-    METHODS6 = "POST, OPTIONS";
+    METHODS7 = "POST, OPTIONS";
     __name(json20, "json");
-    __name(onRequestOptions101, "onRequestOptions");
-    __name(onRequestPost72, "onRequestPost");
+    __name(onRequestOptions102, "onRequestOptions");
+    __name(onRequestPost73, "onRequestPost");
   }
 });
 
@@ -42350,10 +43682,10 @@ function hashKey2(s) {
   for (let i = 0; i < s.length; i++) h = (h << 5) + h + s.charCodeAt(i) >>> 0;
   return h.toString(36);
 }
-async function onRequestOptions102(context) {
+async function onRequestOptions103(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost73(context) {
+async function onRequestPost74(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
   if (error) return error;
@@ -42415,7 +43747,7 @@ async function onRequestPost73(context) {
 var GHL_API_BASE55, MAX_LEN, DEDUPE_TTL_S2, VALID_CONTACT_ID3, BAD_CHARS3;
 var init_staff_send_text = __esm({
   "api/staff-send-text.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE55 = "https://services.leadconnectorhq.com";
@@ -42425,19 +43757,19 @@ var init_staff_send_text = __esm({
     BAD_CHARS3 = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u202A-\u202E]/;
     __name(normalizePhone3, "normalizePhone");
     __name(hashKey2, "hashKey");
-    __name(onRequestOptions102, "onRequestOptions");
-    __name(onRequestPost73, "onRequestPost");
+    __name(onRequestOptions103, "onRequestOptions");
+    __name(onRequestPost74, "onRequestPost");
   }
 });
 
 // api/staff-send-toolkit.js
-async function onRequestOptions103(context) {
+async function onRequestOptions104(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost74(context) {
+async function onRequestPost75(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -42528,7 +43860,7 @@ async function onRequestPost74(context) {
 var GHL_API_BASE56, GHL_LOCATION_ID35, TOOLKIT_MESSAGE;
 var init_staff_send_toolkit = __esm({
   "api/staff-send-toolkit.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE56 = "https://services.leadconnectorhq.com";
@@ -42538,55 +43870,55 @@ var init_staff_send_toolkit = __esm({
 https://www.amarimethod.com/partner-app
 
 Log in with your email and you're all set. Reach out anytime if you have questions!`;
-    __name(onRequestOptions103, "onRequestOptions");
-    __name(onRequestPost74, "onRequestPost");
+    __name(onRequestOptions104, "onRequestOptions");
+    __name(onRequestPost75, "onRequestPost");
   }
 });
 
 // api/staff-session.js
 async function authenticatedResponse(context) {
-  const headers4 = responseHeaders7(context.request.headers.get("Origin"), "");
+  const headers4 = responseHeaders8(context.request.headers.get("Origin"), "");
   const { error, payload } = await requireStaffAuth(context, headers4);
   return error || { payload, headers: headers4 };
 }
-async function onRequestOptions104(context) {
+async function onRequestOptions105(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, DELETE, OPTIONS") });
 }
-async function onRequestGet63(context) {
+async function onRequestGet64(context) {
   const result = await authenticatedResponse(context);
   if (result instanceof Response) return result;
   return new Response(JSON.stringify({ authenticated: true, user: result.payload.user }), { status: 200, headers: result.headers });
 }
-async function onRequestPost75(context) {
+async function onRequestPost76(context) {
   const result = await authenticatedResponse(context);
   if (result instanceof Response) return result;
   const token = bearerToken(context.request);
   const cookieValue = token || context.request.headers.get("Cookie")?.match(new RegExp(`(?:^|;\\s*)${STAFF_SESSION_COOKIE}=([^;]+)`))?.[1];
   if (!cookieValue) return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: result.headers });
-  return new Response(JSON.stringify({ authenticated: true, user: result.payload.user }), { status: 200, headers: responseHeaders7(context.request.headers.get("Origin"), sessionCookie(cookieValue)) });
+  return new Response(JSON.stringify({ authenticated: true, user: result.payload.user }), { status: 200, headers: responseHeaders8(context.request.headers.get("Origin"), sessionCookie(cookieValue)) });
 }
 async function onRequestDelete(context) {
-  return new Response(JSON.stringify({ authenticated: false }), { status: 200, headers: responseHeaders7(context.request.headers.get("Origin"), sessionCookie("", 0)) });
+  return new Response(JSON.stringify({ authenticated: false }), { status: 200, headers: responseHeaders8(context.request.headers.get("Origin"), sessionCookie("", 0)) });
 }
-var MAX_AGE_SECONDS, sessionCookie, responseHeaders7, bearerToken;
+var MAX_AGE_SECONDS, sessionCookie, responseHeaders8, bearerToken;
 var init_staff_session = __esm({
   "api/staff-session.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
     sessionCookie = /* @__PURE__ */ __name((value, maxAge = MAX_AGE_SECONDS) => `${STAFF_SESSION_COOKIE}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`, "sessionCookie");
-    responseHeaders7 = /* @__PURE__ */ __name((origin, cookie) => ({ ...corsHeaders3(origin, "GET, POST, DELETE, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store", "Set-Cookie": cookie }), "responseHeaders");
+    responseHeaders8 = /* @__PURE__ */ __name((origin, cookie) => ({ ...corsHeaders3(origin, "GET, POST, DELETE, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store", "Set-Cookie": cookie }), "responseHeaders");
     bearerToken = /* @__PURE__ */ __name((request) => request.headers.get("Authorization")?.startsWith("Bearer ") ? request.headers.get("Authorization").slice(7) : null, "bearerToken");
     __name(authenticatedResponse, "authenticatedResponse");
-    __name(onRequestOptions104, "onRequestOptions");
-    __name(onRequestGet63, "onRequestGet");
-    __name(onRequestPost75, "onRequestPost");
+    __name(onRequestOptions105, "onRequestOptions");
+    __name(onRequestGet64, "onRequestGet");
+    __name(onRequestPost76, "onRequestPost");
     __name(onRequestDelete, "onRequestDelete");
   }
 });
 
 // api/staff-sharpen.js
-async function onRequestOptions105(context) {
+async function onRequestOptions106(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
 async function readCards(env) {
@@ -42596,13 +43928,13 @@ async function readCards(env) {
 async function writeCards(env, cards) {
   await env.PORTAL_KV.put(CARDS_KEY, JSON.stringify({ cards, updatedAt: (/* @__PURE__ */ new Date()).toISOString() }));
 }
-async function onRequestGet64(context) {
+async function onRequestGet65(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers4);
   if (error) return error;
   return new Response(JSON.stringify({ cards: await readCards(context.env) }), { status: 200, headers: headers4 });
 }
-async function onRequestPost76(context) {
+async function onRequestPost77(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers4);
   if (error) return error;
@@ -42612,27 +43944,27 @@ async function onRequestPost76(context) {
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
   }
-  const { action, id: id2 } = body;
+  const { action, id: id3 } = body;
   const category = CATEGORIES2.includes(body.category) ? body.category : "frame";
   const title = typeof body.title === "string" ? body.title.trim().slice(0, MAX_LEN2) : "";
-  const text5 = typeof body.body === "string" ? body.body.trim().slice(0, MAX_LEN2) : "";
+  const text6 = typeof body.body === "string" ? body.body.trim().slice(0, MAX_LEN2) : "";
   const now = (/* @__PURE__ */ new Date()).toISOString();
   let cards = await readCards(context.env);
   switch (action) {
     case "add": {
-      if (!title && !text5) return new Response(JSON.stringify({ error: "Card needs a title or body" }), { status: 400, headers: headers4 });
+      if (!title && !text6) return new Response(JSON.stringify({ error: "Card needs a title or body" }), { status: 400, headers: headers4 });
       if (cards.length >= MAX_CARDS) return new Response(JSON.stringify({ error: "Too many cards" }), { status: 400, headers: headers4 });
-      cards = [{ id: crypto.randomUUID(), category, title, body: text5, addedBy: payload.user || "staff", createdAt: now }, ...cards];
+      cards = [{ id: crypto.randomUUID(), category, title, body: text6, addedBy: payload.user || "staff", createdAt: now }, ...cards];
       break;
     }
     case "edit": {
-      if (!id2) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
-      cards = cards.map((c) => c.id === id2 ? { ...c, category, title, body: text5 } : c);
+      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
+      cards = cards.map((c) => c.id === id3 ? { ...c, category, title, body: text6 } : c);
       break;
     }
     case "delete": {
-      if (!id2) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
-      cards = cards.filter((c) => c.id !== id2);
+      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
+      cards = cards.filter((c) => c.id !== id3);
       break;
     }
     case "seen": {
@@ -42655,17 +43987,17 @@ async function onRequestPost76(context) {
 var CARDS_KEY, MAX_CARDS, MAX_LEN2, CATEGORIES2;
 var init_staff_sharpen = __esm({
   "api/staff-sharpen.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     CARDS_KEY = "staff:sharpen-cards";
     MAX_CARDS = 200;
     MAX_LEN2 = 600;
     CATEGORIES2 = ["frame", "objection", "discovery", "close", "real-call"];
-    __name(onRequestOptions105, "onRequestOptions");
+    __name(onRequestOptions106, "onRequestOptions");
     __name(readCards, "readCards");
     __name(writeCards, "writeCards");
-    __name(onRequestGet64, "onRequestGet");
-    __name(onRequestPost76, "onRequestPost");
+    __name(onRequestGet65, "onRequestGet");
+    __name(onRequestPost77, "onRequestPost");
   }
 });
 
@@ -42690,10 +44022,10 @@ async function rememberCustomer2(env, contactId, customerId) {
   } catch {
   }
 }
-async function onRequestOptions106(context) {
+async function onRequestOptions107(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS") });
 }
-async function onRequestGet65(context) {
+async function onRequestGet66(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers4);
@@ -42739,26 +44071,26 @@ async function onRequestGet65(context) {
 }
 var init_staff_stripe_cards = __esm({
   "api/staff-stripe-cards.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_stripe_api();
     init_ops_last_run();
     __name(json21, "json");
     __name(storedCustomerId2, "storedCustomerId");
     __name(rememberCustomer2, "rememberCustomer");
-    __name(onRequestOptions106, "onRequestOptions");
-    __name(onRequestGet65, "onRequestGet");
+    __name(onRequestOptions107, "onRequestOptions");
+    __name(onRequestGet66, "onRequestGet");
   }
 });
 
 // api/staff-study.js
-async function onRequestOptions107({ request }) {
+async function onRequestOptions108({ request }) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet66(context) {
+async function onRequestGet67(context) {
   const { request, env } = context;
   const origin = request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
@@ -42781,7 +44113,7 @@ async function onRequestGet66(context) {
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
   }
 }
-async function onRequestPost77(context) {
+async function onRequestPost78(context) {
   const { request, env } = context;
   const origin = request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
@@ -42820,19 +44152,19 @@ async function onRequestPost77(context) {
 var GHL_API_BASE57;
 var init_staff_study = __esm({
   "api/staff-study.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
     GHL_API_BASE57 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions107, "onRequestOptions");
-    __name(onRequestGet66, "onRequestGet");
-    __name(onRequestPost77, "onRequestPost");
+    __name(onRequestOptions108, "onRequestOptions");
+    __name(onRequestGet67, "onRequestGet");
+    __name(onRequestPost78, "onRequestPost");
   }
 });
 
 // api/staff-tasks.js
-async function onRequestOptions108(context) {
+async function onRequestOptions109(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
 async function readState(env) {
@@ -42849,14 +44181,14 @@ async function writeState(env, state) {
 function publicView(state) {
   return { goal: state.goal, rule: state.rule, tasks: state.tasks };
 }
-async function onRequestGet67(context) {
+async function onRequestGet68(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers4);
   if (error) return error;
   const state = await readState(context.env);
   return new Response(JSON.stringify(publicView(state)), { status: 200, headers: headers4 });
 }
-async function onRequestPost78(context) {
+async function onRequestPost79(context) {
   const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers4);
   if (error) return error;
@@ -42866,30 +44198,30 @@ async function onRequestPost78(context) {
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
   }
-  const { action, id: id2 } = body;
-  const text5 = typeof body.text === "string" ? body.text.trim().slice(0, MAX_TEXT_LEN) : "";
+  const { action, id: id3 } = body;
+  const text6 = typeof body.text === "string" ? body.text.trim().slice(0, MAX_TEXT_LEN) : "";
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const state = await readState(context.env);
   switch (action) {
     case "add": {
-      if (!text5) return new Response(JSON.stringify({ error: "Task text required" }), { status: 400, headers: headers4 });
+      if (!text6) return new Response(JSON.stringify({ error: "Task text required" }), { status: 400, headers: headers4 });
       if (state.tasks.length >= MAX_TASKS) return new Response(JSON.stringify({ error: "Too many tasks \u2014 clear some first" }), { status: 400, headers: headers4 });
-      state.tasks = [...state.tasks, { id: crypto.randomUUID(), text: text5, done: false, addedBy: payload.user || "staff", createdAt: now }];
+      state.tasks = [...state.tasks, { id: crypto.randomUUID(), text: text6, done: false, addedBy: payload.user || "staff", createdAt: now }];
       break;
     }
     case "edit": {
-      if (!id2 || !text5) return new Response(JSON.stringify({ error: "id and text required" }), { status: 400, headers: headers4 });
-      state.tasks = state.tasks.map((t) => t.id === id2 ? { ...t, text: text5 } : t);
+      if (!id3 || !text6) return new Response(JSON.stringify({ error: "id and text required" }), { status: 400, headers: headers4 });
+      state.tasks = state.tasks.map((t) => t.id === id3 ? { ...t, text: text6 } : t);
       break;
     }
     case "toggle": {
-      if (!id2) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
-      state.tasks = state.tasks.map((t) => t.id === id2 ? { ...t, done: !t.done, doneAt: !t.done ? now : null } : t);
+      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
+      state.tasks = state.tasks.map((t) => t.id === id3 ? { ...t, done: !t.done, doneAt: !t.done ? now : null } : t);
       break;
     }
     case "delete": {
-      if (!id2) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
-      state.tasks = state.tasks.filter((t) => t.id !== id2);
+      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
+      state.tasks = state.tasks.filter((t) => t.id !== id3);
       break;
     }
     case "clear-done": {
@@ -42897,11 +44229,11 @@ async function onRequestPost78(context) {
       break;
     }
     case "set-goal": {
-      state.goal = text5;
+      state.goal = text6;
       break;
     }
     case "set-rule": {
-      state.rule = text5;
+      state.rule = text6;
       break;
     }
     default:
@@ -42913,30 +44245,30 @@ async function onRequestPost78(context) {
 var TASKS_KEY, MAX_TASKS, MAX_TEXT_LEN, DEFAULT_GOAL, DEFAULT_RULE;
 var init_staff_tasks = __esm({
   "api/staff-tasks.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     TASKS_KEY = "staff:garrett-tasks";
     MAX_TASKS = 50;
     MAX_TEXT_LEN = 280;
     DEFAULT_GOAL = "Today: get people out of pain \u2014 every call is someone you could help.";
     DEFAULT_RULE = "Every call ends with a text \u2014 tap VM + text or Talked + text.";
-    __name(onRequestOptions108, "onRequestOptions");
+    __name(onRequestOptions109, "onRequestOptions");
     __name(readState, "readState");
     __name(writeState, "writeState");
     __name(publicView, "publicView");
-    __name(onRequestGet67, "onRequestGet");
-    __name(onRequestPost78, "onRequestPost");
+    __name(onRequestGet68, "onRequestGet");
+    __name(onRequestPost79, "onRequestPost");
   }
 });
 
 // api/staff-toggle-prepaid.js
-async function onRequestOptions109(context) {
+async function onRequestOptions110(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost79(context) {
+async function onRequestPost80(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -42971,29 +44303,30 @@ async function onRequestPost79(context) {
 var GHL_API_BASE58, FIELD_ID_SESSION_PREPAID;
 var init_staff_toggle_prepaid = __esm({
   "api/staff-toggle-prepaid.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
     GHL_API_BASE58 = "https://services.leadconnectorhq.com";
     FIELD_ID_SESSION_PREPAID = FIELD_IDS.session_prepaid;
-    __name(onRequestOptions109, "onRequestOptions");
-    __name(onRequestPost79, "onRequestPost");
+    __name(onRequestOptions110, "onRequestOptions");
+    __name(onRequestPost80, "onRequestPost");
   }
 });
 
 // api/stream-health.js
-async function onRequestOptions110() {
+async function onRequestOptions111() {
   return new Response(null, {
     status: 204,
     headers: { "Access-Control-Allow-Methods": "GET, OPTIONS" }
   });
 }
-async function onRequestGet68(context) {
+async function onRequestGet69(context) {
   const headers4 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
   const CF_ACCOUNT_ID = context.env.CF_STREAM_ACCOUNT_ID;
   const CF_STREAM_TOKEN = context.env.CF_STREAM_TOKEN;
-  if (!CF_ACCOUNT_ID || !CF_STREAM_TOKEN) {
+  const CUSTOMER_CODE = context.env.CF_STREAM_CUSTOMER_CODE;
+  if (!CF_ACCOUNT_ID || !CF_STREAM_TOKEN || !CUSTOMER_CODE) {
     return new Response(
       JSON.stringify({ healthy: false, reason: "missing-env", checkedAt: (/* @__PURE__ */ new Date()).toISOString() }),
       { status: 200, headers: headers4 }
@@ -43017,9 +44350,9 @@ async function onRequestGet68(context) {
       { status: 200, headers: headers4 }
     );
   }
-  const healthy = !!(res.ok && json24 && json24.success && json24.result && json24.result.token);
+  const signingHealthy = !!(res.ok && json24 && json24.success && json24.result && json24.result.token);
   let reason = null;
-  if (!healthy) {
+  if (!signingHealthy) {
     if (res.status === 401 || res.status === 403 || res.status === 400) {
       reason = "token-invalid";
     } else if (res.status === 404) {
@@ -43028,15 +44361,50 @@ async function onRequestGet68(context) {
       reason = "stream-api-error";
     }
   }
+  if (!signingHealthy) {
+    return new Response(
+      JSON.stringify({
+        healthy: false,
+        reason,
+        status: res.status,
+        testUid: TEST_UID,
+        checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        // first CF error message only (no secret material), for the alert detail
+        detail: json24 && json24.errors && json24.errors[0] && json24.errors[0].message || null
+      }),
+      { status: 200, headers: headers4 }
+    );
+  }
+  let manifestRes, manifest;
+  try {
+    const manifestUrl = `https://customer-${CUSTOMER_CODE}.cloudflarestream.com/${json24.result.token}/manifest/video.m3u8`;
+    manifestRes = await fetch(manifestUrl, {
+      headers: { Accept: "application/vnd.apple.mpegurl, application/x-mpegURL, */*" }
+    });
+    manifest = await manifestRes.text();
+  } catch (err) {
+    return new Response(
+      JSON.stringify({
+        healthy: false,
+        reason: "manifest-fetch-failed",
+        testUid: TEST_UID,
+        checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
+        detail: String(err).slice(0, 160)
+      }),
+      { status: 200, headers: headers4 }
+    );
+  }
+  const playlistValid = manifestRes.ok && manifest.startsWith("#EXTM3U") && (manifest.includes("#EXT-X-STREAM-INF") || manifest.includes("#EXTINF"));
   return new Response(
     JSON.stringify({
-      healthy,
-      reason,
+      healthy: playlistValid,
+      reason: playlistValid ? null : "manifest-unavailable",
       status: res.status,
+      manifestStatus: manifestRes.status,
       testUid: TEST_UID,
       checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      // first CF error message only (no secret material), for the alert detail
-      detail: healthy ? void 0 : json24 && json24.errors && json24.errors[0] && json24.errors[0].message || null
+      // Status/shape only; no playback URL, token, or Stream response body.
+      playlistValid
     }),
     { status: 200, headers: headers4 }
   );
@@ -43044,10 +44412,10 @@ async function onRequestGet68(context) {
 var TEST_UID;
 var init_stream_health = __esm({
   "api/stream-health.js"() {
-    init_functionsRoutes_0_5773764037964985();
-    TEST_UID = "de9f0388d4c9e987d30ede97eedc84a2";
-    __name(onRequestOptions110, "onRequestOptions");
-    __name(onRequestGet68, "onRequestGet");
+    init_functionsRoutes_0_8372690901872232();
+    TEST_UID = "9072ff146ba6434f9463ae78c6616e3d";
+    __name(onRequestOptions111, "onRequestOptions");
+    __name(onRequestGet69, "onRequestGet");
   }
 });
 
@@ -43061,13 +44429,13 @@ function corsHeaders37(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions111(context) {
+async function onRequestOptions112(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders37(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet69(context) {
+async function onRequestGet70(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = corsHeaders37(origin);
   headers4["Content-Type"] = "application/json";
@@ -43184,7 +44552,7 @@ async function onRequestGet69(context) {
 var GHL_API_BASE59, GHL_LOCATION_ID36, ALLOWED_ORIGINS38, TOKEN_TTL_SECONDS;
 var init_stream_token = __esm({
   "api/stream-token.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_auth();
     init_portal_helpers();
@@ -43197,8 +44565,8 @@ var init_stream_token = __esm({
     ];
     TOKEN_TTL_SECONDS = 60 * 60;
     __name(corsHeaders37, "corsHeaders");
-    __name(onRequestOptions111, "onRequestOptions");
-    __name(onRequestGet69, "onRequestGet");
+    __name(onRequestOptions112, "onRequestOptions");
+    __name(onRequestGet70, "onRequestGet");
   }
 });
 
@@ -43268,7 +44636,7 @@ async function settleSession(context, session, source) {
     fulfillmentStatus: next.fulfillmentStatus || null
   };
 }
-async function onRequestPost80(context) {
+async function onRequestPost81(context) {
   const secret = context.env.STRIPE_POS_WEBHOOK_SECRET || context.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) {
     console.error("[stripe-pos-webhook] webhook secret not configured");
@@ -43345,7 +44713,7 @@ async function onRequestPost80(context) {
 }
 var init_stripe_pos_webhook = __esm({
   "api/stripe-pos-webhook.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_processed_events();
     init_staff_pos_fulfill();
     init_staff_pos();
@@ -43356,7 +44724,7 @@ var init_stripe_pos_webhook = __esm({
     __name(loadSaleForSession, "loadSaleForSession");
     __name(maybeFulfill, "maybeFulfill");
     __name(settleSession, "settleSession");
-    __name(onRequestPost80, "onRequestPost");
+    __name(onRequestPost81, "onRequestPost");
   }
 });
 
@@ -43393,7 +44761,7 @@ async function ensureStudyBookingConfirmedMarker(context, contactId) {
 var GHL_API_BASE60, STUDY_BOOKING_CONFIRMED_MARKER;
 var init_study_enrollment_marker = __esm({
   "lib/study-enrollment-marker.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     GHL_API_BASE60 = "https://services.leadconnectorhq.com";
     STUDY_BOOKING_CONFIRMED_MARKER = "study-booking-confirmed-before-enrollment";
@@ -43506,7 +44874,7 @@ function resolveStudyBookingRuntime(context, options = {}) {
 var PRODUCTION_ORIGINS, PREVIEW_HOST_SUFFIX, StudyBookingRuntimeError;
 var init_study_booking_runtime = __esm({
   "lib/study-booking-runtime.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     PRODUCTION_ORIGINS = /* @__PURE__ */ new Set([
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -43616,7 +44984,7 @@ function validateStudyBooking(input) {
 var STUDY_NAME_FIELD_ID7, STUDY_BOOKING_KIND, VISIT_QUALIFICATION, LIVE_STUDY_BOOKINGS;
 var init_study_booking = __esm({
   "lib/study-booking.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_studies();
     init_study_consent();
     STUDY_NAME_FIELD_ID7 = "1xhxStKyEN47shwjOKC0";
@@ -43737,8 +45105,8 @@ async function findExistingContactId(context, email) {
       GHL_API_BASE61 + "/contacts/search/duplicate?locationId=" + GHL_LOCATION_ID37 + "&email=" + encodeURIComponent(email)
     );
     if (duplicate.ok) {
-      const id2 = contactIdFrom(await duplicate.json());
-      if (id2) return id2;
+      const id3 = contactIdFrom(await duplicate.json());
+      if (id3) return id3;
     }
   } catch (error) {
     console.warn("[study-book] duplicate contact lookup failed:", error.message);
@@ -43930,13 +45298,13 @@ async function markOperationFailure(db, opKey, error, manualReview) {
     console.error("[study-book] operation failure state:", stateError.message);
   }
 }
-async function onRequestOptions112(context) {
+async function onRequestOptions113(context) {
   return new Response(null, {
     status: 204,
     headers: headers3(context)
   });
 }
-async function onRequestGet70(context) {
+async function onRequestGet71(context) {
   let runtime;
   try {
     runtime = resolveStudyBookingRuntime(context);
@@ -43964,7 +45332,7 @@ async function onRequestGet70(context) {
     return json23({ error: "Could not load available times. Please try again." }, 422, context);
   }
 }
-async function onRequestPost81(context) {
+async function onRequestPost82(context) {
   let runtime;
   try {
     runtime = resolveStudyBookingRuntime(context, { mutation: true });
@@ -44078,9 +45446,9 @@ async function onRequestPost81(context) {
           email: data.email,
           phone: data.phone
         },
-        onCreated: /* @__PURE__ */ __name(async (id2) => {
-          progress.appointmentId = id2;
-          await checkpointBookingAppointment(db, operation.opKey, id2);
+        onCreated: /* @__PURE__ */ __name(async (id3) => {
+          progress.appointmentId = id3;
+          await checkpointBookingAppointment(db, operation.opKey, id3);
         }, "onCreated")
       });
       progress.appointmentId = created.id || created.appointment?.id || null;
@@ -44201,7 +45569,7 @@ async function onRequestPost81(context) {
 var GHL_API_BASE61, GHL_LOCATION_ID37, APPOINTMENT_ENDPOINT, RetryableFlowError, ManualReviewError;
 var init_study_book_v2 = __esm({
   "api/study-book-v2.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ghl();
     init_studies();
     init_datetime();
@@ -44255,14 +45623,14 @@ var init_study_book_v2 = __esm({
     __name(checkpointedAppointment, "checkpointedAppointment");
     __name(deferEvidence, "deferEvidence");
     __name(markOperationFailure, "markOperationFailure");
-    __name(onRequestOptions112, "onRequestOptions");
-    __name(onRequestGet70, "onRequestGet");
-    __name(onRequestPost81, "onRequestPost");
+    __name(onRequestOptions113, "onRequestOptions");
+    __name(onRequestGet71, "onRequestGet");
+    __name(onRequestPost82, "onRequestPost");
   }
 });
 
 // api/study-book.js
-function responseHeaders8(origin) {
+function responseHeaders9(origin) {
   return {
     "Access-Control-Allow-Origin": ORIGINS.has(origin) ? origin : "https://www.amarimethod.com",
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -44272,7 +45640,7 @@ function responseHeaders8(origin) {
     Vary: "Origin"
   };
 }
-async function onRequestPost82({ request }) {
+async function onRequestPost83({ request }) {
   const origin = request.headers.get("Origin") || "";
   return new Response(JSON.stringify({
     error: "Study booking now includes choosing the study and qualifications in one entry. Refresh this page.",
@@ -44280,17 +45648,17 @@ async function onRequestPost82({ request }) {
     refreshRequired: true
   }), {
     status: 409,
-    headers: responseHeaders8(origin)
+    headers: responseHeaders9(origin)
   });
 }
 var ORIGINS;
 var init_study_book = __esm({
   "api/study-book.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_study_book_v2();
     ORIGINS = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
-    __name(responseHeaders8, "responseHeaders");
-    __name(onRequestPost82, "onRequestPost");
+    __name(responseHeaders9, "responseHeaders");
+    __name(onRequestPost83, "onRequestPost");
   }
 });
 
@@ -44337,7 +45705,7 @@ async function checkDailyAudit(kv) {
   const n = Array.isArray(rec.issues) ? rec.issues.length : "?";
   return { label: "Daily audit", state: "green", note: `present for ${ds} (${n} issues)` };
 }
-async function onRequestGet71(context) {
+async function onRequestGet72(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers4 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -44377,7 +45745,7 @@ async function onRequestGet71(context) {
 var HOUR4;
 var init_system_health = __esm({
   "api/system-health.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_auth();
     HOUR4 = 3600 * 1e3;
     __name(ageHours3, "ageHours");
@@ -44385,18 +45753,18 @@ var init_system_health = __esm({
     __name(judgeWorker, "judgeWorker");
     __name(checkToken, "checkToken");
     __name(checkDailyAudit, "checkDailyAudit");
-    __name(onRequestGet71, "onRequestGet");
+    __name(onRequestGet72, "onRequestGet");
   }
 });
 
 // api/voice-write.js
-async function onRequestOptions113(context) {
+async function onRequestOptions114(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS")
   });
 }
-async function onRequestPost83(context) {
+async function onRequestPost84(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
@@ -44443,7 +45811,7 @@ async function onRequestPost83(context) {
     return new Response(JSON.stringify({ error: "The writer hit a problem. Try again." }), { status: 500, headers: headers4 });
   }
 }
-async function onRequestGet72(context) {
+async function onRequestGet73(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers4 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers4);
@@ -44457,13 +45825,13 @@ async function onRequestGet72(context) {
 var HISTORY_CAP2;
 var init_voice_write = __esm({
   "api/voice-write.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_endpoint_guards();
     init_voice_engine();
     HISTORY_CAP2 = 25;
-    __name(onRequestOptions113, "onRequestOptions");
-    __name(onRequestPost83, "onRequestPost");
-    __name(onRequestGet72, "onRequestGet");
+    __name(onRequestOptions114, "onRequestOptions");
+    __name(onRequestPost84, "onRequestPost");
+    __name(onRequestGet73, "onRequestGet");
   }
 });
 
@@ -44492,7 +45860,7 @@ async function onRequest(context) {
 }
 var init_path = __esm({
   "portal/[[path]].js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(onRequest, "onRequest");
   }
 });
@@ -44518,7 +45886,7 @@ async function onRequest2(context) {
 }
 var init_path2 = __esm({
   "staff/[[path]].js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     __name(isStaticFile, "isStaticFile");
     __name(onRequest2, "onRequest");
   }
@@ -44526,8 +45894,8 @@ var init_path2 = __esm({
 
 // lib/ops-surface-nav.js
 function opsSurfaceNavHtml(active) {
-  const item = /* @__PURE__ */ __name((id2, href, label) => {
-    const current = id2 === active ? ' aria-current="page"' : "";
+  const item = /* @__PURE__ */ __name((id3, href, label) => {
+    const current = id3 === active ? ' aria-current="page"' : "";
     return `<a class="ops-surface-tab" href="${href}"${current}>${label}</a>`;
   }, "item");
   return `
@@ -44549,7 +45917,7 @@ function opsEmbedBootScript() {
 var OPS_SURFACE_URLS, OPS_SURFACE_NAV_CSS;
 var init_ops_surface_nav = __esm({
   "lib/ops-surface-nav.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     OPS_SURFACE_URLS = Object.freeze({
       systems: "https://www.amarimethod.com/ops",
       crmMirror: "https://amari-crm-mirror.eben-fa2.workers.dev/",
@@ -44589,7 +45957,7 @@ var init_ops_surface_nav = __esm({
 });
 
 // ops.js
-async function onRequestGet73() {
+async function onRequestGet74() {
   const html = OPS_HTML.replace("/*__OPS_SURFACE_NAV_CSS__*/", OPS_SURFACE_NAV_CSS).replace("__OPS_SURFACE_NAV__", opsSurfaceNavHtml("systems")).replace("__OPS_EMBED_BOOT__", opsEmbedBootScript());
   return new Response(html, {
     status: 200,
@@ -44603,9 +45971,9 @@ async function onRequestGet73() {
 var OPS_HTML;
 var init_ops = __esm({
   "ops.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_ops_surface_nav();
-    __name(onRequestGet73, "onRequestGet");
+    __name(onRequestGet74, "onRequestGet");
     OPS_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -45634,7 +47002,7 @@ async function onRequest3(context) {
 var PUBLIC_STAFF_PATHS;
 var init_middleware = __esm({
   "_middleware.js"() {
-    init_functionsRoutes_0_5773764037964985();
+    init_functionsRoutes_0_8372690901872232();
     init_auth();
     init_endpoint_guards();
     PUBLIC_STAFF_PATHS = /* @__PURE__ */ new Set(["/staff/login", "/staff/access"]);
@@ -45645,10 +47013,10 @@ var init_middleware = __esm({
   }
 });
 
-// ../.wrangler/tmp/pages-a4FqQl/functionsRoutes-0.5773764037964985.mjs
+// ../.wrangler/tmp/pages-ARe2VD/functionsRoutes-0.8372690901872232.mjs
 var routes;
-var init_functionsRoutes_0_5773764037964985 = __esm({
-  "../.wrangler/tmp/pages-a4FqQl/functionsRoutes-0.5773764037964985.mjs"() {
+var init_functionsRoutes_0_8372690901872232 = __esm({
+  "../.wrangler/tmp/pages-ARe2VD/functionsRoutes-0.8372690901872232.mjs"() {
     init_create_checkout();
     init_create_checkout();
     init_public_slots();
@@ -45658,11 +47026,16 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
     init_fix();
     init_incidents();
     init_incidents();
+    init_ledger();
+    init_ledger();
+    init_ledger();
     init_monitor_event();
     init_repair_command();
     init_repair_command();
     init_systems();
     init_systems();
+    init_resource();
+    init_resource();
     init_affiliate_refer();
     init_affiliate_refer();
     init_appointment_webhook();
@@ -45840,6 +47213,9 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
     init_staff_note();
     init_staff_note();
     init_staff_note();
+    init_staff_operations_ledger();
+    init_staff_operations_ledger();
+    init_staff_operations_ledger();
     init_staff_outreach_cards();
     init_staff_outreach_cards();
     init_staff_outreach_upload();
@@ -45992,77 +47368,105 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
         modules: [onRequestOptions4]
       },
       {
-        routePath: "/api/ops/monitor-event",
-        mountPath: "/api/ops",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost3]
-      },
-      {
-        routePath: "/api/ops/repair-command",
+        routePath: "/api/ops/ledger",
         mountPath: "/api/ops",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet4]
       },
       {
-        routePath: "/api/ops/repair-command",
-        mountPath: "/api/ops",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost4]
-      },
-      {
-        routePath: "/api/ops/systems",
-        mountPath: "/api/ops",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet5]
-      },
-      {
-        routePath: "/api/ops/systems",
+        routePath: "/api/ops/ledger",
         mountPath: "/api/ops",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions5]
       },
       {
-        routePath: "/api/affiliate-refer",
-        mountPath: "/api",
-        method: "OPTIONS",
+        routePath: "/api/ops/ledger",
+        mountPath: "/api/ops",
+        method: "POST",
         middlewares: [],
-        modules: [onRequestOptions6]
+        modules: [onRequestPost3]
       },
       {
-        routePath: "/api/affiliate-refer",
-        mountPath: "/api",
+        routePath: "/api/ops/monitor-event",
+        mountPath: "/api/ops",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost4]
+      },
+      {
+        routePath: "/api/ops/repair-command",
+        mountPath: "/api/ops",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet5]
+      },
+      {
+        routePath: "/api/ops/repair-command",
+        mountPath: "/api/ops",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost5]
       },
       {
-        routePath: "/api/appointment-webhook",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost6]
-      },
-      {
-        routePath: "/api/call-coach",
-        mountPath: "/api",
+        routePath: "/api/ops/systems",
+        mountPath: "/api/ops",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet6]
       },
       {
-        routePath: "/api/call-coach",
+        routePath: "/api/ops/systems",
+        mountPath: "/api/ops",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions6]
+      },
+      {
+        routePath: "/api/staff-operations-ledger/:resource",
+        mountPath: "/api/staff-operations-ledger",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions5]
+      },
+      {
+        routePath: "/api/staff-operations-ledger/:resource",
+        mountPath: "/api/staff-operations-ledger",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost3]
+      },
+      {
+        routePath: "/api/affiliate-refer",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions7]
       },
       {
-        routePath: "/api/client-refer",
+        routePath: "/api/affiliate-refer",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost6]
+      },
+      {
+        routePath: "/api/appointment-webhook",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost7]
+      },
+      {
+        routePath: "/api/call-coach",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet7]
+      },
+      {
+        routePath: "/api/call-coach",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46071,138 +47475,138 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/client-refer",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost7]
-      },
-      {
-        routePath: "/api/comms-summary",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet7]
-      },
-      {
-        routePath: "/api/contact-message",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions9]
       },
       {
-        routePath: "/api/contact-message",
+        routePath: "/api/client-refer",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost8]
       },
       {
-        routePath: "/api/cos-actions",
+        routePath: "/api/comms-summary",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet8]
       },
       {
-        routePath: "/api/cos-actions",
+        routePath: "/api/contact-message",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions10]
       },
       {
-        routePath: "/api/cos-actions",
+        routePath: "/api/contact-message",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost9]
       },
       {
-        routePath: "/api/cos-auth",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions11]
-      },
-      {
-        routePath: "/api/cos-auth",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost10]
-      },
-      {
-        routePath: "/api/cos-chat",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions12]
-      },
-      {
-        routePath: "/api/cos-chat",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost11]
-      },
-      {
-        routePath: "/api/cos-daily-sync",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions13]
-      },
-      {
-        routePath: "/api/cos-daily-sync",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost12]
-      },
-      {
-        routePath: "/api/cos-ghl-sync",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions14]
-      },
-      {
-        routePath: "/api/cos-ghl-sync",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost13]
-      },
-      {
-        routePath: "/api/cos-google-auth",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions15]
-      },
-      {
-        routePath: "/api/cos-google-auth",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost14]
-      },
-      {
-        routePath: "/api/cos-google-callback",
+        routePath: "/api/cos-actions",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet9]
       },
       {
-        routePath: "/api/cos-health",
+        routePath: "/api/cos-actions",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions11]
+      },
+      {
+        routePath: "/api/cos-actions",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost10]
+      },
+      {
+        routePath: "/api/cos-auth",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions12]
+      },
+      {
+        routePath: "/api/cos-auth",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost11]
+      },
+      {
+        routePath: "/api/cos-chat",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions13]
+      },
+      {
+        routePath: "/api/cos-chat",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost12]
+      },
+      {
+        routePath: "/api/cos-daily-sync",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions14]
+      },
+      {
+        routePath: "/api/cos-daily-sync",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost13]
+      },
+      {
+        routePath: "/api/cos-ghl-sync",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions15]
+      },
+      {
+        routePath: "/api/cos-ghl-sync",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost14]
+      },
+      {
+        routePath: "/api/cos-google-auth",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions16]
+      },
+      {
+        routePath: "/api/cos-google-auth",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost15]
+      },
+      {
+        routePath: "/api/cos-google-callback",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet10]
       },
       {
-        routePath: "/api/cos-parking-current",
+        routePath: "/api/cos-health",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
@@ -46211,19 +47615,12 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/cos-parking-current",
         mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions16]
-      },
-      {
-        routePath: "/api/cos-parking-seed",
-        mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet12]
       },
       {
-        routePath: "/api/cos-parking-seed",
+        routePath: "/api/cos-parking-current",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46232,194 +47629,201 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/cos-parking-seed",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost15]
-      },
-      {
-        routePath: "/api/cos-spotify-auth",
-        mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet13]
       },
       {
-        routePath: "/api/cos-spotify-callback",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet14]
-      },
-      {
-        routePath: "/api/cos-vault-sync",
+        routePath: "/api/cos-parking-seed",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions18]
       },
       {
-        routePath: "/api/cos-vault-sync",
+        routePath: "/api/cos-parking-seed",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost16]
       },
       {
-        routePath: "/api/daily-audit",
+        routePath: "/api/cos-spotify-auth",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet14]
+      },
+      {
+        routePath: "/api/cos-spotify-callback",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet15]
       },
       {
-        routePath: "/api/ecosystem-scan",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet16]
-      },
-      {
-        routePath: "/api/elbow-study-interest",
+        routePath: "/api/cos-vault-sync",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions19]
       },
       {
-        routePath: "/api/elbow-study-interest",
+        routePath: "/api/cos-vault-sync",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost17]
       },
       {
-        routePath: "/api/elbow-study-signup",
+        routePath: "/api/daily-audit",
         mountPath: "/api",
-        method: "OPTIONS",
+        method: "GET",
         middlewares: [],
-        modules: [onRequestOptions20]
+        modules: [onRequestGet16]
       },
       {
-        routePath: "/api/elbow-study-signup",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost18]
-      },
-      {
-        routePath: "/api/foot-study-signup",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions21]
-      },
-      {
-        routePath: "/api/foot-study-signup",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost19]
-      },
-      {
-        routePath: "/api/ghl-export-tokens",
+        routePath: "/api/ecosystem-scan",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet17]
       },
       {
-        routePath: "/api/ghl-invoice-webhook",
+        routePath: "/api/elbow-study-interest",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions20]
+      },
+      {
+        routePath: "/api/elbow-study-interest",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost20]
+        modules: [onRequestPost18]
       },
       {
-        routePath: "/api/ghl-oauth-callback",
+        routePath: "/api/elbow-study-signup",
         mountPath: "/api",
-        method: "GET",
+        method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestGet18]
+        modules: [onRequestOptions21]
       },
       {
-        routePath: "/api/ghl-purchase-webhook",
+        routePath: "/api/elbow-study-signup",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost21]
+        modules: [onRequestPost19]
       },
       {
-        routePath: "/api/hand-study-signup",
+        routePath: "/api/foot-study-signup",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions22]
       },
       {
-        routePath: "/api/hand-study-signup",
+        routePath: "/api/foot-study-signup",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost22]
+        modules: [onRequestPost20]
       },
       {
-        routePath: "/api/heartbeats",
+        routePath: "/api/ghl-export-tokens",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet18]
+      },
+      {
+        routePath: "/api/ghl-invoice-webhook",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost21]
+      },
+      {
+        routePath: "/api/ghl-oauth-callback",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet19]
       },
       {
-        routePath: "/api/heartbeats",
+        routePath: "/api/ghl-purchase-webhook",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost23]
+        modules: [onRequestPost22]
       },
       {
-        routePath: "/api/jaw-study-signup",
+        routePath: "/api/hand-study-signup",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions23]
       },
       {
-        routePath: "/api/jaw-study-signup",
+        routePath: "/api/hand-study-signup",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost24]
+        modules: [onRequestPost23]
       },
       {
-        routePath: "/api/newsletter-signup",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions24]
-      },
-      {
-        routePath: "/api/newsletter-signup",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost25]
-      },
-      {
-        routePath: "/api/outreach-coach",
+        routePath: "/api/heartbeats",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet20]
       },
       {
-        routePath: "/api/outreach-coach",
+        routePath: "/api/heartbeats",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost24]
+      },
+      {
+        routePath: "/api/jaw-study-signup",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions24]
+      },
+      {
+        routePath: "/api/jaw-study-signup",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost25]
+      },
+      {
+        routePath: "/api/newsletter-signup",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions25]
       },
       {
-        routePath: "/api/partner-auth",
+        routePath: "/api/newsletter-signup",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost26]
+      },
+      {
+        routePath: "/api/outreach-coach",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet21]
+      },
+      {
+        routePath: "/api/outreach-coach",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46428,54 +47832,54 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/partner-auth",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost26]
-      },
-      {
-        routePath: "/api/partner-data",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet21]
-      },
-      {
-        routePath: "/api/partner-data",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions27]
       },
       {
-        routePath: "/api/partner-stats",
+        routePath: "/api/partner-auth",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost27]
+      },
+      {
+        routePath: "/api/partner-data",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet22]
       },
       {
-        routePath: "/api/partner-stats",
+        routePath: "/api/partner-data",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions28]
       },
       {
-        routePath: "/api/partner-verify",
+        routePath: "/api/partner-stats",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet23]
       },
       {
-        routePath: "/api/partner-verify",
+        routePath: "/api/partner-stats",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions29]
       },
       {
-        routePath: "/api/portal-auth",
+        routePath: "/api/partner-verify",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet24]
+      },
+      {
+        routePath: "/api/partner-verify",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46484,54 +47888,54 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/portal-auth",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost27]
-      },
-      {
-        routePath: "/api/portal-book",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions31]
       },
       {
-        routePath: "/api/portal-book",
+        routePath: "/api/portal-auth",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost28]
       },
       {
-        routePath: "/api/portal-cancel",
+        routePath: "/api/portal-book",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions32]
       },
       {
-        routePath: "/api/portal-cancel",
+        routePath: "/api/portal-book",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost29]
       },
       {
-        routePath: "/api/portal-data",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet24]
-      },
-      {
-        routePath: "/api/portal-data",
+        routePath: "/api/portal-cancel",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions33]
       },
       {
-        routePath: "/api/portal-pay-followup",
+        routePath: "/api/portal-cancel",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost30]
+      },
+      {
+        routePath: "/api/portal-data",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet25]
+      },
+      {
+        routePath: "/api/portal-data",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46540,61 +47944,61 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/portal-pay-followup",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost30]
-      },
-      {
-        routePath: "/api/portal-progress",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet25]
-      },
-      {
-        routePath: "/api/portal-progress",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions35]
       },
       {
-        routePath: "/api/portal-progress",
+        routePath: "/api/portal-pay-followup",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost31]
       },
       {
-        routePath: "/api/portal-reimbursement-packet",
+        routePath: "/api/portal-progress",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet26]
       },
       {
-        routePath: "/api/portal-reimbursement-packet",
+        routePath: "/api/portal-progress",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions36]
       },
       {
-        routePath: "/api/portal-slots",
+        routePath: "/api/portal-progress",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost32]
+      },
+      {
+        routePath: "/api/portal-reimbursement-packet",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet27]
       },
       {
-        routePath: "/api/portal-slots",
+        routePath: "/api/portal-reimbursement-packet",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions37]
       },
       {
-        routePath: "/api/portal-update-preference",
+        routePath: "/api/portal-slots",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet28]
+      },
+      {
+        routePath: "/api/portal-slots",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46603,89 +48007,89 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/portal-update-preference",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost32]
-      },
-      {
-        routePath: "/api/portal-verify",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet28]
-      },
-      {
-        routePath: "/api/portal-verify",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions39]
       },
       {
-        routePath: "/api/referral-complete",
+        routePath: "/api/portal-update-preference",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost33]
       },
       {
-        routePath: "/api/send-to-ghl",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions40]
-      },
-      {
-        routePath: "/api/send-to-ghl",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost34]
-      },
-      {
-        routePath: "/api/shoulder-study-signup",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions41]
-      },
-      {
-        routePath: "/api/shoulder-study-signup",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost35]
-      },
-      {
-        routePath: "/api/staff-amari-mail-auth",
+        routePath: "/api/portal-verify",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet29]
       },
       {
-        routePath: "/api/staff-amari-mail-auth",
+        routePath: "/api/portal-verify",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions40]
+      },
+      {
+        routePath: "/api/referral-complete",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost34]
+      },
+      {
+        routePath: "/api/send-to-ghl",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions41]
+      },
+      {
+        routePath: "/api/send-to-ghl",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost35]
+      },
+      {
+        routePath: "/api/shoulder-study-signup",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions42]
       },
       {
-        routePath: "/api/staff-amari-mail-auth",
+        routePath: "/api/shoulder-study-signup",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost36]
       },
       {
-        routePath: "/api/staff-amari-mail-callback",
+        routePath: "/api/staff-amari-mail-auth",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet30]
       },
       {
-        routePath: "/api/staff-appointment-readiness",
+        routePath: "/api/staff-amari-mail-auth",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions43]
+      },
+      {
+        routePath: "/api/staff-amari-mail-auth",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost37]
+      },
+      {
+        routePath: "/api/staff-amari-mail-callback",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
@@ -46694,12 +48098,12 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-appointment-readiness",
         mountPath: "/api",
-        method: "OPTIONS",
+        method: "GET",
         middlewares: [],
-        modules: [onRequestOptions43]
+        modules: [onRequestGet32]
       },
       {
-        routePath: "/api/staff-appointments",
+        routePath: "/api/staff-appointment-readiness",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46708,26 +48112,26 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-appointments",
         mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions45]
+      },
+      {
+        routePath: "/api/staff-appointments",
+        mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost37]
+        modules: [onRequestPost38]
       },
       {
         routePath: "/api/staff-attestation",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet32]
+        modules: [onRequestGet33]
       },
       {
         routePath: "/api/staff-attestation",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions45]
-      },
-      {
-        routePath: "/api/staff-auth",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46736,61 +48140,61 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-auth",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost38]
-      },
-      {
-        routePath: "/api/staff-automation-watch-access",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions47]
       },
       {
-        routePath: "/api/staff-automation-watch-access",
+        routePath: "/api/staff-auth",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost39]
       },
       {
-        routePath: "/api/staff-automations",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet33]
-      },
-      {
-        routePath: "/api/staff-automations",
+        routePath: "/api/staff-automation-watch-access",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions48]
       },
       {
-        routePath: "/api/staff-automations",
+        routePath: "/api/staff-automation-watch-access",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost40]
       },
       {
-        routePath: "/api/staff-balances",
+        routePath: "/api/staff-automations",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet34]
       },
       {
-        routePath: "/api/staff-balances",
+        routePath: "/api/staff-automations",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions49]
       },
       {
-        routePath: "/api/staff-book",
+        routePath: "/api/staff-automations",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost41]
+      },
+      {
+        routePath: "/api/staff-balances",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet35]
+      },
+      {
+        routePath: "/api/staff-balances",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46799,26 +48203,26 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-book",
         mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions51]
+      },
+      {
+        routePath: "/api/staff-book",
+        mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost41]
+        modules: [onRequestPost42]
       },
       {
         routePath: "/api/staff-calendars",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet35]
+        modules: [onRequestGet36]
       },
       {
         routePath: "/api/staff-calendars",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions51]
-      },
-      {
-        routePath: "/api/staff-call-coach-run",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46827,40 +48231,40 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-call-coach-run",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost42]
-      },
-      {
-        routePath: "/api/staff-checkin",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions53]
       },
       {
-        routePath: "/api/staff-checkin",
+        routePath: "/api/staff-call-coach-run",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost43]
       },
       {
-        routePath: "/api/staff-clarity-study",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet36]
-      },
-      {
-        routePath: "/api/staff-clarity-study",
+        routePath: "/api/staff-checkin",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions54]
       },
       {
-        routePath: "/api/staff-coach-one",
+        routePath: "/api/staff-checkin",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost44]
+      },
+      {
+        routePath: "/api/staff-clarity-study",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet37]
+      },
+      {
+        routePath: "/api/staff-clarity-study",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46869,23 +48273,30 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-coach-one",
         mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions56]
+      },
+      {
+        routePath: "/api/staff-coach-one",
+        mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost44]
+        modules: [onRequestPost45]
       },
       {
         routePath: "/api/staff-communication-preferences",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet37]
+        modules: [onRequestGet38]
       },
       {
         routePath: "/api/staff-communication-preferences",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions56]
+        modules: [onRequestOptions57]
       },
       {
         routePath: "/api/staff-communication-preferences",
@@ -46899,31 +48310,24 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet38]
+        modules: [onRequestGet39]
       },
       {
         routePath: "/api/staff-community",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions57]
+        modules: [onRequestOptions58]
       },
       {
         routePath: "/api/staff-community-image",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet39]
+        modules: [onRequestGet40]
       },
       {
         routePath: "/api/staff-community-image",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions58]
-      },
-      {
-        routePath: "/api/staff-community-touch",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46932,54 +48336,54 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-community-touch",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost45]
-      },
-      {
-        routePath: "/api/staff-contact",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet40]
-      },
-      {
-        routePath: "/api/staff-contact",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions60]
       },
       {
-        routePath: "/api/staff-contacts",
+        routePath: "/api/staff-community-touch",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost46]
+      },
+      {
+        routePath: "/api/staff-contact",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet41]
       },
       {
-        routePath: "/api/staff-contacts",
+        routePath: "/api/staff-contact",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions61]
       },
       {
-        routePath: "/api/staff-conversations",
+        routePath: "/api/staff-contacts",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet42]
       },
       {
-        routePath: "/api/staff-conversations",
+        routePath: "/api/staff-contacts",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions62]
       },
       {
-        routePath: "/api/staff-crm-mirror-access",
+        routePath: "/api/staff-conversations",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet43]
+      },
+      {
+        routePath: "/api/staff-conversations",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -46988,33 +48392,26 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-crm-mirror-access",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost46]
-      },
-      {
-        routePath: "/api/staff-data",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet43]
-      },
-      {
-        routePath: "/api/staff-data",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions64]
       },
       {
-        routePath: "/api/staff-elbow-study",
+        routePath: "/api/staff-crm-mirror-access",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost47]
+      },
+      {
+        routePath: "/api/staff-data",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet44]
       },
       {
-        routePath: "/api/staff-elbow-study",
+        routePath: "/api/staff-data",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47023,117 +48420,124 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-elbow-study",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost47]
-      },
-      {
-        routePath: "/api/staff-exceptions",
-        mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet45]
       },
       {
-        routePath: "/api/staff-exceptions",
+        routePath: "/api/staff-elbow-study",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions66]
       },
       {
-        routePath: "/api/staff-exceptions",
+        routePath: "/api/staff-elbow-study",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost48]
       },
       {
-        routePath: "/api/staff-field-study",
+        routePath: "/api/staff-exceptions",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet46]
       },
       {
-        routePath: "/api/staff-field-study",
+        routePath: "/api/staff-exceptions",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions67]
       },
       {
-        routePath: "/api/staff-field-study",
+        routePath: "/api/staff-exceptions",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost49]
       },
       {
-        routePath: "/api/staff-followup-brief",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions68]
-      },
-      {
-        routePath: "/api/staff-followup-brief",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost50]
-      },
-      {
-        routePath: "/api/staff-followups",
+        routePath: "/api/staff-field-study",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet47]
       },
       {
-        routePath: "/api/staff-followups",
+        routePath: "/api/staff-field-study",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions68]
+      },
+      {
+        routePath: "/api/staff-field-study",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost50]
+      },
+      {
+        routePath: "/api/staff-followup-brief",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions69]
       },
       {
-        routePath: "/api/staff-followups",
+        routePath: "/api/staff-followup-brief",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost51]
       },
       {
-        routePath: "/api/staff-founders-circle",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions70]
-      },
-      {
-        routePath: "/api/staff-founders-circle",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost52]
-      },
-      {
-        routePath: "/api/staff-funnel",
+        routePath: "/api/staff-followups",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet48]
       },
       {
-        routePath: "/api/staff-funnel",
+        routePath: "/api/staff-followups",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions70]
+      },
+      {
+        routePath: "/api/staff-followups",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost52]
+      },
+      {
+        routePath: "/api/staff-founders-circle",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions71]
       },
       {
-        routePath: "/api/staff-funnel-refresh",
+        routePath: "/api/staff-founders-circle",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost53]
+      },
+      {
+        routePath: "/api/staff-funnel",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet49]
+      },
+      {
+        routePath: "/api/staff-funnel",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47142,26 +48546,26 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-funnel-refresh",
         mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions73]
+      },
+      {
+        routePath: "/api/staff-funnel-refresh",
+        mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost53]
+        modules: [onRequestPost54]
       },
       {
         routePath: "/api/staff-gmail-reply-readiness",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet49]
+        modules: [onRequestGet50]
       },
       {
         routePath: "/api/staff-gmail-reply-readiness",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions73]
-      },
-      {
-        routePath: "/api/staff-mark-attended",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47170,37 +48574,44 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-mark-attended",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost54]
-      },
-      {
-        routePath: "/api/staff-media",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet50]
-      },
-      {
-        routePath: "/api/staff-media",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions75]
       },
       {
-        routePath: "/api/staff-media",
+        routePath: "/api/staff-mark-attended",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost55]
       },
       {
-        routePath: "/api/staff-media-file",
+        routePath: "/api/staff-media",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet51]
+      },
+      {
+        routePath: "/api/staff-media",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions76]
+      },
+      {
+        routePath: "/api/staff-media",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost56]
+      },
+      {
+        routePath: "/api/staff-media-file",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet52]
       },
       {
         routePath: "/api/staff-media-file",
@@ -47214,49 +48625,49 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions76]
-      },
-      {
-        routePath: "/api/staff-media-upload",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
         modules: [onRequestOptions77]
       },
       {
         routePath: "/api/staff-media-upload",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost56]
-      },
-      {
-        routePath: "/api/staff-not-a-fit",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions78]
       },
       {
-        routePath: "/api/staff-not-a-fit",
+        routePath: "/api/staff-media-upload",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost57]
       },
       {
-        routePath: "/api/staff-note",
+        routePath: "/api/staff-not-a-fit",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions79]
       },
       {
-        routePath: "/api/staff-note",
+        routePath: "/api/staff-not-a-fit",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost58]
+      },
+      {
+        routePath: "/api/staff-note",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions80]
+      },
+      {
+        routePath: "/api/staff-note",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost59]
       },
       {
         routePath: "/api/staff-note",
@@ -47266,21 +48677,35 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
         modules: [onRequestPut2]
       },
       {
+        routePath: "/api/staff-operations-ledger",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet4]
+      },
+      {
+        routePath: "/api/staff-operations-ledger",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions5]
+      },
+      {
+        routePath: "/api/staff-operations-ledger",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost3]
+      },
+      {
         routePath: "/api/staff-outreach-cards",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet52]
+        modules: [onRequestGet53]
       },
       {
         routePath: "/api/staff-outreach-cards",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions80]
-      },
-      {
-        routePath: "/api/staff-outreach-upload",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47289,68 +48714,68 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-outreach-upload",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost59]
-      },
-      {
-        routePath: "/api/staff-owed",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet53]
-      },
-      {
-        routePath: "/api/staff-owed",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions82]
       },
       {
-        routePath: "/api/staff-owed-list",
+        routePath: "/api/staff-outreach-upload",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost60]
+      },
+      {
+        routePath: "/api/staff-owed",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet54]
       },
       {
-        routePath: "/api/staff-owed-list",
+        routePath: "/api/staff-owed",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions83]
       },
       {
-        routePath: "/api/staff-owned-contacts",
+        routePath: "/api/staff-owed-list",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet55]
       },
       {
-        routePath: "/api/staff-owned-contacts",
+        routePath: "/api/staff-owed-list",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions84]
       },
       {
-        routePath: "/api/staff-partner-activity",
+        routePath: "/api/staff-owned-contacts",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet56]
       },
       {
-        routePath: "/api/staff-partner-activity",
+        routePath: "/api/staff-owned-contacts",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions85]
       },
       {
-        routePath: "/api/staff-partner-outcome",
+        routePath: "/api/staff-partner-activity",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet57]
+      },
+      {
+        routePath: "/api/staff-partner-activity",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47359,33 +48784,26 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-partner-outcome",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost60]
-      },
-      {
-        routePath: "/api/staff-partner-prospects",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet57]
-      },
-      {
-        routePath: "/api/staff-partner-prospects",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions87]
       },
       {
-        routePath: "/api/staff-partner-rewards",
+        routePath: "/api/staff-partner-outcome",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost61]
+      },
+      {
+        routePath: "/api/staff-partner-prospects",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet58]
       },
       {
-        routePath: "/api/staff-partner-rewards",
+        routePath: "/api/staff-partner-prospects",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47394,75 +48812,75 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-partner-rewards",
         mountPath: "/api",
-        method: "POST",
+        method: "GET",
         middlewares: [],
-        modules: [onRequestPost61]
+        modules: [onRequestGet59]
       },
       {
-        routePath: "/api/staff-partner-toggle-verified",
+        routePath: "/api/staff-partner-rewards",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions89]
       },
       {
-        routePath: "/api/staff-partner-toggle-verified",
+        routePath: "/api/staff-partner-rewards",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost62]
       },
       {
-        routePath: "/api/staff-partner-update-field",
+        routePath: "/api/staff-partner-toggle-verified",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions90]
       },
       {
-        routePath: "/api/staff-partner-update-field",
+        routePath: "/api/staff-partner-toggle-verified",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost63]
       },
       {
-        routePath: "/api/staff-partner-verify",
+        routePath: "/api/staff-partner-update-field",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions91]
       },
       {
-        routePath: "/api/staff-partner-verify",
+        routePath: "/api/staff-partner-update-field",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost64]
       },
       {
-        routePath: "/api/staff-pipeline",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet59]
-      },
-      {
-        routePath: "/api/staff-pipeline",
+        routePath: "/api/staff-partner-verify",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions92]
       },
       {
-        routePath: "/api/staff-pos-sales",
+        routePath: "/api/staff-partner-verify",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost65]
+      },
+      {
+        routePath: "/api/staff-pipeline",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet60]
       },
       {
-        routePath: "/api/staff-pos-sales",
+        routePath: "/api/staff-pipeline",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47471,75 +48889,82 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-pos-sales",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost65]
-      },
-      {
-        routePath: "/api/staff-products",
-        mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet61]
       },
       {
-        routePath: "/api/staff-products",
+        routePath: "/api/staff-pos-sales",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions94]
       },
       {
-        routePath: "/api/staff-products",
+        routePath: "/api/staff-pos-sales",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost66]
       },
       {
-        routePath: "/api/staff-refresh-activity",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions95]
-      },
-      {
-        routePath: "/api/staff-refresh-activity",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost67]
-      },
-      {
-        routePath: "/api/staff-reply-dismiss",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions96]
-      },
-      {
-        routePath: "/api/staff-reply-dismiss",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost68]
-      },
-      {
-        routePath: "/api/staff-revenue",
+        routePath: "/api/staff-products",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet62]
       },
       {
-        routePath: "/api/staff-revenue",
+        routePath: "/api/staff-products",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions95]
+      },
+      {
+        routePath: "/api/staff-products",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost67]
+      },
+      {
+        routePath: "/api/staff-refresh-activity",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions96]
+      },
+      {
+        routePath: "/api/staff-refresh-activity",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost68]
+      },
+      {
+        routePath: "/api/staff-reply-dismiss",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions97]
       },
       {
-        routePath: "/api/staff-save-progress",
+        routePath: "/api/staff-reply-dismiss",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost69]
+      },
+      {
+        routePath: "/api/staff-revenue",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet63]
+      },
+      {
+        routePath: "/api/staff-revenue",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47548,79 +48973,86 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-save-progress",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost69]
-      },
-      {
-        routePath: "/api/staff-send-email",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions99]
       },
       {
-        routePath: "/api/staff-send-email",
+        routePath: "/api/staff-save-progress",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost70]
       },
       {
-        routePath: "/api/staff-send-paylink",
+        routePath: "/api/staff-send-email",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions100]
       },
       {
-        routePath: "/api/staff-send-paylink",
+        routePath: "/api/staff-send-email",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost71]
       },
       {
-        routePath: "/api/staff-send-receipt",
+        routePath: "/api/staff-send-paylink",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions101]
       },
       {
-        routePath: "/api/staff-send-receipt",
+        routePath: "/api/staff-send-paylink",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost72]
       },
       {
-        routePath: "/api/staff-send-text",
+        routePath: "/api/staff-send-receipt",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions102]
       },
       {
-        routePath: "/api/staff-send-text",
+        routePath: "/api/staff-send-receipt",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost73]
       },
       {
-        routePath: "/api/staff-send-toolkit",
+        routePath: "/api/staff-send-text",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions103]
       },
       {
-        routePath: "/api/staff-send-toolkit",
+        routePath: "/api/staff-send-text",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost74]
+      },
+      {
+        routePath: "/api/staff-send-toolkit",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions104]
+      },
+      {
+        routePath: "/api/staff-send-toolkit",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost75]
       },
       {
         routePath: "/api/staff-session",
@@ -47634,66 +49066,52 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet63]
-      },
-      {
-        routePath: "/api/staff-session",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions104]
-      },
-      {
-        routePath: "/api/staff-session",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost75]
-      },
-      {
-        routePath: "/api/staff-sharpen",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
         modules: [onRequestGet64]
       },
       {
-        routePath: "/api/staff-sharpen",
+        routePath: "/api/staff-session",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions105]
       },
       {
-        routePath: "/api/staff-sharpen",
+        routePath: "/api/staff-session",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost76]
       },
       {
-        routePath: "/api/staff-stripe-cards",
+        routePath: "/api/staff-sharpen",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet65]
       },
       {
-        routePath: "/api/staff-stripe-cards",
+        routePath: "/api/staff-sharpen",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions106]
       },
       {
-        routePath: "/api/staff-study",
+        routePath: "/api/staff-sharpen",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost77]
+      },
+      {
+        routePath: "/api/staff-stripe-cards",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet66]
       },
       {
-        routePath: "/api/staff-study",
+        routePath: "/api/staff-stripe-cards",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -47702,131 +49120,138 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/staff-study",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost77]
-      },
-      {
-        routePath: "/api/staff-tasks",
-        mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet67]
       },
       {
-        routePath: "/api/staff-tasks",
+        routePath: "/api/staff-study",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions108]
       },
       {
-        routePath: "/api/staff-tasks",
+        routePath: "/api/staff-study",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost78]
       },
       {
-        routePath: "/api/staff-toggle-prepaid",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions109]
-      },
-      {
-        routePath: "/api/staff-toggle-prepaid",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost79]
-      },
-      {
-        routePath: "/api/stream-health",
+        routePath: "/api/staff-tasks",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet68]
       },
       {
-        routePath: "/api/stream-health",
+        routePath: "/api/staff-tasks",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions109]
+      },
+      {
+        routePath: "/api/staff-tasks",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost79]
+      },
+      {
+        routePath: "/api/staff-toggle-prepaid",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions110]
       },
       {
-        routePath: "/api/stream-token",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet69]
-      },
-      {
-        routePath: "/api/stream-token",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions111]
-      },
-      {
-        routePath: "/api/stripe-pos-webhook",
+        routePath: "/api/staff-toggle-prepaid",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost80]
       },
       {
-        routePath: "/api/study-book",
+        routePath: "/api/stream-health",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet69]
+      },
+      {
+        routePath: "/api/stream-health",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions111]
+      },
+      {
+        routePath: "/api/stream-token",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet70]
       },
       {
-        routePath: "/api/study-book",
+        routePath: "/api/stream-token",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions112]
       },
       {
-        routePath: "/api/study-book",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost82]
-      },
-      {
-        routePath: "/api/study-book-v2",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet70]
-      },
-      {
-        routePath: "/api/study-book-v2",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions112]
-      },
-      {
-        routePath: "/api/study-book-v2",
+        routePath: "/api/stripe-pos-webhook",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost81]
       },
       {
-        routePath: "/api/system-health",
+        routePath: "/api/study-book",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet71]
       },
       {
-        routePath: "/api/voice-write",
+        routePath: "/api/study-book",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions113]
+      },
+      {
+        routePath: "/api/study-book",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost83]
+      },
+      {
+        routePath: "/api/study-book-v2",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet71]
+      },
+      {
+        routePath: "/api/study-book-v2",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions113]
+      },
+      {
+        routePath: "/api/study-book-v2",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost82]
+      },
+      {
+        routePath: "/api/system-health",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
@@ -47835,16 +49260,23 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
       {
         routePath: "/api/voice-write",
         mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet73]
+      },
+      {
+        routePath: "/api/voice-write",
+        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions113]
+        modules: [onRequestOptions114]
       },
       {
         routePath: "/api/voice-write",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost83]
+        modules: [onRequestPost84]
       },
       {
         routePath: "/portal/:path*",
@@ -47865,7 +49297,7 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
         mountPath: "/",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet73]
+        modules: [onRequestGet74]
       },
       {
         routePath: "/",
@@ -47878,11 +49310,11 @@ var init_functionsRoutes_0_5773764037964985 = __esm({
   }
 });
 
-// ../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
-init_functionsRoutes_0_5773764037964985();
+// ../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+init_functionsRoutes_0_8372690901872232();
 
-// ../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
-init_functionsRoutes_0_5773764037964985();
+// ../../../.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
+init_functionsRoutes_0_8372690901872232();
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -48208,7 +49640,7 @@ function pathToRegexp(path, keys, options) {
 }
 __name(pathToRegexp, "pathToRegexp");
 
-// ../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+// ../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
 var escapeRegex = /[.+?^${}()|[\]\\]/g;
 function* executeRequest(request) {
   const requestPath = new URL(request.url).pathname;
