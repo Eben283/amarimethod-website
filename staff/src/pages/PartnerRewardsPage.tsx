@@ -3,7 +3,9 @@ import { FormEvent, useCallback, useEffect, useState } from 'react';
 type Reward = { rewardId: string; partnerName: string; partnerOrganization: string | null; referredName: string; referralAt: string | null; purchasedAt: string | null; sessionCount: number | null; amountCents: number | null; sessionEntitlement: string | null; holdUntil: string | null; status: 'chargeback_hold' | 'payable' | 'paid' | 'expired' | 'refunded' | 'disputed' | 'voided'; canRecordPayout: boolean; payoutReference: string | null; paidAt: string | null; corrected: boolean };
 const inputClass = 'mt-1 block w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm';
 const labelClass = 'block text-sm font-medium text-slate-700';
-const date = (value: string | null) => value ? new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric' }).format(new Date(value)) : 'not recorded';
+// Ledger dates are stored as midnight UTC business dates. Keep them in UTC for
+// display so Pacific time does not shift a July 29 referral to July 28.
+const date = (value: string | null) => value ? new Intl.DateTimeFormat('en-US', { month: 'long', day: 'numeric', year: 'numeric', timeZone: 'UTC' }).format(new Date(value)) : 'not recorded';
 const money = (cents: number | null) => cents === null ? 'amount needs review' : `$${(cents / 100).toLocaleString()}`;
 
 export default function PartnerRewardsPage() {
