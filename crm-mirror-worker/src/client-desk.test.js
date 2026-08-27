@@ -52,6 +52,7 @@ describe("Client Desk message rendering", () => {
     const html = clientDeskHtml();
     expect(html).toContain('const INBOX_REFRESH_MS = 60_000');
     expect(html).toContain("document.addEventListener?.('visibilitychange', refreshInboxWhenVisible)");
+    expect(html).toContain("typeof window.setInterval === 'function'");
     expect(html).toContain("window.setInterval(refreshInboxWhenVisible, INBOX_REFRESH_MS)");
   });
 

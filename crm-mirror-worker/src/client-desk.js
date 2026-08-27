@@ -486,8 +486,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
   if (typeof window !== 'undefined') {
     document.addEventListener?.('visibilitychange', refreshInboxWhenVisible);
     if (typeof window !== 'undefined') {
-      window.addEventListener('focus', refreshInboxWhenVisible);
-      window.setInterval(refreshInboxWhenVisible, INBOX_REFRESH_MS);
+      window.addEventListener?.('focus', refreshInboxWhenVisible);
+      if (typeof window.setInterval === 'function') window.setInterval(refreshInboxWhenVisible, INBOX_REFRESH_MS);
     }
   }
   loadInbox();
