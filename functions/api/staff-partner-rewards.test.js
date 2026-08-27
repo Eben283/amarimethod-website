@@ -5,7 +5,7 @@ vi.mock("../lib/endpoint-guards.js", () => ({
 }));
 
 import { requireStaffAuth } from "../lib/endpoint-guards.js";
-import { onRequestPost } from "./staff-partner-rewards.js";
+import { onRequestGet, onRequestPost } from "./staff-partner-rewards.js";
 
 function db({ qualified = false, paid = false, blocked = null } = {}) {
   const run = vi.fn(async () => ({}));
@@ -35,9 +35,29 @@ function ctx(body, d = db()) {
   };
 }
 
+function readCtx(d) { return { env: { AUTOMATION_DB: d }, request: new Request("https://www.amarimethod.com/api/staff-partner-rewards") }; }
+
 beforeEach(() => { vi.clearAllMocks(); requireStaffAuth.mockResolvedValue({ payload: { role: "staff", user: "Eben" } }); });
 
 describe("staff partner rewards", () => {
+  it("returns reward summaries from D1 rows rather than raw events", async () => {
+    const rows = [
+      { reward_id: "bryan-chung-geoff-papilion-20260729", ts: 1, type: "attributed", detail: JSON.stringify({ referralAt: "2026-07-29T00:00:00.000Z" }) },
+      { reward_id: "bryan-chung-geoff-papilion-20260729", ts: 2, type: "qualifying_purchase", detail: JSON.stringify({ purchasedAt: "2026-08-10T00:00:00.000Z", sessionCount: 24, amountCents: 70000, holdUntil: "2026-09-09T00:00:00.000Z" }) },
+      { reward_id: "bryan-chung-geoff-papilion-20260729", ts: 3, type: "correction", detail: JSON.stringify({ amountCents: 50000, sessionEntitlement: "one Amari session", holdUntil: "2026-09-09T00:00:00.000Z" }) },
+    ];
+    const d = { prepare: vi.fn(() => ({ all: vi.fn(async () => ({ results: rows })) })) };
+    const response = await onRequestGet(readCtx(d));
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({ configured: true, rewards: [expect.objectContaining({ partnerName: "Bryan Chung", referredName: "Geoff Papilion", amountCents: 50000 })] });
+  });
+
+  it("makes a missing binding a visible configuration error", async () => {
+    const response = await onRequestGet({ env: {}, request: new Request("https://www.amarimethod.com/api/staff-partner-rewards") });
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({ code: "automation_db_binding_missing" });
+  });
+
   it("records a qualifying 12-session purchase as a $250 plus one Amari session chargeback hold", async () => {
     const d = db();
     const response = await onRequestPost(ctx({ action: "qualify", rewardId: "reward_1", purchasedAt: "2026-08-30T00:00:00Z", sessionCount: 12 }, d));
