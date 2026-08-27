@@ -1,6 +1,6 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: the prior reconciliation increment merged as #510 at `282b9686554dfcf794d09861c0ebff87d78a76dd`; only the execution-evidence linkage increment below remains local, unpublished, and non-authoritative. This contract is deliberately unable to make Staff healthy or authoritative.
+Status: reconciliation merged as #510 at `282b9686554dfcf794d09861c0ebff87d78a76dd`, and execution-evidence linkage merged as #517 at `d74308c62f0f38c58ec77f1e486a9fcfbc8a7d49`. Only the coverage-selection increment below remains local and unpublished. All three contracts remain non-authoritative and deliberately unable to make Staff healthy.
 
 ## Source provenance and boundary
 
@@ -97,6 +97,22 @@ It is explicitly `mechanicsOnly: true`, `providerReceiptObserved: false`, and `o
 The `legacy.sourceEventId` and effective-start projection are proposed, independently verified bindings for a future adapter; they are **not** columns in current `reminder_enrollments` or `reminder_steps` and must never be synthesized from appointment ID plus step index. Likewise, acceptance and executor projections are caller-supplied structural inputs, not authenticated attestation rows. The document digest detects changed authored content under the same version but does not authenticate the document or provenance.
 
 Every result is permanently `sourceOnly:true`, `simulation:true`, `authority:false`, `dispatchAllowed:false`, and `outcomeProven:false`. Caller-supplied rows and digests are not authenticated; the planner is not an attestor. Historical sent, Gmail-accepted, or GHL-delivered observations never manufacture a pre-send attempt or close an obligation. A future adapter must independently validate and durably write evidence; that is a separate behavior release.
+
+## Coverage-selection planner
+
+`functions/lib/follow-up-coverage-selection.js` is an unimported, pure candidate planner (`follow-up-coverage-selection.v1`). Its explicit half-open received and ingestion windows select new source receipts and exactly linked late-ingested evidence separately; `plannedAt` is only an as-of check, so future-due unresolved obligations remain candidates. It unions unresolved active lifecycles, pending/leased/overdue obligations, every non-resolved exception (including temporary suppression), prior unresolved carry-forward, and named retention, parent, or terminal-state anomalies. Stable IDs are required at every join; appointment/step guesses and `updated_at` inference are forbidden.
+
+The proposed adapter projection supplies one rooted cursor chain whose pages bind the same snapshot and exact windows, plus explicit family on exceptions, anomalies, and carry-forward. A complete structural chain is still not authenticated coverage. Missing, repeated, disconnected, empty, or bounded-overflow traversal remains incomplete; the planner never silently truncates unresolved candidates. Every result remains source-only/simulated with `authority:false`, `dispatchAllowed:false`, and `outcomeProven:false`; it has no database, provider, scheduling, or terminal-proof behavior.
+
+This is selection over supplied projections, not a database reader or an authenticated change feed. An `ingestedAt` clock must eventually come from durable, independently verified ingestion evidence; an old provider event timestamp or mutable `updated_at` cannot stand in for it. A retained candidate's absence or a caller-supplied terminal state cannot prove resolution. Retention expiry is a gap, never permission to forget unfinished work or recreate lost evidence. Candidate limits are deliberate validation bounds, not a production-scale retention policy.
+
+The interface is `planFollowUpCoverageSelection({ snapshotPages, previousCarryForward, cutoff })`:
+
+- `cutoff` supplies nonnegative integer `receivedStart/receivedEnd`, `ingestedStart/ingestedEnd`, `plannedAt`, and bounded `maxPages/maxCandidates`. Both windows are half-open and end no later than `plannedAt`. Future obligation deadlines are allowed.
+- Each page binds a `snapshotId`, both windows, `cursor/nextCursor`, and arrays of `sources`, `lifecycles`, `obligations`, `exceptions`, `evidence`, and `anomalies`. Hard limits are 20 pages, 200 rows per array and 200 candidate identities. A root cursor is null; a terminal next cursor is null. Supplied pages may be unordered but must form one connected chain. `traversalComplete` is only the caller's structural assertion, never external completeness proof.
+- `previousCarryForward` supplies `candidates` in the returned retained-candidate shape and `cursor:null`. Only full-root replay is supported. A valid partial chain may return a snapshot/window-bound diagnostic continuation hint; the caller must obtain the remaining pages and replay the full set. A broken chain, invalid input or overflow returns no usable cursor. No cursor is a provider-read or persistence authorization.
+- Exact duplicate records are idempotent; conflicting records under one identity fail closed. Reasons accumulate per identity, and a missing prior candidate stays retained with `candidate_missing`. The digest normalizes row order, exact duplicates, and reason order, while binding the page chain and cutoffs.
+- `status:"selected"` and `inputPaginationComplete:true` mean only that supplied, structurally valid input was traversed. They do not mean coverage or resolution. Every outcome has `authoritativeCoverage:false`, `replacementAllowed:false`, and `retainPreviousCarryForward:true`; even empty failure arrays must never replace prior retained work. No database adapter or durable retention/watermark protocol is supplied here.
 
 ## Gates before any future authority lift
 
