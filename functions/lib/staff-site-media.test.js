@@ -1,27 +1,20 @@
 import { describe, expect, it } from "vitest";
 import { siteAssetCatalog, siteAssetTotal } from "./staff-site-media.js";
 
-describe("fixed Staff site-media catalog", () => {
-  it("gives every importable image a description and explicit classifications", () => {
+describe("website image filing list", () => {
+  it("gives every known site image one deterministic website-use destination", () => {
     const catalog = siteAssetCatalog();
     expect(catalog).toHaveLength(siteAssetTotal());
     expect(catalog.length).toBeGreaterThan(80);
     for (const asset of catalog) {
-      expect(asset).toMatchObject({ folder: expect.any(String), path: expect.stringMatching(/^\/images\//), description: expect.any(String) });
+      expect(asset).toMatchObject({ folder: expect.any(String), path: expect.stringMatching(/^\/images\//) });
       expect(["currently_used", "not_used"]).toContain(asset.websiteUsage);
-      expect(["good", "delete_candidate"]).toContain(asset.curationStatus);
     }
   });
 
-  it("preserves the rejected public-placement images as non-destructive delete candidates", () => {
+  it("reflects the confirmed live exceptions in the website-use list", () => {
     const byPath = new Map(siteAssetCatalog().map((asset) => [asset.path, asset]));
-    for (const path of [
-      "/images/photos/black-woman38-window-seat.jpg",
-      "/images/photos/black-man42-room-roller.jpg",
-      "/images/photos/living-practice-woman-asn35.jpg",
-      "/images/photos/firstvisit-doorway-woman-wht48.jpg",
-    ]) {
-      expect(byPath.get(path)).toMatchObject({ websiteUsage: "currently_used", curationStatus: "delete_candidate" });
-    }
+    expect(byPath.get("/images/photos/partner-coach.jpg")).toMatchObject({ websiteUsage: "not_used" });
+    expect(byPath.get("/images/photos/amari-method-passive-bridge-south-asian-client.png")).toMatchObject({ websiteUsage: "currently_used" });
   });
 });

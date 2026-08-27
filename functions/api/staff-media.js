@@ -1,6 +1,6 @@
 import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-guards.js";
 import { createMediaFolder, listStaffMedia, updateMediaAsset } from "../lib/staff-media.js";
-import { importSiteMediaBatch, syncSiteMediaCatalog } from "../lib/staff-site-media.js";
+import { importSiteMediaBatch, NOT_USED_ON_WEBSITE_FOLDER, organizeMediaByWebsiteUsage, syncSiteMediaCatalog, USED_ON_WEBSITE_FOLDER } from "../lib/staff-site-media.js";
 
 function responseHeaders(context) {
   return {
@@ -29,9 +29,19 @@ export async function onRequestGet(context) {
   if (auth.error) return auth.error;
   try {
     const url = new URL(context.request.url);
-    const library = await listStaffMedia(context.env.ATTEND_DB || null, {
+    let library = await listStaffMedia(context.env.ATTEND_DB || null, {
       includeArchived: url.searchParams.get("archived") === "1",
     });
+    // Run the one-time organization when this release first opens Staff Media.
+    // The two destination folders are its durable completion marker.
+    const hasUsageFolders = [USED_ON_WEBSITE_FOLDER, NOT_USED_ON_WEBSITE_FOLDER]
+      .every((name) => library.folders.some((folder) => folder.status === "active" && !folder.parentId && folder.name === name));
+    if (!hasUsageFolders && library.assets.some((asset) => asset.status === "active" && asset.kind === "image")) {
+      await organizeMediaByWebsiteUsage({ db: context.env.ATTEND_DB || null, actor: auth.payload?.user || "Staff" });
+      library = await listStaffMedia(context.env.ATTEND_DB || null, {
+        includeArchived: url.searchParams.get("archived") === "1",
+      });
+    }
     return json({ ...library, storage: "owned-d1-r2", uploadReady: !!context.env.MEDIA_BUCKET }, 200, headers);
   } catch (cause) {
     const status = safeStatus(cause);
