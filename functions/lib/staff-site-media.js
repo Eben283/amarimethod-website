@@ -44,7 +44,7 @@ const SITE_ASSETS = [
   ["Legacy site imagery", "/images/v6/real/Amari-child.jpg"], ["Legacy site imagery", "/images/v6/real/active-bridge.jpg"], ["Legacy site imagery", "/images/v6/real/back-pain-from-sitting.webp"], ["Legacy site imagery", "/images/v6/real/danielle-testimonial.jpg"],
   ["Legacy site imagery", "/images/v6/real/elbow-reset.jpg"], ["Legacy site imagery", "/images/v6/real/foam-roller-v2.jpg"], ["Legacy site imagery", "/images/v6/real/garrett-face-1200.jpg"], ["Legacy site imagery", "/images/v6/real/garrett-session-img-3348.jpg"],
   ["Legacy site imagery", "/images/v6/real/gymnastic-rings.jpg"], ["Legacy site imagery", "/images/v6/real/hand-balancer.jpg"], ["Legacy site imagery", "/images/v6/real/jaw-align.jpg"], ["Legacy site imagery", "/images/v6/real/passive-bridge.jpg"],
-  ["Legacy site imagery", "/images/v6/real/power-posture.jpg"], ["Legacy site imagery", "/images/v6/real/pull-up-bar.jpg"], ["Legacy site imagery", "/images/v6/real/putting-it-all-together.jpg"], ["Legacy site imagery", "/images/v6/real/spring-step.jpg"],
+  ["Legacy site imagery", "/images/v6/real/pull-up-bar.jpg"], ["Legacy site imagery", "/images/v6/real/putting-it-all-together.jpg"], ["Legacy site imagery", "/images/v6/real/spring-step.jpg"],
 ];
 
 const MIME_BY_EXTENSION = {
