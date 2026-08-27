@@ -1,5 +1,8 @@
 const MAX_FILE_BYTES = 95 * 1024 * 1024;
 const MAX_NAME_LENGTH = 160;
+const MAX_DESCRIPTION_LENGTH = 600;
+const WEBSITE_USAGES = new Set(["currently_used", "not_used"]);
+const CURATION_STATUSES = new Set(["good", "delete_candidate"]);
 
 export const STAFF_MEDIA_TYPES = Object.freeze({
   "image/jpeg": "image",
@@ -22,6 +25,13 @@ function cleanText(value, max = MAX_NAME_LENGTH) {
   return typeof value === "string"
     ? value.trim().replace(/[\u0000-\u001f\u007f]/g, "").replace(/\s+/g, " ").slice(0, max)
     : "";
+}
+
+function cleanChoice(value, allowed, fallback) {
+  const choice = cleanText(value, 40);
+  if (!choice) return fallback;
+  if (!allowed.has(choice)) throw failure("Choose a valid media classification");
+  return choice;
 }
 
 export function normalizeMediaName(value) {
@@ -79,6 +89,10 @@ function mapAsset(row) {
     mimeType: row.mime_type,
     kind: STAFF_MEDIA_TYPES[row.mime_type] || "file",
     sizeBytes: Number(row.size_bytes),
+    description: row.internal_description || "",
+    websiteUsage: row.website_usage || "not_used",
+    curationStatus: row.curation_status || "good",
+    sourcePath: row.source_path || null,
     status: row.status,
     version: Number(row.version),
     createdAt: row.created_at,
@@ -146,15 +160,19 @@ export async function registerMediaAsset(db, input, { actor, now, id, allowSvg =
   await requireFolder(db, folderId);
   const assetId = id || crypto.randomUUID();
   const objectKey = mediaObjectKey(assetId, upload.mimeType);
+  const description = cleanText(input?.description, MAX_DESCRIPTION_LENGTH);
+  const websiteUsage = cleanChoice(input?.websiteUsage, WEBSITE_USAGES, "not_used");
+  const curationStatus = cleanChoice(input?.curationStatus, CURATION_STATUSES, "good");
+  const sourcePath = cleanText(input?.sourcePath, 500) || null;
   const timestamp = now || new Date().toISOString();
   const staffActor = cleanText(actor, 80) || "Staff";
   try {
     await db.batch([
       db.prepare(`INSERT INTO staff_media_assets
         (id, folder_id, object_key, display_name, original_name, normalized_name, mime_type, size_bytes,
-         status, version, created_at, created_by, updated_at, updated_by)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, ?, ?)`)
-        .bind(assetId, folderId, objectKey, upload.displayName, upload.displayName, upload.normalizedName, upload.mimeType, upload.sizeBytes, timestamp, staffActor, timestamp, staffActor),
+         internal_description, website_usage, curation_status, source_path, status, version, created_at, created_by, updated_at, updated_by)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'active', 1, ?, ?, ?, ?)`)
+        .bind(assetId, folderId, objectKey, upload.displayName, upload.displayName, upload.normalizedName, upload.mimeType, upload.sizeBytes, description, websiteUsage, curationStatus, sourcePath, timestamp, staffActor, timestamp, staffActor),
       db.prepare(`INSERT INTO staff_media_events (id, asset_id, folder_id, action, actor, occurred_at, detail)
         VALUES (?, ?, ?, 'uploaded', ?, ?, ?)`)
         .bind(crypto.randomUUID(), assetId, folderId, staffActor, timestamp, `${upload.mimeType} · ${upload.sizeBytes} bytes`),
@@ -163,15 +181,15 @@ export async function registerMediaAsset(db, input, { actor, now, id, allowSvg =
     if (/unique|constraint/i.test(String(cause))) throw failure("A file with that name already exists in this folder", 409);
     throw cause;
   }
-  return { asset: mapAsset({ id: assetId, folder_id: folderId, object_key: objectKey, display_name: upload.displayName, original_name: upload.displayName, mime_type: upload.mimeType, size_bytes: upload.sizeBytes, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor }), objectKey };
+  return { asset: mapAsset({ id: assetId, folder_id: folderId, object_key: objectKey, display_name: upload.displayName, original_name: upload.displayName, mime_type: upload.mimeType, size_bytes: upload.sizeBytes, internal_description: description, website_usage: websiteUsage, curation_status: curationStatus, source_path: sourcePath, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor }), objectKey };
 }
 
 export async function updateMediaAsset(db, input, { actor, now } = {}) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
-  const allowed = new Set(["action", "assetId", "name", "folderId"]);
+  const allowed = new Set(["action", "assetId", "name", "folderId", "description", "websiteUsage", "curationStatus", "sourcePath"]);
   for (const key of Object.keys(input || {})) if (!allowed.has(key)) throw failure(`Unknown media field: ${key}`);
   const action = input?.action;
-  if (!["rename_asset", "move_asset", "archive_asset", "restore_asset"].includes(action)) throw failure("Choose a valid media action");
+  if (!["rename_asset", "move_asset", "archive_asset", "restore_asset", "curate_asset"].includes(action)) throw failure("Choose a valid media action");
   const assetId = cleanText(input?.assetId, 80);
   const current = assetId ? await db.prepare("SELECT * FROM staff_media_assets WHERE id = ?").bind(assetId).first() : null;
   if (!current) throw failure("Media file not found", 404);
@@ -181,6 +199,10 @@ export async function updateMediaAsset(db, input, { actor, now } = {}) {
   let normalizedName = current.normalized_name;
   let folderId = current.folder_id || null;
   let status = current.status;
+  let description = current.internal_description || "";
+  let websiteUsage = current.website_usage || "not_used";
+  let curationStatus = current.curation_status || "good";
+  let sourcePath = current.source_path || null;
   if (action === "rename_asset") {
     name = cleanText(input?.name);
     if (!name) throw failure("File name is required");
@@ -190,24 +212,29 @@ export async function updateMediaAsset(db, input, { actor, now } = {}) {
     await requireFolder(db, folderId);
   } else if (action === "archive_asset") {
     status = "archived";
+  } else if (action === "curate_asset") {
+    description = cleanText(input?.description, MAX_DESCRIPTION_LENGTH);
+    websiteUsage = cleanChoice(input?.websiteUsage, WEBSITE_USAGES, websiteUsage);
+    curationStatus = cleanChoice(input?.curationStatus, CURATION_STATUSES, curationStatus);
+    sourcePath = cleanText(input?.sourcePath, 500) || null;
   } else {
     status = "active";
   }
   try {
     await db.batch([
       db.prepare(`UPDATE staff_media_assets
-        SET folder_id = ?, display_name = ?, normalized_name = ?, status = ?, version = version + 1,
-            updated_at = ?, updated_by = ? WHERE id = ?`)
-        .bind(folderId, name, normalizedName, status, timestamp, staffActor, assetId),
+        SET folder_id = ?, display_name = ?, normalized_name = ?, internal_description = ?, website_usage = ?,
+            curation_status = ?, source_path = ?, status = ?, version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?`)
+        .bind(folderId, name, normalizedName, description, websiteUsage, curationStatus, sourcePath, status, timestamp, staffActor, assetId),
       db.prepare(`INSERT INTO staff_media_events (id, asset_id, folder_id, action, actor, occurred_at, detail)
         VALUES (?, ?, ?, ?, ?, ?, ?)`)
-        .bind(crypto.randomUUID(), assetId, folderId, action, staffActor, timestamp, name),
+        .bind(crypto.randomUUID(), assetId, folderId, action, staffActor, timestamp, action === "curate_asset" ? `${websiteUsage} · ${curationStatus} · ${description || "No description"}` : name),
     ]);
   } catch (cause) {
     if (/unique|constraint/i.test(String(cause))) throw failure("A file with that name already exists in this folder", 409);
     throw cause;
   }
-  return mapAsset({ ...current, folder_id: folderId, display_name: name, normalized_name: normalizedName, status, version: Number(current.version) + 1, updated_at: timestamp, updated_by: staffActor });
+  return mapAsset({ ...current, folder_id: folderId, display_name: name, normalized_name: normalizedName, internal_description: description, website_usage: websiteUsage, curation_status: curationStatus, source_path: sourcePath, status, version: Number(current.version) + 1, updated_at: timestamp, updated_by: staffActor });
 }
 
 export async function getMediaAssetRecord(db, assetId) {

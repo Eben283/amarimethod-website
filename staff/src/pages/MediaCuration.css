@@ -1,0 +1,29 @@
+.media-drawer textarea {
+  width: 100%;
+  min-height: 82px;
+  padding: 9px 11px;
+  border: 1px solid #b8cbc9;
+  border-radius: 7px;
+  background: #fff;
+  color: #234a51;
+  font: inherit;
+  line-height: 1.45;
+  resize: vertical;
+}
+
+.media-drawer__curation dd { display: grid; gap: 8px; }
+.media-drawer__curation button {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 32px;
+  padding: 0 10px;
+  border: 1px solid #b8cbc9;
+  border-radius: 6px;
+  background: #fff;
+  color: #31585e;
+  font-size: 10px;
+  font-weight: 700;
+}
+.media-drawer__curation button svg { width: 13px; }
