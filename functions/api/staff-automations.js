@@ -261,7 +261,7 @@ export async function onRequestGet(context) {
           route: reliabilityRoute, sourceEvents: [], exceptions: [], sourceEventDetail: null,
         }), { status: 200, headers });
       }
-      if (health.reason === "schema_unproven" || health.reason === "authority_read_failed") {
+      if (!health.schemaProven || health.reason === "authority_read_failed") {
         return new Response(JSON.stringify({
           success: true, configured: true, family: requestedFamily, health,
           route: reliabilityRoute, sourceEvents: [], exceptions: [], sourceEventDetail: null,

@@ -1,0 +1,49 @@
+name: deploy CRM Mirror
+
+# This is the only supported production release lane for the standalone CRM
+# Mirror Worker. It is intentionally manual: a Pages deployment is sourced
+# from main automatically, while a Worker release must carry its own verified
+# source provenance and preserve its existing bindings.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-mirror-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: source-attested Worker release
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - run: npm ci
+      - name: Refuse a stale workflow revision
+        run: |
+          git fetch origin main
+          test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
+      - run: npm run check:crm-mirror-release
+      # The Cloudflare credential is never stored in GitHub. This read-only
+      # Bitwarden machine-account bootstrap may retrieve only the immutable
+      # secret ID configured as a production environment variable.
+      - name: Retrieve CRM Mirror deploy credential from Bitwarden
+        uses: bitwarden/sm-action@v2
+        with:
+          access_token: ${{ secrets.BWS_CRM_MIRROR_READ_TOKEN }}
+          secrets: |
+            ${{ vars.BWS_CRM_MIRROR_DEPLOY_SECRET_ID }} > CLOUDFLARE_API_TOKEN
+      - name: Deploy and verify exact source provenance
+        run: npm run deploy:crm-mirror -- --deploy --approved-revision "$GITHUB_SHA"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
