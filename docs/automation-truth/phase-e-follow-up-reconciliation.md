@@ -426,12 +426,12 @@ classification has `installationProven:false` because metadata is unauthenticate
 The only candidate target is `amari-automation`, database
 `089d810a-9d2d-43a4-8f1d-dc3620835557`, on the already promoted exact v2
 lineage `8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62`.
-The two source files are frozen and applied in this order in local fixtures:
+The current source files are hash-pinned and applied in this order in local fixtures:
 
 | Candidate SQL under `reminder-engine-worker/` | SHA-256 |
 | --- | --- |
-| `reliability-effect-evidence.candidate.sql` | `9b6f640d212692ff67cbc0b6ab9654ce7f8df7908eceaf192c2b405bcf7441ea` |
-| `reliability-consumer-retention.candidate.sql` | `208512e371d115778a17608c74cabd267f31c3145a4b0b05125048c8e6e142d4` |
+| `reliability-effect-evidence.candidate.sql` | `4a71cc0da24928677df2c26702600576df9ed80441a94c5f6e10b6c82aa36069` |
+| `reliability-consumer-retention.candidate.sql` | `0fef0772950d429fc3dfb5ec4827089ea562523d3945917d114b22a99f2ebb88` |
 
 Together they contain 29 explicit CREATE statements and add exactly 39 catalog
 objects: 4 tables, 5 explicit indexes, 10 implicit unique indexes, 19 triggers
@@ -515,7 +515,11 @@ Hashed identities are not anonymous. No policy, witness or authorized operator
 is invented by this package. Physical installation, even if later verified,
 does not resolve these gates, make Staff healthy or complete CRM coverage.
 
-### Installation-envelope source verification
+### Installation-envelope source verification (original artifact)
+
+This paragraph records the original pre-parentheses artifact, not verification
+or approval of the revised SQL below. Its historical digest and results remain
+unchanged.
 
 On merged base `dfdcace0cc377421979fc38ffc73e1ce48f05cd2`, local Node 24.13.1 /
 Vitest 4.1.10 passes all 2,559 repository tests, including 59 new planner cases.
@@ -543,6 +547,37 @@ authority, package/configuration, runtime entrypoints and committed Pages bundle
 are unchanged. This six-file source package has not been published or run through
 public CI/full build. No production database read/write, installation, restore,
 Worker deployment, activation, provider action or message occurred.
+
+### Parentheses-only SQL compatibility revision
+
+The inactive SQL now encloses every complete CASE expression in parentheses:
+20 in the effect candidate and 16 in the consumer candidate, including nested
+cases and the existing validation view. Removing exactly those 36 wrapper pairs
+reconstructs the original source hashes byte-for-byte. No predicate, NULL
+behavior, error code, guard order or other SQL text changes. The planner changes
+only its two artifact pins; schema authority and runtime imports are untouched.
+This follows the workaround reported in [Cloudflare issue #4727](https://github.com/cloudflare/workers-sdk/issues/4727),
+not a claim about the current REST backend's implementation or guarantees.
+
+The revised local oracle still produces 15 + 14 complete CREATE statements,
+33 envelope statements and 39 additive catalog objects. Its current
+`canonicalJson` additive-catalog digest is
+`234679b57212ddc8665fed65b2601ef4282d30b4e9604239d05730f3eb7dfb62`;
+the ordered SQL-text vector digest is
+`1632b44b941dc687bb3344ae0f884c745e0faf0f18624af093ee594869bed100`.
+Neither is a whole-production-catalog prediction or authenticated deployment
+identity. A plan still binds its exact fresh basis and artifact hashes; a saved
+old envelope or approval must not be silently relabeled as this revision.
+
+Local regressions compare the old and revised compiled SQLite programs for
+all four new tables' INSERT, REPLACE, UPDATE and DELETE paths and the validation
+view, excluding only source-text trace spelling and connection-local virtual
+table pointers. They also exercise true/false/NULL guard behavior, quoted and
+nested lexical boundaries, original-hash reconstruction and refusal to accept
+an old empty installation as the revised artifact. These are local semantic
+and installation guards, not public REST transport proof. Revised isolated
+retesting and cleanup must remain separately scoped; no production access,
+installation, activation or authority lift is part of this source revision.
 
 ## Gates before any future authority lift
 
