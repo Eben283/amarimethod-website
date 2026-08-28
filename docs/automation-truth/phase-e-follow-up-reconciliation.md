@@ -1,6 +1,79 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), durable consumer retention (#528), offline retention/capture planning (#531), and capture integration (#532) are merged source increments. PR #530 supplies the reviewed CASE-compatible SQL. A separately authorized August 27 physical installation was verified installed-empty/inactive; no new producer or consumer is adopted. The admission gate below is an unpublished source-only increment, not a runtime release. All existing v1 contracts remain non-authoritative and deliberately unable to make Staff healthy. Earlier unapplied/uninstalled statements below describe their historical source-release checkpoints, not permission to install again.
+Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), durable consumer retention (#528), offline retention/capture planning (#531), capture integration (#532), and the admission gate (#533) are merged source increments. PR #530 supplies the reviewed CASE-compatible SQL. A separately authorized August 27 physical installation was verified installed-empty/inactive; no new producer or consumer is adopted. The platform adapters below are a local, unpublished source increment, not a runtime release. All existing v1 contracts remain non-authoritative and deliberately unable to make Staff healthy. Earlier unapplied/uninstalled statements below describe their historical source-release checkpoints, not permission to install again.
+
+## Private storage platform adapters (local source, not adopted)
+
+`scripts/lib/follow-up-evidence-storage-adapters.mjs` composes the unchanged gate
+and capture protocols through four factories:
+
+- `createFollowUpEvidenceRegistryAdapter`: injected SQLite-backed Durable Object
+  storage, exact declared schema digest, and mandatory present read/write access.
+- `createFollowUpEvidenceWitnessAdapter`: injected R2 bucket, fixed Ed25519 signer
+  and verification keyring, signed immutable transitions and an ETag-CAS head.
+- `createFollowUpEvidenceCaptureBucket`: an exact-operation, original-deadline
+  capability exposing only conditional `put` and bounded, authorized `get`.
+- `createFollowUpCurrentFloorIssuer`: verifies a separate source-key-signed proof
+  obtained from mandatory `trustedSource.read`, then signs the challenge-bound
+  floor. Caller-supplied approval booleans/keys do not grant permission.
+
+Scope, keys, callbacks, clocks and timeouts are fixed factory dependencies. The
+capture capability must use the same validated admission's operation and shortest
+immutable retention deadline, including parent/deletion bounds. Source proofs bind
+immutable origin, original five-minute window, current governance, all required
+suppression aliases and finite replay horizon; missing/stale/mismatched evidence
+refuses issuance. A configured-key signature proves bytes, not that the external
+source or its administrative deployment is truthful/current.
+
+`FOLLOW_UP_REGISTRY_SCHEMA` is **declarative provisioning input only**: three new
+DO-local tables, nine triggers and two implicit indexes. Factories execute no DDL
+and never seed control, admission, epoch or independent head. Exact catalog and
+`FOLLOW_UP_REGISTRY_SCHEMA_DIGEST` binding are required. Scope-wide control, entry
+and immutable receipt persist in one synchronous transaction; `confirm` awaits
+the native persistence barrier and freshly authorizes the persisted receipt.
+Neither a promise map nor a post-read substitutes for an atomic transaction and
+durable confirmation. See the official
+[SQLite Durable Object storage API](https://developers.cloudflare.com/durable-objects/api/sqlite-storage-api/).
+
+Witness signatures, exact direct-read bytes and the actual prior R2 ETag are
+verified; failed conditional writes do not confer ownership. Head validity only
+shortens as it incorporates earlier evidence. Capture authorization is checked
+after native get, before/after each body part, and at deadline boundaries; timeout
+or malformed metadata cancels acquired readers without waiting for cancellation
+acknowledgement. No wrapper exposes native delete/list/overwrite or raw storage.
+See the official [R2 binding API](https://developers.cloudflare.com/r2/api/workers/workers-api-reference/).
+
+Measured one-chunk synthetic invocations, including repeated direct readback:
+
+| Invocation | Adapter SQL | transactionSync / sync | R2 get / put | Source proof calls | Access callbacks |
+|---|---:|---:|---:|---:|---:|
+| Admit | 15 | 2 / 2 | 7 / 2 | 1 | 23 |
+| Execute and capture | 19 | 2 / 2 | 13 / 5 | 2 | 52 |
+
+The synthetic effect itself adds one SQL statement, separately from adapter SQL.
+The gate's 64-call ceiling is **logical port calls**, not an authorization-inclusive
+physical RPC budget: the access callback's eventual network/database work remains
+unknown. No production latency/cost capacity is established. Native object bodies
+are capped at 32 parts and 8192 bytes (capture chunks 4096); each port wait is at
+most 20 seconds, with the unchanged gate's 60-second overall limit.
+
+The 68 focused tests include actual local workerd/SQLite/R2 composition, competing
+invocations, rollback, lost acknowledgements, exact native ETag behavior, three
+successive persisted runtime openings, shortened retention, signed-proof and scope
+failures, present read revocation, hostile getters and late/hung body cancellation.
+Miniflare is pinned to `5.20260820.0-alpha` / workerd `1.20260820.1`; the test Worker
+is bundled only in memory and rejects external egress. Local sync/restart behavior
+is not provider replication, recovery, authentication or exactly-once proof.
+
+Live adoption still needs separately scoped private resources and provisioning,
+authenticated source/current-governance/access transports, key and floor cutover
+governance, measured authorization-inclusive budgets, finite purge/subject-deletion
+and suppression/epoch recovery protocols. The immutable candidate tables have no
+purge path; this is a deliberate remaining gate, not indefinite-retention approval.
+Coherent same-epoch dual rollback is still unprovable here. All authority,
+execution/adoption/retry/restore, live authentication and durability claims remain
+false. No production route, resource binding, installed D1 schema, runtime config,
+generated bundle, maintenance unlock or installer replay is added.
 
 ## Admission and consumption gate (offline, not adopted)
 
@@ -52,8 +125,9 @@ Bounds are 24,000-byte typed reports, 8192-byte control objects/results, fixed
 4096-byte serialized chunks with at most 16 chunks, 64 port calls plus one fixed
 action, and 256 KiB of processed control/capture transfer per invocation. Factory
 timeouts are at most 20 seconds per wait and 60 seconds overall. Actual adapter
-SQL, transport buffering, authentication and provider durability remain separately
-unimplemented obligations; bounded synthetic calls do not prove production cost.
+SQL and bounded transport adapters are supplied by the local increment above;
+live authentication and provider durability remain separate obligations. Bounded
+synthetic calls do not prove production cost.
 Malformed/oversize post-effect reports leave consumption intact and counts unknown.
 
 The 108 synthetic tests cover actual SQLite atomicity, independent competing
