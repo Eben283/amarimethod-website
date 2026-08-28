@@ -64,7 +64,7 @@ CREATE INDEX idx_follow_up_consumer_members ON follow_up_consumer_retained_reaso
 CREATE VIEW follow_up_consumer_journal_v1 AS
 WITH checked AS (
   SELECT e.*,b.source_event_id,b.lifecycle_instance_id,b.obligation_id,
-  CASE WHEN
+  (CASE WHEN
     c.command_attempt_id=b.command_attempt_id AND c.obligation_id=b.obligation_id
     AND c.idempotency_key=b.idempotency_key AND c.attempt_number=b.attempt_number AND c.retry_class=b.retry_class
     AND c.target=b.target AND c.request_sha256=b.request_sha256 AND c.rendered_copy_sha256 IS b.rendered_copy_sha256
@@ -123,7 +123,7 @@ WITH checked AS (
           AND ((p.proof_level=e.proof_level AND p.evidence_sha256<>e.evidence_sha256)
             OR (p.proof_level='delivered' AND e.proof_level IN ('failed','bounced'))
             OR (e.proof_level='delivered' AND p.proof_level IN ('failed','bounced'))))))
-    ) THEN 1 ELSE 0 END valid
+    ) THEN 1 ELSE 0 END) valid
   FROM follow_up_effect_evidence_events e LEFT JOIN follow_up_effect_attempt_bindings b USING(command_attempt_id)
   LEFT JOIN command_attempts c ON c.command_attempt_id=b.command_attempt_id
 )
@@ -145,19 +145,19 @@ WHEN EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id
 BEGIN SELECT RAISE(ABORT,'consumer_checkpoint_conflict'); END;
 CREATE TRIGGER follow_up_consumer_checkpoint_guard BEFORE INSERT ON follow_up_consumer_checkpoints
 BEGIN
-  SELECT CASE WHEN NEW.created_at<>(CAST(strftime('%s','now') AS INTEGER)*1000+CAST(substr(strftime('%f','now'),4,3) AS INTEGER))
-    THEN RAISE(ABORT,'consumer_database_clock_required') END;
-  SELECT CASE WHEN NEW.generation<>COALESCE((SELECT MAX(p.generation) FROM follow_up_consumer_checkpoints p WHERE p.consumer_key=NEW.consumer_key),0)+1
+  SELECT (CASE WHEN NEW.created_at<>(CAST(strftime('%s','now') AS INTEGER)*1000+CAST(substr(strftime('%f','now'),4,3) AS INTEGER))
+    THEN RAISE(ABORT,'consumer_database_clock_required') END);
+  SELECT (CASE WHEN NEW.generation<>COALESCE((SELECT MAX(p.generation) FROM follow_up_consumer_checkpoints p WHERE p.consumer_key=NEW.consumer_key),0)+1
     OR NEW.previous_checkpoint_id IS NOT (SELECT p.checkpoint_id FROM follow_up_consumer_checkpoints p WHERE p.consumer_key=NEW.consumer_key ORDER BY p.generation DESC LIMIT 1)
     OR NEW.previous_checkpoint_digest IS NOT (SELECT p.checkpoint_digest FROM follow_up_consumer_checkpoints p WHERE p.consumer_key=NEW.consumer_key ORDER BY p.generation DESC LIMIT 1)
-    THEN RAISE(ABORT,'consumer_checkpoint_stale') END;
-  SELECT CASE WHEN NEW.generation<>(SELECT COUNT(*)+1 FROM follow_up_consumer_checkpoints p WHERE p.consumer_key=NEW.consumer_key)
+    THEN RAISE(ABORT,'consumer_checkpoint_stale') END);
+  SELECT (CASE WHEN NEW.generation<>(SELECT COUNT(*)+1 FROM follow_up_consumer_checkpoints p WHERE p.consumer_key=NEW.consumer_key)
     OR COALESCE((SELECT p.cumulative_member_count FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id),0)
       <>(SELECT COUNT(*) FROM follow_up_consumer_retained_reasons r WHERE r.consumer_key=NEW.consumer_key)
-    THEN RAISE(ABORT,'consumer_retention_gap') END;
+    THEN RAISE(ABORT,'consumer_retention_gap') END);
   -- Detect a mixed ancestor restore or same-count membership substitution.
   -- A coherent rollback of BOTH streams still needs an external witness.
-  SELECT CASE WHEN EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p
+  SELECT (CASE WHEN EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p
     LEFT JOIN follow_up_consumer_checkpoints q ON q.consumer_key=p.consumer_key AND q.generation=p.generation-1
     WHERE p.consumer_key=NEW.consumer_key AND (
       (p.generation=1 AND (p.previous_checkpoint_id IS NOT NULL OR p.previous_checkpoint_digest IS NOT NULL))
@@ -170,67 +170,67 @@ BEGIN
         OR NOT EXISTS(SELECT 1 FROM json_each(p.payload_json,'$.members') m WHERE m.key=r.member_index
           AND json_extract(m.value,'$.candidateId')=r.candidate_id AND json_extract(m.value,'$.kind')=r.kind
           AND json_extract(m.value,'$.identity')=r.identity AND json_extract(m.value,'$.reasonCode')=r.reason_code)))
-    THEN RAISE(ABORT,'consumer_retention_gap') END;
+    THEN RAISE(ABORT,'consumer_retention_gap') END);
   -- Revalidate the recorded prefix as a SET, not only its last anchor. Counts
   -- are record counts, never sequence arithmetic: allocation gaps are legal.
   -- This is a SQL scan with bounded output, not a production capacity promise.
-  SELECT CASE WHEN (SELECT COUNT(*) FROM follow_up_effect_evidence_events e WHERE e.sequence<=COALESCE(
+  SELECT (CASE WHEN (SELECT COUNT(*) FROM follow_up_effect_evidence_events e WHERE e.sequence<=COALESCE(
       (SELECT p.prefix_sequence FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id),0))
     <>COALESCE((SELECT SUM(json_array_length(p.payload_json,'$.rows')) FROM follow_up_consumer_checkpoints p WHERE p.consumer_key=NEW.consumer_key),0)
     OR EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p JOIN json_each(p.payload_json,'$.rows') r
       LEFT JOIN follow_up_consumer_journal_v1 e ON e.sequence=json_extract(r.value,'$.sequence')
       WHERE p.consumer_key=NEW.consumer_key AND (e.sequence IS NULL OR e.valid<>1 OR e.event_digest_sha256<>json_extract(r.value,'$.eventDigestSha256')))
-    THEN RAISE(ABORT,'consumer_retention_gap') END;
-  SELECT CASE WHEN json_type(NEW.payload_json,'$.members')<>'array' OR json_array_length(NEW.payload_json,'$.members')>2800
+    THEN RAISE(ABORT,'consumer_retention_gap') END);
+  SELECT (CASE WHEN json_type(NEW.payload_json,'$.members')<>'array' OR json_array_length(NEW.payload_json,'$.members')>2800
     OR json_type(NEW.payload_json,'$.rows')<>'array' OR json_array_length(NEW.payload_json,'$.rows')>200
     OR NEW.cumulative_member_count<>COALESCE((SELECT p.cumulative_member_count FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id),0)+json_array_length(NEW.payload_json,'$.members')
-    THEN RAISE(ABORT,'consumer_payload_invalid') END;
-  SELECT CASE WHEN NEW.evidence_valid_until IS NOT NULL AND NEW.evidence_valid_until<=(CAST(strftime('%s','now') AS INTEGER)*1000+CAST(substr(strftime('%f','now'),4,3) AS INTEGER))
-    THEN RAISE(ABORT,'consumer_retention_gap') END;
-  SELECT CASE WHEN EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id
+    THEN RAISE(ABORT,'consumer_payload_invalid') END);
+  SELECT (CASE WHEN NEW.evidence_valid_until IS NOT NULL AND NEW.evidence_valid_until<=(CAST(strftime('%s','now') AS INTEGER)*1000+CAST(substr(strftime('%f','now'),4,3) AS INTEGER))
+    THEN RAISE(ABORT,'consumer_retention_gap') END);
+  SELECT (CASE WHEN EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id
     AND ((p.evidence_valid_until IS NOT NULL AND (NEW.evidence_valid_until IS NULL OR NEW.evidence_valid_until>p.evidence_valid_until))
       OR NEW.prefix_sequence<p.prefix_sequence
       OR (p.window_complete=0 AND (NEW.window_high_sequence<>p.window_high_sequence OR NEW.window_event_id_sha256 IS NOT p.window_event_id_sha256 OR NEW.window_event_digest IS NOT p.window_event_digest))))
-    THEN RAISE(ABORT,'consumer_boundary_conflict') END;
-  SELECT CASE WHEN NEW.operation_page>0 AND NOT EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id
+    THEN RAISE(ABORT,'consumer_boundary_conflict') END);
+  SELECT (CASE WHEN NEW.operation_page>0 AND NOT EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id
     AND p.operation_id=NEW.operation_id AND p.operation_kind=NEW.operation_kind AND p.operation_digest=NEW.operation_digest
     AND p.operation_page=NEW.operation_page-1 AND p.operation_complete=0)
-    THEN RAISE(ABORT,'consumer_operation_conflict') END;
-  SELECT CASE WHEN NEW.operation_page=0 AND EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p
+    THEN RAISE(ABORT,'consumer_operation_conflict') END);
+  SELECT (CASE WHEN NEW.operation_page=0 AND EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p
     WHERE p.checkpoint_id=NEW.previous_checkpoint_id AND p.operation_complete<>1)
-    THEN RAISE(ABORT,'consumer_operation_conflict') END;
-  SELECT CASE WHEN NEW.operation_kind='inputs' AND (NEW.operation_page<>0 OR NEW.operation_complete<>1 OR json_array_length(NEW.payload_json,'$.rows')<>0
+    THEN RAISE(ABORT,'consumer_operation_conflict') END);
+  SELECT (CASE WHEN NEW.operation_kind='inputs' AND (NEW.operation_page<>0 OR NEW.operation_complete<>1 OR json_array_length(NEW.payload_json,'$.rows')<>0
     OR NEW.prefix_sequence<>COALESCE((SELECT p.prefix_sequence FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id),0)
     OR NEW.window_high_sequence<>COALESCE((SELECT p.window_high_sequence FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id),0))
-    THEN RAISE(ABORT,'consumer_boundary_conflict') END;
-  SELECT CASE WHEN NEW.operation_kind='journal' AND (
+    THEN RAISE(ABORT,'consumer_boundary_conflict') END);
+  SELECT (CASE WHEN NEW.operation_kind='journal' AND (
     json_array_length(NEW.payload_json,'$.rows')<>(SELECT COUNT(*) FROM follow_up_effect_evidence_events e
       WHERE e.sequence>COALESCE((SELECT p.prefix_sequence FROM follow_up_consumer_checkpoints p WHERE p.checkpoint_id=NEW.previous_checkpoint_id),0) AND e.sequence<=NEW.prefix_sequence)
     OR EXISTS(SELECT 1 FROM json_each(NEW.payload_json,'$.rows') item LEFT JOIN follow_up_consumer_journal_v1 e ON e.sequence=json_extract(item.value,'$.sequence')
       WHERE e.sequence IS NULL OR e.valid<>1 OR e.event_digest_sha256<>json_extract(item.value,'$.eventDigestSha256'))
     OR (NEW.prefix_sequence>0 AND NOT EXISTS(SELECT 1 FROM follow_up_consumer_journal_v1 e WHERE e.sequence=NEW.prefix_sequence AND e.valid=1 AND e.event_digest_sha256=NEW.prefix_event_digest))
     OR (NEW.window_high_sequence>0 AND NOT EXISTS(SELECT 1 FROM follow_up_consumer_journal_v1 e WHERE e.sequence=NEW.window_high_sequence AND e.valid=1 AND e.event_digest_sha256=NEW.window_event_digest)))
-    THEN RAISE(ABORT,'consumer_source_changed') END;
+    THEN RAISE(ABORT,'consumer_source_changed') END);
 END;
 
 CREATE TRIGGER follow_up_consumer_reason_guard BEFORE INSERT ON follow_up_consumer_retained_reasons
 BEGIN
-  SELECT CASE WHEN EXISTS(SELECT 1 FROM follow_up_consumer_retained_reasons r WHERE r.checkpoint_id=NEW.checkpoint_id
+  SELECT (CASE WHEN EXISTS(SELECT 1 FROM follow_up_consumer_retained_reasons r WHERE r.checkpoint_id=NEW.checkpoint_id
     AND (r.member_index=NEW.member_index OR (r.candidate_id=NEW.candidate_id AND r.reason_code=NEW.reason_code)))
-    THEN RAISE(ABORT,'consumer_reason_conflict') END;
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p JOIN json_each(p.payload_json,'$.members') m
+    THEN RAISE(ABORT,'consumer_reason_conflict') END);
+  SELECT (CASE WHEN NOT EXISTS(SELECT 1 FROM follow_up_consumer_checkpoints p JOIN json_each(p.payload_json,'$.members') m
     WHERE p.checkpoint_id=NEW.checkpoint_id AND p.consumer_key=NEW.consumer_key AND p.generation=NEW.generation
       AND m.key=NEW.member_index AND json_extract(m.value,'$.candidateId')=NEW.candidate_id
       AND json_extract(m.value,'$.kind')=NEW.kind AND json_extract(m.value,'$.identity')=NEW.identity AND json_extract(m.value,'$.reasonCode')=NEW.reason_code)
-    THEN RAISE(ABORT,'consumer_reason_invalid') END;
+    THEN RAISE(ABORT,'consumer_reason_invalid') END);
 END;
 CREATE TRIGGER follow_up_consumer_retain_members AFTER INSERT ON follow_up_consumer_checkpoints
 BEGIN
   INSERT INTO follow_up_consumer_retained_reasons(checkpoint_id,member_index,consumer_key,generation,candidate_id,kind,identity,reason_code)
   SELECT NEW.checkpoint_id,m.key,NEW.consumer_key,NEW.generation,json_extract(m.value,'$.candidateId'),json_extract(m.value,'$.kind'),
     json_extract(m.value,'$.identity'),json_extract(m.value,'$.reasonCode') FROM json_each(NEW.payload_json,'$.members') m;
-  SELECT CASE WHEN (SELECT COUNT(*) FROM follow_up_consumer_retained_reasons r WHERE r.checkpoint_id=NEW.checkpoint_id)<>json_array_length(NEW.payload_json,'$.members')
-    THEN RAISE(ABORT,'consumer_retention_gap') END;
+  SELECT (CASE WHEN (SELECT COUNT(*) FROM follow_up_consumer_retained_reasons r WHERE r.checkpoint_id=NEW.checkpoint_id)<>json_array_length(NEW.payload_json,'$.members')
+    THEN RAISE(ABORT,'consumer_retention_gap') END);
 END;
 CREATE TRIGGER follow_up_consumer_checkpoints_no_update BEFORE UPDATE ON follow_up_consumer_checkpoints BEGIN SELECT RAISE(ABORT,'consumer_checkpoint_immutable'); END;
 CREATE TRIGGER follow_up_consumer_checkpoints_no_delete BEFORE DELETE ON follow_up_consumer_checkpoints BEGIN SELECT RAISE(ABORT,'consumer_checkpoint_immutable'); END;
