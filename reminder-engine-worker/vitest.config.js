@@ -6,5 +6,6 @@ import { dirname } from "node:path";
 // (its lovable-tagger import breaks vitest) — same pattern as series-reconcile-worker.
 export default defineConfig({
   root: dirname(fileURLToPath(import.meta.url)),
-  test: { environment: "node" },
+  // Native fixtures share CPU and test short authorization windows.
+  test: { environment: "node", maxWorkers: 1 },
 });
