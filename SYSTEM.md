@@ -115,6 +115,23 @@ Last updated: 2026-08-27.
 | Owned dated follow-ups | `staff/src/components/OwnedFollowupsPanel.tsx`, `functions/api/staff-followups.js`, `crm-mirror-worker/src/owned-followups.js` | Staff-authored reminders in CRM D1; create/complete/reopen never sends, books, charges, refunds, or writes to GHL. |
 | Session docs | `BodyMapCanvas`, `SessionDocSheet`, `SignaturePad`, CheckIn | Staff session documentation and client handoff. |
 
+### Private synthetic rehearsal release tooling (source candidate)
+
+`follow-up-rehearsal-worker/` owns the private signed-envelope caller, control,
+SQLite registry and separate issuer. `scripts/follow-up-rehearsal-release.mjs`
+prepares read-only source evidence; `scripts/follow-up-rehearsal-deploy.mjs`
+provides a separately gated, exact-byte first-install transport. Reuse these
+instead of creating a public test endpoint or deploying from an arbitrary checkout.
+The caller holds no private signing keys and forwards once through its service
+binding. The release transport requires explicit resource approval and an external
+durable one-shot authorization, verifies public-URL lockdown before real uploads,
+and stops on partial/unknown writes without retry or rollback.
+
+This is not deployed, an approved live test, an operator console, or proof of
+production identity, durability, deletion, or Staff coverage. Resource/key custody,
+private operator ingress and physical cleanup remain separate gates. See the
+[rehearsal contract](follow-up-rehearsal-worker/README.md).
+
 ### Messaging exit smoke tests
 
 | Name | Kind | Paths | Notes |
