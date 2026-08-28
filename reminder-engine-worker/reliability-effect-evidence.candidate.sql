@@ -98,9 +98,9 @@ BEGIN SELECT RAISE(ABORT,'effect_event_immutable'); END;
 
 CREATE TRIGGER follow_up_effect_binding_guard BEFORE INSERT ON follow_up_effect_attempt_bindings
 BEGIN
-  SELECT CASE WHEN NEW.created_at <> (CAST(strftime('%s','now') AS INTEGER) * 1000 + CAST(substr(strftime('%f','now'),4,3) AS INTEGER))
-    THEN RAISE(ABORT,'effect_database_clock_required') END;
-  SELECT CASE WHEN NOT EXISTS (
+  SELECT (CASE WHEN NEW.created_at <> (CAST(strftime('%s','now') AS INTEGER) * 1000 + CAST(substr(strftime('%f','now'),4,3) AS INTEGER))
+    THEN RAISE(ABORT,'effect_database_clock_required') END);
+  SELECT (CASE WHEN NOT EXISTS (
     SELECT 1 FROM command_attempts c
     JOIN lifecycle_obligations o ON o.obligation_id = c.obligation_id
     JOIN lifecycle_instances l ON l.lifecycle_instance_id = o.lifecycle_instance_id
@@ -152,17 +152,17 @@ BEGIN
       AND EXISTS (SELECT 1 FROM json_each(w.document,'$.nodes') n WHERE json_extract(n.value,'$.id') = NEW.node_id
         AND json_extract(n.value,'$.action.type') IN ('email','internal_email','sms','internal_sms')
         AND o.kind = json_extract(n.value,'$.message.audience') || '_' || json_extract(n.value,'$.message.channel')
-        AND NEW.provider = CASE json_extract(n.value,'$.message.channel') WHEN 'email' THEN 'gmail' WHEN 'sms' THEN 'ghl' ELSE '' END)
-  ) THEN RAISE(ABORT,'effect_binding_invalid') END;
+        AND NEW.provider = (CASE json_extract(n.value,'$.message.channel') WHEN 'email' THEN 'gmail' WHEN 'sms' THEN 'ghl' ELSE '' END))
+  ) THEN RAISE(ABORT,'effect_binding_invalid') END);
 END;
 
 CREATE TRIGGER follow_up_effect_event_guard BEFORE INSERT ON follow_up_effect_evidence_events
 BEGIN
-  SELECT CASE WHEN NEW.ingested_at <> (CAST(strftime('%s','now') AS INTEGER) * 1000 + CAST(substr(strftime('%f','now'),4,3) AS INTEGER))
-    THEN RAISE(ABORT,'effect_database_clock_required') END;
-  SELECT CASE WHEN NEW.previous_sequence <> COALESCE((SELECT MAX(sequence) FROM follow_up_effect_evidence_events WHERE command_attempt_id = NEW.command_attempt_id),0)
-    THEN RAISE(ABORT,'effect_stale_sequence') END;
-  SELECT CASE WHEN NOT EXISTS (
+  SELECT (CASE WHEN NEW.ingested_at <> (CAST(strftime('%s','now') AS INTEGER) * 1000 + CAST(substr(strftime('%f','now'),4,3) AS INTEGER))
+    THEN RAISE(ABORT,'effect_database_clock_required') END);
+  SELECT (CASE WHEN NEW.previous_sequence <> COALESCE((SELECT MAX(sequence) FROM follow_up_effect_evidence_events WHERE command_attempt_id = NEW.command_attempt_id),0)
+    THEN RAISE(ABORT,'effect_stale_sequence') END);
+  SELECT (CASE WHEN NOT EXISTS (
     SELECT 1 FROM follow_up_effect_attempt_bindings b
     JOIN command_attempts c ON c.command_attempt_id = b.command_attempt_id
     JOIN lifecycle_obligations o ON o.obligation_id = b.obligation_id
@@ -191,8 +191,8 @@ BEGIN
       AND le.obligation_id = b.obligation_id AND le.new_owner = b.lease_owner AND le.lease_acquired_at = b.lease_acquired_at AND le.lease_expires_at = b.lease_expires_at
       AND NEW.ingested_at >= b.created_at AND NEW.retention_until = b.retention_until
       AND NEW.retention_until <= MIN(c.retention_until,s.normalized_retention_until,l.retention_until,o.retention_until,p.retention_until,a.retention_until,am.retention_until,x.retention_until,xm.retention_until,le.retention_until)
-  ) THEN RAISE(ABORT,'effect_binding_invalid') END;
-  SELECT CASE WHEN NEW.event_type <> 'prepared' AND NOT EXISTS (
+  ) THEN RAISE(ABORT,'effect_binding_invalid') END);
+  SELECT (CASE WHEN NEW.event_type <> 'prepared' AND NOT EXISTS (
     SELECT 1 FROM command_attempts c JOIN follow_up_effect_attempt_bindings b USING(command_attempt_id)
     WHERE c.command_attempt_id = NEW.command_attempt_id
       AND c.state = (SELECT p.state_after FROM follow_up_effect_evidence_events p WHERE p.command_attempt_id = c.command_attempt_id
@@ -203,24 +203,24 @@ BEGIN
         AND p.event_type = 'observation' ORDER BY p.sequence DESC LIMIT 1)
       AND c.updated_at = COALESCE((SELECT p.ingested_at FROM follow_up_effect_evidence_events p WHERE p.command_attempt_id = c.command_attempt_id
         AND p.event_type = 'observation' ORDER BY p.sequence DESC LIMIT 1),b.command_created_at)
-  ) THEN RAISE(ABORT,'effect_projection_stale') END;
-  SELECT CASE WHEN NEW.event_type = 'prepared' AND NOT EXISTS (
+  ) THEN RAISE(ABORT,'effect_projection_stale') END);
+  SELECT (CASE WHEN NEW.event_type = 'prepared' AND NOT EXISTS (
     SELECT 1 FROM follow_up_effect_attempt_bindings b JOIN command_attempts c USING(command_attempt_id)
     WHERE b.command_attempt_id = NEW.command_attempt_id AND b.prepared_event_id = NEW.event_id
       AND b.prepare_request_sha256 = NEW.event_digest_sha256 AND c.state = 'prepared'
-  ) THEN RAISE(ABORT,'effect_prepared_event_invalid') END;
-  SELECT CASE WHEN NEW.event_type <> 'prepared' AND NOT EXISTS (
+  ) THEN RAISE(ABORT,'effect_prepared_event_invalid') END);
+  SELECT (CASE WHEN NEW.event_type <> 'prepared' AND NOT EXISTS (
     SELECT 1 FROM follow_up_effect_evidence_events e WHERE e.command_attempt_id = NEW.command_attempt_id AND e.event_type = 'prepared'
-  ) THEN RAISE(ABORT,'effect_prepared_event_missing') END;
-  SELECT CASE WHEN NEW.event_type = 'observation' AND (
+  ) THEN RAISE(ABORT,'effect_prepared_event_missing') END);
+  SELECT (CASE WHEN NEW.event_type = 'observation' AND (
     NOT ((NEW.state_before = 'prepared' AND NEW.state_after IN ('submitted','ambiguous','failed_retryable','failed_terminal'))
       OR (NEW.state_before = 'submitted' AND NEW.state_after IN ('ambiguous','failed_retryable','failed_terminal'))
       OR (NEW.state_before = 'failed_retryable' AND NEW.state_after IN ('ambiguous','failed_terminal'))
       OR (NEW.state_before = 'ambiguous' AND NEW.state_after = 'failed_terminal'))
     OR NOT EXISTS (SELECT 1 FROM command_attempts c WHERE c.command_attempt_id = NEW.command_attempt_id AND c.state = NEW.state_before
       AND (c.provider_reference IS NULL OR NEW.provider_reference IS NULL OR c.provider_reference = NEW.provider_reference))
-  ) THEN RAISE(ABORT,'effect_projection_stale') END;
-  SELECT CASE WHEN NEW.event_type = 'observation' AND NEW.state_after = 'submitted' AND NOT EXISTS (
+  ) THEN RAISE(ABORT,'effect_projection_stale') END);
+  SELECT (CASE WHEN NEW.event_type = 'observation' AND NEW.state_after = 'submitted' AND NOT EXISTS (
     SELECT 1 FROM follow_up_effect_attempt_bindings b
     JOIN lifecycle_obligations o ON o.obligation_id = b.obligation_id
     JOIN lifecycle_instances l ON l.lifecycle_instance_id = b.lifecycle_instance_id
@@ -228,27 +228,27 @@ BEGIN
     WHERE b.command_attempt_id = NEW.command_attempt_id AND l.state = 'active'
       AND o.state = 'leased' AND o.lease_owner = b.lease_owner AND o.lease_acquired_at = b.lease_acquired_at AND o.lease_expires_at = b.lease_expires_at
       AND b.lease_acquired_at <= NEW.ingested_at AND NEW.ingested_at < b.lease_expires_at AND NEW.ingested_at < x.expires_at
-  ) THEN RAISE(ABORT,'effect_live_fence_missing') END;
-  SELECT CASE WHEN NEW.event_type = 'receipt' AND NOT EXISTS (
+  ) THEN RAISE(ABORT,'effect_live_fence_missing') END);
+  SELECT (CASE WHEN NEW.event_type = 'receipt' AND NOT EXISTS (
     SELECT 1 FROM follow_up_effect_attempt_bindings b JOIN command_attempts c USING(command_attempt_id)
     WHERE b.command_attempt_id = NEW.command_attempt_id AND b.provider = NEW.provider AND b.provider_account_scope = NEW.provider_account_scope
       AND c.provider_reference = NEW.provider_reference
       AND EXISTS (SELECT 1 FROM follow_up_effect_evidence_events sent WHERE sent.command_attempt_id = b.command_attempt_id
         AND sent.event_type = 'observation' AND sent.state_after = 'submitted' AND sent.provider_reference = NEW.provider_reference)
-  ) THEN RAISE(ABORT,'effect_receipt_unlinked') END;
-  SELECT CASE WHEN NEW.event_type = 'receipt' AND EXISTS (
+  ) THEN RAISE(ABORT,'effect_receipt_unlinked') END);
+  SELECT (CASE WHEN NEW.event_type = 'receipt' AND EXISTS (
     SELECT 1 FROM provider_receipts r WHERE r.provider = NEW.provider AND r.provider_reference = NEW.provider_reference AND r.command_attempt_id <> NEW.command_attempt_id
-  ) THEN RAISE(ABORT,'effect_receipt_ownership_conflict') END;
-  SELECT CASE WHEN NEW.event_type = 'receipt' AND EXISTS (
+  ) THEN RAISE(ABORT,'effect_receipt_ownership_conflict') END);
+  SELECT (CASE WHEN NEW.event_type = 'receipt' AND EXISTS (
     SELECT 1 FROM provider_receipts r WHERE r.provider_receipt_id = NEW.provider_receipt_id
       OR (r.provider = NEW.provider AND r.provider_reference = NEW.provider_reference AND r.proof_level = NEW.proof_level AND r.evidence_sha256 = NEW.evidence_sha256)
-  ) THEN RAISE(ABORT,'effect_receipt_identity_conflict') END;
-  SELECT CASE WHEN NEW.event_type = 'receipt' AND NEW.is_conflict <> CASE WHEN EXISTS (
+  ) THEN RAISE(ABORT,'effect_receipt_identity_conflict') END);
+  SELECT (CASE WHEN NEW.event_type = 'receipt' AND NEW.is_conflict <> (CASE WHEN EXISTS (
     SELECT 1 FROM provider_receipts r WHERE r.provider = NEW.provider AND r.provider_reference = NEW.provider_reference
       AND ((r.proof_level = NEW.proof_level AND r.evidence_sha256 <> NEW.evidence_sha256)
         OR (r.proof_level = 'delivered' AND NEW.proof_level IN ('failed','bounced'))
         OR (NEW.proof_level = 'delivered' AND r.proof_level IN ('failed','bounced')))
-  ) THEN 1 ELSE 0 END THEN RAISE(ABORT,'effect_receipt_conflict_flag_invalid') END;
+  ) THEN 1 ELSE 0 END) THEN RAISE(ABORT,'effect_receipt_conflict_flag_invalid') END);
 END;
 
 -- Trigger-side assertions abort the entire D1 batch, including its event. A
@@ -262,8 +262,8 @@ BEGIN
   UPDATE command_attempts SET state = NEW.state_after,
     provider_reference = COALESCE(NEW.provider_reference,provider_reference), error_code = NEW.error_code, updated_at = NEW.ingested_at
   WHERE command_attempt_id = NEW.command_attempt_id AND state = NEW.state_before;
-  SELECT CASE WHEN changes() <> 1 THEN RAISE(ABORT,'effect_projection_stale') END;
-  SELECT CASE WHEN NOT EXISTS (
+  SELECT (CASE WHEN changes() <> 1 THEN RAISE(ABORT,'effect_projection_stale') END);
+  SELECT (CASE WHEN NOT EXISTS (
     SELECT 1 FROM command_attempts c JOIN follow_up_effect_attempt_bindings b USING(command_attempt_id)
     WHERE c.command_attempt_id = NEW.command_attempt_id AND c.state = NEW.state_after AND c.error_code IS NEW.error_code AND c.updated_at = NEW.ingested_at
       AND c.obligation_id = b.obligation_id AND c.idempotency_key = b.idempotency_key AND c.attempt_number = b.attempt_number
@@ -271,17 +271,17 @@ BEGIN
       AND c.rendered_copy_sha256 IS b.rendered_copy_sha256 AND c.created_at = b.command_created_at AND c.retention_until = b.retention_until
       AND c.provider_reference IS (SELECT p.provider_reference FROM follow_up_effect_evidence_events p
         WHERE p.command_attempt_id = c.command_attempt_id AND p.event_type = 'observation' AND p.provider_reference IS NOT NULL ORDER BY p.sequence DESC LIMIT 1)
-  ) THEN RAISE(ABORT,'effect_projection_stale') END;
+  ) THEN RAISE(ABORT,'effect_projection_stale') END);
 END;
 CREATE TRIGGER follow_up_effect_receipt_projection AFTER INSERT ON follow_up_effect_evidence_events
 WHEN NEW.event_type = 'receipt'
 BEGIN
   INSERT INTO provider_receipts(provider_receipt_id,command_attempt_id,provider,provider_reference,proof_level,evidence_sha256,observed_at,retention_until,created_at)
   VALUES(NEW.provider_receipt_id,NEW.command_attempt_id,NEW.provider,NEW.provider_reference,NEW.proof_level,NEW.evidence_sha256,NEW.observed_at,NEW.retention_until,NEW.ingested_at);
-  SELECT CASE WHEN changes() <> 1 THEN RAISE(ABORT,'effect_receipt_projection_failed') END;
-  SELECT CASE WHEN NOT EXISTS (SELECT 1 FROM provider_receipts r WHERE r.provider_receipt_id = NEW.provider_receipt_id
+  SELECT (CASE WHEN changes() <> 1 THEN RAISE(ABORT,'effect_receipt_projection_failed') END);
+  SELECT (CASE WHEN NOT EXISTS (SELECT 1 FROM provider_receipts r WHERE r.provider_receipt_id = NEW.provider_receipt_id
     AND r.command_attempt_id = NEW.command_attempt_id AND r.provider = NEW.provider AND r.provider_reference = NEW.provider_reference
     AND r.proof_level = NEW.proof_level AND r.evidence_sha256 = NEW.evidence_sha256 AND r.observed_at = NEW.observed_at
     AND r.retention_until = NEW.retention_until AND r.created_at = NEW.ingested_at)
-    THEN RAISE(ABORT,'effect_receipt_projection_failed') END;
+    THEN RAISE(ABORT,'effect_receipt_projection_failed') END);
 END;
