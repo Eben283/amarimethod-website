@@ -1,6 +1,6 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), and bounded evidence composition (#526) are merged source increments. PR #526 merged at `fff378e37d5ed4fe2dd306bd08c4832f8540bb6e` with post-merge tests/build and Pages verified. Durable consumer retention below is a separate unpublished source candidate. Neither additive SQL candidate is installed, and no new producer or consumer is adopted. All contracts remain non-authoritative and deliberately unable to make Staff healthy.
+Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), and durable consumer retention (#528) are merged source increments. PR #528 merged at `dfdcace0cc377421979fc38ffc73e1ce48f05cd2` with post-merge tests/build and Pages verified. Neither additive SQL candidate is installed, and no new producer or consumer is adopted. All contracts remain non-authoritative and deliberately unable to make Staff healthy.
 
 ## Source provenance and boundary
 
@@ -396,9 +396,153 @@ only the exact three inert evidence module paths and forbids their adoption
 elsewhere. The inventory, selector, composition and journal implementations,
 effect-evidence SQL, runtime entrypoints/configuration, schema authority and
 committed Pages bundle are unchanged. Concurrent Media PR #527 is preserved.
-No full SPA build or public CI has run for this new unpublished seven-file
-package. These tests do not establish installed D1 compatibility, authenticated
-provenance, production capacity, runtime adoption or completed CRM coverage.
+The approved seven-file package subsequently merged in PR #528 as
+`dfdcace0cc377421979fc38ffc73e1ce48f05cd2`, with exact reviewed tree
+`67cd016c62e043ce843e86ef82e88ce3b23c8e53`. Pre-merge CI run `33129994131`
+and post-merge run `33130159322` passed all 2,500 tests, guards and full
+production builds on Node 22.23.2. Automatic Pages deployment
+`b1546af5-e0e7-44e7-8882-a063336c6593` passed for the merged revision.
+These tests and releases do not establish installed D1 compatibility,
+authenticated provenance, production capacity, runtime adoption or completed
+CRM coverage.
+
+## Guarded physical-installation envelope — offline source candidate
+
+`scripts/follow-up-evidence-install-plan.mjs` is an offline planning module,
+not a database client or migration runner. It has no credential lookup, network
+transport, execution command, runtime import or automatic retry. A returned
+statement envelope is review material, never installation authorization. This
+package is still local/unpublished; neither candidate SQL has been installed.
+
+The module exports `planFollowUpEvidenceInstall({databaseId, sourceRevision,
+snapshot, recovery})` and `classifyFollowUpEvidenceInstallOutcome({basis,
+planDigest, snapshot})`. The first returns pending/refused, an already-installed
+observation with no replay statements, or a 33-statement bound envelope. The
+second recomputes the exact envelope identity from its saved basis and classifies
+fresh caller-supplied readback. Both permanently deny execution, production-read,
+restore, first-row and automatic-retry authority; even an installed-empty
+classification has `installationProven:false` because metadata is unauthenticated.
+
+The only candidate target is `amari-automation`, database
+`089d810a-9d2d-43a4-8f1d-dc3620835557`, on the already promoted exact v2
+lineage `8c7245ae2bb34d053e1d13e2f7c0ed632eca1c5aa0a52259c476100ec9388a62`.
+The two source files are frozen and applied in this order in local fixtures:
+
+| Candidate SQL under `reminder-engine-worker/` | SHA-256 |
+| --- | --- |
+| `reliability-effect-evidence.candidate.sql` | `9b6f640d212692ff67cbc0b6ab9654ce7f8df7908eceaf192c2b405bcf7441ea` |
+| `reliability-consumer-retention.candidate.sql` | `208512e371d115778a17608c74cabd267f31c3145a4b0b05125048c8e6e142d4` |
+
+Together they contain 29 explicit CREATE statements and add exactly 39 catalog
+objects: 4 tables, 5 explicit indexes, 10 implicit unique indexes, 19 triggers
+and 1 view. Existing objects, v1/v2 markers and the immutable v2 contract must
+remain unchanged. All new triggers belong to the four new tables. No v3 marker,
+authority promotion, historical backfill, sender change or customer row is
+part of this empty physical installation. A whole-catalog count from an earlier
+production observation must not become a hardcoded current baseline.
+
+### Approval and evidence boundary
+
+Before any future physical installation, separately authorize a fresh primary
+schema read and recovery-bookmark acquisition for the exact database. Capture
+the complete catalog, including views and implicit indexes, exact authority
+rows, foreign-key checks and primary/zero-write metadata. A table/index/trigger
+projection alone is insufficient. Existing additive names, altered lineage,
+missing objects, unknown metadata or conflicting definitions must stop the
+operation. Never execute caller-supplied catalog DDL to predict the new state;
+only the pinned repository DDL may construct the local oracle.
+
+The planner pins the promotion-observed fixture as well as both SQL files,
+including the exact v2 marker/contract `applied_at=1787803363000`. It requires
+foreign keys enabled, no violations, per-query successful primary/zero-write
+metadata, null counts for absent candidate tables/view, and zero counts for an
+empty installation. Snapshot and recovery times have a five-minute freshness
+bound, checked again against database time inside both transaction assertions.
+Readback may not predate either saved preflight or recovery metadata. These
+checks constrain supplied evidence; they do not authenticate its source.
+
+Record the provider-confirmed Time Travel recovery point outside the database,
+bound to the database and the reviewed preflight. A formatted bookmark string,
+caller boolean or digest does not authenticate recoverability or approval.
+The offline planner cannot obtain or verify these facts. Missing evidence stays
+pending/refused, not fabricated. An approved execution transport must independently
+verify database routing, complete transactional-batch semantics and primary
+service; a local SQLite test is not that proof.
+
+### Atomicity and immediate readback
+
+The proposed physical operation uses one transaction: create a temporary-purpose
+assertion table, unconditionally check the exact precondition, execute all 29
+complete CREATE statements, unconditionally check the exact postcondition, then
+remove only the assertion table. A failing CHECK aborts the batch; a filtered
+INSERT that silently inserts zero rows is not a guard. SQL triggers contain
+internal semicolons and must remain single statements. The operation changes no
+existing business rows and preserves ongoing customer work; it does not freeze
+or claim to snapshot that work.
+
+Cloudflare documents transactional rollback for failed `batch()` statements.
+Do not substitute separate calls or assume `exec()` has identical guarantees.
+Read replicas are possible after the first query in a `first-primary` session,
+so primary readback must be established for the actual readback batch.
+[D1 database API](https://developers.cloudflare.com/d1/worker-api/d1-database/).
+Check each statement against 100,000 SQL bytes, 100 bound parameters and 32
+function arguments; a passing local test does not prove the 30-second production
+execution budget. [D1 limits](https://developers.cloudflare.com/d1/platform/limits/).
+
+Stop after installation and perform read-only primary readback. Require the
+exact expected whole catalog, four empty new tables, a readable empty view,
+unchanged authority rows, enabled/clean foreign keys and no assertion table.
+Classify a lost response from this readback, never by blindly replaying SQL:
+
+| Fresh readback relative to the approved preflight | Meaning / next action |
+| --- | --- |
+| Exact original catalog, no additions | Installation is not observed; stop, do not automatically retry. |
+| Exact original catalog plus all 39 expected objects, new tables empty | Installed but inactive; stop, do not replay or activate. |
+| Partial/different catalog, changed authority, nonempty new tables, invalid/missing proof | Investigate with new authority; no automatic repair, DROP, restore or retry. |
+
+Time Travel restore overwrites the database and cancels in-flight work. A
+bookmark is not a scoped rollback that preserves intervening customer actions;
+restoration always needs a separate decision and recovery procedure.
+[Time Travel recovery](https://developers.cloudflare.com/d1/reference/time-travel/).
+
+### First-row adoption remains blocked
+
+Before any producer/consumer writes real evidence, name retention/privacy and
+DSAR ownership, capacity/lag bounds, external restore-witness and epoch/rebase
+policy. Permanent no-delete triggers and foreign keys can prevent parent-data
+deletion; the existing 400-day cap does not itself implement a purge policy.
+Hashed identities are not anonymous. No policy, witness or authorized operator
+is invented by this package. Physical installation, even if later verified,
+does not resolve these gates, make Staff healthy or complete CRM coverage.
+
+### Installation-envelope source verification
+
+On merged base `dfdcace0cc377421979fc38ffc73e1ce48f05cd2`, local Node 24.13.1 /
+Vitest 4.1.10 passes all 2,559 repository tests, including 59 new planner cases.
+Independent review passes the 59 planner and 69 existing journal/isolation
+cases together. Separate local SQLite oracles agree on the exact 39-object
+delta: `canonicalJson` over the type/name-sorted `{type,name,tbl_name,sql}`
+rows hashes to
+`bd5151d6d3b8e3bb65c3a7099a12f86e2858316b6edbc66a0048569c70fb4600`.
+This is the additive projection digest, not a predicted whole-production-catalog
+digest or authenticated deployment identity.
+
+Actual transaction tests cover rollback after effect DDL, at the final consumer
+statement and at the unconditional postcondition; precondition schema races;
+execution-time expiry and foreign-key disablement; duplicate application;
+lost committed and uncommitted outcomes; old readback; changed markers/contracts;
+partial/extra table or view objects; missing primary/view metadata; and hostile
+catalog text remaining bound data. Existing catalog, seeded business data and
+sequence rows remain unchanged, all four candidate tables and the view are
+empty, and the exact 69-object current-v2 authority remains proven locally.
+
+All source/release and whitespace guards pass. A narrow isolation-test exception
+permits only this offline script; its basename remains forbidden in production
+and schema routes. Both SQL files, all existing evidence stores/readers, schema
+authority, package/configuration, runtime entrypoints and committed Pages bundle
+are unchanged. This six-file source package has not been published or run through
+public CI/full build. No production database read/write, installation, restore,
+Worker deployment, activation, provider action or message occurred.
 
 ## Gates before any future authority lift
 
