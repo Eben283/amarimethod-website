@@ -1,6 +1,71 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), durable consumer retention (#528), and offline retention/capture planning (#531) are merged source increments. PR #530 supplies the reviewed CASE-compatible SQL. A separately authorized August 27 physical installation was verified installed-empty/inactive; no new producer or consumer is adopted. The capture integration below is a local source-only increment, not a runtime release. All existing v1 contracts remain non-authoritative and deliberately unable to make Staff healthy. Earlier unapplied/uninstalled statements below describe their historical source-release checkpoints, not permission to install again.
+Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), durable consumer retention (#528), offline retention/capture planning (#531), and capture integration (#532) are merged source increments. PR #530 supplies the reviewed CASE-compatible SQL. A separately authorized August 27 physical installation was verified installed-empty/inactive; no new producer or consumer is adopted. The admission gate below is an unpublished source-only increment, not a runtime release. All existing v1 contracts remain non-authoritative and deliberately unable to make Staff healthy. Earlier unapplied/uninstalled statements below describe their historical source-release checkpoints, not permission to install again.
+
+## Admission and consumption gate (offline, not adopted)
+
+`scripts/lib/follow-up-evidence-admission-gate.mjs` composes the unchanged capture
+integration through `createFollowUpEvidenceAdmissionGate`. The factory returns
+`admit`, `executeAdmitted`, `readStatus` and `readCapture`. Separate admission and
+current-floor signing-byte helpers define domain-separated Ed25519 envelopes.
+All capabilities, trust anchors, clocks, scope and the action are fixed factory
+dependencies; requests cannot provide a callback, URL, SQL or approval boolean.
+
+The admission binds immutable source coordinates and original approval/deadline,
+business-derived operation identity, exact capture intent, source/handler/schema,
+environment, registry/sink scope, epoch, policy, suppression-alias commitment and
+finite replay horizon. The original dispatch window is at most five minutes;
+renewed signatures, nonce, source revision or key rotation do not create a new
+business action. Evidence expires at the immutable 90-day-or-shorter deadline.
+Witness events carry that exact deadline, including shorter parent/deletion
+bounds; their event timestamp cannot renew it.
+
+The injected registry exposes `read`, scope-wide `transact` with a synchronous
+updater, and exact `confirm` after its durable storage barrier. A positive seeded
+control/head and admission are required: no missing row initializes permission.
+The module atomically proposes `CONSUMED` plus a pending barrier, verifies the
+transaction identity and confirmation, then conditionally records and directly
+reads the independent transition/head. No action occurs inside a transaction.
+Unknown acknowledgements are indeterminate and cannot resume the invocation.
+Confirmed consumption and unknown mutation state are reported separately, never
+as a cached absent/unconsumed state.
+
+The fixed action wrapper obtains a new signed floor and exact registry/witness
+readback after the asynchronous capture claim. It rechecks the registry, original
+deadline and invocation budget at the actual effect boundary. Its inner deadline
+starts before capture execution, so claim latency cannot renew the callback's
+timeout. Actual effect invocation is tracked separately from entry into the
+capture adapter's wrapper. Consumed action barriers remain after capture; there
+is no maintenance unlock, lease steal, retry or automatic recovery API here.
+Capturing a typed report is not independent proof of the effect's outcome.
+
+Both read APIs are non-mutating. The eventual registry/read transport must enforce
+present caller/scope/subject authorization and deletion/suppression on every read;
+a historical ticket is not a lasting read grant. Legitimate retained history need
+not remain within the expired dispatch window. The eventual floor issuer must
+independently authenticate immutable origins, all required historical aliases and
+the latest administrative floor. Witness adapters must authenticate their stored
+envelopes and enforce original deadlines on events and linkable head/read access.
+This source verifies signatures and structural bytes, not those live guarantees.
+
+Bounds are 24,000-byte typed reports, 8192-byte control objects/results, fixed
+4096-byte serialized chunks with at most 16 chunks, 64 port calls plus one fixed
+action, and 256 KiB of processed control/capture transfer per invocation. Factory
+timeouts are at most 20 seconds per wait and 60 seconds overall. Actual adapter
+SQL, transport buffering, authentication and provider durability remain separately
+unimplemented obligations; bounded synthetic calls do not prove production cost.
+Malformed/oversize post-effect reports leave consumption intact and counts unknown.
+
+The 108 synthetic tests cover actual SQLite atomicity, independent competing
+processes/restarts, lost transaction/witness/capture acknowledgements, timeout and
+expiry races, scoped read denial, immutable retention, key/origin/floor mismatch,
+bounded metadata and read-only reconciliation. An explicit test demonstrates
+that unannounced coherent same-epoch registry+witness rollback can evade detection;
+a fresh epoch certificate is not a per-action high-water oracle. Controlled
+retirement/draining and independently governed recovery remain adoption gates.
+All authority, execution/adoption/retry/restore, live authentication/durability and
+exactly-once claims remain false. No resources, bindings, installed schema, runtime
+entrypoints, packages or generated bundle change, and no installer is replayed.
 
 ## Capture integration increment (offline, not adopted)
 
@@ -53,7 +118,7 @@ Receipts must preserve those distinctions and deny authority, adoption and retry
 grants. Synthetic restart/race tests cannot prove a real resource's isolation,
 access policy, deletion protection or production behavior.
 
-Publication, a private storage choice outside the target rollback domain,
+Further publication, a private storage choice outside the target rollback domain,
 authenticated consumption/suppression, deployment and live rehearsal remain
 separate gates. No new mutating executor may be adopted based on these source
 tests, and the closed physical installation must never be replayed.
