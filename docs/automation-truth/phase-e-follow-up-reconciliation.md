@@ -1,6 +1,96 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), and durable consumer retention (#528) are merged source increments. PR #528 merged at `dfdcace0cc377421979fc38ffc73e1ce48f05cd2` with post-merge tests/build and Pages verified. Neither additive SQL candidate is installed, and no new producer or consumer is adopted. All contracts remain non-authoritative and deliberately unable to make Staff healthy.
+Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), and durable consumer retention (#528) are merged source increments. PR #530 supplies the reviewed CASE-compatible SQL. A separately authorized August 27 physical installation was verified installed-empty/inactive; no new producer or consumer is adopted. Retention/recovery planning below is a local source-only increment, not a runtime release. All existing v1 contracts remain non-authoritative and deliberately unable to make Staff healthy. Earlier unapplied/uninstalled statements below describe their historical source-release checkpoints, not permission to install again.
+
+## Retention and recovery planning increment (offline only)
+
+The approved design defaults now have a separate source-only planning increment:
+
+- `functions/lib/follow-up-retention-policy-plan.js` models original-clock retention, scoped dependency/deletion planning and epoch/witness boundaries.
+- `scripts/lib/follow-up-evidence-capture.mjs` models bounded evidence transfer and consumed-attempt readback classification.
+- Their `reminder-engine-worker/src/follow-up-*.test.js` fixtures use synthetic identities and local data only.
+
+These are new planning contracts, **not a new production schema or a promotion of
+any existing v1 contract**. No runtime imports, database adapter, executable purge
+SQL, provider client, schedule, release command, external witness destination or
+credentials are added. A structurally valid plan is not authenticated source
+evidence, permission to execute, actual deletion or trustworthy coverage.
+
+The retention module exports `planFollowUpRetentionDeadline`,
+`planFollowUpRetentionMaintenance` and `classifyFollowUpRetentionEpoch`. The capture
+module exports `chunkFollowUpEvidenceCapture`, `reassembleFollowUpEvidenceCapture`
+and `classifyOneShotCaptureState`. Inputs are snapshotted before asynchronous work;
+outputs are frozen and always deny authority, execution, adoption and retry.
+Independent focused review and tests pass: 107 retention/epoch cases and 68
+capture cases. These synthetic tests establish local contract behavior, not
+production privacy compliance, physical erasure or durable evidence capture.
+
+### Approved implementation targets
+
+Operational evidence has a 90-day maximum from its immutable original capture,
+with shorter applicable parent/deletion deadlines winning. A later inventory
+`readAt`, retry, restore or rebase cannot renew it. Missing original clock or
+incomplete dependency inventory must refuse. Raw message bodies, clinical notes,
+payment details, secrets and arbitrary provider errors are outside the planner's
+metadata contract. Opaque/digested identities remain restricted, not anonymous.
+
+Expiry, physical erasure and proof validity are different states. A removed
+unresolved item must leave a visible evidence gap; it cannot become a completed
+obligation. Multi-person checkpoint retirement must preserve permitted unrelated
+work in a separately validated replacement before affected historical proof is
+retired. A hold may restrict physical deletion but cannot extend evidence validity.
+Privacy-request audit records have a separate 24-month design schedule; an
+ordinary subject-deletion request must not silently shorten that audit record.
+This is an operational separation, not a determination of legal applicability.
+
+Witness intent, D1 commit, independent acknowledgement and reader verification
+must remain distinct. An unknown write response is not an empty database or a
+retry permission. A coherent rollback requires comparison with an independently
+retained witness; a same-D1 record or a local temporary file does not supply it.
+Pruning a predecessor witness requires a replacement anchor covering every still
+supported restore/replay horizon, or an explicit recovery gap. Suppression cannot
+expire while a reimport horizon is unknown.
+
+The capture helper's byte bounds concern complete serialized ASCII envelopes,
+including base64 and metadata. They do not prove a particular tool's token limit
+or the durability/authentication of a future sink. A transport must hand off and
+acknowledge each bounded unit without emitting the entire payload in one tool
+result, then verify complete reassembly. A digest without all bytes is incomplete
+evidence. No capture failure authorizes rerunning a consumed mutating attempt.
+The generic JSON capture capsule is not a PII scrubber; the future executor must
+apply the approved field-minimization policy before any private capture.
+
+### Required physical changes remain unimplemented
+
+This is the concrete boundary for the later schema/adapter review; the existing
+SQL, schema-authority markers and installer hashes remain unchanged.
+
+| Existing dependency | Required later invariant; not implemented by a pure plan |
+| --- | --- |
+| Effect attempt bindings and evidence events | Preserve append-only integrity within the allowed lifetime; add an exact authorized purge path, immutable retention origin and row/receipt scope binding. Permanent no-delete guards currently prevent expiry cleanup. |
+| Consumer checkpoints and retained reasons | Explicit epoch boundaries, original per-identity deadlines, complete replacement/carry proof and old-cursor invalidation. Remove old payload copies only after dependency closure; do not relabel a new consumer key as continuity. |
+| Canonical sources, lifecycle/obligation/command/receipt graph | Include person/appointment mappings, normalized JSON/payload references and logical receipt links. Existing parent clocks and protected-delete triggers cannot be bypassed just because the new journal uses a shorter policy. |
+| Transitions, leases, exceptions, access and provenance evidence | Enumerate their exact incoming references and hold/deletion constraints, validate child-first order and preserve unrelated rows. Do not cascade into shared release/attestation history based solely on a subject request. |
+| Independent witness and suppression records | Select an approved private resource outside the target rollback domain, define storage/access/expiry contracts, bind every acknowledgement to the exact epoch/operation and reapply suppressions before restored data is usable. |
+
+Before adoption the actual inventory adapter must prove the complete dependency
+set, identity ownership and origin clocks from authenticated primary reads. These
+pure inputs are self-reported and do not provide that proof. Likewise, an abstract
+deletion order is not executable against today's immutable SQL.
+
+The existing 200-row per-family inventory and 200-candidate union caps remain
+refusal limits, not verified capacity. The design starting point is 100 rows/page
+and at most eight pages/run, with an explicit total query/byte/time budget still
+required. Full history, repeated memberships, inventory and error readbacks must
+be measured, not just the commit batch. Actual production load, purge lag and
+recovery RPO/RTO remain unproven.
+
+The installer evidence-truncation incident is **not operationally fixed** by an
+offline helper. A separately reviewed executor/sink integration and lost-response
+rehearsal are still required before another mutating executor. Do not rerun the
+closed physical installation. Source publication/merge, schema migration,
+external-storage provisioning, real-data deletion, runtime adoption, ordinary
+lifecycle/operator proof and health promotion retain separate authorization gates.
 
 ## Source provenance and boundary
 
