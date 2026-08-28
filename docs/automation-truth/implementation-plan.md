@@ -25,16 +25,21 @@ The SQL remains unregistered/unapplied and no runtime has adopted the store.
 
 The remaining completion path is:
 
-1. The source-only inventory/carry/journal composition is now built and
-   independently reviewed. All 2,435 repository tests pass on main
-   `102ed7dec6794253d9c28e6421fe7a9a3a0b27db`, including 74 new composition
+1. The source-only inventory/carry/journal composition is released in PR #526
+   at `fff378e37d5ed4fe2dd306bd08c4832f8540bb6e`. Pre- and post-merge CI
+   passed all 2,435 repository tests, guards and the full build, including 74 new composition
    cases. Full-root fixed-boundary traversal, per-attempt predecessor chains,
    receipt ownership/conflicts, retention failure and complete carry
    preservation are covered. No sequence evidence enters the timestamp selector
-   and no shared historical snapshot is claimed. Publish the reviewed six-file
-   follow-on only after approval, then verify exact-head CI/build before any
-   approved merge. Durable consumer checkpoints and production compatibility
-   remain unproven.
+   and no shared historical snapshot is claimed. Automatic Pages deployment
+   passed; the unimported composition has no runtime adoption. The next
+   source-only increment now implements append-only consumer checkpoints and
+   paginated retention of unresolved work. On current main `802b9030…`, all
+   2,500 local tests pass, including 64 new consumer cases. The seven-file
+   package is unpublished; publish and merge only after explicit approval and
+   exact-head public checks. Frozen v1 readers and their bounds are unchanged;
+   durable journal progress does not solve exhaustive inventory discovery.
+   Production compatibility and activation remain unproven.
 2. Review the exact schema delta and compatibility/readback/recovery plan before
    any separately approved production installation. This candidate does not
    register a migration or alter the current schema-authority allowlist.

@@ -312,7 +312,7 @@ describe("durable effect candidate against actual promoted-v2 SQLite", () => {
     db = connection(raw); const retry = await store.prepareFollowUpEffectAttempt(db, prepareInput()); expect(["prepared", "replayed"]).toContain(retry.status);
     expect(count("command_attempts")).toBe(1); expect(count("follow_up_effect_evidence_events")).toBe(1);
   });
-  it("keeps the store/composition pair isolated from every other production module and schema route", () => {
+  it("keeps the three inert evidence modules isolated from every other production module and schema route", () => {
     const root = new URL("../../", import.meta.url), violations = [];
     function visit(dir) {
       for (const entry of readdirSync(new URL(dir, root), { withFileTypes: true })) {
@@ -320,9 +320,9 @@ describe("durable effect candidate against actual promoted-v2 SQLite", () => {
         const path = `${dir}${entry.name}`;
         if (entry.isDirectory()) { visit(`${path}/`); continue; }
         if (!/\.(?:js|mjs|cjs|ts|tsx|json|toml|sql)$/.test(path) || /(?:\.test\.|\.spec\.|\/fixtures\/)/.test(path)
-          || ["functions/lib/follow-up-effect-evidence-store.js", "functions/lib/follow-up-evidence-composition.js"].includes(path)) continue;
+          || ["functions/lib/follow-up-effect-evidence-store.js", "functions/lib/follow-up-evidence-composition.js", "functions/lib/follow-up-consumer-retention-store.js"].includes(path)) continue;
         const source = readFileSync(new URL(path, root), "utf8");
-        if (/follow-up-effect-evidence-store|follow-up-evidence-composition|reliability-effect-evidence\.candidate/.test(source)) violations.push(path);
+        if (/follow-up-effect-evidence-store|follow-up-evidence-composition|follow-up-consumer-retention-store|reliability-effect-evidence\.candidate|reliability-consumer-retention\.candidate/.test(source)) violations.push(path);
       }
     }
     visit(""); expect(violations).toEqual([]);
