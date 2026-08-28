@@ -121,15 +121,21 @@ Last updated: 2026-08-27.
 SQLite registry and separate issuer. `scripts/follow-up-rehearsal-release.mjs`
 prepares read-only source evidence; `scripts/follow-up-rehearsal-deploy.mjs`
 provides a separately gated, exact-byte first-install transport. Reuse these
-instead of creating a public test endpoint or deploying from an arbitrary checkout.
+instead of creating an unauthenticated test endpoint or deploying from an arbitrary checkout.
 The caller holds no private signing keys and forwards once through its service
 binding. The release transport requires explicit resource approval and an external
 durable one-shot authorization, verifies public-URL lockdown before real uploads,
 and stops on partial/unknown writes without retry or rollback.
+`scripts/follow-up-rehearsal-host.mjs` adds exact-record Bitwarden custody,
+protected create-only GitHub release consumption and separately authorized HTTPS
+calling. The separate operator gateway validates Access identity and the signed
+principal envelope before one private caller RPC. Its routes remain disabled;
+no existing Staff authentication or production sender is reused or changed.
 
 This is not deployed, an approved live test, an operator console, or proof of
-production identity, durability, deletion, or Staff coverage. Resource/key custody,
-private operator ingress and physical cleanup remain separate gates. See the
+production identity, durability, deletion, or Staff coverage. Actual trusted host,
+tag governance, credential/root custody, Access/hostname/gateway release and physical
+cleanup remain separate gates. See the
 [rehearsal contract](follow-up-rehearsal-worker/README.md).
 
 ### Messaging exit smoke tests

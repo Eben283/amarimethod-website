@@ -1,0 +1,5 @@
+# Public configuration only. Never cache session credentials or inherit endpoints.
+[profiles.rehearsal]
+server_api = "https://api.bitwarden.com"
+server_identity = "https://identity.bitwarden.com"
+state_opt_out = "true"
