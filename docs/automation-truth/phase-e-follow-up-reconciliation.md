@@ -1,6 +1,62 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), and durable consumer retention (#528) are merged source increments. PR #530 supplies the reviewed CASE-compatible SQL. A separately authorized August 27 physical installation was verified installed-empty/inactive; no new producer or consumer is adopted. Retention/recovery planning below is a local source-only increment, not a runtime release. All existing v1 contracts remain non-authoritative and deliberately unable to make Staff healthy. Earlier unapplied/uninstalled statements below describe their historical source-release checkpoints, not permission to install again.
+Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), durable consumer retention (#528), and offline retention/capture planning (#531) are merged source increments. PR #530 supplies the reviewed CASE-compatible SQL. A separately authorized August 27 physical installation was verified installed-empty/inactive; no new producer or consumer is adopted. The capture integration below is a local source-only increment, not a runtime release. All existing v1 contracts remain non-authoritative and deliberately unable to make Staff healthy. Earlier unapplied/uninstalled statements below describe their historical source-release checkpoints, not permission to install again.
+
+## Capture integration increment (offline, not adopted)
+
+This increment connects the existing byte-capture helper to an injected
+conditional-object storage interface and a supplied operation callback. It adds
+no provider client, credentials, bucket binding, CLI, installer hook or runtime
+import. Only synthetic fixtures exercise it. No real evidence destination has
+been selected or provisioned; the existing Staff Media bucket is not that sink.
+
+`scripts/lib/follow-up-evidence-capture-integration.mjs` exports
+`createFollowUpEvidenceCaptureIntegration`,
+`followUpEvidenceIntentSigningBytes` and `normalizeFollowUpEvidenceMetadata`.
+The factory receives the trusted bucket, fixed scope, Ed25519 intent/receipt
+keyrings, receipt signer, callback and clock. It returns `execute` and `reconcile`;
+request bodies cannot select those capabilities. Intent and receipt signatures
+use separate domains. `actionAttempted` describes this invocation, not historical
+provider outcome. Missing result counts are `null`, never invented zero writes.
+
+The integration contract requires a strict, allowlisted metadata report before
+persistence. Generic JSON chunking is not a scrubber. Signed intent must bind the
+operation, action digest, source revision, environment, destination scope and
+validity window to a separately configured trust anchor; accepting a caller's
+`approved` boolean or embedded verification key is insufficient. Opaque identities
+and hashes are still restricted metadata, not anonymous information.
+
+Metadata is capped at 24,000 bytes, signed control objects at 8192 bytes and each
+serialized chunk at the configured 512–24,000 bytes. The unchanged helper's
+200-chunk ceiling remains a refusal bound. No chunks or raw exceptions are returned
+in a receipt. These are local byte bounds, not verified provider performance.
+
+An immutable conditional-create claim precedes the callback. Only the invocation
+that received and verified its own successful creation may dispatch, with a fresh
+validity check after awaited work. Existing or indeterminate claims do not permit
+dispatch. Capture writes bounded chunks, directly verifies their stored bytes and
+publishes a final manifest only after complete reassembly. Lost acknowledgements,
+corruption and incomplete capture have a read-only reconciliation path; that path
+never retries the operation or repairs stored evidence by overwriting it.
+
+There is an important boundary: a conditional object protects a claim **while it
+exists**. If an ambiguous create never persisted, or a claim is deleted or restored
+away, this adapter alone cannot remember the prior attempt. Absent storage is not
+proof that no action ran. Independent consumption/suppression and deletion/restore
+governance covering supported replay horizons are required before live adoption.
+This is not an exactly-once external-effect guarantee.
+
+Complete capture proves the integrity of the retained typed report, not provider
+authenticity, a successful external effect, storage durability or a recovered
+original provider response. The original lost operational payload remains lost.
+Receipts must preserve those distinctions and deny authority, adoption and retry
+grants. Synthetic restart/race tests cannot prove a real resource's isolation,
+access policy, deletion protection or production behavior.
+
+Publication, a private storage choice outside the target rollback domain,
+authenticated consumption/suppression, deployment and live rehearsal remain
+separate gates. No new mutating executor may be adopted based on these source
+tests, and the closed physical installation must never be replayed.
 
 ## Retention and recovery planning increment (offline only)
 
