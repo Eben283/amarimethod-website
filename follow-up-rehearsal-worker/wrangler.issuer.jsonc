@@ -1,0 +1,21 @@
+{
+  "name": "amari-followup-admission-issuer-rehearsal",
+  "main": "src/issuer.mjs",
+  "account_id": "fa2b6f2441129b259dd5dea74045721b",
+  "compatibility_date": "2026-08-27",
+  "compatibility_flags": [
+    "nodejs_compat"
+  ],
+  "workers_dev": false,
+  "preview_urls": false,
+  "routes": [],
+  "observability": {
+    "enabled": false
+  },
+  "send_metrics": false,
+  "keep_vars": false,
+  "limits": {
+    "cpu_ms": 1000,
+    "subrequests": 64
+  }
+}
