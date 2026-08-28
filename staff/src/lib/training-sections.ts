@@ -1,7 +1,7 @@
-export type TrainingSection = 'sharpen' | 'playbooks' | 'reference';
+export type TrainingSection = 'amari' | 'sharpen' | 'playbooks' | 'reference';
 export type TrainingPlaybook = 'discovery' | 'partner' | 'therapist' | 'positioning';
 
-const TRAINING_SECTIONS = new Set<TrainingSection>(['sharpen', 'playbooks', 'reference']);
+const TRAINING_SECTIONS = new Set<TrainingSection>(['amari', 'sharpen', 'playbooks', 'reference']);
 const TRAINING_PLAYBOOKS = new Set<TrainingPlaybook>(['discovery', 'partner', 'therapist', 'positioning']);
 
 export function trainingSectionFromSearch(search: string): TrainingSection {
