@@ -15,8 +15,8 @@ const TABLES = ["follow_up_effect_attempt_bindings", "follow_up_effect_evidence_
 const READS = ["catalog", "markers", "contracts", "foreign_keys", "candidate_counts"];
 const AUTHORITY_FIXTURE = { path: "docs/automation-truth/fixtures/reliability-v2-production-lineage-promotion-observed-primary.v1.json", sha256: "cc9783c2e4ac903ff33307dec3e707a603c194a1d8bfb24e8b02183d0dae9537" };
 const ARTIFACTS = [
-  { path: "reminder-engine-worker/reliability-effect-evidence.candidate.sql", sha256: "9b6f640d212692ff67cbc0b6ab9654ce7f8df7908eceaf192c2b405bcf7441ea", statements: 15 },
-  { path: "reminder-engine-worker/reliability-consumer-retention.candidate.sql", sha256: "208512e371d115778a17608c74cabd267f31c3145a4b0b05125048c8e6e142d4", statements: 14 },
+  { path: "reminder-engine-worker/reliability-effect-evidence.candidate.sql", sha256: "4a71cc0da24928677df2c26702600576df9ed80441a94c5f6e10b6c82aa36069", statements: 15 },
+  { path: "reminder-engine-worker/reliability-consumer-retention.candidate.sql", sha256: "0fef0772950d429fc3dfb5ec4827089ea562523d3945917d114b22a99f2ebb88", statements: 14 },
 ];
 const FLAGS = { sourceOnly: true, simulation: true, executionAuthorized: false, productionReadAuthorized: false, installationProven: false,
   authority: false, producerAdopted: false, dispatchAllowed: false, replacementAllowed: false, watermarkAdvanceAllowed: false,
