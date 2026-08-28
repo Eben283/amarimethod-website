@@ -32,17 +32,24 @@ The remaining completion path is:
    receipt ownership/conflicts, retention failure and complete carry
    preservation are covered. No sequence evidence enters the timestamp selector
    and no shared historical snapshot is claimed. Automatic Pages deployment
-   passed; the unimported composition has no runtime adoption. The next
-   source-only increment now implements append-only consumer checkpoints and
-   paginated retention of unresolved work. On current main `802b9030…`, all
-   2,500 local tests pass, including 64 new consumer cases. The seven-file
-   package is unpublished; publish and merge only after explicit approval and
-   exact-head public checks. Frozen v1 readers and their bounds are unchanged;
+   passed; the unimported composition has no runtime adoption. Consumer
+   retention subsequently released in PR #528 at `dfdcace0…`, implementing
+   append-only consumer checkpoints and paginated retention of unresolved work.
+   Pre- and post-merge CI passed all 2,500 tests, guards and full builds,
+   including 64 consumer cases; automatic Pages deployment passed.
+   Frozen v1 readers and their bounds are unchanged;
    durable journal progress does not solve exhaustive inventory discovery.
    Production compatibility and activation remain unproven.
-2. Review the exact schema delta and compatibility/readback/recovery plan before
-   any separately approved production installation. This candidate does not
-   register a migration or alter the current schema-authority allowlist.
+2. The offline guarded installation-envelope planner and real SQLite
+   rollback/readback tests are built and reviewed locally: all 2,559 tests pass,
+   including 59 new planner cases. Publish the six-file source package only
+   after approval, then verify exact-head public checks before any approved
+   merge. It preserves current v2 authority and compares the complete catalog,
+   including views and implicit indexes. Neither a caller-supplied snapshot nor
+   a generated plan authenticates production access or installation approval.
+   Obtain fresh primary/recovery evidence and separately approve the exact
+   physical installation only after this source package is released. No
+   migration registration or schema-authority allowlist change is included.
 3. Adopt authenticated acceptance and executor provenance, exact ingress-to-step
    bindings, lease fencing, and prepared-before-effect behavior in the existing
    sender through one separately approved behavior release. Preserve existing
