@@ -1,6 +1,6 @@
 # Follow-Up reconciliation v1 — source-only contract
 
-Status: reconciliation merged as #510 at `282b9686554dfcf794d09861c0ebff87d78a76dd`, execution-evidence linkage as #517 at `d74308c62f0f38c58ec77f1e486a9fcfbc8a7d49`, coverage selection as #519 at `d3fdf35368f85409776860fce51a40720528ea2f`, and current inventory as #521 at `75063c8a7601b13ad30cb6a98683bab55c2b2d99`. The subsequent durable effect-evidence store and additive schema candidate are local source work, not an installed or adopted producer. All contracts remain non-authoritative and deliberately unable to make Staff healthy.
+Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), and bounded evidence composition (#526) are merged source increments. PR #526 merged at `fff378e37d5ed4fe2dd306bd08c4832f8540bb6e` with post-merge tests/build and Pages verified. Durable consumer retention below is a separate unpublished source candidate. Neither additive SQL candidate is installed, and no new producer or consumer is adopted. All contracts remain non-authoritative and deliberately unable to make Staff healthy.
 
 ## Source provenance and boundary
 
@@ -278,9 +278,127 @@ The existing isolation regression was narrowly updated to allow only the
 store/composition source pair while forbidding either module or the candidate
 SQL from every other non-test source/configuration/schema path. All source and
 release guards pass; runtime implementations, candidate SQL, entrypoints and
-the committed Pages bundle are unchanged. No full SPA build or public CI has
-run for this new six-file draft yet; these local checks do not establish
-production compatibility, installation or activation.
+the committed Pages bundle are unchanged. The subsequently approved six-file
+package merged in PR #526 at `fff378e37d5ed4fe2dd306bd08c4832f8540bb6e`.
+Pre- and post-merge CI passed all 2,435 tests, guards and the full production
+build; automatic Pages deployment passed. This verifies the source release,
+not production database compatibility, installation or runtime activation.
+
+## Durable consumer retention — source-only candidate
+
+The next contract, `follow-up-consumer-retention.v1`, separates bounded work
+per operation from the size of the durable unresolved set. Its source artifact
+is `functions/lib/follow-up-consumer-retention-store.js`; candidate SQL is
+`reminder-engine-worker/reliability-consumer-retention.candidate.sql`. Neither
+is adopted by a runtime or registered as a migration. The existing inventory,
+selector, journal and composition implementations keep their frozen contracts
+and limits. Verification below identifies the source-only test scope; no
+production behavior is claimed.
+
+The additive store uses `follow_up_consumer_checkpoints` and
+`follow_up_consumer_retained_reasons`, with a read-only journal-validation view.
+Checkpoints and reason memberships are append-only. A checkpoint records its
+consumer, predecessor/generation, operation/page identity, fixed high-water
+boundary and processed prefix, structural content/prefix digests, database
+clock and evidence-valid-until boundary. Retained reasons reference their
+checkpoint and origin. Customer/entity identities leave the source projection
+only as hashes, alongside structural digests, clocks and bounded enums. Consumer
+and operation keys are internal identifiers, not customer data. Raw proof fields are transient transaction
+parameters, not a second customer-payload archive.
+
+The three operations are:
+
+- `retainFollowUpConsumerInputs(db, {consumerKey, operationId, inventoryOptions,
+  previousCarryForward})`, where inventory options contain `readAt`, `limit`
+  and `cutoff`; prior carry keeps the existing `{candidates, cursor:null}` shape.
+- `advanceFollowUpConsumerPrefix(db, {consumerKey, operationId, pageSize,
+  maxPages})`, using the separately versioned internal
+  `follow-up-checkpoint-aware-journal-read.v1` protocol.
+- `readRetainedFollowUpCandidates(db, {consumerKey, checkpointId, cursor,
+  limit})`; start with null checkpoint/cursor, then retain both the returned
+  checkpoint identity and continuation for stable keyset pages.
+
+They retain current inventory plus validated prior carry, advance bounded
+journal pages, and read retained candidates respectively. Callers supply
+operation identities and bounds, not a trusted high-water mark, prefix or
+coverage claim. Inputs are snapshotted before asynchronous work. Reads group
+all retained reasons by candidate before applying keyset pagination and
+`limit + 1`; a page cap never discards the rest of the durable unresolved set.
+`recordedWindowComplete` describes only the checkpoint's fixed journal window,
+not subsequent arrivals, inventory completeness or provider coverage. A retained
+candidate read may still expose a continuity gap without deleting its results.
+
+Journal progress must atomically bind exact predecessor, source/page membership,
+parent/retention checks and retained reasons. JavaScript-computed digests do
+not substitute for transaction-side comparison with actual database rows.
+Competing writers use predecessor/generation compare-and-swap. A bounded
+multi-page operation commits in one D1 batch, so failure rolls back the whole
+operation; exact operation replay handles a lost response. A successful
+budget-limited operation preserves its unfinished fixed boundary for the next
+operation. Runtime code uses D1 batch transactions, not raw `BEGIN`/`COMMIT`.
+Proof mismatch must abort inside that transaction, including on its final page;
+a post-commit row-count check cannot provide rollback. Stored-state checks
+compare ancestor links, each retained membership against its owning payload,
+and the whole recorded journal prefix against actual event membership/digests
+and structural validity, not just the last anchor or total counts.
+Statement/parameter and payload bounds must remain within the documented
+[D1 limits](https://developers.cloudflare.com/d1/platform/limits/).
+The candidate's JSON projection uses function calls with at most 32 arguments
+and preserves explicit null fields; local SQLite's looser defaults do not
+establish this platform compatibility.
+These are bounds on materialized rows and statements, not a measured runtime
+or total database-scan bound. Integrity counts and proof-history validation
+can grow with retained data; production capacity and lag remain unproven.
+
+Missing or expired required evidence blocks progress without removing retained
+work. The candidate has no deletion, resolution, retention extension, automatic
+reset/rebase or epoch-adoption API, and never borrows business-obligation leases.
+Internal journal/checkpoint mismatch can be refused. A coherent database
+rollback that restores both journal and checkpoints to the same earlier state
+is **not detectable by this database alone**; recovery requires a separately
+owned external witness and explicit epoch/rebase policy before production use.
+Structural digest consistency is not authenticated provenance.
+
+Every result remains simulated/source-only and denies coverage, producer
+adoption, dispatch, outcome, replacement and production-watermark authority.
+Durable journal progress does not solve exhaustive inventory discovery: the
+frozen current-inventory reader still refuses oversized family inventories,
+and separate current-row observation is not a historical snapshot. No result
+closes obligations, lifts Staff health or proves provider coverage.
+
+Production adoption still requires named retention/privacy and DSAR ownership,
+alignment with the existing 400-day policy, measured capacity/lag limits,
+recovery/epoch ownership and external-witness design, plus a separately reviewed
+exact install/recovery/readback procedure. Installation, authority changes,
+Worker deployment, producer activation and customer actions each remain
+outside this source candidate's approval.
+
+### Consumer source verification
+
+On exact current main `802b903021518b26ae43120651edeca7b1c8e8c0`, local Node
+24.13.1 / Vitest 4.1.10 passes all 2,500 repository tests, including 64 new
+real-SQLite/D1-shaped consumer cases. The fixture constructs the exact v1
+schema, applies promoted-v2 lineage and the effect-evidence candidate, then
+the consumer candidate. Existing schema rows and markers stay unchanged; the
+consumer adds 14 explicit objects (2 tables, 3 indexes, 8 triggers and 1 view)
+plus 6 implicit unique indexes. Foreign-key validation passes.
+
+Tests cover 303 retained candidates across stable grouped pages, 203 actual
+journal events, bounded-window restarts, real two-connection competing writers,
+lost committed responses, transaction-side final-page failure, whole-prefix
+and ancestor/member inconsistency, expiry, post-boundary arrivals, retained
+conflicts, malformed input/cursors, privacy and D1 statement/function limits.
+A coherent journal-plus-checkpoint rollback is tested as an explicitly
+undetectable case, not relabelled as successful restore detection.
+
+Source/release and whitespace guards pass. The isolation regression permits
+only the exact three inert evidence module paths and forbids their adoption
+elsewhere. The inventory, selector, composition and journal implementations,
+effect-evidence SQL, runtime entrypoints/configuration, schema authority and
+committed Pages bundle are unchanged. Concurrent Media PR #527 is preserved.
+No full SPA build or public CI has run for this new unpublished seven-file
+package. These tests do not establish installed D1 compatibility, authenticated
+provenance, production capacity, runtime adoption or completed CRM coverage.
 
 ## Gates before any future authority lift
 
