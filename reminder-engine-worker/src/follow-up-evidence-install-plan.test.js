@@ -14,6 +14,31 @@ const promotion = JSON.parse(readFileSync(new URL("../../docs/automation-truth/f
 const sql = (name) => readFileSync(new URL(`../${name}`, import.meta.url), "utf8");
 const effect = sql("reliability-effect-evidence.candidate.sql"), consumer = sql("reliability-consumer-retention.candidate.sql");
 const hash = (s) => createHash("sha256").update(s).digest("hex");
+const ORIGINAL_ARTIFACTS = [
+  { name: "effect", source: effect, cases: 20, sha256: "9b6f640d212692ff67cbc0b6ab9654ce7f8df7908eceaf192c2b405bcf7441ea" },
+  { name: "consumer", source: consumer, cases: 16, sha256: "208512e371d115778a17608c74cabd267f31c3145a4b0b05125048c8e6e142d4" },
+];
+// Independent, test-only lexical oracle. Match whole quoted/comment tokens so
+// their CASE/END text cannot masquerade as an expression or a trigger boundary.
+function casePairs(source) {
+  const tokens = /--[^\n]*(?:\n|$)|\/\*[\s\S]*?\*\/|'(?:''|[^'])*'|"(?:""|[^"])*"|`(?:``|[^`])*`|\[(?:\]\]|[^\]])*\]|[A-Za-z_][A-Za-z_0-9]*|[()]/g;
+  const stack = [], pairs = [];
+  for (const match of source.matchAll(tokens)) {
+    const word = match[0].toUpperCase();
+    if (word === "CASE") stack.push(match.index);
+    else if (word === "END" && stack.length) pairs.push({ start: stack.pop(), end: match.index + match[0].length });
+  }
+  if (stack.length) throw new Error("unclosed CASE expression");
+  return pairs.sort((a, b) => a.start - b.start);
+}
+function removeCaseWrappers(source) {
+  const removed = new Set();
+  for (const { start, end } of casePairs(source)) {
+    if (source[start - 1] !== "(" || source[end] !== ")") throw new Error("CASE expression must be fully parenthesized");
+    removed.add(start - 1); removed.add(end);
+  }
+  return source.split("").filter((_, index) => !removed.has(index)).join("");
+}
 let raw;
 function catalog() { return raw.prepare("SELECT type,name,tbl_name,sql FROM sqlite_master WHERE type IN ('table','index','trigger','view') ORDER BY type,name").all().map((r) => ({ ...r })); }
 function rows(query) { return raw.prepare(query).all().map((r) => ({ ...r })); }
@@ -82,7 +107,7 @@ describe("offline exact Follow-Up installation envelope", () => {
     const addition = after.catalog.filter((r) => !priorNames.has(`${r.type}:${r.name}`));
     expect(after.catalog.filter((r) => priorNames.has(`${r.type}:${r.name}`))).toEqual(before.catalog); expect(addition).toHaveLength(39);
     expect(addition.filter((r) => r.sql === null)).toHaveLength(10); expect(hash(canonicalJson(addition))).toBe(p.additiveCatalogDigest);
-    expect(hash(JSON.stringify(addition))).toBe("6e07fdbabc57d0cce865962b32e81813a9bb76707304f8c8ec490c8fce178b9a");
+    expect(hash(JSON.stringify(addition))).toBe("7440241ab197941fc5a8d2ce49761b880cb4dd84af208336f9230c219c4aa905");
     expect(rows("SELECT * FROM automation_events")).toEqual(data); expect(rows("SELECT * FROM sqlite_sequence")).toEqual(sequence);
     expect(after.markers).toEqual(before.markers); expect(after.contracts).toEqual(before.contracts); expect(Object.values(after.candidateTableCounts)).toEqual([0, 0, 0, 0]);
     expect(after.candidateViewRowCount).toBe(0); expect(after.foreignKeyViolations).toEqual([]); expect(after.catalog.some((r) => r.name === GATE)).toBe(false);
@@ -209,6 +234,78 @@ describe("offline exact Follow-Up installation envelope", () => {
     const statements = splitFollowUpEvidenceSql(`-- before;\nCREATE TABLE test(n TEXT DEFAULT 'semi;colon');\n${t}\n-- after;`);
     expect(statements).toHaveLength(2); expect(statements[1]).toBe(t);
     expect(splitFollowUpEvidenceSql(effect)).toHaveLength(15); expect(splitFollowUpEvidenceSql(consumer)).toHaveLength(14);
+  });
+  it.each(ORIGINAL_ARTIFACTS)("changes only complete CASE wrappers in the $name artifact", ({ source, cases, sha256 }) => {
+    expect(casePairs(source)).toHaveLength(cases);
+    const original = removeCaseWrappers(source);
+    expect(hash(original)).toBe(sha256); expect(hash(source)).not.toBe(sha256);
+    expect(Buffer.byteLength(source) - Buffer.byteLength(original)).toBe(cases * 2);
+  });
+  it("pairs nested CASE expressions independently of quoted text, comments and the trigger END", () => {
+    const source = "CREATE TRIGGER [CASE] AFTER INSERT ON t BEGIN SELECT (CASE WHEN 1 THEN (CASE WHEN 0 THEN 'END; it''s CASE' ELSE \"END\" END) ELSE `CASE` END); /* CASE END; */ -- END CASE\n END;";
+    expect(casePairs(source)).toHaveLength(2);
+    expect(removeCaseWrappers(source)).toBe("CREATE TRIGGER [CASE] AFTER INSERT ON t BEGIN SELECT CASE WHEN 1 THEN CASE WHEN 0 THEN 'END; it''s CASE' ELSE \"END\" END ELSE `CASE` END; /* CASE END; */ -- END CASE\n END;");
+    expect(splitFollowUpEvidenceSql(source)).toEqual([source]);
+  });
+  it.each([
+    "SELECT CASE WHEN 1 THEN 1 END;",
+    "SELECT (CASE WHEN 1 THEN 1 END + 2);",
+    "SELECT (1 + CASE WHEN 1 THEN 1 END);",
+    "SELECT (CASE WHEN 1 THEN CASE WHEN 0 THEN 1 END ELSE 2 END);",
+    "SELECT (CASE WHEN 1 THEN 1);",
+  ])("detects an absent, partial or unclosed CASE wrapper: %s", (source) => {
+    expect(() => removeCaseWrappers(source)).toThrow(/CASE/);
+  });
+  it("compiles identical SQLite guard programs and view bytecode before and after all36 wrappers", () => {
+    const baseline = catalog(), databases = [];
+    try {
+      for (const sources of [[removeCaseWrappers(effect), removeCaseWrappers(consumer)], [effect, consumer]]) {
+        const db = new DatabaseSync(":memory:"); databases.push(db); db.exec("PRAGMA foreign_keys=ON");
+        // Only this test's trusted, locally constructed fixture DDL is copied.
+        // SQLite creates its own implicit indexes and sqlite_sequence table.
+        for (const type of ["table", "index", "view", "trigger"]) for (const row of baseline.filter((r) => r.type === type && r.sql && !r.name.startsWith("sqlite_"))) db.exec(row.sql);
+        for (const source of sources) db.exec(source);
+      }
+      const statements = TABLES.flatMap((name) => [
+        `INSERT INTO ${name} DEFAULT VALUES`, `INSERT OR REPLACE INTO ${name} DEFAULT VALUES`,
+        `UPDATE ${name} SET rowid=rowid`, `DELETE FROM ${name}`,
+      ]).concat(`SELECT * FROM ${VIEW}`);
+      const bytecode = (db, statement) => {
+        const virtualTables = new Map();
+        return db.prepare(`EXPLAIN ${statement}`).all().map((row) => {
+          let p4 = row.p4;
+          // Trace is source spelling; VOpen embeds connection-local pointers.
+          // Canonicalize pointer identity in first-use order, preserving aliases.
+          // Every opcode and remaining operand/constant must remain identical.
+          if (row.opcode === "Trace") p4 = "[statement source text]";
+          else if (row.opcode === "VOpen" && /^vtab:[0-9A-F]+$/i.test(p4)) {
+            if (!virtualTables.has(p4)) virtualTables.set(p4, `vtab:${virtualTables.size}`);
+            p4 = virtualTables.get(p4);
+          }
+          return { ...row, p4 };
+        });
+      };
+      for (const statement of statements) {
+        const before = bytecode(databases[0], statement), after = bytecode(databases[1], statement);
+        expect(after, statement).toEqual(before);
+        if (!statement.startsWith("SELECT")) expect(after.some((r) => r.opcode === "Program"), statement).toBe(true);
+      }
+    } finally { for (const db of databases) db.close(); }
+  });
+  it.each([1, 0, null])("preserves CASE guard truth/NULL behavior and RAISE for input %s", (value) => {
+    for (const wrapped of [false, true]) {
+      const name = wrapped ? "wrapped_case_guard" : "original_case_guard";
+      const expression = "CASE WHEN NEW.value<>1 THEN RAISE(ABORT,'case_guard_failed') END";
+      raw.exec(`CREATE TABLE ${name}(value INTEGER); CREATE TRIGGER ${name}_trigger BEFORE INSERT ON ${name} BEGIN SELECT ${wrapped ? `(${expression})` : expression}; END;`);
+      const insert = () => raw.prepare(`INSERT INTO ${name}(value) VALUES(?)`).run(value);
+      if (value === 0) { expect(insert).toThrow("case_guard_failed"); expect(rows(`SELECT * FROM ${name}`)).toEqual([]); }
+      else { insert(); expect(rows(`SELECT * FROM ${name}`)).toEqual([{ value }]); }
+    }
+  });
+  it("does not relabel an old exact-empty installation as the revised artifact", async () => {
+    raw.exec(removeCaseWrappers(effect)); raw.exec(removeCaseWrappers(consumer));
+    const before = catalog(), r = await planFollowUpEvidenceInstall(input());
+    refused(r); expect(r.reasonCodes).toEqual(["catalog_conflict"]); expect(catalog()).toEqual(before);
   });
   it.each(["DROP TABLE x;", "CREATE TABLE x(n TEXT DEFAULT 'unfinished);", "CREATE TABLE x(n INTEGER)", "CREATE TRIGGER t BEFORE INSERT ON x BEGIN SELECT 1;", "/* unclosed"])("refuses incomplete or unsupported SQL %s", (source) => {
     expect(() => splitFollowUpEvidenceSql(source)).toThrow(/unsupported_sql/);
