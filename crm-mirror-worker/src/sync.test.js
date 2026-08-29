@@ -63,10 +63,54 @@ vi.mock("../../functions/lib/ops-last-run.js", () => ({
   writeOpsLastRun: mocks.writeOpsLastRun, OPS_LAST_RUN_KEYS: { crmMirror: "crm" },
 }));
 
-import { backfillGhlClientRecords, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
+import { backfillGhlClientRecords, runScheduledSync, SCHEDULED_SYNC_ORDER, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
+});
+
+describe("scheduled provider fairness", () => {
+  it("finishes core GHL and Stripe freshness before expensive enrichment", () => {
+    expect(SCHEDULED_SYNC_ORDER).toEqual([
+      "ghl", "stripe", "stripe-invoices", "ghl-conversations-recent",
+      "ghl-conversations", "ghl-client-records", "consents",
+    ]);
+  });
+
+  it("executes the core provider calls before either conversation sweep", async () => {
+    const calls = [];
+    mocks.fetchGhlContactsPage.mockImplementation(async () => {
+      calls.push("ghl");
+      return { contacts: [], nextCursor: null };
+    });
+    mocks.fetchStripeChargesPage.mockImplementation(async () => {
+      calls.push("stripe");
+      return { charges: [], nextCursor: null };
+    });
+    mocks.fetchStripeInvoicesPage.mockImplementation(async () => {
+      calls.push("stripe-invoices");
+      return { invoices: [], nextCursor: null };
+    });
+    mocks.fetchGhlConversationsPage.mockImplementation(async (_env, cursor) => {
+      calls.push(cursor == null ? "ghl-conversations-recent" : "ghl-conversations");
+      return { conversations: [], nextCursor: null };
+    });
+    // Give the paginated conversation sweep a durable non-null cursor so the
+    // test can distinguish it from the deliberately fresh recent window.
+    mocks.getSyncCursor.mockImplementation(async (_db, key) => key === "ghl-conversations" ? "2026-08-20T00:00:00.000Z" : null);
+
+    await runScheduledSync({ CRM_DB: {}, AUTOMATION_DB: {} }, "2026-08-29T08:15:00.000Z");
+
+    mocks.fetchGhlContactsPage.mockReset();
+    mocks.fetchStripeChargesPage.mockReset();
+    mocks.fetchStripeInvoicesPage.mockReset().mockResolvedValue({ invoices: [{ externalId: "in_1" }], nextCursor: null });
+    mocks.fetchGhlConversationsPage.mockReset();
+    mocks.getSyncCursor.mockReset().mockResolvedValue(null);
+
+    expect(calls).toEqual([
+      "ghl", "stripe", "stripe-invoices", "ghl-conversations-recent", "ghl-conversations",
+    ]);
+  });
 });
 
 describe("GHL conversation mirror cursor", () => {

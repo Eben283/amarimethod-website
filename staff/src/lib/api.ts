@@ -260,7 +260,7 @@ export async function getStaffCalendars(): Promise<StaffCalendarRegistry> {
 export interface AppointmentProjectionReadiness {
   configured: boolean;
   shadowOnly: true;
-  state: 'ready' | 'attention' | 'unavailable';
+  state: 'ready' | 'baseline_ready' | 'attention' | 'unavailable';
   generatedAt: string;
   liveScheduleFallback: true;
   reason?: string;
@@ -270,7 +270,10 @@ export interface AppointmentProjectionReadiness {
       appointments: number;
       observations: number;
       conflicts: number;
+      totalIssues: number;
       historyGaps: number;
+      blockingHistoryGaps: number;
+      historicalBaselines: number;
       stateCounts: Record<'matched' | 'baseline' | 'unobserved' | 'mismatch' | 'orphaned', number>;
     };
     records: Array<{

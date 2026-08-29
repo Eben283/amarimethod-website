@@ -5,6 +5,7 @@
 // read time. It never books, reschedules, cancels, messages, or writes upstream.
 
 const CREATE_EVENT_TYPES = new Set(["AppointmentCreate", "create"]);
+const HISTORY_GAP_CODES = new Set(["missing_create", "missing_shadow_observation", "shadow_without_current_mirror"]);
 
 function value(row, snake, camel) {
   return row?.[snake] ?? row?.[camel] ?? null;
@@ -180,7 +181,21 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
     for (const row of rows) {
       if (!current && !CREATE_EVENT_TYPES.has(value(row, "provider_event_type", "providerEventType"))) {
         historyComplete = false;
-        issues.push({ code: "missing_create", providerAppointmentId, firstProviderEventId: value(row, "provider_event_id", "providerEventId") });
+        const sourceKind = value(row, "source_kind", "sourceKind");
+        const firstProviderEventType = value(row, "provider_event_type", "providerEventType");
+        // The importer deliberately labels the first exact provider snapshot as
+        // sync_initial. It is honest cutover evidence, not an invented booking
+        // event. Preserve the history gap, but do not let an exact current-state
+        // baseline masquerade as a current conflict or block new owned history.
+        const acceptedHistoricalBaseline = sourceKind === "snapshot" && firstProviderEventType === "sync_initial";
+        issues.push({
+          code: "missing_create",
+          providerAppointmentId,
+          firstProviderEventId: value(row, "provider_event_id", "providerEventId"),
+          sourceKind,
+          firstProviderEventType,
+          blocking: !acceptedHistoricalBaseline,
+        });
       }
       const derived = deriveAppointmentTransition(current, row);
       current = derived.current;
@@ -220,14 +235,19 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
       records.filter((record) => record.state === state).length,
     ]),
   );
+  const blockingIssues = issues.filter((issue) => issue.blocking !== false);
+  const historyGapIssues = issues.filter((issue) => HISTORY_GAP_CODES.has(issue.code));
 
   return {
     shadowOnly: true,
     summary: {
       appointments: appointments.length,
       observations: distinct.length,
-      conflicts: issues.length,
-      historyGaps: issues.filter((issue) => ["missing_create", "missing_shadow_observation", "shadow_without_current_mirror"].includes(issue.code)).length,
+      conflicts: blockingIssues.length,
+      totalIssues: issues.length,
+      historyGaps: historyGapIssues.length,
+      blockingHistoryGaps: historyGapIssues.filter((issue) => issue.blocking !== false).length,
+      historicalBaselines: historyGapIssues.filter((issue) => issue.code === "missing_create" && issue.blocking === false).length,
       stateCounts,
     },
     appointments,

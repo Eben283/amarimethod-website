@@ -106,6 +106,7 @@ describe("owned appointment projection", () => {
 
     expect(result.issues).toContainEqual(expect.objectContaining({ code: "missing_create", providerAppointmentId: "appointment-1" }));
     expect(result.appointments[0]).toMatchObject({ transition: "cancel", status: "cancelled", historyComplete: false });
+    expect(result.summary).toMatchObject({ conflicts: 2, historyGaps: 2, blockingHistoryGaps: 2, historicalBaselines: 0 });
   });
 });
 
@@ -145,5 +146,37 @@ describe("appointment buffer readiness evidence", () => {
       expect.objectContaining({ providerAppointmentId: "appointment-2", state: "unobserved", observationCount: 0 }),
     ]));
     expect(result.summary.stateCounts).toMatchObject({ baseline: 1, unobserved: 1, matched: 0, mismatch: 0, orphaned: 0 });
+    expect(result.summary).toMatchObject({
+      conflicts: 1,
+      totalIssues: 2,
+      historyGaps: 2,
+      blockingHistoryGaps: 1,
+      historicalBaselines: 1,
+    });
+    expect(result.issues).toContainEqual(expect.objectContaining({
+      code: "missing_create",
+      sourceKind: "snapshot",
+      firstProviderEventType: "sync_initial",
+      blocking: false,
+    }));
+  });
+
+  it("accepts an exact sync-initial snapshot as cutover baseline without claiming complete history", () => {
+    const result = reconcileAppointmentProjection({
+      events: [event({ provider_event_type: "sync_initial", source_kind: "snapshot" })],
+      currentAppointments: [{
+        provider_appointment_id: "appointment-1", provider_calendar_id: "calendar-1", provider_status_raw: "confirmed",
+        status: "confirmed", starts_at: "2026-08-10T17:00:00.000Z", ends_at: "2026-08-10T17:50:00.000Z", timezone: "America/Los_Angeles",
+      }],
+    });
+
+    expect(result.records[0]).toMatchObject({ state: "baseline", historyComplete: false });
+    expect(result.summary).toMatchObject({
+      conflicts: 0,
+      totalIssues: 1,
+      historyGaps: 1,
+      blockingHistoryGaps: 0,
+      historicalBaselines: 1,
+    });
   });
 });

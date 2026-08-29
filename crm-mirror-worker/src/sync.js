@@ -32,6 +32,18 @@ function result(status = "succeeded") {
 export const SCHEDULED_SYNC_LIMIT = 50;
 export const RECENT_CONVERSATION_LIMIT = 10;
 export const RECENT_MESSAGE_LIMIT = 20;
+// Core provider freshness must finish before historically expensive
+// conversation/client enrichment. A long GHL conversation page must never
+// prevent Stripe from being observed for days while the cron fires normally.
+export const SCHEDULED_SYNC_ORDER = Object.freeze([
+  "ghl",
+  "stripe",
+  "stripe-invoices",
+  "ghl-conversations-recent",
+  "ghl-conversations",
+  "ghl-client-records",
+  "consents",
+]);
 
 function newestMessage(messages) {
   return [...messages].sort((left, right) => Date.parse(right?.dateAdded || right?.createdAt || right?.date || 0) - Date.parse(left?.dateAdded || left?.createdAt || left?.date || 0))[0] || null;
@@ -429,15 +441,17 @@ export async function runScheduledSync(env, now) {
   // Conversation sync advances its own durable GHL page cursor each pass, so
   // the complete communication mirror stays current without re-reading page 1.
   // Historic client records are separately capped below provider rate limits.
-  for (const [provider, sync, limit] of [
-    ["ghl-conversations-recent", syncRecentGhlConversations, RECENT_CONVERSATION_LIMIT],
-    ["ghl", syncGhl, SCHEDULED_SYNC_LIMIT],
-    ["ghl-conversations", syncGhlConversations, SCHEDULED_SYNC_LIMIT],
-    ["stripe", syncStripe, SCHEDULED_SYNC_LIMIT],
-    ["stripe-invoices", syncStripeInvoices, SCHEDULED_SYNC_LIMIT],
-    ["ghl-client-records", backfillGhlClientRecords, 10],
-    ["consents", syncNativeBookingConsents, 0],
-  ]) {
+  const plan = {
+    "ghl": [syncGhl, SCHEDULED_SYNC_LIMIT],
+    "stripe": [syncStripe, SCHEDULED_SYNC_LIMIT],
+    "stripe-invoices": [syncStripeInvoices, SCHEDULED_SYNC_LIMIT],
+    "ghl-conversations-recent": [syncRecentGhlConversations, RECENT_CONVERSATION_LIMIT],
+    "ghl-conversations": [syncGhlConversations, SCHEDULED_SYNC_LIMIT],
+    "ghl-client-records": [backfillGhlClientRecords, 10],
+    "consents": [syncNativeBookingConsents, 0],
+  };
+  for (const provider of SCHEDULED_SYNC_ORDER) {
+    const [sync, limit] = plan[provider];
     try {
       results[provider] = await sync(env, limit, now);
     } catch (error) {
