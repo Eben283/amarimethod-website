@@ -417,6 +417,35 @@ export async function startStaffAmariMailAuthorization(): Promise<{ authorizatio
   return fetchApi('/staff-amari-mail-auth', { method: 'POST' });
 }
 
+export type StaffGoogleCalendarReadiness = {
+  actor: 'Eben' | 'Garrett';
+  requiredPrimaryCalendarId: string;
+  oauthConfigured: boolean;
+  connectionStatus: 'unconfigured' | 'absent' | 'invalid' | 'verified';
+  grantPresent: boolean;
+  grantVerified: boolean;
+  authorityMarkerVerified?: boolean;
+  calendars: Array<{
+    id: string;
+    summary: string;
+    accessRole: 'owner' | 'writer';
+    primary: boolean;
+    selected: boolean;
+    hidden: boolean;
+    timeZone: string | null;
+  }>;
+  bookingActivationEnabled: boolean;
+  blockers: string[];
+};
+
+export async function getStaffGoogleCalendarReadiness(): Promise<StaffGoogleCalendarReadiness> {
+  return fetchApi('/staff-google-calendar-auth');
+}
+
+export async function startStaffGoogleCalendarAuthorization(): Promise<{ authorizationUrl: string; bookingActivationEnabled: false }> {
+  return fetchApi('/staff-google-calendar-auth', { method: 'POST' });
+}
+
 export type GmailReplySyncGapReason =
   | 'provider_message_missing'
   | 'body_truncated'

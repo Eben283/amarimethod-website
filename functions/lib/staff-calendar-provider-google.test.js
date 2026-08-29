@@ -9,7 +9,13 @@ import { configuredStaffCalendarProvider, configuredStaffCalendarProviderForBook
 const context = () => ({ env: {
   STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID: "garrett-appointments@group.calendar.google.com",
   STAFF_APPOINTMENT_GOOGLE_USER: "Garrett",
-  PORTAL_KV: {},
+  PORTAL_KV: { get: vi.fn(async (key) => key === "google:garrett:grant_status" ? JSON.stringify({
+    actor: "Garrett",
+    primaryCalendarId: "garrett@amarimethod.com",
+    scopes: ["https://www.googleapis.com/auth/calendar"],
+    writableCalendarIds: ["garrett-appointments@group.calendar.google.com"],
+    bookingActivationEnabled: false,
+  }) : null) },
 } });
 
 function event(overrides = {}) {
@@ -92,6 +98,18 @@ describe("owned Google Staff calendar adapter", () => {
       amariServiceId: "partner-initial",
       amariServiceCalendarId: "lfsnaiGiLNL2z12pLKDP",
     });
+  });
+
+  it("refuses every provider request without the governed identity marker", async () => {
+    const ctx = context();
+    ctx.env.PORTAL_KV.get.mockResolvedValue(null);
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const provider = createGoogleStaffCalendarProvider(ctx, "owned-contact-1");
+    await expect(provider.listSchedule("2026-09-01T00:00:00-07:00", "2026-09-02T00:00:00-07:00"))
+      .rejects.toMatchObject({ code: "calendar_provider_unavailable" });
+    expect(fetch).not.toHaveBeenCalled();
+    expect(mocks.getGoogleToken).not.toHaveBeenCalled();
   });
 
   it("pins contact queries to private owned identity and treats provider deletion as cancelled readback", async () => {

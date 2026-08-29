@@ -8,6 +8,7 @@
 import { appointmentEndTime } from "./datetime.js";
 import { getGoogleToken } from "./google-api.js";
 import { policyForCalendarId, WORK_HOURS } from "./booking-slot-policy.js";
+import { assertStaffCalendarAuthority } from "./staff-calendar-oauth.js";
 
 const API = "https://www.googleapis.com/calendar/v3";
 const PROVIDER = "google_calendar";
@@ -28,6 +29,8 @@ function configured(context) {
 }
 
 async function request(context, user, path, options = {}) {
+  const calendarId = clean(context?.env?.STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID, 240);
+  await assertStaffCalendarAuthority(context.env, user, calendarId);
   const token = await getGoogleToken(context, user);
   return fetch(`${API}${path}`, {
     ...options,

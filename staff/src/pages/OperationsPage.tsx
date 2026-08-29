@@ -7,8 +7,10 @@ import {
   getOpsLedger,
   getOpsSystemsBoard,
   getStaffAmariMailReadiness,
+  getStaffGoogleCalendarReadiness,
   getStaffGmailReplyReadiness,
   startStaffAmariMailAuthorization,
+  startStaffGoogleCalendarAuthorization,
   type GmailReplySyncGapReason,
   type OpsLedger,
   type OpsLedgerActivity,
@@ -16,6 +18,7 @@ import {
   type OpsLedgerIncident,
   type OpsSystemsBoard,
   type StaffAmariMailReadiness,
+  type StaffGoogleCalendarReadiness,
   type StaffGmailReplyReadiness,
 } from '../lib/api';
 import { currentStaffBuildIdentity } from '../lib/staff-release';
@@ -89,6 +92,90 @@ function authorizationDestination(value: string) {
     throw new Error('Amari mailbox authorization returned an unexpected destination');
   }
   return url.toString();
+}
+
+function PractitionerCalendarReadiness({ callbackState }: { callbackState: string | null }) {
+  const [readiness, setReadiness] = useState<StaffGoogleCalendarReadiness | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [connecting, setConnecting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    void getStaffGoogleCalendarReadiness()
+      .then((result) => { if (!cancelled) setReadiness(result); })
+      .catch((reason) => { if (!cancelled) setError(reason instanceof Error ? reason.message : 'Calendar readiness could not be checked'); })
+      .finally(() => { if (!cancelled) setLoading(false); });
+    return () => { cancelled = true; };
+  }, [callbackState]);
+
+  async function connectCalendar() {
+    if (connecting || !readiness?.oauthConfigured) return;
+    setConnecting(true);
+    setError(null);
+    try {
+      const result = await startStaffGoogleCalendarAuthorization();
+      window.location.assign(authorizationDestination(result.authorizationUrl));
+    } catch (reason) {
+      setError(reason instanceof Error ? reason.message : 'Calendar authorization could not be started');
+      setConnecting(false);
+    }
+  }
+
+  const verified = readiness?.grantVerified === true;
+  const callbackMessage = callbackState === 'failed'
+    ? 'Calendar connection was not completed. Staff booking stayed on its current provider.'
+    : callbackState === 'connected' && verified
+      ? 'Google verified this practitioner calendar. Staff booking activation is still off.'
+      : callbackState === 'connected' && readiness && !loading
+        ? 'Google returned, but the practitioner calendar identity was not verified.'
+        : null;
+  const primary = readiness?.calendars.find((calendar) => calendar.primary);
+
+  return (
+    <section className="ops-mailbox" aria-labelledby="ops-practitioner-calendar-title">
+      <div className="ops-mailbox__topline">
+        <div className="ops-mailbox__title">
+          <span className="ops-mailbox__icon" aria-hidden="true"><CalendarDays /></span>
+          <div><p>Practitioner calendar</p><h2 id="ops-practitioner-calendar-title">Your appointment calendar</h2></div>
+        </div>
+        <span className={`ops-mailbox__status${verified ? ' is-verified' : ''}`} role="status">
+          {verified ? <Check aria-hidden="true" /> : null}{loading ? 'Checking connection' : verified ? 'Writer grant verified' : readiness?.connectionStatus === 'invalid' ? 'Reconnect required' : 'Not connected'}
+        </span>
+      </div>
+      <div className="ops-mailbox__identity">
+        <span>Required primary calendar</span>
+        <strong>{readiness?.requiredPrimaryCalendarId || (loading ? 'Checking signed-in identity…' : 'Calendar unavailable')}</strong>
+        <small>The signed-in Staff identity determines this address. Connecting does not activate appointment writes.</small>
+      </div>
+      <ol className="ops-mailbox__route" aria-label="Practitioner calendar readiness path">
+        {[
+          { label: 'Identity', value: readiness?.actor || 'Checking', state: readiness ? 'ready' : 'pending' },
+          { label: 'Writer grant', value: verified ? 'Verified' : readiness?.connectionStatus === 'invalid' ? 'Needs reconnect' : 'Not connected', state: verified ? 'ready' : 'pending' },
+          { label: 'Primary calendar', value: primary?.summary || 'Not verified', state: primary && verified ? 'ready' : 'pending' },
+          { label: 'Staff booking', value: readiness?.bookingActivationEnabled ? 'Active' : 'Off', state: readiness?.bookingActivationEnabled ? 'ready' : 'off' },
+        ].map((step, index) => (
+          <li key={step.label} className={`is-${step.state}`}>
+            <span className="ops-mailbox__route-marker" aria-hidden="true">{step.state === 'ready' ? <Check /> : null}</span>
+            <span><small>{step.label}</small><strong>{step.value}</strong></span>
+            {index < 3 ? <ChevronRight className="ops-mailbox__route-arrow" aria-hidden="true" /> : null}
+          </li>
+        ))}
+      </ol>
+      <div className="ops-mailbox__foot">
+        <p>This only verifies a writable calendar. No appointment, invite, reminder, or client notification is created.</p>
+        {!loading && readiness?.oauthConfigured && !verified ? (
+          <button type="button" onClick={connectCalendar} disabled={connecting}>
+            {connecting ? <Loader2 className="animate-spin" aria-hidden="true" /> : <CalendarDays aria-hidden="true" />}
+            {connecting ? 'Opening Google…' : readiness.connectionStatus === 'invalid' ? 'Reconnect my calendar' : 'Connect my calendar'}
+          </button>
+        ) : null}
+      </div>
+      {callbackMessage ? <p className="ops-mailbox__notice" role="status">{callbackMessage}</p> : null}
+      {error ? <p className="ops-mailbox__notice ops-mailbox__notice--error" role="alert">{error}</p> : null}
+    </section>
+  );
 }
 
 function MailboxReadiness({ callbackState }: { callbackState: string | null }) {
@@ -442,6 +529,10 @@ export default function OperationsPage() {
     const value = params.get('amariMail');
     return value === 'connected' || value === 'failed' ? value : null;
   });
+  const [calendarCallbackState] = useState<'connected' | 'failed' | null>(() => {
+    const value = params.get('staffCalendar');
+    return value === 'connected' || value === 'failed' ? value : null;
+  });
   const navigate = useNavigate();
   const tab = tabFromSearch(params.get('tab'));
   const [board, setBoard] = useState<OpsSystemsBoard | null>(null);
@@ -457,13 +548,14 @@ export default function OperationsPage() {
   const [automationError, setAutomationError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!mailCallbackState) return;
+    if (!mailCallbackState && !calendarCallbackState) return;
     setParams((current) => {
       const next = new URLSearchParams(current);
       next.delete('amariMail');
+      next.delete('staffCalendar');
       return next;
     }, { replace: true });
-  }, [mailCallbackState, setParams]);
+  }, [mailCallbackState, calendarCallbackState, setParams]);
 
   useEffect(() => {
     if (tab !== 'overview' || board) return;
@@ -593,6 +685,7 @@ export default function OperationsPage() {
             <div className="ops-overview__attention"><p>Needs attention</p>{attention.slice(0, 4).map((system) => <button key={system.id} type="button" onClick={() => selectTab('systems')}><i aria-hidden="true" /><span><strong>{system.label}</strong><small>{system.note || system.state}</small></span></button>)}</div>
           ) : null}
           <MailboxReadiness callbackState={mailCallbackState} />
+          <PractitionerCalendarReadiness callbackState={calendarCallbackState} />
           <ReplySyncReview />
           <div className="ops-overview__workspace-groups">
             {WORKSPACE_GROUPS.map((group) => (
