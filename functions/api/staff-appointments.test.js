@@ -177,4 +177,49 @@ describe("staff appointment management API", () => {
       }),
     }));
   });
+
+  it("routes Partner Initial scheduling through the owned CRM authority without ATTEND_DB", async () => {
+    const ownedStore = { marker: "owned-crm-appointment-store" };
+    const createOwnedAppointmentScheduleStore = vi.fn(() => ownedStore);
+    const scheduleAppointmentCommand = vi.fn(async (input) => ({
+      status: "completed", action: "schedule", actor: input.actor,
+      appointmentId: "appt_owned_1", providerAppointmentId: "ghl_appointment_1",
+      authority: "owned", contactId: input.contactId, newStartTime: input.startTime,
+      appointmentStatus: "confirmed", reminderVerification: "pending_event_evidence",
+    }));
+    vi.doMock("../lib/endpoint-guards.js", () => ({
+      requireStaffAuth: vi.fn(async () => ({ error: null, payload: { role: "staff", user: "Garrett" } })),
+      corsHeaders: () => ({}),
+      parseJsonBody: vi.fn(async () => ({
+        body: {
+          action: "schedule", contactId: "owned_1", sessionType: "partner_initial",
+          startTime: "2026-08-12T10:00:00-07:00", idempotencyKey: "schedule-partner-1",
+        },
+        error: null,
+      })),
+    }));
+    vi.doMock("../lib/staff-owned-appointment-store.js", () => ({ createOwnedAppointmentScheduleStore }));
+    vi.doMock("../lib/staff-appointment-manage.js", async (importOriginal) => ({
+      ...(await importOriginal()), scheduleAppointmentCommand,
+    }));
+    vi.doMock("../lib/ops-path-emit.js", () => ({ emitPathHop: vi.fn(async () => ({})) }));
+    vi.doMock("../lib/ops-alert.js", () => ({ recordOpsError: vi.fn(async () => ({})) }));
+
+    const { onRequestPost } = await import("./staff-appointments.js");
+    const response = await onRequestPost({
+      request: new Request("https://www.amarimethod.com/api/staff-appointments", { method: "POST" }),
+      env: { WORKER_AUTH_SECRET: "secret" },
+      waitUntil: vi.fn(),
+    });
+
+    expect(response.status).toBe(200);
+    expect(createOwnedAppointmentScheduleStore).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      actor: "Garrett", contactId: "owned_1", sessionType: "partner_initial",
+      booking: expect.objectContaining({ serviceId: "partner-initial" }),
+    }));
+    expect(scheduleAppointmentCommand).toHaveBeenCalledWith(expect.objectContaining({ store: ownedStore }));
+    await expect(response.json()).resolves.toMatchObject({
+      appointmentId: "appt_owned_1", providerAppointmentId: "ghl_appointment_1", authority: "owned",
+    });
+  });
 });

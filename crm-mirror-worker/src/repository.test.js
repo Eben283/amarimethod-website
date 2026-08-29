@@ -21,7 +21,7 @@ describe("CRM mirror appointment projection isolation", () => {
         if (sql.includes("appointment_projection_events")) throw new Error("no such table: appointment_projection_events");
         return {
           bind: (...values) => ({
-            first: async () => sql.includes("SELECT id FROM appointments") ? { id: "owned-appointment-1" } : null,
+            first: async () => sql.includes("FROM appointments WHERE provider_appointment_id") ? { id: "owned-appointment-1" } : null,
             run: async () => { writes.push({ sql, values }); return { success: true }; },
           }),
         };
@@ -34,6 +34,35 @@ describe("CRM mirror appointment projection isolation", () => {
     }, "owned-contact-1", "2026-08-08T17:00:00.000Z")).resolves.toBe("owned-appointment-1");
     expect(writes.some((write) => write.sql.includes("UPDATE appointments"))).toBe(true);
     expect(writes.some((write) => write.sql.includes("INSERT INTO external_records"))).toBe(true);
+  });
+
+  it("treats a provider observation as evidence and never overwrites owned appointment truth", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => ({ bind: (...values) => ({
+        first: async () => {
+          if (sql.includes("FROM services")) return { id: "partner-initial" };
+          if (sql.includes("FROM appointments WHERE provider_appointment_id")) {
+            return { id: "owned-appointment-1", authority: "owned" };
+          }
+          return null;
+        },
+        run: async () => { writes.push({ sql, values }); return { meta: { changes: 1 } }; },
+      }) }),
+    };
+    await upsertGhlAppointment(db, {
+      externalId: "ghl-appointment-1", calendarId: "calendar-1",
+      providerStatusRaw: "cancelled", status: "cancelled",
+      startsAt: "2026-08-10T18:00:00.000Z", endsAt: "2026-08-10T19:00:00.000Z",
+      timezone: "America/Los_Angeles",
+    }, "owned-contact-1", "2026-08-08T17:00:00.000Z");
+
+    const update = writes.find((write) => write.sql.includes("UPDATE appointments"));
+    expect(update.sql).toContain("provider_sync_state = CASE");
+    expect(update.sql).toContain("WHERE id = ? AND authority = 'owned'");
+    expect(update.sql).not.toContain("SET contact_id");
+    expect(update.sql).not.toContain("status = ?,");
+    expect(update.sql).not.toContain("starts_at = ?");
   });
 });
 

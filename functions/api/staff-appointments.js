@@ -19,6 +19,7 @@ import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 import { createGhlStaffCalendarProvider } from "../lib/staff-calendar-provider-ghl.js";
+import { createOwnedAppointmentScheduleStore } from "../lib/staff-owned-appointment-store.js";
 
 const METHODS = "POST, OPTIONS";
 const FORBIDDEN_FIELDS = ["calendarId", "title", "appointmentStatus", "status", "replacementAppointmentId", "timezone", "actor", "user"];
@@ -165,9 +166,23 @@ export async function onRequestPost(context) {
     if (!booking) return json({ error: "Choose an appointment type." }, 400, headers);
     if (idempotencyKey.length < 8) return json({ error: "A valid action key is required." }, 400, headers);
     if (!startTime) return json({ error: "Choose a time." }, 400, headers);
-    if (!context.env.ATTEND_DB) return json({ error: "Appointment scheduling is temporarily unavailable; no calendar change was made." }, 500, headers);
     try {
       const identity = await providerIdentity(context, contactId);
+      const ownedAuthority = Boolean(booking.serviceId);
+      if (!ownedAuthority && !context.env.ATTEND_DB) {
+        return json({ error: "Appointment scheduling is temporarily unavailable; no calendar change was made." }, 500, headers);
+      }
+      const store = ownedAuthority
+        ? createOwnedAppointmentScheduleStore(context, {
+          actor,
+          contactId: identity.ownedContactId,
+          sessionType,
+          idempotencyKey,
+          startTime,
+          timezone: WORK_HOURS.timezone,
+          booking,
+        })
+        : scheduleStore(context.env.ATTEND_DB, { actor, contactId: identity.ownedContactId, sessionType, idempotencyKey, startTime, booking });
       const result = await scheduleAppointmentCommand({
         actor,
         contactId: identity.ownedContactId,
@@ -176,7 +191,7 @@ export async function onRequestPost(context) {
         idempotencyKey,
         startTime,
         timezone: WORK_HOURS.timezone,
-        store: scheduleStore(context.env.ATTEND_DB, { actor, contactId: identity.ownedContactId, sessionType, idempotencyKey, startTime, booking }),
+        store,
         provider: createGhlStaffCalendarProvider(context, identity.providerContactId),
       });
       context.waitUntil?.(emitPathHop(context.env, {

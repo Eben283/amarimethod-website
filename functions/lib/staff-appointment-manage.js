@@ -362,8 +362,9 @@ export async function scheduleAppointmentCommand(input) {
         appointmentId: String(existing.id), newStartTime: existing.startTime || existing.start_time,
         appointmentStatus: normalizeStatus(existing), reminderVerification: "pending_event_evidence",
       };
-      await store.complete(result);
-      return result;
+      const canonicalResult = store.canonicalResult?.(result) || result;
+      await store.complete(canonicalResult);
+      return canonicalResult;
     }
 
     const schedule = await provider.listSchedule(
@@ -419,8 +420,9 @@ export async function scheduleAppointmentCommand(input) {
       appointmentId: String(created.id), newStartTime: startTime,
       appointmentStatus: normalizeStatus(readback), reminderVerification: "pending_event_evidence",
     };
-    await store.complete(result);
-    return result;
+    const canonicalResult = store.canonicalResult?.(result) || result;
+    await store.complete(canonicalResult);
+    return canonicalResult;
   } catch (error) {
     await store.fail(error, { manualReview: !!error?.manualReview });
     throw error;

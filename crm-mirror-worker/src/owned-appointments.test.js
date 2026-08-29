@@ -1,7 +1,15 @@
 import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
-import { captureOwnedScheduleCommand, OwnedAppointmentError } from "./owned-appointments.js";
+import {
+  captureOwnedScheduleCommand,
+  claimOwnedAppointmentExecution,
+  completeOwnedAppointmentExecution,
+  failOwnedAppointmentExecution,
+  linkOwnedAppointmentProviderRecord,
+  OwnedAppointmentError,
+  unlinkOwnedAppointmentProviderRecord,
+} from "./owned-appointments.js";
 
 const migrationNames = [
   "0001_initial_schema.sql", "0002_purchase_reconciliation_candidates.sql",
@@ -115,6 +123,98 @@ describe("owned appointment authority", () => {
       startTime: "2026-09-02T10:00:00-07:00",
     }, options)).rejects.toMatchObject({ code: "idempotency_conflict", status: 409 });
     expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM appointments").get()).toEqual({ count: 1 });
+    db.sqlite.close();
+  });
+
+  it("leases one executor and checkpoints exact provider linkage before completion", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedScheduleCommand(db, input, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.commandId, actor: "Garrett" };
+
+    const claim = await claimOwnedAppointmentExecution(db, identity, { nowMs, leaseMs: 120_000 });
+    expect(claim).toMatchObject({ state: "acquired", execution: { attempts: 1, providerRecordId: null } });
+    await expect(claimOwnedAppointmentExecution(db, identity, { nowMs: nowMs + 1_000 }))
+      .resolves.toMatchObject({ state: "in_progress" });
+
+    const linked = await linkOwnedAppointmentProviderRecord(db, {
+      ...identity,
+      provider: "ghl",
+      providerRecordId: "ghl-appointment-1",
+      providerCalendarId: "lfsnaiGiLNL2z12pLKDP",
+      providerStatusRaw: "confirmed",
+    }, { nowMs: nowMs + 2_000 });
+    expect(linked).toMatchObject({ state: "executing", provider: "ghl", providerRecordId: "ghl-appointment-1" });
+
+    const completed = await completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: { providerReadback: "confirmed" },
+    }, { nowMs: nowMs + 3_000, providerSyncRequired: true });
+    expect(completed).toMatchObject({ state: "completed", result: { providerReadback: "confirmed" } });
+    expect(db.sqlite.prepare("SELECT provider_appointment_id, provider_sync_state FROM appointments WHERE id = ?")
+      .get(captured.appointmentId))
+      .toEqual({ provider_appointment_id: "ghl-appointment-1", provider_sync_state: "synced" });
+    expect(db.sqlite.prepare("SELECT record_id FROM external_records WHERE provider = 'ghl' AND external_id = ?")
+      .get("ghl-appointment-1"))
+      .toEqual({ record_id: captured.appointmentId });
+    await expect(claimOwnedAppointmentExecution(db, identity, { nowMs: nowMs + 4_000 }))
+      .resolves.toMatchObject({ state: "completed" });
+    db.sqlite.close();
+  });
+
+  it("removes an exact compensated provider link and leaves retryable owned truth", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedScheduleCommand(db, input, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await linkOwnedAppointmentProviderRecord(db, {
+      ...identity,
+      provider: "ghl",
+      providerRecordId: "ghl-appointment-2",
+      providerCalendarId: "lfsnaiGiLNL2z12pLKDP",
+      providerStatusRaw: "new",
+    }, { nowMs: nowMs + 1_000 });
+    await unlinkOwnedAppointmentProviderRecord(db, {
+      ...identity,
+      providerRecordId: "ghl-appointment-2",
+    }, { nowMs: nowMs + 2_000 });
+    const failed = await failOwnedAppointmentExecution(db, {
+      ...identity,
+      error: "provider confirmation failed after successful compensation",
+      manualReview: false,
+    }, { nowMs: nowMs + 3_000 });
+    expect(failed).toMatchObject({ state: "retryable", providerRecordId: null });
+    expect(db.sqlite.prepare("SELECT provider_appointment_id, provider_sync_state FROM appointments WHERE id = ?")
+      .get(captured.appointmentId))
+      .toEqual({ provider_appointment_id: null, provider_sync_state: "retryable" });
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM external_records WHERE external_id = 'ghl-appointment-2'").get())
+      .toEqual({ count: 0 });
+    await expect(claimOwnedAppointmentExecution(db, identity, { nowMs: nowMs + 4_000 }))
+      .resolves.toMatchObject({ state: "acquired", execution: { attempts: 2 } });
+    db.sqlite.close();
+  });
+
+  it("cancels a provider-free owned reservation when final availability rejects it", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedScheduleCommand(db, input, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    const rejected = await failOwnedAppointmentExecution(db, {
+      ...identity,
+      error: "that time is no longer open on Garrett's schedule",
+      terminal: true,
+    }, { nowMs: nowMs + 1_000 });
+    expect(rejected).toMatchObject({ state: "rejected", providerRecordId: null });
+    expect(db.sqlite.prepare("SELECT status, provider_sync_state, cancelled_at FROM appointments WHERE id = ?")
+      .get(captured.appointmentId))
+      .toEqual({ status: "cancelled", provider_sync_state: "not_required", cancelled_at: "2026-08-28T00:00:01.000Z" });
+    await expect(claimOwnedAppointmentExecution(db, identity, { nowMs: nowMs + 2_000 }))
+      .resolves.toMatchObject({ state: "rejected" });
     db.sqlite.close();
   });
 });

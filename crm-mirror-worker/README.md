@@ -9,7 +9,7 @@ This Worker is the owned data foundation for the internal Amari CRM. Its bounded
 - Review-only purchase-to-contact candidates when one Stripe billing email exactly matches one mirrored contact.
 - Existing service and package definitions seeded by the first D1 migration.
 
-Migration `0019_owned_appointment_authority.sql` preserves all existing appointment, note, and session-ledger identities while making the canonical appointment ID provider-independent. It also adds the inert appointment command/event ledger and owned service collision policy used by `POST /appointments/commands`. That protected route currently captures schedule intent only; provider propagation and Staff cutover remain separately reviewed work.
+Migration `0019_owned_appointment_authority.sql` preserves all existing appointment, note, and session-ledger identities while making the canonical appointment ID provider-independent. It also adds the appointment command/event ledger and owned service collision policy used by `POST /appointments/commands`. That protected route captures schedule intent, leases one executor, and records exact provider-link, compensation, completion, retry, rejection, or manual-review evidence. It never calls a provider. The first Staff integration uses it only for Partner Initial scheduling while the isolated GHL calendar adapter remains the temporary propagation edge.
 
 Stripe charges that cannot be linked to a mirrored GHL contact are retained as unlinked purchase candidates. Package balance is deliberately **not** written to `session_ledger_entries` yet: a full ledger backfill must reconcile purchases against explicit attendance and refunds, rather than guessing from a mutable GHL field.
 
@@ -46,7 +46,7 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 - `GET /reconciliation` — aggregate pending-review counts; no client data.
 - `GET /reconciliation/queue?limit=25` — authenticated, bounded review candidates with their source evidence; read-only.
 - `GET /reconciliation/review?limit=25` — authenticated read-only workspace data: candidates, unmatched purchases, and package-classification exceptions.
-- `POST /appointments/commands` — Worker-authenticated, recognized-Staff schedule capture under owned contact/service identity. It atomically rejects collisions, records idempotent command evidence, and makes no provider call.
+- `POST /appointments/commands` — Worker-authenticated, recognized-Staff schedule capture and leased execution checkpointing under owned contact/service identity. It atomically rejects collisions, records append-only command evidence, and makes no provider call.
 
 The root dashboard does **not** accept a pasted worker bearer secret in the browser. Operator access is minted by `POST /dashboard-access-link` (bearer, server-side only) into a one-time five-minute handoff URL backed by an opaque high-entropy code in KV; redeeming `/dashboard-access/:code` sets a signed eight-hour HttpOnly browser session and never exposes `WORKER_AUTH_SECRET` in the URL. Staff opens this via `POST /api/staff-crm-mirror-access` (Eben JWT). The root server-renders aggregate counts and source health once the session is present, so the health summary remains visible even in a browser that cannot run the dashboard JavaScript. That session can read only the dashboard's GET endpoints; `POST /sync` and `POST /dashboard-session` continue to require the bearer credential on every request (machine/operator tooling, not the staff UI).
 

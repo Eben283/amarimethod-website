@@ -5,7 +5,15 @@ import { dashboardSessionActor, dashboardSessionCookie, dashboardSessionToken, h
 import { CommunicationCommandError, captureCommunicationCommand, communicationReadiness } from "./owned-sender.js";
 import { GmailReplyReadinessError, gmailReplyReadiness } from "./gmail-reply-readiness.js";
 import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
-import { captureOwnedScheduleCommand, OwnedAppointmentError } from "./owned-appointments.js";
+import {
+  captureOwnedScheduleCommand,
+  claimOwnedAppointmentExecution,
+  completeOwnedAppointmentExecution,
+  failOwnedAppointmentExecution,
+  linkOwnedAppointmentProviderRecord,
+  OwnedAppointmentError,
+  unlinkOwnedAppointmentProviderRecord,
+} from "./owned-appointments.js";
 import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
 import {
   activeClientOperations,
@@ -529,26 +537,72 @@ export default {
         } catch (error) {
           return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
         }
-        const allowed = new Set(["action", "contactId", "serviceId", "idempotencyKey", "startTime", "timezone"]);
+        const actionFields = {
+          schedule: ["action", "contactId", "serviceId", "idempotencyKey", "startTime", "timezone"],
+          claim: ["action", "commandId"],
+          "provider-link": ["action", "commandId", "provider", "providerRecordId", "providerCalendarId", "providerStatusRaw"],
+          "provider-unlink": ["action", "commandId", "providerRecordId"],
+          complete: ["action", "commandId", "result"],
+          fail: ["action", "commandId", "error", "manualReview", "terminal"],
+        };
+        const allowed = new Set(actionFields[payload?.action] || ["action"]);
         const unsupported = payload && typeof payload === "object" && !Array.isArray(payload)
           ? Object.keys(payload).filter((key) => !allowed.has(key))
           : [];
         if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
-        if (payload?.action !== "schedule") return json(400, { error: "unsupported_appointment_action" });
         try {
-          const appointment = await captureOwnedScheduleCommand(env.CRM_DB, {
-            contactId: payload.contactId,
-            serviceId: payload.serviceId,
-            actor,
-            idempotencyKey: payload.idempotencyKey,
-            startTime: payload.startTime,
-            timezone: payload.timezone,
-          }, {
-            // Compatibility remains required until the separately gated GHL-off
-            // rehearsal. The browser cannot weaken this deployment decision.
-            providerSyncRequired: env.APPOINTMENT_PROVIDER_MODE !== "owned_only",
-          });
-          return json(appointment.deduped ? 200 : 201, { success: true, appointment });
+          // Compatibility remains required until the separately gated GHL-off
+          // rehearsal. The browser cannot weaken this deployment decision.
+          const providerSyncRequired = env.APPOINTMENT_PROVIDER_MODE !== "owned_only";
+          if (payload?.action === "schedule") {
+            const appointment = await captureOwnedScheduleCommand(env.CRM_DB, {
+              contactId: payload.contactId,
+              serviceId: payload.serviceId,
+              actor,
+              idempotencyKey: payload.idempotencyKey,
+              startTime: payload.startTime,
+              timezone: payload.timezone,
+            }, { providerSyncRequired });
+            return json(appointment.deduped ? 200 : 201, { success: true, appointment });
+          }
+          const identity = { commandId: payload?.commandId, actor };
+          if (payload?.action === "claim") {
+            return json(200, { success: true, ...(await claimOwnedAppointmentExecution(env.CRM_DB, identity)) });
+          }
+          if (payload?.action === "provider-link") {
+            const execution = await linkOwnedAppointmentProviderRecord(env.CRM_DB, {
+              ...identity,
+              provider: payload.provider,
+              providerRecordId: payload.providerRecordId,
+              providerCalendarId: payload.providerCalendarId,
+              providerStatusRaw: payload.providerStatusRaw,
+            });
+            return json(200, { success: true, execution });
+          }
+          if (payload?.action === "provider-unlink") {
+            const execution = await unlinkOwnedAppointmentProviderRecord(env.CRM_DB, {
+              ...identity,
+              providerRecordId: payload.providerRecordId,
+            });
+            return json(200, { success: true, execution });
+          }
+          if (payload?.action === "complete") {
+            const execution = await completeOwnedAppointmentExecution(env.CRM_DB, {
+              ...identity,
+              result: payload.result,
+            }, { providerSyncRequired });
+            return json(200, { success: true, execution });
+          }
+          if (payload?.action === "fail") {
+            const execution = await failOwnedAppointmentExecution(env.CRM_DB, {
+              ...identity,
+              error: payload.error,
+              manualReview: payload.manualReview === true,
+              terminal: payload.terminal === true,
+            });
+            return json(200, { success: true, execution });
+          }
+          return json(400, { error: "unsupported_appointment_action" });
         } catch (error) {
           if (error instanceof OwnedAppointmentError) {
             return json(error.status, { error: error.code, detail: error.message });
