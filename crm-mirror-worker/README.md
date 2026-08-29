@@ -37,8 +37,11 @@ so a slow GHL history page cannot indefinitely starve payment freshness.
 
 Appointment readiness keeps exact `sync_initial` snapshots as visible
 historical baselines with incomplete history; it does not rename them create
-events. Those accepted baselines do not count as current conflicts. Unobserved,
-mismatched, orphaned, colliding, or truncated evidence remains blocking.
+events. It also recognizes an older provider-mirror row only when its exact
+external-record receipt matches the same pre-projection importer timestamp.
+Those accepted baselines do not count as current conflicts. Owned, unsynced,
+post-cutover, receipt-mismatched, orphaned, colliding, or truncated evidence
+remains blocking.
 
 Dashboard: open from Staff → Back office → CRM Mirror (Eben-only). That path calls `POST /api/staff-crm-mirror-access`, which mints a one-time `/dashboard-access/:code` handoff server-side. Direct worker URL visits without a session show a locked shell and never accept a pasted bearer secret in the browser. Full-pass completeness ignores GHL contacts confirmed deleted at the source so ghost `external_records` do not keep the mirror in review.
 

@@ -137,4 +137,46 @@ describe("appointment projection store", () => {
       } },
     });
   });
+
+  it("uses the first projection timestamp and exact external receipt to accept only a pre-projection mirror baseline", async () => {
+    const db = {
+      prepare: (sql) => ({ bind: () => ({
+        first: async () => ({ count: 1, cutover_at: "2026-08-09T03:45:57.994Z" }),
+        all: async () => ({ results: sql.includes("appointment_projection_events") ? [{
+          id: "event-observed", provider: "ghl", source_kind: "webhook",
+          provider_event_id: "event-observed", provider_event_type: "AppointmentCreate",
+          provider_appointment_id: "observed-appointment", provider_status_raw: "confirmed",
+          normalized_status: "confirmed", starts_at: "2026-08-10T17:00:00.000Z",
+          ends_at: "2026-08-10T17:50:00.000Z", timezone: "America/Los_Angeles",
+          observed_at: "2026-08-09T03:45:57.994Z", evidence_hash: "observed-hash",
+        }] : [
+          {
+            provider_appointment_id: "observed-appointment", provider_status_raw: "confirmed",
+            status: "confirmed", starts_at: "2026-08-10T17:00:00.000Z",
+            ends_at: "2026-08-10T17:50:00.000Z", timezone: "America/Los_Angeles",
+          },
+          {
+            provider_appointment_id: "legacy-appointment", status: "confirmed",
+            authority: "provider_mirror", provider_sync_state: "synced",
+            updated_at: "2026-08-07T23:45:11.899Z",
+            appointment_last_seen_at: "2026-08-07T23:45:11.899Z",
+          },
+        ] }),
+      }) }),
+    };
+
+    await expect(appointmentProjectionReadiness(db, "2026-08-29T14:37:21.190Z")).resolves.toMatchObject({
+      state: "baseline_ready",
+      reconciliation: {
+        summary: {
+          conflicts: 0,
+          historicalBaselines: 1,
+          stateCounts: { baseline: 1, matched: 1, unobserved: 0 },
+        },
+        records: expect.arrayContaining([expect.objectContaining({
+          providerAppointmentId: "legacy-appointment", state: "baseline", observationCount: 0,
+        })]),
+      },
+    });
+  });
 });

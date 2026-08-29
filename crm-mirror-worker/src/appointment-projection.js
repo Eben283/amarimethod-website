@@ -83,6 +83,28 @@ function issueCodesFor(issues, providerAppointmentId) {
     .map((issue) => issue.code);
 }
 
+function instant(value) {
+  const parsed = Date.parse(value || "");
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+// Before the append-only projection existed, provider reads wrote the current
+// mirror and the matching external-record receipt in one importer operation.
+// Accept only that exact pre-projection pair as cutover evidence. Anything
+// owned, post-cutover, unsynced, or without an exact receipt remains blocking.
+function acceptedPreprojectionMirrorBaseline(mirror, projectionCutoverAt) {
+  const cutover = instant(projectionCutoverAt);
+  const updatedAt = instant(value(mirror, "updated_at", "updatedAt"));
+  const lastSeenAt = instant(value(mirror, "appointment_last_seen_at", "appointmentLastSeenAt"));
+  return value(mirror, "authority", "authority") === "provider_mirror"
+    && value(mirror, "provider_sync_state", "providerSyncState") === "synced"
+    && cutover != null
+    && updatedAt != null
+    && lastSeenAt != null
+    && updatedAt === lastSeenAt
+    && updatedAt < cutover;
+}
+
 // This is the operational projection Staff needs during shadow mode. It says
 // what Amari knows about the *current* appointment without pretending that a
 // snapshot recreates provider history we never received.
@@ -96,9 +118,15 @@ function classifyCurrentAppointments(appointments, currentAppointments, issues) 
     const projected = projectedById.get(providerAppointmentId);
     const issueCodes = issueCodesFor(issues, providerAppointmentId);
     let state = "unobserved";
+    const acceptedUnobservedBaseline = issues.some((issue) => (
+      issue.providerAppointmentId === providerAppointmentId
+      && issue.code === "missing_shadow_observation"
+      && issue.blocking === false
+    ));
     if (projected && issueCodes.includes("shadow_current_mismatch")) state = "mismatch";
     else if (projected && !projected.historyComplete) state = "baseline";
     else if (projected) state = "matched";
+    else if (acceptedUnobservedBaseline) state = "baseline";
     records.push({
       providerAppointmentId,
       state,
@@ -135,7 +163,7 @@ function classifyCurrentAppointments(appointments, currentAppointments, issues) 
  * Exact retries collapse; the same provider event ID with different evidence
  * remains visible as a conflict rather than being overwritten.
  */
-export function reconcileAppointmentProjection({ events = [], currentAppointments = [] } = {}) {
+export function reconcileAppointmentProjection({ events = [], currentAppointments = [], projectionCutoverAt = null } = {}) {
   const exactSeen = new Set();
   const distinct = [];
   const evidenceByProviderEvent = new Map();
@@ -215,7 +243,14 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
     const providerAppointmentId = mirror.provider_appointment_id;
     const projected = projectedById.get(providerAppointmentId);
     if (!projected) {
-      issues.push({ code: "missing_shadow_observation", providerAppointmentId });
+      const acceptedHistoricalBaseline = acceptedPreprojectionMirrorBaseline(mirror, projectionCutoverAt);
+      issues.push({
+        code: "missing_shadow_observation",
+        providerAppointmentId,
+        blocking: !acceptedHistoricalBaseline,
+        baselineKind: acceptedHistoricalBaseline ? "preprojection_provider_mirror" : null,
+        projectionCutoverAt,
+      });
       continue;
     }
     const differingFields = mirrorDiff(projected, mirror);
@@ -247,7 +282,7 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
       totalIssues: issues.length,
       historyGaps: historyGapIssues.length,
       blockingHistoryGaps: historyGapIssues.filter((issue) => issue.blocking !== false).length,
-      historicalBaselines: historyGapIssues.filter((issue) => issue.code === "missing_create" && issue.blocking === false).length,
+      historicalBaselines: historyGapIssues.filter((issue) => issue.blocking === false).length,
       stateCounts,
     },
     appointments,
