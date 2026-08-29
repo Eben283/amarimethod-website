@@ -20,6 +20,7 @@ import { listStaffBookTypes, resolveStaffBookType } from "../lib/staff-book-cale
 import { internalAvailability, manageAppointmentCommand, scheduleAppointmentCommand } from "../lib/staff-appointment-manage.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 
 const BASE = "https://services.leadconnectorhq.com";
 const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -67,7 +68,7 @@ async function cancelProviderAppointment(context, appointment) {
 
 function providerFor(context, authoritativeContactId) {
   return Object.freeze({
-    listContactAppointments: (contactId) => listAppointments(context, contactId),
+    listContactAppointments: () => listAppointments(context, authoritativeContactId),
     listSchedule: (start, end) => fetchGarrettScheduleEvents(context, start, end),
     cancelAppointment: (appointment) => cancelProviderAppointment(context, appointment),
     async createAppointment({ contactId: requestedContactId, booking, startTime, timezone, onCreated }) {
@@ -151,6 +152,22 @@ function scheduleStore(db, { actor, contactId, sessionType, idempotencyKey, star
   });
 }
 
+function identityFailure(error, headers) {
+  const status = Number(error?.status);
+  return json({
+    error: error?.message || "Owned CRM identity is unavailable.",
+    code: error?.code || "owned_identity_unavailable",
+  }, [400, 404, 409, 503].includes(status) ? status : 503, headers);
+}
+
+async function providerIdentity(context, reference) {
+  const identity = await resolveOwnedContactIdentity(context, reference);
+  return Object.freeze({
+    ...identity,
+    providerContactId: requireProviderContactIdentity(identity),
+  });
+}
+
 export async function onRequestOptions(context) {
   return new Response(null, { status: 204, headers: corsHeaders(context.request.headers.get("Origin"), METHODS) });
 }
@@ -188,7 +205,8 @@ export async function onRequestPost(context) {
       let calendarId = "";
       if (appointmentId) {
         if (!contactId) return json({ error: "Choose a person and appointment." }, 400, headers);
-        const appointments = await listAppointments(context, contactId);
+        const identity = await providerIdentity(context, contactId);
+        const appointments = await listAppointments(context, identity.providerContactId);
         original = exactAppointment(appointments, appointmentId);
         if (!original) return json({ error: "Appointment not found for this person." }, 404, headers);
         if (!["new", "confirmed"].includes(appointmentStatus(original))) {
@@ -196,6 +214,8 @@ export async function onRequestPost(context) {
         }
         calendarId = clean(original.calendarId || original.calendar_id, 100);
       } else {
+        if (!contactId) return json({ error: "Choose a person." }, 400, headers);
+        await providerIdentity(context, contactId);
         booking = resolveStaffBookType(clean(body.sessionType, 64));
         if (!booking) return json({ error: "Choose an appointment type." }, 400, headers);
         calendarId = booking.calendarId;
@@ -220,6 +240,9 @@ export async function onRequestPost(context) {
       }, 200, headers);
     } catch (error) {
       console.error("[staff-appointments] availability failed", error);
+      if (String(error?.code || "").startsWith("owned_") || error?.code === "provider_identity_missing" || error?.code === "contact_reference_required") {
+        return identityFailure(error, headers);
+      }
       return json({ error: error?.message || "Could not load Garrett’s internal availability." }, 500, headers);
     }
   }
@@ -235,16 +258,17 @@ export async function onRequestPost(context) {
     if (!startTime) return json({ error: "Choose a time." }, 400, headers);
     if (!context.env.ATTEND_DB) return json({ error: "Appointment scheduling is temporarily unavailable; no calendar change was made." }, 500, headers);
     try {
+      const identity = await providerIdentity(context, contactId);
       const result = await scheduleAppointmentCommand({
         actor,
-        contactId,
+        contactId: identity.ownedContactId,
         sessionType,
         booking,
         idempotencyKey,
         startTime,
         timezone: WORK_HOURS.timezone,
-        store: scheduleStore(context.env.ATTEND_DB, { actor, contactId, sessionType, idempotencyKey, startTime, booking }),
-        provider: providerFor(context, contactId),
+        store: scheduleStore(context.env.ATTEND_DB, { actor, contactId: identity.ownedContactId, sessionType, idempotencyKey, startTime, booking }),
+        provider: providerFor(context, identity.providerContactId),
       });
       context.waitUntil?.(emitPathHop(context.env, {
         pathId: "staff_appointment_manage",
@@ -252,7 +276,7 @@ export async function onRequestPost(context) {
         outcome: "ok",
         summary: "Staff scheduled appointment",
         source: "staff-appointments",
-        contactId,
+        contactId: identity.ownedContactId,
         correlationId: idempotencyKey,
       }));
       return json(result, 200, headers);
@@ -261,6 +285,9 @@ export async function onRequestPost(context) {
       context.waitUntil?.(recordOpsError(context.env, "staff-appointments", "Staff appointment schedule failed", {
         actor, action, contactId, sessionType, code: error?.code || "unknown",
       }));
+      if (String(error?.code || "").startsWith("owned_") || error?.code === "provider_identity_missing" || error?.code === "contact_reference_required") {
+        return identityFailure(error, headers);
+      }
       const status = ["in_progress", "conflict", "slot_unavailable"].includes(error?.code) ? 409
         : error?.manualReview ? 409 : 422;
       return json({ error: error?.message || "Appointment scheduling failed.", code: error?.code || "appointment_schedule_failed" }, status, headers);
@@ -281,16 +308,17 @@ export async function onRequestPost(context) {
     return json({ error: "Appointment changes are temporarily unavailable; no calendar change was made." }, 500, headers);
   }
   try {
+    const identity = await providerIdentity(context, contactId);
     const result = await manageAppointmentCommand({
       actor,
       action,
-      contactId,
+      contactId: identity.ownedContactId,
       appointmentId,
       idempotencyKey,
       startTime,
       timezone: WORK_HOURS.timezone,
       store,
-      provider: providerFor(context, contactId),
+      provider: providerFor(context, identity.providerContactId),
     });
     context.waitUntil?.(emitPathHop(context.env, {
       pathId: "staff_appointment_manage",
@@ -298,7 +326,7 @@ export async function onRequestPost(context) {
       outcome: "ok",
       summary: action === "cancel" ? "Staff cancelled appointment" : "Staff rescheduled appointment",
       source: "staff-appointments",
-      contactId,
+      contactId: identity.ownedContactId,
       correlationId: idempotencyKey,
     }));
     return json(result, 200, headers);
@@ -307,6 +335,9 @@ export async function onRequestPost(context) {
     context.waitUntil?.(recordOpsError(context.env, "staff-appointments", "Staff appointment change failed", {
       actor, action, contactId, appointmentId, code: error?.code || "unknown",
     }));
+    if (String(error?.code || "").startsWith("owned_") || error?.code === "provider_identity_missing" || error?.code === "contact_reference_required") {
+      return identityFailure(error, headers);
+    }
     const status = error?.code === "appointment_not_found" ? 404
       : ["in_progress", "conflict", "appointment_not_manageable", "appointment_not_future", "slot_unavailable"].includes(error?.code) ? 409
         : error?.manualReview ? 409 : 422;

@@ -1,7 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 describe("staff appointment management API", () => {
-  beforeEach(() => vi.resetModules());
+  beforeEach(() => {
+    vi.resetModules();
+    vi.doMock("../lib/staff-owned-contact-identity.js", () => ({
+      resolveOwnedContactIdentity: vi.fn(async (_context, reference) => ({
+        ownedContactId: String(reference).startsWith("ghl_") ? "owned_1" : reference,
+        providerContactId: String(reference).startsWith("ghl_") ? reference : `ghl_${reference}`,
+      })),
+      requireProviderContactIdentity: vi.fn((identity) => identity.providerContactId),
+    }));
+  });
   afterEach(() => vi.useRealTimers());
 
   it("returns Garrett's internal availability without calling public free slots", async () => {
@@ -12,7 +21,7 @@ describe("staff appointment management API", () => {
       corsHeaders: () => ({ "Access-Control-Allow-Origin": "https://www.amarimethod.com" }),
       parseJsonBody: vi.fn(async () => ({
         body: {
-          action: "availability", contactId: "contact_1", appointmentId: "appt_1",
+          action: "availability", contactId: "owned_1", appointmentId: "appt_1",
           startDate: "2026-08-12", endDate: "2026-08-12",
         },
         error: null,
@@ -20,8 +29,8 @@ describe("staff appointment management API", () => {
     }));
     const ghlFetch = vi.fn(async (_context, url) => {
       const value = String(url);
-      if (value.includes("/contacts/contact_1/appointments")) return new Response(JSON.stringify({ appointments: [{
-        id: "appt_1", contactId: "contact_1", calendarId: "EM6vB2mq7EAdGCbUb3j1",
+      if (value.includes("/contacts/ghl_owned_1/appointments")) return new Response(JSON.stringify({ appointments: [{
+        id: "appt_1", contactId: "ghl_owned_1", calendarId: "EM6vB2mq7EAdGCbUb3j1",
         title: "Amari Assessment", appointmentStatus: "confirmed",
         startTime: "2026-08-14T13:00:00-07:00", endTime: "2026-08-14T13:50:00-07:00",
       }] }), { status: 200 });
@@ -78,7 +87,7 @@ describe("staff appointment management API", () => {
       requireStaffAuth: vi.fn(async () => ({ error: null, payload: { role: "staff", user: "Garrett" } })),
       corsHeaders: () => ({}),
       parseJsonBody: vi.fn(async () => ({
-        body: { action: "cancel", contactId: "contact_1", appointmentId: "appt_1", idempotencyKey: "cancel-appt-1" },
+        body: { action: "cancel", contactId: "ghl_1", appointmentId: "appt_1", idempotencyKey: "cancel-appt-1" },
         error: null,
       })),
     }));
@@ -98,7 +107,7 @@ describe("staff appointment management API", () => {
 
     expect(response.status).toBe(200);
     expect(manageAppointmentCommand).toHaveBeenCalledWith(expect.objectContaining({
-      actor: "Garrett", action: "cancel", contactId: "contact_1", appointmentId: "appt_1", store,
+      actor: "Garrett", action: "cancel", contactId: "owned_1", appointmentId: "appt_1", store,
     }));
   });
 
@@ -135,7 +144,7 @@ describe("staff appointment management API", () => {
       corsHeaders: () => ({}),
       parseJsonBody: vi.fn(async () => ({
         body: {
-          action: "schedule", contactId: "contact_1", sessionType: "assessment",
+          action: "schedule", contactId: "owned_1", sessionType: "assessment",
           startTime: "2026-08-12T10:15:00-07:00", idempotencyKey: "schedule-contact-1",
         },
         error: null,
@@ -158,7 +167,7 @@ describe("staff appointment management API", () => {
     expect(response.status).toBe(200);
     expect(scheduleAppointmentCommand).toHaveBeenCalledWith(expect.objectContaining({
       actor: "Garrett",
-      contactId: "contact_1",
+      contactId: "owned_1",
       sessionType: "assessment",
       startTime: "2026-08-12T10:15:00-07:00",
       booking: expect.objectContaining({

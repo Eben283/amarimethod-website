@@ -31,7 +31,6 @@ export interface AppointmentPerson {
   name: string;
   email?: string;
   phone?: string;
-  providerContactId?: string | null;
 }
 
 interface Props {
@@ -79,10 +78,6 @@ function formatTime(value: string): string {
 function actionKey(subjectId: string, action: string): string {
   const id = globalThis.crypto?.randomUUID?.() || `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   return `${action}:${subjectId}:${id}`;
-}
-
-function providerContactId(person: AppointmentPerson | null): string {
-  return person?.providerContactId || person?.id || '';
 }
 
 export default function ManageAppointmentSheet({ appointment, person, initialMode, onClose, onChanged, onUnauthorized }: Props) {
@@ -163,14 +158,14 @@ export default function ManageAppointmentSheet({ appointment, person, initialMod
     const today = new Date();
     try {
       const response = await getStaffAppointmentAvailability({
-        contactId: mode === 'reschedule' ? appointment?.contactId : providerContactId(selectedPerson),
+        contactId: mode === 'reschedule' ? appointment?.contactId : selectedPerson?.id,
         appointmentId: mode === 'reschedule' ? appointment?.id : undefined,
         sessionType: mode === 'schedule' ? selectedType?.id : undefined,
         startDate: pacificDate(today),
         endDate: pacificDate(addDays(today, 32)),
       });
       setSlots(response.slots);
-      if (mode === 'schedule') scheduleKey.current = actionKey(providerContactId(selectedPerson), 'schedule');
+      if (mode === 'schedule') scheduleKey.current = actionKey(selectedPerson?.id || 'unknown', 'schedule');
     } catch (caught) {
       if (caught instanceof ApiError && caught.status === 401) onUnauthorized?.();
       setError(caught instanceof Error ? caught.message : 'Garrett’s availability could not be loaded.');
@@ -188,7 +183,7 @@ export default function ManageAppointmentSheet({ appointment, person, initialMod
     try {
       const completed = action === 'schedule'
         ? await scheduleStaffAppointment({
-          contactId: providerContactId(selectedPerson),
+          contactId: selectedPerson!.id,
           sessionType: selectedType!.id,
           startTime: selected!.datetime,
           idempotencyKey: scheduleKey.current,
@@ -283,13 +278,12 @@ export default function ManageAppointmentSheet({ appointment, person, initialMod
             </form>
             <div className="appointment-manage__people">
               {matches.map((match) => (
-                <button key={match.id} type="button" disabled={!match.providerContactId} onClick={() => {
+                <button key={match.id} type="button" onClick={() => {
                   setSelectedPerson(match);
                   setError('');
                   setStep('service');
                 }}>
                   <b>{match.name}</b><span>{match.email || match.phone || 'No contact details'}</span>
-                  {!match.providerContactId && <em>Not yet connected to calendar scheduling</em>}
                 </button>
               ))}
             </div>
