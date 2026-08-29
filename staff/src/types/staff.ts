@@ -62,6 +62,13 @@ export interface TodayAppointment {
   providerSyncState?: 'not_required' | 'pending' | 'synced' | 'retryable' | 'manual_review';
   truthState?: 'authoritative' | 'propagating' | 'mirrored' | 'degraded';
   providerAppointmentId?: string | null;
+  detailTruth?: {
+    overall: 'complete' | 'partial';
+    sessionBalance: 'owned_ledger' | 'provider_mirror' | 'unknown';
+    series: 'provider_mirror' | 'unknown';
+    payment: 'owned_record' | 'unknown';
+    meetingLocation: 'owned' | 'provider_mirror' | 'unknown';
+  };
 }
 
 export interface ContactListItem {

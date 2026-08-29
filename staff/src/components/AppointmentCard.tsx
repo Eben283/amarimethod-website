@@ -113,8 +113,8 @@ export default function AppointmentCard({ appointment, onTap, onDocSession, onSe
                 return <span className={`text-xs px-1.5 py-0.5 rounded ${meta.cls}`}>{meta.label}</span>;
               }
               return (
-                <span className={`text-xs px-1.5 py-0.5 rounded ${appointment.sessionPrepaid ? 'bg-green-50 text-green-700' : 'bg-amber-50 text-amber-700'}`}>
-                  {appointment.sessionPrepaid ? 'Paid' : 'Unpaid'}
+                <span className={`text-xs px-1.5 py-0.5 rounded ${appointment.sessionPrepaid ? 'bg-green-50 text-green-700' : 'bg-slate-50 text-slate-600'}`}>
+                  {appointment.sessionPrepaid ? 'Package balance' : 'Payment unknown'}
                 </span>
               );
             })()}

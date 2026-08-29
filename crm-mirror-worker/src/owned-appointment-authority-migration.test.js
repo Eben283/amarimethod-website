@@ -84,6 +84,22 @@ describe("owned appointment authority migration", () => {
     expect(db.prepare("SELECT provider_appointment_id, authority, provider_sync_state FROM appointments WHERE id = ?")
       .get("appointment-owned"))
       .toEqual({ provider_appointment_id: null, authority: "owned", provider_sync_state: "pending" });
+    db.prepare(`
+      INSERT INTO appointment_payment_records (
+        appointment_id, contact_id, status, method, note, amount_cents,
+        source, recorded_by, recorded_at, updated_at
+      ) VALUES (?, ?, 'comped', NULL, 'Partner gift', 0, 'manual', 'Garrett', ?, ?)
+    `).run("appointment-owned", "contact-1", "2026-08-28T01:05:00Z", "2026-08-28T01:05:00Z");
+    expect(db.prepare("SELECT status, note FROM appointment_payment_records WHERE appointment_id = ?")
+      .get("appointment-owned"))
+      .toEqual({ status: "comped", note: "Partner gift" });
+    db.prepare(`
+      INSERT INTO appointment_payment_events (
+        id, appointment_id, contact_id, status, source, recorded_by, occurred_at
+      ) VALUES ('payment-event-1', ?, ?, 'comped', 'manual', 'Garrett', ?)
+    `).run("appointment-owned", "contact-1", "2026-08-28T01:05:00Z");
+    expect(() => db.exec("DELETE FROM appointment_payment_events WHERE id = 'payment-event-1'"))
+      .toThrow(/append-only/i);
     expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     db.close();
   });

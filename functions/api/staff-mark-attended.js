@@ -6,6 +6,7 @@ import { shouldScheduleUpgradeOffer, scheduleUpgradeOffer, appendAutomationEvent
 import { maybeSendLpOnboarding } from "../lib/lp-onboarding.js";
 import { getCustomField } from "../lib/portal-helpers.js";
 import { resolveSessionPayment, buildPaymentRecord, writePaymentRecord } from "../lib/session-payment.js";
+import { writeOwnedAppointmentPayment } from "../lib/staff-owned-appointment-payment.js";
 import { claimDebit, releaseDebit, finalizeDebit, isDebited } from "../lib/attendance-claim.js";
 import { NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN } from "../lib/journey-classification.js";
 import { SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS } from "../lib/session-ledger.js";
@@ -451,6 +452,7 @@ export async function onRequestPost(context) {
     //   - no answer + package covers it → auto "on-package".
     //   - no answer + not covered → nothing recorded (feeds the owed pool).
     let paymentRecorded = false;
+    let ownedPaymentRecorded = false;
     try {
       const capture = resolveSessionPayment({
         contactId,
@@ -466,10 +468,23 @@ export async function onRequestPost(context) {
         recordedBy: tokenPayload.user || tokenPayload.email || tokenPayload.sub || "staff",
         at: new Date().toISOString(),
       });
-      if (capture && context.env.PURCHASE_KV) {
+      if (capture) {
         const record = buildPaymentRecord(capture);
-        await writePaymentRecord(context.env.PURCHASE_KV, record);
-        paymentRecorded = true;
+        if (context.env.PURCHASE_KV) {
+          try {
+            await writePaymentRecord(context.env.PURCHASE_KV, record);
+            paymentRecorded = true;
+          } catch (kvError) {
+            console.error("[staff-mark-attended] legacy payment write failed (non-blocking):", kvError);
+          }
+        }
+        try {
+          await writeOwnedAppointmentPayment(context, record);
+          ownedPaymentRecorded = true;
+          paymentRecorded = true;
+        } catch (ownedError) {
+          console.error("[staff-mark-attended] owned payment write failed (non-blocking):", ownedError);
+        }
         // Backup GHL note for comps / anything carrying a human note, so the
         // reason (e.g. "rare 2nd comp") lands in the contact timeline and
         // survives KV. Routine "on-package"/stripe records skip the note to
@@ -500,6 +515,7 @@ export async function onRequestPost(context) {
       sessionsRemaining: newRemaining,
       pairedEntrainmentId,
       paymentRecorded,
+      ownedPaymentRecorded,
     }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-mark-attended] Unexpected error:", err);
