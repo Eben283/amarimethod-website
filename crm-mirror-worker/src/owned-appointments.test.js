@@ -23,6 +23,7 @@ const migrationNames = [
   "0015_owned_communication_commands.sql", "0016_gmail_provider_evidence.sql",
   "0017_gmail_sync_gap_evidence.sql", "0018_gmail_reply_sync_control.sql",
   "0019_owned_appointment_authority.sql", "0020_owned_appointment_lifecycle_dispatch.sql",
+  "0021_provider_neutral_calendar_authority.sql",
 ];
 
 function d1Database() {
@@ -79,6 +80,7 @@ function seedProviderAppointment(db, overrides = {}) {
     id: "owned-source-1",
     contactId: "contact-1",
     serviceId: "partner-initial",
+    provider: "ghl",
     providerAppointmentId: "ghl-source-1",
     providerCalendarId: "lfsnaiGiLNL2z12pLKDP",
     status: "confirmed",
@@ -97,6 +99,14 @@ function seedProviderAppointment(db, overrides = {}) {
     appointment.id, appointment.contactId, appointment.serviceId,
     appointment.providerAppointmentId, appointment.providerCalendarId,
     appointment.status, appointment.startsAt, appointment.endsAt,
+  );
+  db.sqlite.prepare(`
+    INSERT INTO external_records
+      (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+    VALUES (?, ?, 'appointment', ?, ?, 'appointment', ?, '2026-08-28T00:00:00Z')
+  `).run(
+    `ext-${appointment.id}`, appointment.provider, appointment.providerAppointmentId,
+    appointment.contactId, appointment.id,
   );
   return appointment;
 }
@@ -248,6 +258,50 @@ describe("owned appointment authority", () => {
     db.sqlite.close();
   });
 
+  it("completes the same owned Partner Initial contract through Google without inventing provider contact identity", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedScheduleCommand(db, {
+      ...input, idempotencyKey: "partner-session-google-0001",
+    }, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await linkOwnedAppointmentProviderRecord(db, {
+      ...identity,
+      provider: "google_calendar",
+      providerRecordId: "google-event-1",
+      providerCalendarId: "garrett-appointments@group.calendar.google.com",
+      providerStatusRaw: "confirmed",
+    }, { nowMs: nowMs + 1_000 });
+
+    await expect(completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: {
+        action: "schedule", contactId: "contact-1", appointmentId: captured.appointmentId,
+        providerAppointmentId: "google-event-1", newStartTime: input.startTime,
+        appointmentStatus: "confirmed",
+      },
+    }, { nowMs: nowMs + 2_000, providerSyncRequired: true })).resolves.toMatchObject({
+      state: "completed", provider: "google_calendar",
+    });
+
+    expect(db.sqlite.prepare(`
+      SELECT provider, provider_contact_id, provider_appointment_id, provider_calendar_id, state
+        FROM appointment_lifecycle_dispatches WHERE command_id = ?
+    `).get(captured.commandId)).toEqual({
+      provider: "google_calendar",
+      provider_contact_id: null,
+      provider_appointment_id: "google-event-1",
+      provider_calendar_id: "garrett-appointments@group.calendar.google.com",
+      state: "pending",
+    });
+    expect(db.sqlite.prepare(
+      "SELECT record_id FROM external_records WHERE provider = 'google_calendar' AND external_id = ?",
+    ).get("google-event-1")).toEqual({ record_id: captured.appointmentId });
+    db.sqlite.close();
+  });
+
   it("removes an exact compensated provider link and leaves retryable owned truth", async () => {
     const db = d1Database();
     seedContact(db);
@@ -343,6 +397,55 @@ describe("owned appointment authority", () => {
     });
     expect(db.sqlite.prepare("SELECT status, authority, provider_sync_state, revision FROM appointments WHERE id = ?").get(source.id))
       .toEqual({ status: "cancelled", authority: "owned", provider_sync_state: "synced", revision: 2 });
+    expect(db.sqlite.prepare(`
+      SELECT appointment_id, provider, provider_appointment_id, event_type, start_at, state
+        FROM appointment_lifecycle_dispatches WHERE command_id = ?
+    `).get(captured.command.commandId)).toEqual({
+      appointment_id: source.id,
+      provider: "ghl",
+      provider_appointment_id: source.providerAppointmentId,
+      event_type: "cancelled",
+      start_at: source.startsAt,
+      state: "pending",
+    });
+    db.sqlite.close();
+  });
+
+  it("captures Google cancellation against the exact provider already linked to the owned appointment", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const source = seedProviderAppointment(db, {
+      id: "owned-google-source-1",
+      provider: "google_calendar",
+      providerAppointmentId: "google-source-1",
+      providerCalendarId: "garrett-appointments@group.calendar.google.com",
+    });
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedManageCommand(db, {
+      actor: "Garrett", action: "cancel", contactId: source.contactId,
+      appointmentId: source.id, idempotencyKey: "cancel-owned-google-source-1",
+    }, { nowMs, providerSyncRequired: true });
+
+    expect(captured.command).toMatchObject({
+      provider: "google_calendar",
+      providerRecordId: "google-source-1",
+    });
+    const identity = { commandId: captured.command.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: { action: "cancel", contactId: source.contactId, appointmentStatus: "cancelled" },
+    }, { nowMs: nowMs + 1_000, providerSyncRequired: true });
+    expect(db.sqlite.prepare(`
+      SELECT provider, provider_contact_id, provider_appointment_id, provider_calendar_id, event_type
+        FROM appointment_lifecycle_dispatches WHERE command_id = ?
+    `).get(captured.command.commandId)).toEqual({
+      provider: "google_calendar",
+      provider_contact_id: null,
+      provider_appointment_id: "google-source-1",
+      provider_calendar_id: "garrett-appointments@group.calendar.google.com",
+      event_type: "cancelled",
+    });
     db.sqlite.close();
   });
 
@@ -448,6 +551,15 @@ describe("owned appointment authority", () => {
     });
     expect(db.sqlite.prepare("SELECT record_id FROM external_records WHERE external_id = 'ghl-replacement-1'").get())
       .toEqual({ record_id: replacementId });
+    expect(db.sqlite.prepare(`
+      SELECT appointment_id, provider_appointment_id, event_type, start_at
+        FROM appointment_lifecycle_dispatches WHERE command_id = ?
+    `).get(captured.command.commandId)).toEqual({
+      appointment_id: source.id,
+      provider_appointment_id: "ghl-replacement-1",
+      event_type: "confirmed",
+      start_at: "2026-09-04T17:15:00.000Z",
+    });
     db.sqlite.close();
   });
 

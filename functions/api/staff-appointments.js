@@ -16,8 +16,8 @@ import { listStaffBookTypes, resolveStaffBookType } from "../lib/staff-book-cale
 import { internalAvailability, manageAppointmentCommand, scheduleAppointmentCommand } from "../lib/staff-appointment-manage.js";
 import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
-import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
-import { createGhlStaffCalendarProvider } from "../lib/staff-calendar-provider-ghl.js";
+import { resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
+import { configuredStaffCalendarProviderForBooking, createStaffCalendarProvider } from "../lib/staff-calendar-provider.js";
 import { createOwnedAppointmentManageStore, createOwnedAppointmentScheduleStore } from "../lib/staff-owned-appointment-store.js";
 import { requireProviderAppointmentIdentity, resolveStaffOwnedAppointmentIdentity } from "../lib/staff-owned-appointment-identity.js";
 
@@ -74,12 +74,8 @@ function isIdentityError(error) {
   return code.startsWith("owned_") || code.startsWith("provider_") || code === "contact_reference_required";
 }
 
-async function providerIdentity(context, reference) {
-  const identity = await resolveOwnedContactIdentity(context, reference);
-  return Object.freeze({
-    ...identity,
-    providerContactId: requireProviderContactIdentity(identity),
-  });
+async function ownedIdentity(context, reference) {
+  return resolveOwnedContactIdentity(context, reference);
 }
 
 async function providerAppointmentIdentity(context, reference, contactIdentity) {
@@ -91,7 +87,7 @@ async function providerAppointmentIdentity(context, reference, contactIdentity) 
     throw error;
   }
   const provider = requireProviderAppointmentIdentity(identity);
-  if (provider.contactId !== contactIdentity.providerContactId) {
+  if (provider.provider === "ghl" && provider.contactId !== contactIdentity.providerContactId) {
     const error = new Error("Appointment provider identity does not match this person.");
     error.code = "owned_appointment_provider_mismatch";
     error.status = 409;
@@ -137,11 +133,13 @@ export async function onRequestPost(context) {
       let calendarId = "";
       let identity;
       let appointmentIdentity = null;
+      let provider;
       if (appointmentId) {
         if (!contactId) return json({ error: "Choose a person and appointment." }, 400, headers);
-        identity = await providerIdentity(context, contactId);
+        identity = await ownedIdentity(context, contactId);
         appointmentIdentity = await providerAppointmentIdentity(context, appointmentId, identity);
-        const appointments = await createGhlStaffCalendarProvider(context, identity.providerContactId).listContactAppointments();
+        provider = createStaffCalendarProvider(context, identity, appointmentIdentity.provider);
+        const appointments = await provider.listContactAppointments();
         original = exactAppointment(appointments, appointmentIdentity.appointmentId);
         if (!original) return json({ error: "Appointment not found for this person." }, 404, headers);
         if (!["new", "confirmed"].includes(appointmentStatus(original))) {
@@ -150,15 +148,18 @@ export async function onRequestPost(context) {
         calendarId = clean(original.calendarId || original.calendar_id, 100);
       } else {
         if (!contactId) return json({ error: "Choose a person." }, 400, headers);
-        identity = await providerIdentity(context, contactId);
+        identity = await ownedIdentity(context, contactId);
         booking = resolveStaffBookType(clean(body.sessionType, 64));
         if (!booking) return json({ error: "Choose an appointment type." }, 400, headers);
         calendarId = booking.calendarId;
+        provider = createStaffCalendarProvider(
+          context, identity, configuredStaffCalendarProviderForBooking(context.env, booking),
+        );
       }
       if (!policyForCalendarId(calendarId)) return json({ error: "This calendar is not yet governed for Staff scheduling." }, 409, headers);
       const start = Date.parse(normalizeGhlTimestamp(`${startDate}T00:00:00`));
       const end = Date.parse(normalizeGhlTimestamp(`${endDate}T23:59:59`));
-      const events = await createGhlStaffCalendarProvider(context, identity.providerContactId).listSchedule(start, end);
+      const events = await provider.listSchedule(start, end);
       return json({
         appointment: original ? {
           id: appointmentIdentity?.ownedAppointmentId || appointmentId,
@@ -195,7 +196,10 @@ export async function onRequestPost(context) {
     if (idempotencyKey.length < 8) return json({ error: "A valid action key is required." }, 400, headers);
     if (!startTime) return json({ error: "Choose a time." }, 400, headers);
     try {
-      const identity = await providerIdentity(context, contactId);
+      const identity = await ownedIdentity(context, contactId);
+      const provider = createStaffCalendarProvider(
+        context, identity, configuredStaffCalendarProviderForBooking(context.env, booking),
+      );
       const ownedAuthority = Boolean(booking.serviceId);
       if (!ownedAuthority && !context.env.ATTEND_DB) {
         return json({ error: "Appointment scheduling is temporarily unavailable; no calendar change was made." }, 500, headers);
@@ -209,6 +213,8 @@ export async function onRequestPost(context) {
           startTime,
           timezone: WORK_HOURS.timezone,
           booking,
+          provider: provider.provider,
+          providerCalendarId: provider.providerCalendarIdFor(booking),
         })
         : scheduleStore(context.env.ATTEND_DB, { actor, contactId: identity.ownedContactId, sessionType, idempotencyKey, startTime, booking });
       const result = await scheduleAppointmentCommand({
@@ -220,7 +226,7 @@ export async function onRequestPost(context) {
         startTime,
         timezone: WORK_HOURS.timezone,
         store,
-        provider: createGhlStaffCalendarProvider(context, identity.providerContactId),
+        provider,
       });
       context.waitUntil?.(emitPathHop(context.env, {
         pathId: "staff_appointment_manage",
@@ -254,14 +260,16 @@ export async function onRequestPost(context) {
   if (action === "reschedule" && !startTime) return json({ error: "Choose a new time." }, 400, headers);
 
   try {
-    const identity = await providerIdentity(context, contactId);
+    const identity = await ownedIdentity(context, contactId);
     const appointmentIdentity = await providerAppointmentIdentity(context, appointmentId, identity);
+    const provider = createStaffCalendarProvider(context, identity, appointmentIdentity.provider);
     const store = createOwnedAppointmentManageStore(context, {
       actor,
       action,
       contactId: identity.ownedContactId,
       appointmentId: appointmentIdentity.ownedAppointmentId,
       providerCalendarId: appointmentIdentity.providerCalendarId,
+      provider: appointmentIdentity.provider,
       timezone: WORK_HOURS.timezone,
     });
     const result = await manageAppointmentCommand({
@@ -274,7 +282,7 @@ export async function onRequestPost(context) {
       startTime,
       timezone: WORK_HOURS.timezone,
       store,
-      provider: createGhlStaffCalendarProvider(context, identity.providerContactId),
+      provider,
     });
     context.waitUntil?.(emitPathHop(context.env, {
       pathId: "staff_appointment_manage",

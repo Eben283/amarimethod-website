@@ -5,7 +5,7 @@
 //   runSweep(env, nowMs)           — the cron: fire (or shadow-log) every due step.
 
 import { FLOWS } from "./config.js";
-import { enroll, backfillEnrollment } from "./enroll.js";
+import { enroll, backfillEnrollment, eventMatchesFlow } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
 import { saveEnrollment, saveBackfilledEnrollment, retireLegacyEnrollment, retimeEnrollment, queueRescheduleConfirmation, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
@@ -58,7 +58,7 @@ export async function handleEvent(env, event, nowMs, { workflowOverrides = [] } 
   const actions = [];
   if (!event || event.recognized !== true) return { actions };
 
-  const flows = (await executionFlows(env, workflowOverrides)).filter((flow) => flow.calendarIds.includes(event.calendarId));
+  const flows = (await executionFlows(env, workflowOverrides)).filter((flow) => eventMatchesFlow(event, flow));
   for (const flow of flows) {
     if (flow.enrollOn.statuses.includes(event.type)) {
       const enrollment = enroll(event, flow, nowMs);

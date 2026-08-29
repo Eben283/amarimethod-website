@@ -68,6 +68,8 @@ export function createGhlStaffCalendarProvider(context, providerContactId) {
   if (!authoritativeContactId) throw new TypeError("GHL calendar adapter requires provider contact identity");
 
   return Object.freeze({
+    provider: "ghl",
+    providerCalendarIdFor: (booking) => clean(booking?.calendarId, 120),
     // Intentionally ignore command-supplied contact IDs. The owned CRM
     // crosswalk selected this exact provider identity before adapter creation.
     listContactAppointments: () => listAppointments(context, authoritativeContactId),

@@ -31,14 +31,17 @@ export async function resolveStaffOwnedAppointmentIdentity(context, reference) {
 }
 
 export function requireProviderAppointmentIdentity(identity) {
-  if (!identity?.providerAppointmentId || !identity?.providerContactId) {
+  const provider = String(identity?.provider || (identity?.providerContactId ? "ghl" : ""));
+  if (!identity?.providerAppointmentId || !new Set(["ghl", "google_calendar"]).has(provider) ||
+      (provider === "ghl" && !identity?.providerContactId)) {
     throw identityError({
       error: "provider_appointment_identity_missing",
       detail: "This owned appointment has no verified temporary provider link.",
     }, 409);
   }
   return {
+    provider,
     appointmentId: identity.providerAppointmentId,
-    contactId: identity.providerContactId,
+    contactId: identity.providerContactId || null,
   };
 }

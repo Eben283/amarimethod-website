@@ -131,8 +131,8 @@ async function performTokenRefresh(context, refreshToken, options = {}) {
 }
 async function ghlFetch(context, url, options = {}) {
   const token = await getGhlToken(context);
-  const headers4 = { ...ghlHeaders(token), ...options.headers };
-  let response2 = await fetch(url, { ...options, headers: headers4 });
+  const headers5 = { ...ghlHeaders(token), ...options.headers };
+  let response2 = await fetch(url, { ...options, headers: headers5 });
   if (response2.status === 401) {
     console.warn("[ghl] Got 401, attempting token refresh and retry");
     const kv = context.env.PORTAL_KV;
@@ -197,7 +197,7 @@ async function applyTagDelta(context, contactId, { add = [], remove = [] } = {})
 var GHL_API_BASE, GHL_TOKEN_URL, REFRESH_BUFFER_MS, KV_ACCESS_TOKEN, KV_REFRESH_TOKEN, KV_TOKEN_EXPIRY, refreshInFlight;
 var init_ghl = __esm({
   "lib/ghl.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     GHL_API_BASE = "https://services.leadconnectorhq.com";
     GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
     REFRESH_BUFFER_MS = 5 * 60 * 1e3;
@@ -278,7 +278,7 @@ function appointmentEndTime(startTime, durationMinutes) {
 var PACIFIC_TZ, OFFSET_OR_Z, NAIVE_DATETIME;
 var init_datetime = __esm({
   "lib/datetime.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(formatIsoAtOffset, "formatIsoAtOffset");
     PACIFIC_TZ = "America/Los_Angeles";
     OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
@@ -295,7 +295,7 @@ var init_datetime = __esm({
 var FIELD_IDS;
 var init_ghl_fields = __esm({
   "lib/ghl-fields.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     FIELD_IDS = {
       // Session balance — the most contended value in the stack. Raw GHL field,
       // reconciled hourly against the derived ledger (session-ledger.js).
@@ -383,7 +383,7 @@ function safeParse(raw) {
 var OPS_ERR_PREFIX, OPS_ERR_TTL_SECONDS;
 var init_ops_alert = __esm({
   "lib/ops-alert.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     OPS_ERR_PREFIX = "ops:err:";
     OPS_ERR_TTL_SECONDS = 60 * 60 * 24 * 30;
     __name(opsKv, "opsKv");
@@ -402,7 +402,7 @@ function registryPath(pathId) {
 var OPS_SEVERITY, PATH_ASSESSMENT_PAID_BOOK, OPS_ERR_PATH_SOURCES, OPS_REGISTRY, EXTERNAL_MONITOR_PATH_IDS;
 var init_ops_registry = __esm({
   "lib/ops-registry.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     OPS_SEVERITY = Object.freeze({
       MONEY: "money",
       BOOKING: "booking",
@@ -919,7 +919,7 @@ async function sendConversationMessage(context, params) {
 var GHL_MESSAGE_ENDPOINT, SEND_LIMITS, BAD_CHARS, CONTACT_ID;
 var init_ghl_send = __esm({
   "lib/ghl-send.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     GHL_MESSAGE_ENDPOINT = "https://services.leadconnectorhq.com/conversations/messages";
     SEND_LIMITS = Object.freeze({
@@ -1017,7 +1017,7 @@ async function notifyOpsFlip(context, incident) {
 var DEFAULT_OPS_ALERT_CONTACT_ID, SEVERITY_CHANNELS;
 var init_ops_notify = __esm({
   "lib/ops-notify.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl_send();
     DEFAULT_OPS_ALERT_CONTACT_ID = "3jsTC9Cb7hkDpC3FLuFd";
     SEVERITY_CHANNELS = Object.freeze({
@@ -1189,7 +1189,7 @@ async function touchMeta(kv, reason) {
 var EVENTS_PREFIX, INCIDENTS_KEY, META_KEY, MAX_EVENTS, MAX_INCIDENTS, TTL_SECONDS;
 var init_ops_trail_kv = __esm({
   "lib/ops-trail-kv.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     EVENTS_PREFIX = "ops:trail:events:";
     INCIDENTS_KEY = "ops:trail:incidents";
     META_KEY = "ops:trail:meta";
@@ -1628,7 +1628,7 @@ function safeJsonArray(raw) {
 var OUTCOMES;
 var init_ops_events = __esm({
   "lib/ops-events.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_registry();
     init_ops_notify();
     init_ops_trail_kv();
@@ -1839,7 +1839,7 @@ async function recordAssessmentCheckout(env, {
 var SOURCE;
 var init_ops_assessment = __esm({
   "lib/ops-assessment.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -1919,7 +1919,7 @@ function assessmentBookingFromWorkflow(document) {
 var ASSESSMENT_PAID_BOOKING_WORKFLOW_ID, ASSESSMENT_PRODUCT_ID, ASSESSMENT_PAID_BOOKING_WORKFLOW;
 var init_assessment_paid_booking_workflow = __esm({
   "lib/assessment-paid-booking-workflow.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     ASSESSMENT_PAID_BOOKING_WORKFLOW_ID = "assessment-paid-booking";
     ASSESSMENT_PRODUCT_ID = "6a66cf0103821ea09ea13f1b";
     __name(deepFreeze, "deepFreeze");
@@ -1984,7 +1984,7 @@ async function currentAssessmentPaidBookingWorkflow(context) {
 var REMINDER_ENGINE_URL;
 var init_assessment_paid_booking_runtime = __esm({
   "lib/assessment-paid-booking-runtime.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_assessment_paid_booking_workflow();
     REMINDER_ENGINE_URL = "https://reminder-engine.eben-fa2.workers.dev";
     __name(currentAssessmentPaidBookingWorkflow, "currentAssessmentPaidBookingWorkflow");
@@ -2182,7 +2182,7 @@ function paidBookPathForProduct(productId, pkg) {
 }
 var init_ops_path_emit = __esm({
   "lib/ops-path-emit.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_events();
     init_ops_alert();
     init_ops_assessment();
@@ -2282,7 +2282,7 @@ function applyHourPackPreference(slots2, opts) {
 var STUDIO_INTERVAL_MINUTES, WORK_HOURS, SLOT_POLICIES;
 var init_booking_slot_policy = __esm({
   "lib/booking-slot-policy.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     STUDIO_INTERVAL_MINUTES = 60;
     WORK_HOURS = Object.freeze({
       scheduleId: "WIPAUCHQ5WW18vLJ49Gk",
@@ -2572,7 +2572,7 @@ async function assertSlotRespectsAppBuffer(context, startTime, calendarId) {
 var GHL_API_BASE2, GHL_LOCATION_ID, GHL_GARRETT_USER_ID, INACTIVE_STATUSES, APP_BUFFER_CALENDAR_IDS;
 var init_app_owned_buffer = __esm({
   "lib/app-owned-buffer.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_datetime();
     init_booking_slot_policy();
@@ -2607,10 +2607,10 @@ async function responseText(response2) {
     return "response body unavailable";
   }
 }
-async function createConfirmedAppointment({ request, endpoint, payload, onCreated }) {
-  if (typeof request !== "function") throw new TypeError("request callback required");
+async function createConfirmedAppointment({ request: request2, endpoint, payload, onCreated }) {
+  if (typeof request2 !== "function") throw new TypeError("request callback required");
   if (!endpoint) throw new TypeError("appointment endpoint required");
-  const createResponse = await request(endpoint, {
+  const createResponse = await request2(endpoint, {
     method: "POST",
     body: JSON.stringify({ ...payload, appointmentStatus: "new" })
   });
@@ -2629,7 +2629,7 @@ async function createConfirmedAppointment({ request, endpoint, payload, onCreate
     } catch (err) {
       let cleanupStatus = null;
       try {
-        const cleanup = await request(appointmentUrl, {
+        const cleanup = await request2(appointmentUrl, {
           method: "PUT",
           body: JSON.stringify({ appointmentStatus: "cancelled" })
         });
@@ -2646,7 +2646,7 @@ async function createConfirmedAppointment({ request, endpoint, payload, onCreate
       );
     }
   }
-  const confirmResponse = await request(appointmentUrl, {
+  const confirmResponse = await request2(appointmentUrl, {
     method: "PUT",
     body: JSON.stringify({ appointmentStatus: "confirmed" })
   });
@@ -2654,7 +2654,7 @@ async function createConfirmedAppointment({ request, endpoint, payload, onCreate
     const detail = await responseText(confirmResponse);
     let cleanupStatus = null;
     try {
-      const cleanup = await request(appointmentUrl, {
+      const cleanup = await request2(appointmentUrl, {
         method: "PUT",
         body: JSON.stringify({ appointmentStatus: "cancelled" })
       });
@@ -2674,7 +2674,7 @@ async function createConfirmedAppointment({ request, endpoint, payload, onCreate
 var AppointmentHandoffError;
 var init_ghl_appointment_handoff = __esm({
   "lib/ghl-appointment-handoff.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     AppointmentHandoffError = class extends Error {
       static {
         __name(this, "AppointmentHandoffError");
@@ -2808,7 +2808,7 @@ async function completePaidBookingIntent(db, intentId, appointmentId, options = 
 }
 var init_paid_booking_intents = __esm({
   "lib/paid-booking-intents.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(changesOf2, "changesOf");
     __name(normalize, "normalize");
     __name(sameIntent, "sameIntent");
@@ -2844,7 +2844,7 @@ async function recordPartnerReferralAttribution(db, { partner, contactId, referr
 var PARTNERS;
 var init_partner_referrals = __esm({
   "lib/partner-referrals.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     PARTNERS = Object.freeze({ "vital-ice": Object.freeze({ entityId: "vital-ice", businessName: "Vital Ice", publicCode: "VI-001", entryPath: "/r/vital-ice" }), "zach-taylor": Object.freeze({ entityId: "zach-taylor", businessName: "Zach Taylor Fitness", publicCode: "ZT-001", entryPath: "/r/zach-taylor" }), "teddys-total-body": Object.freeze({ entityId: "teddys-total-body", businessName: "Teddy's Total Body", publicCode: "TTB-001", entryPath: "/r/teddys-total-body" }) });
     __name(resolvePartnerReferral, "resolvePartnerReferral");
     __name(recordPartnerReferralAttribution, "recordPartnerReferralAttribution");
@@ -2956,10 +2956,10 @@ function json(data, status, requestOrigin) {
     }
   });
 }
-async function onRequestOptions({ request }) {
+async function onRequestOptions({ request: request2 }) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders(request.headers.get("Origin") || "")
+    headers: corsHeaders(request2.headers.get("Origin") || "")
   });
 }
 function validateBody(b) {
@@ -3140,11 +3140,11 @@ async function bookFreeAppointment(context, locationId, contactId, payload, book
   return data?.id || data?.appointment?.id || null;
 }
 async function onRequestPost(context) {
-  const { request, env } = context;
-  const origin = request.headers.get("Origin") || "";
+  const { request: request2, env } = context;
+  const origin = request2.headers.get("Origin") || "";
   let body;
   try {
-    body = await request.json();
+    body = await request2.json();
   } catch {
     return json({ error: "Invalid JSON" }, 400, origin);
   }
@@ -3164,8 +3164,8 @@ async function onRequestPost(context) {
     }
   }
   const locationId = env.GHL_LOCATION_ID || DEFAULT_LOCATION_ID;
-  const ip = request.headers.get("CF-Connecting-IP") || request.headers.get("X-Forwarded-For") || "";
-  const userAgent = request.headers.get("User-Agent") || "";
+  const ip = request2.headers.get("CF-Connecting-IP") || request2.headers.get("X-Forwarded-For") || "";
+  const userAgent = request2.headers.get("User-Agent") || "";
   try {
     await assertSlotRespectsAppBuffer(context, body.startTime, booking.calendarId);
   } catch {
@@ -3341,7 +3341,7 @@ async function onRequestPost(context) {
 var ALLOWED_ORIGINS, DEFAULT_LOCATION_ID, ALLOWED_BOOKINGS;
 var init_create_checkout = __esm({
   "api/book/create-checkout.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_datetime();
     init_ghl_fields();
@@ -3613,7 +3613,7 @@ function applyLookBusy(slots2, opts) {
 var MAX_SLOTS_PER_DAY, MIN_SLOTS_PER_DAY, PINNED_SLOT_TIMES;
 var init_look_busy = __esm({
   "lib/look-busy.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     MAX_SLOTS_PER_DAY = 12;
     MIN_SLOTS_PER_DAY = 2;
     __name(targetFullPercent, "targetFullPercent");
@@ -3656,7 +3656,7 @@ async function writeOpsLastRun(env, key, payload, ttlSeconds = 14 * 86400) {
 var OPS_LAST_RUN_KEYS, OPS_READY_KEYS;
 var init_ops_last_run = __esm({
   "lib/ops-last-run.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(writeOpsLastRun, "writeOpsLastRun");
     OPS_LAST_RUN_KEYS = Object.freeze({
       reminder: "ops:reminder-engine:lastRun",
@@ -3698,16 +3698,16 @@ function json2(data, status, requestOrigin) {
     }
   });
 }
-async function onRequestOptions2({ request }) {
+async function onRequestOptions2({ request: request2 }) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders2(request.headers.get("Origin") || "")
+    headers: corsHeaders2(request2.headers.get("Origin") || "")
   });
 }
 async function onRequestGet(context) {
-  const { request } = context;
-  const origin = request.headers.get("Origin") || "";
-  const url = new URL(request.url);
+  const { request: request2 } = context;
+  const origin = request2.headers.get("Origin") || "";
+  const url = new URL(request2.url);
   const calendarId = url.searchParams.get("calendarId") || "";
   const startDate = url.searchParams.get("startDate") || "";
   const endDate = url.searchParams.get("endDate") || "";
@@ -3830,7 +3830,7 @@ async function onRequestGet(context) {
 var ALLOWED_ORIGIN, ALLOWED_CALENDARS;
 var init_public_slots = __esm({
   "api/book/public-slots.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_look_busy();
     init_booking_slot_policy();
@@ -3889,14 +3889,14 @@ async function verifySessionToken(tokenString, secret) {
   }
   return payload;
 }
-function verifyWebhookSecret(request, expectedSecret) {
+function verifyWebhookSecret(request2, expectedSecret) {
   if (!expectedSecret) return false;
-  const headerSecret = request.headers.get("X-Webhook-Secret");
+  const headerSecret = request2.headers.get("X-Webhook-Secret");
   return headerSecret === expectedSecret;
 }
 var init_auth = __esm({
   "lib/auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(verifySessionToken, "verifySessionToken");
     __name(verifyWebhookSecret, "verifyWebhookSecret");
   }
@@ -3915,14 +3915,14 @@ function timingSafeEqual(a, b) {
 }
 var init_safe_equal = __esm({
   "lib/safe-equal.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(timingSafeEqual, "timingSafeEqual");
   }
 });
 
 // lib/ops-auth.js
-function requireOpsReadKey(request, env, responseHeaders10 = {}) {
-  const headers4 = { ...responseHeaders10, "Content-Type": "application/json" };
+function requireOpsReadKey(request2, env, responseHeaders10 = {}) {
+  const headers5 = { ...responseHeaders10, "Content-Type": "application/json" };
   const key = env.OPS_READ_KEY;
   if (!key) {
     console.error(
@@ -3930,40 +3930,40 @@ function requireOpsReadKey(request, env, responseHeaders10 = {}) {
     );
     return new Response(JSON.stringify({ error: "auth not configured" }), {
       status: 500,
-      headers: headers4
+      headers: headers5
     });
   }
-  const headerKey = request.headers.get("X-Service-Key") || "";
-  const auth = request.headers.get("Authorization") || "";
+  const headerKey = request2.headers.get("X-Service-Key") || "";
+  const auth = request2.headers.get("Authorization") || "";
   const bearer = auth.startsWith("Bearer ") ? auth.slice(7) : "";
   const provided = headerKey || bearer;
   if (!provided || !timingSafeEqual(provided, key)) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
-      headers: headers4
+      headers: headers5
     });
   }
   return null;
 }
 var init_ops_auth = __esm({
   "lib/ops-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_safe_equal();
     __name(requireOpsReadKey, "requireOpsReadKey");
   }
 });
 
 // lib/endpoint-guards.js
-function readCookie(request, name) {
-  const cookieHeader = request.headers.get("Cookie") || "";
+function readCookie(request2, name) {
+  const cookieHeader = request2.headers.get("Cookie") || "";
   for (const segment of cookieHeader.split(";")) {
     const [key, ...value] = segment.trim().split("=");
     if (key === name) return value.join("=");
   }
   return null;
 }
-function readStaffSessionToken(request) {
-  return readCookie(request, STAFF_SESSION_COOKIE);
+function readStaffSessionToken(request2) {
+  return readCookie(request2, STAFF_SESSION_COOKIE);
 }
 function corsHeaders3(origin, methods = "GET, OPTIONS") {
   const allowedOrigin4 = ALLOWED_ORIGINS2.includes(origin) ? origin : ALLOWED_ORIGINS2[0];
@@ -3974,66 +3974,66 @@ function corsHeaders3(origin, methods = "GET, OPTIONS") {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function requireStaffAuth(context, headers4) {
+async function requireStaffAuth(context, headers5) {
   const secret = context.env.JWT_SECRET;
   if (!secret) {
-    return { error: new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: headers4 }) };
+    return { error: new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: headers5 }) };
   }
   const auth = context.request.headers.get("Authorization");
   const bearerToken2 = auth?.startsWith("Bearer ") ? auth.slice(7) : null;
   const cookieToken = readStaffSessionToken(context.request);
   const token = bearerToken2 || cookieToken;
   if (!token) {
-    return { error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: headers4 }) };
+    return { error: new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: headers5 }) };
   }
   let payload;
   try {
     payload = await verifySessionToken(token, secret);
   } catch {
-    return { error: new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers: headers4 }) };
+    return { error: new Response(JSON.stringify({ error: "Session expired" }), { status: 401, headers: headers5 }) };
   }
   if (payload.role !== "staff") {
-    return { error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: headers4 }) };
+    return { error: new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: headers5 }) };
   }
   return { payload };
 }
-async function requireEbenStaffAuth(context, headers4) {
-  const auth = await requireStaffAuth(context, headers4);
+async function requireEbenStaffAuth(context, headers5) {
+  const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth;
   if (auth.payload?.user !== "Eben") {
     return {
       error: new Response(JSON.stringify({ error: "Amari Ops is Eben-only" }), {
         status: 403,
-        headers: headers4
+        headers: headers5
       })
     };
   }
   return auth;
 }
-async function parseJsonBody(request, headers4) {
+async function parseJsonBody(request2, headers5) {
   let body;
   try {
-    body = await request.json();
+    body = await request2.json();
   } catch {
-    return { error: new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 }) };
+    return { error: new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers5 }) };
   }
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return { error: new Response(JSON.stringify({ error: "Invalid request body" }), { status: 400, headers: headers4 }) };
+    return { error: new Response(JSON.stringify({ error: "Invalid request body" }), { status: 400, headers: headers5 }) };
   }
   return { body };
 }
-async function requireStaffOrOpsAuth(context, headers4) {
+async function requireStaffOrOpsAuth(context, headers5) {
   if (context.request.headers.get("X-Service-Key")) {
     const denied = requireOpsReadKey(context.request, context.env);
     if (denied) return { error: denied };
     return { payload: { role: "service" } };
   }
-  return requireStaffAuth(context, headers4);
+  return requireStaffAuth(context, headers5);
 }
 var ALLOWED_ORIGINS2, STAFF_SESSION_COOKIE;
 var init_endpoint_guards = __esm({
   "lib/endpoint-guards.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     init_ops_auth();
     ALLOWED_ORIGINS2 = [
@@ -4062,7 +4062,7 @@ function timingSafeEqual2(a, b) {
   }
   return mismatch === 0;
 }
-function requireWorkerAuth(request, env) {
+function requireWorkerAuth(request2, env) {
   const secret = env.WORKER_AUTH_SECRET;
   if (!secret) {
     console.error(
@@ -4073,7 +4073,7 @@ function requireWorkerAuth(request, env) {
       headers: { "Content-Type": "application/json" }
     });
   }
-  const header = request.headers.get("Authorization") || "";
+  const header = request2.headers.get("Authorization") || "";
   const provided = header.startsWith("Bearer ") ? header.slice(7) : "";
   if (!provided || !timingSafeEqual2(provided, secret)) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
@@ -4085,7 +4085,7 @@ function requireWorkerAuth(request, env) {
 }
 var init_worker_auth = __esm({
   "lib/worker-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(timingSafeEqual2, "timingSafeEqual");
     __name(requireWorkerAuth, "requireWorkerAuth");
   }
@@ -4109,7 +4109,7 @@ function isAttentionState(state) {
 var OPS_BOARD_ROLE, OPS_BOARD_META, OPS_ROW_STATE;
 var init_ops_board_meta = __esm({
   "lib/ops-board-meta.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     OPS_BOARD_ROLE = Object.freeze({
       HOT: "hot",
       // pay→book→confirm early warning
@@ -4651,7 +4651,7 @@ async function runOpsFixSweep(env, { buildSystemsBoard: buildSystemsBoard2 } = {
 var HOUR, JOB_TTL_S, REQUEST_TTL_S, OPS_FIX_COOLDOWN_MS, OPS_FIX_MODES;
 var init_ops_fix = __esm({
   "lib/ops-fix.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_board_meta();
     init_ops_board_meta();
     init_ops_registry();
@@ -6062,7 +6062,7 @@ function judgeCallCoachReadiness(ready, last, { maxAgeH = 36 } = {}) {
 var HOUR2, ERR_LOOKBACK_H, HOT_HEALTHY_MAX_AGE_H, EXTERNAL_MONITOR_MAX_AGE_H, EXTERNAL_MONITOR_HEARTBEAT_PATHS, STUCK_REASON_CODES;
 var init_ops_board = __esm({
   "lib/ops-board.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -6115,20 +6115,20 @@ async function onRequestOptions3(context) {
     headers: corsHeaders3(context.request.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-function json3(data, status, headers4) {
-  return new Response(JSON.stringify(data), { status, headers: headers4 });
+function json3(data, status, headers5) {
+  return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
 async function onRequestGet2(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = {
+  const headers5 = {
     ...corsHeaders3(origin, "GET, POST, OPTIONS"),
     "Content-Type": "application/json",
     "Cache-Control": "no-store"
   };
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const pathId = new URL(context.request.url).searchParams.get("pathId");
-  if (!pathId) return json3({ error: "pathId required" }, 400, headers4);
+  if (!pathId) return json3({ error: "pathId required" }, 400, headers5);
   const job = await readFixJob(context.env, pathId);
   return json3(
     {
@@ -6139,12 +6139,12 @@ async function onRequestGet2(context) {
       job
     },
     200,
-    headers4
+    headers5
   );
 }
 async function onRequestPost2(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = {
+  const headers5 = {
     ...corsHeaders3(origin, "GET, POST, OPTIONS"),
     "Content-Type": "application/json",
     "Cache-Control": "no-store"
@@ -6161,36 +6161,36 @@ async function onRequestPost2(context) {
     const denied = requireWorkerAuth(context.request, context.env);
     if (denied) return denied;
     const summary = await runOpsFixSweep(context.env, { buildSystemsBoard });
-    return json3(summary, 200, headers4);
+    return json3(summary, 200, headers5);
   }
   if (action === "launch") {
     const denied = requireWorkerAuth(context.request, context.env);
     if (denied) return denied;
-    if (!pathId) return json3({ error: "pathId required" }, 400, headers4);
+    if (!pathId) return json3({ error: "pathId required" }, 400, headers5);
     const detail2 = await buildPathDetail(context.env, pathId);
-    if (!detail2) return json3({ error: "Unknown path" }, 404, headers4);
+    if (!detail2) return json3({ error: "Unknown path" }, 404, headers5);
     const result2 = await launchFixForPath(context.env, detail2, {
       requested: true,
       force: !!body.force
     });
-    return json3(result2, result2.ok ? 200 : 409, headers4);
+    return json3(result2, result2.ok ? 200 : 409, headers5);
   }
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   if (action === "request") {
-    if (!pathId) return json3({ error: "pathId required" }, 400, headers4);
+    if (!pathId) return json3({ error: "pathId required" }, 400, headers5);
     const result2 = await queueFixRequest(context.env, pathId, { reason: "manual" });
     if (!result2.queued) {
-      return json3(result2, result2.reason === "unknown-path" ? 404 : 409, headers4);
+      return json3(result2, result2.reason === "unknown-path" ? 404 : 409, headers5);
     }
-    return json3(result2, 200, headers4);
+    return json3(result2, 200, headers5);
   }
-  if (!pathId) return json3({ error: "pathId required" }, 400, headers4);
+  if (!pathId) return json3({ error: "pathId required" }, 400, headers5);
   if (!isAutoFixable(pathId)) {
-    return json3({ ok: false, error: "not-fixable" }, 409, headers4);
+    return json3({ ok: false, error: "not-fixable" }, 409, headers5);
   }
   const detail = await buildPathDetail(context.env, pathId);
-  if (!detail) return json3({ error: "Unknown path" }, 404, headers4);
+  if (!detail) return json3({ error: "Unknown path" }, 404, headers5);
   const result = await launchFixForPath(context.env, detail, {
     requested: true,
     manual: true,
@@ -6202,12 +6202,12 @@ async function onRequestPost2(context) {
       hasCursorKey: !!context.env.CURSOR_API_KEY
     },
     result.ok ? 200 : 409,
-    headers4
+    headers5
   );
 }
 var init_fix = __esm({
   "api/ops/fix.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_worker_auth();
     init_ops_board();
@@ -6228,13 +6228,13 @@ async function onRequestOptions4(context) {
 }
 async function onRequestGet3(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = {
+  const headers5 = {
     ...corsHeaders3(origin, "GET, OPTIONS"),
     "Content-Type": "application/json",
     "Cache-Control": "no-store",
     "X-Robots-Tag": "noindex, nofollow"
   };
-  const denied = requireOpsReadKey(context.request, context.env, headers4);
+  const denied = requireOpsReadKey(context.request, context.env, headers5);
   if (denied) return denied;
   const url = new URL(context.request.url);
   const status = url.searchParams.get("status") || "open";
@@ -6248,19 +6248,19 @@ async function onRequestGet3(context) {
         configured: !!context.env.AUTOMATION_DB,
         incidents
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error(`[api/ops/incidents] ${err && err.message}`);
     return new Response(JSON.stringify({ error: "Failed to load incidents" }), {
       status: 500,
-      headers: headers4
+      headers: headers5
     });
   }
 }
 var init_incidents = __esm({
   "api/ops/incidents.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_ops_auth();
     init_ops_events();
@@ -6814,7 +6814,7 @@ async function ingestOperationsLedgerRelease(env, input, provenance) {
 var ACTOR_KINDS, TASK_STATUSES, RELEASE_STATUSES, ACTOR_SET, TASK_STATUS_SET, RELEASE_STATUS_SET, PRIORITIES, SENSITIVE_WORDS, EMAIL, PHONE, REF, FIELD, SAFE_FIELD_EXCEPTIONS, OpsLedgerError;
 var init_ops_ledger = __esm({
   "lib/ops-ledger.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     ACTOR_KINDS = Object.freeze(["human", "codex", "worker", "github", "cloudflare"]);
     TASK_STATUSES = Object.freeze(["todo", "open", "in_progress", "blocked", "done", "completed", "cancelled"]);
     RELEASE_STATUSES = Object.freeze(["planned", "pending", "queued", "building", "active", "succeeded", "failed", "rolled_back", "cancelled"]);
@@ -7009,15 +7009,15 @@ function safeInput(body, resource) {
   }
   return input;
 }
-function requireLedgerIngestKey(context, headers4) {
-  const configured = context.env.OPS_LEDGER_INGEST_KEY;
-  if (!configured) {
+function requireLedgerIngestKey(context, headers5) {
+  const configured2 = context.env.OPS_LEDGER_INGEST_KEY;
+  if (!configured2) {
     console.error("[staff-operations-ledger] OPS_LEDGER_INGEST_KEY is not configured; denying service write");
-    return new Response(JSON.stringify({ error: "Operations Ledger ingest is not configured" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Operations Ledger ingest is not configured" }), { status: 500, headers: headers5 });
   }
   const provided = context.request.headers.get("OPS_LEDGER_INGEST_KEY") || "";
-  if (!provided || !timingSafeEqual(provided, configured)) {
-    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: headers4 });
+  if (!provided || !timingSafeEqual(provided, configured2)) {
+    return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: headers5 });
   }
   return null;
 }
@@ -7025,13 +7025,13 @@ async function onRequestOptions5(context) {
   return new Response(null, { status: 204, headers: responseHeaders(context) });
 }
 async function onRequestGet4(context) {
-  const headers4 = responseHeaders(context);
-  const auth = await requireStaffAuth(context, headers4);
+  const headers5 = responseHeaders(context);
+  const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
   const url = new URL(context.request.url);
   const requestedResource = resourceFrom(context);
   if (requestedResource && !RESOURCES.has(requestedResource)) {
-    return new Response(JSON.stringify({ error: "Unknown ledger resource" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Unknown ledger resource" }), { status: 400, headers: headers5 });
   }
   try {
     const result = await readOperationsLedger(context.env, {
@@ -7040,21 +7040,21 @@ async function onRequestGet4(context) {
       cursor: (url.searchParams.get("cursor") || "").slice(0, 512) || null,
       filters: filtersFrom(url)
     });
-    return new Response(JSON.stringify(projectRead(result, requestedResource || null)), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(projectRead(result, requestedResource || null)), { status: 200, headers: headers5 });
   } catch (error) {
     console.error("[staff-operations-ledger] read failed:", error instanceof Error ? error.message : String(error));
-    return new Response(JSON.stringify({ error: "Operations Ledger is unavailable" }), { status: 503, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Operations Ledger is unavailable" }), { status: 503, headers: headers5 });
   }
 }
 async function onRequestPost3(context) {
-  const headers4 = responseHeaders(context);
-  const denied = requireLedgerIngestKey(context, headers4);
+  const headers5 = responseHeaders(context);
+  const denied = requireLedgerIngestKey(context, headers5);
   if (denied) return denied;
   const resource = resourceFrom(context);
   if (!INGEST_RESOURCES.has(resource)) {
-    return new Response(JSON.stringify({ error: "Ingest resource must be tasks, events, or releases" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Ingest resource must be tasks, events, or releases" }), { status: 400, headers: headers5 });
   }
-  const { body, error } = await parseJsonBody(context.request, headers4);
+  const { body, error } = await parseJsonBody(context.request, headers5);
   if (error) return error;
   const input = safeInput(body, resource);
   const ingest = INGESTORS[resource];
@@ -7069,16 +7069,16 @@ async function onRequestPost3(context) {
       success: true,
       resource,
       result: projected
-    }), { status: 200, headers: headers4 });
+    }), { status: 200, headers: headers5 });
   } catch (error2) {
     console.error("[staff-operations-ledger] ingest failed:", error2 instanceof Error ? error2.message : String(error2));
-    return new Response(JSON.stringify({ error: "Operations Ledger ingest failed" }), { status: 503, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Operations Ledger ingest failed" }), { status: 503, headers: headers5 });
   }
 }
 var METHODS, MAX_LIMIT, DEFAULT_LIMIT, RESOURCES, INGEST_RESOURCES, SAFE_FIELDS, SAFE_INPUT_FIELDS, INGESTORS;
 var init_staff_operations_ledger = __esm({
   "api/staff-operations-ledger.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_safe_equal();
     init_ops_ledger();
@@ -7183,7 +7183,7 @@ var init_staff_operations_ledger = __esm({
 // api/ops/ledger.js
 var init_ledger = __esm({
   "api/ops/ledger.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_staff_operations_ledger();
   }
 });
@@ -7192,9 +7192,9 @@ var init_ledger = __esm({
 function text2(value, max = MAX_NOTE_LENGTH) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
-async function readBody(request) {
+async function readBody(request2) {
   try {
-    return await request.json();
+    return await request2.json();
   } catch {
     return null;
   }
@@ -7284,7 +7284,7 @@ async function onRequestPost4(context) {
 var HEADERS, STATES, MAX_NOTE_LENGTH, MAX_FUTURE_SKEW_MS, EXTERNAL_MONITOR_PATHS;
 var init_monitor_event = __esm({
   "api/ops/monitor-event.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_auth();
     init_ops_events();
     init_ops_registry();
@@ -7333,10 +7333,10 @@ async function createRepairCommand(env, { command, pathId, requestedBy = "ops" }
   if (!policy) return { ok: false, error: "path-not-authorized" };
   const kv = env?.PORTAL_KV;
   if (!kv) return { ok: false, error: "no-kv" };
-  const commandId2 = id2();
+  const commandId = id2();
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const entry = {
-    id: commandId2,
+    id: commandId,
     command: COMMAND,
     pathId,
     requestedBy,
@@ -7344,7 +7344,7 @@ async function createRepairCommand(env, { command, pathId, requestedBy = "ops" }
     status: "pending",
     policy: { mode: policy.mode, touch: policy.touch, verify: policy.verify }
   };
-  await kv.put(repairCommandKey(commandId2), JSON.stringify(entry), { expirationTtl: TTL_S });
+  await kv.put(repairCommandKey(commandId), JSON.stringify(entry), { expirationTtl: TTL_S });
   return { ok: true, command: entry };
 }
 function authorizationModeFor(original, action) {
@@ -7366,10 +7366,10 @@ async function authorizeRepairCommand(env, sourceId, { command, requestedBy = "o
   if (!["completed", "blocked"].includes(original.status)) return { ok: false, error: "not-ready" };
   const executionMode = authorizationModeFor(original, action);
   if (!executionMode) return { ok: false, error: "wrong-authorization" };
-  const commandId2 = id2();
+  const commandId = id2();
   const now = (/* @__PURE__ */ new Date()).toISOString();
   const entry = {
-    id: commandId2,
+    id: commandId,
     command: action,
     pathId: original.pathId,
     requestedBy,
@@ -7383,7 +7383,7 @@ async function authorizeRepairCommand(env, sourceId, { command, requestedBy = "o
       grantedAt: now
     }
   };
-  await kv.put(repairCommandKey(commandId2), JSON.stringify(entry), { expirationTtl: TTL_S });
+  await kv.put(repairCommandKey(commandId), JSON.stringify(entry), { expirationTtl: TTL_S });
   return { ok: true, command: entry };
 }
 async function claimNextRepairCommand(env, { runnerId } = {}) {
@@ -7429,7 +7429,7 @@ async function finishRepairCommand(env, id3, { status, result } = {}) {
 var PREFIX, TTL_S, LEASE_S, COMMAND, APPROVAL_COMMANDS, REPAIR_MODE, AUTO_REPAIR_PATHS, APPROVAL_PATHS, CONFIRM_PATHS, REPAIR_POLICIES;
 var init_ops_repair_command = __esm({
   "lib/ops-repair-command.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_registry();
     init_ops_board_meta();
     PREFIX = "ops:repair:command:";
@@ -7534,7 +7534,7 @@ async function onRequestPost5(context) {
 var HEADERS2, json4;
 var init_repair_command = __esm({
   "api/ops/repair-command.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_auth();
     init_ops_repair_command();
     HEADERS2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -7553,13 +7553,13 @@ async function onRequestOptions6(context) {
 }
 async function onRequestGet6(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = {
+  const headers5 = {
     ...corsHeaders3(origin, "GET, OPTIONS"),
     "Content-Type": "application/json",
     "Cache-Control": "no-store",
     "X-Robots-Tag": "noindex, nofollow"
   };
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const url = new URL(context.request.url);
   const pathId = url.searchParams.get("pathId");
@@ -7575,31 +7575,31 @@ async function onRequestGet6(context) {
       if (!person) {
         return new Response(JSON.stringify({ error: "Unknown path or missing person key" }), {
           status: 404,
-          headers: headers4
+          headers: headers5
         });
       }
-      return new Response(JSON.stringify(person), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify(person), { status: 200, headers: headers5 });
     }
     if (pathId) {
       const detail = await buildPathDetail(context.env, pathId);
       if (!detail) {
-        return new Response(JSON.stringify({ error: "Unknown path" }), { status: 404, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Unknown path" }), { status: 404, headers: headers5 });
       }
-      return new Response(JSON.stringify(detail), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify(detail), { status: 200, headers: headers5 });
     }
     const board = await buildSystemsBoard(context.env);
-    return new Response(JSON.stringify(board), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(board), { status: 200, headers: headers5 });
   } catch (err) {
     console.error(`[api/ops/systems] ${err && err.message}`);
     return new Response(JSON.stringify({ error: "Failed to load systems" }), {
       status: 500,
-      headers: headers4
+      headers: headers5
     });
   }
 }
 var init_systems = __esm({
   "api/ops/systems.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_ops_board();
     __name(onRequestOptions6, "onRequestOptions");
@@ -7610,7 +7610,7 @@ var init_systems = __esm({
 // api/staff-operations-ledger/[resource].js
 var init_resource = __esm({
   "api/staff-operations-ledger/[resource].js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_staff_operations_ledger();
   }
 });
@@ -7631,7 +7631,7 @@ async function isContactRevoked(kv, contactId) {
 var REVOKE_PREFIX;
 var init_session_guard = __esm({
   "lib/session-guard.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     REVOKE_PREFIX = "auth-revoked:";
     __name(revokeKey, "revokeKey");
     __name(isContactRevoked, "isContactRevoked");
@@ -7639,10 +7639,10 @@ var init_session_guard = __esm({
 });
 
 // lib/owned-access.js
-async function requireOwner(context, headers4, { audience, messages = {} } = {}) {
+async function requireOwner(context, headers5, { audience, messages = {} } = {}) {
   const msg = { ...DEFAULT_MESSAGES, ...messages };
   const fail2 = /* @__PURE__ */ __name((status, message) => ({
-    error: new Response(JSON.stringify({ error: message }), { status, headers: headers4 })
+    error: new Response(JSON.stringify({ error: message }), { status, headers: headers5 })
   }), "fail");
   const secret = context.env.JWT_SECRET;
   if (!secret) return fail2(500, msg.misconfigured);
@@ -7660,9 +7660,9 @@ async function requireOwner(context, headers4, { audience, messages = {} } = {})
   if (await isContactRevoked(context.env.PORTAL_KV, contactId)) return fail2(401, msg.revoked);
   return { tokenPayload, contactId };
 }
-async function loadOwnedContact(context, headers4, { audience, requireTag, messages = {} } = {}) {
+async function loadOwnedContact(context, headers5, { audience, requireTag, messages = {} } = {}) {
   const msg = { ...DEFAULT_MESSAGES, ...messages };
-  const gate = await requireOwner(context, headers4, { audience, messages });
+  const gate = await requireOwner(context, headers5, { audience, messages });
   if (gate.error) return gate;
   const { tokenPayload, contactId } = gate;
   const ghlToken = await getGhlToken(context);
@@ -7674,7 +7674,7 @@ async function loadOwnedContact(context, headers4, { audience, requireTag, messa
     return {
       error: new Response(JSON.stringify({ error: msg.contactFetchFailed }), {
         status: 422,
-        headers: headers4
+        headers: headers5
       })
     };
   }
@@ -7684,7 +7684,7 @@ async function loadOwnedContact(context, headers4, { audience, requireTag, messa
     return {
       error: new Response(JSON.stringify({ error: msg.tagMissing }), {
         status: 403,
-        headers: headers4
+        headers: headers5
       })
     };
   }
@@ -7693,7 +7693,7 @@ async function loadOwnedContact(context, headers4, { audience, requireTag, messa
 var GHL_API_BASE3, DEFAULT_MESSAGES;
 var init_owned_access = __esm({
   "lib/owned-access.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     init_session_guard();
     init_ghl();
@@ -7731,10 +7731,10 @@ async function onRequestOptions7(context) {
 }
 async function onRequestPost6(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders4(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders4(origin);
+  headers5["Content-Type"] = "application/json";
   try {
-    const owned = await loadOwnedContact(context, headers4, {
+    const owned = await loadOwnedContact(context, headers5, {
       audience: "partner",
       requireTag: "affiliate-partner"
     });
@@ -7744,14 +7744,14 @@ async function onRequestPost6(context) {
     if (!body.clientFirstName || !body.clientPhone) {
       return new Response(
         JSON.stringify({ error: "Client name and phone are required" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const phoneDigitCount = (String(body.clientPhone).match(/\d/g) || []).length;
     if (phoneDigitCount < 10) {
       return new Response(
         JSON.stringify({ error: "Phone number must have at least 10 digits" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const affiliateName = partner.firstName ? partner.firstName.charAt(0).toUpperCase() + partner.firstName.slice(1).toLowerCase() : "Partner";
@@ -7790,7 +7790,7 @@ async function onRequestPost6(context) {
       console.error(`[affiliate-refer] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save referral" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
@@ -7818,20 +7818,20 @@ async function onRequestPost6(context) {
     }
     return new Response(
       JSON.stringify({ success: true }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[affiliate-refer] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE4, GHL_LOCATION_ID2, REFERRAL_SOURCE_FIELD_ID, PARTNER_CONTACT_ID_FIELD_ID, REFERRAL_TYPE_FIELD_ID, REFERRAL_FEE_STATUS_FIELD_ID, ALLOWED_ORIGINS3;
 var init_affiliate_refer = __esm({
   "api/affiliate-refer.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     GHL_API_BASE4 = "https://services.leadconnectorhq.com";
@@ -7916,7 +7916,7 @@ function normalizeAppointmentEvent(payload) {
 var APPOINTMENT_EVENT_TYPES, STATUS_TO_TYPE, APPOINTMENT_ID_KEYS, CALENDAR_ID_KEYS, CONTACT_ID_KEYS, START_AT_KEYS, STATUS_KEYS, MODIFIED_BY_KEYS, APPOINTMENT_EVENT_KIND_KEYS, APPOINTMENT_RECURRING_KEYS;
 var init_appointment_event = __esm({
   "lib/appointment-event.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_datetime();
     APPOINTMENT_EVENT_TYPES = Object.freeze({
       BOOKED: "booked",
@@ -7994,7 +7994,7 @@ async function releaseProcessedEvent(db, eventId) {
 }
 var init_processed_events = __esm({
   "lib/processed-events.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(changesOf3, "changesOf");
     __name(claimProcessedEvent, "claimProcessedEvent");
     __name(releaseProcessedEvent, "releaseProcessedEvent");
@@ -8029,7 +8029,7 @@ function emitNurtureEvent(context, event2) {
 }
 var init_engine_forward = __esm({
   "lib/engine-forward.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(forwardEventToEngine, "forwardEventToEngine");
     __name(emitNurtureEvent, "emitNurtureEvent");
   }
@@ -8060,7 +8060,7 @@ async function dispatchAppointmentEvent(context, event2) {
 var CONSUMERS;
 var init_appointment_dispatch = __esm({
   "lib/appointment-dispatch.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_engine_forward();
     CONSUMERS = [
       { name: "reminder", urlVar: "REMINDER_ENGINE_URL" },
@@ -8177,7 +8177,7 @@ async function onRequestPost7(context) {
 var JSON_HEADERS, KEY_TTL_SECONDS;
 var init_appointment_webhook = __esm({
   "api/appointment-webhook.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_appointment_event();
     init_safe_equal();
     init_processed_events();
@@ -8214,28 +8214,28 @@ async function onRequestOptions8(context) {
 }
 async function onRequestGet7(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders5(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders5(origin), "Content-Type": "application/json" };
   try {
     const JWT_SECRET = context.env.JWT_SECRET;
     if (!JWT_SECRET) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: headers5 });
     }
     const authHeader = context.request.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: headers5 });
     }
     let tokenPayload;
     try {
       tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
     } catch {
-      return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers: headers5 });
     }
     if (tokenPayload.role !== "staff") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: headers5 });
     }
     const kv = context.env.PORTAL_KV;
     if (!kv) {
-      return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: headers5 });
     }
     const url = new URL(context.request.url);
     const dateParam = url.searchParams.get("date");
@@ -8246,30 +8246,30 @@ async function onRequestGet7(context) {
       if (!record3) {
         return new Response(
           JSON.stringify({ contactId, date: dateParam || null, coaching: null, message: "No coaching for this contact" }),
-          { status: 200, headers: headers4 }
+          { status: 200, headers: headers5 }
         );
       }
-      return new Response(JSON.stringify(record3), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify(record3), { status: 200, headers: headers5 });
     }
     const date2 = dateParam || yesterdayPacific();
     const digest2 = await kv.get(`${KV_DAILY_PREFIX}${date2}`, "json");
     if (!digest2) {
       return new Response(
         JSON.stringify({ date: date2, count: 0, items: [], message: "No coaching digest for this date" }),
-        { status: 200, headers: headers4 }
+        { status: 200, headers: headers5 }
       );
     }
-    return new Response(JSON.stringify(digest2), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(digest2), { status: 200, headers: headers5 });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[call-coach] reader failed:", detail);
-    return new Response(JSON.stringify({ error: `Failed to load coaching: ${detail}` }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: `Failed to load coaching: ${detail}` }), { status: 500, headers: headers5 });
   }
 }
 var PT, KV_CALL_PREFIX, KV_DAILY_PREFIX, KV_LATEST_PREFIX, ALLOWED_ORIGINS4;
 var init_call_coach = __esm({
   "api/call-coach.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     PT = "America/Los_Angeles";
     KV_CALL_PREFIX = "call-coach:";
@@ -8322,11 +8322,11 @@ async function onRequestOptions9(context) {
 }
 async function onRequestPost8(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders6(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders6(origin);
+  headers5["Content-Type"] = "application/json";
   return new Response(
     JSON.stringify({ error: "Client referral links are no longer active." }),
-    { status: 410, headers: headers4 }
+    { status: 410, headers: headers5 }
   );
   try {
     const GHL_API_KEY = await getGhlToken(context);
@@ -8334,7 +8334,7 @@ async function onRequestPost8(context) {
       console.error("[client-refer] GHL_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const body = await context.request.json();
@@ -8342,26 +8342,26 @@ async function onRequestPost8(context) {
     if (!referrerId || typeof referrerId !== "string" || referrerId.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "Invalid referral link" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     if (!referredName || typeof referredName !== "string" || referredName.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "Please enter your first name" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     if (!referredPhone || typeof referredPhone !== "string" || referredPhone.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "Please enter your phone number" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const phoneDigitCount = (referredPhone.match(/\d/g) || []).length;
     if (phoneDigitCount < 10) {
       return new Response(
         JSON.stringify({ error: "Phone number must have at least 10 digits" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const sanitizedReferrerId = referrerId.trim().slice(0, 50);
@@ -8377,7 +8377,7 @@ async function onRequestPost8(context) {
       console.warn(`[client-refer] Referrer not found or invalid: ${sanitizedReferrerId} (${referrerRes.status})`);
       return new Response(
         JSON.stringify({ error: "Invalid referral link" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const referredByFieldId = fieldDefs["referred_by_client_id"];
@@ -8403,7 +8403,7 @@ async function onRequestPost8(context) {
       console.error(`[client-refer] GHL upsert error: ${upsertRes.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Something went wrong. Please try again." }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertRes.json();
@@ -8411,20 +8411,20 @@ async function onRequestPost8(context) {
     console.log(`[client-refer] Contact upserted: ${contactId || "unknown"} (referred by: ${sanitizedReferrerId})`);
     return new Response(
       JSON.stringify({ success: true, bookingUrl: BOOKING_URL }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[client-refer] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE5, GHL_LOCATION_ID3, BOOKING_URL, ALLOWED_ORIGINS5;
 var init_client_refer = __esm({
   "api/client-refer.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     GHL_API_BASE5 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID3 = "7pIO7FHVAyBT1jKGhfQM";
@@ -8444,27 +8444,27 @@ var init_client_refer = __esm({
 async function onRequestGet8(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
-  const headers4 = { "Content-Type": "application/json" };
+  const headers5 = { "Content-Type": "application/json" };
   const kv = context.env.PORTAL_KV;
   if (!kv) {
     return new Response(
       JSON.stringify({ error: "KV not configured" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
   const data = await kv.get(KV_SUMMARY, "json");
   if (!data) {
     return new Response(
       JSON.stringify({ error: "No comms-coherence summary yet" }),
-      { status: 404, headers: headers4 }
+      { status: 404, headers: headers5 }
     );
   }
-  return new Response(JSON.stringify(data), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify(data), { status: 200, headers: headers5 });
 }
 var KV_SUMMARY;
 var init_comms_summary = __esm({
   "api/comms-summary.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_auth();
     KV_SUMMARY = "comms:flags:summary";
     __name(onRequestGet8, "onRequestGet");
@@ -8513,8 +8513,8 @@ async function onRequestOptions10(context) {
 }
 async function onRequestPost9(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders7(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders7(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -8524,7 +8524,7 @@ async function onRequestPost9(context) {
       if (currentCount >= 10) {
         return new Response(
           JSON.stringify({ error: "Too many submissions. Please try again later." }),
-          { status: 429, headers: headers4 }
+          { status: 429, headers: headers5 }
         );
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
@@ -8532,7 +8532,7 @@ async function onRequestPost9(context) {
     const body = await context.request.json();
     const validated = validateContactMessage(body);
     if (validated.error) {
-      return new Response(JSON.stringify({ error: validated.error }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: validated.error }), { status: 400, headers: headers5 });
     }
     const [firstName, ...rest] = validated.name.split(/\s+/);
     const upsertPayload = {
@@ -8551,7 +8551,7 @@ async function onRequestPost9(context) {
     if (!upsertResponse.ok) {
       const errorText = await upsertResponse.text();
       console.error(`[contact-message] GHL upsert error: ${upsertResponse.status} ${errorText}`);
-      return new Response(JSON.stringify({ error: "Failed to save" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to save" }), { status: 422, headers: headers5 });
     }
     const upsertData = await upsertResponse.json();
     const contactId = upsertData.contact?.id;
@@ -8570,19 +8570,19 @@ ${validated.message}`
         console.error(`[contact-message] Note create error for ${contactId}: ${noteResponse.status} ${noteError}`);
       }
     }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[contact-message] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE6, GHL_LOCATION_ID4, ALLOWED_ORIGINS6, MAX_NAME, MAX_PHONE, MAX_MESSAGE;
 var init_contact_message = __esm({
   "api/contact-message.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     GHL_API_BASE6 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID4 = "7pIO7FHVAyBT1jKGhfQM";
@@ -8701,7 +8701,7 @@ async function onRequestPost10(context) {
 var ALLOWED_ORIGINS7, COS_QUEUE_USERS;
 var init_cos_actions = __esm({
   "api/cos-actions.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     init_safe_equal();
     ALLOWED_ORIGINS7 = [
@@ -8797,7 +8797,7 @@ async function clearPinAttempts(kv, { ip, scope }) {
 var RATE_LIMITS, PIN_RATE_LIMITS, pinAttemptKey;
 var init_rate_limit = __esm({
   "lib/rate-limit.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     RATE_LIMITS = Object.freeze({
       EMAIL_COOLDOWN_SEC: 5 * 60,
       // one login email per address per 5 min (was 60s)
@@ -8825,15 +8825,15 @@ var init_rate_limit = __esm({
 
 // api/cos-auth.js
 function corsHeaders9(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS8.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 async function createToken(payload, secret) {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
@@ -8859,28 +8859,28 @@ async function onRequestOptions12(context) {
 }
 async function onRequestPost11(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders9(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders9(origin), "Content-Type": "application/json" };
   try {
     const body = await context.request.json();
     const pin = (body.pin || "").trim();
     if (!pin || pin.length < 4 || pin.length > 8) {
       return new Response(
         JSON.stringify({ error: "Invalid PIN format." }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const JWT_SECRET = context.env.JWT_SECRET;
     if (!JWT_SECRET) {
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const ip = context.request.headers.get("CF-Connecting-IP") || "";
     const rateLimitKv = pinRateLimitKv(context.env);
     const gate = await checkPinAttempts(rateLimitKv, { ip, scope: "cos" });
     if (!gate.ok) {
-      return new Response(JSON.stringify({ error: gate.error }), { status: gate.status, headers: headers4 });
+      return new Response(JSON.stringify({ error: gate.error }), { status: gate.status, headers: headers5 });
     }
     const cosUsers = [
       { envKey: "STAFF_PIN_EBEN", name: "Eben" },
@@ -8906,7 +8906,7 @@ async function onRequestPost11(context) {
       await recordFailedPinAttempt(rateLimitKv, { ip, scope: "cos", count: gate.count });
       return new Response(
         JSON.stringify({ error: "Incorrect PIN." }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     await clearPinAttempts(rateLimitKv, { ip, scope: "cos" });
@@ -8924,20 +8924,20 @@ async function onRequestPost11(context) {
     });
     return new Response(
       JSON.stringify({ token }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[cos-auth] Error:", err.message);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var ALLOWED_ORIGINS8;
 var init_cos_auth = __esm({
   "api/cos-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_rate_limit();
     init_ops_last_run();
     ALLOWED_ORIGINS8 = [
@@ -9264,9 +9264,9 @@ async function getRecentEmails(context, user) {
         );
         if (!msgResp.ok) return null;
         const msg = await msgResp.json();
-        const headers4 = msg.payload?.headers || [];
-        const subject2 = headers4.find((h) => h.name === "Subject")?.value || "(no subject)";
-        const from = headers4.find((h) => h.name === "From")?.value || "Unknown";
+        const headers5 = msg.payload?.headers || [];
+        const subject2 = headers5.find((h) => h.name === "Subject")?.value || "(no subject)";
+        const from = headers5.find((h) => h.name === "From")?.value || "Unknown";
         const fromName = from.includes("<") ? from.split("<")[0].trim().replace(/"/g, "") : from;
         return `- ${fromName}: ${subject2}`;
       })
@@ -9281,7 +9281,7 @@ ${messages.filter(Boolean).join("\n")}`;
 var GOOGLE_TOKEN_URL, REFRESH_BUFFER_MS2, LEGACY_KV_ACCESS_TOKEN, LEGACY_KV_REFRESH_TOKEN, LEGACY_KV_TOKEN_EXPIRY, LEGACY_USER;
 var init_google_api = __esm({
   "lib/google-api.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_datetime();
     GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
     REFRESH_BUFFER_MS2 = 5 * 60 * 1e3;
@@ -9326,7 +9326,7 @@ function hasFoundersCircleTag(tags = []) {
 var FOUNDERS_CIRCLE_TAG;
 var init_portal_helpers = __esm({
   "lib/portal-helpers.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(getCustomField, "getCustomField");
     __name(isChecked, "isChecked");
     __name(computeHasLivingPractice, "computeHasLivingPractice");
@@ -9347,7 +9347,7 @@ function creditsOnPurchase(productId, p2) {
 var PACKAGE_TYPES, CANONICAL_SERIES_BY_GHL_VALUE, SESSION_COUNT_BY_SERIES_TYPE, GHL_PRODUCTS, LEDGER_PRODUCT_MAP, WEBHOOK_PURCHASE_MAP, PRICE_IDS, DRAW_DOWN_PRODUCT_IDS, ID_TO_PRODUCT_ID, productIdForAnyId, PURCHASE_CREDIT_MAP, PACKAGE_MAP, AUDIT_INCREMENT_MAP;
 var init_ghl_products = __esm({
   "lib/ghl-products.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     PACKAGE_TYPES = /* @__PURE__ */ new Set(["4-series", "8-series", "6-week", "12-week", "4-upgrade", "8-upgrade", "4-to-8-upgrade"]);
     CANONICAL_SERIES_BY_GHL_VALUE = Object.freeze({
       "4-session": "4-session",
@@ -9714,7 +9714,7 @@ async function hydrateOrders(fetchOrderDetail2, ordersList, options = {}) {
 var DEFAULT_CONCURRENCY;
 var init_ghl_orders = __esm({
   "lib/ghl-orders.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     DEFAULT_CONCURRENCY = 3;
     __name(hydrateOrders, "hydrateOrders");
   }
@@ -10051,7 +10051,7 @@ async function computeSessionLedger(context, contactId, options = {}) {
 var GHL_API_BASE7, GHL_LOCATION_ID5, ACTIVE_PRODUCTS, SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS, ATTENDED_STATUSES;
 var init_session_ledger = __esm({
   "lib/session-ledger.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_portal_helpers();
     init_ghl_products();
@@ -10217,10 +10217,10 @@ async function getPackageTracking(context, user) {
         );
         if (!msgResp.ok) return null;
         const msg = await msgResp.json();
-        const headers4 = msg.payload?.headers || [];
-        const subject2 = headers4.find((h) => h.name === "Subject")?.value || "(no subject)";
-        const from = headers4.find((h) => h.name === "From")?.value || "Unknown";
-        const date2 = headers4.find((h) => h.name === "Date")?.value || "";
+        const headers5 = msg.payload?.headers || [];
+        const subject2 = headers5.find((h) => h.name === "Subject")?.value || "(no subject)";
+        const from = headers5.find((h) => h.name === "From")?.value || "Unknown";
+        const date2 = headers5.find((h) => h.name === "Date")?.value || "";
         const fromName = from.includes("<") ? from.split("<")[0].trim().replace(/"/g, "") : from;
         const shortDate = date2 ? new Date(date2).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "";
         return `- ${shortDate}: ${fromName} \u2014 ${subject2}`;
@@ -10318,7 +10318,7 @@ async function geocode(location) {
 var SF_LAT, SF_LON, WEATHER_CODES;
 var init_cos_lookups = __esm({
   "lib/cos-lookups.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_google_api();
     init_ghl();
     SF_LAT = 37.78;
@@ -10724,7 +10724,7 @@ async function handleQueue(context, action) {
 var SPOTIFY_TOKEN_URL, SPOTIFY_API_BASE, REFRESH_BUFFER_MS3, KV_ACCESS_TOKEN2, KV_REFRESH_TOKEN2, KV_TOKEN_EXPIRY2;
 var init_spotify = __esm({
   "lib/spotify.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
     SPOTIFY_API_BASE = "https://api.spotify.com/v1";
     REFRESH_BUFFER_MS3 = 5 * 60 * 1e3;
@@ -10788,7 +10788,7 @@ ${sections.join("\n\n---\n\n")}`;
 var ALWAYS_DOCS, ON_DEMAND_DOCS;
 var init_cos_vault = __esm({
   "lib/cos-vault.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     ALWAYS_DOCS = ["positioning", "garrett-voice", "lifecycles", "technical-reference"];
     ON_DEMAND_DOCS = [
       { name: "messaging-templates", trigger: /email|message|template|copy|write|draft|send/i },
@@ -11293,7 +11293,7 @@ ${schedules}`;
 var HISTORY_CAP, RULES_CAP, HISTORY_KEY, RULES_KEY, SF_SWEEP_KEY, SF_ADDRESS_DATASET, SF_STREET_SEGMENTS_DATASET, STREET_TYPE_ALIASES, CITY_STREET_TYPES, SWEEP_WEEKDAYS;
 var init_cos_parking = __esm({
   "lib/cos-parking.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     HISTORY_CAP = 100;
     RULES_CAP = 300;
     HISTORY_KEY = /* @__PURE__ */ __name((user) => `cos:parking-history:${user}`, "HISTORY_KEY");
@@ -11444,7 +11444,7 @@ async function replaceParkingCalendarReminder({ kv, createEvent, deleteEvent }, 
 var activeReminderKey;
 var init_cos_parking_calendar = __esm({
   "lib/cos-parking-calendar.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_cos_parking();
     activeReminderKey = /* @__PURE__ */ __name((user) => `cos:active-parking-reminder:${user}`, "activeReminderKey");
     __name(retireTrackedEvents, "retireTrackedEvents");
@@ -11613,7 +11613,7 @@ async function listFieldPartners(kv, user, { limit = 25, stage } = {}) {
 var INDEX_KEY, PARTNER_KEY, VISIT_KEY, IMAGE_KEY, MAX_INDEX_ENTRIES, MAX_IMAGES, STAGES, STAGE_RANK;
 var init_cos_field_visits = __esm({
   "lib/cos-field-visits.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     INDEX_KEY = /* @__PURE__ */ __name((user) => `cos:field-partners:${user}:index`, "INDEX_KEY");
     PARTNER_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-partner:${user}:${id3}`, "PARTNER_KEY");
     VISIT_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-visit:${user}:${id3}`, "VISIT_KEY");
@@ -12163,7 +12163,7 @@ async function streamWithTools({ apiKey, requestBody, onTextDelta, executeToolFn
 var OPENROUTER_MESSAGES_API, OPENROUTER_MODEL, LOCATION_ID, MAX_TOOL_ROUNDS, FIELD_SESSIONS_REMAINING, FIELD_SESSIONS_COMPLETED, FIELD_SERIES_TYPE, TOOLS;
 var init_cos_anthropic = __esm({
   "lib/cos-anthropic.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_session_ledger();
     init_ghl_fields();
@@ -12353,7 +12353,7 @@ var init_cos_anthropic = __esm({
 var VOICE_STANDARD;
 var init_voice_standard = __esm({
   "lib/voice-standard.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     VOICE_STANDARD = `# The Amari voice standard
 
 You write copy that a real person would send. Not AI. Not slick. Not clipped.
@@ -12459,7 +12459,7 @@ function mechanicalTells(text6) {
 var HARD_TELLS;
 var init_slop_lint = __esm({
   "lib/slop-lint.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     HARD_TELLS = [
       // Mechanical
       { id: "em-dash", label: "em/en dash \u2014 rewrite as two sentences or a comma", re: /—|–/ },
@@ -12612,7 +12612,7 @@ async function generateOnBrand({ apiKey, userName = "Garrett", messages, maxRoun
 var CHANNELS, DEFAULT_MAX_ROUNDS;
 var init_voice_engine = __esm({
   "lib/voice-engine.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_voice_standard();
     init_cos_anthropic();
     init_slop_lint();
@@ -12644,7 +12644,7 @@ function routeAskAmariRequest({ message, previousMode } = {}) {
 var REWRITE_REQUEST, DRAFT_REQUEST, COPY_TARGET, REQUESTS_COPY, OPERATION_TARGET, SOFT_REWRITE, FACTUAL_OR_OPERATIONS_REQUEST;
 var init_ask_amari_router = __esm({
   "lib/ask-amari-router.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     REWRITE_REQUEST = /\b(?:rewrite|reword|de-?slop|polish|proofread|shorten|lengthen)\b/i;
     DRAFT_REQUEST = /\b(?:draft|write|edit)\b/i;
     COPY_TARGET = /\b(?:text|sms|email|message|subject(?: line)?|caption|ad(?: copy)?|website copy|headline|follow-?up|copy|letter|note)\b/i;
@@ -12746,15 +12746,15 @@ function writerHistory(messages) {
   while (first >= 0 && messages[first]?.mode === "write") first -= 1;
   return messages.slice(first + 1).slice(-12).map(({ role, content }) => ({ role, content }));
 }
-function streamHeaders(headers4) {
+function streamHeaders(headers5) {
   return {
-    ...headers4,
+    ...headers5,
     "Content-Type": "text/event-stream",
     "Cache-Control": "no-cache",
     "Connection": "keep-alive"
   };
 }
-function writerStream(context, { apiKey, userName, messages, conversation, kv, dateKey, headers: headers4 }) {
+function writerStream(context, { apiKey, userName, messages, conversation, kv, dateKey, headers: headers5 }) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const encoder2 = new TextEncoder();
@@ -12781,7 +12781,7 @@ function writerStream(context, { apiKey, userName, messages, conversation, kv, d
       await writer.close();
     }
   })());
-  return new Response(readable, { headers: streamHeaders(headers4) });
+  return new Response(readable, { headers: streamHeaders(headers5) });
 }
 function buildSystemPrompt(context, calendarEvents, ghlSummary, userName) {
   const isEben = userName === "Eben";
@@ -13349,7 +13349,7 @@ async function onRequestOptions13(context) {
 }
 async function onRequestPost12(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders10(origin);
+  const headers5 = corsHeaders10(origin);
   const authHeader = context.request.headers.get("Authorization") || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : readStaffSessionToken(context.request);
   if (!token) {
@@ -13418,7 +13418,7 @@ async function onRequestPost12(context) {
       conversation,
       kv,
       dateKey,
-      headers: headers4
+      headers: headers5
     });
   }
   const msg = userMessage.toLowerCase();
@@ -13751,12 +13751,12 @@ ${actionSummary}`;
       await writer.close();
     }
   })());
-  return new Response(readable, { headers: streamHeaders(headers4) });
+  return new Response(readable, { headers: streamHeaders(headers5) });
 }
 var LEDGER_FIELD_DEFS, ALLOWED_ORIGINS9, SKIP_WORDS;
 var init_cos_chat = __esm({
   "api/cos-chat.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     init_endpoint_guards();
     init_google_api();
@@ -14030,7 +14030,7 @@ async function onRequestPost13(context) {
 var ALLOWED_ORIGINS10;
 var init_cos_daily_sync = __esm({
   "api/cos-daily-sync.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     ALLOWED_ORIGINS10 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -14098,7 +14098,7 @@ async function onRequestPost14(context) {
 var ALLOWED_ORIGINS11;
 var init_cos_ghl_sync = __esm({
   "api/cos-ghl-sync.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     ALLOWED_ORIGINS11 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -14112,14 +14112,14 @@ var init_cos_ghl_sync = __esm({
 
 // api/cos-google-auth.js
 function cors(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400",
     "Cache-Control": "no-store"
   };
-  if (ALLOWED_ORIGINS12.has(origin)) headers4["Access-Control-Allow-Origin"] = origin;
-  return headers4;
+  if (ALLOWED_ORIGINS12.has(origin)) headers5["Access-Control-Allow-Origin"] = origin;
+  return headers5;
 }
 function stateValue() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
@@ -14171,7 +14171,7 @@ async function onRequestPost15(context) {
 var AUTH_URL, CALLBACK_URL, GOOGLE_WORKSPACE_SCOPES, STATE_TTL_SECONDS, ALLOWED_ORIGINS12;
 var init_cos_google_auth = __esm({
   "api/cos-google-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
@@ -14259,7 +14259,7 @@ async function onRequestGet10(context) {
 var TOKEN_URL, CALLBACK_URL2, SUCCESS_URL, FAILURE_URL;
 var init_cos_google_callback = __esm({
   "api/cos-google-callback.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     TOKEN_URL = "https://oauth2.googleapis.com/token";
     CALLBACK_URL2 = "https://www.amarimethod.com/api/cos-google-callback";
     SUCCESS_URL = "https://www.amarimethod.com/cos/?google=connected";
@@ -14327,7 +14327,7 @@ async function onRequestGet11(context) {
 var HEADERS3;
 var init_cos_health = __esm({
   "api/cos-health.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_auth();
     init_cos_anthropic();
     init_google_api();
@@ -14341,13 +14341,13 @@ var init_cos_health = __esm({
 
 // api/cos-parking-current.js
 function corsHeaders13(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
-  if (ALLOWED_ORIGINS13.includes(origin)) headers4["Access-Control-Allow-Origin"] = origin;
-  return headers4;
+  if (ALLOWED_ORIGINS13.includes(origin)) headers5["Access-Control-Allow-Origin"] = origin;
+  return headers5;
 }
 function jsonResponse5(data, status, origin) {
   return new Response(JSON.stringify(data), {
@@ -14359,8 +14359,8 @@ function jsonResponse5(data, status, origin) {
     }
   });
 }
-async function authenticate2(request, env) {
-  const authHeader = request.headers.get("Authorization") || "";
+async function authenticate2(request2, env) {
+  const authHeader = request2.headers.get("Authorization") || "";
   const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
   if (!token) return null;
   try {
@@ -14392,7 +14392,7 @@ async function onRequestGet12(context) {
 var ALLOWED_ORIGINS13;
 var init_cos_parking_current = __esm({
   "api/cos-parking-current.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     init_cos_parking();
     ALLOWED_ORIGINS13 = ["https://www.amarimethod.com", "https://amarimethod.com"];
@@ -14406,8 +14406,8 @@ var init_cos_parking_current = __esm({
 
 // api/cos-parking-seed.js
 async function onRequestPost16(context) {
-  const { request, env } = context;
-  const provided = request.headers.get("X-Service-Key") || "";
+  const { request: request2, env } = context;
+  const provided = request2.headers.get("X-Service-Key") || "";
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
@@ -14452,8 +14452,8 @@ async function onRequestPost16(context) {
   });
 }
 async function onRequestGet13(context) {
-  const { request, env } = context;
-  const provided = request.headers.get("X-Service-Key") || "";
+  const { request: request2, env } = context;
+  const provided = request2.headers.get("X-Service-Key") || "";
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
@@ -14472,7 +14472,7 @@ function onRequestOptions18() {
 var DATASF_URL, PAGE_SIZE, MAX_PAGES, CORS_HEADERS, JSON_HEADERS2;
 var init_cos_parking_seed = __esm({
   "api/cos-parking-seed.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_cos_parking();
     DATASF_URL = "https://data.sfgov.org/resource/yhqp-riqs.json";
     PAGE_SIZE = 5e3;
@@ -14508,7 +14508,7 @@ async function onRequestGet14(context) {
 var SPOTIFY_AUTH_URL, SCOPES;
 var init_cos_spotify_auth = __esm({
   "api/cos-spotify-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
     SCOPES = [
       "user-read-playback-state",
@@ -14634,7 +14634,7 @@ function errorPage(message) {
 var SPOTIFY_TOKEN_URL2;
 var init_cos_spotify_callback = __esm({
   "api/cos-spotify-callback.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     SPOTIFY_TOKEN_URL2 = "https://accounts.spotify.com/api/token";
     __name(onRequestGet15, "onRequestGet");
     __name(successPage, "successPage");
@@ -14697,7 +14697,7 @@ async function onRequestPost17(context) {
 var ALLOWED_ORIGINS14;
 var init_cos_vault_sync = __esm({
   "api/cos-vault-sync.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     ALLOWED_ORIGINS14 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -14716,14 +14716,14 @@ function todayPacific() {
 async function onRequestGet16(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
-  const headers4 = {
+  const headers5 = {
     "Content-Type": "application/json"
   };
   const kv = context.env.PORTAL_KV;
   if (!kv) {
     return new Response(
       JSON.stringify({ error: "KV not configured" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
   const url = new URL(context.request.url);
@@ -14732,15 +14732,15 @@ async function onRequestGet16(context) {
   if (!data) {
     return new Response(
       JSON.stringify({ error: "No audit data for this date", date: date2 }),
-      { status: 404, headers: headers4 }
+      { status: 404, headers: headers5 }
     );
   }
-  return new Response(JSON.stringify(data), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify(data), { status: 200, headers: headers5 });
 }
 var PT2, AUDIT_KV_PREFIX;
 var init_daily_audit = __esm({
   "api/daily-audit.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_auth();
     PT2 = "America/Los_Angeles";
     AUDIT_KV_PREFIX = "ops:daily-audit:";
@@ -14756,14 +14756,14 @@ function todayPacific2() {
 async function onRequestGet17(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
-  const headers4 = {
+  const headers5 = {
     "Content-Type": "application/json"
   };
   const kv = context.env.PORTAL_KV;
   if (!kv) {
     return new Response(
       JSON.stringify({ error: "KV not configured" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
   const url = new URL(context.request.url);
@@ -14772,15 +14772,15 @@ async function onRequestGet17(context) {
   if (!data) {
     return new Response(
       JSON.stringify({ error: "No scan data for this date", date: date2 }),
-      { status: 404, headers: headers4 }
+      { status: 404, headers: headers5 }
     );
   }
-  return new Response(JSON.stringify(data), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify(data), { status: 200, headers: headers5 });
 }
 var PT3, SCAN_KV_PREFIX;
 var init_ecosystem_scan = __esm({
   "api/ecosystem-scan.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_auth();
     PT3 = "America/Los_Angeles";
     SCAN_KV_PREFIX = "ops:ecosystem-scan:";
@@ -14810,8 +14810,8 @@ async function onRequestOptions20(context) {
 }
 async function onRequestPost18(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders15(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders15(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -14821,7 +14821,7 @@ async function onRequestPost18(context) {
       if (currentCount >= 30) {
         return new Response(
           JSON.stringify({ error: "Too many submissions. Please try again later." }),
-          { status: 429, headers: headers4 }
+          { status: 429, headers: headers5 }
         );
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
@@ -14831,7 +14831,7 @@ async function onRequestPost18(context) {
     if (!isValidEmail2(email)) {
       return new Response(
         JSON.stringify({ error: "Valid email required" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const upsertPayload = {
@@ -14849,24 +14849,24 @@ async function onRequestPost18(context) {
       console.error(`[elbow-study-interest] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
     console.log(`[elbow-study-interest] Contact upserted: ${upsertData.contact?.id || "unknown"}`);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[elbow-study-interest] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE8, GHL_LOCATION_ID6, ALLOWED_ORIGINS15;
 var init_elbow_study_interest = __esm({
   "api/elbow-study-interest.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     GHL_API_BASE8 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
@@ -14885,7 +14885,7 @@ var init_elbow_study_interest = __esm({
 var STUDIES, STUDY_CALENDAR_ID, STUDY_TAGS;
 var init_studies = __esm({
   "lib/studies.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     STUDIES = {
       "tennis-elbow": {
         slug: "tennis-elbow",
@@ -15000,14 +15000,14 @@ function wantsPublishOptIn(publishOptIn) {
 var STUDY_PUBLISH_OPT_IN_TAG;
 var init_study_consent = __esm({
   "lib/study-consent.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     STUDY_PUBLISH_OPT_IN_TAG = "study-publish-opt-in";
     __name(wantsPublishOptIn, "wantsPublishOptIn");
   }
 });
 
 // lib/legacy-study-signup.js
-function legacyStudySignupDisabledResponse(headers4, studySlug) {
+function legacyStudySignupDisabledResponse(headers5, studySlug) {
   if (!LIVE_STUDY_SLUGS.has(studySlug)) {
     throw new TypeError("live study slug required");
   }
@@ -15019,7 +15019,7 @@ function legacyStudySignupDisabledResponse(headers4, studySlug) {
   }), {
     status: 409,
     headers: {
-      ...headers4,
+      ...headers5,
       "Content-Type": "application/json",
       "Cache-Control": "no-store"
     }
@@ -15028,7 +15028,7 @@ function legacyStudySignupDisabledResponse(headers4, studySlug) {
 var LIVE_STUDY_SLUGS;
 var init_legacy_study_signup = __esm({
   "lib/legacy-study-signup.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     LIVE_STUDY_SLUGS = /* @__PURE__ */ new Set([
       "tennis-elbow",
       "tmj",
@@ -15071,9 +15071,9 @@ async function onRequestOptions21(context) {
 }
 async function onRequestPost19(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders16(origin);
-  headers4["Content-Type"] = "application/json";
-  return legacyStudySignupDisabledResponse(headers4, "tennis-elbow");
+  const headers5 = corsHeaders16(origin);
+  headers5["Content-Type"] = "application/json";
+  return legacyStudySignupDisabledResponse(headers5, "tennis-elbow");
   try {
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -15083,7 +15083,7 @@ async function onRequestPost19(context) {
       if (currentCount >= 30) {
         return new Response(
           JSON.stringify({ error: "Too many submissions. Please try again later." }),
-          { status: 429, headers: headers4 }
+          { status: 429, headers: headers5 }
         );
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
@@ -15093,20 +15093,20 @@ async function onRequestPost19(context) {
     if (!name || !phone || !email) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     if (!isValidPhone(phone)) {
       return new Response(
         JSON.stringify({ error: "Invalid phone number" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
     if (!isValidEmail3(email)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanEmail = String(email).trim().toLowerCase();
@@ -15138,24 +15138,24 @@ async function onRequestPost19(context) {
       console.error(`[elbow-study-signup] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save sign-up" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
     console.log(`[elbow-study-signup] Contact upserted: ${upsertData.contact?.id || "unknown"}`);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[elbow-study-signup] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE9, GHL_LOCATION_ID7, STUDY, STUDY_NAME_FIELD_ID, ALLOWED_ORIGINS16;
 var init_elbow_study_signup = __esm({
   "api/elbow-study-signup.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -15208,9 +15208,9 @@ async function onRequestOptions22(context) {
 }
 async function onRequestPost20(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders17(origin);
-  headers4["Content-Type"] = "application/json";
-  return legacyStudySignupDisabledResponse(headers4, "runners-lower-leg");
+  const headers5 = corsHeaders17(origin);
+  headers5["Content-Type"] = "application/json";
+  return legacyStudySignupDisabledResponse(headers5, "runners-lower-leg");
   try {
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -15220,7 +15220,7 @@ async function onRequestPost20(context) {
       if (currentCount >= 30) {
         return new Response(
           JSON.stringify({ error: "Too many submissions. Please try again later." }),
-          { status: 429, headers: headers4 }
+          { status: 429, headers: headers5 }
         );
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
@@ -15230,20 +15230,20 @@ async function onRequestPost20(context) {
     if (!name || !phone || !email) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     if (!isValidPhone2(phone)) {
       return new Response(
         JSON.stringify({ error: "Invalid phone number" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
     if (!isValidEmail4(email)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanEmail = String(email).trim().toLowerCase();
@@ -15275,24 +15275,24 @@ async function onRequestPost20(context) {
       console.error(`[foot-study-signup] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save sign-up" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
     console.log(`[foot-study-signup] Contact upserted: ${upsertData.contact?.id || "unknown"}`);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[foot-study-signup] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE10, GHL_LOCATION_ID8, STUDY2, STUDY_NAME_FIELD_ID2, ALLOWED_ORIGINS17;
 var init_foot_study_signup = __esm({
   "api/foot-study-signup.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -15361,7 +15361,7 @@ async function onRequestGet18(context) {
 var LOCATION_ID2;
 var init_ghl_export_tokens = __esm({
   "api/ghl-export-tokens.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     LOCATION_ID2 = "7pIO7FHVAyBT1jKGhfQM";
     __name(timingSafeEqual3, "timingSafeEqual");
     __name(onRequestGet18, "onRequestGet");
@@ -15412,7 +15412,7 @@ async function appendAutomationEvent(db, r) {
 var UPGRADE_OFFER_DELAY_MS, GUARD_TAGS;
 var init_upgrade_offer = __esm({
   "lib/upgrade-offer.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     UPGRADE_OFFER_DELAY_MS = 3 * 864e5;
     GUARD_TAGS = ["ambassador-prospect", "affiliate-partner"];
     __name(changesOf4, "changesOf");
@@ -15494,7 +15494,7 @@ async function recordSeriesPurchase(context, { contactId, seriesType, classifica
 var MODE, FROM, FOUNDER_FULFILLMENT_CONFIRMATION;
 var init_purchase_confirmations = __esm({
   "lib/purchase-confirmations.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_upgrade_offer();
     init_ghl_send();
     MODE = "shadow";
@@ -15779,7 +15779,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
 var GHL_API_BASE11, LOCATION_ID3, CURRENCY;
 var init_staff_pos_invoice_bridge = __esm({
   "lib/staff-pos-invoice-bridge.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_ghl_products();
     GHL_API_BASE11 = "https://services.leadconnectorhq.com";
@@ -16089,7 +16089,7 @@ async function writePosSale(kv, sale) {
 var MAX_CART_LINES, MAX_AMOUNT_CENTS, MAX_CUSTOM_LABEL, MAX_LEGS, POS_CATALOG, POS_PAYMENT_METHODS, STRIPE_CHECKOUT_METHODS, POS_SALE_STATUSES, POS_LEG_STATUSES;
 var init_staff_pos = __esm({
   "lib/staff-pos.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     MAX_CART_LINES = 24;
     MAX_AMOUNT_CENTS = 2e6;
     MAX_CUSTOM_LABEL = 120;
@@ -16229,7 +16229,7 @@ async function issueOwnedReceipt(db, sale, { actor = "Staff POS", now, id: id3 }
 }
 var init_staff_pos_receipts = __esm({
   "lib/staff-pos-receipts.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(ownedNoEffectLine, "ownedNoEffectLine");
     __name(ownedNoEffectCart, "ownedNoEffectCart");
     __name(mapReceipt, "mapReceipt");
@@ -16616,7 +16616,7 @@ async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) {
 var KV_TTL_SECONDS;
 var init_staff_pos_fulfill = __esm({
   "lib/staff-pos-fulfill.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_processed_events();
     init_ops_alert();
     init_ops_path_emit();
@@ -16701,7 +16701,7 @@ function extractField(body, keys) {
   return null;
 }
 async function onRequestPost21(context) {
-  const headers4 = { "Content-Type": "application/json" };
+  const headers5 = { "Content-Type": "application/json" };
   let wonD1ClaimKey = null;
   const releaseWonD1Claim = /* @__PURE__ */ __name(async () => {
     if (!wonD1ClaimKey) return;
@@ -16719,7 +16719,7 @@ async function onRequestPost21(context) {
       console.error("[ghl-invoice-webhook] GHL_WEBHOOK_SECRET not configured");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const providedSecret = context.request.headers.get("X-Webhook-Secret");
@@ -16727,7 +16727,7 @@ async function onRequestPost21(context) {
       console.warn("[ghl-invoice-webhook] Invalid webhook secret");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     const body = await context.request.json();
@@ -16756,7 +16756,7 @@ async function onRequestPost21(context) {
       console.error("[ghl-invoice-webhook] No contactId found in payload");
       return new Response(
         JSON.stringify({ error: "Missing contactId" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const sanitizedContactId = contactId.trim().slice(0, 50);
@@ -16769,7 +16769,7 @@ async function onRequestPost21(context) {
       );
       return new Response(
         JSON.stringify({ error: "Failed to fetch invoices" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const invoicesData = await invoicesRes.json();
@@ -16781,7 +16781,7 @@ async function onRequestPost21(context) {
       );
       return new Response(
         JSON.stringify({ success: true, skipped: true, reason: "unsupported-invoice-product" }),
-        { status: 200, headers: headers4 }
+        { status: 200, headers: headers5 }
       );
     }
     const { invoice, pkg: matchedProduct } = match2;
@@ -16805,7 +16805,7 @@ async function onRequestPost21(context) {
               console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (D1) \u2014 skipping`);
               return new Response(
                 JSON.stringify({ success: true, alreadyProcessed: true }),
-                { status: 200, headers: headers4 }
+                { status: 200, headers: headers5 }
               );
             }
             invoiceClaimDuplicate = true;
@@ -16828,7 +16828,7 @@ async function onRequestPost21(context) {
             console.log(`[ghl-invoice-webhook] Invoice ${matchedInvoiceId} already processed (KV) \u2014 skipping`);
             return new Response(
               JSON.stringify({ success: true, alreadyProcessed: true }),
-              { status: 200, headers: headers4 }
+              { status: 200, headers: headers5 }
             );
           }
           invoiceClaimDuplicate = true;
@@ -16855,7 +16855,7 @@ async function onRequestPost21(context) {
       await releaseWonD1Claim();
       return new Response(
         JSON.stringify({ error: "Contact not found" }),
-        { status: 404, headers: headers4 }
+        { status: 404, headers: headers5 }
       );
     }
     const contact = (await contactRes.json()).contact;
@@ -16878,7 +16878,7 @@ async function onRequestPost21(context) {
           product: pkg.name,
           posSaleId,
           posFulfilled: true
-        }), { status: 200, headers: headers4 });
+        }), { status: 200, headers: headers5 });
       }
       if (pkg.effect === "session_credit" && invoiceClaimDuplicate) {
         const checkpointedTarget = Number(posSale.fulfillment?.effectTarget?.sessionsRemaining);
@@ -16890,7 +16890,7 @@ async function onRequestPost21(context) {
             reason: "single-session-target-not-yet-visible",
             invoiceId: matchedInvoiceId,
             posSaleId
-          }), { status: 202, headers: headers4 });
+          }), { status: 202, headers: headers5 });
         }
       }
     }
@@ -16982,7 +16982,7 @@ async function onRequestPost21(context) {
       await releaseWonD1Claim();
       return new Response(
         JSON.stringify({ error: "Failed to update contact" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const existingTags = Array.isArray(contact.tags) ? contact.tags : [];
@@ -17011,7 +17011,7 @@ async function onRequestPost21(context) {
       await releaseWonD1Claim();
       return new Response(
         JSON.stringify({ error: "Failed to apply contact tags" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     let completedPosSale = null;
@@ -17135,7 +17135,7 @@ async function onRequestPost21(context) {
         posSaleId,
         posFulfilled: completedPosSale?.fulfillmentStatus === "fulfilled"
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     await releaseWonD1Claim();
@@ -17148,14 +17148,14 @@ async function onRequestPost21(context) {
     ));
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE12, LOCATION_ID4, KV_TTL_SECONDS2, INVOICE_PURCHASE_PRODUCTS, STAFF_POS_INVOICE_EFFECTS, FIELD_IDS2, TAGS_TO_REMOVE, DOWNSTREAM_TRIGGER_TAG;
 var init_ghl_invoice_webhook = __esm({
   "api/ghl-invoice-webhook.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_purchase_confirmations();
     init_ghl_products();
@@ -17293,7 +17293,7 @@ async function onRequestGet19(context) {
 var GHL_TOKEN_URL2, EXPECTED_LOCATION_ID;
 var init_ghl_oauth_callback = __esm({
   "api/ghl-oauth-callback.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     GHL_TOKEN_URL2 = "https://services.leadconnectorhq.com/oauth/token";
     EXPECTED_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
     __name(isForeignLocationToken, "isForeignLocationToken");
@@ -17315,7 +17315,7 @@ function verifyGhlWebhookSecret(env, provided, dedicatedKey) {
 }
 var init_ghl_webhook_auth = __esm({
   "lib/ghl-webhook-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_safe_equal();
     __name(verifyGhlWebhookSecret, "verifyGhlWebhookSecret");
   }
@@ -17353,7 +17353,7 @@ function checkPackageBalance({ remaining, packageSize, attended = null }) {
 }
 var init_session_consistency = __esm({
   "lib/session-consistency.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(checkPackageBalance, "checkPackageBalance");
   }
 });
@@ -17558,7 +17558,7 @@ async function failBookingOperation(db, opKey, error, options = {}) {
 }
 var init_booking_operations = __esm({
   "lib/booking-operations.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(changesOf6, "changesOf");
     __name(normalizeRow, "normalizeRow");
     __name(sameRequest, "sameRequest");
@@ -17910,7 +17910,7 @@ function extractField2(body, keys) {
   return null;
 }
 async function onRequestPost22(context) {
-  const headers4 = { "Content-Type": "application/json" };
+  const headers5 = { "Content-Type": "application/json" };
   let assessmentOperationKey = null;
   let assessmentOperationClaimed = false;
   let assessmentIntent = null;
@@ -17921,14 +17921,14 @@ async function onRequestPost22(context) {
       console.error("[ghl-purchase-webhook] GHL_WEBHOOK_SECRET not configured");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     if (!auth.valid) {
       console.warn("[ghl-purchase-webhook] Invalid webhook secret");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     const body = await context.request.json();
@@ -17970,7 +17970,7 @@ async function onRequestPost22(context) {
       console.error("[ghl-purchase-webhook] No contactId found in payload");
       return new Response(
         JSON.stringify({ error: "Missing contactId" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     let resolvedProductId = productId;
@@ -17993,7 +17993,7 @@ async function onRequestPost22(context) {
         console.log("[ghl-purchase-webhook] Could not determine product from payload or API \u2014 skipping");
         return new Response(
           JSON.stringify({ success: true, skipped: true, reason: "unrecognized product" }),
-          { status: 200, headers: headers4 }
+          { status: 200, headers: headers5 }
         );
       }
     }
@@ -18008,7 +18008,7 @@ async function onRequestPost22(context) {
           orderId: resolvedOrderId,
           error: String(err?.message || err).slice(0, 300)
         });
-        return new Response(JSON.stringify({ success: false, retryable: true, error: "Assessment workflow definition unavailable" }), { status: 503, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Assessment workflow definition unavailable" }), { status: 503, headers: headers5 });
       }
     }
     const productName = pkg?.name || booking?.name || booking?.sessionTitle || resolvedProductId;
@@ -18030,7 +18030,7 @@ async function onRequestPost22(context) {
           contactId,
           product: productName
         });
-        return new Response(JSON.stringify({ success: false, retryable: true, error: "Missing paid order identity" }), { status: 500, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Missing paid order identity" }), { status: 500, headers: headers5 });
       }
       let intentBinding;
       const recordIntentFailure = /* @__PURE__ */ __name((error, observed) => recordAssessmentBookPath(context, {
@@ -18054,7 +18054,7 @@ async function onRequestPost22(context) {
       } catch (err) {
         console.error("[ghl-purchase-webhook] Assessment intent binding failed:", err);
         await recordIntentFailure(err, "intent database unavailable");
-        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking intent unavailable" }), { status: 500, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking intent unavailable" }), { status: 500, headers: headers5 });
       }
       console.log(`[ghl-purchase-webhook] Assessment intent resolution: ${intentBinding.state}`);
       if (intentBinding.state === "ambiguous") {
@@ -18062,14 +18062,14 @@ async function onRequestPost22(context) {
           new Error("multiple possible checkout slots \u2014 manual review required"),
           `ambiguous intents: ${intentBinding.intents.map((intent) => intent.intentId).join(", ")}`
         );
-        return new Response(JSON.stringify({ success: false, manualReview: true, error: "Ambiguous paid booking intent" }), { status: 200, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, manualReview: true, error: "Ambiguous paid booking intent" }), { status: 200, headers: headers5 });
       }
       if (intentBinding.state === "manual_review") {
-        return new Response(JSON.stringify({ success: false, manualReview: true, error: "Paid booking intent is held for staff review" }), { status: 200, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, manualReview: true, error: "Paid booking intent is held for staff review" }), { status: 200, headers: headers5 });
       }
       if (intentBinding.state !== "bound") {
         await recordIntentFailure(new Error("no matching durable checkout slot"), "no compatible intent");
-        return new Response(JSON.stringify({ success: false, retryable: true, error: "Paid booking intent not found" }), { status: 500, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Paid booking intent not found" }), { status: 500, headers: headers5 });
       }
       assessmentIntent = intentBinding.intent;
       assessmentOperationKey = `paid-assessment:${resolvedOrderId}`;
@@ -18088,16 +18088,16 @@ async function onRequestPost22(context) {
           orderId: resolvedOrderId,
           error: err.message
         });
-        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking operation unavailable" }), { status: 500, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking operation unavailable" }), { status: 500, headers: headers5 });
       }
       if (operationClaim.state === "completed") {
-        return new Response(JSON.stringify({ ...operationClaim.operation.result, alreadyProcessed: true }), { status: 200, headers: headers4 });
+        return new Response(JSON.stringify({ ...operationClaim.operation.result, alreadyProcessed: true }), { status: 200, headers: headers5 });
       }
       if (operationClaim.state === "in_progress") {
-        return new Response(JSON.stringify({ success: false, retryable: true, processing: true }), { status: 500, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, retryable: true, processing: true }), { status: 500, headers: headers5 });
       }
       if (operationClaim.state === "manual_review" || operationClaim.state === "conflict") {
-        return new Response(JSON.stringify({ success: false, manualReview: true }), { status: 200, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, manualReview: true }), { status: 200, headers: headers5 });
       }
       assessmentOperationClaimed = true;
     }
@@ -18113,7 +18113,7 @@ async function onRequestPost22(context) {
             console.log(`[ghl-purchase-webhook] Order ${resolvedOrderId} already processed (D1) \u2014 skipping`);
             return new Response(
               JSON.stringify({ success: true, alreadyProcessed: true }),
-              { status: 200, headers: headers4 }
+              { status: 200, headers: headers5 }
             );
           }
           console.log(`[ghl-purchase-webhook] D1 claim won for order ${resolvedOrderId}`);
@@ -18130,7 +18130,7 @@ async function onRequestPost22(context) {
             console.log(`[ghl-purchase-webhook] Order ${resolvedOrderId} already processed (KV) \u2014 skipping`);
             return new Response(
               JSON.stringify({ success: true, alreadyProcessed: true }),
-              { status: 200, headers: headers4 }
+              { status: 200, headers: headers5 }
             );
           }
         } catch (err) {
@@ -18167,7 +18167,7 @@ async function onRequestPost22(context) {
           error: "Contact not found",
           retryable: !!booking?.isNonCreditBooking
         }),
-        { status: booking?.isNonCreditBooking ? 500 : 404, headers: headers4 }
+        { status: booking?.isNonCreditBooking ? 500 : 404, headers: headers5 }
       );
     }
     const contactData = await contactRes.json();
@@ -18282,7 +18282,7 @@ async function onRequestPost22(context) {
             sessionsAdded: 0,
             outcome: assessmentPath?.outcome || "fail"
           }),
-          { status: 500, headers: headers4 }
+          { status: 500, headers: headers5 }
         );
       }
       const appointmentId = appointment?.id || appointment?.appointment?.id || null;
@@ -18299,7 +18299,7 @@ async function onRequestPost22(context) {
         assessmentOperationClaimed = false;
       } catch (err) {
         console.error("[ghl-purchase-webhook] Assessment completion checkpoint failed:", err);
-        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking completion checkpoint failed" }), { status: 500, headers: headers4 });
+        return new Response(JSON.stringify({ success: false, retryable: true, error: "Booking completion checkpoint failed" }), { status: 500, headers: headers5 });
       }
       if (kv && idempotencyKey) {
         try {
@@ -18315,7 +18315,7 @@ async function onRequestPost22(context) {
       }
       return new Response(
         JSON.stringify(durableResult),
-        { status: 200, headers: headers4 }
+        { status: 200, headers: headers5 }
       );
     }
     const currentRemaining = parseInt(
@@ -18399,7 +18399,7 @@ async function onRequestPost22(context) {
       }
       return new Response(
         JSON.stringify({ error: "Failed to update contact fields" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     console.log(`[ghl-purchase-webhook] Updated ${sanitizedContactId}: sessions_remaining ${currentRemaining} \u2192 ${newRemaining} (${pkg.name})`);
@@ -18582,7 +18582,7 @@ async function onRequestPost22(context) {
         product: pkg.name,
         sessionsRemaining: newRemaining
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[ghl-purchase-webhook] Unexpected error:", err);
@@ -18601,14 +18601,14 @@ async function onRequestPost22(context) {
     ));
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE13, LOCATION_ID5, PAID_BOOKING_MAP, LEGACY_CREDITS, PRODUCT_MAP, REQUESTED_SLOT_FIELD_IDS, SLOT_ISO_RE, CHECKOUT_NOTE_SLOT_RE, FIELD_IDS3, KV_TTL_SECONDS3;
 var init_ghl_purchase_webhook = __esm({
   "api/ghl-purchase-webhook.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_ghl_products();
     init_ghl_fields();
@@ -18749,9 +18749,9 @@ async function onRequestOptions23(context) {
 }
 async function onRequestPost23(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders18(origin);
-  headers4["Content-Type"] = "application/json";
-  return legacyStudySignupDisabledResponse(headers4, "hand");
+  const headers5 = corsHeaders18(origin);
+  headers5["Content-Type"] = "application/json";
+  return legacyStudySignupDisabledResponse(headers5, "hand");
   try {
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -18761,7 +18761,7 @@ async function onRequestPost23(context) {
       if (currentCount >= 30) {
         return new Response(
           JSON.stringify({ error: "Too many submissions. Please try again later." }),
-          { status: 429, headers: headers4 }
+          { status: 429, headers: headers5 }
         );
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
@@ -18771,20 +18771,20 @@ async function onRequestPost23(context) {
     if (!name || !phone || !email) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     if (!isValidPhone3(phone)) {
       return new Response(
         JSON.stringify({ error: "Invalid phone number" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
     if (!isValidEmail5(email)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanEmail = String(email).trim().toLowerCase();
@@ -18816,24 +18816,24 @@ async function onRequestPost23(context) {
       console.error(`[hand-study-signup] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save sign-up" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
     console.log(`[hand-study-signup] Contact upserted: ${upsertData.contact?.id || "unknown"}`);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[hand-study-signup] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE14, GHL_LOCATION_ID9, STUDY3, STUDY_NAME_FIELD_ID3, ALLOWED_ORIGINS18;
 var init_hand_study_signup = __esm({
   "api/hand-study-signup.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -18928,7 +18928,7 @@ async function readAndJudgeBeats(kv) {
 var BEAT_PREFIX, HOUR3, HEARTBEAT_JOBS, JOBS_BY_NAME;
 var init_heartbeat = __esm({
   "lib/heartbeat.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     BEAT_PREFIX = "ops:beat:";
     HOUR3 = 3600 * 1e3;
     __name(beatKey, "beatKey");
@@ -19010,7 +19010,7 @@ async function onRequestPost24(context) {
 var JSON_HEADERS3;
 var init_heartbeats = __esm({
   "api/heartbeats.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_auth();
     init_heartbeat();
     JSON_HEADERS3 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -19050,9 +19050,9 @@ async function onRequestOptions24(context) {
 }
 async function onRequestPost25(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders19(origin);
-  headers4["Content-Type"] = "application/json";
-  return legacyStudySignupDisabledResponse(headers4, "tmj");
+  const headers5 = corsHeaders19(origin);
+  headers5["Content-Type"] = "application/json";
+  return legacyStudySignupDisabledResponse(headers5, "tmj");
   try {
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -19062,7 +19062,7 @@ async function onRequestPost25(context) {
       if (currentCount >= 30) {
         return new Response(
           JSON.stringify({ error: "Too many submissions. Please try again later." }),
-          { status: 429, headers: headers4 }
+          { status: 429, headers: headers5 }
         );
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
@@ -19072,20 +19072,20 @@ async function onRequestPost25(context) {
     if (!name || !phone || !email) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     if (!isValidPhone4(phone)) {
       return new Response(
         JSON.stringify({ error: "Invalid phone number" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
     if (!isValidEmail6(email)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanEmail = String(email).trim().toLowerCase();
@@ -19117,24 +19117,24 @@ async function onRequestPost25(context) {
       console.error(`[jaw-study-signup] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save sign-up" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
     console.log(`[jaw-study-signup] Contact upserted: ${upsertData.contact?.id || "unknown"}`);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[jaw-study-signup] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE15, GHL_LOCATION_ID10, STUDY4, STUDY_NAME_FIELD_ID4, ALLOWED_ORIGINS19;
 var init_jaw_study_signup = __esm({
   "api/jaw-study-signup.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -19187,8 +19187,8 @@ async function onRequestOptions25(context) {
 }
 async function onRequestPost26(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders20(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders20(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -19198,7 +19198,7 @@ async function onRequestPost26(context) {
       if (currentCount >= 30) {
         return new Response(
           JSON.stringify({ error: "Too many submissions. Please try again later." }),
-          { status: 429, headers: headers4 }
+          { status: 429, headers: headers5 }
         );
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
@@ -19208,7 +19208,7 @@ async function onRequestPost26(context) {
     if (!isValidEmail7(email)) {
       return new Response(
         JSON.stringify({ error: "Valid email required" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const upsertPayload = {
@@ -19226,24 +19226,24 @@ async function onRequestPost26(context) {
       console.error(`[newsletter-signup] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
     console.log(`[newsletter-signup] Contact upserted: ${upsertData.contact?.id || "unknown"}`);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[newsletter-signup] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE16, GHL_LOCATION_ID11, ALLOWED_ORIGINS20;
 var init_newsletter_signup = __esm({
   "api/newsletter-signup.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     GHL_API_BASE16 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID11 = "7pIO7FHVAyBT1jKGhfQM";
@@ -19281,54 +19281,54 @@ async function onRequestOptions26(context) {
 }
 async function onRequestGet21(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders21(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders21(origin), "Content-Type": "application/json" };
   try {
     const JWT_SECRET = context.env.JWT_SECRET;
     if (!JWT_SECRET) {
-      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Server configuration error" }), { status: 500, headers: headers5 });
     }
     const authHeader = context.request.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Not authenticated" }), { status: 401, headers: headers5 });
     }
     let tokenPayload;
     try {
       tokenPayload = await verifySessionToken(authHeader.slice(7), JWT_SECRET);
     } catch {
-      return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Session expired. Please log in again." }), { status: 401, headers: headers5 });
     }
     if (tokenPayload.role !== "staff") {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 403, headers: headers5 });
     }
     const kv = context.env.PORTAL_KV;
     if (!kv) {
-      return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: headers5 });
     }
     const contactId = new URL(context.request.url).searchParams.get("contactId");
     if (!contactId) {
-      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     }
     if (!/^[A-Za-z0-9]+$/.test(contactId)) {
-      return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers5 });
     }
     const record3 = await kv.get(`${KV_COACH_PREFIX}${contactId}`, "json");
     if (!record3) {
       return new Response(
         JSON.stringify({ contactId, coach: null, message: "No coaching for this contact" }),
-        { status: 200, headers: headers4 }
+        { status: 200, headers: headers5 }
       );
     }
-    return new Response(JSON.stringify({ contactId, coach: record3 }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ contactId, coach: record3 }), { status: 200, headers: headers5 });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[outreach-coach] reader failed:", detail);
-    return new Response(JSON.stringify({ error: `Failed to load coaching: ${detail}` }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: `Failed to load coaching: ${detail}` }), { status: 500, headers: headers5 });
   }
 }
 var KV_COACH_PREFIX, ALLOWED_ORIGINS21;
 var init_outreach_coach = __esm({
   "api/outreach-coach.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     KV_COACH_PREFIX = "coach:";
     ALLOWED_ORIGINS21 = [
@@ -19343,15 +19343,15 @@ var init_outreach_coach = __esm({
 
 // api/partner-auth.js
 function corsHeaders22(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS22.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 async function createToken2(payload, secret) {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
@@ -19428,14 +19428,14 @@ async function onRequestOptions27(context) {
 }
 async function onRequestPost27(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders22(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders22(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const contentLength = parseInt(context.request.headers.get("content-length") || "0", 10);
     if (contentLength > 2048) {
       return new Response(
         JSON.stringify({ error: "Request too large." }),
-        { status: 413, headers: headers4 }
+        { status: 413, headers: headers5 }
       );
     }
     const body = await context.request.json();
@@ -19443,14 +19443,14 @@ async function onRequestPost27(context) {
     if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
         JSON.stringify({ error: "Please enter a valid email address." }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const ip = context.request.headers.get("CF-Connecting-IP") || "";
     const dateKey = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
     const slot = await reserveAuthSlot(context.env.PORTAL_KV, { ip, email, scope: "partner", dateKey });
     if (!slot.ok) {
-      return new Response(JSON.stringify({ error: slot.error }), { status: slot.status, headers: headers4 });
+      return new Response(JSON.stringify({ error: slot.error }), { status: slot.status, headers: headers5 });
     }
     const GHL_API_KEY = await getGhlToken(context);
     const JWT_SECRET = context.env.JWT_SECRET;
@@ -19458,7 +19458,7 @@ async function onRequestPost27(context) {
       console.error("[partner-auth] Missing env vars");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const contact = await findContactByEmail(email, GHL_API_KEY);
@@ -19467,7 +19467,7 @@ async function onRequestPost27(context) {
         JSON.stringify({
           error: "We don't have an account with that email. Contact hello@amarimethod.com if you think this is an error."
         }),
-        { status: 404, headers: headers4 }
+        { status: 404, headers: headers5 }
       );
     }
     const tags = contact.tags || [];
@@ -19476,7 +19476,7 @@ async function onRequestPost27(context) {
         JSON.stringify({
           error: "This portal is for approved partners. Contact hello@amarimethod.com if you think this is an error."
         }),
-        { status: 403, headers: headers4 }
+        { status: 403, headers: headers5 }
       );
     }
     const nonce = crypto.randomUUID();
@@ -19531,20 +19531,20 @@ async function onRequestPost27(context) {
         success: true,
         message: "Check your email for a login link."
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[partner-auth] Unexpected error:", err.message);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE17, GHL_LOCATION_ID12, ALLOWED_ORIGINS22;
 var init_partner_auth = __esm({
   "api/partner-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_rate_limit();
     GHL_API_BASE17 = "https://services.leadconnectorhq.com";
@@ -19563,15 +19563,15 @@ var init_partner_auth = __esm({
 
 // api/partner-data.js
 function corsHeaders23(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS23.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 async function onRequestOptions28(context) {
   return new Response(null, {
@@ -19581,10 +19581,10 @@ async function onRequestOptions28(context) {
 }
 async function onRequestGet22(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders23(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders23(origin);
+  headers5["Content-Type"] = "application/json";
   try {
-    const owned = await loadOwnedContact(context, headers4, {
+    const owned = await loadOwnedContact(context, headers5, {
       audience: "partner",
       requireTag: "affiliate-partner"
     });
@@ -19767,20 +19767,20 @@ async function onRequestGet22(context) {
           // "unpaid" | "paid" | null (null = sold path, no fee owed)
         }))
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[partner-data] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE18, GHL_LOCATION_ID13, REFERRAL_SOURCE_FIELD_ID2, PARTNER_CONTACT_ID_FIELD_ID2, REFERRAL_TYPE_FIELD_ID2, REFERRAL_FEE_STATUS_FIELD_ID2, ALLOWED_ORIGINS23;
 var init_partner_data = __esm({
   "api/partner-data.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     GHL_API_BASE18 = "https://services.leadconnectorhq.com";
@@ -19829,10 +19829,10 @@ async function onRequestOptions29(context) {
 }
 async function onRequestGet23(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders24(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders24(origin);
+  headers5["Content-Type"] = "application/json";
   try {
-    const gate = await requireOwner(context, headers4, {
+    const gate = await requireOwner(context, headers5, {
       audience: "partner",
       messages: { wrongAudience: "Partner access required" }
     });
@@ -19842,7 +19842,7 @@ async function onRequestGet23(context) {
     if (!GHL_API_KEY) {
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     let partnerName = null;
@@ -19862,7 +19862,7 @@ async function onRequestGet23(context) {
     if (!partnerName) {
       return new Response(
         JSON.stringify({ error: "Could not load partner profile" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const requestedRef = (new URL(context.request.url).searchParams.get("ref") || "").replace(/<[^>]*>/g, "").replace(/[^a-zA-Z\s\-']/g, "").trim();
@@ -19878,7 +19878,7 @@ async function onRequestGet23(context) {
       console.error(`[partner-stats] GHL search error: ${searchResponse.status}`);
       return new Response(
         JSON.stringify({ error: "Failed to fetch stats" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const searchData = await searchResponse.json();
@@ -19968,20 +19968,20 @@ async function onRequestGet23(context) {
           status: d2.status
         }))
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[partner-stats] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE19, GHL_LOCATION_ID14, REFERRAL_SOURCE_FIELD_ID3, PARTNER_CONTACT_ID_FIELD_ID3, ALLOWED_ORIGINS24;
 var init_partner_stats = __esm({
   "api/partner-stats.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     GHL_API_BASE19 = "https://services.leadconnectorhq.com";
@@ -20001,15 +20001,15 @@ var init_partner_stats = __esm({
 
 // api/partner-verify.js
 function corsHeaders25(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS25.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 async function verifyToken(tokenString, secret) {
   const parts = tokenString.split(".");
@@ -20054,15 +20054,15 @@ async function onRequestOptions30(context) {
 }
 async function onRequestGet24(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders25(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders25(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const url = new URL(context.request.url);
     const token = url.searchParams.get("token");
     if (!token) {
       return new Response(
         JSON.stringify({ error: "No token provided" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const JWT_SECRET = context.env.JWT_SECRET;
@@ -20070,7 +20070,7 @@ async function onRequestGet24(context) {
       console.error("[partner-verify] JWT_SECRET not configured");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     let payload;
@@ -20079,19 +20079,19 @@ async function onRequestGet24(context) {
     } catch (err) {
       return new Response(
         JSON.stringify({ error: "Invalid or expired login link." }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     if (!payload.exp || Date.now() > payload.exp) {
       return new Response(
         JSON.stringify({ error: "This login link has expired. Please request a new one." }),
-        { status: 410, headers: headers4 }
+        { status: 410, headers: headers5 }
       );
     }
     if (payload.type !== "partner") {
       return new Response(
         JSON.stringify({ error: "Invalid token type." }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     if (context.env.PORTAL_KV && payload.nonce) {
@@ -20102,7 +20102,7 @@ async function onRequestGet24(context) {
         console.warn(`[partner-verify] Nonce not found in KV for contact ${payload.contactId} \u2014 rejecting`);
         return new Response(
           JSON.stringify({ error: "This login link has already been used. Please request a new one." }),
-          { status: 401, headers: headers4 }
+          { status: 401, headers: headers5 }
         );
       }
     }
@@ -20122,20 +20122,20 @@ async function onRequestGet24(context) {
         contactId: payload.contactId,
         email: payload.email
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[partner-verify] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var ALLOWED_ORIGINS25;
 var init_partner_verify = __esm({
   "api/partner-verify.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     ALLOWED_ORIGINS25 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -20150,15 +20150,15 @@ var init_partner_verify = __esm({
 
 // api/portal-auth.js
 function corsHeaders26(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS26.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 async function createToken3(payload, secret) {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
@@ -20254,14 +20254,14 @@ async function onRequestOptions31(context) {
 }
 async function onRequestPost28(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders26(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders26(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const contentLength = parseInt(context.request.headers.get("content-length") || "0", 10);
     if (contentLength > 2048) {
       return new Response(
         JSON.stringify({ error: "Request too large." }),
-        { status: 413, headers: headers4 }
+        { status: 413, headers: headers5 }
       );
     }
     const body = await context.request.json();
@@ -20269,14 +20269,14 @@ async function onRequestPost28(context) {
     if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
       return new Response(
         JSON.stringify({ error: "Please enter a valid email address." }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const ip = context.request.headers.get("CF-Connecting-IP") || "";
     const dateKey = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
     const slot = await reserveAuthSlot(context.env.PORTAL_KV, { ip, email, scope: "portal", dateKey });
     if (!slot.ok) {
-      return new Response(JSON.stringify({ error: slot.error }), { status: slot.status, headers: headers4 });
+      return new Response(JSON.stringify({ error: slot.error }), { status: slot.status, headers: headers5 });
     }
     const GHL_API_KEY = await getGhlToken(context);
     const JWT_SECRET = context.env.JWT_SECRET;
@@ -20287,7 +20287,7 @@ async function onRequestPost28(context) {
       });
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const contact = await findContactByEmail2(email, GHL_API_KEY);
@@ -20296,7 +20296,7 @@ async function onRequestPost28(context) {
         JSON.stringify({
           error: "We don't have an account with that email. If you've had a session with us, contact hello@amarimethod.com."
         }),
-        { status: 404, headers: headers4 }
+        { status: 404, headers: headers5 }
       );
     }
     const nonce = crypto.randomUUID();
@@ -20320,7 +20320,7 @@ async function onRequestPost28(context) {
         console.error(`[portal-auth] Nonce KV put failed \u2014 not sending a dead link: ${kvErr.message}`);
         return new Response(
           JSON.stringify({ error: "We couldn't create your sign-in link just now. Please try again in a minute." }),
-          { status: 500, headers: headers4 }
+          { status: 500, headers: headers5 }
         );
       }
     }
@@ -20360,20 +20360,20 @@ async function onRequestPost28(context) {
         success: true,
         message: "Check your email for a login link."
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[portal-auth] Unexpected error:", err.message, err.stack);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE20, GHL_LOCATION_ID15, ALLOWED_ORIGINS26;
 var init_portal_auth = __esm({
   "api/portal-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_rate_limit();
     init_ops_last_run();
@@ -20469,13 +20469,13 @@ async function confirmAppointment(appointment, token) {
   }
   return { ...appointment, appointmentStatus: "confirmed" };
 }
-async function onRequestOptions32({ request }) {
-  const origin = request.headers.get("Origin") || "";
+async function onRequestOptions32({ request: request2 }) {
+  const origin = request2.headers.get("Origin") || "";
   return new Response(null, { status: 204, headers: cors2(origin) });
 }
 async function onRequestPost29(context) {
-  const { request, env } = context;
-  const origin = request.headers.get("Origin") || "";
+  const { request: request2, env } = context;
+  const origin = request2.headers.get("Origin") || "";
   const GHL_API_KEY = await getGhlToken(context);
   const gateHeaders = { ...cors2(origin), "Content-Type": "application/json" };
   const gate = await requireOwner(context, gateHeaders, {
@@ -20486,7 +20486,7 @@ async function onRequestPost29(context) {
   const email = tokenPayload.email;
   let body;
   try {
-    body = await request.json();
+    body = await request2.json();
   } catch {
     return json6({ error: "Invalid JSON body" }, 400, origin);
   }
@@ -20584,7 +20584,7 @@ async function onRequestPost29(context) {
   );
   const title = sessionType === "virtual" ? "Follow-up Session (Virtual)" : "Follow-up Session (In Person)";
   const endTime = appointmentEndTime(startTime, 50);
-  const appointmentPayload = {
+  const appointmentPayload2 = {
     calendarId,
     locationId: env.GHL_LOCATION_ID || "7pIO7FHVAyBT1jKGhfQM",
     contactId,
@@ -20636,7 +20636,7 @@ async function onRequestPost29(context) {
       apptData = await createConfirmedAppointment({
         endpoint: "https://services.leadconnectorhq.com/calendars/events/appointments",
         request: /* @__PURE__ */ __name((url, options) => fetch(url, { ...options, headers: ghlHeaders(GHL_API_KEY) }), "request"),
-        payload: appointmentPayload,
+        payload: appointmentPayload2,
         onCreated: /* @__PURE__ */ __name((appointmentId) => checkpointBookingAppointment(env.ATTEND_DB, opKey, appointmentId), "onCreated")
       });
     }
@@ -20697,7 +20697,7 @@ async function onRequestPost29(context) {
 var allowedOrigin, PORTAL_FOLLOWUP_CALENDARS, SESSIONS_REMAINING_FIELD_ID;
 var init_portal_book = __esm({
   "api/portal-book.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -20747,8 +20747,8 @@ async function onRequestOptions33(context) {
 }
 async function onRequestPost30(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders27(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders27(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const JWT_SECRET = context.env.JWT_SECRET;
     const GHL_API_KEY = await getGhlToken(context);
@@ -20756,10 +20756,10 @@ async function onRequestPost30(context) {
       console.error("[portal-cancel] Missing env vars");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
-    const gate = await requireOwner(context, headers4);
+    const gate = await requireOwner(context, headers5);
     if (gate.error) return gate.error;
     const { tokenPayload } = gate;
     const body = await context.request.json();
@@ -20767,7 +20767,7 @@ async function onRequestPost30(context) {
     if (!appointmentId) {
       return new Response(
         JSON.stringify({ error: "Missing appointmentId" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     console.log(`[portal-cancel] User ${tokenPayload.contactId} cancelling appointment ${appointmentId}`);
@@ -20787,7 +20787,7 @@ async function onRequestPost30(context) {
           );
           return new Response(
             JSON.stringify({ error: "Appointment not found." }),
-            { status: 404, headers: headers4 }
+            { status: 404, headers: headers5 }
           );
         }
         if (typeof ownedAppointment.title === "string" && ownedAppointment.title.trim()) {
@@ -20797,14 +20797,14 @@ async function onRequestPost30(context) {
         console.error(`[portal-cancel] Ownership check GHL error ${ownershipResponse.status} \u2014 blocking`);
         return new Response(
           JSON.stringify({ error: "Unable to verify appointment ownership. Please try again." }),
-          { status: 500, headers: headers4 }
+          { status: 500, headers: headers5 }
         );
       }
     } catch (ownershipErr) {
       console.error(`[portal-cancel] Ownership check error: ${ownershipErr.message} \u2014 blocking`);
       return new Response(
         JSON.stringify({ error: "Unable to verify appointment ownership. Please try again." }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const cancelResponse = await fetch(
@@ -20823,26 +20823,26 @@ async function onRequestPost30(context) {
       console.error(`[portal-cancel] GHL cancel error: ${cancelResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: `Unable to cancel appointment (GHL ${cancelResponse.status}). Please try again or contact us.` }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     console.log(`[portal-cancel] Successfully cancelled appointment ${appointmentId}`);
     return new Response(
       JSON.stringify({ success: true }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[portal-cancel] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE21, ALLOWED_ORIGINS27;
 var init_portal_cancel = __esm({
   "api/portal-cancel.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     GHL_API_BASE21 = "https://services.leadconnectorhq.com";
@@ -20863,7 +20863,7 @@ function countsTowardLifetime(titleAndCalendar) {
 var NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN;
 var init_journey_classification = __esm({
   "lib/journey-classification.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     NON_JOURNEY_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
     NON_PACKAGE_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
     __name(countsTowardLifetime, "countsTowardLifetime");
@@ -20872,15 +20872,15 @@ var init_journey_classification = __esm({
 
 // api/portal-data.js
 function corsHeaders28(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS28.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 function countLifetimeCompleted(appointments, nowMs) {
   return (appointments || []).filter((a) => {
@@ -20900,8 +20900,8 @@ async function onRequestOptions34(context) {
 }
 async function onRequestGet25(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders28(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders28(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     let extractMeetingUrl = function(appt) {
       const candidates = [
@@ -20922,10 +20922,10 @@ async function onRequestGet25(context) {
       console.error("[portal-data] Missing env vars");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
-    const gate = await requireOwner(context, headers4);
+    const gate = await requireOwner(context, headers5);
     if (gate.error) return gate.error;
     const { tokenPayload, contactId } = gate;
     const [
@@ -20967,7 +20967,7 @@ async function onRequestGet25(context) {
       console.error(`[portal-data] GHL contact fetch error: ${contactResponse.status}`);
       return new Response(
         JSON.stringify({ error: "Unable to load your data. Please try again." }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const contactData = await contactResponse.json();
@@ -21079,20 +21079,20 @@ async function onRequestGet25(context) {
         appointments: pastAppointments,
         upcomingAppointments
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[portal-data] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE22, GHL_LOCATION_ID16, ALLOWED_ORIGINS28;
 var init_portal_data = __esm({
   "api/portal-data.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -21128,13 +21128,13 @@ function json7(data, status = 200, requestOrigin = "") {
     headers: { ...cors3(requestOrigin), "Content-Type": "application/json" }
   });
 }
-async function onRequestOptions35({ request }) {
-  const origin = request.headers.get("Origin") || "";
+async function onRequestOptions35({ request: request2 }) {
+  const origin = request2.headers.get("Origin") || "";
   return new Response(null, { status: 204, headers: cors3(origin) });
 }
 async function onRequestPost31(context) {
-  const { request } = context;
-  const origin = request.headers.get("Origin") || "";
+  const { request: request2 } = context;
+  const origin = request2.headers.get("Origin") || "";
   const gateHeaders = { ...cors3(origin), "Content-Type": "application/json" };
   const gate = await requireOwner(context, gateHeaders, {
     messages: { notAuthenticated: "Unauthorized", invalidToken: "Unauthorized" }
@@ -21143,7 +21143,7 @@ async function onRequestPost31(context) {
   const { contactId } = gate;
   let body;
   try {
-    body = await request.json();
+    body = await request2.json();
   } catch {
     return json7({ error: "Invalid JSON body" }, 400, origin);
   }
@@ -21225,7 +21225,7 @@ async function onRequestPost31(context) {
 var allowedOrigin2, PAYMENT_LINK_URL, PAID_FOLLOWUP_CALENDARS;
 var init_portal_pay_followup = __esm({
   "api/portal-pay-followup.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     init_ghl_fields();
@@ -21246,21 +21246,21 @@ var init_portal_pay_followup = __esm({
 
 // api/portal-progress.js
 function corsHeaders29(origin, methods = "GET, POST, OPTIONS") {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": methods,
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS29.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 function kvKey(contactId) {
   return `lp_progress:${contactId}`;
 }
-async function requirePortalAuth(context, headers4) {
-  const gate = await requireOwner(context, headers4, {
+async function requirePortalAuth(context, headers5) {
+  const gate = await requireOwner(context, headers5, {
     messages: { invalidToken: "Session expired", revoked: "Session expired" }
   });
   if (gate.error) return { error: gate.error };
@@ -21274,39 +21274,39 @@ async function onRequestOptions36(context) {
 }
 async function onRequestGet26(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders29(origin), "Content-Type": "application/json" };
-  const { error, payload } = await requirePortalAuth(context, headers4);
+  const headers5 = { ...corsHeaders29(origin), "Content-Type": "application/json" };
+  const { error, payload } = await requirePortalAuth(context, headers5);
   if (error) return error;
   if (!context.env.PORTAL_KV) {
-    return new Response(JSON.stringify({ progress: null }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ progress: null }), { status: 200, headers: headers5 });
   }
   const stored = await context.env.PORTAL_KV.get(kvKey(payload.contactId), "json").catch(() => null);
-  return new Response(JSON.stringify({ progress: stored }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ progress: stored }), { status: 200, headers: headers5 });
 }
 async function onRequestPost32(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders29(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload } = await requirePortalAuth(context, headers4);
+  const headers5 = { ...corsHeaders29(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requirePortalAuth(context, headers5);
   if (error) return error;
   let body;
   try {
     body = await context.request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers5 });
   }
   if (!body || typeof body !== "object" || Array.isArray(body)) {
-    return new Response(JSON.stringify({ error: "Invalid request body" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Invalid request body" }), { status: 400, headers: headers5 });
   }
   if (!context.env.PORTAL_KV) {
-    return new Response(JSON.stringify({ success: true, stored: false }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true, stored: false }), { status: 200, headers: headers5 });
   }
   await context.env.PORTAL_KV.put(kvKey(payload.contactId), JSON.stringify(body));
-  return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
 }
 var ALLOWED_ORIGINS29;
 var init_portal_progress = __esm({
   "api/portal-progress.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_owned_access();
     ALLOWED_ORIGINS29 = [
       "https://www.amarimethod.com",
@@ -21542,7 +21542,7 @@ function renderInvoice(inv, patientName, patientPhone) {
 var PRACTICE;
 var init_reimbursement_template = __esm({
   "lib/reimbursement-template.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     PRACTICE = {
       name: "Amari Method",
       phone: "(628) 877-7673",
@@ -21563,15 +21563,15 @@ var init_reimbursement_template = __esm({
 
 // api/portal-reimbursement-packet.js
 function corsHeaders30(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS30.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 function isPaid(inv) {
   const status = String(inv.status || "").toLowerCase();
@@ -21658,7 +21658,7 @@ async function onRequestGet27(context) {
 var GHL_API_BASE23, GHL_LOCATION_ID17, ALLOWED_ORIGINS30;
 var init_portal_reimbursement_packet = __esm({
   "api/portal-reimbursement-packet.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     init_reimbursement_template();
@@ -21690,15 +21690,15 @@ function json8(data, status = 200, requestOrigin = "") {
     headers: { ...cors4(requestOrigin), "Content-Type": "application/json" }
   });
 }
-async function onRequestOptions38({ request }) {
-  const origin = request.headers.get("Origin") || "";
+async function onRequestOptions38({ request: request2 }) {
+  const origin = request2.headers.get("Origin") || "";
   return new Response(null, { status: 204, headers: cors4(origin) });
 }
 async function onRequestGet28(context) {
-  const { request, env } = context;
-  const origin = request.headers.get("Origin") || "";
+  const { request: request2, env } = context;
+  const origin = request2.headers.get("Origin") || "";
   const GHL_API_KEY = await getGhlToken(context);
-  const auth = request.headers.get("Authorization") || "";
+  const auth = request2.headers.get("Authorization") || "";
   const token = auth.replace("Bearer ", "").trim();
   if (!token) return json8({ error: "Unauthorized" }, 401, origin);
   try {
@@ -21706,7 +21706,7 @@ async function onRequestGet28(context) {
   } catch {
     return json8({ error: "Unauthorized" }, 401, origin);
   }
-  const url = new URL(request.url);
+  const url = new URL(request2.url);
   const calendarId = url.searchParams.get("calendarId");
   const startDate = url.searchParams.get("startDate");
   const endDate = url.searchParams.get("endDate");
@@ -21788,7 +21788,7 @@ async function onRequestGet28(context) {
 var allowedOrigin3;
 var init_portal_slots = __esm({
   "api/portal-slots.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_auth();
     init_look_busy();
@@ -21804,15 +21804,15 @@ var init_portal_slots = __esm({
 
 // api/portal-update-preference.js
 function corsHeaders31(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS31.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 async function onRequestOptions39(context) {
   return new Response(null, {
@@ -21822,8 +21822,8 @@ async function onRequestOptions39(context) {
 }
 async function onRequestPost33(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders31(origin), "Content-Type": "application/json" };
-  const jsonError = /* @__PURE__ */ __name((status, error) => new Response(JSON.stringify({ error }), { status, headers: headers4 }), "jsonError");
+  const headers5 = { ...corsHeaders31(origin), "Content-Type": "application/json" };
+  const jsonError = /* @__PURE__ */ __name((status, error) => new Response(JSON.stringify({ error }), { status, headers: headers5 }), "jsonError");
   try {
     const JWT_SECRET = context.env.JWT_SECRET;
     const GHL_API_KEY = await getGhlToken(context);
@@ -21831,7 +21831,7 @@ async function onRequestPost33(context) {
       console.error("[update-preference] Missing env vars");
       return jsonError(500, "Server configuration error");
     }
-    const gate = await requireOwner(context, headers4);
+    const gate = await requireOwner(context, headers5);
     if (gate.error) return gate.error;
     const { contactId } = gate;
     const body = await context.request.json().catch(() => ({}));
@@ -21850,7 +21850,7 @@ async function onRequestPost33(context) {
       console.error(`[update-preference] GHL PUT error ${res.status}`);
       return jsonError(422, "Could not save your preference. Please try again.");
     }
-    return new Response(JSON.stringify({ success: true, preference }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true, preference }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[update-preference] Unexpected error:", err);
     return jsonError(500, "Internal server error");
@@ -21859,7 +21859,7 @@ async function onRequestPost33(context) {
 var GHL_API_BASE24, REMINDER_PREFERENCE_FIELD_ID, VALID, ALLOWED_ORIGINS31;
 var init_portal_update_preference = __esm({
   "api/portal-update-preference.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_owned_access();
     GHL_API_BASE24 = "https://services.leadconnectorhq.com";
@@ -21887,15 +21887,15 @@ function isAllowedOrigin3(origin) {
   }
 }
 function corsHeaders32(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "GET, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (isAllowedOrigin3(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 async function verifyToken2(tokenString, secret) {
   const parts = tokenString.split(".");
@@ -21940,15 +21940,15 @@ async function onRequestOptions40(context) {
 }
 async function onRequestGet29(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders32(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders32(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const url = new URL(context.request.url);
     const token = url.searchParams.get("token");
     if (!token) {
       return new Response(
         JSON.stringify({ error: "No token provided" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const JWT_SECRET = context.env.JWT_SECRET;
@@ -21956,7 +21956,7 @@ async function onRequestGet29(context) {
       console.error("[portal-verify] JWT_SECRET not configured");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     let payload;
@@ -21965,13 +21965,13 @@ async function onRequestGet29(context) {
     } catch (err) {
       return new Response(
         JSON.stringify({ error: "Invalid or expired login link." }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     if (!payload.exp || Date.now() > payload.exp) {
       return new Response(
         JSON.stringify({ error: "This login link has expired. Please request a new one." }),
-        { status: 410, headers: headers4 }
+        { status: 410, headers: headers5 }
       );
     }
     if (context.env.PORTAL_KV && payload.nonce) {
@@ -21982,7 +21982,7 @@ async function onRequestGet29(context) {
         console.warn(`[portal-verify] Nonce not found in KV for contact ${payload.contactId} \u2014 rejecting`);
         return new Response(
           JSON.stringify({ error: "This login link has already been used. Please request a new one." }),
-          { status: 401, headers: headers4 }
+          { status: 401, headers: headers5 }
         );
       }
     }
@@ -22005,20 +22005,20 @@ async function onRequestGet29(context) {
         contactId: payload.contactId,
         email: payload.email
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[portal-verify] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var ALLOWED_ORIGINS32;
 var init_portal_verify = __esm({
   "api/portal-verify.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_last_run();
     ALLOWED_ORIGINS32 = [
       "https://www.amarimethod.com",
@@ -22111,13 +22111,13 @@ async function createGhlCoupon(apiKey, code) {
   }
 }
 async function onRequestPost34(context) {
-  const headers4 = { "Content-Type": "application/json" };
+  const headers5 = { "Content-Type": "application/json" };
   try {
     if (!verifyWebhookSecret(context.request, context.env.GHL_WEBHOOK_SECRET)) {
       console.error("[referral-complete] Invalid or missing webhook secret");
       return new Response(
         JSON.stringify({ error: "Unauthorized" }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     const GHL_API_KEY = await getGhlToken(context);
@@ -22125,7 +22125,7 @@ async function onRequestPost34(context) {
       console.error("[referral-complete] GHL_API_KEY not configured");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const body = await context.request.json();
@@ -22133,7 +22133,7 @@ async function onRequestPost34(context) {
     if (!contactId || typeof contactId !== "string" || contactId.trim().length === 0) {
       return new Response(
         JSON.stringify({ error: "contactId is required" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const sanitizedContactId = contactId.trim().slice(0, 50);
@@ -22146,7 +22146,7 @@ async function onRequestPost34(context) {
           console.log(`[referral-complete] Already processed (KV lock): ${sanitizedContactId}`);
           return new Response(
             JSON.stringify({ success: true, alreadyProcessed: true }),
-            { status: 200, headers: headers4 }
+            { status: 200, headers: headers5 }
           );
         }
       } catch (err) {
@@ -22165,7 +22165,7 @@ async function onRequestPost34(context) {
       console.error(`[referral-complete] Referred contact not found: ${sanitizedContactId} (${contactRes.status})`);
       return new Response(
         JSON.stringify({ error: "Contact not found" }),
-        { status: 404, headers: headers4 }
+        { status: 404, headers: headers5 }
       );
     }
     const contactData = await contactRes.json();
@@ -22177,13 +22177,13 @@ async function onRequestPost34(context) {
       console.error("[referral-complete] One or more referral custom fields missing from GHL. Check that client_referral_count, referred_by_client_id, and referral_reward_code fields exist.");
       return new Response(
         JSON.stringify({ error: "Referral fields not configured" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const referrerId = getCustomField2(contact, referredByFieldId);
     if (!referrerId) {
       console.log(`[referral-complete] Contact ${sanitizedContactId} has no referred_by_client_id \u2014 skipping`);
-      return new Response(JSON.stringify({ success: true, skipped: true }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ success: true, skipped: true }), { status: 200, headers: headers5 });
     }
     console.log(`[referral-complete] Processing referral: referred=${sanitizedContactId}, referrer=${referrerId}`);
     if (kv) {
@@ -22197,7 +22197,7 @@ async function onRequestPost34(context) {
         console.error(`[referral-complete] KV write failed: ${err.message}`);
         return new Response(
           JSON.stringify({ error: "Idempotency lock failed \u2014 refusing to risk double-credit" }),
-          { status: 500, headers: headers4 }
+          { status: 500, headers: headers5 }
         );
       }
     }
@@ -22216,7 +22216,7 @@ async function onRequestPost34(context) {
       console.error(`[referral-complete] Referrer not found: ${referrerId} (${referrerRes.status})`);
       return new Response(
         JSON.stringify({ error: "Referrer contact not found" }),
-        { status: 404, headers: headers4 }
+        { status: 404, headers: headers5 }
       );
     }
     const referrerData = await referrerRes.json();
@@ -22233,7 +22233,7 @@ async function onRequestPost34(context) {
       console.error(`[referral-complete] Failed to update referral count: ${err.message}`);
       return new Response(
         JSON.stringify({ error: "Failed to update referral count" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const existingRewardCode = getCustomField2(referrer, rewardCodeFieldId);
@@ -22258,20 +22258,20 @@ async function onRequestPost34(context) {
     }
     return new Response(
       JSON.stringify({ success: true, newCount }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[referral-complete] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE25, GHL_LOCATION_ID18, REFERRAL_MILESTONE;
 var init_referral_complete = __esm({
   "api/referral-complete.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_auth();
     GHL_API_BASE25 = "https://services.leadconnectorhq.com";
@@ -22296,8 +22296,8 @@ function corsHeaders33(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-function json9(headers4, body, status) {
-  return new Response(JSON.stringify(body), { status, headers: headers4 });
+function json9(headers5, body, status) {
+  return new Response(JSON.stringify(body), { status, headers: headers5 });
 }
 function isAllowedOrigin4(origin) {
   return ALLOWED_ORIGINS33.includes(origin);
@@ -22420,56 +22420,56 @@ async function onRequestOptions41(context) {
 }
 async function onRequestPost35(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders33(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders33(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     if (!isAllowedOrigin4(origin)) {
-      return json9(headers4, { error: "Submission must come from the Amari quiz." }, 403);
+      return json9(headers5, { error: "Submission must come from the Amari quiz." }, 403);
     }
     if (!context.request.headers.get("Content-Type")?.toLowerCase().includes("application/json")) {
-      return json9(headers4, { error: "Expected a JSON quiz submission." }, 415);
+      return json9(headers5, { error: "Expected a JSON quiz submission." }, 415);
     }
     const rawBody = await context.request.json();
     const body = normalizeQuizSubmission(rawBody);
-    if (!body) return json9(headers4, { error: "Invalid quiz submission." }, 400);
+    if (!body) return json9(headers5, { error: "Invalid quiz submission." }, 400);
     const { firstName, lastName, email } = body;
     const clientIP = context.request.headers.get("CF-Connecting-IP") || "unknown";
     try {
       const verified = await verifyTurnstile(rawBody.turnstileToken, context.env.TURNSTILE_SECRET_KEY, clientIP);
-      if (!verified) return json9(headers4, { error: "Bot verification failed." }, 403);
+      if (!verified) return json9(headers5, { error: "Bot verification failed." }, 403);
     } catch (err) {
       console.error("[send-to-ghl] Turnstile verification failed:", err);
-      return json9(headers4, { error: "Bot verification failed." }, 403);
+      return json9(headers5, { error: "Bot verification failed." }, 403);
     }
     const kv = context.env.PORTAL_KV;
     if (!kv) {
       console.error("[send-to-ghl] PORTAL_KV is not configured");
-      return json9(headers4, { error: "Submission protection unavailable." }, 422);
+      return json9(headers5, { error: "Submission protection unavailable." }, 422);
     }
     try {
       const idempotencyKey = `quiz_submission:${await submissionKey(body)}`;
       if (await kv.get(idempotencyKey)) {
-        return json9(headers4, { success: true, duplicate: true }, 200);
+        return json9(headers5, { success: true, duplicate: true }, 200);
       }
       const rateKey = `quiz_submission_rate:${clientIP}`;
       const currentCount = parseInt(await kv.get(rateKey) || "0", 10);
       if (!Number.isFinite(currentCount)) throw new Error("Invalid rate-limit value");
       if (currentCount >= RATE_LIMIT) {
-        return json9(headers4, { error: "Too many submissions from this network. Please try again in an hour." }, 429);
+        return json9(headers5, { error: "Too many submissions from this network. Please try again in an hour." }, 429);
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: RATE_LIMIT_TTL_SECONDS });
       await kv.put(idempotencyKey, "processing", { expirationTtl: IDEMPOTENCY_TTL_SECONDS });
     } catch (err) {
       console.error("[send-to-ghl] KV protection failed:", err);
-      return json9(headers4, { error: "Submission protection unavailable." }, 422);
+      return json9(headers5, { error: "Submission protection unavailable." }, 422);
     }
     if (context.env.QUIZ_SUBMISSION_MODE === "verify_only") {
-      return json9(headers4, { success: true, verificationOnly: true }, 200);
+      return json9(headers5, { success: true, verificationOnly: true }, 200);
     }
     const GHL_API_KEY = await getGhlToken(context);
     if (!GHL_API_KEY) {
       console.error("[send-to-ghl] GHL_API_KEY not configured");
-      return json9(headers4, { error: "Server configuration error" }, 500);
+      return json9(headers5, { error: "Server configuration error" }, 500);
     }
     const tags = ["quiz submitted"];
     const severity = body.painSeverity;
@@ -22519,7 +22519,7 @@ async function onRequestPost35(context) {
       console.error(`[send-to-ghl] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save contact" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
@@ -22566,20 +22566,20 @@ async function onRequestPost35(context) {
     }
     return new Response(
       JSON.stringify({ success: true, audience }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[send-to-ghl] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE26, GHL_LOCATION_ID19, FIELD_IDS4, ALLOWED_ORIGINS33, TEXT_LIMITS, REFERRAL_SOURCE_RE, TURNSTILE_VERIFY_URL, RATE_LIMIT, RATE_LIMIT_TTL_SECONDS, IDEMPOTENCY_TTL_SECONDS;
 var init_send_to_ghl = __esm({
   "api/send-to-ghl.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_engine_forward();
     GHL_API_BASE26 = "https://services.leadconnectorhq.com";
@@ -22675,9 +22675,9 @@ async function onRequestOptions42(context) {
 }
 async function onRequestPost36(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders34(origin);
-  headers4["Content-Type"] = "application/json";
-  return legacyStudySignupDisabledResponse(headers4, "desk-shoulders");
+  const headers5 = corsHeaders34(origin);
+  headers5["Content-Type"] = "application/json";
+  return legacyStudySignupDisabledResponse(headers5, "desk-shoulders");
   try {
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -22687,7 +22687,7 @@ async function onRequestPost36(context) {
       if (currentCount >= 30) {
         return new Response(
           JSON.stringify({ error: "Too many submissions. Please try again later." }),
-          { status: 429, headers: headers4 }
+          { status: 429, headers: headers5 }
         );
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
@@ -22697,20 +22697,20 @@ async function onRequestPost36(context) {
     if (!name || !phone || !email) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     if (!isValidPhone5(phone)) {
       return new Response(
         JSON.stringify({ error: "Invalid phone number" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
     if (!isValidEmail8(email)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const cleanEmail = String(email).trim().toLowerCase();
@@ -22742,24 +22742,24 @@ async function onRequestPost36(context) {
       console.error(`[shoulder-study-signup] GHL upsert error: ${upsertResponse.status} ${errorText}`);
       return new Response(
         JSON.stringify({ error: "Failed to save sign-up" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const upsertData = await upsertResponse.json();
     console.log(`[shoulder-study-signup] Contact upserted: ${upsertData.contact?.id || "unknown"}`);
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[shoulder-study-signup] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE27, GHL_LOCATION_ID20, STUDY5, STUDY_NAME_FIELD_ID5, ALLOWED_ORIGINS34;
 var init_shoulder_study_signup = __esm({
   "api/shoulder-study-signup.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -22778,6 +22778,71 @@ var init_shoulder_study_signup = __esm({
     __name(isValidEmail8, "isValidEmail");
     __name(onRequestOptions42, "onRequestOptions");
     __name(onRequestPost36, "onRequestPost");
+  }
+});
+
+// api/staff-amari-description-lab.js
+function headers(request2) {
+  return { ...corsHeaders3(request2.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+}
+function clean(value) {
+  return typeof value === "string" ? value.trim().slice(0, MAX_TEXT) : "";
+}
+async function read(env) {
+  return await env.PORTAL_KV.get(KEY, "json") || { overrides: {}, feedback: [] };
+}
+async function onRequestOptions43(context) {
+  return new Response(null, { status: 204, headers: headers(context.request) });
+}
+async function onRequestGet30(context) {
+  const out = headers(context.request);
+  const auth = await requireStaffAuth(context, out);
+  if (auth.error) return auth.error;
+  return new Response(JSON.stringify(await read(context.env)), { status: 200, headers: out });
+}
+async function onRequestPost37(context) {
+  const out = headers(context.request);
+  const auth = await requireStaffAuth(context, out);
+  if (auth.error) return auth.error;
+  let body;
+  try {
+    body = await context.request.json();
+  } catch {
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: out });
+  }
+  const cardId = clean(body.cardId);
+  if (!cardId || cardId.length > 80) return new Response(JSON.stringify({ error: "A card is required" }), { status: 400, headers: out });
+  const state = await read(context.env);
+  const now = (/* @__PURE__ */ new Date()).toISOString();
+  if (body.action === "save") {
+    const answer = clean(body.answer);
+    const note = clean(body.note);
+    if (!answer) return new Response(JSON.stringify({ error: "An answer is required" }), { status: 400, headers: out });
+    state.overrides[cardId] = { answer, note, updatedAt: now, updatedBy: auth.payload.user || "staff" };
+    state.feedback.unshift({ type: "edit", cardId, answer, note, at: now, by: auth.payload.user || "staff" });
+  } else if (body.action === "feedback") {
+    const sentiment = body.sentiment === "keep" || body.sentiment === "rewrite" ? body.sentiment : null;
+    if (!sentiment) return new Response(JSON.stringify({ error: "Choose keep or rewrite" }), { status: 400, headers: out });
+    state.feedback.unshift({ type: sentiment, cardId, note: clean(body.note), at: now, by: auth.payload.user || "staff" });
+  } else return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: out });
+  state.feedback = state.feedback.slice(0, MAX_EVENTS2);
+  await context.env.PORTAL_KV.put(KEY, JSON.stringify(state));
+  return new Response(JSON.stringify(state), { status: 200, headers: out });
+}
+var KEY, MAX_TEXT, MAX_EVENTS2;
+var init_staff_amari_description_lab = __esm({
+  "api/staff-amari-description-lab.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    init_endpoint_guards();
+    KEY = "staff:amari-description-lab:v1";
+    MAX_TEXT = 1600;
+    MAX_EVENTS2 = 300;
+    __name(headers, "headers");
+    __name(clean, "clean");
+    __name(read, "read");
+    __name(onRequestOptions43, "onRequestOptions");
+    __name(onRequestGet30, "onRequestGet");
+    __name(onRequestPost37, "onRequestPost");
   }
 });
 
@@ -22913,7 +22978,7 @@ async function amariMailGrantReadiness(env, actor) {
 var encoder, AMARI_MAIL_CALLBACK_URL, AMARI_MAIL_SCOPES, AMARI_MAIL_STATE_TTL_SECONDS, STAFF_MAILBOXES;
 var init_amari_mail_oauth = __esm({
   "lib/amari-mail-oauth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     encoder = new TextEncoder();
     AMARI_MAIL_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
     AMARI_MAIL_SCOPES = Object.freeze([
@@ -22940,47 +23005,47 @@ var init_amari_mail_oauth = __esm({
 });
 
 // api/staff-amari-mail-auth.js
-function json10(data, status, headers4) {
-  return new Response(JSON.stringify(data), { status, headers: headers4 });
+function json10(data, status, headers5) {
+  return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
-async function onRequestOptions43(context) {
+async function onRequestOptions44(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet30(context) {
+async function onRequestGet31(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
-  const { error, payload } = await requireStaffAuth(context, headers4);
+  const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   let mailbox;
   try {
     mailbox = resolveAmariMailbox(payload?.user);
   } catch {
-    return json10({ error: "Staff mailbox is not authorized" }, 403, headers4);
+    return json10({ error: "Staff mailbox is not authorized" }, 403, headers5);
   }
   try {
-    return json10(await amariMailGrantReadiness(context.env, mailbox.actor), 200, headers4);
+    return json10(await amariMailGrantReadiness(context.env, mailbox.actor), 200, headers5);
   } catch {
     return json10({
       error: "Amari mail readiness is unavailable",
       actor: mailbox.actor,
       mailbox: mailbox.sender,
       deliveryEnabled: false
-    }, 500, headers4);
+    }, 500, headers5);
   }
 }
-async function onRequestPost37(context) {
+async function onRequestPost38(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
-  if (!ALLOWED_ORIGINS35.has(origin)) return json10({ error: "Untrusted origin" }, 403, headers4);
-  const { error, payload } = await requireStaffAuth(context, headers4);
+  const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
+  if (!ALLOWED_ORIGINS35.has(origin)) return json10({ error: "Untrusted origin" }, 403, headers5);
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   let mailbox;
   try {
     mailbox = resolveAmariMailbox(payload?.user);
   } catch {
-    return json10({ error: "Staff mailbox is not authorized" }, 403, headers4);
+    return json10({ error: "Staff mailbox is not authorized" }, 403, headers5);
   }
-  if (!amariMailOAuthConfigured(context.env)) return json10({ error: "Amari mail authorization is not configured" }, 500, headers4);
+  if (!amariMailOAuthConfigured(context.env)) return json10({ error: "Amari mail authorization is not configured" }, 500, headers5);
   const state = await createAmariMailOAuthState(context.env, payload.user);
   const authorizationUrl = new URL(AUTH_URL2);
   authorizationUrl.search = new URLSearchParams({
@@ -22997,20 +23062,20 @@ async function onRequestPost37(context) {
     mailbox: mailbox.sender,
     authorizationUrl: authorizationUrl.toString(),
     deliveryEnabled: false
-  }, 200, headers4);
+  }, 200, headers5);
 }
 var AUTH_URL2, ALLOWED_ORIGINS35;
 var init_staff_amari_mail_auth = __esm({
   "api/staff-amari-mail-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_amari_mail_oauth();
     AUTH_URL2 = "https://accounts.google.com/o/oauth2/v2/auth";
     ALLOWED_ORIGINS35 = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(json10, "json");
-    __name(onRequestOptions43, "onRequestOptions");
-    __name(onRequestGet30, "onRequestGet");
-    __name(onRequestPost37, "onRequestPost");
+    __name(onRequestOptions44, "onRequestOptions");
+    __name(onRequestGet31, "onRequestGet");
+    __name(onRequestPost38, "onRequestPost");
   }
 });
 
@@ -23026,7 +23091,7 @@ function hasVerifiedSendAs(payload, requiredSender) {
   const accepted = new Set((payload?.sendAs || []).filter((identity2) => identity2?.isPrimary || String(identity2?.verificationStatus || "").toLowerCase() === "accepted").map((identity2) => String(identity2.sendAsEmail || "").trim().toLowerCase()));
   return accepted.has(requiredSender);
 }
-async function onRequestGet31(context) {
+async function onRequestGet32(context) {
   const url = new URL(context.request.url);
   if (!amariMailOAuthConfigured(context.env)) return redirect2(FAILURE_URL2);
   const state = url.searchParams.get("state") || "";
@@ -23088,7 +23153,7 @@ async function onRequestGet31(context) {
 var TOKEN_URL2, PROFILE_URL, SEND_AS_URL, SUCCESS_URL2, FAILURE_URL2;
 var init_staff_amari_mail_callback = __esm({
   "api/staff-amari-mail-callback.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_amari_mail_oauth();
     TOKEN_URL2 = "https://oauth2.googleapis.com/token";
     PROFILE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/profile";
@@ -23098,27 +23163,27 @@ var init_staff_amari_mail_callback = __esm({
     __name(redirect2, "redirect");
     __name(json11, "json");
     __name(hasVerifiedSendAs, "hasVerifiedSendAs");
-    __name(onRequestGet31, "onRequestGet");
+    __name(onRequestGet32, "onRequestGet");
   }
 });
 
 // api/staff-appointment-readiness.js
-async function onRequestOptions44(context) {
+async function onRequestOptions45(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS2)
   });
 }
-async function onRequestGet32(context) {
-  const headers4 = {
+async function onRequestGet33(context) {
+  const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS2),
     "Content-Type": "application/json",
     "Cache-Control": "private, no-store"
   };
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const secret = context.env.WORKER_AUTH_SECRET;
-  if (!secret) return new Response(JSON.stringify({ error: "Appointment shadow is not configured." }), { status: 422, headers: headers4 });
+  if (!secret) return new Response(JSON.stringify({ error: "Appointment shadow is not configured." }), { status: 422, headers: headers5 });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -23128,12 +23193,12 @@ async function onRequestGet32(context) {
     });
     const body = await response2.json().catch(() => ({}));
     if (!response2.ok) {
-      return new Response(JSON.stringify({ error: "Appointment shadow could not be read.", upstreamStatus: response2.status }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Appointment shadow could not be read.", upstreamStatus: response2.status }), { status: 422, headers: headers5 });
     }
-    return new Response(JSON.stringify(body), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(body), { status: 200, headers: headers5 });
   } catch (cause) {
     const message = cause instanceof Error && cause.name === "AbortError" ? "Appointment shadow timed out." : "Appointment shadow could not be reached.";
-    return new Response(JSON.stringify({ error: message }), { status: 422, headers: headers4 });
+    return new Response(JSON.stringify({ error: message }), { status: 422, headers: headers5 });
   } finally {
     clearTimeout(timer);
   }
@@ -23141,186 +23206,13 @@ async function onRequestGet32(context) {
 var WORKER_URL, TIMEOUT_MS, METHODS2;
 var init_staff_appointment_readiness = __esm({
   "api/staff-appointment-readiness.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/readiness";
     TIMEOUT_MS = 1e4;
     METHODS2 = "GET, OPTIONS";
-    __name(onRequestOptions44, "onRequestOptions");
-    __name(onRequestGet32, "onRequestGet");
-  }
-});
-
-// lib/appointment-command-store.js
-function changes2(result) {
-  return result?.meta?.changes ?? result?.changes ?? 0;
-}
-function parseResult(value) {
-  if (!value) return null;
-  try {
-    return JSON.parse(value);
-  } catch {
-    return null;
-  }
-}
-function shape(row) {
-  if (!row) return null;
-  return {
-    id: row.id,
-    actor: row.actor,
-    action: row.action,
-    contactId: row.contact_id,
-    appointmentId: row.source_appointment_id,
-    requestedStartTime: row.requested_start_time || null,
-    replacementAppointmentId: row.replacement_appointment_id || null,
-    status: row.status,
-    result: parseResult(row.result_json),
-    leaseUntil: Number(row.lease_until || 0)
-  };
-}
-function sameCommand(row, input) {
-  return row.actor === input.actor && row.action === input.action && row.contact_id === input.contactId && row.source_appointment_id === input.appointmentId && (row.requested_start_time || null) === (input.requestedStartTime || null);
-}
-function commandId(actor, idempotencyKey) {
-  return `appointment:${String(actor).toLowerCase()}:${encodeURIComponent(idempotencyKey)}`;
-}
-function eventStatement(db, command, phase, detail, now) {
-  return db.prepare(
-    `INSERT INTO appointment_command_events
-      (id, command_id, actor, phase, detail_json, occurred_at)
-     VALUES (?, ?, ?, ?, ?, ?)`
-  ).bind(
-    crypto.randomUUID(),
-    command.id,
-    command.actor,
-    phase,
-    detail ? JSON.stringify(detail) : null,
-    now
-  );
-}
-async function read(db, id3) {
-  return db.prepare("SELECT * FROM appointment_commands WHERE id = ?").bind(id3).first();
-}
-function createAppointmentCommandStore(db, options = {}) {
-  if (!db) throw new Error("ATTEND_DB appointment command state is unavailable");
-  const clock = /* @__PURE__ */ __name(() => Number(options.now?.() ?? Date.now()), "clock");
-  const leaseMs = Number(options.leaseMs ?? 12e4);
-  return Object.freeze({
-    async claim(input) {
-      const now = clock();
-      const id3 = commandId(input.actor, input.idempotencyKey);
-      const inserted = await db.prepare(
-        `INSERT INTO appointment_commands
-          (id, actor, idempotency_key, action, contact_id, source_appointment_id,
-           requested_start_time, replacement_appointment_id, status, result_json,
-           lease_until, attempts, last_error, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, ?, ?, NULL, 'processing', NULL, ?, 1, NULL, ?, ?)
-         ON CONFLICT(actor, idempotency_key) DO NOTHING`
-      ).bind(
-        id3,
-        input.actor,
-        input.idempotencyKey,
-        input.action,
-        input.contactId,
-        input.appointmentId,
-        input.requestedStartTime || null,
-        now + leaseMs,
-        now,
-        now
-      ).run();
-      let row = await read(db, id3);
-      if (changes2(inserted) === 1) {
-        await eventStatement(db, row, "claimed", { action: input.action }, now).run();
-        return { state: "acquired", command: shape(row) };
-      }
-      if (!row || !sameCommand(row, input)) return { state: "conflict", command: shape(row) };
-      if (row.status === "completed") return { state: "completed", command: shape(row) };
-      if (row.status === "manual_review") return { state: "manual_review", command: shape(row) };
-      if (row.status === "processing" && Number(row.lease_until) > now) return { state: "in_progress", command: shape(row) };
-      const resumed = await db.prepare(
-        `UPDATE appointment_commands
-            SET status = 'processing', lease_until = ?, attempts = attempts + 1,
-                last_error = NULL, updated_at = ?
-          WHERE id = ? AND status IN ('processing', 'retryable') AND lease_until <= ?`
-      ).bind(now + leaseMs, now, id3, now).run();
-      if (changes2(resumed) !== 1) return { state: "in_progress", command: shape(await read(db, id3)) };
-      row = await read(db, id3);
-      await eventStatement(db, row, "resumed", null, now).run();
-      return { state: "acquired", command: shape(row) };
-    },
-    async checkpointReplacement(id3, replacementAppointmentId) {
-      const now = clock();
-      const row = await read(db, id3);
-      if (!row) throw new Error("appointment command not found");
-      const update = db.prepare(
-        `UPDATE appointment_commands
-            SET replacement_appointment_id = ?, lease_until = ?, updated_at = ?
-          WHERE id = ? AND status = 'processing'
-            AND (replacement_appointment_id IS NULL OR replacement_appointment_id = ?)`
-      ).bind(replacementAppointmentId, now + leaseMs, now, id3, replacementAppointmentId);
-      const [updated] = await db.batch([
-        update,
-        eventStatement(db, row, "replacement_created", { replacementAppointmentId }, now)
-      ]);
-      if (changes2(updated) !== 1) throw new Error("replacement checkpoint was not accepted");
-    },
-    async clearReplacement(id3, replacementAppointmentId) {
-      const now = clock();
-      const row = await read(db, id3);
-      if (!row) throw new Error("appointment command not found");
-      const [updated] = await db.batch([
-        db.prepare(
-          `UPDATE appointment_commands SET replacement_appointment_id = NULL, updated_at = ?
-            WHERE id = ? AND status = 'processing' AND replacement_appointment_id = ?`
-        ).bind(now, id3, replacementAppointmentId),
-        eventStatement(db, row, "replacement_compensated", { replacementAppointmentId }, now)
-      ]);
-      if (changes2(updated) !== 1) throw new Error("replacement checkpoint could not be cleared");
-    },
-    async complete(id3, result) {
-      const now = clock();
-      const row = await read(db, id3);
-      if (!row) throw new Error("appointment command not found");
-      const [updated] = await db.batch([
-        db.prepare(
-          `UPDATE appointment_commands
-              SET status = 'completed', result_json = ?, lease_until = 0,
-                  last_error = NULL, updated_at = ?
-            WHERE id = ? AND status = 'processing'`
-        ).bind(JSON.stringify(result), now, id3),
-        eventStatement(db, row, "completed", result, now)
-      ]);
-      if (changes2(updated) !== 1) throw new Error("appointment command completion was not accepted");
-    },
-    async fail(id3, error, options2 = {}) {
-      const now = clock();
-      const row = await read(db, id3);
-      if (!row) return null;
-      const status = options2.manualReview ? "manual_review" : "retryable";
-      const message = String(error?.message || error || "unknown error").slice(0, 1e3);
-      const [updated] = await db.batch([
-        db.prepare(
-          `UPDATE appointment_commands
-              SET status = ?, lease_until = 0, last_error = ?, updated_at = ?
-            WHERE id = ? AND status = 'processing'`
-        ).bind(status, message, now, id3),
-        eventStatement(db, row, status, { code: error?.code || "appointment_command_failed", message }, now)
-      ]);
-      return { ok: changes2(updated) === 1, status };
-    }
-  });
-}
-var init_appointment_command_store = __esm({
-  "lib/appointment-command-store.js"() {
-    init_functionsRoutes_0_5623767148686312();
-    __name(changes2, "changes");
-    __name(parseResult, "parseResult");
-    __name(shape, "shape");
-    __name(sameCommand, "sameCommand");
-    __name(commandId, "commandId");
-    __name(eventStatement, "eventStatement");
-    __name(read, "read");
-    __name(createAppointmentCommandStore, "createAppointmentCommandStore");
+    __name(onRequestOptions45, "onRequestOptions");
+    __name(onRequestGet33, "onRequestGet");
   }
 });
 
@@ -23354,7 +23246,7 @@ function flattenSlots(data) {
 var STAFF_BOOK_TYPES;
 var init_staff_book_calendars = __esm({
   "lib/staff-book-calendars.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     STAFF_BOOK_TYPES = {
       assessment: {
         calendarId: "EM6vB2mq7EAdGCbUb3j1",
@@ -23393,12 +23285,14 @@ var init_staff_book_calendars = __esm({
         label: "Follow-up \xB7 package \xB7 virtual"
       },
       partner_initial: {
+        serviceId: "partner-initial",
         calendarId: "lfsnaiGiLNL2z12pLKDP",
         durationMinutes: 60,
         title: "Amari Method Partner Initial Session",
         label: "Partner Initial (comp)"
       },
       partner_initial_virtual: {
+        serviceId: "partner-initial-virtual",
         calendarId: "P7T6M1w8wtuRfwAqzOVw",
         durationMinutes: 60,
         title: "Amari Method Partner Initial Session \u2014 Virtual",
@@ -23486,7 +23380,7 @@ function internalAvailability({ calendarId, startDate, endDate, events = [], exc
   }
   return slots2;
 }
-function clean(value, max = 200) {
+function clean2(value, max = 200) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 function normalizeStatus(appointment) {
@@ -23498,17 +23392,21 @@ function appointmentStart(appointment) {
 function assertCommandInput(input) {
   if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(input.actor)) throw new TypeError("recognized Staff actor required");
   if (!(/* @__PURE__ */ new Set(["cancel", "reschedule"])).has(input.action)) throw new TypeError("valid appointment action required");
-  if (!clean(input.contactId, 100) || !clean(input.appointmentId, 100) || !clean(input.idempotencyKey, 160)) {
+  if (!clean2(input.contactId, 100) || !clean2(input.appointmentId, 100) || !clean2(input.idempotencyKey, 160)) {
     throw new TypeError("complete appointment command identity required");
   }
 }
-async function loadOriginal(provider, contactId, appointmentId) {
+async function loadOriginal(provider, contactId, appointmentId, fallback = null) {
+  if (typeof provider.getAppointment === "function") {
+    return provider.getAppointment(appointmentId, contactId, fallback || {});
+  }
   const appointments = await provider.listContactAppointments(contactId);
   return (appointments || []).find((appointment) => String(appointment?.id || "") === appointmentId) || null;
 }
 async function manageAppointmentCommand(input) {
   assertCommandInput(input);
   const { actor, action, contactId, appointmentId, idempotencyKey, store, provider } = input;
+  const providerAppointmentId = clean2(input.providerAppointmentId, 160) || appointmentId;
   if (!store || !provider) throw new TypeError("appointment command dependencies required");
   const now = Number(input.now ?? Date.now());
   const claim = await store.claim({
@@ -23517,7 +23415,7 @@ async function manageAppointmentCommand(input) {
     contactId,
     appointmentId,
     idempotencyKey,
-    requestedStartTime: clean(input.startTime, 100) || null
+    requestedStartTime: clean2(input.startTime, 100) || null
   });
   if (claim.state === "completed") return claim.command.result;
   if (claim.state !== "acquired") {
@@ -23525,9 +23423,9 @@ async function manageAppointmentCommand(input) {
     error.code = claim.state;
     throw error;
   }
-  const commandId2 = claim.command.id;
+  const commandId = claim.command.id;
   try {
-    const original = await loadOriginal(provider, contactId, appointmentId);
+    const original = await loadOriginal(provider, contactId, providerAppointmentId);
     if (!original) throw Object.assign(new Error("Appointment not found for this person."), { code: "appointment_not_found" });
     const status = normalizeStatus(original);
     if (status === "cancelled" && action === "cancel") {
@@ -23541,8 +23439,8 @@ async function manageAppointmentCommand(input) {
         appointmentStatus: "cancelled",
         reminderVerification: "pending_event_evidence"
       };
-      await store.complete(commandId2, result2);
-      return result2;
+      const completion2 = await store.complete(commandId, result2);
+      return store.canonicalResult?.(result2, completion2) || result2;
     }
     if (status === "cancelled" && action === "reschedule" && claim.command.replacementAppointmentId) {
       const replacement2 = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === claim.command.replacementAppointmentId) || null;
@@ -23564,8 +23462,8 @@ async function manageAppointmentCommand(input) {
         appointmentStatus: normalizeStatus(replacement2),
         reminderVerification: "pending_event_evidence"
       };
-      await store.complete(commandId2, result2);
-      return result2;
+      const completion2 = await store.complete(commandId, result2);
+      return store.canonicalResult?.(result2, completion2) || result2;
     }
     if (!MANAGEABLE_STATUSES.has(status)) {
       throw Object.assign(new Error(`This appointment is already ${status || "not manageable"}.`), { code: "appointment_not_manageable" });
@@ -23576,7 +23474,7 @@ async function manageAppointmentCommand(input) {
     }
     if (action === "cancel") {
       await provider.cancelAppointment(original);
-      const readback = await loadOriginal(provider, contactId, appointmentId);
+      const readback = await loadOriginal(provider, contactId, providerAppointmentId, original);
       if (!readback || normalizeStatus(readback) !== "cancelled") {
         throw Object.assign(new Error("Cancellation was not confirmed by the calendar."), { code: "cancel_not_confirmed", manualReview: true });
       }
@@ -23590,13 +23488,13 @@ async function manageAppointmentCommand(input) {
         appointmentStatus: "cancelled",
         reminderVerification: "pending_event_evidence"
       };
-      await store.complete(commandId2, result2);
-      return result2;
+      const completion2 = await store.complete(commandId, result2);
+      return store.canonicalResult?.(result2, completion2) || result2;
     }
-    const newStartTime = clean(input.startTime, 100);
+    const newStartTime = clean2(input.startTime, 100);
     const newStartMs = Date.parse(newStartTime);
-    const timezone = clean(input.timezone, 100) || WORK_HOURS.timezone;
-    const calendarId = clean(original.calendarId || original.calendar_id, 100);
+    const timezone = clean2(input.timezone, 100) || WORK_HOURS.timezone;
+    const calendarId = clean2(original.calendarId || original.calendar_id, 100);
     const dateMatch = /^(\d{4}-\d{2}-\d{2})T/.exec(newStartTime);
     if (!calendarId || !policyForCalendarId(calendarId) || !dateMatch || !Number.isFinite(newStartMs) || newStartMs <= now || newStartMs > now + 33 * DAY_MS) {
       throw Object.assign(new Error("Choose a valid internal time for this appointment."), { code: "invalid_reschedule_time" });
@@ -23610,7 +23508,7 @@ async function manageAppointmentCommand(input) {
       startDate: dateMatch[1],
       endDate: dateMatch[1],
       events: schedule,
-      excludeAppointmentId: appointmentId,
+      excludeAppointmentId: providerAppointmentId,
       now
     });
     if (!available.some((slot) => slot.datetime === newStartTime)) {
@@ -23629,15 +23527,15 @@ async function manageAppointmentCommand(input) {
           original,
           startTime: newStartTime,
           timezone,
-          onCreated: /* @__PURE__ */ __name(async (replacementId) => {
-            await store.checkpointReplacement(commandId2, replacementId);
+          onCreated: /* @__PURE__ */ __name(async (replacementId, providerLink) => {
+            await store.checkpointReplacement(commandId, replacementId, providerLink);
             checkpointedReplacementId = String(replacementId);
           }, "onCreated")
         });
       } catch (createError) {
         const cleanupSucceeded = Number(createError?.cleanupStatus) >= 200 && Number(createError?.cleanupStatus) < 300;
         if (checkpointedReplacementId && cleanupSucceeded) {
-          await store.clearReplacement?.(commandId2, checkpointedReplacementId);
+          await store.clearReplacement?.(commandId, checkpointedReplacementId);
         } else if (createError?.phase === "create" && !createError?.appointmentId || createError?.appointmentId && !cleanupSucceeded) {
           createError.manualReview = true;
           createError.code = createError.code || "replacement_create_unverified";
@@ -23651,11 +23549,11 @@ async function manageAppointmentCommand(input) {
     try {
       await provider.cancelAppointment(original);
     } catch (cancelError) {
-      const afterFailure = await loadOriginal(provider, contactId, appointmentId);
+      const afterFailure = await loadOriginal(provider, contactId, providerAppointmentId, original);
       if (!afterFailure || normalizeStatus(afterFailure) !== "cancelled") {
         try {
           await provider.cancelAppointment(replacement);
-          await store.clearReplacement?.(commandId2, String(replacement.id));
+          await store.clearReplacement?.(commandId, String(replacement.id));
         } catch (compensationError) {
           throw Object.assign(new Error("The calendar change needs manual review; both appointments may still be active."), {
             code: "reschedule_compensation_failed",
@@ -23669,9 +23567,10 @@ async function manageAppointmentCommand(input) {
         });
       }
     }
-    const finalAppointments = await provider.listContactAppointments(contactId);
-    const oldReadback = finalAppointments.find((appointment) => String(appointment?.id || "") === appointmentId);
-    const newReadback = finalAppointments.find((appointment) => String(appointment?.id || "") === String(replacement.id));
+    const [oldReadback, newReadback] = await Promise.all([
+      loadOriginal(provider, contactId, providerAppointmentId, original),
+      loadOriginal(provider, contactId, String(replacement.id), replacement)
+    ]);
     if (!oldReadback || normalizeStatus(oldReadback) !== "cancelled" || !newReadback || !MANAGEABLE_STATUSES.has(normalizeStatus(newReadback))) {
       throw Object.assign(new Error("The reschedule could not be fully verified."), { code: "reschedule_not_confirmed", manualReview: true });
     }
@@ -23687,27 +23586,27 @@ async function manageAppointmentCommand(input) {
       appointmentStatus: "confirmed",
       reminderVerification: "pending_event_evidence"
     };
-    await store.complete(commandId2, result);
-    return result;
+    const completion = await store.complete(commandId, result);
+    return store.canonicalResult?.(result, completion) || result;
   } catch (error) {
-    await store.fail(commandId2, error, { manualReview: !!error?.manualReview });
+    await store.fail(commandId, error, { manualReview: !!error?.manualReview });
     throw error;
   }
 }
 async function scheduleAppointmentCommand(input) {
-  const actor = clean(input?.actor, 40);
-  const contactId = clean(input?.contactId, 100);
-  const sessionType = clean(input?.sessionType, 64);
-  const idempotencyKey = clean(input?.idempotencyKey, 160);
-  const startTime = clean(input?.startTime, 100);
-  const timezone = clean(input?.timezone, 100) || WORK_HOURS.timezone;
+  const actor = clean2(input?.actor, 40);
+  const contactId = clean2(input?.contactId, 100);
+  const sessionType = clean2(input?.sessionType, 64);
+  const idempotencyKey = clean2(input?.idempotencyKey, 160);
+  const startTime = clean2(input?.startTime, 100);
+  const timezone = clean2(input?.timezone, 100) || WORK_HOURS.timezone;
   const booking = input?.booking || null;
   const store = input?.store;
   const provider = input?.provider;
   const now = Number(input?.now ?? Date.now());
   if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor)) throw new TypeError("recognized Staff actor required");
   if (!contactId || !sessionType || !idempotencyKey) throw new TypeError("complete schedule command identity required");
-  if (!booking || !policyForCalendarId(booking.calendarId) || !clean(booking.title, 240)) {
+  if (!booking || !policyForCalendarId(booking.calendarId) || !clean2(booking.title, 240)) {
     throw new TypeError("server-owned booking definition required");
   }
   if (!store || !provider) throw new TypeError("schedule command dependencies required");
@@ -23742,8 +23641,9 @@ async function scheduleAppointmentCommand(input) {
         appointmentStatus: normalizeStatus(existing),
         reminderVerification: "pending_event_evidence"
       };
-      await store.complete(result2);
-      return result2;
+      const canonicalResult2 = store.canonicalResult?.(result2) || result2;
+      await store.complete(canonicalResult2);
+      return canonicalResult2;
     }
     const schedule = await provider.listSchedule(
       Date.parse(`${dateMatch[1]}T00:00:00-08:00`) - 12 * 60 * 60 * 1e3,
@@ -23767,8 +23667,8 @@ async function scheduleAppointmentCommand(input) {
         booking,
         startTime,
         timezone,
-        onCreated: /* @__PURE__ */ __name(async (appointmentId) => {
-          await store.checkpointAppointment(String(appointmentId));
+        onCreated: /* @__PURE__ */ __name(async (appointmentId, providerLink) => {
+          await store.checkpointAppointment(String(appointmentId), providerLink);
           checkpointedAppointmentId = String(appointmentId);
         }, "onCreated")
       });
@@ -23799,8 +23699,9 @@ async function scheduleAppointmentCommand(input) {
       appointmentStatus: normalizeStatus(readback),
       reminderVerification: "pending_event_evidence"
     };
-    await store.complete(result);
-    return result;
+    const canonicalResult = store.canonicalResult?.(result) || result;
+    await store.complete(canonicalResult);
+    return canonicalResult;
   } catch (error) {
     await store.fail(error, { manualReview: !!error?.manualReview });
     throw error;
@@ -23809,7 +23710,7 @@ async function scheduleAppointmentCommand(input) {
 var INTERNAL_START_INTERVAL_MINUTES, DAY_MS, MANAGEABLE_STATUSES;
 var init_staff_appointment_manage = __esm({
   "lib/staff-appointment-manage.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_datetime();
     init_app_owned_buffer();
     init_booking_slot_policy();
@@ -23822,7 +23723,7 @@ var init_staff_appointment_manage = __esm({
     __name(wallClock, "wallClock");
     __name(internalAvailability, "internalAvailability");
     MANAGEABLE_STATUSES = /* @__PURE__ */ new Set(["new", "confirmed"]);
-    __name(clean, "clean");
+    __name(clean2, "clean");
     __name(normalizeStatus, "normalizeStatus");
     __name(appointmentStart, "appointmentStart");
     __name(assertCommandInput, "assertCommandInput");
@@ -23832,15 +23733,86 @@ var init_staff_appointment_manage = __esm({
   }
 });
 
-// api/staff-appointments.js
-function json12(body, status, headers4) {
-  return new Response(JSON.stringify(body), { status, headers: headers4 });
-}
-function clean2(value, max = 160) {
+// lib/staff-owned-contact-identity.js
+function clean3(value, max = 120) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
-function validDate(value) {
-  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+function identityError(message, code, status) {
+  return Object.assign(new Error(message), { code, status });
+}
+async function resolveOwnedContactIdentity(context, contactReference) {
+  const reference = clean3(contactReference);
+  if (!reference) throw identityError("Choose a person.", "contact_reference_required", 400);
+  if (!context?.env?.WORKER_AUTH_SECRET) {
+    throw identityError("Owned CRM identity is not configured.", "owned_identity_unavailable", 503);
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS2);
+  try {
+    const response2 = await fetch(`${WORKER_URL2}?limit=20&query=${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
+      signal: controller.signal
+    });
+    if (!response2.ok) {
+      throw identityError("Owned CRM identity is unavailable.", "owned_identity_unavailable", 503);
+    }
+    const body = await response2.json().catch(() => ({}));
+    const exact = (Array.isArray(body.contacts) ? body.contacts : []).filter(
+      (contact2) => clean3(contact2?.id) === reference || clean3(contact2?.provider_contact_id) === reference
+    );
+    const ownedIds = new Set(exact.map((contact2) => clean3(contact2?.id)).filter(Boolean));
+    if (ownedIds.size > 1) {
+      throw identityError("This person reference is ambiguous in the owned CRM.", "owned_identity_ambiguous", 409);
+    }
+    const contact = exact[0];
+    const ownedContactId = clean3(contact?.id);
+    if (!ownedContactId) {
+      throw identityError("This person was not found in the owned CRM.", "owned_contact_not_found", 404);
+    }
+    return Object.freeze({
+      ownedContactId,
+      providerContactId: clean3(contact?.provider_contact_id) || null
+    });
+  } catch (error) {
+    if (error?.code) throw error;
+    if (error instanceof Error && error.name === "AbortError") {
+      throw identityError("Owned CRM identity lookup timed out.", "owned_identity_unavailable", 503);
+    }
+    throw identityError("Owned CRM identity is unavailable.", "owned_identity_unavailable", 503);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function requireProviderContactIdentity(identity2) {
+  if (!clean3(identity2?.ownedContactId)) {
+    throw identityError("This person was not found in the owned CRM.", "owned_contact_not_found", 404);
+  }
+  const providerContactId = clean3(identity2?.providerContactId);
+  if (!providerContactId) {
+    throw identityError(
+      "This owned person is not connected to the current calendar provider.",
+      "provider_identity_missing",
+      409
+    );
+  }
+  return providerContactId;
+}
+var WORKER_URL2, TIMEOUT_MS2;
+var init_staff_owned_contact_identity = __esm({
+  "lib/staff-owned-contact-identity.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    WORKER_URL2 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
+    TIMEOUT_MS2 = 1e4;
+    __name(clean3, "clean");
+    __name(identityError, "identityError");
+    __name(resolveOwnedContactIdentity, "resolveOwnedContactIdentity");
+    __name(requireProviderContactIdentity, "requireProviderContactIdentity");
+  }
+});
+
+// lib/staff-calendar-provider-ghl.js
+function clean4(value, max = 240) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 async function listAppointments(context, contactId) {
   const response2 = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}/appointments`);
@@ -23848,14 +23820,8 @@ async function listAppointments(context, contactId) {
   const data = await response2.json();
   return data.appointments || data.events || [];
 }
-function exactAppointment(appointments, appointmentId) {
-  return (appointments || []).find((item) => String(item?.id || "") === appointmentId) || null;
-}
-function appointmentStatus(appointment) {
-  return String(appointment?.appointmentStatus || appointment?.status || "").toLowerCase();
-}
-async function cancelProviderAppointment(context, appointment) {
-  const title = clean2(appointment?.title, 240) || "Session";
+async function cancelAppointment(context, appointment) {
+  const title = clean4(appointment?.title) || "Session";
   const response2 = await ghlFetch(context, `${BASE}/calendars/events/appointments/${encodeURIComponent(appointment.id)}`, {
     method: "PUT",
     body: JSON.stringify({ title, appointmentStatus: "cancelled" })
@@ -23865,72 +23831,642 @@ async function cancelProviderAppointment(context, appointment) {
     throw Object.assign(new Error(`Calendar cancellation failed (${response2.status}).`), { status: response2.status, detail });
   }
 }
-function providerFor(context, authoritativeContactId) {
+async function contactFor(context, contactId, action) {
+  const response2 = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
+  if (!response2.ok) throw new Error(`Could not load the person for this ${action}.`);
+  const data = await response2.json();
+  return data.contact || data;
+}
+function appointmentPayload({ contact, contactId, calendarId, startTime, durationMinutes, timezone, title, toNotify }) {
+  return {
+    calendarId,
+    locationId: LOCATION_ID6,
+    contactId,
+    startTime,
+    endTime: appointmentEndTime(startTime, durationMinutes),
+    selectedTimezone: timezone || WORK_HOURS.timezone,
+    title,
+    toNotify,
+    ignoreDateRange: false,
+    firstName: contact.firstName || contact.first_name || "",
+    lastName: contact.lastName || contact.last_name || "",
+    email: contact.email || "",
+    phone: contact.phone || ""
+  };
+}
+function createGhlStaffCalendarProvider(context, providerContactId) {
+  const authoritativeContactId = clean4(providerContactId, 120);
+  if (!authoritativeContactId) throw new TypeError("GHL calendar adapter requires provider contact identity");
   return Object.freeze({
-    listContactAppointments: /* @__PURE__ */ __name((contactId) => listAppointments(context, contactId), "listContactAppointments"),
+    provider: "ghl",
+    providerCalendarIdFor: /* @__PURE__ */ __name((booking) => clean4(booking?.calendarId, 120), "providerCalendarIdFor"),
+    // Intentionally ignore command-supplied contact IDs. The owned CRM
+    // crosswalk selected this exact provider identity before adapter creation.
+    listContactAppointments: /* @__PURE__ */ __name(() => listAppointments(context, authoritativeContactId), "listContactAppointments"),
     listSchedule: /* @__PURE__ */ __name((start, end) => fetchGarrettScheduleEvents(context, start, end), "listSchedule"),
-    cancelAppointment: /* @__PURE__ */ __name((appointment) => cancelProviderAppointment(context, appointment), "cancelAppointment"),
-    async createAppointment({ contactId: requestedContactId, booking, startTime, timezone, onCreated }) {
-      const contactId = clean2(authoritativeContactId || requestedContactId, 100);
-      if (!contactId || !booking || !policyForCalendarId(booking.calendarId)) {
+    cancelAppointment: /* @__PURE__ */ __name((appointment) => cancelAppointment(context, appointment), "cancelAppointment"),
+    async createAppointment({ booking, startTime, timezone, onCreated }) {
+      if (!booking || !policyForCalendarId(booking.calendarId)) {
         throw new Error("The appointment is missing governed calendar identity.");
       }
-      const contactResponse = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
-      if (!contactResponse.ok) throw new Error("Could not load the person for this appointment.");
-      const contactData = await contactResponse.json();
-      const contact = contactData.contact || contactData;
+      const contact = await contactFor(context, authoritativeContactId, "appointment");
       return createConfirmedAppointment({
         endpoint: `${BASE}/calendars/events/appointments`,
         request: /* @__PURE__ */ __name((url, options) => ghlFetch(context, url, options), "request"),
         onCreated,
-        payload: {
+        payload: appointmentPayload({
+          contact,
+          contactId: authoritativeContactId,
           calendarId: booking.calendarId,
-          locationId: LOCATION_ID6,
-          contactId,
           startTime,
-          endTime: appointmentEndTime(startTime, booking.durationMinutes),
-          selectedTimezone: timezone || WORK_HOURS.timezone,
+          durationMinutes: booking.durationMinutes,
+          timezone,
           title: booking.title,
-          toNotify: true,
-          ignoreDateRange: false,
-          firstName: contact.firstName || contact.first_name || "",
-          lastName: contact.lastName || contact.last_name || "",
-          email: contact.email || "",
-          phone: contact.phone || ""
-        }
+          toNotify: true
+        })
       });
     },
     async createReplacement({ original, startTime, timezone, onCreated }) {
-      const contactId = clean2(authoritativeContactId, 100);
-      const calendarId = clean2(original?.calendarId || original?.calendar_id, 100);
+      const calendarId = clean4(original?.calendarId || original?.calendar_id, 120);
       const policy = policyForCalendarId(calendarId);
-      if (!contactId || !policy) throw new Error("The original appointment is missing governed calendar identity.");
-      const contactResponse = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
-      if (!contactResponse.ok) throw new Error("Could not load the person for this reschedule.");
-      const contactData = await contactResponse.json();
-      const contact = contactData.contact || contactData;
+      if (!policy) throw new Error("The original appointment is missing governed calendar identity.");
+      const contact = await contactFor(context, authoritativeContactId, "reschedule");
       return createConfirmedAppointment({
         endpoint: `${BASE}/calendars/events/appointments`,
         request: /* @__PURE__ */ __name((url, options) => ghlFetch(context, url, options), "request"),
         onCreated,
-        payload: {
+        payload: appointmentPayload({
+          contact,
+          contactId: authoritativeContactId,
           calendarId,
-          locationId: LOCATION_ID6,
-          contactId,
           startTime,
-          endTime: appointmentEndTime(startTime, policy.durationMinutes),
-          selectedTimezone: timezone || WORK_HOURS.timezone,
-          title: clean2(original?.title, 240) || policy.label,
-          toNotify: false,
-          ignoreDateRange: false,
-          firstName: contact.firstName || contact.first_name || "",
-          lastName: contact.lastName || contact.last_name || "",
-          email: contact.email || "",
-          phone: contact.phone || ""
-        }
+          durationMinutes: policy.durationMinutes,
+          timezone,
+          title: clean4(original?.title) || policy.label,
+          toNotify: false
+        })
       });
     }
   });
+}
+var BASE, LOCATION_ID6;
+var init_staff_calendar_provider_ghl = __esm({
+  "lib/staff-calendar-provider-ghl.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    init_ghl();
+    init_datetime();
+    init_app_owned_buffer();
+    init_booking_slot_policy();
+    init_ghl_appointment_handoff();
+    BASE = "https://services.leadconnectorhq.com";
+    LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
+    __name(clean4, "clean");
+    __name(listAppointments, "listAppointments");
+    __name(cancelAppointment, "cancelAppointment");
+    __name(contactFor, "contactFor");
+    __name(appointmentPayload, "appointmentPayload");
+    __name(createGhlStaffCalendarProvider, "createGhlStaffCalendarProvider");
+  }
+});
+
+// lib/staff-calendar-provider-google.js
+function clean5(value, max = 240) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+function configured(context) {
+  const calendarId = clean5(context?.env?.STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID, 240);
+  const user = clean5(context?.env?.STAFF_APPOINTMENT_GOOGLE_USER, 80);
+  if (!calendarId || !user) {
+    const error = new Error("Google appointment calendar authority is not configured.");
+    error.code = "calendar_provider_unavailable";
+    throw error;
+  }
+  return { calendarId, user };
+}
+async function request(context, user, path, options = {}) {
+  const token = await getGoogleToken(context, user);
+  return fetch(`${API}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...options.body ? { "Content-Type": "application/json" } : {},
+      ...options.headers || {}
+    }
+  });
+}
+function privateFields(event2) {
+  return event2?.extendedProperties?.private || {};
+}
+function normalizeEvent(event2, providerCalendarId, fallback = {}) {
+  const owned = privateFields(event2);
+  const rawStatus = clean5(event2?.status, 40).toLowerCase();
+  const status = rawStatus === "confirmed" || rawStatus === "cancelled" ? rawStatus : rawStatus || "unknown";
+  return {
+    id: clean5(event2?.id || fallback.id, 240),
+    contactId: clean5(owned.amariOwnedContactId || fallback.contactId, 160),
+    calendarId: clean5(owned.amariServiceCalendarId || fallback.calendarId, 160),
+    providerCalendarId,
+    serviceId: clean5(owned.amariServiceId || fallback.serviceId, 160),
+    title: clean5(event2?.summary || fallback.title) || "Session",
+    appointmentStatus: status,
+    status,
+    startTime: event2?.start?.dateTime || fallback.startTime || null,
+    endTime: event2?.end?.dateTime || fallback.endTime || null,
+    timezone: event2?.start?.timeZone || fallback.timezone || WORK_HOURS.timezone,
+    location: event2?.location || fallback.location || null,
+    htmlLink: event2?.htmlLink || null
+  };
+}
+async function responseJson2(response2, message) {
+  if (!response2.ok) {
+    const detail = await response2.text().catch(() => "");
+    const error = new Error(`${message} (${response2.status}).`);
+    error.status = response2.status;
+    error.detail = detail.slice(0, 500);
+    throw error;
+  }
+  return response2.json();
+}
+function eventsPath(calendarId, params) {
+  return `/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
+}
+function createGoogleStaffCalendarProvider(context, ownedContactId) {
+  const authoritativeContactId = clean5(ownedContactId, 160);
+  if (!authoritativeContactId) throw new TypeError("Google calendar adapter requires owned contact identity");
+  const { calendarId: providerCalendarId, user } = configured(context);
+  async function listContactAppointments2() {
+    const params = new URLSearchParams({
+      privateExtendedProperty: `amariOwnedContactId=${authoritativeContactId}`,
+      singleEvents: "true",
+      showDeleted: "true",
+      maxResults: "2500"
+    });
+    const response2 = await request(context, user, eventsPath(providerCalendarId, params));
+    const data = await responseJson2(response2, "Could not load this person\u2019s Google Calendar appointments");
+    if (data.nextPageToken) throw new Error("Google Calendar contact read exceeded the exact bounded page.");
+    return (data.items || []).map((event2) => normalizeEvent(event2, providerCalendarId));
+  }
+  __name(listContactAppointments2, "listContactAppointments");
+  async function getAppointment(appointmentId, _contactId, fallback = {}) {
+    const id3 = clean5(appointmentId, 240);
+    const response2 = await request(
+      context,
+      user,
+      `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(id3)}`
+    );
+    if (response2.status === 404 || response2.status === 410) {
+      return normalizeEvent({ id: id3, status: "cancelled" }, providerCalendarId, fallback);
+    }
+    return normalizeEvent(
+      await responseJson2(response2, "Could not read back the Google Calendar appointment"),
+      providerCalendarId,
+      fallback
+    );
+  }
+  __name(getAppointment, "getAppointment");
+  async function listSchedule(start, end) {
+    const params = new URLSearchParams({
+      timeMin: new Date(start).toISOString(),
+      timeMax: new Date(end).toISOString(),
+      singleEvents: "true",
+      showDeleted: "false",
+      orderBy: "startTime",
+      maxResults: "2500"
+    });
+    const response2 = await request(context, user, eventsPath(providerCalendarId, params));
+    const data = await responseJson2(response2, "Could not load Garrett\u2019s Google Calendar schedule");
+    if (data.nextPageToken) throw new Error("Google Calendar schedule read exceeded the exact bounded page.");
+    return (data.items || []).map((event2) => normalizeEvent(event2, providerCalendarId));
+  }
+  __name(listSchedule, "listSchedule");
+  async function cancelAppointment2(appointment) {
+    const id3 = clean5(appointment?.id, 240);
+    if (!id3) throw new TypeError("Google Calendar appointment identity required");
+    const response2 = await request(
+      context,
+      user,
+      `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(id3)}?sendUpdates=none`,
+      { method: "DELETE" }
+    );
+    if (!response2.ok && response2.status !== 404 && response2.status !== 410) {
+      await responseJson2(response2, "Google Calendar cancellation failed");
+    }
+  }
+  __name(cancelAppointment2, "cancelAppointment");
+  async function create({ booking, startTime, timezone, onCreated, title }) {
+    if (!booking?.serviceId || !policyForCalendarId(booking.calendarId)) {
+      throw new Error("The appointment is missing governed owned service identity.");
+    }
+    const body = {
+      summary: clean5(title || booking.title) || "Amari Method Session",
+      start: { dateTime: startTime, timeZone: timezone || WORK_HOURS.timezone },
+      end: {
+        dateTime: appointmentEndTime(startTime, booking.durationMinutes),
+        timeZone: timezone || WORK_HOURS.timezone
+      },
+      transparency: "opaque",
+      visibility: "private",
+      guestsCanInviteOthers: false,
+      guestsCanModify: false,
+      guestsCanSeeOtherGuests: false,
+      reminders: { useDefault: false, overrides: [] },
+      extendedProperties: {
+        private: {
+          amariAuthorityVersion: "1",
+          amariOwnedContactId: authoritativeContactId,
+          amariServiceId: clean5(booking.serviceId, 160),
+          amariServiceCalendarId: clean5(booking.calendarId, 160)
+        }
+      }
+    };
+    let createdId = null;
+    try {
+      const response2 = await request(
+        context,
+        user,
+        eventsPath(providerCalendarId, new URLSearchParams({ sendUpdates: "none", conferenceDataVersion: "0" })),
+        { method: "POST", body: JSON.stringify(body) }
+      );
+      const created = await responseJson2(response2, "Google Calendar appointment creation failed");
+      createdId = clean5(created?.id, 240);
+      if (!createdId) throw new Error("Google Calendar did not return an appointment identity.");
+      await onCreated?.(createdId, { provider: PROVIDER, providerCalendarId });
+      const readback = await getAppointment(createdId, authoritativeContactId);
+      if (readback.contactId !== authoritativeContactId || readback.serviceId !== booking.serviceId || readback.calendarId !== booking.calendarId || Date.parse(readback.startTime || "") !== Date.parse(startTime) || readback.status !== "confirmed") {
+        const error = new Error("Google Calendar appointment readback did not match owned intent.");
+        error.code = "provider_readback_mismatch";
+        throw error;
+      }
+      return readback;
+    } catch (error) {
+      error.phase = createdId ? "readback" : "create";
+      error.appointmentId = createdId;
+      if (createdId) {
+        const cleanup = await request(
+          context,
+          user,
+          `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(createdId)}?sendUpdates=none`,
+          { method: "DELETE" }
+        ).catch(() => null);
+        error.cleanupStatus = cleanup?.status || 0;
+      }
+      throw error;
+    }
+  }
+  __name(create, "create");
+  return Object.freeze({
+    provider: PROVIDER,
+    providerCalendarIdFor: /* @__PURE__ */ __name(() => providerCalendarId, "providerCalendarIdFor"),
+    listContactAppointments: listContactAppointments2,
+    getAppointment,
+    listSchedule,
+    cancelAppointment: cancelAppointment2,
+    createAppointment: /* @__PURE__ */ __name((input) => create(input), "createAppointment"),
+    createReplacement: /* @__PURE__ */ __name(({ original, ...input }) => {
+      const serviceCalendarId = clean5(original?.calendarId || original?.calendar_id, 160);
+      const policy = policyForCalendarId(serviceCalendarId);
+      const serviceId = clean5(original?.serviceId, 160);
+      if (!policy || !serviceId) throw new Error("The original appointment is missing governed owned service identity.");
+      return create({
+        ...input,
+        title: clean5(original?.title) || policy.label,
+        booking: {
+          serviceId,
+          calendarId: serviceCalendarId,
+          durationMinutes: policy.durationMinutes,
+          title: clean5(original?.title) || policy.label
+        }
+      });
+    }, "createReplacement")
+  });
+}
+var API, PROVIDER;
+var init_staff_calendar_provider_google = __esm({
+  "lib/staff-calendar-provider-google.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    init_datetime();
+    init_google_api();
+    init_booking_slot_policy();
+    API = "https://www.googleapis.com/calendar/v3";
+    PROVIDER = "google_calendar";
+    __name(clean5, "clean");
+    __name(configured, "configured");
+    __name(request, "request");
+    __name(privateFields, "privateFields");
+    __name(normalizeEvent, "normalizeEvent");
+    __name(responseJson2, "responseJson");
+    __name(eventsPath, "eventsPath");
+    __name(createGoogleStaffCalendarProvider, "createGoogleStaffCalendarProvider");
+  }
+});
+
+// lib/staff-calendar-provider.js
+function configuredStaffCalendarProvider(env) {
+  const provider = String(env?.STAFF_APPOINTMENT_CALENDAR_PROVIDER || "ghl").trim();
+  if (!SUPPORTED.has(provider)) {
+    const error = new Error("Configured Staff appointment calendar provider is unsupported.");
+    error.code = "calendar_provider_unsupported";
+    throw error;
+  }
+  return provider;
+}
+function configuredStaffCalendarProviderForBooking(env, booking) {
+  return booking?.serviceId === "partner-initial" ? configuredStaffCalendarProvider(env) : "ghl";
+}
+function createStaffCalendarProvider(context, identity2, requestedProvider = null) {
+  const provider = requestedProvider || configuredStaffCalendarProvider(context?.env);
+  if (provider === "google_calendar") {
+    return createGoogleStaffCalendarProvider(context, identity2?.ownedContactId);
+  }
+  return createGhlStaffCalendarProvider(context, requireProviderContactIdentity(identity2));
+}
+var SUPPORTED;
+var init_staff_calendar_provider = __esm({
+  "lib/staff-calendar-provider.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    init_staff_calendar_provider_ghl();
+    init_staff_calendar_provider_google();
+    init_staff_owned_contact_identity();
+    SUPPORTED = /* @__PURE__ */ new Set(["ghl", "google_calendar"]);
+    __name(configuredStaffCalendarProvider, "configuredStaffCalendarProvider");
+    __name(configuredStaffCalendarProviderForBooking, "configuredStaffCalendarProviderForBooking");
+    __name(createStaffCalendarProvider, "createStaffCalendarProvider");
+  }
+});
+
+// lib/staff-owned-appointment-store.js
+function commandError(body, status) {
+  const error = new Error(body?.detail || body?.error || "Owned appointment command failed.");
+  error.code = body?.error || "owned_appointment_unavailable";
+  error.status = status;
+  if (error.code === "manual_review") error.manualReview = true;
+  return error;
+}
+async function post(context, actor, payload) {
+  if (!context?.env?.WORKER_AUTH_SECRET) throw commandError({ error: "owned_appointment_unavailable" }, 503);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS3);
+  try {
+    const response2 = await fetch(WORKER_URL3, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`,
+        "Content-Type": "application/json",
+        "X-Staff-Actor": actor
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    const body = await response2.json().catch(() => ({}));
+    if (!response2.ok) throw commandError(body, response2.status);
+    return body;
+  } catch (error) {
+    if (error?.code) throw error;
+    throw commandError({ error: "owned_appointment_unavailable", detail: "Owned appointment command is unavailable." }, 503);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function createOwnedAppointmentScheduleStore(context, input) {
+  const actor = String(input?.actor || "");
+  const serviceId = String(input?.booking?.serviceId || "");
+  const serviceCalendarId = String(input?.booking?.calendarId || "");
+  const provider = String(input?.provider || "ghl");
+  const providerCalendarId = String(input?.providerCalendarId || serviceCalendarId);
+  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor) || !serviceId || !serviceCalendarId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider) || !providerCalendarId) {
+    throw new TypeError("owned appointment store identity required");
+  }
+  let commandId = null;
+  let ownedAppointmentId = null;
+  return Object.freeze({
+    async claim() {
+      const captured = await post(context, actor, {
+        action: "schedule",
+        contactId: input.contactId,
+        serviceId,
+        idempotencyKey: input.idempotencyKey,
+        startTime: input.startTime,
+        timezone: input.timezone
+      });
+      commandId = captured.appointment?.commandId;
+      ownedAppointmentId = captured.appointment?.appointmentId;
+      if (!commandId || !ownedAppointmentId) throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
+      const claimed = await post(context, actor, { action: "claim", commandId });
+      const execution = claimed.execution || {};
+      if (claimed.state === "completed") return { state: "completed", operation: { result: execution.result } };
+      if (claimed.state === "rejected") {
+        throw commandError({ error: "appointment_rejected", detail: execution.lastError || "Appointment request was rejected." }, 409);
+      }
+      if (claimed.state === "manual_review") {
+        throw commandError({
+          error: "manual_review",
+          detail: execution.lastError || "This appointment change needs manual review before another attempt."
+        }, 409);
+      }
+      if (claimed.state !== "acquired") return { state: claimed.state || "in_progress", operation: execution };
+      return {
+        state: "acquired",
+        operation: {
+          ...execution,
+          appointmentId: execution.providerRecordId || null,
+          ownedAppointmentId
+        }
+      };
+    },
+    checkpointAppointment(providerRecordId, link = {}) {
+      return post(context, actor, {
+        action: "provider-link",
+        commandId,
+        provider: link.provider || provider,
+        providerRecordId,
+        providerCalendarId: link.providerCalendarId || providerCalendarId,
+        providerStatusRaw: "new"
+      });
+    },
+    clearAppointment(providerRecordId) {
+      return post(context, actor, { action: "provider-unlink", commandId, providerRecordId });
+    },
+    canonicalResult(result) {
+      return {
+        ...result,
+        appointmentId: ownedAppointmentId,
+        providerAppointmentId: result.appointmentId,
+        authority: "owned"
+      };
+    },
+    async complete(result) {
+      const response2 = await post(context, actor, { action: "complete", commandId, result });
+      return response2.execution;
+    },
+    async fail(error, options = {}) {
+      const response2 = await post(context, actor, {
+        action: "fail",
+        commandId,
+        error: String(error?.message || error || "appointment execution failed").slice(0, 1e3),
+        manualReview: options.manualReview === true,
+        terminal: error?.code === "slot_unavailable" || error?.code === "invalid_schedule_time"
+      });
+      return response2.execution;
+    }
+  });
+}
+function createOwnedAppointmentManageStore(context, input) {
+  const actor = String(input?.actor || "");
+  const action = String(input?.action || "");
+  const contactId = String(input?.contactId || "");
+  const appointmentId = String(input?.appointmentId || "");
+  const providerCalendarId = String(input?.providerCalendarId || "");
+  const provider = String(input?.provider || "ghl");
+  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor) || !(/* @__PURE__ */ new Set(["cancel", "reschedule"])).has(action) || !contactId || !appointmentId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider)) {
+    throw new TypeError("owned appointment manage identity required");
+  }
+  let commandId = null;
+  return Object.freeze({
+    async claim(command) {
+      const captured = await post(context, actor, {
+        action: "manage",
+        manageAction: action,
+        contactId,
+        appointmentId,
+        idempotencyKey: command.idempotencyKey,
+        ...action === "reschedule" ? {
+          startTime: command.requestedStartTime,
+          timezone: input.timezone
+        } : {}
+      });
+      commandId = captured.command?.commandId;
+      if (!commandId) throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
+      const claimed = await post(context, actor, { action: "claim", commandId });
+      const execution = claimed.execution || {};
+      if (claimed.state === "completed") {
+        return { state: "completed", command: { id: commandId, result: execution.result } };
+      }
+      if (claimed.state === "rejected") {
+        throw commandError({ error: "appointment_rejected", detail: execution.lastError || "Appointment request was rejected." }, 409);
+      }
+      return {
+        state: claimed.state,
+        command: {
+          id: commandId,
+          result: execution.result || null,
+          replacementAppointmentId: action === "reschedule" ? execution.providerRecordId || null : null
+        }
+      };
+    },
+    checkpointReplacement(_ignoredCommandId, providerRecordId, link = {}) {
+      return post(context, actor, {
+        action: "provider-link",
+        commandId,
+        provider: link.provider || provider,
+        providerRecordId,
+        providerCalendarId: link.providerCalendarId || providerCalendarId,
+        providerStatusRaw: "new"
+      });
+    },
+    clearReplacement(_ignoredCommandId, providerRecordId) {
+      return post(context, actor, { action: "provider-unlink", commandId, providerRecordId });
+    },
+    async complete(_ignoredCommandId, result) {
+      const response2 = await post(context, actor, { action: "complete", commandId, result });
+      return response2.execution;
+    },
+    canonicalResult(result, execution) {
+      return execution?.result || result;
+    },
+    async fail(_ignoredCommandId, error, options = {}) {
+      const response2 = await post(context, actor, {
+        action: "fail",
+        commandId,
+        error: String(error?.message || error || "appointment execution failed").slice(0, 1e3),
+        manualReview: options.manualReview === true,
+        terminal: false
+      });
+      return response2.execution;
+    }
+  });
+}
+var WORKER_URL3, TIMEOUT_MS3;
+var init_staff_owned_appointment_store = __esm({
+  "lib/staff-owned-appointment-store.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    WORKER_URL3 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/commands";
+    TIMEOUT_MS3 = 1e4;
+    __name(commandError, "commandError");
+    __name(post, "post");
+    __name(createOwnedAppointmentScheduleStore, "createOwnedAppointmentScheduleStore");
+    __name(createOwnedAppointmentManageStore, "createOwnedAppointmentManageStore");
+  }
+});
+
+// lib/staff-owned-appointment-identity.js
+function identityError2(body, status) {
+  const error = new Error(body?.detail || body?.error || "Owned appointment identity is unavailable.");
+  error.code = body?.error || "owned_appointment_identity_unavailable";
+  error.status = status;
+  return error;
+}
+async function resolveStaffOwnedAppointmentIdentity(context, reference) {
+  if (!context?.env?.WORKER_AUTH_SECRET) throw identityError2({}, 503);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS4);
+  try {
+    const response2 = await fetch(`${WORKER_URL4}/${encodeURIComponent(reference)}/identity`, {
+      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
+      signal: controller.signal
+    });
+    const body = await response2.json().catch(() => ({}));
+    if (!response2.ok) throw identityError2(body, response2.status);
+    const identity2 = body?.identity;
+    if (!identity2?.ownedAppointmentId || !identity2?.ownedContactId) throw identityError2({}, 503);
+    return Object.freeze(identity2);
+  } catch (error) {
+    if (error?.code) throw error;
+    throw identityError2({}, 503);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function requireProviderAppointmentIdentity(identity2) {
+  const provider = String(identity2?.provider || (identity2?.providerContactId ? "ghl" : ""));
+  if (!identity2?.providerAppointmentId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider) || provider === "ghl" && !identity2?.providerContactId) {
+    throw identityError2({
+      error: "provider_appointment_identity_missing",
+      detail: "This owned appointment has no verified temporary provider link."
+    }, 409);
+  }
+  return {
+    provider,
+    appointmentId: identity2.providerAppointmentId,
+    contactId: identity2.providerContactId || null
+  };
+}
+var WORKER_URL4, TIMEOUT_MS4;
+var init_staff_owned_appointment_identity = __esm({
+  "lib/staff-owned-appointment-identity.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    WORKER_URL4 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
+    TIMEOUT_MS4 = 1e4;
+    __name(identityError2, "identityError");
+    __name(resolveStaffOwnedAppointmentIdentity, "resolveStaffOwnedAppointmentIdentity");
+    __name(requireProviderAppointmentIdentity, "requireProviderAppointmentIdentity");
+  }
+});
+
+// api/staff-appointments.js
+function json12(body, status, headers5) {
+  return new Response(JSON.stringify(body), { status, headers: headers5 });
+}
+function clean6(value, max = 160) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+function validDate(value) {
+  return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
+}
+function exactAppointment(appointments, appointmentId) {
+  return (appointments || []).find((item) => String(item?.id || "") === appointmentId) || null;
+}
+function appointmentStatus(appointment) {
+  return String(appointment?.appointmentStatus || appointment?.status || "").toLowerCase();
 }
 function scheduleStore(db, { actor, contactId, sessionType, idempotencyKey, startTime, booking }) {
   const opKey = `staff-schedule:${actor.toLowerCase()}:${idempotencyKey}`;
@@ -23948,95 +24484,168 @@ function scheduleStore(db, { actor, contactId, sessionType, idempotencyKey, star
     fail: /* @__PURE__ */ __name((error, options) => failBookingOperation(db, opKey, error?.message || error, options), "fail")
   });
 }
-async function onRequestOptions45(context) {
+function identityFailure(error, headers5) {
+  const status = Number(error?.status);
+  return json12({
+    error: error?.message || "Owned CRM identity is unavailable.",
+    code: error?.code || "owned_identity_unavailable"
+  }, [400, 404, 409, 503].includes(status) ? status : 503, headers5);
+}
+function isIdentityError(error) {
+  const code = String(error?.code || "");
+  return code.startsWith("owned_") || code.startsWith("provider_") || code === "contact_reference_required";
+}
+async function ownedIdentity(context, reference) {
+  return resolveOwnedContactIdentity(context, reference);
+}
+async function providerAppointmentIdentity(context, reference, contactIdentity) {
+  const identity2 = await resolveStaffOwnedAppointmentIdentity(context, reference);
+  if (identity2.ownedContactId !== contactIdentity.ownedContactId) {
+    const error = new Error("Appointment does not belong to this owned person.");
+    error.code = "owned_appointment_contact_mismatch";
+    error.status = 409;
+    throw error;
+  }
+  const provider = requireProviderAppointmentIdentity(identity2);
+  if (provider.provider === "ghl" && provider.contactId !== contactIdentity.providerContactId) {
+    const error = new Error("Appointment provider identity does not match this person.");
+    error.code = "owned_appointment_provider_mismatch";
+    error.status = 409;
+    throw error;
+  }
+  return Object.freeze({ ...identity2, ...provider });
+}
+async function onRequestOptions46(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), METHODS3) });
 }
-async function onRequestPost38(context) {
-  const headers4 = {
+async function onRequestPost39(context) {
+  const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS3),
     "Content-Type": "application/json",
     "Cache-Control": "private, no-store"
   };
-  const auth = await requireStaffAuth(context, headers4);
+  const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
   const actor = auth.payload?.user;
-  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor)) return json12({ error: "Recognized Staff identity required." }, 403, headers4);
-  const parsed = await parseJsonBody(context.request, headers4);
+  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor)) return json12({ error: "Recognized Staff identity required." }, 403, headers5);
+  const parsed = await parseJsonBody(context.request, headers5);
   if (parsed.error) return parsed.error;
   const body = parsed.body;
   if (FORBIDDEN_FIELDS.some((field) => Object.prototype.hasOwnProperty.call(body, field))) {
-    return json12({ error: "Appointment identity and status are controlled by the server." }, 400, headers4);
+    return json12({ error: "Appointment identity and status are controlled by the server." }, 400, headers5);
   }
-  const action = clean2(body.action, 30);
-  const contactId = clean2(body.contactId, 100);
-  const appointmentId = clean2(body.appointmentId, 100);
-  if (action === "list-types") return json12({ types: listStaffBookTypes() }, 200, headers4);
+  const action = clean6(body.action, 30);
+  const contactId = clean6(body.contactId, 100);
+  const appointmentId = clean6(body.appointmentId, 100);
+  if (action === "list-types") return json12({ types: listStaffBookTypes() }, 200, headers5);
   if (action === "availability") {
-    const startDate = clean2(body.startDate, 10);
-    const endDate = clean2(body.endDate, 10);
-    if (!validDate(startDate) || !validDate(endDate)) return json12({ error: "Choose a valid date range." }, 400, headers4);
+    const startDate = clean6(body.startDate, 10);
+    const endDate = clean6(body.endDate, 10);
+    if (!validDate(startDate) || !validDate(endDate)) return json12({ error: "Choose a valid date range." }, 400, headers5);
     try {
       let original = null;
       let booking = null;
       let calendarId = "";
+      let identity2;
+      let appointmentIdentity = null;
+      let provider;
       if (appointmentId) {
-        if (!contactId) return json12({ error: "Choose a person and appointment." }, 400, headers4);
-        const appointments = await listAppointments(context, contactId);
-        original = exactAppointment(appointments, appointmentId);
-        if (!original) return json12({ error: "Appointment not found for this person." }, 404, headers4);
+        if (!contactId) return json12({ error: "Choose a person and appointment." }, 400, headers5);
+        identity2 = await ownedIdentity(context, contactId);
+        appointmentIdentity = await providerAppointmentIdentity(context, appointmentId, identity2);
+        provider = createStaffCalendarProvider(context, identity2, appointmentIdentity.provider);
+        const appointments = await provider.listContactAppointments();
+        original = exactAppointment(appointments, appointmentIdentity.appointmentId);
+        if (!original) return json12({ error: "Appointment not found for this person." }, 404, headers5);
         if (!["new", "confirmed"].includes(appointmentStatus(original))) {
-          return json12({ error: `This appointment is already ${appointmentStatus(original) || "not manageable"}.` }, 409, headers4);
+          return json12({ error: `This appointment is already ${appointmentStatus(original) || "not manageable"}.` }, 409, headers5);
         }
-        calendarId = clean2(original.calendarId || original.calendar_id, 100);
+        calendarId = clean6(original.calendarId || original.calendar_id, 100);
       } else {
-        booking = resolveStaffBookType(clean2(body.sessionType, 64));
-        if (!booking) return json12({ error: "Choose an appointment type." }, 400, headers4);
+        if (!contactId) return json12({ error: "Choose a person." }, 400, headers5);
+        identity2 = await ownedIdentity(context, contactId);
+        booking = resolveStaffBookType(clean6(body.sessionType, 64));
+        if (!booking) return json12({ error: "Choose an appointment type." }, 400, headers5);
         calendarId = booking.calendarId;
+        provider = createStaffCalendarProvider(
+          context,
+          identity2,
+          configuredStaffCalendarProviderForBooking(context.env, booking)
+        );
       }
-      if (!policyForCalendarId(calendarId)) return json12({ error: "This calendar is not yet governed for Staff scheduling." }, 409, headers4);
+      if (!policyForCalendarId(calendarId)) return json12({ error: "This calendar is not yet governed for Staff scheduling." }, 409, headers5);
       const start = Date.parse(normalizeGhlTimestamp(`${startDate}T00:00:00`));
       const end = Date.parse(normalizeGhlTimestamp(`${endDate}T23:59:59`));
-      const events = await fetchGarrettScheduleEvents(context, start, end);
+      const events = await provider.listSchedule(start, end);
       return json12({
         appointment: original ? {
-          id: original.id,
+          id: appointmentIdentity?.ownedAppointmentId || appointmentId,
           title: original.title || "Session",
           startTime: original.startTime || original.start_time,
           calendarName: original.calendarName || ""
         } : null,
-        service: booking ? { id: clean2(body.sessionType, 64), label: booking.label, durationMinutes: booking.durationMinutes } : null,
-        slots: internalAvailability({ calendarId, startDate, endDate, events, excludeAppointmentId: appointmentId }),
+        service: booking ? { id: clean6(body.sessionType, 64), label: booking.label, durationMinutes: booking.durationMinutes } : null,
+        slots: internalAvailability({
+          calendarId,
+          startDate,
+          endDate,
+          events,
+          excludeAppointmentId: original?.id || appointmentId
+        }),
         timezone: WORK_HOURS.timezone,
         source: "garrett_internal_schedule",
         publicRestrictionsApplied: false,
         guidance: "All collision-free Staff times are shown; public booking filters are not applied."
-      }, 200, headers4);
+      }, 200, headers5);
     } catch (error) {
       console.error("[staff-appointments] availability failed", error);
-      return json12({ error: error?.message || "Could not load Garrett\u2019s internal availability." }, 500, headers4);
+      if (isIdentityError(error)) {
+        return identityFailure(error, headers5);
+      }
+      return json12({ error: error?.message || "Could not load Garrett\u2019s internal availability." }, 500, headers5);
     }
   }
   if (action === "schedule") {
-    const sessionType = clean2(body.sessionType, 64);
+    const sessionType = clean6(body.sessionType, 64);
     const booking = resolveStaffBookType(sessionType);
-    const idempotencyKey2 = clean2(body.idempotencyKey, 160);
-    const startTime2 = clean2(body.startTime, 100);
-    if (!contactId) return json12({ error: "Choose a person." }, 400, headers4);
-    if (!booking) return json12({ error: "Choose an appointment type." }, 400, headers4);
-    if (idempotencyKey2.length < 8) return json12({ error: "A valid action key is required." }, 400, headers4);
-    if (!startTime2) return json12({ error: "Choose a time." }, 400, headers4);
-    if (!context.env.ATTEND_DB) return json12({ error: "Appointment scheduling is temporarily unavailable; no calendar change was made." }, 500, headers4);
+    const idempotencyKey2 = clean6(body.idempotencyKey, 160);
+    const startTime2 = clean6(body.startTime, 100);
+    if (!contactId) return json12({ error: "Choose a person." }, 400, headers5);
+    if (!booking) return json12({ error: "Choose an appointment type." }, 400, headers5);
+    if (idempotencyKey2.length < 8) return json12({ error: "A valid action key is required." }, 400, headers5);
+    if (!startTime2) return json12({ error: "Choose a time." }, 400, headers5);
     try {
+      const identity2 = await ownedIdentity(context, contactId);
+      const provider = createStaffCalendarProvider(
+        context,
+        identity2,
+        configuredStaffCalendarProviderForBooking(context.env, booking)
+      );
+      const ownedAuthority = Boolean(booking.serviceId);
+      if (!ownedAuthority && !context.env.ATTEND_DB) {
+        return json12({ error: "Appointment scheduling is temporarily unavailable; no calendar change was made." }, 500, headers5);
+      }
+      const store = ownedAuthority ? createOwnedAppointmentScheduleStore(context, {
+        actor,
+        contactId: identity2.ownedContactId,
+        sessionType,
+        idempotencyKey: idempotencyKey2,
+        startTime: startTime2,
+        timezone: WORK_HOURS.timezone,
+        booking,
+        provider: provider.provider,
+        providerCalendarId: provider.providerCalendarIdFor(booking)
+      }) : scheduleStore(context.env.ATTEND_DB, { actor, contactId: identity2.ownedContactId, sessionType, idempotencyKey: idempotencyKey2, startTime: startTime2, booking });
       const result = await scheduleAppointmentCommand({
         actor,
-        contactId,
+        contactId: identity2.ownedContactId,
         sessionType,
         booking,
         idempotencyKey: idempotencyKey2,
         startTime: startTime2,
         timezone: WORK_HOURS.timezone,
-        store: scheduleStore(context.env.ATTEND_DB, { actor, contactId, sessionType, idempotencyKey: idempotencyKey2, startTime: startTime2, booking }),
-        provider: providerFor(context, contactId)
+        store,
+        provider
       });
       context.waitUntil?.(emitPathHop(context.env, {
         pathId: "staff_appointment_manage",
@@ -24044,10 +24653,10 @@ async function onRequestPost38(context) {
         outcome: "ok",
         summary: "Staff scheduled appointment",
         source: "staff-appointments",
-        contactId,
+        contactId: identity2.ownedContactId,
         correlationId: idempotencyKey2
       }));
-      return json12(result, 200, headers4);
+      return json12(result, 200, headers5);
     } catch (error) {
       console.error("[staff-appointments] schedule failed", error);
       context.waitUntil?.(recordOpsError(context.env, "staff-appointments", "Staff appointment schedule failed", {
@@ -24057,33 +24666,43 @@ async function onRequestPost38(context) {
         sessionType,
         code: error?.code || "unknown"
       }));
+      if (isIdentityError(error)) {
+        return identityFailure(error, headers5);
+      }
       const status = ["in_progress", "conflict", "slot_unavailable"].includes(error?.code) ? 409 : error?.manualReview ? 409 : 422;
-      return json12({ error: error?.message || "Appointment scheduling failed.", code: error?.code || "appointment_schedule_failed" }, status, headers4);
+      return json12({ error: error?.message || "Appointment scheduling failed.", code: error?.code || "appointment_schedule_failed" }, status, headers5);
     }
   }
-  if (!contactId || !appointmentId) return json12({ error: "Choose a person and appointment." }, 400, headers4);
-  if (!["cancel", "reschedule"].includes(action)) return json12({ error: "Choose cancel or reschedule." }, 400, headers4);
-  const idempotencyKey = clean2(body.idempotencyKey, 160);
-  if (idempotencyKey.length < 8) return json12({ error: "A valid action key is required." }, 400, headers4);
-  const startTime = clean2(body.startTime, 100);
-  if (action === "reschedule" && !startTime) return json12({ error: "Choose a new time." }, 400, headers4);
-  let store;
+  if (!contactId || !appointmentId) return json12({ error: "Choose a person and appointment." }, 400, headers5);
+  if (!["cancel", "reschedule"].includes(action)) return json12({ error: "Choose cancel or reschedule." }, 400, headers5);
+  const idempotencyKey = clean6(body.idempotencyKey, 160);
+  if (idempotencyKey.length < 8) return json12({ error: "A valid action key is required." }, 400, headers5);
+  const startTime = clean6(body.startTime, 100);
+  if (action === "reschedule" && !startTime) return json12({ error: "Choose a new time." }, 400, headers5);
   try {
-    store = createAppointmentCommandStore(context.env.ATTEND_DB || null);
-  } catch (error) {
-    return json12({ error: "Appointment changes are temporarily unavailable; no calendar change was made." }, 500, headers4);
-  }
-  try {
+    const identity2 = await ownedIdentity(context, contactId);
+    const appointmentIdentity = await providerAppointmentIdentity(context, appointmentId, identity2);
+    const provider = createStaffCalendarProvider(context, identity2, appointmentIdentity.provider);
+    const store = createOwnedAppointmentManageStore(context, {
+      actor,
+      action,
+      contactId: identity2.ownedContactId,
+      appointmentId: appointmentIdentity.ownedAppointmentId,
+      providerCalendarId: appointmentIdentity.providerCalendarId,
+      provider: appointmentIdentity.provider,
+      timezone: WORK_HOURS.timezone
+    });
     const result = await manageAppointmentCommand({
       actor,
       action,
-      contactId,
-      appointmentId,
+      contactId: identity2.ownedContactId,
+      appointmentId: appointmentIdentity.ownedAppointmentId,
+      providerAppointmentId: appointmentIdentity.appointmentId,
       idempotencyKey,
       startTime,
       timezone: WORK_HOURS.timezone,
       store,
-      provider: providerFor(context, contactId)
+      provider
     });
     context.waitUntil?.(emitPathHop(context.env, {
       pathId: "staff_appointment_manage",
@@ -24091,10 +24710,10 @@ async function onRequestPost38(context) {
       outcome: "ok",
       summary: action === "cancel" ? "Staff cancelled appointment" : "Staff rescheduled appointment",
       source: "staff-appointments",
-      contactId,
+      contactId: identity2.ownedContactId,
       correlationId: idempotencyKey
     }));
-    return json12(result, 200, headers4);
+    return json12(result, 200, headers5);
   } catch (error) {
     console.error("[staff-appointments] command failed", error);
     context.waitUntil?.(recordOpsError(context.env, "staff-appointments", "Staff appointment change failed", {
@@ -24104,65 +24723,70 @@ async function onRequestPost38(context) {
       appointmentId,
       code: error?.code || "unknown"
     }));
+    if (isIdentityError(error)) {
+      return identityFailure(error, headers5);
+    }
     const status = error?.code === "appointment_not_found" ? 404 : ["in_progress", "conflict", "appointment_not_manageable", "appointment_not_future", "slot_unavailable"].includes(error?.code) ? 409 : error?.manualReview ? 409 : 422;
-    return json12({ error: error?.message || "Appointment change failed.", code: error?.code || "appointment_change_failed" }, status, headers4);
+    return json12({ error: error?.message || "Appointment change failed.", code: error?.code || "appointment_change_failed" }, status, headers5);
   }
 }
-var BASE, LOCATION_ID6, METHODS3, FORBIDDEN_FIELDS;
+var METHODS3, FORBIDDEN_FIELDS;
 var init_staff_appointments = __esm({
   "api/staff-appointments.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    init_ghl();
     init_datetime();
-    init_app_owned_buffer();
     init_booking_slot_policy();
-    init_ghl_appointment_handoff();
-    init_appointment_command_store();
     init_booking_operations();
     init_staff_book_calendars();
     init_staff_appointment_manage();
     init_ops_path_emit();
     init_ops_alert();
-    BASE = "https://services.leadconnectorhq.com";
-    LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
+    init_staff_owned_contact_identity();
+    init_staff_calendar_provider();
+    init_staff_owned_appointment_store();
+    init_staff_owned_appointment_identity();
     METHODS3 = "POST, OPTIONS";
     FORBIDDEN_FIELDS = ["calendarId", "title", "appointmentStatus", "status", "replacementAppointmentId", "timezone", "actor", "user"];
     __name(json12, "json");
-    __name(clean2, "clean");
+    __name(clean6, "clean");
     __name(validDate, "validDate");
-    __name(listAppointments, "listAppointments");
     __name(exactAppointment, "exactAppointment");
     __name(appointmentStatus, "appointmentStatus");
-    __name(cancelProviderAppointment, "cancelProviderAppointment");
-    __name(providerFor, "providerFor");
     __name(scheduleStore, "scheduleStore");
-    __name(onRequestOptions45, "onRequestOptions");
-    __name(onRequestPost38, "onRequestPost");
+    __name(identityFailure, "identityFailure");
+    __name(isIdentityError, "isIdentityError");
+    __name(ownedIdentity, "ownedIdentity");
+    __name(providerAppointmentIdentity, "providerAppointmentIdentity");
+    __name(onRequestOptions46, "onRequestOptions");
+    __name(onRequestPost39, "onRequestPost");
   }
 });
 
 // api/staff-attestation.js
-async function onRequestOptions46(context) {
+async function onRequestOptions47(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet33(context) {
+async function onRequestGet34(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const url = new URL(context.request.url);
-    const contactId = url.searchParams.get("contactId");
-    if (!contactId) {
-      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers4 });
+    const contactReference = url.searchParams.get("contactId");
+    if (!contactReference) {
+      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers5 });
     }
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference)
+    );
     const kv = context.env.PURCHASE_KV;
     if (!kv) {
-      return new Response(JSON.stringify({ error: "Storage not configured" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Storage not configured" }), { status: 500, headers: headers5 });
     }
     const prefix = `attestation:${contactId}:`;
     let listResult;
@@ -24170,11 +24794,11 @@ async function onRequestGet33(context) {
       listResult = await kv.list({ prefix });
     } catch (err) {
       console.error("[staff-attestation] KV list failed:", err.message);
-      return new Response(JSON.stringify({ error: "Failed to read attestation" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to read attestation" }), { status: 500, headers: headers5 });
     }
     const keys = listResult.keys || [];
     if (keys.length === 0) {
-      return new Response(JSON.stringify({ found: false }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ found: false }), { status: 200, headers: headers5 });
     }
     const latestKey = keys[keys.length - 1].name;
     let raw;
@@ -24182,16 +24806,16 @@ async function onRequestGet33(context) {
       raw = await kv.get(latestKey);
     } catch (err) {
       console.error("[staff-attestation] KV get failed:", err.message);
-      return new Response(JSON.stringify({ error: "Failed to read attestation" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to read attestation" }), { status: 500, headers: headers5 });
     }
     if (!raw) {
-      return new Response(JSON.stringify({ found: false }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ found: false }), { status: 200, headers: headers5 });
     }
     let record3;
     try {
       record3 = JSON.parse(raw);
     } catch {
-      return new Response(JSON.stringify({ error: "Attestation record is corrupt" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Attestation record is corrupt" }), { status: 500, headers: headers5 });
     }
     return new Response(
       JSON.stringify({
@@ -24201,33 +24825,38 @@ async function onRequestGet33(context) {
         agreementVersion: record3.agreementVersion,
         signedAt: record3.signedAt
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[staff-attestation] Error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var init_staff_attestation = __esm({
   "api/staff-attestation.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    __name(onRequestOptions46, "onRequestOptions");
-    __name(onRequestGet33, "onRequestGet");
+    init_staff_owned_contact_identity();
+    __name(onRequestOptions47, "onRequestOptions");
+    __name(onRequestGet34, "onRequestGet");
   }
 });
 
 // api/staff-auth.js
 function corsHeaders35(origin) {
-  const headers4 = {
+  const headers5 = {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     "Access-Control-Allow-Headers": "Content-Type, Authorization",
     "Access-Control-Max-Age": "86400"
   };
   if (ALLOWED_ORIGINS36.includes(origin)) {
-    headers4["Access-Control-Allow-Origin"] = origin;
+    headers5["Access-Control-Allow-Origin"] = origin;
   }
-  return headers4;
+  return headers5;
 }
 async function createToken4(payload, secret) {
   const header = btoa(JSON.stringify({ alg: "HS256", typ: "JWT" }));
@@ -24245,22 +24874,22 @@ async function createToken4(payload, secret) {
   const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
   return `${data}.${sig}`;
 }
-async function onRequestOptions47(context) {
+async function onRequestOptions48(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders35(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost39(context) {
+async function onRequestPost40(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders35(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders35(origin), "Content-Type": "application/json" };
   try {
     const body = await context.request.json();
     const pin = (body.pin || "").trim();
     if (!pin || pin.length < 4 || pin.length > 8) {
       return new Response(
         JSON.stringify({ error: "Invalid PIN format." }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const JWT_SECRET = context.env.JWT_SECRET;
@@ -24268,7 +24897,7 @@ async function onRequestPost39(context) {
       console.error("[staff-auth] Missing JWT_SECRET env var");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const ip = context.request.headers.get("CF-Connecting-IP") || "";
@@ -24277,7 +24906,7 @@ async function onRequestPost39(context) {
     if (!gate.ok) {
       return new Response(JSON.stringify({ error: gate.error }), {
         status: gate.status,
-        headers: { ...headers4, "X-Amari-Auth-Rate-Limit": gate.reason || "ready" }
+        headers: { ...headers5, "X-Amari-Auth-Rate-Limit": gate.reason || "ready" }
       });
     }
     const staffUsers = [
@@ -24304,7 +24933,7 @@ async function onRequestPost39(context) {
       await recordFailedPinAttempt(rateLimitKv, { ip, scope: "staff", count: gate.count });
       return new Response(
         JSON.stringify({ error: "Incorrect PIN." }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     await clearPinAttempts(rateLimitKv, { ip, scope: "staff" });
@@ -24325,7 +24954,7 @@ async function onRequestPost39(context) {
       {
         status: 200,
         headers: {
-          ...headers4,
+          ...headers5,
           "Cache-Control": "no-store",
           "X-Amari-Auth-Rate-Limit": "ready",
           "Set-Cookie": `${STAFF_SESSION_COOKIE}=${token}; Path=/; Max-Age=${30 * 24 * 60 * 60}; HttpOnly; Secure; SameSite=Strict`
@@ -24336,14 +24965,14 @@ async function onRequestPost39(context) {
     console.error("[staff-auth] Unexpected error:", err.message);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var ALLOWED_ORIGINS36;
 var init_staff_auth = __esm({
   "api/staff-auth.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_rate_limit();
     init_endpoint_guards();
     init_ops_last_run();
@@ -24353,57 +24982,57 @@ var init_staff_auth = __esm({
     ];
     __name(corsHeaders35, "corsHeaders");
     __name(createToken4, "createToken");
-    __name(onRequestOptions47, "onRequestOptions");
-    __name(onRequestPost39, "onRequestPost");
+    __name(onRequestOptions48, "onRequestOptions");
+    __name(onRequestPost40, "onRequestPost");
   }
 });
 
 // api/staff-automation-watch-access.js
-async function onRequestOptions48(context) {
+async function onRequestOptions49(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestPost40(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin") || ""), "Content-Type": "application/json" };
+async function onRequestPost41(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin") || ""), "Content-Type": "application/json" };
   try {
-    const { error, payload } = await requireStaffAuth(context, headers4);
+    const { error, payload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const secret = context.env.WORKER_AUTH_SECRET;
-    if (!secret) return new Response(JSON.stringify({ error: "Automation Watch access is not configured" }), { status: 500, headers: headers4 });
+    if (!secret) return new Response(JSON.stringify({ error: "Automation Watch access is not configured" }), { status: 500, headers: headers5 });
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS);
     try {
-      const response2 = await fetch(WORKER_URL2, {
+      const response2 = await fetch(WORKER_URL5, {
         method: "POST",
         headers: { Authorization: `Bearer ${secret}`, "X-Staff-Actor": String(payload?.user || "").slice(0, 80) },
         signal: controller.signal
       });
       const body = await response2.json().catch(() => ({}));
       if (!response2.ok || !body?.url) {
-        return new Response(JSON.stringify({ error: `Automation Watch returned ${response2.status}` }), { status: 422, headers: headers4 });
+        return new Response(JSON.stringify({ error: `Automation Watch returned ${response2.status}` }), { status: 422, headers: headers5 });
       }
-      return new Response(JSON.stringify({ url: body.url, expiresInSeconds: body.expiresInSeconds ?? 300 }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ url: body.url, expiresInSeconds: body.expiresInSeconds ?? 300 }), { status: 200, headers: headers5 });
     } catch (err) {
       const message = err?.name === "AbortError" ? "Automation Watch access timed out" : String(err?.message || err);
       console.error("[staff-automation-watch-access] worker fetch error:", message);
-      return new Response(JSON.stringify({ error: message }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: message }), { status: 422, headers: headers5 });
     } finally {
       clearTimeout(timer);
     }
   } catch (err) {
     const message = String(err?.message || err);
     console.error("[staff-automation-watch-access] failed:", message);
-    return new Response(JSON.stringify({ error: `Failed to open Automation Watch: ${message}` }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: `Failed to open Automation Watch: ${message}` }), { status: 500, headers: headers5 });
   }
 }
-var WORKER_URL2, WORKER_TIMEOUT_MS;
+var WORKER_URL5, WORKER_TIMEOUT_MS;
 var init_staff_automation_watch_access = __esm({
   "api/staff-automation-watch-access.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    WORKER_URL2 = "https://reminder-engine.eben-fa2.workers.dev/dashboard-access-link";
+    WORKER_URL5 = "https://reminder-engine.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS = 15e3;
-    __name(onRequestOptions48, "onRequestOptions");
-    __name(onRequestPost40, "onRequestPost");
+    __name(onRequestOptions49, "onRequestOptions");
+    __name(onRequestPost41, "onRequestPost");
   }
 });
 
@@ -24505,7 +25134,7 @@ function executableFlow(workflow) {
 var MESSAGE_ACTIONS, CONTROL_ACTIONS, ACTIONS, CHANNELS2, AUDIENCES, TIMING;
 var init_workflow_definition = __esm({
   "../reminder-engine-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_assessment_paid_booking_workflow();
     __name(deepFreeze2, "deepFreeze");
     __name(requireText2, "requireText");
@@ -24525,7 +25154,7 @@ var init_workflow_definition = __esm({
 var INITIAL_IN_PERSON_WORKFLOW, INITIAL_IN_PERSON;
 var init_initial_in_person_workflow = __esm({
   "../reminder-engine-worker/src/initial-in-person-workflow.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_workflow_definition();
     INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
       id: "initial-in-person",
@@ -24558,7 +25187,7 @@ var init_initial_in_person_workflow = __esm({
 var INITIAL_VIRTUAL_WORKFLOW, INITIAL_VIRTUAL;
 var init_initial_virtual_workflow = __esm({
   "../reminder-engine-worker/src/initial-virtual-workflow.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_workflow_definition();
     INITIAL_VIRTUAL_WORKFLOW = defineWorkflow({
       id: "initial-virtual",
@@ -24594,7 +25223,7 @@ var init_initial_virtual_workflow = __esm({
 var NO_SHOW_RECOVERY_WORKFLOW, NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY;
 var init_no_show_recovery_workflow = __esm({
   "../reminder-engine-worker/src/no-show-recovery-workflow.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_workflow_definition();
     NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
       id: "no-show-recovery",
@@ -24721,7 +25350,7 @@ var init_no_show_recovery_workflow = __esm({
 var DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW, FLOWS;
 var init_config = __esm({
   "../reminder-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_initial_in_person_workflow();
     init_initial_in_person_workflow();
     init_initial_virtual_workflow();
@@ -24760,6 +25389,7 @@ var init_config = __esm({
       flowKey: "partner-initial-in-person",
       calendarIds: Object.freeze(["lfsnaiGiLNL2z12pLKDP"]),
       // In Person Session for Partners
+      serviceIds: Object.freeze(["partner-initial"]),
       enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: null }),
       cancelOn: Object.freeze(["cancelled"]),
       mode: "shadow",
@@ -24797,7 +25427,7 @@ var init_config = __esm({
 var DISCOVERY, DISCOVERY_AMBASSADOR, INITIAL_IN_PERSON2, INITIAL_VIRTUAL2, FOLLOWUP_IN_PERSON_PKG, FOLLOWUP_VIRTUAL_PKG, FOLLOWUP_IN_PERSON, FOLLOWUP_VIRTUAL, ENTRAINMENT, PRODUCT_4_SESSION, PRODUCT_8_SESSION, PRODUCT_UPGRADE_4, PRODUCT_UPGRADE_8, TAG_WORKFLOW_2, TAG_WORKFLOW_3, deepFreeze3, FLOW_1_QUIZ, FLOW_2_POST_DISCOVERY, FLOW_3_POST_INITIAL, SEQUENCES;
 var init_config2 = __esm({
   "../nurture-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     DISCOVERY = "USgPsktqRcuomdUgpShL";
     DISCOVERY_AMBASSADOR = "aVE54Qf4lrbYTB0zFqXy";
     INITIAL_IN_PERSON2 = "G7OAnnJuFbMF6nQSlZVQ";
@@ -24958,7 +25588,7 @@ var init_config2 = __esm({
 var COPY, AGENDA_COPY, DEFAULT_FIRST_MINUTES, SECOND_OFFSET_MS, PREP_LEAD_MS, SEND_GRACE_MS;
 var init_schedule = __esm({
   "../morning-sms-worker/src/schedule.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     COPY = Object.freeze({
       prepare: "Good morning, time to prepare for the day.",
       meeting: "Staff meeting"
@@ -25028,7 +25658,7 @@ function defineMorningSmsWorkflow(input) {
 var REQUIRED_HANDLERS, EXECUTABLE_ORDER;
 var init_workflow_definition2 = __esm({
   "../morning-sms-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     REQUIRED_HANDLERS = Object.freeze([
       "scheduled_event",
       "read_todays_appointments",
@@ -25057,7 +25687,7 @@ var init_workflow_definition2 = __esm({
 var MORNING_SMS_DEFINITION;
 var init_config3 = __esm({
   "../morning-sms-worker/src/config.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_schedule();
     init_workflow_definition2();
     MORNING_SMS_DEFINITION = Object.freeze(defineMorningSmsWorkflow({
@@ -25243,7 +25873,7 @@ function eventEvidence(event2, { terminalOutcome = null } = {}) {
 var REGISTRY_VERSION, OWNED_ONLY_GAP, PRE_REGISTRY_HISTORY_GAP, DELIVERY_GAP, DB_UNAVAILABLE_GAP, PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_VIRTUAL_MESSAGE_PREVIEW, ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW, PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_VIRTUAL_CUTOVER_READINESS, ASSESSMENT_NO_SHOW_CUTOVER_READINESS, NO_SHOW_RECOVERY_CUTOVER_READINESS, DEFINITIONS;
 var init_automation_registry = __esm({
   "lib/automation-registry.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_config();
     init_config2();
     init_config3();
@@ -25505,7 +26135,7 @@ function familyRegistryEvidence() {
 var AUTOMATION_INVENTORY_AS_OF, AUTOMATION_INVENTORY_SOURCE, record2, p, d, ASSESSMENT_CUTOVER_TREE, ASSESSMENT_PAID_BOOKING_CUTOVER_TREE, RAW_FAMILIES, OWNED_DEFINITIONS, FAMILIES;
 var init_automation_families = __esm({
   "lib/automation-families.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_automation_registry();
     AUTOMATION_INVENTORY_AS_OF = "2026-08-07";
     AUTOMATION_INVENTORY_SOURCE = "GHL-WORKFLOWS-MASTER.md";
@@ -25959,7 +26589,7 @@ function displayOutcome(r) {
 function terminalOutcomes(events) {
   return new Map(events.filter((event2) => event2.action === "delivery_status" && event2.message_ref && ["delivered", "bounced", "failed"].includes(event2.outcome)).map((event2) => [event2.message_ref, event2.outcome]));
 }
-function normalizeEvent(r, outcomes = /* @__PURE__ */ new Map()) {
+function normalizeEvent2(r, outcomes = /* @__PURE__ */ new Map()) {
   return {
     id: r.id,
     ts: r.ts,
@@ -25982,7 +26612,7 @@ function normalizeEvent(r, outcomes = /* @__PURE__ */ new Map()) {
 }
 function normalizeEvents(events) {
   const outcomes = terminalOutcomes(events);
-  return events.map((event2) => normalizeEvent(event2, outcomes));
+  return events.map((event2) => normalizeEvent2(event2, outcomes));
 }
 function exactIso(value) {
   if (value == null || value === "") return null;
@@ -26243,14 +26873,14 @@ async function failuresView(db, { sinceMs = 0, limit = 100 } = {}) {
 }
 var init_automation_views = __esm({
   "lib/automation-views.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_automation_registry();
     init_automation_families();
     __name(familyReference, "familyReference");
     __name(parseDetail, "parseDetail");
     __name(displayOutcome, "displayOutcome");
     __name(terminalOutcomes, "terminalOutcomes");
-    __name(normalizeEvent, "normalizeEvent");
+    __name(normalizeEvent2, "normalizeEvent");
     __name(normalizeEvents, "normalizeEvents");
     __name(exactIso, "exactIso");
     __name(nextPendingStep, "nextPendingStep");
@@ -26277,7 +26907,7 @@ async function sha256Hex(value) {
 var FOLLOW_UP_FAMILY, NO_SHOW_MISSED_COUNT_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE, NO_SHOW_COUNTER_RELIABILITY_ROUTE, RAW_RETENTION_MS, NORMALIZED_RETENTION_MS;
 var init_reliability_contract = __esm({
   "lib/reliability-contract.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     FOLLOW_UP_FAMILY = "follow-up-session-reminders";
     NO_SHOW_MISSED_COUNT_FAMILY = "no-show-missed-count";
     FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
@@ -26458,7 +27088,7 @@ async function readReliabilitySchemaAuthority(db) {
 var RELIABILITY_SCHEMA_V1, RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY, V2_ONLY_OBJECTS, V2_ADDITIVE_TABLES;
 var init_reliability_schema_authority = __esm({
   "lib/reliability-schema-authority.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_reliability_contract();
     RELIABILITY_SCHEMA_V1 = Object.freeze({
       version: 1,
@@ -27223,7 +27853,7 @@ async function recordEvidenceAccess(db, { actor, family, action, sourceEventId =
 var FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION, FOLLOW_UP_RECONCILIATION_RUN_KIND, FOLLOW_UP_RECONCILIATION_EVIDENCE_SCOPE, FOLLOW_UP_RECONCILIATION_MAX_WINDOW_MS, FOLLOW_UP_RECONCILIATION_MAX_COMPLETION_LAG_MS, FOLLOW_UP_RECONCILIATION_MAX_RUN_MS, FOLLOW_UP_RECONCILIATION_MAX_DETAIL_BYTES, FOLLOW_UP_RECONCILIATION_MAX_ID_ARRAY_ITEMS, RECONCILIATION_SOURCE_VERSION_RE, RECONCILIATION_RUNTIME_VERSION_RE, RELEASE_MANIFEST_ID_RE, DEPLOYMENT_ATTESTATION_ID_RE, GHL_APPOINTMENT_EVENTS_WORKFLOW_ID, GHL_SOURCE_LIMITATION, RECONCILIATION_COMPONENT_KEYS, DETAIL_KEYS, WINDOW_KEYS, COMPONENT_KEYS;
 var init_reliability_store = __esm({
   "lib/reliability-store.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_reliability_contract();
     init_reliability_schema_authority();
     FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION = "follow-up-reconciliation.v1";
@@ -27521,32 +28151,32 @@ function windowHours(url, fallback) {
     24 * 90
   );
 }
-async function onRequestOptions49(context) {
+async function onRequestOptions50(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestPost41(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload } = await requireEbenStaffAuth(context, headers4);
+async function onRequestPost42(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireEbenStaffAuth(context, headers5);
   if (error) return error;
-  if (!context.env.WORKER_AUTH_SECRET) return new Response(JSON.stringify({ error: "Workflow runtime is not configured" }), { status: 503, headers: headers4 });
+  if (!context.env.WORKER_AUTH_SECRET) return new Response(JSON.stringify({ error: "Workflow runtime is not configured" }), { status: 503, headers: headers5 });
   const body = await context.request.json().catch(() => null);
   const view = new URL(context.request.url).searchParams.get("view");
   const path = view === "workflow-draft" ? "/workflow-draft" : view === "workflow-publish" ? "/workflow-publish" : null;
-  if (!path || !body) return new Response(JSON.stringify({ error: "Invalid workflow operation" }), { status: 400, headers: headers4 });
+  if (!path || !body) return new Response(JSON.stringify({ error: "Invalid workflow operation" }), { status: 400, headers: headers5 });
   const response2 = await fetch(`${REMINDER_ENGINE_URL2}${path}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`, "Content-Type": "application/json", "X-Staff-Actor": String(payload?.user || "Staff") },
     body: JSON.stringify(body)
   });
   const result = await response2.text();
-  return new Response(result, { status: response2.status, headers: headers4 });
+  return new Response(result, { status: response2.status, headers: headers5 });
 }
-async function onRequestGet34(context) {
-  const headers4 = {
+async function onRequestGet35(context) {
+  const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"),
     "Content-Type": "application/json"
   };
-  const { error, payload } = await requireStaffAuth(context, headers4);
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const url = new URL(context.request.url);
   const view = url.searchParams.get("view");
@@ -27559,12 +28189,12 @@ async function onRequestGet34(context) {
       const requestedFamily = (url.searchParams.get("family") || FOLLOW_UP_FAMILY).trim();
       const reliabilityRoute = RELIABILITY_ROUTES.get(requestedFamily);
       if (!reliabilityRoute) {
-        return new Response(JSON.stringify({ error: "Unknown reliability family" }), { status: 400, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Unknown reliability family" }), { status: 400, headers: headers5 });
       }
       const isEben = String(payload?.user || "").toLowerCase() === "eben";
       const isGarrett = String(payload?.user || "").toLowerCase() === "garrett";
       if (!isEben && !isGarrett) {
-        return new Response(JSON.stringify({ error: "Reliability evidence is restricted to assigned staff" }), { status: 403, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Reliability evidence is restricted to assigned staff" }), { status: 403, headers: headers5 });
       }
       const health = await readReliabilityHealth(db, {
         family: requestedFamily,
@@ -27581,7 +28211,7 @@ async function onRequestGet34(context) {
           sourceEvents: [],
           exceptions: [],
           sourceEventDetail: null
-        }), { status: 200, headers: headers4 });
+        }), { status: 200, headers: headers5 });
       }
       if (!health.schemaProven || health.reason === "authority_read_failed") {
         return new Response(JSON.stringify({
@@ -27594,14 +28224,14 @@ async function onRequestGet34(context) {
           exceptions: [],
           sourceEventDetail: null,
           access: isEben ? "evidence_control" : "assigned_actions_only"
-        }), { status: 200, headers: headers4 });
+        }), { status: 200, headers: headers5 });
       }
       const sourceEventId = (url.searchParams.get("sourceEventId") || "").trim();
       if (sourceEventId && !VALID_SOURCE_EVENT_ID.test(sourceEventId)) {
-        return new Response(JSON.stringify({ error: "Invalid sourceEventId" }), { status: 400, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Invalid sourceEventId" }), { status: 400, headers: headers5 });
       }
       if (sourceEventId && !isEben) {
-        return new Response(JSON.stringify({ error: "Source evidence is restricted to Eben" }), { status: 403, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Source evidence is restricted to Eben" }), { status: 403, headers: headers5 });
       }
       const queue = await readExceptionQueue(db, { family: requestedFamily });
       const exceptions = isEben ? queue : queue.filter((item) => String(item.accountable_owner || "").toLowerCase() === "garrett");
@@ -27612,7 +28242,7 @@ async function onRequestGet34(context) {
       const actor = isEben ? "Eben" : "Garrett";
       const sourceEventDetail = sourceEventId ? await readSourceEventDetail(db, sourceEventId, { family: requestedFamily }) : null;
       if (sourceEventId && !sourceEventDetail) {
-        return new Response(JSON.stringify({ error: "Reliability source event not found" }), { status: 404, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Reliability source event not found" }), { status: 404, headers: headers5 });
       }
       await recordEvidenceAccess(db, {
         actor,
@@ -27633,7 +28263,7 @@ async function onRequestGet34(context) {
         sourceEventTotal: isEben ? counts2.sourceEventTotal : null,
         exceptionTotal: counts2.exceptionTotal,
         access: isEben ? "evidence_control" : "assigned_actions_only"
-      }), { status: 200, headers: headers4 });
+      }), { status: 200, headers: headers5 });
     }
     if (view === "registry") {
       return new Response(JSON.stringify({
@@ -27642,7 +28272,7 @@ async function onRequestGet34(context) {
         registryVersion: REGISTRY_VERSION,
         definitions: automationDefinitions(),
         evidence
-      }), { status: 200, headers: headers4 });
+      }), { status: 200, headers: headers5 });
     }
     if (view === "families") {
       return new Response(JSON.stringify({
@@ -27655,16 +28285,16 @@ async function onRequestGet34(context) {
           ...evidence,
           gaps: [...familyEvidence2.gaps, ...evidence.gaps]
         }
-      }), { status: 200, headers: headers4 });
+      }), { status: 200, headers: headers5 });
     }
     if (view === "family") {
       const key = (url.searchParams.get("key") || "").trim();
       if (!VALID_FAMILY_KEY.test(key)) {
-        return new Response(JSON.stringify({ error: "Invalid automation family key" }), { status: 400, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Invalid automation family key" }), { status: 400, headers: headers5 });
       }
       const family = automationFamily(key);
       if (!family) {
-        return new Response(JSON.stringify({ error: "Automation family not found" }), { status: 404, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Automation family not found" }), { status: 404, headers: headers5 });
       }
       const runtimeFlowKeys = family.runtimeFlowKeys;
       const initialRuntimes = runtimeFlowKeys.length ? (await Promise.all(runtimeFlowKeys.map((flowKey) => reminderRuntimeEvidence(context, flowKey)))).filter(Boolean) : [];
@@ -27689,17 +28319,17 @@ async function onRequestGet34(context) {
           ...executionEvidence,
           gaps: [...family.evidence.gaps, ...executionEvidence.gaps, ...workerExecution?.evidence?.gaps || []]
         }
-      }), { status: 200, headers: headers4 });
+      }), { status: 200, headers: headers5 });
     }
     if (view === "automation") {
       const engine = (url.searchParams.get("engine") || "").trim();
       const key = (url.searchParams.get("key") || "").trim();
       if (!VALID_ENGINES.has(engine) || !VALID_AUTOMATION_KEY.test(key)) {
-        return new Response(JSON.stringify({ error: "Invalid automation engine or key" }), { status: 400, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Invalid automation engine or key" }), { status: 400, headers: headers5 });
       }
       const definition = findAutomationDefinition(engine, key);
       if (!definition) {
-        return new Response(JSON.stringify({ error: "Automation definition not found" }), { status: 404, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Automation definition not found" }), { status: 404, headers: headers5 });
       }
       const execution = db ? await automationExecutionView(db, { engine, key }) : { enrollments: [], events: [], coverage: { enrollmentsTruncated: false, eventsTruncated: false } };
       return new Response(JSON.stringify({
@@ -27709,12 +28339,12 @@ async function onRequestGet34(context) {
         definition,
         ...execution,
         evidence
-      }), { status: 200, headers: headers4 });
+      }), { status: 200, headers: headers5 });
     }
     if (view === "contact") {
       const contactReference = (url.searchParams.get("contactId") || "").trim();
       if (!VALID_CONTACT_ID.test(contactReference)) {
-        return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers5 });
       }
       const identity2 = await contactIdentityForReference(context, contactReference);
       const ownedContactId = identity2.ownedContactId;
@@ -27738,7 +28368,7 @@ async function onRequestGet34(context) {
                 ...workerEvidence.evidence?.gaps || []
               ]
             }
-          }), { status: 200, headers: headers4 });
+          }), { status: 200, headers: headers5 });
         }
         return new Response(JSON.stringify({
           success: true,
@@ -27752,33 +28382,33 @@ async function onRequestGet34(context) {
           lpOnboarding: null,
           coverage: { eventLimit: 200, eventsTruncated: false },
           evidence: contactEvidence
-        }), { status: 200, headers: headers4 });
+        }), { status: 200, headers: headers5 });
       }
       const data = await contactAutomationIdentityView(db, {
         ownedContactId,
         providerContactId: identity2.providerContactId
       });
-      return new Response(JSON.stringify({ success: true, configured: true, ...data, evidence: contactEvidence }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ success: true, configured: true, ...data, evidence: contactEvidence }), { status: 200, headers: headers5 });
     }
     if (view === "activity") {
       const sinceHours = windowHours(url, DEFAULT_ACTIVITY_WINDOW_HOURS);
       const events = db ? await activityView(db, { sinceMs: Date.now() - sinceHours * 36e5 }) : [];
-      return new Response(JSON.stringify({ success: true, configured: !!db, sinceHours, events, evidence }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ success: true, configured: !!db, sinceHours, events, evidence }), { status: 200, headers: headers5 });
     }
     if (view === "failures") {
       const sinceHours = windowHours(url, DEFAULT_FAILURE_WINDOW_HOURS);
       const failures = db ? await failuresView(db, { sinceMs: Date.now() - sinceHours * 36e5 }) : [];
-      return new Response(JSON.stringify({ success: true, configured: !!db, sinceHours, failures, evidence }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ success: true, configured: !!db, sinceHours, failures, evidence }), { status: 200, headers: headers5 });
     }
-    return new Response(JSON.stringify({ error: "Unknown view (use families, family, registry, automation, activity, contact, failures, or reliability)" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Unknown view (use families, family, registry, automation, activity, contact, failures, or reliability)" }), { status: 400, headers: headers5 });
   } catch (err) {
-    return new Response(JSON.stringify({ error: `Query failed: ${String(err && err.message || err)}` }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: `Query failed: ${String(err && err.message || err)}` }), { status: 500, headers: headers5 });
   }
 }
 var RELIABILITY_ROUTES, VALID_CONTACT_ID, VALID_AUTOMATION_KEY, VALID_FAMILY_KEY, VALID_ENGINES, VALID_SOURCE_EVENT_ID, DEFAULT_FAILURE_WINDOW_HOURS, DEFAULT_ACTIVITY_WINDOW_HOURS, CRM_WORKER_CONTACTS_URL, CRM_WORKER_AUTOMATIONS_URL, CRM_WORKER_FAMILIES_URL, CRM_WORKER_TIMEOUT_MS, REMINDER_ENGINE_URL2;
 var init_staff_automations = __esm({
   "api/staff-automations.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_automation_views();
     init_automation_registry();
@@ -27809,24 +28439,24 @@ var init_staff_automations = __esm({
     __name(workerFamilyAutomationEvidence, "workerFamilyAutomationEvidence");
     __name(contactIdentityGaps, "contactIdentityGaps");
     __name(windowHours, "windowHours");
-    __name(onRequestOptions49, "onRequestOptions");
-    __name(onRequestPost41, "onRequestPost");
-    __name(onRequestGet34, "onRequestGet");
+    __name(onRequestOptions50, "onRequestOptions");
+    __name(onRequestPost42, "onRequestPost");
+    __name(onRequestGet35, "onRequestGet");
   }
 });
 
 // api/staff-balances.js
-async function onRequestOptions50(context) {
+async function onRequestOptions51(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet35(context) {
+async function onRequestGet36(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffOrOpsAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffOrOpsAuth(context, headers5);
     if (error) return error;
     const url = new URL(context.request.url);
     const forceRefresh = url.searchParams.get("refresh") === "1";
@@ -27834,7 +28464,7 @@ async function onRequestGet35(context) {
       try {
         const cached = await context.env.PORTAL_KV.get(CACHE_KEY);
         if (cached) {
-          return new Response(cached, { status: 200, headers: { ...headers4, "X-Cache": "HIT" } });
+          return new Response(cached, { status: 200, headers: { ...headers5, "X-Cache": "HIT" } });
         }
       } catch (err) {
         console.error(`[staff-balances] KV read error: ${err.message}`);
@@ -27970,16 +28600,16 @@ async function onRequestGet35(context) {
         console.error(`[staff-balances] KV write error: ${err.message}`);
       }
     }
-    return new Response(body, { status: 200, headers: { ...headers4, "X-Cache": "MISS" } });
+    return new Response(body, { status: 200, headers: { ...headers5, "X-Cache": "MISS" } });
   } catch (err) {
     console.error("[staff-balances] Unexpected error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE28, GHL_LOCATION_ID21, CACHE_KEY, CACHE_TTL_SECONDS, MAX_CONTACT_PAGES, PAGE_SIZE2;
 var init_staff_balances = __esm({
   "api/staff-balances.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
@@ -27989,14 +28619,14 @@ var init_staff_balances = __esm({
     CACHE_TTL_SECONDS = 300;
     MAX_CONTACT_PAGES = 10;
     PAGE_SIZE2 = 100;
-    __name(onRequestOptions50, "onRequestOptions");
-    __name(onRequestGet35, "onRequestGet");
+    __name(onRequestOptions51, "onRequestOptions");
+    __name(onRequestGet36, "onRequestGet");
   }
 });
 
 // api/staff-book.js
-function json13(body, status, headers4) {
-  return new Response(JSON.stringify(body), { status, headers: headers4 });
+function json13(body, status, headers5) {
+  return new Response(JSON.stringify(body), { status, headers: headers5 });
 }
 function cleanText3(value, max = 200) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
@@ -28054,24 +28684,24 @@ async function findUpcomingOnCalendar(context, contactId, calendarId) {
   })).filter((appt) => appt.id && appt.startTime && !CANCELLED.has(appt.status) && Date.parse(appt.startTime) >= now - 60 * 60 * 1e3).sort((a, b) => Date.parse(a.startTime) - Date.parse(b.startTime));
   return upcoming[0] || null;
 }
-async function onRequestOptions51(context) {
+async function onRequestOptions52(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS4)
   });
 }
-async function onRequestPost42(context) {
-  const headers4 = {
+async function onRequestPost43(context) {
+  const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS4),
     "Content-Type": "application/json"
   };
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+  const { body, error: parseError } = await parseJsonBody(context.request, headers5);
   if (parseError) return parseError;
   const action = cleanText3(body.action, 40);
   if (action === "list-types") {
-    return json13({ types: listStaffBookTypes() }, 200, headers4);
+    return json13({ types: listStaffBookTypes() }, 200, headers5);
   }
   if (action === "get-slots") {
     const sessionType = cleanText3(body.sessionType, 64);
@@ -28079,13 +28709,13 @@ async function onRequestPost42(context) {
     const endDate = cleanText3(body.endDate, 10);
     const timezone = cleanText3(body.timezone, 80) || "America/Los_Angeles";
     const booking = resolveStaffBookType(sessionType);
-    if (!booking) return json13({ error: "Choose a session type." }, 400, headers4);
-    if (!validDateRange(startDate, endDate)) return json13({ error: "Choose a valid calendar month." }, 400, headers4);
+    if (!booking) return json13({ error: "Choose a session type." }, 400, headers5);
+    if (!validDateRange(startDate, endDate)) return json13({ error: "Choose a valid calendar month." }, 400, headers5);
     try {
       const slots2 = await freeSlots(context, booking.calendarId, startDate, endDate, timezone);
-      return json13({ slots: slots2, sessionType, calendarId: booking.calendarId }, 200, headers4);
+      return json13({ slots: slots2, sessionType, calendarId: booking.calendarId }, 200, headers5);
     } catch (err) {
-      return json13({ error: err.message || "Could not load available times." }, 500, headers4);
+      return json13({ error: err.message || "Could not load available times." }, 500, headers5);
     }
   }
   if (action === "book") {
@@ -28096,23 +28726,23 @@ async function onRequestPost42(context) {
     const idempotencyKey = cleanText3(body.idempotencyKey, 100);
     const notify = body.notify !== false;
     const booking = resolveStaffBookType(sessionType);
-    if (!booking) return json13({ error: "Choose a session type." }, 400, headers4);
-    if (!contactId) return json13({ error: "contactId required" }, 400, headers4);
+    if (!booking) return json13({ error: "Choose a session type." }, 400, headers5);
+    if (!contactId) return json13({ error: "contactId required" }, 400, headers5);
     if (!startTime || Number.isNaN(Date.parse(startTime))) {
-      return json13({ error: "Choose an available time." }, 400, headers4);
+      return json13({ error: "Choose an available time." }, 400, headers5);
     }
-    if (!idempotencyKey) return json13({ error: "idempotencyKey required" }, 400, headers4);
+    if (!idempotencyKey) return json13({ error: "idempotencyKey required" }, 400, headers5);
     const cacheKey = `staff-book:${contactId}:${idempotencyKey}`;
     const existing = await context.env.PORTAL_KV?.get(cacheKey, "json");
-    if (existing) return json13(existing, 200, headers4);
+    if (existing) return json13(existing, 200, headers5);
     try {
       await assertSlotRespectsAppBuffer(context, startTime, booking.calendarId);
     } catch (err) {
-      return json13({ error: "That time is no longer available. Choose another one." }, 422, headers4);
+      return json13({ error: "That time is no longer available. Choose another one." }, 422, headers5);
     }
     const contactRes = await ghlFetch(context, `${GHL_API_BASE29}/contacts/${contactId}`);
     if (!contactRes.ok) {
-      return json13({ error: "Could not load that contact." }, 404, headers4);
+      return json13({ error: "Could not load that contact." }, 404, headers5);
     }
     const contactData = await contactRes.json();
     const contact = contactData.contact || contactData;
@@ -28121,7 +28751,7 @@ async function onRequestPost42(context) {
       return json13({
         error: "They already have an upcoming appointment on this calendar.",
         existingAppointment: already
-      }, 409, headers4);
+      }, 409, headers5);
     }
     let data;
     try {
@@ -28166,7 +28796,7 @@ async function onRequestPost42(context) {
           reasonCode: "book_failed"
         })
       );
-      return json13({ error: "That time is no longer available. Choose another one." }, 422, headers4);
+      return json13({ error: "That time is no longer available. Choose another one." }, 422, headers5);
     }
     const result = {
       appointment: {
@@ -28189,14 +28819,14 @@ async function onRequestPost42(context) {
       })
     );
     await context.env.PORTAL_KV?.put(cacheKey, JSON.stringify(result), { expirationTtl: 3600 });
-    return json13(result, 200, headers4);
+    return json13(result, 200, headers5);
   }
-  return json13({ error: "Unknown action" }, 400, headers4);
+  return json13({ error: "Unknown action" }, 400, headers5);
 }
 var GHL_API_BASE29, GHL_LOCATION_ID22, METHODS4, CANCELLED;
 var init_staff_book = __esm({
   "api/staff-book.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_ghl();
     init_datetime();
@@ -28214,8 +28844,8 @@ var init_staff_book = __esm({
     __name(validDateRange, "validDateRange");
     __name(freeSlots, "freeSlots");
     __name(findUpcomingOnCalendar, "findUpcomingOnCalendar");
-    __name(onRequestOptions51, "onRequestOptions");
-    __name(onRequestPost42, "onRequestPost");
+    __name(onRequestOptions52, "onRequestOptions");
+    __name(onRequestPost43, "onRequestPost");
   }
 });
 
@@ -28271,7 +28901,7 @@ function listStaffCalendarDefinitions() {
 var GROUPS, DEFINITIONS2, STAFF_BOOKABLE_IDS;
 var init_staff_calendar_catalog = __esm({
   "lib/staff-calendar-catalog.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_booking_slot_policy();
     init_staff_book_calendars();
     GROUPS = Object.freeze([
@@ -28445,46 +29075,46 @@ var init_staff_calendar_catalog = __esm({
 });
 
 // api/staff-calendars.js
-async function onRequestOptions52(context) {
+async function onRequestOptions53(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS5)
   });
 }
-async function onRequestGet36(context) {
-  const headers4 = {
+async function onRequestGet37(context) {
+  const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS5),
     "Content-Type": "application/json",
     "Cache-Control": "private, no-store"
   };
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  return new Response(JSON.stringify(listStaffCalendarDefinitions()), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify(listStaffCalendarDefinitions()), { status: 200, headers: headers5 });
 }
 var METHODS5;
 var init_staff_calendars = __esm({
   "api/staff-calendars.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_staff_calendar_catalog();
     METHODS5 = "GET, OPTIONS";
-    __name(onRequestOptions52, "onRequestOptions");
-    __name(onRequestGet36, "onRequestGet");
+    __name(onRequestOptions53, "onRequestOptions");
+    __name(onRequestGet37, "onRequestGet");
   }
 });
 
 // api/staff-call-coach-run.js
-async function onRequestOptions53(context) {
+async function onRequestOptions54(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost43(context) {
+async function onRequestPost44(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error } = await requireStaffAuth(context, headers4);
+    const { error } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const body = await context.request.json().catch(() => ({}));
     const date2 = typeof body.date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(body.date) ? body.date : null;
@@ -28506,59 +29136,61 @@ async function onRequestPost43(context) {
         date: date2 || "yesterday-pacific",
         message: "Call coach day sweep started \u2014 check call-coach:status:lastRun in KV / worker /status."
       }),
-      { status: 202, headers: headers4 }
+      { status: 202, headers: headers5 }
     );
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-call-coach-run] failed:", detail);
-    return new Response(JSON.stringify({ error: `Failed: ${detail}` }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: `Failed: ${detail}` }), { status: 500, headers: headers5 });
   }
 }
 var WORKER_BASE;
 var init_staff_call_coach_run = __esm({
   "api/staff-call-coach-run.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     WORKER_BASE = "https://call-coach.eben-fa2.workers.dev";
-    __name(onRequestOptions53, "onRequestOptions");
-    __name(onRequestPost43, "onRequestPost");
+    __name(onRequestOptions54, "onRequestOptions");
+    __name(onRequestPost44, "onRequestPost");
   }
 });
 
 // api/staff-checkin.js
-async function onRequestOptions54(context) {
+async function onRequestOptions55(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost44(context) {
+async function onRequestPost45(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
-    const { contactId, typedName, signatureImage } = body;
-    if (!contactId) {
-      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers4 });
+    const { contactId: contactReference, typedName, signatureImage } = body;
+    if (!contactReference) {
+      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers5 });
     }
+    const identity2 = await resolveOwnedContactIdentity(context, contactReference);
+    const contactId = requireProviderContactIdentity(identity2);
     if (!typedName || typeof typedName !== "string" || typedName.trim().length < 2) {
-      return new Response(JSON.stringify({ error: "Typed name is required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Typed name is required" }), { status: 400, headers: headers5 });
     }
     if (!signatureImage || !signatureImage.startsWith("data:image/")) {
-      return new Response(JSON.stringify({ error: "Signature is required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Signature is required" }), { status: 400, headers: headers5 });
     }
     if (signatureImage.length > 5e5) {
-      return new Response(JSON.stringify({ error: "Signature image too large" }), { status: 413, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Signature image too large" }), { status: 413, headers: headers5 });
     }
     const timestamp = (/* @__PURE__ */ new Date()).toISOString();
     const kvKey3 = `attestation:${contactId}:${timestamp}`;
     const ip = context.request.headers.get("CF-Connecting-IP") || null;
     const userAgent = context.request.headers.get("User-Agent") || null;
     const attestationRecord = {
-      contactId,
+      contactId: identity2.ownedContactId,
       typedName: typedName.trim(),
       signatureImage,
       agreementVersion: AGREEMENT_VERSION,
@@ -28573,11 +29205,11 @@ async function onRequestPost44(context) {
         await kv.put(kvKey3, JSON.stringify(attestationRecord));
       } catch (err) {
         console.error("[staff-checkin] KV write failed:", err.message);
-        return new Response(JSON.stringify({ error: "Failed to store signature" }), { status: 500, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Failed to store signature" }), { status: 500, headers: headers5 });
       }
     } else {
       console.error("[staff-checkin] PURCHASE_KV not bound \u2014 cannot store attestation");
-      return new Response(JSON.stringify({ error: "Storage not configured" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Storage not configured" }), { status: 500, headers: headers5 });
     }
     try {
       const signedTag = `policies-signed-${AGREEMENT_VERSION}`;
@@ -28605,23 +29237,28 @@ async function onRequestPost44(context) {
     }
     return new Response(
       JSON.stringify({ success: true, kvKey: kvKey3, signedAt: timestamp, agreementVersion: AGREEMENT_VERSION }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[staff-checkin] Error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE30, AGREEMENT_VERSION;
 var init_staff_checkin = __esm({
   "api/staff-checkin.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
+    init_staff_owned_contact_identity();
     GHL_API_BASE30 = "https://services.leadconnectorhq.com";
     AGREEMENT_VERSION = "practice-member-v2026-04-17";
-    __name(onRequestOptions54, "onRequestOptions");
-    __name(onRequestPost44, "onRequestPost");
+    __name(onRequestOptions55, "onRequestOptions");
+    __name(onRequestPost45, "onRequestPost");
   }
 });
 
@@ -28717,20 +29354,20 @@ function summarizeClarity(payload, days) {
     interactionSignals: Array.from(signals.values()).sort((a, b) => b.count - a.count || a.name.localeCompare(b.name))
   };
 }
-async function onRequestOptions55(context) {
+async function onRequestOptions56(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet37(context) {
+async function onRequestGet38(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json", "Cache-Control": "no-store" };
-  const { error } = await requireStaffAuth(context, headers4);
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json", "Cache-Control": "no-store" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const days = Number(new URL(context.request.url).searchParams.get("days") || "3");
   if (!Number.isInteger(days) || days < 1 || days > 3) {
-    return new Response(JSON.stringify({ error: "days must be 1, 2, or 3" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "days must be 1, 2, or 3" }), { status: 400, headers: headers5 });
   }
   if (!context.env.CLARITY_API_TOKEN) {
-    return new Response(JSON.stringify({ error: "Clarity export is not configured" }), { status: 503, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Clarity export is not configured" }), { status: 503, headers: headers5 });
   }
   const params = new URLSearchParams({ numOfDays: String(days), dimension1: "URL", dimension2: "Source", dimension3: "Device" });
   let response2;
@@ -28742,22 +29379,22 @@ async function onRequestGet37(context) {
       }
     });
   } catch {
-    return new Response(JSON.stringify({ error: "Clarity export service could not be reached" }), { status: 502, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Clarity export service could not be reached" }), { status: 502, headers: headers5 });
   }
   if (!response2.ok) {
     const diagnosis = response2.status === 403 ? "Clarity rejected this token for Data Export. Confirm it was generated by an admin of the Clarity project that tracks amarimethod.com, then replace the Pages production secret." : response2.status === 401 ? "Clarity rejected the export token as missing, invalid, or expired. Regenerate it in that Clarity project's Data Export settings and update the Pages production secret." : response2.status === 429 ? "Clarity's daily export-request quota has been reached. Try again tomorrow." : "Clarity export request failed.";
-    return new Response(JSON.stringify({ error: diagnosis, clarityStatus: response2.status }), { status: 502, headers: headers4 });
+    return new Response(JSON.stringify({ error: diagnosis, clarityStatus: response2.status }), { status: 502, headers: headers5 });
   }
   try {
-    return new Response(JSON.stringify(summarizeClarity(await response2.json(), days)), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(summarizeClarity(await response2.json(), days)), { status: 200, headers: headers5 });
   } catch {
-    return new Response(JSON.stringify({ error: "Clarity returned an unexpected response" }), { status: 502, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Clarity returned an unexpected response" }), { status: 502, headers: headers5 });
   }
 }
 var CLARITY_ENDPOINT, STUDY_PATH, SIGNAL_METRICS;
 var init_staff_clarity_study = __esm({
   "api/staff-clarity-study.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     CLARITY_ENDPOINT = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
     STUDY_PATH = "/book/study";
@@ -28775,32 +29412,32 @@ var init_staff_clarity_study = __esm({
     __name(rowsForStudy, "rowsForStudy");
     __name(firstText, "firstText");
     __name(summarizeClarity, "summarizeClarity");
-    __name(onRequestOptions55, "onRequestOptions");
-    __name(onRequestGet37, "onRequestGet");
+    __name(onRequestOptions56, "onRequestOptions");
+    __name(onRequestGet38, "onRequestGet");
   }
 });
 
 // api/staff-coach-one.js
-async function onRequestOptions56(context) {
+async function onRequestOptions57(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost45(context) {
+async function onRequestPost46(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const body = await context.request.json().catch(() => ({}));
     const { contactId } = body;
     if (!contactId || typeof contactId !== "string") {
-      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     }
     const workerHeaders = context.env.WORKER_AUTH_SECRET ? { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` } : {};
     const ac = new AbortController();
-    const kickoff = fetch(`${WORKER_URL3}?contactId=${encodeURIComponent(contactId)}`, {
+    const kickoff = fetch(`${WORKER_URL6}?contactId=${encodeURIComponent(contactId)}`, {
       method: "GET",
       headers: workerHeaders,
       signal: ac.signal
@@ -28809,24 +29446,24 @@ async function onRequestPost45(context) {
     });
     setTimeout(() => ac.abort(), 1500);
     context.waitUntil(kickoff);
-    return new Response(JSON.stringify({ triggered: true, contactId }), { status: 202, headers: headers4 });
+    return new Response(JSON.stringify({ triggered: true, contactId }), { status: 202, headers: headers5 });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-coach-one] failed:", detail);
     return new Response(
       JSON.stringify({ error: `Failed: ${detail}` }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
-var WORKER_URL3;
+var WORKER_URL6;
 var init_staff_coach_one = __esm({
   "api/staff-coach-one.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    WORKER_URL3 = "https://call-coach.eben-fa2.workers.dev/coach-one";
-    __name(onRequestOptions56, "onRequestOptions");
-    __name(onRequestPost45, "onRequestPost");
+    WORKER_URL6 = "https://call-coach.eben-fa2.workers.dev/coach-one";
+    __name(onRequestOptions57, "onRequestOptions");
+    __name(onRequestPost46, "onRequestPost");
   }
 });
 
@@ -28984,7 +29621,7 @@ function communicationPreferencesView({ user, preferences, saved, storageAvailab
 var TEAM_COMMUNICATION_PREFERENCES_VERSION, TEAM_COMMUNICATION_DEFAULT_TIMEZONE, STAFF_USERS, CHANNELS3, CADENCES, CATEGORY_DEFINITIONS, EXTERNAL_ROUTES, CURRENT_CHANNELS, CURRENT_CADENCE;
 var init_team_communication_preferences = __esm({
   "lib/team-communication-preferences.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     TEAM_COMMUNICATION_PREFERENCES_VERSION = 1;
     TEAM_COMMUNICATION_DEFAULT_TIMEZONE = "America/Los_Angeles";
     STAFF_USERS = Object.freeze(["Eben", "Garrett"]);
@@ -29072,14 +29709,14 @@ function responseHeaders2(origin) {
     "Cache-Control": "no-store"
   };
 }
-function json14(body, status, headers4) {
-  return new Response(JSON.stringify(body), { status, headers: headers4 });
+function json14(body, status, headers5) {
+  return new Response(JSON.stringify(body), { status, headers: headers5 });
 }
-async function authenticate3(context, headers4) {
-  const { error, payload } = await requireStaffAuth(context, headers4);
+async function authenticate3(context, headers5) {
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return { error };
   const user = normalizeStaffPreferenceUser(payload?.user);
-  if (!user) return { error: json14({ error: "Communication preferences are only available to Eben and Garrett" }, 403, headers4) };
+  if (!user) return { error: json14({ error: "Communication preferences are only available to Eben and Garrett" }, 403, headers5) };
   return { user };
 }
 async function readRecord(kv, user) {
@@ -29095,12 +29732,12 @@ async function readRecord(kv, user) {
     return null;
   }
 }
-async function onRequestOptions57(context) {
+async function onRequestOptions58(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, PUT, OPTIONS") });
 }
-async function onRequestGet38(context) {
-  const headers4 = responseHeaders2(context.request.headers.get("Origin"));
-  const auth = await authenticate3(context, headers4);
+async function onRequestGet39(context) {
+  const headers5 = responseHeaders2(context.request.headers.get("Origin"));
+  const auth = await authenticate3(context, headers5);
   if (auth.error) return auth.error;
   try {
     const record3 = await readRecord(context.env.PORTAL_KV, auth.user);
@@ -29111,23 +29748,23 @@ async function onRequestGet38(context) {
       saved: Boolean(record3),
       storageAvailable: Boolean(context.env.PORTAL_KV),
       updatedAt: record3?.updatedAt || null
-    }), 200, headers4);
+    }), 200, headers5);
   } catch (error) {
-    return json14({ error: `Could not read communication preferences: ${String(error?.message || error)}` }, 500, headers4);
+    return json14({ error: `Could not read communication preferences: ${String(error?.message || error)}` }, 500, headers5);
   }
 }
 async function onRequestPut(context) {
-  const headers4 = responseHeaders2(context.request.headers.get("Origin"));
-  const auth = await authenticate3(context, headers4);
+  const headers5 = responseHeaders2(context.request.headers.get("Origin"));
+  const auth = await authenticate3(context, headers5);
   if (auth.error) return auth.error;
-  if (!context.env.PORTAL_KV) return json14({ error: "Communication preference storage is not configured" }, 422, headers4);
-  const { body, error: bodyError } = await parseJsonBody(context.request, headers4);
+  if (!context.env.PORTAL_KV) return json14({ error: "Communication preference storage is not configured" }, 422, headers5);
+  const { body, error: bodyError } = await parseJsonBody(context.request, headers5);
   if (bodyError) return bodyError;
   let preferences;
   try {
     preferences = normalizeTeamCommunicationPreferences(body.preferences || body, auth.user);
   } catch (error) {
-    return json14({ error: String(error?.message || error) }, 400, headers4);
+    return json14({ error: String(error?.message || error) }, 400, headers5);
   }
   const updatedAt = (/* @__PURE__ */ new Date()).toISOString();
   const stored = {
@@ -29146,22 +29783,22 @@ async function onRequestPut(context) {
       saved: true,
       storageAvailable: true,
       updatedAt
-    }), 200, headers4);
+    }), 200, headers5);
   } catch (error) {
-    return json14({ error: `Could not save communication preferences: ${String(error?.message || error)}` }, 500, headers4);
+    return json14({ error: `Could not save communication preferences: ${String(error?.message || error)}` }, 500, headers5);
   }
 }
 var init_staff_communication_preferences = __esm({
   "api/staff-communication-preferences.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_team_communication_preferences();
     __name(responseHeaders2, "responseHeaders");
     __name(json14, "json");
     __name(authenticate3, "authenticate");
     __name(readRecord, "readRecord");
-    __name(onRequestOptions57, "onRequestOptions");
-    __name(onRequestGet38, "onRequestGet");
+    __name(onRequestOptions58, "onRequestOptions");
+    __name(onRequestGet39, "onRequestGet");
     __name(onRequestPut, "onRequestPut");
   }
 });
@@ -29173,13 +29810,13 @@ function identity(partner) {
 function preferred(a, b) {
   return String(a.latest_visit_at || "").localeCompare(String(b.latest_visit_at || "")) >= 0 ? a : b;
 }
-async function onRequestOptions58(context) {
+async function onRequestOptions59(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet39(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
+async function onRequestGet40(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
   try {
-    const { error, payload } = await requireStaffAuth(context, headers4);
+    const { error, payload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const users = [...new Set([payload.user, "Eben", "Staff"].filter(Boolean))];
     const lists = await Promise.all(users.map((user) => listFieldPartners(context.env.PORTAL_KV, user, { limit: 500 })));
@@ -29216,23 +29853,23 @@ async function onRequestGet39(context) {
       // The keys are internal implementation detail; photos load through the
       // dedicated Staff-authenticated endpoint only when a card is opened.
       image_keys: void 0
-    })) }), { status: 200, headers: headers4 });
+    })) }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-community]", err);
-    return new Response(JSON.stringify({ error: "Could not load community relationships" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Could not load community relationships" }), { status: 500, headers: headers5 });
   }
 }
 var STAGE_RANK2;
 var init_staff_community = __esm({
   "api/staff-community.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGE_RANK2 = { host: 1, engaged_host: 2, partner: 3, workshop_opportunity: 4 };
     __name(identity, "identity");
     __name(preferred, "preferred");
-    __name(onRequestOptions58, "onRequestOptions");
-    __name(onRequestGet39, "onRequestGet");
+    __name(onRequestOptions59, "onRequestOptions");
+    __name(onRequestGet40, "onRequestGet");
   }
 });
 
@@ -29248,48 +29885,48 @@ function dataUrl(buffer) {
   const mime = isPng ? "image/png" : isWebp ? "image/webp" : "image/jpeg";
   return `data:${mime};base64,${btoa(binary)}`;
 }
-async function onRequestOptions59(context) {
+async function onRequestOptions60(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet40(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
+async function onRequestGet41(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
   try {
-    const { error, payload } = await requireStaffAuth(context, headers4);
+    const { error, payload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const url = new URL(context.request.url);
     const partnerId = url.searchParams.get("partnerId") || "";
     const imageIndex = Number(url.searchParams.get("image") || "0");
     if (!/^business_[a-z0-9-]{1,280}$/i.test(partnerId) || !Number.isInteger(imageIndex) || imageIndex < 0) {
-      return new Response(JSON.stringify({ error: "Invalid image request" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Invalid image request" }), { status: 400, headers: headers5 });
     }
     const users = [...new Set([payload.user, "Eben", "Staff"].filter(Boolean))];
     const lists = await Promise.all(users.map((user) => listFieldPartners(context.env.PORTAL_KV, user, { limit: 500 })));
     const partner = lists.flat().find((entry) => entry.id === partnerId);
     const imageKeys = Array.isArray(partner?.image_keys) ? partner.image_keys : [];
     if (!imageKeys.length) {
-      return new Response(JSON.stringify({ image_count: 0, image_data_url: null }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ image_count: 0, image_data_url: null }), { status: 200, headers: headers5 });
     }
     if (imageIndex >= imageKeys.length) {
-      return new Response(JSON.stringify({ error: "Image not found" }), { status: 404, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Image not found" }), { status: 404, headers: headers5 });
     }
     const image = await context.env.PORTAL_KV.get(imageKeys[imageIndex], "arrayBuffer");
     if (!image) {
-      return new Response(JSON.stringify({ error: "Image not found" }), { status: 404, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Image not found" }), { status: 404, headers: headers5 });
     }
-    return new Response(JSON.stringify({ image_count: imageKeys.length, image_data_url: dataUrl(image) }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ image_count: imageKeys.length, image_data_url: dataUrl(image) }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-community-image]", err);
-    return new Response(JSON.stringify({ error: "Could not load the relationship image" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Could not load the relationship image" }), { status: 500, headers: headers5 });
   }
 }
 var init_staff_community_image = __esm({
   "api/staff-community-image.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_cos_field_visits();
     __name(dataUrl, "dataUrl");
-    __name(onRequestOptions59, "onRequestOptions");
-    __name(onRequestGet40, "onRequestGet");
+    __name(onRequestOptions60, "onRequestOptions");
+    __name(onRequestGet41, "onRequestGet");
   }
 });
 
@@ -29301,22 +29938,22 @@ function date(value) {
   const valueText = text4(value, 20);
   return /^\d{4}-\d{2}-\d{2}$/.test(valueText) ? valueText : "";
 }
-async function onRequestOptions60(context) {
+async function onRequestOptions61(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost46(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
+async function onRequestPost47(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
-    const { error, payload } = await requireStaffAuth(context, headers4);
+    const { error, payload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: bodyError } = await parseJsonBody(context.request, headers4);
+    const { body, error: bodyError } = await parseJsonBody(context.request, headers5);
     if (bodyError) return bodyError;
     const relationship = body.relationship && typeof body.relationship === "object" ? body.relationship : {};
     const businessName = text4(relationship.business_name, 180);
     const relationshipId = text4(relationship.id, 300);
     const notes = text4(body.notes, 2e3);
-    if (!businessName) return new Response(JSON.stringify({ error: "Business name required" }), { status: 400, headers: headers4 });
-    if (!notes) return new Response(JSON.stringify({ error: "A short touch note is required" }), { status: 400, headers: headers4 });
+    if (!businessName) return new Response(JSON.stringify({ error: "Business name required" }), { status: 400, headers: headers5 });
+    if (!notes) return new Response(JSON.stringify({ error: "A short touch note is required" }), { status: 400, headers: headers5 });
     const requestedStage = text4(body.relationship_stage, 80);
     const stage = STAGES2.has(requestedStage) ? requestedStage : "host";
     const users = [...new Set([payload.user, "Eben", "Staff"].filter(Boolean))];
@@ -29336,23 +29973,23 @@ async function onRequestPost46(context) {
       event_title: text4(body.event_title, 240),
       event_details: text4(body.event_details, 1200)
     });
-    return new Response(JSON.stringify({ partner: { ...partner, image_keys: void 0 } }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ partner: { ...partner, image_keys: void 0 } }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-community-touch]", err);
-    return new Response(JSON.stringify({ error: "Could not save this relationship touch" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Could not save this relationship touch" }), { status: 500, headers: headers5 });
   }
 }
 var STAGES2;
 var init_staff_community_touch = __esm({
   "api/staff-community-touch.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGES2 = /* @__PURE__ */ new Set(["host", "engaged_host", "partner", "workshop_opportunity"]);
     __name(text4, "text");
     __name(date, "date");
-    __name(onRequestOptions60, "onRequestOptions");
-    __name(onRequestPost46, "onRequestPost");
+    __name(onRequestOptions61, "onRequestOptions");
+    __name(onRequestPost47, "onRequestPost");
   }
 });
 
@@ -29448,7 +30085,7 @@ async function listPaymentRecordsForContact(kv, contactId) {
 var PAYMENT_STATUSES, PAYMENT_METHODS, SOURCES, NOTE_MAX, PREFIX2;
 var init_session_payment = __esm({
   "lib/session-payment.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     PAYMENT_STATUSES = Object.freeze([
       "paid",
       // confirmed paid (cash, venmo, a matched Stripe charge, …)
@@ -29484,25 +30121,27 @@ var init_session_payment = __esm({
 });
 
 // api/staff-contact.js
-async function onRequestOptions61(context) {
+async function onRequestOptions62(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet41(context) {
+async function onRequestGet42(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const url = new URL(context.request.url);
-    const contactId = url.searchParams.get("id");
+    const contactReference = url.searchParams.get("id");
     const debug = url.searchParams.get("debug") === "1";
-    if (!contactId) {
-      return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers: headers4 });
+    if (!contactReference) {
+      return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers: headers5 });
     }
-    const debugInfo = debug ? { contactId, steps: [] } : null;
+    const identity2 = await resolveOwnedContactIdentity(context, contactReference);
+    const contactId = requireProviderContactIdentity(identity2);
+    const debugInfo = debug ? { contactId: identity2.ownedContactId, providerContactId: contactId, steps: [] } : null;
     const [contactRes, appointmentsRes, notesRes, conversationsRes, ordersRes, invoicesRes, calendarsRes, fieldDefsRes] = await Promise.all([
       ghlFetch(context, `${GHL_API_BASE31}/contacts/${contactId}`),
       ghlFetch(context, `${GHL_API_BASE31}/contacts/${contactId}/appointments`),
@@ -29516,7 +30155,7 @@ async function onRequestGet41(context) {
     ]);
     if (!contactRes.ok) {
       console.error(`[staff-contact] Contact fetch error: ${contactRes.status}`);
-      return new Response(JSON.stringify({ error: "Failed to load contact" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to load contact" }), { status: 422, headers: headers5 });
     }
     const contactData = await contactRes.json();
     const contact = contactData.contact;
@@ -29807,7 +30446,7 @@ async function onRequestGet41(context) {
       clientProgress.yogaBlockSize = blockVal.charAt(0);
     }
     const result = {
-      id: contact.id,
+      id: identity2.ownedContactId,
       firstName: capitalize2(contact.firstName) || "",
       lastName: capitalize2(contact.lastName) || "",
       email: contact.email || "",
@@ -29840,16 +30479,20 @@ async function onRequestGet41(context) {
       ledgerAttended: ledger.attended,
       ...debugInfo && { _debug: debugInfo }
     };
-    return new Response(JSON.stringify(result), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(result), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-contact] Unexpected error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE31, GHL_LOCATION_ID23;
 var init_staff_contact = __esm({
   "api/staff-contact.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -29857,36 +30500,37 @@ var init_staff_contact = __esm({
     init_journey_classification();
     init_endpoint_guards();
     init_datetime();
+    init_staff_owned_contact_identity();
     GHL_API_BASE31 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID23 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions61, "onRequestOptions");
-    __name(onRequestGet41, "onRequestGet");
+    __name(onRequestOptions62, "onRequestOptions");
+    __name(onRequestGet42, "onRequestGet");
   }
 });
 
 // api/staff-contacts.js
-async function onRequestOptions62(context) {
+async function onRequestOptions63(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet42(context) {
+async function onRequestGet43(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const url = new URL(context.request.url);
     const query = (url.searchParams.get("query") || "").trim();
     if (!query || query.length < 2) {
-      return new Response(JSON.stringify([]), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify([]), { status: 200, headers: headers5 });
     }
     const searchUrl = `${GHL_API_BASE32}/contacts/?locationId=${GHL_LOCATION_ID24}&query=${encodeURIComponent(query)}&limit=20`;
     const searchRes = await ghlFetch(context, searchUrl);
     if (!searchRes.ok) {
       console.error(`[staff-contacts] GHL search error: ${searchRes.status}`);
-      return new Response(JSON.stringify({ error: "Search failed" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Search failed" }), { status: 422, headers: headers5 });
     }
     const searchData = await searchRes.json();
     const contacts = searchData.contacts || [];
@@ -29915,28 +30559,28 @@ async function onRequestGet42(context) {
         isFoundersCircle: (c.tags || []).some((t) => String(t).toLowerCase() === "founders-circle")
       };
     });
-    return new Response(JSON.stringify(results), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(results), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-contacts] Unexpected error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE32, GHL_LOCATION_ID24;
 var init_staff_contacts = __esm({
   "api/staff-contacts.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
     GHL_API_BASE32 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID24 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions62, "onRequestOptions");
-    __name(onRequestGet42, "onRequestGet");
+    __name(onRequestOptions63, "onRequestOptions");
+    __name(onRequestGet43, "onRequestGet");
   }
 });
 
 // api/staff-conversations.js
-async function onRequestOptions63(context) {
+async function onRequestOptions64(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -29978,11 +30622,11 @@ function isNonReply(text6) {
   if (t.length <= 40 && CLOSER_RE.test(t)) return true;
   return false;
 }
-async function onRequestGet43(context) {
+async function onRequestGet44(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffOrOpsAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffOrOpsAuth(context, headers5);
     if (error) return error;
     const url = new URL(context.request.url);
     const filterParam = (url.searchParams.get("filter") || "needs_reply").toLowerCase();
@@ -30015,7 +30659,7 @@ async function onRequestGet43(context) {
             }
           }
         }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const searchData = await searchRes.json();
@@ -30117,24 +30761,24 @@ async function onRequestGet43(context) {
         }
       }
     };
-    return new Response(JSON.stringify(responseBody), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(responseBody), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-conversations] Unexpected error:", err);
     return new Response(JSON.stringify({ error: "Internal server error" }), {
       status: 500,
-      headers: headers4
+      headers: headers5
     });
   }
 }
 var GHL_API_BASE33, GHL_LOCATION_ID25, CLOSER_WORD, CLOSER_RE;
 var init_staff_conversations = __esm({
   "api/staff-conversations.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE33 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID25 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions63, "onRequestOptions");
+    __name(onRequestOptions64, "onRequestOptions");
     __name(isInbound, "isInbound");
     __name(normalizeMessageType, "normalizeMessageType");
     __name(isCallType, "isCallType");
@@ -30143,28 +30787,28 @@ var init_staff_conversations = __esm({
     CLOSER_WORD = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE = new RegExp(`^(?:${CLOSER_WORD}[\\s!.,]*)+$`, "i");
     __name(isNonReply, "isNonReply");
-    __name(onRequestGet43, "onRequestGet");
+    __name(onRequestGet44, "onRequestGet");
   }
 });
 
 // api/staff-crm-mirror-access.js
-async function onRequestOptions64(context) {
+async function onRequestOptions65(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost47(context) {
+async function onRequestPost48(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload } = await requireStaffAuth(context, headers4);
+    const { error, payload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const secret = context.env.WORKER_AUTH_SECRET;
     if (!secret) {
       return new Response(
         JSON.stringify({ error: "CRM mirror access is not configured" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const ac = new AbortController();
@@ -30172,7 +30816,7 @@ async function onRequestPost47(context) {
     let body;
     try {
       const requestedView = new URL(context.request.url || "https://www.amarimethod.com/api/staff-crm-mirror-access").searchParams.get("view") === "client-desk" ? "?view=client-desk" : "";
-      const res = await fetch(`${WORKER_URL4}${requestedView}`, {
+      const res = await fetch(`${WORKER_URL7}${requestedView}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${secret}`,
@@ -30184,14 +30828,14 @@ async function onRequestPost47(context) {
       if (!res.ok || !body?.url) {
         return new Response(
           JSON.stringify({ error: `CRM mirror returned ${res.status}`, detail: body }),
-          { status: 422, headers: headers4 }
+          { status: 422, headers: headers5 }
         );
       }
     } catch (err) {
       const aborted = err && err.name === "AbortError";
       const detail = aborted ? "CRM mirror access timed out" : err.message || String(err);
       console.error("[staff-crm-mirror-access] worker fetch error:", detail);
-      return new Response(JSON.stringify({ error: detail }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: detail }), { status: 422, headers: headers5 });
     } finally {
       clearTimeout(timer);
     }
@@ -30200,39 +30844,132 @@ async function onRequestPost47(context) {
         url: body.url,
         expiresInSeconds: body.expiresInSeconds ?? 300
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-crm-mirror-access] failed:", detail);
     return new Response(
       JSON.stringify({ error: `Failed to open CRM mirror: ${detail}` }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
-var WORKER_URL4, WORKER_TIMEOUT_MS2;
+var WORKER_URL7, WORKER_TIMEOUT_MS2;
 var init_staff_crm_mirror_access = __esm({
   "api/staff-crm-mirror-access.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    WORKER_URL4 = "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link";
+    WORKER_URL7 = "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS2 = 15e3;
-    __name(onRequestOptions64, "onRequestOptions");
-    __name(onRequestPost47, "onRequestPost");
+    __name(onRequestOptions65, "onRequestOptions");
+    __name(onRequestPost48, "onRequestPost");
+  }
+});
+
+// lib/staff-owned-appointment-schedule.js
+async function fetchOwnedAppointmentSchedule(context, input) {
+  if (!context?.env?.WORKER_AUTH_SECRET) throw new Error("Owned appointment schedule is not configured.");
+  const params = new URLSearchParams({
+    startTime: new Date(input.startTime).toISOString(),
+    endTime: new Date(input.endTime).toISOString()
+  });
+  if (input.includeCancelled) params.set("includeCancelled", "1");
+  if (input.includeDetail) params.set("detail", "1");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS5);
+  try {
+    const response2 = await fetch(`${WORKER_URL8}?${params}`, {
+      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
+      signal: controller.signal
+    });
+    if (!response2.ok) throw new Error(`Owned appointment schedule failed (${response2.status}).`);
+    const body = await response2.json();
+    if (body?.source !== "owned_crm" || !Array.isArray(body.appointments) || !body.truth) {
+      throw new Error("Owned appointment schedule returned an invalid contract.");
+    }
+    return body;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function staffScheduleDetails(schedule) {
+  if (schedule.detailIncluded !== true) throw new Error("Owned appointment detail was not included.");
+  return schedule.appointments.map((appointment) => ({
+    id: appointment.id,
+    calendarId: appointment.providerCalendarId || "",
+    contactId: appointment.contactId,
+    contactName: appointment.contactName,
+    startTime: appointment.startTime,
+    endTime: appointment.endTime,
+    title: appointment.serviceName || "Session",
+    calendarName: appointment.serviceName || "Session",
+    appointmentStatus: appointment.status,
+    meetingLocation: appointment.meetingLocation || null,
+    sessionsRemaining: appointment.sessionsRemaining,
+    sessionsCompleted: appointment.sessionsCompleted,
+    seriesType: appointment.seriesType,
+    tags: appointment.tags,
+    sessionPrepaid: appointment.sessionPrepaid,
+    paymentStatus: appointment.paymentStatus,
+    paymentMethod: appointment.paymentMethod,
+    paymentNote: appointment.paymentNote,
+    enrichmentFailed: appointment.enrichmentFailed,
+    authority: appointment.authority,
+    providerSyncState: appointment.providerSyncState,
+    truthState: appointment.truthState,
+    providerAppointmentId: appointment.providerAppointmentId,
+    detailTruth: appointment.detailTruth
+  }));
+}
+function staffScheduleSummaries(schedule) {
+  return schedule.appointments.map((appointment) => ({
+    id: appointment.id,
+    calendarId: appointment.providerCalendarId || "",
+    contactId: appointment.contactId,
+    contactName: appointment.contactName,
+    startTime: appointment.startTime,
+    endTime: appointment.endTime,
+    title: appointment.serviceName || "Session",
+    calendarName: appointment.serviceName || "Session",
+    appointmentStatus: appointment.status,
+    meetingLocation: null,
+    sessionsRemaining: 0,
+    sessionsCompleted: 0,
+    seriesType: "none",
+    tags: [],
+    sessionPrepaid: false,
+    paymentStatus: "unknown",
+    paymentMethod: null,
+    paymentNote: null,
+    authority: appointment.authority,
+    providerSyncState: appointment.providerSyncState,
+    truthState: appointment.truthState,
+    providerAppointmentId: appointment.providerAppointmentId
+  }));
+}
+var WORKER_URL8, TIMEOUT_MS5;
+var init_staff_owned_appointment_schedule = __esm({
+  "lib/staff-owned-appointment-schedule.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    WORKER_URL8 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
+    TIMEOUT_MS5 = 1e4;
+    __name(fetchOwnedAppointmentSchedule, "fetchOwnedAppointmentSchedule");
+    __name(staffScheduleDetails, "staffScheduleDetails");
+    __name(staffScheduleSummaries, "staffScheduleSummaries");
   }
 });
 
 // api/staff-data.js
-async function onRequestOptions65(context) {
+async function onRequestOptions66(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet44(context) {
+async function onRequestGet45(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
     let dateToEpochRange = function(dateStr) {
       const [y, m, d2] = dateStr.split("-").map(Number);
@@ -30245,14 +30982,14 @@ async function onRequestGet44(context) {
       return { start, end: start + 864e5 - 1 };
     };
     __name(dateToEpochRange, "dateToEpochRange");
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const GHL_API_KEY = await getGhlToken(context);
     const url = new URL(context.request.url);
     const dateParam = url.searchParams.get("date");
     const endDateParam = url.searchParams.get("endDate");
     const includeCancelled = url.searchParams.get("includeCancelled") === "1";
     const summaryOnly = url.searchParams.get("summary") === "1";
+    const ownedDetail = !summaryOnly && url.searchParams.get("ownedDetail") !== "0";
     const now = /* @__PURE__ */ new Date();
     const pacificFormatter = new Intl.DateTimeFormat("en-CA", {
       timeZone: "America/Los_Angeles",
@@ -30267,10 +31004,30 @@ async function onRequestGet44(context) {
     const rangeEnd = dateToEpochRange(endDateStr);
     const startTime = rangeStart.start;
     const endTime = rangeEnd.end;
+    if (summaryOnly || ownedDetail) {
+      try {
+        const ownedSchedule = await fetchOwnedAppointmentSchedule(context, {
+          startTime,
+          endTime,
+          includeCancelled,
+          includeDetail: ownedDetail
+        });
+        return new Response(JSON.stringify(
+          ownedDetail ? staffScheduleDetails(ownedSchedule) : staffScheduleSummaries(ownedSchedule)
+        ), { status: 200, headers: headers5 });
+      } catch (error2) {
+        console.error("[staff-data] Owned appointment schedule read failed", error2);
+        return new Response(JSON.stringify({
+          error: "Owned appointment schedule is unavailable; provider fallback is disabled.",
+          code: "owned_schedule_unavailable"
+        }), { status: 503, headers: headers5 });
+      }
+    }
+    const GHL_API_KEY = await getGhlToken(context);
     const calendarsRes = await ghlFetch(context, `${GHL_API_BASE34}/calendars/?locationId=${GHL_LOCATION_ID26}`);
     if (!calendarsRes.ok) {
       console.error(`[staff-data] Calendars list error: ${calendarsRes.status}`);
-      return new Response(JSON.stringify({ error: "Failed to load calendars" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to load calendars" }), { status: 422, headers: headers5 });
     }
     const calendarsData = await calendarsRes.json();
     const allCalendars = calendarsData.calendars || [];
@@ -30284,7 +31041,7 @@ async function onRequestGet44(context) {
     const eventsRes = await ghlFetch(context, `${GHL_API_BASE34}/calendars/events?${eventParams}`);
     if (!eventsRes.ok) {
       console.error(`[staff-data] Practitioner schedule error: ${eventsRes.status}`);
-      return new Response(JSON.stringify({ error: "Failed to load calendar appointments" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to load calendar appointments" }), { status: 422, headers: headers5 });
     }
     const eventsData = await eventsRes.json();
     const eventMap = /* @__PURE__ */ new Map();
@@ -30298,29 +31055,6 @@ async function onRequestGet44(context) {
       (e) => (e.appointmentStatus || e.status || "").toLowerCase() !== "cancelled"
     );
     todayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-    if (summaryOnly) {
-      const summaries = todayEvents.map((event2) => ({
-        id: event2.id,
-        calendarId: event2.calendarId || event2.calendar_id || "",
-        contactId: event2.contactId || "",
-        contactName: event2.title || "Unknown",
-        startTime: event2.startTime || event2.start_time,
-        endTime: event2.endTime || event2.end_time,
-        title: event2.title || event2.calendarName || "Session",
-        calendarName: event2.calendarName || "",
-        appointmentStatus: (event2.appointmentStatus || event2.status || "").toLowerCase(),
-        meetingLocation: event2.meetingLocation || null,
-        sessionsRemaining: 0,
-        sessionsCompleted: 0,
-        seriesType: "none",
-        tags: [],
-        sessionPrepaid: false,
-        paymentStatus: "unknown",
-        paymentMethod: null,
-        paymentNote: null
-      }));
-      return new Response(JSON.stringify(summaries), { status: 200, headers: headers4 });
-    }
     const fieldDefsResponse = await ghlFetch(context, `${GHL_API_BASE34}/locations/${GHL_LOCATION_ID26}/customFields`);
     let fieldDefs = {};
     if (fieldDefsResponse.ok) {
@@ -30433,16 +31167,16 @@ async function onRequestGet44(context) {
       const part = await Promise.all(todayEvents.slice(i, i + ENRICH_CHUNK).map(enrichOne));
       enriched.push(...part);
     }
-    return new Response(JSON.stringify(enriched), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(enriched), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-data] Unexpected error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE34, GHL_LOCATION_ID26, GHL_GARRETT_USER_ID2;
 var init_staff_data = __esm({
   "api/staff-data.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -30450,11 +31184,12 @@ var init_staff_data = __esm({
     init_journey_classification();
     init_endpoint_guards();
     init_datetime();
+    init_staff_owned_appointment_schedule();
     GHL_API_BASE34 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID26 = "7pIO7FHVAyBT1jKGhfQM";
     GHL_GARRETT_USER_ID2 = "P5b0oSTaVYfULDjZ6YyG";
-    __name(onRequestOptions65, "onRequestOptions");
-    __name(onRequestGet44, "onRequestGet");
+    __name(onRequestOptions66, "onRequestOptions");
+    __name(onRequestGet45, "onRequestGet");
   }
 });
 
@@ -30484,7 +31219,7 @@ function normWeeks(v) {
 }
 function normText(v) {
   if (typeof v !== "string") return "";
-  return v.trim().slice(0, MAX_TEXT);
+  return v.trim().slice(0, MAX_TEXT2);
 }
 function normAt(v) {
   if (typeof v !== "string" || !v) return null;
@@ -30540,14 +31275,14 @@ function normalizeRecord(input, nowIso) {
 function sessionsDoneCount(record3) {
   return (record3?.sessions || []).filter((s) => s.after !== null).length;
 }
-var SESSION_COUNT, BODY_PART_VALUES, MAX_TEXT, MAX_WEEKS, MAX_INSTRUMENT_ITEMS, MAX_ITEM_ID, ITEM_ID_RE, STUDY_SESSIONS_DONE_FIELD_ID;
+var SESSION_COUNT, BODY_PART_VALUES, MAX_TEXT2, MAX_WEEKS, MAX_INSTRUMENT_ITEMS, MAX_ITEM_ID, ITEM_ID_RE, STUDY_SESSIONS_DONE_FIELD_ID;
 var init_study_capture = __esm({
   "lib/study-capture.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_studies();
     SESSION_COUNT = 3;
     BODY_PART_VALUES = /* @__PURE__ */ new Set(["left", "right", "both"]);
-    MAX_TEXT = 1e3;
+    MAX_TEXT2 = 1e3;
     MAX_WEEKS = 520;
     MAX_INSTRUMENT_ITEMS = 40;
     MAX_ITEM_ID = 16;
@@ -30568,41 +31303,41 @@ var init_study_capture = __esm({
 });
 
 // api/staff-elbow-study.js
-async function onRequestOptions66({ request }) {
+async function onRequestOptions67({ request: request2 }) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS")
+    headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet45(context) {
-  const { request, env } = context;
-  const origin = request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error } = await requireStaffAuth(context, headers4);
+async function onRequestGet46(context) {
+  const { request: request2, env } = context;
+  const origin = request2.headers.get("Origin") || "";
+  const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const contactId = new URL(request.url).searchParams.get("contactId");
+  const contactId = new URL(request2.url).searchParams.get("contactId");
   if (!contactId) {
-    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
   }
   try {
     const record3 = await env.PORTAL_KV.get(kvKey2(STUDY_SLUG, contactId), "json") || null;
-    return new Response(JSON.stringify({ record: record3 }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ record: record3 }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-elbow-study] GET error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
-async function onRequestPost48(context) {
-  const { request, env } = context;
-  const origin = request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error } = await requireStaffAuth(context, headers4);
+async function onRequestPost49(context) {
+  const { request: request2, env } = context;
+  const origin = request2.headers.get("Origin") || "";
+  const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const { body, error: parseError } = await parseJsonBody(request, headers4);
+  const { body, error: parseError } = await parseJsonBody(request2, headers5);
   if (parseError) return parseError;
   const { contactId, record: record3 } = body;
   if (!contactId || typeof contactId !== "string") {
-    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
   }
   const nowIso = (/* @__PURE__ */ new Date()).toISOString();
   const normalized = normalizeRecord(record3, nowIso);
@@ -30619,24 +31354,24 @@ async function onRequestPost48(context) {
     } catch (ghlErr) {
       console.error("[staff-elbow-study] GHL sessions-done sync failed:", ghlErr.message);
     }
-    return new Response(JSON.stringify({ record: normalized }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ record: normalized }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-elbow-study] POST error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE35, STUDY_SLUG;
 var init_staff_elbow_study = __esm({
   "api/staff-elbow-study.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
     GHL_API_BASE35 = "https://services.leadconnectorhq.com";
     STUDY_SLUG = "tennis-elbow";
-    __name(onRequestOptions66, "onRequestOptions");
-    __name(onRequestGet45, "onRequestGet");
-    __name(onRequestPost48, "onRequestPost");
+    __name(onRequestOptions67, "onRequestOptions");
+    __name(onRequestGet46, "onRequestGet");
+    __name(onRequestPost49, "onRequestPost");
   }
 });
 
@@ -30708,7 +31443,7 @@ function isOpsErrKey(key) {
 }
 var init_staff_exceptions = __esm({
   "lib/staff-exceptions.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(humanizeOpsError, "humanizeOpsError");
     __name(sourceLabel, "sourceLabel");
     __name(unique, "unique");
@@ -30717,18 +31452,18 @@ var init_staff_exceptions = __esm({
 });
 
 // api/staff-exceptions.js
-async function onRequestOptions67(context) {
+async function onRequestOptions68(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS6)
   });
 }
-async function onRequestGet46(context) {
-  const headers4 = {
+async function onRequestGet47(context) {
+  const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
     "Content-Type": "application/json"
   };
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const errors = await listOpsErrors(context.env, { limit: 100 });
   const items = errors.map(humanizeOpsError).filter((item) => item.id).sort((a, b) => String(b.at || "").localeCompare(String(a.at || "")));
@@ -30738,40 +31473,40 @@ async function onRequestGet46(context) {
       count: items.length,
       generatedAt: (/* @__PURE__ */ new Date()).toISOString()
     }),
-    { status: 200, headers: headers4 }
+    { status: 200, headers: headers5 }
   );
 }
-async function onRequestPost49(context) {
-  const headers4 = {
+async function onRequestPost50(context) {
+  const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
     "Content-Type": "application/json"
   };
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+  const { body, error: parseError } = await parseJsonBody(context.request, headers5);
   if (parseError) return parseError;
   const action = body?.action;
   const key = typeof body?.key === "string" ? body.key.trim() : "";
   if (action !== "dismiss") {
-    return new Response(JSON.stringify({ error: "Unsupported action" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Unsupported action" }), { status: 400, headers: headers5 });
   }
   if (!isOpsErrKey(key)) {
-    return new Response(JSON.stringify({ error: "Invalid exception key" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Invalid exception key" }), { status: 400, headers: headers5 });
   }
   await clearOpsError(context.env, key);
-  return new Response(JSON.stringify({ ok: true, key }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ ok: true, key }), { status: 200, headers: headers5 });
 }
 var METHODS6;
 var init_staff_exceptions2 = __esm({
   "api/staff-exceptions.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_ops_alert();
     init_staff_exceptions();
     METHODS6 = "GET, POST, OPTIONS";
-    __name(onRequestOptions67, "onRequestOptions");
-    __name(onRequestGet46, "onRequestGet");
-    __name(onRequestPost49, "onRequestPost");
+    __name(onRequestOptions68, "onRequestOptions");
+    __name(onRequestGet47, "onRequestGet");
+    __name(onRequestPost50, "onRequestPost");
   }
 });
 
@@ -30779,7 +31514,7 @@ var init_staff_exceptions2 = __esm({
 function recordKey(id3) {
   return `field_study:${id3}`;
 }
-function cleanText4(value, max = MAX_TEXT2) {
+function cleanText4(value, max = MAX_TEXT3) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 function paperLabel(firstName, studyLabel, paperDate) {
@@ -30935,44 +31670,44 @@ function summarize(record3) {
     baselineCapturedAt: record3.baseline?.capturedAt || null
   };
 }
-function json15(data, status, headers4) {
-  return new Response(JSON.stringify(data), { status, headers: headers4 });
+function json15(data, status, headers5) {
+  return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
-async function onRequestOptions68({ request }) {
+async function onRequestOptions69({ request: request2 }) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS")
+    headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet47(context) {
-  const { request, env } = context;
-  const headers4 = { ...corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error } = await requireStaffAuth(context, headers4);
+async function onRequestGet48(context) {
+  const { request: request2, env } = context;
+  const headers5 = { ...corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   try {
-    const url = new URL(request.url);
+    const url = new URL(request2.url);
     const recordId = url.searchParams.get("recordId");
     const includeBookings = url.searchParams.get("includeBookings") === "1";
     if (recordId) {
       const record3 = await env.PORTAL_KV.get(recordKey(recordId), "json");
-      return json15({ record: record3 ? await withStudyAppointments(context, record3) : null }, 200, headers4);
+      return json15({ record: record3 ? await withStudyAppointments(context, record3) : null }, 200, headers5);
     }
     const index = await env.PORTAL_KV.get(INDEX_KEY2, "json");
     const ids = indexIds(index);
     let records = (await Promise.all(ids.map((id3) => env.PORTAL_KV.get(recordKey(id3), "json")))).filter(Boolean).map(summarize);
     if (includeBookings) records = await enrichBookings(context, records);
-    return json15({ records }, 200, headers4);
+    return json15({ records }, 200, headers5);
   } catch (err) {
     console.error("[staff-field-study] GET error:", err.message);
-    return json15({ error: "Internal server error" }, 500, headers4);
+    return json15({ error: "Internal server error" }, 500, headers5);
   }
 }
-async function onRequestPost50(context) {
-  const { request, env } = context;
-  const headers4 = { ...corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error } = await requireStaffAuth(context, headers4);
+async function onRequestPost51(context) {
+  const { request: request2, env } = context;
+  const headers5 = { ...corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const { body, error: parseError } = await parseJsonBody(request, headers4);
+  const { body, error: parseError } = await parseJsonBody(request2, headers5);
   if (parseError) return parseError;
   try {
     if (body.action === "get-slots") {
@@ -30980,28 +31715,28 @@ async function onRequestPost50(context) {
       const startDate = cleanText4(body.startDate, 10);
       const endDate = cleanText4(body.endDate, 10);
       const timezone = cleanText4(body.timezone, 80) || "America/Los_Angeles";
-      if (!recordId || !validDateRange2(startDate, endDate)) return json15({ error: "Choose a valid calendar month." }, 400, headers4);
+      if (!recordId || !validDateRange2(startDate, endDate)) return json15({ error: "Choose a valid calendar month." }, 400, headers5);
       const record4 = await env.PORTAL_KV.get(recordKey(recordId), "json");
-      if (!record4) return json15({ error: "Study record not found." }, 404, headers4);
-      return json15({ slots: await studySlots(context, startDate, endDate, timezone) }, 200, headers4);
+      if (!record4) return json15({ error: "Study record not found." }, 404, headers5);
+      return json15({ slots: await studySlots(context, startDate, endDate, timezone) }, 200, headers5);
     }
     if (body.action === "book-followup") {
       const recordId = cleanText4(body.recordId, 80);
       const startTime = cleanText4(body.startTime, 80);
       const timezone = cleanText4(body.timezone, 80) || "America/Los_Angeles";
       const idempotencyKey = cleanText4(body.idempotencyKey, 100);
-      if (!recordId || !startTime || Number.isNaN(Date.parse(startTime))) return json15({ error: "Choose an available study time." }, 400, headers4);
+      if (!recordId || !startTime || Number.isNaN(Date.parse(startTime))) return json15({ error: "Choose an available study time." }, 400, headers5);
       const record4 = await env.PORTAL_KV.get(recordKey(recordId), "json");
-      if (!record4) return json15({ error: "Study record not found." }, 404, headers4);
+      if (!record4) return json15({ error: "Study record not found." }, 404, headers5);
       const cacheKey = idempotencyKey ? `field-study-book:${recordId}:${idempotencyKey}` : null;
       if (cacheKey) {
         const existing = await env.PORTAL_KV.get(cacheKey, "json");
-        if (existing) return json15(existing, 200, headers4);
+        if (existing) return json15(existing, 200, headers5);
       }
       try {
         await assertSlotRespectsAppBuffer(context, startTime, STUDY_CALENDAR_ID);
       } catch {
-        return json15({ error: "That time is no longer available. Choose another one." }, 422, headers4);
+        return json15({ error: "That time is no longer available. Choose another one." }, 422, headers5);
       }
       let data;
       try {
@@ -31025,44 +31760,44 @@ async function onRequestPost50(context) {
       } catch (err) {
         const detail = String(err?.detail || err?.message || err);
         console.error("[staff-field-study] study booking error:", err?.status || 0, detail.slice(0, 300));
-        return json15({ error: "That time is no longer available. Choose another one." }, 422, headers4);
+        return json15({ error: "That time is no longer available. Choose another one." }, 422, headers5);
       }
       const result = { appointment: { id: data.id || data.appointment?.id || "", startTime } };
       if (cacheKey) await env.PORTAL_KV.put(cacheKey, JSON.stringify(result), { expirationTtl: 3600 });
-      return json15(result, 200, headers4);
+      return json15(result, 200, headers5);
     }
     if (body.action === "save-baseline") {
       const recordId = cleanText4(body.recordId, 80);
-      if (!recordId) return json15({ error: "recordId required" }, 400, headers4);
+      if (!recordId) return json15({ error: "recordId required" }, 400, headers5);
       const existing = await env.PORTAL_KV.get(recordKey(recordId), "json");
-      if (!existing) return json15({ error: "Study record not found" }, 404, headers4);
+      if (!existing) return json15({ error: "Study record not found" }, 404, headers5);
       const nowIso2 = (/* @__PURE__ */ new Date()).toISOString();
       const baseline = normalizeBaseline(body.baseline, nowIso2);
-      if (!isCompleteBaseline(baseline)) return json15({ error: "Enter all 6 answers and at least 1 marked body location before saving." }, 400, headers4);
+      if (!isCompleteBaseline(baseline)) return json15({ error: "Enter all 6 answers and at least 1 marked body location before saving." }, 400, headers5);
       const record4 = { ...existing, baseline, updatedAt: nowIso2 };
       await env.PORTAL_KV.put(recordKey(recordId), JSON.stringify(record4));
-      return json15({ record: record4 }, 200, headers4);
+      return json15({ record: record4 }, 200, headers5);
     }
-    if (body.action !== "enroll") return json15({ error: "Unknown action" }, 400, headers4);
+    if (body.action !== "enroll") return json15({ error: "Unknown action" }, 400, headers5);
     const fieldStudyKey = cleanText4(body.fieldStudyKey, 32);
     const study2 = FIELD_STUDIES[fieldStudyKey];
     const firstName = cleanText4(body.firstName, 100);
     const lastName = cleanText4(body.lastName, 100);
     const phone = String(body.phone || "").replace(/[^\d+]/g, "").slice(0, 20);
     const email = cleanText4(body.email, 254).toLowerCase();
-    if (typeof body.firstSessionCompleted !== "boolean") return json15({ error: "Confirm whether they completed their first session." }, 400, headers4);
+    if (typeof body.firstSessionCompleted !== "boolean") return json15({ error: "Confirm whether they completed their first session." }, 400, headers5);
     const firstSessionCompleted = isFirstSessionCompleted(body.firstSessionCompleted);
     const afterSessionOnePain = score(body.afterSessionOnePain);
     const participantQuote = cleanText4(body.participantQuote, 500);
     const paperDate = cleanText4(body.paperDate, 10);
-    if (!study2) return json15({ error: "Choose one of the active field studies." }, 400, headers4);
+    if (!study2) return json15({ error: "Choose one of the active field studies." }, 400, headers5);
     if (!firstName || !lastName || !isValidPhone6(phone) || !isValidEmail9(email)) {
-      return json15({ error: "First name, last name, a valid mobile, and a valid email are required." }, 400, headers4);
+      return json15({ error: "First name, last name, a valid mobile, and a valid email are required." }, 400, headers5);
     }
-    if (firstSessionCompleted && afterSessionOnePain === null) return json15({ error: "Record the after-session score before saving." }, 400, headers4);
-    if (!isValidPaperDate(paperDate)) return json15({ error: "Could not determine today\u2019s date. Refresh and try again." }, 400, headers4);
+    if (firstSessionCompleted && afterSessionOnePain === null) return json15({ error: "Record the after-session score before saving." }, 400, headers5);
+    if (!isValidPaperDate(paperDate)) return json15({ error: "Could not determine today\u2019s date. Refresh and try again." }, 400, headers5);
     const duplicate = await findSameDayDuplicate(env.PORTAL_KV, { phone, email, fieldStudyKey, paperDate });
-    if (duplicate) return json15({ error: `${duplicate.paperId} is already saved for this study today. Open that record instead of saving a duplicate.` }, 409, headers4);
+    if (duplicate) return json15({ error: `${duplicate.paperId} is already saved for this study today. Open that record instead of saving a duplicate.` }, 409, headers5);
     const upsert = await ghlFetch(context, `${GHL_API_BASE36}/contacts/upsert`, {
       method: "POST",
       body: JSON.stringify({
@@ -31083,11 +31818,11 @@ async function onRequestPost50(context) {
     });
     if (!upsert.ok) {
       console.error("[staff-field-study] GHL upsert error:", upsert.status, await upsert.text());
-      return json15({ error: "Could not save the participant contact." }, 422, headers4);
+      return json15({ error: "Could not save the participant contact." }, 422, headers5);
     }
     const upsertData = await upsert.json();
     const contactId = upsertData.contact?.id;
-    if (!contactId) return json15({ error: "Contact was saved but no ID was returned." }, 422, headers4);
+    if (!contactId) return json15({ error: "Contact was saved but no ID was returned." }, 422, headers5);
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     const record3 = {
       id: crypto.randomUUID(),
@@ -31115,16 +31850,16 @@ async function onRequestPost50(context) {
     };
     await env.PORTAL_KV.put(recordKey(record3.id), JSON.stringify(record3));
     await addToIndex(env.PORTAL_KV, record3.id);
-    return json15({ record: record3 }, 200, headers4);
+    return json15({ record: record3 }, 200, headers5);
   } catch (err) {
     console.error("[staff-field-study] POST error:", err.message);
-    return json15({ error: "Internal server error" }, 500, headers4);
+    return json15({ error: "Internal server error" }, 500, headers5);
   }
 }
-var GHL_API_BASE36, GHL_LOCATION_ID27, STUDY_NAME_FIELD_ID6, STUDY_SESSIONS_DONE_FIELD_ID2, FIELD_STUDY_TABLE_TAG, INDEX_KEY2, MAX_INDEX, MAX_TEXT2, FIELD_STUDIES;
+var GHL_API_BASE36, GHL_LOCATION_ID27, STUDY_NAME_FIELD_ID6, STUDY_SESSIONS_DONE_FIELD_ID2, FIELD_STUDY_TABLE_TAG, INDEX_KEY2, MAX_INDEX, MAX_TEXT3, FIELD_STUDIES;
 var init_staff_field_study = __esm({
   "api/staff-field-study.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_ghl();
     init_studies();
@@ -31138,7 +31873,7 @@ var init_staff_field_study = __esm({
     FIELD_STUDY_TABLE_TAG = "field-study-table-participant";
     INDEX_KEY2 = "field_study:index:v1";
     MAX_INDEX = 200;
-    MAX_TEXT2 = 500;
+    MAX_TEXT3 = 500;
     FIELD_STUDIES = {
       jaw: { slug: "tmj", label: "Jaw", studyName: STUDIES.tmj.shortName },
       foot: { slug: "runners-lower-leg", label: "Foot", studyName: STUDIES["runners-lower-leg"].shortName },
@@ -31167,9 +31902,9 @@ var init_staff_field_study = __esm({
     __name(enrichBookings, "enrichBookings");
     __name(summarize, "summarize");
     __name(json15, "json");
-    __name(onRequestOptions68, "onRequestOptions");
-    __name(onRequestGet47, "onRequestGet");
-    __name(onRequestPost50, "onRequestPost");
+    __name(onRequestOptions69, "onRequestOptions");
+    __name(onRequestGet48, "onRequestGet");
+    __name(onRequestPost51, "onRequestPost");
   }
 });
 
@@ -31208,20 +31943,20 @@ function parseBrief(text6) {
     drafts: Array.isArray(obj.drafts) ? obj.drafts.filter((d2) => d2 && typeof d2.text === "string").map((d2) => ({ channel: ["text", "call", "email"].includes(d2.channel) ? d2.channel : "text", text: d2.text })) : []
   };
 }
-async function onRequestOptions69(context) {
+async function onRequestOptions70(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost51(context) {
+async function onRequestPost52(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const apiKey = context.env.ANTHROPIC_API_KEY;
-    if (!apiKey) return new Response(JSON.stringify({ error: "Brief not configured (missing ANTHROPIC_API_KEY)" }), { status: 500, headers: headers4 });
+    if (!apiKey) return new Response(JSON.stringify({ error: "Brief not configured (missing ANTHROPIC_API_KEY)" }), { status: 500, headers: headers5 });
     const payload = await context.request.json().catch(() => ({}));
     const { contactId, contact } = payload;
-    if (!contactId) return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+    if (!contactId) return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     const thread = [];
     try {
       const ghlToken = await getGhlToken(context);
@@ -31268,7 +32003,7 @@ async function onRequestPost51(context) {
     if (!aiRes.ok) {
       const detail = await aiRes.text().catch(() => "");
       console.error("[staff-followup-brief] Anthropic error:", aiRes.status, detail.slice(0, 300));
-      return new Response(JSON.stringify({ error: "Couldn't build the brief \u2014 model error. Try again." }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Couldn't build the brief \u2014 model error. Try again." }), { status: 422, headers: headers5 });
     }
     const aiData = await aiRes.json();
     const text6 = aiData?.content?.[0]?.text || "";
@@ -31277,19 +32012,19 @@ async function onRequestPost51(context) {
       brief = parseBrief(text6);
     } catch {
       console.error("[staff-followup-brief] JSON parse failed:", text6.slice(0, 300));
-      return new Response(JSON.stringify({ error: "Couldn't read the brief. Try again." }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Couldn't read the brief. Try again." }), { status: 422, headers: headers5 });
     }
-    return new Response(JSON.stringify({ contactId, generatedAt: (/* @__PURE__ */ new Date()).toISOString(), ...brief }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ contactId, generatedAt: (/* @__PURE__ */ new Date()).toISOString(), ...brief }), { status: 200, headers: headers5 });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-followup-brief] failed:", detail);
-    return new Response(JSON.stringify({ error: `Failed to build brief: ${detail}` }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: `Failed to build brief: ${detail}` }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE37, GHL_LOCATION_ID28, ANTHROPIC_API, ANTHROPIC_VERSION, MODEL, SYSTEM;
 var init_staff_followup_brief = __esm({
   "api/staff-followup-brief.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE37 = "https://services.leadconnectorhq.com";
@@ -31314,8 +32049,8 @@ OUTPUT: strict JSON only, no prose, no code fences. Shape exactly:
 Give 2-3 drafts. Prefer "text" channel unless the thread suggests a call or email fits better. Use the prospect's real details (name, what they do, where) \u2014 never invent facts you weren't given.`;
     __name(buildUserPrompt, "buildUserPrompt");
     __name(parseBrief, "parseBrief");
-    __name(onRequestOptions69, "onRequestOptions");
-    __name(onRequestPost51, "onRequestPost");
+    __name(onRequestOptions70, "onRequestOptions");
+    __name(onRequestPost52, "onRequestPost");
   }
 });
 
@@ -31327,19 +32062,19 @@ function responseHeaders3(context) {
     "Cache-Control": "no-store"
   };
 }
-async function onRequestOptions70(context) {
+async function onRequestOptions71(context) {
   return new Response(null, { status: 204, headers: responseHeaders3(context) });
 }
 async function proxy(context, method) {
-  const headers4 = responseHeaders3(context);
-  const { error, payload } = await requireStaffAuth(context, headers4);
+  const headers5 = responseHeaders3(context);
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const secret = context.env.WORKER_AUTH_SECRET;
-  if (!secret) return new Response(JSON.stringify({ error: "Owned follow-ups are not configured" }), { status: 422, headers: headers4 });
+  if (!secret) return new Response(JSON.stringify({ error: "Owned follow-ups are not configured" }), { status: 422, headers: headers5 });
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS3);
   try {
-    const target = method === "GET" ? `${WORKER_URL5}?state=open&limit=50` : WORKER_URL5;
+    const target = method === "GET" ? `${WORKER_URL9}?state=open&limit=50` : WORKER_URL9;
     const options = {
       method,
       headers: method === "GET" ? { Authorization: `Bearer ${secret}` } : {
@@ -31352,48 +32087,48 @@ async function proxy(context, method) {
     if (method === "POST") options.body = await context.request.text();
     const upstream = await fetch(target, options);
     const body = await upstream.text();
-    return new Response(body || JSON.stringify({ error: "Empty CRM response" }), { status: upstream.status, headers: headers4 });
+    return new Response(body || JSON.stringify({ error: "Empty CRM response" }), { status: upstream.status, headers: headers5 });
   } catch (error2) {
     const message = error2?.name === "AbortError" ? "Owned follow-ups timed out" : "Owned follow-ups are unavailable";
     console.error("[staff-followups] proxy failed:", error2 instanceof Error ? error2.message : String(error2));
-    return new Response(JSON.stringify({ error: message }), { status: 422, headers: headers4 });
+    return new Response(JSON.stringify({ error: message }), { status: 422, headers: headers5 });
   } finally {
     clearTimeout(timer);
   }
 }
-async function onRequestGet48(context) {
+async function onRequestGet49(context) {
   return proxy(context, "GET");
 }
-async function onRequestPost52(context) {
+async function onRequestPost53(context) {
   return proxy(context, "POST");
 }
-var WORKER_URL5, WORKER_TIMEOUT_MS3;
+var WORKER_URL9, WORKER_TIMEOUT_MS3;
 var init_staff_followups = __esm({
   "api/staff-followups.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    WORKER_URL5 = "https://amari-crm-mirror.eben-fa2.workers.dev/owned-followups";
+    WORKER_URL9 = "https://amari-crm-mirror.eben-fa2.workers.dev/owned-followups";
     WORKER_TIMEOUT_MS3 = 15e3;
     __name(responseHeaders3, "responseHeaders");
-    __name(onRequestOptions70, "onRequestOptions");
+    __name(onRequestOptions71, "onRequestOptions");
     __name(proxy, "proxy");
-    __name(onRequestGet48, "onRequestGet");
-    __name(onRequestPost52, "onRequestPost");
+    __name(onRequestGet49, "onRequestGet");
+    __name(onRequestPost53, "onRequestPost");
   }
 });
 
 // api/staff-founders-circle.js
-async function onRequestOptions71(context) {
+async function onRequestOptions72(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost53(context) {
+async function onRequestPost54(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error } = await requireStaffAuth(context, headers4);
+    const { error } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const body = await context.request.json().catch(() => null);
     const contactId = typeof body?.contactId === "string" ? body.contactId.trim() : "";
@@ -31401,12 +32136,12 @@ async function onRequestPost53(context) {
     if (!/^[A-Za-z0-9_-]{8,100}$/.test(contactId) || !action) {
       return new Response(JSON.stringify({ error: "contactId and action (add|remove) required" }), {
         status: 400,
-        headers: headers4
+        headers: headers5
       });
     }
     const contactRes = await ghlFetch(context, `${GHL_API_BASE38}/contacts/${contactId}`);
     if (!contactRes.ok) {
-      return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
     }
     const contactData = await contactRes.json();
     const contact = contactData.contact || contactData;
@@ -31422,90 +32157,90 @@ async function onRequestPost53(context) {
         contactId,
         isFoundersCircle: action === "add" ? true : action === "remove" ? false : already
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[staff-founders-circle] Unexpected error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE38;
 var init_staff_founders_circle = __esm({
   "api/staff-founders-circle.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
     GHL_API_BASE38 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions71, "onRequestOptions");
-    __name(onRequestPost53, "onRequestPost");
+    __name(onRequestOptions72, "onRequestOptions");
+    __name(onRequestPost54, "onRequestPost");
   }
 });
 
 // api/staff-funnel.js
-async function onRequestOptions72(context) {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"))
-  });
-}
-async function onRequestGet49(context) {
-  const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
-  try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
-    if (error) return error;
-    const kv = context.env.PORTAL_KV;
-    if (!kv) {
-      return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: headers4 });
-    }
-    const snapshot = await kv.get(KV_KEY);
-    if (!snapshot) {
-      return new Response(
-        JSON.stringify({ generatedAt: null, empty: true }),
-        { status: 200, headers: headers4 }
-      );
-    }
-    return new Response(snapshot, { status: 200, headers: headers4 });
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    console.error("[staff-funnel] failed:", detail);
-    return new Response(
-      JSON.stringify({ error: `Failed to load funnel: ${detail}` }),
-      { status: 500, headers: headers4 }
-    );
-  }
-}
-var KV_KEY;
-var init_staff_funnel = __esm({
-  "api/staff-funnel.js"() {
-    init_functionsRoutes_0_5623767148686312();
-    init_endpoint_guards();
-    KV_KEY = "funnel:latest";
-    __name(onRequestOptions72, "onRequestOptions");
-    __name(onRequestGet49, "onRequestGet");
-  }
-});
-
-// api/staff-funnel-refresh.js
 async function onRequestOptions73(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost54(context) {
+async function onRequestGet50(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
+    if (error) return error;
+    const kv = context.env.PORTAL_KV;
+    if (!kv) {
+      return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: headers5 });
+    }
+    const snapshot = await kv.get(KV_KEY);
+    if (!snapshot) {
+      return new Response(
+        JSON.stringify({ generatedAt: null, empty: true }),
+        { status: 200, headers: headers5 }
+      );
+    }
+    return new Response(snapshot, { status: 200, headers: headers5 });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("[staff-funnel] failed:", detail);
+    return new Response(
+      JSON.stringify({ error: `Failed to load funnel: ${detail}` }),
+      { status: 500, headers: headers5 }
+    );
+  }
+}
+var KV_KEY;
+var init_staff_funnel = __esm({
+  "api/staff-funnel.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    init_endpoint_guards();
+    KV_KEY = "funnel:latest";
+    __name(onRequestOptions73, "onRequestOptions");
+    __name(onRequestGet50, "onRequestGet");
+  }
+});
+
+// api/staff-funnel-refresh.js
+async function onRequestOptions74(context) {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders3(context.request.headers.get("Origin"))
+  });
+}
+async function onRequestPost55(context) {
+  const origin = context.request.headers.get("Origin") || "";
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  try {
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const ac = new AbortController();
     const timer = setTimeout(() => ac.abort(), WORKER_TIMEOUT_MS4);
     const workerHeaders = context.env.WORKER_AUTH_SECRET ? { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` } : void 0;
     let summary;
     try {
-      const res = await fetch(WORKER_URL6, {
+      const res = await fetch(WORKER_URL10, {
         method: "POST",
         headers: workerHeaders,
         signal: ac.signal
@@ -31514,7 +32249,7 @@ async function onRequestPost54(context) {
       if (!res.ok) {
         return new Response(
           JSON.stringify({ triggered: false, error: `Worker returned ${res.status}`, summary }),
-          { status: 422, headers: headers4 }
+          { status: 422, headers: headers5 }
         );
       }
     } catch (err) {
@@ -31523,33 +32258,33 @@ async function onRequestPost54(context) {
       console.error("[staff-funnel-refresh] worker fetch error:", detail);
       return new Response(
         JSON.stringify({ triggered: aborted, error: detail }),
-        { status: aborted ? 202 : 422, headers: headers4 }
+        { status: aborted ? 202 : 422, headers: headers5 }
       );
     } finally {
       clearTimeout(timer);
     }
     return new Response(
       JSON.stringify({ triggered: true, summary }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-funnel-refresh] failed:", detail);
     return new Response(
       JSON.stringify({ error: `Failed to trigger funnel refresh: ${detail}` }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
-var WORKER_URL6, WORKER_TIMEOUT_MS4;
+var WORKER_URL10, WORKER_TIMEOUT_MS4;
 var init_staff_funnel_refresh = __esm({
   "api/staff-funnel-refresh.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    WORKER_URL6 = "https://funnel-refresh.eben-fa2.workers.dev/refresh";
+    WORKER_URL10 = "https://funnel-refresh.eben-fa2.workers.dev/refresh";
     WORKER_TIMEOUT_MS4 = 9e4;
-    __name(onRequestOptions73, "onRequestOptions");
-    __name(onRequestPost54, "onRequestPost");
+    __name(onRequestOptions74, "onRequestOptions");
+    __name(onRequestPost55, "onRequestPost");
   }
 });
 
@@ -31561,26 +32296,26 @@ function responseHeaders4(context) {
     "Cache-Control": "no-store"
   };
 }
-async function onRequestOptions74(context) {
+async function onRequestOptions75(context) {
   return new Response(null, { status: 204, headers: responseHeaders4(context) });
 }
-async function onRequestGet50(context) {
-  const headers4 = responseHeaders4(context);
-  const { error, payload } = await requireStaffAuth(context, headers4);
+async function onRequestGet51(context) {
+  const headers5 = responseHeaders4(context);
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const actor = String(payload?.user || "");
   if (!STAFF_ACTORS.has(actor)) {
-    return new Response(JSON.stringify({ error: "An owned Amari mailbox is required" }), { status: 403, headers: headers4 });
+    return new Response(JSON.stringify({ error: "An owned Amari mailbox is required" }), { status: 403, headers: headers5 });
   }
   const secret = context.env.WORKER_AUTH_SECRET;
   if (!secret) {
-    return new Response(JSON.stringify({ error: "Reply evidence is not configured" }), { status: 422, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Reply evidence is not configured" }), { status: 422, headers: headers5 });
   }
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS5);
   try {
     const query = new URLSearchParams({ actor, limit: "8" });
-    const upstream = await fetch(`${WORKER_URL7}?${query}`, {
+    const upstream = await fetch(`${WORKER_URL11}?${query}`, {
       method: "GET",
       headers: { Authorization: `Bearer ${secret}` },
       signal: controller.signal
@@ -31588,26 +32323,26 @@ async function onRequestGet50(context) {
     const body = await upstream.text();
     return new Response(body || JSON.stringify({ error: "Empty reply evidence response" }), {
       status: upstream.status,
-      headers: headers4
+      headers: headers5
     });
   } catch (error2) {
     console.error("[staff-gmail-reply-readiness] proxy failed:", error2 instanceof Error ? error2.message : String(error2));
-    return new Response(JSON.stringify({ error: "Reply evidence is unavailable" }), { status: 422, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Reply evidence is unavailable" }), { status: 422, headers: headers5 });
   } finally {
     clearTimeout(timer);
   }
 }
-var WORKER_URL7, WORKER_TIMEOUT_MS5, STAFF_ACTORS;
+var WORKER_URL11, WORKER_TIMEOUT_MS5, STAFF_ACTORS;
 var init_staff_gmail_reply_readiness = __esm({
   "api/staff-gmail-reply-readiness.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    WORKER_URL7 = "https://amari-crm-mirror.eben-fa2.workers.dev/gmail/reply-readiness";
+    WORKER_URL11 = "https://amari-crm-mirror.eben-fa2.workers.dev/gmail/reply-readiness";
     WORKER_TIMEOUT_MS5 = 1e4;
     STAFF_ACTORS = /* @__PURE__ */ new Set(["Eben", "Garrett"]);
     __name(responseHeaders4, "responseHeaders");
-    __name(onRequestOptions74, "onRequestOptions");
-    __name(onRequestGet50, "onRequestGet");
+    __name(onRequestOptions75, "onRequestOptions");
+    __name(onRequestGet51, "onRequestGet");
   }
 });
 
@@ -31666,7 +32401,7 @@ async function maybeSendLpOnboarding(context, { contactId, seriesType, newRemain
 var MODE2, LP_ONBOARDING_EMAIL;
 var init_lp_onboarding = __esm({
   "lib/lp-onboarding.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_upgrade_offer();
     init_ghl_send();
     MODE2 = "shadow";
@@ -31685,6 +32420,46 @@ Garrett`
     });
     __name(changesOf8, "changesOf");
     __name(maybeSendLpOnboarding, "maybeSendLpOnboarding");
+  }
+});
+
+// lib/staff-owned-appointment-payment.js
+async function writeOwnedAppointmentPayment(context, record3) {
+  if (!context?.env?.WORKER_AUTH_SECRET) throw new Error("Owned appointment payment is not configured.");
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS6);
+  try {
+    const amountCents = record3.amount == null ? null : Math.round(Number(record3.amount) * 100);
+    const response2 = await fetch(`${WORKER_URL12}/${encodeURIComponent(record3.appointmentId)}/payment`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        contactId: record3.contactId,
+        status: record3.status,
+        method: record3.method,
+        note: record3.note,
+        amountCents,
+        source: record3.source,
+        recordedBy: record3.recordedBy
+      }),
+      signal: controller.signal
+    });
+    if (!response2.ok) throw new Error(`Owned appointment payment failed (${response2.status}).`);
+    return response2.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+var WORKER_URL12, TIMEOUT_MS6;
+var init_staff_owned_appointment_payment = __esm({
+  "lib/staff-owned-appointment-payment.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    WORKER_URL12 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
+    TIMEOUT_MS6 = 1e4;
+    __name(writeOwnedAppointmentPayment, "writeOwnedAppointmentPayment");
   }
 });
 
@@ -31712,7 +32487,7 @@ async function isDebited(db, appointmentId) {
 }
 var init_attendance_claim = __esm({
   "lib/attendance-claim.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(changesOf9, "changesOf");
     __name(claimDebit, "claimDebit");
     __name(releaseDebit, "releaseDebit");
@@ -31728,27 +32503,56 @@ function isAlreadyProcessed(apptStatus, needsFields, alreadyDebited) {
   if (!needsFields) return true;
   return !!alreadyDebited;
 }
-async function onRequestOptions75(context) {
+async function onRequestOptions76(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost55(context) {
+async function onRequestPost56(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
-    const appointmentId = (body.appointmentId || "").trim();
-    const contactId = (body.contactId || "").trim();
-    if (!appointmentId) {
-      return new Response(JSON.stringify({ error: "Appointment ID required" }), { status: 400, headers: headers4 });
+    const appointmentReference = (body.appointmentId || "").trim();
+    const contactReference = (body.contactId || "").trim();
+    if (!appointmentReference) {
+      return new Response(JSON.stringify({ error: "Appointment ID required" }), { status: 400, headers: headers5 });
     }
-    if (!contactId) {
-      return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers: headers4 });
+    if (!contactReference) {
+      return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers: headers5 });
+    }
+    let appointmentId;
+    let contactId;
+    try {
+      const [contactIdentity, appointmentIdentity] = await Promise.all([
+        resolveOwnedContactIdentity(context, contactReference),
+        resolveStaffOwnedAppointmentIdentity(context, appointmentReference)
+      ]);
+      if (appointmentIdentity.ownedContactId !== contactIdentity.ownedContactId) {
+        const mismatch = new Error("Appointment does not belong to this owned person.");
+        mismatch.code = "owned_appointment_contact_mismatch";
+        mismatch.status = 409;
+        throw mismatch;
+      }
+      contactId = requireProviderContactIdentity(contactIdentity);
+      const providerAppointment = requireProviderAppointmentIdentity(appointmentIdentity);
+      if (providerAppointment.contactId !== contactId) {
+        const mismatch = new Error("Appointment provider identity does not match this person.");
+        mismatch.code = "owned_appointment_provider_mismatch";
+        mismatch.status = 409;
+        throw mismatch;
+      }
+      appointmentId = providerAppointment.appointmentId;
+    } catch (identityError3) {
+      const status = [400, 404, 409, 503].includes(Number(identityError3?.status)) ? Number(identityError3.status) : 503;
+      return new Response(JSON.stringify({
+        error: identityError3?.message || "Owned appointment identity is unavailable.",
+        code: identityError3?.code || "owned_appointment_identity_unavailable"
+      }), { status, headers: headers5 });
     }
     const [contactRes, apptListRes, fieldDefsRes] = await Promise.all([
       ghlFetch(context, `${GHL_API_BASE39}/contacts/${contactId}`),
@@ -31759,7 +32563,7 @@ async function onRequestPost55(context) {
       const errText = await contactRes.text();
       console.error(`[staff-mark-attended] Contact fetch error: ${contactRes.status} ${errText}`);
       const status = contactRes.status === 404 ? 404 : 422;
-      return new Response(JSON.stringify({ error: "Failed to load contact" }), { status, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to load contact" }), { status, headers: headers5 });
     }
     const contactData = await contactRes.json();
     const contact = contactData.contact;
@@ -31768,7 +32572,7 @@ async function onRequestPost55(context) {
       console.error(`[staff-mark-attended] Appointment list fetch error: ${apptListRes.status} ${errText}`);
       return new Response(
         JSON.stringify({ error: "Failed to load appointment status \u2014 retry" }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     let currentApptStatus = null;
@@ -31819,7 +32623,7 @@ async function onRequestPost55(context) {
         isSession,
         sessionsCompleted: currentCompleted,
         sessionsRemaining: currentRemaining
-      }), { status: 200, headers: headers4 });
+      }), { status: 200, headers: headers5 });
     }
     const alreadyShowed = currentApptStatus === "showed" || currentApptStatus === "completed";
     if (!alreadyShowed) {
@@ -31830,7 +32634,7 @@ async function onRequestPost55(context) {
       if (!apptRes.ok) {
         const errText = await apptRes.text();
         console.error(`[staff-mark-attended] Appointment update error: ${apptRes.status} ${errText}`);
-        return new Response(JSON.stringify({ error: "Failed to update appointment" }), { status: 422, headers: headers4 });
+        return new Response(JSON.stringify({ error: "Failed to update appointment" }), { status: 422, headers: headers5 });
       }
     }
     let pairedEntrainmentId = null;
@@ -31877,7 +32681,7 @@ async function onRequestPost55(context) {
           isSession,
           sessionsCompleted: currentCompleted,
           sessionsRemaining: currentRemaining
-        }), { status: 200, headers: headers4 });
+        }), { status: 200, headers: headers5 });
       }
       if (debitDb) {
         let claimed = true;
@@ -31896,7 +32700,7 @@ async function onRequestPost55(context) {
             isSession,
             sessionsCompleted: currentCompleted,
             sessionsRemaining: currentRemaining
-          }), { status: 200, headers: headers4 });
+          }), { status: 200, headers: headers5 });
         }
       }
       if (countsTowardLifetime2) newCompleted = currentCompleted + 1;
@@ -31931,7 +32735,7 @@ async function onRequestPost55(context) {
           sessionCountUpdated: false,
           sessionsCompleted: currentCompleted,
           sessionsRemaining: currentRemaining
-        }), { status: 422, headers: headers4 });
+        }), { status: 422, headers: headers5 });
       }
       if (debitDb) {
         try {
@@ -31986,6 +32790,7 @@ async function onRequestPost55(context) {
       }
     }
     let paymentRecorded = false;
+    let ownedPaymentRecorded = false;
     try {
       const capture = resolveSessionPayment({
         contactId,
@@ -32001,10 +32806,23 @@ async function onRequestPost55(context) {
         recordedBy: tokenPayload.user || tokenPayload.email || tokenPayload.sub || "staff",
         at: (/* @__PURE__ */ new Date()).toISOString()
       });
-      if (capture && context.env.PURCHASE_KV) {
+      if (capture) {
         const record3 = buildPaymentRecord(capture);
-        await writePaymentRecord(context.env.PURCHASE_KV, record3);
-        paymentRecorded = true;
+        if (context.env.PURCHASE_KV) {
+          try {
+            await writePaymentRecord(context.env.PURCHASE_KV, record3);
+            paymentRecorded = true;
+          } catch (kvError) {
+            console.error("[staff-mark-attended] legacy payment write failed (non-blocking):", kvError);
+          }
+        }
+        try {
+          await writeOwnedAppointmentPayment(context, record3);
+          ownedPaymentRecorded = true;
+          paymentRecorded = true;
+        } catch (ownedError) {
+          console.error("[staff-mark-attended] owned payment write failed (non-blocking):", ownedError);
+        }
         if (record3.status === "comped" || record3.note) {
           const noteBody = `Payment: ${record3.status}${record3.method ? ` (${record3.method})` : ""}${record3.note ? ` \u2014 ${record3.note}` : ""} [appt ${appointmentId}]`;
           try {
@@ -32029,27 +32847,31 @@ async function onRequestPost55(context) {
       sessionsCompleted: newCompleted,
       sessionsRemaining: newRemaining,
       pairedEntrainmentId,
-      paymentRecorded
-    }), { status: 200, headers: headers4 });
+      paymentRecorded,
+      ownedPaymentRecorded
+    }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-mark-attended] Unexpected error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE39, GHL_LOCATION_ID29, FIELD_IDS5, ENTRAINMENT_CALENDAR_ID, FOLLOWUP_CALENDAR_IDS, PAIR_WINDOW_MS, DISCOVERY_CALENDAR_IDS;
 var init_staff_mark_attended = __esm({
   "api/staff-mark-attended.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_upgrade_offer();
     init_lp_onboarding();
     init_portal_helpers();
     init_session_payment();
+    init_staff_owned_appointment_payment();
     init_attendance_claim();
     init_journey_classification();
     init_session_ledger();
     init_endpoint_guards();
     init_ghl_fields();
+    init_staff_owned_contact_identity();
+    init_staff_owned_appointment_identity();
     GHL_API_BASE39 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID29 = "7pIO7FHVAyBT1jKGhfQM";
     FIELD_IDS5 = {
@@ -32082,8 +32904,8 @@ var init_staff_mark_attended = __esm({
       // Ambassador Prospect Discovery Call
     ]);
     __name(isAlreadyProcessed, "isAlreadyProcessed");
-    __name(onRequestOptions75, "onRequestOptions");
-    __name(onRequestPost55, "onRequestPost");
+    __name(onRequestOptions76, "onRequestOptions");
+    __name(onRequestPost56, "onRequestPost");
   }
 });
 
@@ -32217,6 +33039,26 @@ async function createMediaFolder(db, input, { actor, now, id: id3 } = {}) {
   }
   return mapFolder({ id: folderId, parent_id: parentId, name, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor });
 }
+async function archiveMediaFolder(db, folderId, { actor, now } = {}) {
+  if (!db) throw failure("Media metadata storage is not configured", 422);
+  const id3 = cleanText5(folderId, 80);
+  const current = id3 ? await db.prepare("SELECT * FROM staff_media_folders WHERE id = ?").bind(id3).first() : null;
+  if (!current) throw failure("Media folder not found", 404);
+  if (current.status === "archived") return mapFolder(current);
+  const [asset, child] = await Promise.all([
+    db.prepare("SELECT id FROM staff_media_assets WHERE folder_id = ? AND status = 'active' LIMIT 1").bind(id3).first(),
+    db.prepare("SELECT id FROM staff_media_folders WHERE parent_id = ? AND status = 'active' LIMIT 1").bind(id3).first()
+  ]);
+  if (asset || child) throw failure("Move files and subfolders before retiring this folder", 409);
+  const timestamp = now || (/* @__PURE__ */ new Date()).toISOString();
+  const staffActor = cleanText5(actor, 80) || "Staff";
+  await db.batch([
+    db.prepare("UPDATE staff_media_folders SET status = 'archived', version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?").bind(timestamp, staffActor, id3),
+    db.prepare(`INSERT INTO staff_media_events (id, folder_id, action, actor, occurred_at, detail)
+      VALUES (?, ?, 'folder_archived', ?, ?, ?)`).bind(crypto.randomUUID(), id3, staffActor, timestamp, `Archived empty folder ${current.name}`)
+  ]);
+  return mapFolder({ ...current, status: "archived", version: Number(current.version) + 1, updated_at: timestamp, updated_by: staffActor });
+}
 async function registerMediaAsset(db, input, { actor, now, id: id3, allowSvg = false } = {}) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
   const upload = validateMediaUpload(input, { allowSvg });
@@ -32305,7 +33147,7 @@ async function getMediaAssetRecord(db, assetId) {
 var MAX_FILE_BYTES, MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, WEBSITE_USAGES, CURATION_STATUSES, STAFF_MEDIA_TYPES;
 var init_staff_media = __esm({
   "lib/staff-media.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     MAX_FILE_BYTES = 95 * 1024 * 1024;
     MAX_NAME_LENGTH = 160;
     MAX_DESCRIPTION_LENGTH = 600;
@@ -32334,6 +33176,7 @@ var init_staff_media = __esm({
     __name(requireFolder, "requireFolder");
     __name(listStaffMedia, "listStaffMedia");
     __name(createMediaFolder, "createMediaFolder");
+    __name(archiveMediaFolder, "archiveMediaFolder");
     __name(registerMediaAsset, "registerMediaAsset");
     __name(updateMediaAsset, "updateMediaAsset");
     __name(getMediaAssetRecord, "getMediaAssetRecord");
@@ -32346,9 +33189,6 @@ function internalDescription(path) {
   const label = displayName(path).replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
   return `Amari website asset: ${label}. Review its preview in Staff before assigning it to a new placement.`;
 }
-function extensionFor(path) {
-  return path.split(".").pop()?.toLowerCase() || "";
-}
 function displayName(path) {
   return decodeURIComponent(path.split("/").pop() || "site-asset");
 }
@@ -32359,132 +33199,68 @@ async function ensureFolder(db, folders, name, parentId, actor) {
   folders.push(folder);
   return folder;
 }
-function defaultDescription(asset) {
-  return `Library image: ${asset.name}. Review its preview in Staff before using it on the website.`;
+function hasLegacyMediaFolders(folders) {
+  return folders.some((folder) => folder.status === "active" && RETIRED_LIBRARY_FOLDERS.has(folder.name));
+}
+function hasMisfiledStudyMaterials(library) {
+  const printFolder = library.folders.find((folder) => folder.status === "active" && !folder.parentId && folder.name === PRINT_MATERIALS_FOLDER);
+  const digitalFolder = library.folders.find((folder) => folder.status === "active" && !folder.parentId && folder.name === DIGITAL_SHARE_GRAPHICS_FOLDER);
+  return library.assets.some((asset) => {
+    if (asset.status !== "active") return false;
+    const name = normalizeMediaName(asset.name);
+    return STUDY_FLYER_NAMES.has(name) && asset.folderId !== digitalFolder?.id || STUDY_PRINT_MASTER_NAMES.has(name) && asset.folderId !== printFolder?.id;
+  });
+}
+async function organizeMediaByWebsiteUsage({ db, actor }) {
+  if (!db) throw Object.assign(new Error("Media metadata storage is not configured"), { status: 422 });
+  const library = await listStaffMedia(db);
+  const activeFolders = library.folders.filter((folder) => folder.status === "active");
+  const folders = /* @__PURE__ */ new Map();
+  for (const name of [
+    WEBSITE_IMAGES_FOLDER,
+    PHOTO_LIBRARY_FOLDER,
+    BRAND_LOGOS_FOLDER,
+    PRINT_MATERIALS_FOLDER,
+    DIGITAL_SHARE_GRAPHICS_FOLDER,
+    DOCUMENTS_FOLDER
+  ]) {
+    folders.set(name, await ensureFolder(db, activeFolders, name, null, actor));
+  }
+  const usedNames = new Set(SITE_ASSETS.filter((asset) => asset.websiteUsage === "currently_used").map((asset) => normalizeMediaName(displayName(asset.path))));
+  const isBrand = /* @__PURE__ */ __name((name) => /(?:^amari(?:logo|[-_ ]method[-_ ]logo)?|wordmark|favicon|icon)/i.test(name), "isBrand");
+  const isPrintMaterial = /* @__PURE__ */ __name((name, folderId) => STUDY_PRINT_MASTER_NAMES.has(normalizeMediaName(name)) || /(?:business[-_ ]card|postcard|flyer|sticker)/i.test(name) || folderNameFor(library.folders, folderId) === "Print collateral", "isPrintMaterial");
+  let moved = 0;
+  for (const asset of library.assets) {
+    if (asset.status !== "active") continue;
+    const targetName = isPrintMaterial(asset.name, asset.folderId) ? PRINT_MATERIALS_FOLDER : STUDY_FLYER_NAMES.has(normalizeMediaName(asset.name)) ? DIGITAL_SHARE_GRAPHICS_FOLDER : asset.kind !== "image" ? DOCUMENTS_FOLDER : isBrand(asset.name) ? BRAND_LOGOS_FOLDER : usedNames.has(normalizeMediaName(asset.name)) ? WEBSITE_IMAGES_FOLDER : PHOTO_LIBRARY_FOLDER;
+    const targetFolderId = folders.get(targetName).id;
+    if (asset.folderId === targetFolderId) continue;
+    await updateMediaAsset(db, { action: "move_asset", assetId: asset.id, folderId: targetFolderId }, { actor });
+    moved += 1;
+  }
+  const depth = /* @__PURE__ */ __name((folder) => {
+    let current = folder;
+    let count = 0;
+    while (current?.parentId) {
+      count += 1;
+      current = library.folders.find((candidate) => candidate.id === current.parentId);
+    }
+    return count;
+  }, "depth");
+  let retired = 0;
+  for (const folder of [...activeFolders].filter((candidate) => RETIRED_LIBRARY_FOLDERS.has(candidate.name)).sort((left, right) => depth(right) - depth(left))) {
+    await archiveMediaFolder(db, folder.id, { actor });
+    retired += 1;
+  }
+  return { moved, retired };
 }
 function folderNameFor(folders, folderId) {
   return folders.find((folder) => folder.id === folderId)?.name || "";
 }
-function findExistingSiteAsset({ assets, folders, siteAsset }) {
-  const activeImages = assets.filter((asset) => asset.status === "active" && asset.kind === "image");
-  const sourceMatches = activeImages.filter((asset) => asset.sourcePath === siteAsset.path);
-  if (sourceMatches.length === 1) return { asset: sourceMatches[0], ambiguous: false };
-  if (sourceMatches.length > 1) return { asset: null, ambiguous: true };
-  const aliases = new Set(FOLDER_ALIASES[siteAsset.folder] || [siteAsset.folder]);
-  const named = activeImages.filter((asset) => normalizeMediaName(asset.name) === normalizeMediaName(displayName(siteAsset.path)) && aliases.has(folderNameFor(folders, asset.folderId)));
-  return named.length === 1 ? { asset: named[0], ambiguous: false } : { asset: null, ambiguous: named.length > 1 };
-}
-async function syncMediaMetadata(db, asset, metadata, actor, action = "site_metadata_synced") {
-  const description = metadata.description || defaultDescription(asset);
-  const websiteUsage = metadata.websiteUsage || "not_used";
-  const curationStatus = metadata.curationStatus || "good";
-  const sourcePath = metadata.sourcePath || null;
-  const needsUpdate = asset.description !== description || asset.websiteUsage !== websiteUsage || asset.curationStatus !== curationStatus || asset.sourcePath !== sourcePath;
-  if (!needsUpdate) return false;
-  const timestamp = (/* @__PURE__ */ new Date()).toISOString();
-  const staffActor = String(actor || "Staff").slice(0, 80);
-  await db.batch([
-    db.prepare(`UPDATE staff_media_assets
-      SET internal_description = ?, website_usage = ?, curation_status = ?, source_path = ?,
-          version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?`).bind(description, websiteUsage, curationStatus, sourcePath, timestamp, staffActor, asset.id),
-    db.prepare(`INSERT INTO staff_media_events (id, asset_id, folder_id, action, actor, occurred_at, detail)
-      VALUES (?, ?, ?, ?, ?, ?, ?)`).bind(crypto.randomUUID(), asset.id, asset.folderId, action, staffActor, timestamp, `${websiteUsage} \xB7 ${curationStatus} \xB7 ${sourcePath || "library only"}`)
-  ]);
-  return true;
-}
-async function syncSiteMediaCatalog({ db, actor }) {
-  if (!db) throw Object.assign(new Error("Media metadata storage is not configured"), { status: 422 });
-  const library = await listStaffMedia(db);
-  const result = { classified: 0, catalogMatched: 0, defaulted: 0, ambiguous: 0, skippedNonImage: 0 };
-  const catalogMatches = SITE_ASSETS.map((siteAsset) => ({ siteAsset, match: findExistingSiteAsset({ assets: library.assets, folders: library.folders, siteAsset }) }));
-  result.ambiguous = catalogMatches.filter(({ match: match2 }) => match2.ambiguous).length;
-  for (const asset of library.assets) {
-    if (asset.status !== "active") continue;
-    if (asset.kind !== "image") {
-      result.skippedNonImage += 1;
-      continue;
-    }
-    const candidates = catalogMatches.filter(({ match: match2 }) => match2.asset?.id === asset.id).map(({ siteAsset }) => siteAsset);
-    if (candidates.length > 1) {
-      result.ambiguous += 1;
-      continue;
-    }
-    const matched = candidates[0] || null;
-    const changed = await syncMediaMetadata(db, asset, matched ? {
-      description: matched.description,
-      websiteUsage: matched.websiteUsage,
-      curationStatus: matched.curationStatus,
-      sourcePath: matched.path
-    } : { description: asset.description || defaultDescription(asset), websiteUsage: "not_used", curationStatus: "good", sourcePath: asset.sourcePath }, actor, matched ? "site_metadata_synced" : "library_metadata_defaulted");
-    if (changed) result.classified += 1;
-    if (matched) result.catalogMatched += 1;
-    else result.defaulted += 1;
-  }
-  return result;
-}
-async function importSiteMediaBatch({ db, bucket, origin, actor, offset = 0, fetcher = fetch }) {
-  if (!db || !bucket) throw Object.assign(new Error("Media upload storage is not configured"), { status: 422 });
-  const start = Math.max(0, Number.parseInt(offset, 10) || 0);
-  const group = SITE_ASSETS.slice(start, start + CHUNK_SIZE);
-  const library = await listStaffMedia(db);
-  const root = await ensureFolder(db, library.folders, ROOT_FOLDER, null, actor);
-  const folders = /* @__PURE__ */ new Map();
-  const result = { imported: [], skipped: [], failed: [], total: SITE_ASSETS.length, nextOffset: Math.min(start + group.length, SITE_ASSETS.length) };
-  for (const siteAsset of group) {
-    const { folder: folderName, path } = siteAsset;
-    const name = displayName(path);
-    const existing = findExistingSiteAsset({ assets: library.assets, folders: library.folders, siteAsset });
-    if (existing.asset) {
-      await syncMediaMetadata(db, existing.asset, { description: siteAsset.description, websiteUsage: siteAsset.websiteUsage, curationStatus: siteAsset.curationStatus, sourcePath: path }, actor);
-      result.skipped.push(name);
-      continue;
-    }
-    if (existing.ambiguous) {
-      result.failed.push({ name, error: "Multiple legacy library images match this site asset; review before importing." });
-      continue;
-    }
-    if (!folders.has(folderName)) folders.set(folderName, await ensureFolder(db, library.folders, folderName, root.id, actor));
-    const folder = folders.get(folderName);
-    const mimeType = MIME_BY_EXTENSION[extensionFor(path)];
-    if (!mimeType) {
-      result.failed.push({ name, error: "Unsupported source file type" });
-      continue;
-    }
-    try {
-      const response2 = await fetcher(new URL(path, origin).toString());
-      if (!response2.ok) throw new Error(`Source returned ${response2.status}`);
-      const bytes = await response2.arrayBuffer();
-      const assetId = crypto.randomUUID();
-      const objectKey = mediaObjectKey(assetId, mimeType);
-      await bucket.put(objectKey, bytes, { httpMetadata: { contentType: mimeType }, customMetadata: { assetId, importedFrom: path, uploadedBy: String(actor || "Staff").slice(0, 80) } });
-      try {
-        const registered = await registerMediaAsset(db, {
-          name,
-          mimeType,
-          sizeBytes: bytes.byteLength,
-          folderId: folder.id,
-          description: siteAsset.description,
-          websiteUsage: siteAsset.websiteUsage,
-          curationStatus: siteAsset.curationStatus,
-          sourcePath: path
-        }, { actor, id: assetId, allowSvg: true });
-        library.assets.push(registered.asset);
-        result.imported.push(registered.asset.name);
-      } catch (cause) {
-        await bucket.delete(objectKey);
-        if (Number(cause?.status) === 409) result.skipped.push(name);
-        else throw cause;
-      }
-    } catch (cause) {
-      result.failed.push({ name, error: cause instanceof Error ? cause.message : "Import failed" });
-    }
-  }
-  return result;
-}
-var RAW_SITE_ASSETS, NOT_CURRENTLY_USED, DELETE_CANDIDATES, DESCRIPTIONS, SITE_ASSETS, MIME_BY_EXTENSION, ROOT_FOLDER, CHUNK_SIZE, FOLDER_ALIASES;
+var RAW_SITE_ASSETS, NOT_CURRENTLY_USED, DELETE_CANDIDATES, DESCRIPTIONS, SITE_ASSETS, ROOT_FOLDER, WEBSITE_IMAGES_FOLDER, PHOTO_LIBRARY_FOLDER, BRAND_LOGOS_FOLDER, PRINT_MATERIALS_FOLDER, DIGITAL_SHARE_GRAPHICS_FOLDER, DOCUMENTS_FOLDER, FOLDER_ALIASES, RETIRED_LIBRARY_FOLDERS, STUDY_FLYER_NAMES, STUDY_PRINT_MASTER_NAMES;
 var init_staff_site_media = __esm({
   "lib/staff-site-media.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_staff_media();
     RAW_SITE_ASSETS = [
       ["Brand", "/images/identity/amari-method-wordmark.svg"],
@@ -32514,6 +33290,7 @@ var init_staff_site_media = __esm({
       ["Site photography", "/images/tyler-testimonial.jpg"],
       ["Site photography", "/images/yoga-block.webp"],
       ["Current site photography", "/images/photos/amari-method-active-bridge-ocean-swimmer.png"],
+      ["Current site photography", "/images/photos/amari-method-passive-bridge-south-asian-client.png"],
       ["Current site photography", "/images/photos/amari-method-concept-explanation-athletic-client.png"],
       ["Current site photography", "/images/photos/amari-method-elbow-reset-athletic-ceo.png"],
       ["Current site photography", "/images/photos/amari-method-guided-forearm-position-athletic-client.png"],
@@ -32563,15 +33340,15 @@ var init_staff_site_media = __esm({
       ["Current site photography", "/images/photos/plantar-woman-multi41.jpg"],
       ["Current site photography", "/images/photos/sciatica-man-wht50.jpg"],
       ["Current site photography", "/images/photos/tmj-woman-asn39.jpg"],
-      ["Study materials", "/images/study-flyers-textable/Elbow-Pain-Study-Golfers.png"],
-      ["Study materials", "/images/study-flyers-textable/Elbow-Pain-Study-Lifters.png"],
-      ["Study materials", "/images/study-flyers-textable/Elbow-Pain-Study-Tennis-Pickleball.png"],
-      ["Study materials", "/images/study-flyers-textable/Foot-Pain-On-Feet.png"],
-      ["Study materials", "/images/study-flyers-textable/Foot-Pain-Runners.png"],
-      ["Study materials", "/images/study-flyers-textable/Hand-Pain-Study-Climbers.png"],
-      ["Study materials", "/images/study-flyers-textable/Jaw-Tension-Grinders.png"],
-      ["Study materials", "/images/study-flyers-textable/Jaw-Tension-TMJ.png"],
-      ["Study materials", "/images/study-flyers-textable/Shoulder-Upper-Back-Pain-Study-Coworking.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Golfers.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Lifters.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Tennis-Pickleball.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Foot-Pain-On-Feet.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Foot-Pain-Runners.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Hand-Pain-Study-Climbers.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Jaw-Tension-Grinders.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Jaw-Tension-TMJ.png"],
+      ["Digital share graphics", "/images/study-flyers-textable/Shoulder-Upper-Back-Pain-Study-Coworking.png"],
       ["Legacy site imagery", "/images/v6/amari-cutout-journal.png"],
       ["Legacy site imagery", "/images/v6/amari-cutout-living.png"],
       ["Legacy site imagery", "/images/v6/amari-cutout-partner.png"],
@@ -32613,6 +33390,7 @@ var init_staff_site_media = __esm({
       "/images/photos/jh-psoas.jpg",
       "/images/photos/jh-stretching.jpg",
       "/images/photos/materials/hand-handrail-grip.jpg",
+      "/images/photos/partner-coach.jpg",
       "/images/v6/real/foam-roller-v2.jpg",
       "/images/v6/real/garrett-session-img-3348.jpg",
       "/images/v6/real/gymnastic-rings.jpg",
@@ -32638,17 +33416,13 @@ var init_staff_site_media = __esm({
       websiteUsage: NOT_CURRENTLY_USED.has(path) ? "not_used" : "currently_used",
       curationStatus: DELETE_CANDIDATES.has(path) ? "delete_candidate" : "good"
     })));
-    MIME_BY_EXTENSION = {
-      avif: "image/avif",
-      gif: "image/gif",
-      jpg: "image/jpeg",
-      jpeg: "image/jpeg",
-      png: "image/png",
-      svg: "image/svg+xml",
-      webp: "image/webp"
-    };
     ROOT_FOLDER = "Amari site assets";
-    CHUNK_SIZE = 8;
+    WEBSITE_IMAGES_FOLDER = "Website images";
+    PHOTO_LIBRARY_FOLDER = "Photo library";
+    BRAND_LOGOS_FOLDER = "Brand & logos";
+    PRINT_MATERIALS_FOLDER = "Print materials";
+    DIGITAL_SHARE_GRAPHICS_FOLDER = "Digital share graphics";
+    DOCUMENTS_FOLDER = "Documents";
     FOLDER_ALIASES = {
       Brand: ["Brand", "Current identity", "Historical logo files"],
       "Site photography": ["Site photography", "Current site photography", "Current photography"],
@@ -32656,15 +33430,21 @@ var init_staff_site_media = __esm({
       "Study materials": ["Study materials", "Study flyers"],
       "Legacy site imagery": ["Legacy site imagery", "Historical imagery", "Historical logo files"]
     };
-    __name(extensionFor, "extensionFor");
+    RETIRED_LIBRARY_FOLDERS = /* @__PURE__ */ new Set([
+      ROOT_FOLDER,
+      "Print collateral",
+      "Used on website",
+      "Not used on website",
+      ...Object.values(FOLDER_ALIASES).flat()
+    ]);
     __name(displayName, "displayName");
+    STUDY_FLYER_NAMES = new Set(RAW_SITE_ASSETS.filter(([, path]) => path.startsWith("/images/study-flyers-textable/")).map(([, path]) => normalizeMediaName(displayName(path))));
+    STUDY_PRINT_MASTER_NAMES = new Set([...STUDY_FLYER_NAMES].map((name) => name.replace(/\.png$/, ".pdf")));
     __name(ensureFolder, "ensureFolder");
-    __name(defaultDescription, "defaultDescription");
+    __name(hasLegacyMediaFolders, "hasLegacyMediaFolders");
+    __name(hasMisfiledStudyMaterials, "hasMisfiledStudyMaterials");
+    __name(organizeMediaByWebsiteUsage, "organizeMediaByWebsiteUsage");
     __name(folderNameFor, "folderNameFor");
-    __name(findExistingSiteAsset, "findExistingSiteAsset");
-    __name(syncMediaMetadata, "syncMediaMetadata");
-    __name(syncSiteMediaCatalog, "syncSiteMediaCatalog");
-    __name(importSiteMediaBatch, "importSiteMediaBatch");
   }
 });
 
@@ -32676,78 +33456,71 @@ function responseHeaders5(context) {
     "Cache-Control": "no-store"
   };
 }
-function json16(value, status, headers4) {
-  return new Response(JSON.stringify(value), { status, headers: headers4 });
+function json16(value, status, headers5) {
+  return new Response(JSON.stringify(value), { status, headers: headers5 });
 }
 function safeStatus(cause) {
   const status = Number(cause?.status) || 500;
   return [400, 404, 409, 422].includes(status) ? status : 500;
 }
-async function onRequestOptions76(context) {
+async function onRequestOptions77(context) {
   return new Response(null, { status: 204, headers: responseHeaders5(context) });
 }
-async function onRequestGet51(context) {
-  const headers4 = responseHeaders5(context);
-  const auth = await requireStaffAuth(context, headers4);
+async function onRequestGet52(context) {
+  const headers5 = responseHeaders5(context);
+  const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
   try {
     const url = new URL(context.request.url);
-    const library = await listStaffMedia(context.env.ATTEND_DB || null, {
+    let library = await listStaffMedia(context.env.ATTEND_DB || null, {
       includeArchived: url.searchParams.get("archived") === "1"
     });
-    return json16({ ...library, storage: "owned-d1-r2", uploadReady: !!context.env.MEDIA_BUCKET }, 200, headers4);
+    const hasUsageFolders = [WEBSITE_IMAGES_FOLDER, PHOTO_LIBRARY_FOLDER, BRAND_LOGOS_FOLDER, PRINT_MATERIALS_FOLDER, DIGITAL_SHARE_GRAPHICS_FOLDER, DOCUMENTS_FOLDER].every((name) => library.folders.some((folder) => folder.status === "active" && !folder.parentId && folder.name === name));
+    if ((!hasUsageFolders || hasLegacyMediaFolders(library.folders) || hasMisfiledStudyMaterials(library)) && library.assets.some((asset) => asset.status === "active" && asset.kind === "image")) {
+      await organizeMediaByWebsiteUsage({ db: context.env.ATTEND_DB || null, actor: auth.payload?.user || "Staff" });
+      library = await listStaffMedia(context.env.ATTEND_DB || null, {
+        includeArchived: url.searchParams.get("archived") === "1"
+      });
+    }
+    return json16({ ...library, storage: "owned-d1-r2", uploadReady: !!context.env.MEDIA_BUCKET }, 200, headers5);
   } catch (cause) {
     const status = safeStatus(cause);
     if (status === 500) console.error("[staff-media] list", cause);
-    return json16({ error: cause instanceof Error ? cause.message : "Media library could not be loaded" }, status, headers4);
+    return json16({ error: cause instanceof Error ? cause.message : "Media library could not be loaded" }, status, headers5);
   }
 }
-async function onRequestPost56(context) {
-  const headers4 = responseHeaders5(context);
-  const auth = await requireStaffAuth(context, headers4);
+async function onRequestPost57(context) {
+  const headers5 = responseHeaders5(context);
+  const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
-  const parsed = await parseJsonBody(context.request, headers4);
+  const parsed = await parseJsonBody(context.request, headers5);
   if (parsed.error) return parsed.error;
   try {
     const actor = auth.payload?.user || "Staff";
-    if (parsed.body.action === "sync_site_catalog") {
-      const synced = await syncSiteMediaCatalog({ db: context.env.ATTEND_DB || null, actor });
-      return json16(synced, 200, headers4);
-    }
-    if (parsed.body.action === "import_site_assets") {
-      const imported = await importSiteMediaBatch({
-        db: context.env.ATTEND_DB || null,
-        bucket: context.env.MEDIA_BUCKET || null,
-        origin: new URL(context.request.url).origin,
-        actor,
-        offset: parsed.body.offset
-      });
-      return json16(imported, 200, headers4);
-    }
     if (parsed.body.action === "create_folder") {
       const folder = await createMediaFolder(context.env.ATTEND_DB || null, parsed.body, { actor });
-      return json16({ folder }, 201, headers4);
+      return json16({ folder }, 201, headers5);
     }
     const asset = await updateMediaAsset(context.env.ATTEND_DB || null, parsed.body, { actor });
-    return json16({ asset }, 200, headers4);
+    return json16({ asset }, 200, headers5);
   } catch (cause) {
     const status = safeStatus(cause);
     if (status === 500) console.error("[staff-media] mutate", cause);
-    return json16({ error: cause instanceof Error ? cause.message : "Media library could not be updated" }, status, headers4);
+    return json16({ error: cause instanceof Error ? cause.message : "Media library could not be updated" }, status, headers5);
   }
 }
 var init_staff_media2 = __esm({
   "api/staff-media.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_staff_media();
     init_staff_site_media();
     __name(responseHeaders5, "responseHeaders");
     __name(json16, "json");
     __name(safeStatus, "safeStatus");
-    __name(onRequestOptions76, "onRequestOptions");
-    __name(onRequestGet51, "onRequestGet");
-    __name(onRequestPost56, "onRequestPost");
+    __name(onRequestOptions77, "onRequestOptions");
+    __name(onRequestGet52, "onRequestGet");
+    __name(onRequestPost57, "onRequestPost");
   }
 });
 
@@ -32773,19 +33546,19 @@ function parseRange(value, size) {
   return { offset: start, length: end - start + 1, end };
 }
 async function serve(context, headOnly = false) {
-  const headers4 = baseHeaders(context);
-  const auth = await requireStaffAuth(context, headers4);
+  const headers5 = baseHeaders(context);
+  const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
   if (!context.env.MEDIA_BUCKET || !context.env.ATTEND_DB) {
-    return new Response(JSON.stringify({ error: "Media file storage is not configured" }), { status: 422, headers: { ...headers4, "Content-Type": "application/json" } });
+    return new Response(JSON.stringify({ error: "Media file storage is not configured" }), { status: 422, headers: { ...headers5, "Content-Type": "application/json" } });
   }
   try {
     const url = new URL(context.request.url);
     const record3 = await getMediaAssetRecord(context.env.ATTEND_DB, url.searchParams.get("id"));
     const range = parseRange(context.request.headers.get("Range"), record3.public.sizeBytes);
     const object = headOnly ? await context.env.MEDIA_BUCKET.head(record3.objectKey) : await context.env.MEDIA_BUCKET.get(record3.objectKey, range ? { range: { offset: range.offset, length: range.length } } : void 0);
-    if (!object) return new Response("File not found", { status: 404, headers: headers4 });
-    const responseHeaders10 = new Headers(headers4);
+    if (!object) return new Response("File not found", { status: 404, headers: headers5 });
+    const responseHeaders10 = new Headers(headers5);
     responseHeaders10.set("Content-Type", record3.public.mimeType);
     if (record3.public.mimeType === "image/svg+xml") responseHeaders10.set("Content-Security-Policy", "sandbox");
     responseHeaders10.set("Accept-Ranges", "bytes");
@@ -32803,14 +33576,14 @@ async function serve(context, headOnly = false) {
     if (status === 500) console.error("[staff-media-file]", cause);
     return new Response(JSON.stringify({ error: cause instanceof Error ? cause.message : "Media file could not be opened" }), {
       status,
-      headers: { ...headers4, "Content-Type": "application/json" }
+      headers: { ...headers5, "Content-Type": "application/json" }
     });
   }
 }
-async function onRequestOptions77(context) {
+async function onRequestOptions78(context) {
   return new Response(null, { status: 204, headers: baseHeaders(context) });
 }
-async function onRequestGet52(context) {
+async function onRequestGet53(context) {
   return serve(context, false);
 }
 async function onRequestHead(context) {
@@ -32818,15 +33591,15 @@ async function onRequestHead(context) {
 }
 var init_staff_media_file = __esm({
   "api/staff-media-file.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_staff_media();
     __name(baseHeaders, "baseHeaders");
     __name(contentDisposition, "contentDisposition");
     __name(parseRange, "parseRange");
     __name(serve, "serve");
-    __name(onRequestOptions77, "onRequestOptions");
-    __name(onRequestGet52, "onRequestGet");
+    __name(onRequestOptions78, "onRequestOptions");
+    __name(onRequestGet53, "onRequestGet");
     __name(onRequestHead, "onRequestHead");
   }
 });
@@ -32840,26 +33613,26 @@ function responseHeaders6(context) {
     "Cache-Control": "no-store"
   };
 }
-function json17(value, status, headers4) {
-  return new Response(JSON.stringify(value), { status, headers: headers4 });
+function json17(value, status, headers5) {
+  return new Response(JSON.stringify(value), { status, headers: headers5 });
 }
-function decodedHeader(request, key) {
-  const value = request.headers.get(key) || "";
+function decodedHeader(request2, key) {
+  const value = request2.headers.get(key) || "";
   try {
     return decodeURIComponent(value);
   } catch {
     return "";
   }
 }
-async function onRequestOptions78(context) {
+async function onRequestOptions79(context) {
   return new Response(null, { status: 204, headers: responseHeaders6(context) });
 }
-async function onRequestPost57(context) {
-  const headers4 = responseHeaders6(context);
-  const auth = await requireStaffAuth(context, headers4);
+async function onRequestPost58(context) {
+  const headers5 = responseHeaders6(context);
+  const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
   if (!context.env.MEDIA_BUCKET || !context.env.ATTEND_DB) {
-    return json17({ error: "Media upload storage is not configured" }, 422, headers4);
+    return json17({ error: "Media upload storage is not configured" }, 422, headers5);
   }
   const name = decodedHeader(context.request, "X-Amari-File-Name");
   const folderId = decodedHeader(context.request, "X-Amari-Folder-Id") || null;
@@ -32869,9 +33642,9 @@ async function onRequestPost57(context) {
   try {
     upload = validateMediaUpload({ name, mimeType, sizeBytes });
   } catch (cause) {
-    return json17({ error: cause instanceof Error ? cause.message : "Invalid media upload" }, Number(cause?.status) || 400, headers4);
+    return json17({ error: cause instanceof Error ? cause.message : "Invalid media upload" }, Number(cause?.status) || 400, headers5);
   }
-  if (!context.request.body) return json17({ error: "The file is empty" }, 400, headers4);
+  if (!context.request.body) return json17({ error: "The file is empty" }, 400, headers5);
   const assetId = crypto.randomUUID();
   const objectKey = mediaObjectKey(assetId, upload.mimeType);
   try {
@@ -32885,7 +33658,7 @@ async function onRequestPost57(context) {
       sizeBytes: upload.sizeBytes,
       folderId
     }, { actor: auth.payload?.user || "Staff", id: assetId });
-    return json17({ asset: registered.asset }, 201, headers4);
+    return json17({ asset: registered.asset }, 201, headers5);
   } catch (cause) {
     try {
       await context.env.MEDIA_BUCKET.delete(objectKey);
@@ -32893,80 +33666,80 @@ async function onRequestPost57(context) {
     }
     const status = [400, 404, 409, 422].includes(Number(cause?.status)) ? Number(cause.status) : 500;
     if (status === 500) console.error("[staff-media-upload]", cause);
-    return json17({ error: cause instanceof Error ? cause.message : "File upload failed" }, status, headers4);
+    return json17({ error: cause instanceof Error ? cause.message : "File upload failed" }, status, headers5);
   }
 }
 var init_staff_media_upload = __esm({
   "api/staff-media-upload.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_staff_media();
     __name(responseHeaders6, "responseHeaders");
     __name(json17, "json");
     __name(decodedHeader, "decodedHeader");
-    __name(onRequestOptions78, "onRequestOptions");
-    __name(onRequestPost57, "onRequestPost");
+    __name(onRequestOptions79, "onRequestOptions");
+    __name(onRequestPost58, "onRequestPost");
   }
 });
 
 // api/staff-not-a-fit.js
-async function onRequestOptions79(context) {
+async function onRequestOptions80(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost58(context) {
+async function onRequestPost59(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
     const { contactId } = body;
     if (!contactId) {
-      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers5 });
     }
     const contactRes = await ghlFetch(context, `${GHL_API_BASE40}/contacts/${contactId}`);
     if (!contactRes.ok) {
-      return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
     }
     const contactData = await contactRes.json();
     const tags = contactData.contact?.tags || [];
     if (!tags.includes("partner-session-booked")) {
-      return new Response(JSON.stringify({ error: "Contact does not have partner-session-booked tag" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact does not have partner-session-booked tag" }), { status: 400, headers: headers5 });
     }
     const pipelinesRes = await ghlFetch(context, `${GHL_API_BASE40}/opportunities/pipelines?locationId=${GHL_LOCATION_ID30}`);
     if (!pipelinesRes.ok) {
-      return new Response(JSON.stringify({ error: "Failed to fetch pipelines" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to fetch pipelines" }), { status: 422, headers: headers5 });
     }
     const pipelinesData = await pipelinesRes.json();
     const partnershipPipeline = (pipelinesData.pipelines || []).find(
       (p2) => p2.name.toLowerCase().includes("partnership")
     );
     if (!partnershipPipeline) {
-      return new Response(JSON.stringify({ error: "Partnership Pipeline not found" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Partnership Pipeline not found" }), { status: 422, headers: headers5 });
     }
     const futureStage = (partnershipPipeline.stages || []).find(
       (s) => s.name.toLowerCase().includes("future potential")
     );
     if (!futureStage) {
-      return new Response(JSON.stringify({ error: "Future Potential stage not found in Partnership Pipeline" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Future Potential stage not found in Partnership Pipeline" }), { status: 422, headers: headers5 });
     }
     const oppsRes = await ghlFetch(
       context,
       `${GHL_API_BASE40}/opportunities/search?location_id=${GHL_LOCATION_ID30}&pipeline_id=${partnershipPipeline.id}&contact_id=${contactId}`
     );
     if (!oppsRes.ok) {
-      return new Response(JSON.stringify({ error: "Failed to search opportunities" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to search opportunities" }), { status: 422, headers: headers5 });
     }
     const oppsData = await oppsRes.json();
     const opp = (oppsData.opportunities || []).find(
       (o) => o.pipelineId === partnershipPipeline.id
     );
     if (!opp) {
-      return new Response(JSON.stringify({ error: "No opportunity found in Partnership Pipeline for this contact" }), { status: 404, headers: headers4 });
+      return new Response(JSON.stringify({ error: "No opportunity found in Partnership Pipeline for this contact" }), { status: 404, headers: headers5 });
     }
     const updateRes = await ghlFetch(context, `${GHL_API_BASE40}/opportunities/${opp.id}`, {
       method: "PUT",
@@ -32978,24 +33751,24 @@ async function onRequestPost58(context) {
     if (!updateRes.ok) {
       const errText = await updateRes.text();
       console.error(`[staff-not-a-fit] Opportunity update failed: ${updateRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to update opportunity" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to update opportunity" }), { status: 422, headers: headers5 });
     }
-    return new Response(JSON.stringify({ success: true, stage: "Future Potential" }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true, stage: "Future Potential" }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-not-a-fit] Error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE40, GHL_LOCATION_ID30;
 var init_staff_not_a_fit = __esm({
   "api/staff-not-a-fit.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE40 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID30 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions79, "onRequestOptions");
-    __name(onRequestPost58, "onRequestPost");
+    __name(onRequestOptions80, "onRequestOptions");
+    __name(onRequestPost59, "onRequestPost");
   }
 });
 
@@ -33013,7 +33786,7 @@ function isEditableStaffNote(body) {
 var SYSTEM_NOTE_PATTERNS;
 var init_staff_note_policy = __esm({
   "../shared/staff-note-policy.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     SYSTEM_NOTE_PATTERNS = [
       /^migrat/i,
       /^\[?reconciliation/i,
@@ -33052,119 +33825,134 @@ function editableExistingNote(noteResponse) {
   const note = noteResponse?.note || noteResponse;
   return typeof note?.body === "string" && isEditableStaffNote(note.body);
 }
-function validationResponse(validation, headers4) {
-  return new Response(JSON.stringify({ error: validation.error }), { status: 400, headers: headers4 });
+function validationResponse(validation, headers5) {
+  return new Response(JSON.stringify({ error: validation.error }), { status: 400, headers: headers5 });
 }
-async function onRequestOptions80(context) {
+async function onRequestOptions81(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "POST, PUT, OPTIONS")
   });
 }
-async function onRequestPost59(context) {
+async function onRequestPost60(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
     const validation = validateNoteUpdate({ contactId: body.contactId, noteId: "new", body: body.body });
-    if (validation.error) return validationResponse(validation, headers4);
-    const noteRes = await ghlFetch(context, `${GHL_API_BASE41}/contacts/${validation.contactId}/notes`, {
+    if (validation.error) return validationResponse(validation, headers5);
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, validation.contactId)
+    );
+    const noteRes = await ghlFetch(context, `${GHL_API_BASE41}/contacts/${contactId}/notes`, {
       method: "POST",
       body: JSON.stringify({ body: validation.body })
     });
     if (!noteRes.ok) {
       const errText = await noteRes.text();
       console.error(`[staff-note] GHL note create error: ${noteRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to save note" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to save note" }), { status: 422, headers: headers5 });
     }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-note] Unexpected error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 async function onRequestPut2(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "POST, PUT, OPTIONS"), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin, "POST, PUT, OPTIONS"), "Content-Type": "application/json" };
   try {
-    const { error } = await requireStaffAuth(context, headers4);
+    const { error } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
     const validation = validateNoteUpdate(body);
-    if (validation.error) return validationResponse(validation, headers4);
-    const existingRes = await ghlFetch(context, buildNoteUpdatePath(validation.contactId, validation.noteId));
+    if (validation.error) return validationResponse(validation, headers5);
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, validation.contactId)
+    );
+    const existingRes = await ghlFetch(context, buildNoteUpdatePath(contactId, validation.noteId));
     if (!existingRes.ok) {
       const errText = await existingRes.text();
       console.error(`[staff-note] GHL note read before update error: ${existingRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Could not verify note for editing" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Could not verify note for editing" }), { status: 422, headers: headers5 });
     }
     const existingNote = await existingRes.json();
     if (!editableExistingNote(existingNote)) {
-      return new Response(JSON.stringify({ error: "Only ordinary Staff notes can be edited" }), { status: 403, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Only ordinary Staff notes can be edited" }), { status: 403, headers: headers5 });
     }
-    const noteRes = await ghlFetch(context, buildNoteUpdatePath(validation.contactId, validation.noteId), {
+    const noteRes = await ghlFetch(context, buildNoteUpdatePath(contactId, validation.noteId), {
       method: "PUT",
       body: JSON.stringify({ body: validation.body })
     });
     if (!noteRes.ok) {
       const errText = await noteRes.text();
       console.error(`[staff-note] GHL note update error: ${noteRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to update note" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to update note" }), { status: 422, headers: headers5 });
     }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-note] Unexpected update error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE41;
 var init_staff_note = __esm({
   "api/staff-note.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     init_staff_note_policy();
+    init_staff_owned_contact_identity();
     GHL_API_BASE41 = "https://services.leadconnectorhq.com";
     __name(noteText, "noteText");
     __name(buildNoteUpdatePath, "buildNoteUpdatePath");
     __name(validateNoteUpdate, "validateNoteUpdate");
     __name(editableExistingNote, "editableExistingNote");
     __name(validationResponse, "validationResponse");
-    __name(onRequestOptions80, "onRequestOptions");
-    __name(onRequestPost59, "onRequestPost");
+    __name(onRequestOptions81, "onRequestOptions");
+    __name(onRequestPost60, "onRequestPost");
     __name(onRequestPut2, "onRequestPut");
   }
 });
 
 // api/staff-outreach-cards.js
-async function onRequestOptions81(context) {
+async function onRequestOptions82(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS")
   });
 }
-async function onRequestGet53(context) {
+async function onRequestGet54(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const kv = context.env.PORTAL_KV;
     if (!kv) {
       return new Response(JSON.stringify({ error: "KV not bound" }), {
         status: 500,
-        headers: headers4
+        headers: headers5
       });
     }
     const raw = await kv.get(KV_KEY2);
     if (!raw) {
       return new Response(
         JSON.stringify({ cards: [], generatedAt: null, uploadedAt: null, counts: { total: 0 } }),
-        { status: 200, headers: headers4 }
+        { status: 200, headers: headers5 }
       );
     }
     let snapshot;
@@ -33173,26 +33961,26 @@ async function onRequestGet53(context) {
     } catch {
       return new Response(JSON.stringify({ error: "Snapshot corrupted in KV" }), {
         status: 500,
-        headers: headers4
+        headers: headers5
       });
     }
-    return new Response(JSON.stringify(snapshot), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(snapshot), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-outreach-cards]", err);
     return new Response(
       JSON.stringify({ error: err.message || "Failed to fetch outreach cards" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var KV_KEY2;
 var init_staff_outreach_cards = __esm({
   "api/staff-outreach-cards.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     KV_KEY2 = "outreach-snapshot:current";
-    __name(onRequestOptions81, "onRequestOptions");
-    __name(onRequestGet53, "onRequestGet");
+    __name(onRequestOptions82, "onRequestOptions");
+    __name(onRequestGet54, "onRequestGet");
   }
 });
 
@@ -33206,35 +33994,35 @@ function corsHeaders36(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions82(context) {
+async function onRequestOptions83(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders36(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost60(context) {
+async function onRequestPost61(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders36(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders36(origin), "Content-Type": "application/json" };
   try {
     const expectedSecret = context.env.OUTREACH_UPLOAD_SECRET;
     if (!expectedSecret) {
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const providedSecret = context.request.headers.get("X-Upload-Secret");
     if (!providedSecret || providedSecret !== expectedSecret) {
       return new Response(JSON.stringify({ error: "Not authorized" }), {
         status: 401,
-        headers: headers4
+        headers: headers5
       });
     }
     const kv = context.env.PORTAL_KV;
     if (!kv) {
       return new Response(
         JSON.stringify({ error: "KV not bound" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     let snapshot;
@@ -33243,13 +34031,13 @@ async function onRequestPost60(context) {
     } catch {
       return new Response(JSON.stringify({ error: "Invalid JSON" }), {
         status: 400,
-        headers: headers4
+        headers: headers5
       });
     }
     if (!snapshot || !Array.isArray(snapshot.cards)) {
       return new Response(
         JSON.stringify({ error: "Snapshot missing 'cards' array" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const stored = {
@@ -33264,20 +34052,20 @@ async function onRequestPost60(context) {
     }
     return new Response(
       JSON.stringify({ ok: true, cardCount: snapshot.cards.length, uploadedAt: stored.uploadedAt }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[staff-outreach-upload]", err);
     return new Response(
       JSON.stringify({ error: err.message || "Upload failed" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var KV_KEY3, ALLOWED_ORIGINS37;
 var init_staff_outreach_upload = __esm({
   "api/staff-outreach-upload.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_heartbeat();
     KV_KEY3 = "outreach-snapshot:current";
     ALLOWED_ORIGINS37 = [
@@ -33285,8 +34073,8 @@ var init_staff_outreach_upload = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders36, "corsHeaders");
-    __name(onRequestOptions82, "onRequestOptions");
-    __name(onRequestPost60, "onRequestPost");
+    __name(onRequestOptions83, "onRequestOptions");
+    __name(onRequestPost61, "onRequestPost");
   }
 });
 
@@ -33410,7 +34198,7 @@ function makeStripeClient(secretKey, fetchImpl = fetch) {
 var AMOUNT_TO_SESSIONS, STRIPE_MAX_PAGES;
 var init_stripe_charges = __esm({
   "lib/stripe-charges.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     AMOUNT_TO_SESSIONS = Object.freeze({
       5400: { sessions: 24, label: "The 12-Week Amari Practice" },
       5500: { sessions: 24, label: "The 12-Week Amari Practice" },
@@ -33463,7 +34251,7 @@ function computeOwedStatus({ sessionsPurchased, unknownCount, unknownMax = 0, at
 var ATTENDED, LEGACY_MIN;
 var init_session_owed = __esm({
   "lib/session-owed.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_session_ledger();
     init_datetime();
     ATTENDED = /* @__PURE__ */ new Set(["showed", "completed"]);
@@ -33483,7 +34271,7 @@ function settledReason(contactId) {
 var SETTLED_CONTACT_IDS;
 var init_owed_settled = __esm({
   "lib/owed-settled.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     SETTLED_CONTACT_IDS = /* @__PURE__ */ new Map([
       ["zjewEnCWTi7Q7aY8hHYD", "Igor Khizver \u2014 Garrett comped the session"],
       ["brfGSo7wRyF7MIJT8SmM", "Jon Holsbach \u2014 initial session comped, wasn't a fit"],
@@ -33499,21 +34287,21 @@ var init_owed_settled = __esm({
 });
 
 // api/staff-owed.js
-async function onRequestOptions83(context) {
+async function onRequestOptions84(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet54(context) {
+async function onRequestGet55(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const url = new URL(context.request.url);
     const contactId = (url.searchParams.get("contactId") || "").trim();
-    if (!contactId) return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+    if (!contactId) return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     const stripeKey = context.env.STRIPE_SECRET_KEY;
     if (!stripeKey) {
-      return new Response(JSON.stringify({ status: "unavailable", reason: "Stripe not configured" }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ status: "unavailable", reason: "Stripe not configured" }), { status: 200, headers: headers5 });
     }
     const [contactRes, apptRes] = await Promise.all([
       ghlFetch(context, `${GHL_API_BASE42}/contacts/${contactId}`),
@@ -33580,16 +34368,16 @@ async function onRequestGet54(context) {
       attendedBillable,
       unknownCount: summary.unknownCount,
       chargeCount: charges.length
-    }), { status: 200, headers: headers4 });
+    }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-owed] error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE42;
 var init_staff_owed = __esm({
   "api/staff-owed.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_stripe_charges();
     init_session_owed();
@@ -33597,8 +34385,8 @@ var init_staff_owed = __esm({
     init_session_payment();
     init_endpoint_guards();
     GHL_API_BASE42 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions83, "onRequestOptions");
-    __name(onRequestGet54, "onRequestGet");
+    __name(onRequestOptions84, "onRequestOptions");
+    __name(onRequestGet55, "onRequestGet");
   }
 });
 
@@ -33621,20 +34409,20 @@ function clientNameFromTitle(title) {
 }
 var init_owed_list = __esm({
   "lib/owed-list.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(clientNameFromTitle, "clientNameFromTitle");
   }
 });
 
 // api/staff-owed-list.js
-async function onRequestOptions84(context) {
+async function onRequestOptions85(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet55(context) {
+async function onRequestGet56(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const now = Date.now();
     const since = now - ROSTER_WINDOW_DAYS * 24 * 3600 * 1e3;
@@ -33665,16 +34453,16 @@ async function onRequestGet55(context) {
       }
     }
     const roster = [...byContact.entries()].filter(([, v]) => v.attended > 0).sort((a, b) => b[1].lastMs - a[1].lastMs).map(([contactId, v]) => ({ contactId, name: v.name || contactId, attendedBillable: v.attended, lastSessionMs: v.lastMs }));
-    return new Response(JSON.stringify({ roster, rosterSize: roster.length, windowDays: ROSTER_WINDOW_DAYS }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ roster, rosterSize: roster.length, windowDays: ROSTER_WINDOW_DAYS }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-owed-list] error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE43, GHL_LOCATION_ID31, ROSTER_WINDOW_DAYS, ATTENDED2;
 var init_staff_owed_list = __esm({
   "api/staff-owed-list.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_datetime();
     init_session_ledger();
@@ -33684,24 +34472,24 @@ var init_staff_owed_list = __esm({
     GHL_LOCATION_ID31 = "7pIO7FHVAyBT1jKGhfQM";
     ROSTER_WINDOW_DAYS = 540;
     ATTENDED2 = /* @__PURE__ */ new Set(["showed", "completed"]);
-    __name(onRequestOptions84, "onRequestOptions");
-    __name(onRequestGet55, "onRequestGet");
+    __name(onRequestOptions85, "onRequestOptions");
+    __name(onRequestGet56, "onRequestGet");
   }
 });
 
 // api/staff-owned-contacts.js
-function headers(origin) {
+function headers2(origin) {
   return {
     ...corsHeaders3(origin, "GET, OPTIONS"),
     "Content-Type": "application/json; charset=utf-8",
     "Cache-Control": "private, no-store"
   };
 }
-async function onRequestOptions85(context) {
-  return new Response(null, { status: 204, headers: headers(context.request.headers.get("Origin")) });
+async function onRequestOptions86(context) {
+  return new Response(null, { status: 204, headers: headers2(context.request.headers.get("Origin")) });
 }
-async function onRequestGet56(context) {
-  const responseHeaders10 = headers(context.request.headers.get("Origin"));
+async function onRequestGet57(context) {
+  const responseHeaders10 = headers2(context.request.headers.get("Origin"));
   const { error } = await requireStaffAuth(context, responseHeaders10);
   if (error) return error;
   if (!context.env.WORKER_AUTH_SECRET) {
@@ -33710,9 +34498,9 @@ async function onRequestGet56(context) {
   const query = (new URL(context.request.url).searchParams.get("query") || "").trim();
   if (query.length < 2 || query.length > 120) return new Response(JSON.stringify([]), { status: 200, headers: responseHeaders10 });
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS2);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS7);
   try {
-    const upstream = await fetch(`${WORKER_URL8}?limit=20&query=${encodeURIComponent(query)}`, {
+    const upstream = await fetch(`${WORKER_URL13}?limit=20&query=${encodeURIComponent(query)}`, {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal
     });
@@ -33735,16 +34523,16 @@ async function onRequestGet56(context) {
     clearTimeout(timer);
   }
 }
-var WORKER_URL8, TIMEOUT_MS2;
+var WORKER_URL13, TIMEOUT_MS7;
 var init_staff_owned_contacts = __esm({
   "api/staff-owned-contacts.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    WORKER_URL8 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
-    TIMEOUT_MS2 = 1e4;
-    __name(headers, "headers");
-    __name(onRequestOptions85, "onRequestOptions");
-    __name(onRequestGet56, "onRequestGet");
+    WORKER_URL13 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
+    TIMEOUT_MS7 = 1e4;
+    __name(headers2, "headers");
+    __name(onRequestOptions86, "onRequestOptions");
+    __name(onRequestGet57, "onRequestGet");
   }
 });
 
@@ -33790,26 +34578,26 @@ function mapMessageType(typeRaw) {
   if (t.includes("SMS")) return "sms";
   return null;
 }
-async function onRequestOptions86(context) {
+async function onRequestOptions87(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet57(context) {
+async function onRequestGet58(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const url = new URL(context.request.url);
     const contactId = url.searchParams.get("contactId");
     if (!contactId) {
-      return new Response(JSON.stringify({ error: "contactId query param required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "contactId query param required" }), { status: 400, headers: headers5 });
     }
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) {
-      return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     }
     const events = [];
     const convRes = await fetch(
@@ -33885,35 +34673,35 @@ async function onRequestGet57(context) {
       }
     }
     events.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    const trimmed = events.slice(0, MAX_EVENTS2);
+    const trimmed = events.slice(0, MAX_EVENTS3);
     return new Response(
       JSON.stringify({
         contactId,
         generatedAt: (/* @__PURE__ */ new Date()).toISOString(),
         events: trimmed,
         totalFetched: events.length,
-        truncated: events.length > MAX_EVENTS2
+        truncated: events.length > MAX_EVENTS3
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-partner-activity] failed:", detail);
     return new Response(
       JSON.stringify({ error: `Failed to load activity: ${detail}` }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
-var GHL_API_BASE44, GHL_LOCATION_ID32, MAX_EVENTS2, NUMERIC_TYPE_MAP;
+var GHL_API_BASE44, GHL_LOCATION_ID32, MAX_EVENTS3, NUMERIC_TYPE_MAP;
 var init_staff_partner_activity = __esm({
   "api/staff-partner-activity.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE44 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID32 = "7pIO7FHVAyBT1jKGhfQM";
-    MAX_EVENTS2 = 50;
+    MAX_EVENTS3 = 50;
     NUMERIC_TYPE_MAP = {
       1: "call",
       8: "call",
@@ -33931,47 +34719,47 @@ var init_staff_partner_activity = __esm({
     };
     __name(callOutcomeLabel, "callOutcomeLabel");
     __name(mapMessageType, "mapMessageType");
-    __name(onRequestOptions86, "onRequestOptions");
-    __name(onRequestGet57, "onRequestGet");
+    __name(onRequestOptions87, "onRequestOptions");
+    __name(onRequestGet58, "onRequestGet");
   }
 });
 
 // api/staff-partner-outcome.js
-async function onRequestOptions87(context) {
+async function onRequestOptions88(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost61(context) {
+async function onRequestPost62(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const payload = await context.request.json().catch(() => null);
     if (!payload || typeof payload !== "object") {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: headers5 });
     }
     const { contactId, signal, note, followupAt } = payload;
     if (!contactId || typeof contactId !== "string") {
-      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     }
     if (!VALID_SIGNALS.has(signal)) {
       return new Response(
         JSON.stringify({ error: `Invalid signal: ${signal}. Must be one of: ${Array.from(VALID_SIGNALS).join(", ")}` }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     if (signal === "deferred" && !followupAt) {
-      return new Response(JSON.stringify({ error: "followupAt required when signal === 'deferred'" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "followupAt required when signal === 'deferred'" }), { status: 400, headers: headers5 });
     }
     if (signal === "note" && (!note || !String(note).trim())) {
-      return new Response(JSON.stringify({ error: "note text required when signal === 'note'" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "note text required when signal === 'note'" }), { status: 400, headers: headers5 });
     }
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) {
-      return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     }
     let currentTouchCount = 0;
     let currentStage = null;
@@ -34053,21 +34841,21 @@ async function onRequestPost61(context) {
         followupAt: signal === "deferred" ? followupAt : null,
         touchCount: signal === "skip" || signal === "note" ? currentTouchCount : currentTouchCount + 1
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-partner-outcome] failed:", detail);
     return new Response(
       JSON.stringify({ error: `Failed to record outcome: ${detail}` }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE45, FIELD_IDS6, VALID_SIGNALS, SIGNAL_TO_STAGE, TOUCH_SIGNALS, SIGNAL_NOTE_LABEL;
 var init_staff_partner_outcome = __esm({
   "api/staff-partner-outcome.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE45 = "https://services.leadconnectorhq.com";
@@ -34149,8 +34937,8 @@ var init_staff_partner_outcome = __esm({
       "skip": "Skipped \u2014 not a fit",
       "note": "Note"
     };
-    __name(onRequestOptions87, "onRequestOptions");
-    __name(onRequestPost61, "onRequestPost");
+    __name(onRequestOptions88, "onRequestOptions");
+    __name(onRequestPost62, "onRequestPost");
   }
 });
 
@@ -40940,7 +41728,7 @@ var init_partner_sheet_cache = __esm({
 });
 
 // lib/partner-sheet.js
-function clean3(value) {
+function clean7(value) {
   const result = String(value || "").trim();
   return result || null;
 }
@@ -40950,20 +41738,20 @@ function normalizePhone(value) {
   return digits.length === 10 && /^[2-9]/.test(digits) ? digits : null;
 }
 function normalizeEmail(value) {
-  const result = clean3(value);
+  const result = clean7(value);
   return result && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result) ? result.toLowerCase() : null;
 }
 function rowFromTab(tab, row) {
   if (tab === "Sheet3") {
-    return { name: clean3(row[0]), instagram: clean3(row[1]), status: clean3(row[2]), notes: clean3(row[4]), category: clean3(row[5]), raw_phone: clean3(row[6]), phone: normalizePhone(row[6]), email: normalizeEmail(row[7]), website: clean3(row[8]) };
+    return { name: clean7(row[0]), instagram: clean7(row[1]), status: clean7(row[2]), notes: clean7(row[4]), category: clean7(row[5]), raw_phone: clean7(row[6]), phone: normalizePhone(row[6]), email: normalizeEmail(row[7]), website: clean7(row[8]) };
   }
   if (tab === "Yelp") {
-    return { name: clean3(row[0]), category: clean3(row[1]), website: clean3(row[2]), email: normalizeEmail(row[3]), raw_phone: clean3(row[4]), phone: normalizePhone(row[4]), instagram: clean3(row[5]), status: clean3(row[6]), notes: null };
+    return { name: clean7(row[0]), category: clean7(row[1]), website: clean7(row[2]), email: normalizeEmail(row[3]), raw_phone: clean7(row[4]), phone: normalizePhone(row[4]), instagram: clean7(row[5]), status: clean7(row[6]), notes: null };
   }
   if (tab === "Insta") {
-    return { name: clean3(row[1]) || clean3(row[0]), instagram: clean3(row[0]), status: clean3(row[2]), notes: clean3(row[4]), category: clean3(row[5]), raw_phone: null, phone: null, email: null, website: null };
+    return { name: clean7(row[1]) || clean7(row[0]), instagram: clean7(row[0]), status: clean7(row[2]), notes: clean7(row[4]), category: clean7(row[5]), raw_phone: null, phone: null, email: null, website: null };
   }
-  return { name: clean3(row[0]), raw_phone: clean3(row[1]), phone: normalizePhone(row[1]), email: normalizeEmail(row[2]), website: clean3(row[3]), instagram: clean3(row[4]), status: null, notes: null, category: clean3(row[11]) };
+  return { name: clean7(row[0]), raw_phone: clean7(row[1]), phone: normalizePhone(row[1]), email: normalizeEmail(row[2]), website: clean7(row[3]), instagram: clean7(row[4]), status: null, notes: null, category: clean7(row[11]) };
 }
 function rowKey(row) {
   if (row.email) return `email:${row.email}`;
@@ -41044,14 +41832,14 @@ async function getPartnerSheetCache(context) {
 var SPREADSHEET_ID, CACHE_KEY2, REFRESH_AFTER_MS, RANGES;
 var init_partner_sheet = __esm({
   "lib/partner-sheet.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_partner_sheet_cache();
     init_google_api();
     SPREADSHEET_ID = "1uYsTyyMu9NUefscLKORUglNXrhq_ylcUMZr4Ml-nMiw";
     CACHE_KEY2 = "partner-sheet:cache:v1";
     REFRESH_AFTER_MS = 20 * 60 * 60 * 1e3;
     RANGES = ["Sheet3!A:Q", "Yelp!A:G", "Insta!A:F", "Goog Maps!A:N"];
-    __name(clean3, "clean");
+    __name(clean7, "clean");
     __name(normalizePhone, "normalizePhone");
     __name(normalizeEmail, "normalizeEmail");
     __name(rowFromTab, "rowFromTab");
@@ -41214,7 +42002,7 @@ function buildCard(dossier, now = Date.now()) {
 var CLOSER_WORD2, CLOSER_RE2, DECLINE_RE, CONNECT_CALL_SEC, ORG_WORDS, UNTEXTABLE, PLACEHOLDER_EMAIL_RE, LINKEDIN_SOURCE_RE, PHONE_UNVERIFIED_NOTE, DAY_MS2;
 var init_build_card = __esm({
   "lib/build-card.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     CLOSER_WORD2 = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE2 = new RegExp(`^(?:${CLOSER_WORD2}[\\s!.,]*)+$`, "i");
     __name(isNonReply2, "isNonReply");
@@ -41635,24 +42423,24 @@ async function fetchByTag(ghlToken, tag, pageLimit = 100) {
   }
   return all2;
 }
-async function onRequestOptions88(context) {
+async function onRequestOptions89(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet58(context) {
+async function onRequestGet59(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const { cache: sheetCache, refreshError: sheetRefreshError } = await getPartnerSheetCache(context);
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) {
       return new Response(
         JSON.stringify({ error: "GHL not configured" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     let activityRefreshLastRun = null;
@@ -41786,7 +42574,7 @@ async function onRequestGet58(context) {
         prospects: acquisitionProspects.map((p2) => ({ ...p2, callCoachLine: callCoachMap.get(p2.contactId) || null })),
         dismissedReplies
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
@@ -41796,14 +42584,14 @@ async function onRequestGet58(context) {
         error: `Failed to load partner prospects: ${detail}`,
         detail
       }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE46, GHL_LOCATION_ID33, FIELD_IDS7, CATEGORY_TAGS, BROAD_PARTNER_TAGS, ALL_PARTNER_TAGS, ALL_STAGES, VM_FOLLOWUP_DAYS, TALKED_FOLLOWUP_DAYS, LINK_FOLLOWUP_DAYS, OFFPLATFORM_FOLLOWUP_DAYS, NOANSWER_RETRY_DAYS, QUIET_NUDGE_DAYS, END_OF_ROPE_TOUCHES, FRESH_TOUCH_SIGNALS, KNOWN_SIGNALS, FORCED_CALL_LINES;
 var init_staff_partner_prospects = __esm({
   "api/staff-partner-prospects.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_partner_sheet();
     init_build_card();
@@ -41916,8 +42704,8 @@ var init_staff_partner_prospects = __esm({
     __name(lookupSheetRow, "lookupSheetRow");
     __name(toProspect, "toProspect");
     __name(fetchByTag, "fetchByTag");
-    __name(onRequestOptions88, "onRequestOptions");
-    __name(onRequestGet58, "onRequestGet");
+    __name(onRequestOptions89, "onRequestOptions");
+    __name(onRequestGet59, "onRequestGet");
   }
 });
 
@@ -41981,7 +42769,7 @@ function rewardForPracticePurchase({ referralAt, purchasedAt, sessionCount }) {
 var PARTNER_REWARD_WINDOW_MS, CHARGEBACK_HOLD_MS, REWARD_CENTS, PARTNER_SESSION_ENTITLEMENT, LEGACY_REWARD_LABELS, asObject, dateValue, eventTime;
 var init_partner_reward_ledger = __esm({
   "lib/partner-reward-ledger.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     PARTNER_REWARD_WINDOW_MS = 90 * 24 * 60 * 60 * 1e3;
     CHARGEBACK_HOLD_MS = 30 * 24 * 60 * 60 * 1e3;
     REWARD_CENTS = Object.freeze({ 12: 25e3, 24: 5e4 });
@@ -42002,7 +42790,7 @@ var init_partner_reward_ledger = __esm({
 });
 
 // api/staff-partner-rewards.js
-function headers2(context) {
+function headers3(context) {
   return { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
 }
 function event(id3, rewardId, actor, type, detail) {
@@ -42011,11 +42799,11 @@ function event(id3, rewardId, actor, type, detail) {
 function insert(db, rewardId, actor, type, detail) {
   return db.prepare("INSERT INTO partner_reward_events (id,reward_id,ts,actor,type,detail) VALUES (?,?,?,?,?,?)").bind(...event(crypto.randomUUID(), rewardId, actor, type, detail));
 }
-async function onRequestOptions89(context) {
-  return new Response(null, { status: 204, headers: headers2(context) });
+async function onRequestOptions90(context) {
+  return new Response(null, { status: 204, headers: headers3(context) });
 }
-async function onRequestGet59(context) {
-  const out = headers2(context);
+async function onRequestGet60(context) {
+  const out = headers3(context);
   const auth = await requireStaffAuth(context, out);
   if (auth.error) return auth.error;
   const db = context.env.AUTOMATION_DB;
@@ -42037,8 +42825,8 @@ async function onRequestGet59(context) {
     }), { status: 422, headers: out });
   }
 }
-async function onRequestPost62(context) {
-  const out = headers2(context);
+async function onRequestPost63(context) {
+  const out = headers3(context);
   const auth = await requireStaffAuth(context, out);
   if (auth.error) return auth.error;
   const parsed = await parseJsonBody(context.request, out);
@@ -42093,7 +42881,7 @@ async function onRequestPost62(context) {
 var ID, iso;
 var init_staff_partner_rewards = __esm({
   "api/staff-partner-rewards.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_partner_reward_ledger();
     ID = /^[A-Za-z0-9_-]{1,80}$/;
@@ -42101,42 +42889,42 @@ var init_staff_partner_rewards = __esm({
       const date2 = new Date(value);
       return Number.isFinite(date2.getTime()) ? date2.toISOString() : null;
     }, "iso");
-    __name(headers2, "headers");
+    __name(headers3, "headers");
     __name(event, "event");
     __name(insert, "insert");
-    __name(onRequestOptions89, "onRequestOptions");
-    __name(onRequestGet59, "onRequestGet");
-    __name(onRequestPost62, "onRequestPost");
+    __name(onRequestOptions90, "onRequestOptions");
+    __name(onRequestGet60, "onRequestGet");
+    __name(onRequestPost63, "onRequestPost");
   }
 });
 
 // api/staff-partner-toggle-verified.js
-async function onRequestOptions90(context) {
+async function onRequestOptions91(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost63(context) {
+async function onRequestPost64(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const payload = await context.request.json().catch(() => null);
     if (!payload || typeof payload !== "object") {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: headers5 });
     }
     const { contactId, verified } = payload;
     if (!contactId || typeof contactId !== "string") {
-      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     }
     if (typeof verified !== "boolean") {
-      return new Response(JSON.stringify({ error: "verified must be boolean" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "verified must be boolean" }), { status: 400, headers: headers5 });
     }
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) {
-      return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     }
     const updateRes = await fetch(`${GHL_API_BASE47}/contacts/${contactId}`, {
       method: "PUT",
@@ -42153,32 +42941,32 @@ async function onRequestPost63(context) {
     }
     return new Response(
       JSON.stringify({ success: true, contactId, verified }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-partner-toggle-verified] failed:", detail);
     return new Response(
       JSON.stringify({ error: `Failed to toggle verified: ${detail}` }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE47, OUTREACH_VERIFIED_FIELD_ID;
 var init_staff_partner_toggle_verified = __esm({
   "api/staff-partner-toggle-verified.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE47 = "https://services.leadconnectorhq.com";
     OUTREACH_VERIFIED_FIELD_ID = "PVftrxrmNRPmfdlQAwzl";
-    __name(onRequestOptions90, "onRequestOptions");
-    __name(onRequestPost63, "onRequestPost");
+    __name(onRequestOptions91, "onRequestOptions");
+    __name(onRequestPost64, "onRequestPost");
   }
 });
 
 // api/staff-partner-update-field.js
-async function onRequestOptions91(context) {
+async function onRequestOptions92(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
 function validateValue(field, value) {
@@ -42195,34 +42983,34 @@ function validateValue(field, value) {
   }
   return null;
 }
-async function onRequestPost64(context) {
+async function onRequestPost65(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const payload = await context.request.json().catch(() => null);
     if (!payload || typeof payload !== "object") {
-      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Invalid JSON body" }), { status: 400, headers: headers5 });
     }
     const { contactId, field } = payload;
     let { value } = payload;
     if (!contactId || typeof contactId !== "string") {
-      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     }
     if (!field || !(field in EDITABLE_FIELDS)) {
-      return new Response(JSON.stringify({ error: `field must be one of: ${Object.keys(EDITABLE_FIELDS).join(", ")}` }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: `field must be one of: ${Object.keys(EDITABLE_FIELDS).join(", ")}` }), { status: 400, headers: headers5 });
     }
     if (typeof value !== "string") {
-      return new Response(JSON.stringify({ error: "value must be a string (use empty string to clear)" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "value must be a string (use empty string to clear)" }), { status: 400, headers: headers5 });
     }
     value = value.trim();
     const validationError = validateValue(field, value);
     if (validationError) {
-      return new Response(JSON.stringify({ error: validationError }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: validationError }), { status: 400, headers: headers5 });
     }
     const ghlToken = await getGhlToken(context);
-    if (!ghlToken) return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers4 });
+    if (!ghlToken) return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     let previousValue = "";
     try {
       const getRes = await fetch(`${GHL_API_BASE48}/contacts/${contactId}`, { headers: ghlHeaders(ghlToken) });
@@ -42241,7 +43029,7 @@ async function onRequestPost64(context) {
       console.error("[update-field] read prev failed:", err instanceof Error ? err.message : String(err));
     }
     if ((previousValue || "") === value) {
-      return new Response(JSON.stringify({ success: true, contactId, field, value, changed: false }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ success: true, contactId, field, value, changed: false }), { status: 200, headers: headers5 });
     }
     const spec = EDITABLE_FIELDS[field];
     const body = {};
@@ -42269,17 +43057,17 @@ async function onRequestPost64(context) {
     } catch (err) {
       console.error("[update-field] note write failed:", err instanceof Error ? err.message : String(err));
     }
-    return new Response(JSON.stringify({ success: true, contactId, field, value, previousValue, changed: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true, contactId, field, value, previousValue, changed: true }), { status: 200, headers: headers5 });
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-partner-update-field] failed:", detail);
-    return new Response(JSON.stringify({ error: `Failed to update field: ${detail}` }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: `Failed to update field: ${detail}` }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE48, EDITABLE_FIELDS;
 var init_staff_partner_update_field = __esm({
   "api/staff-partner-update-field.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE48 = "https://services.leadconnectorhq.com";
@@ -42299,31 +43087,31 @@ var init_staff_partner_update_field = __esm({
       partnerOtherUrls: { kind: "custom", id: "7KvhcBornVP0k0vT2h68", label: "Other URLs" },
       partnerRundown: { kind: "custom", id: "Yd3lsw6fAxl0HVCxr1cD", label: "Rundown" }
     };
-    __name(onRequestOptions91, "onRequestOptions");
+    __name(onRequestOptions92, "onRequestOptions");
     __name(validateValue, "validateValue");
-    __name(onRequestPost64, "onRequestPost");
+    __name(onRequestPost65, "onRequestPost");
   }
 });
 
 // api/staff-partner-verify.js
-async function onRequestOptions92(context) {
+async function onRequestOptions93(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost65(context) {
+async function onRequestPost66(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
-    const { error, payload } = await requireStaffAuth(context, headers4);
+    const { error, payload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const body = await context.request.json().catch(() => null);
-    if (!body || !body.contactId) return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+    if (!body || !body.contactId) return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     const contactId = String(body.contactId);
     const dmFirstName = (body.dmFirstName || "").trim();
     const dmLastName = (body.dmLastName || "").trim();
     const dmPhone = (body.dmPhone || "").trim();
-    if (dmPhone && dmPhone.replace(/\D/g, "").length < 10) return new Response(JSON.stringify({ error: "Phone must be 10+ digits" }), { status: 400, headers: headers4 });
+    if (dmPhone && dmPhone.replace(/\D/g, "").length < 10) return new Response(JSON.stringify({ error: "Phone must be 10+ digits" }), { status: 400, headers: headers5 });
     const ghlToken = await getGhlToken(context);
-    if (!ghlToken) return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers4 });
+    if (!ghlToken) return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     let wasName = "";
     try {
       const r = await fetch(`${GHL_API_BASE49}/contacts/${contactId}`, { headers: ghlHeaders(ghlToken) });
@@ -42342,7 +43130,7 @@ async function onRequestPost65(context) {
     if (!tagRes.ok) {
       const t = await tagRes.text();
       console.error("[verify] tag failed", tagRes.status, t);
-      return new Response(JSON.stringify({ error: "Failed to tag contact" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to tag contact" }), { status: 422, headers: headers5 });
     }
     const update = {
       customFields: [{ id: OUTREACH_VERIFIED_FIELD_ID2, value: "true" }]
@@ -42366,23 +43154,23 @@ async function onRequestPost65(context) {
       });
     } catch {
     }
-    return new Response(JSON.stringify({ success: true, verified: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true, verified: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[verify] error:", err instanceof Error ? err.message : String(err));
-    return new Response(JSON.stringify({ error: "Internal error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE49, VERIFIED_TAG, OUTREACH_VERIFIED_FIELD_ID2;
 var init_staff_partner_verify = __esm({
   "api/staff-partner-verify.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE49 = "https://services.leadconnectorhq.com";
     VERIFIED_TAG = "dm-verified";
     OUTREACH_VERIFIED_FIELD_ID2 = "PVftrxrmNRPmfdlQAwzl";
-    __name(onRequestOptions92, "onRequestOptions");
-    __name(onRequestPost65, "onRequestPost");
+    __name(onRequestOptions93, "onRequestOptions");
+    __name(onRequestPost66, "onRequestPost");
   }
 });
 
@@ -42615,20 +43403,20 @@ function buildCohortMetrics(snapshot, discoveryEvents, purchasesByContact) {
     repeatPurchasers: repeatPurchasers.size
   };
 }
-async function onRequestOptions93(context) {
+async function onRequestOptions94(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet60(context) {
+async function onRequestGet61(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
-  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const ghlToken = await getGhlToken(context);
   if (!ghlToken) {
-    return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
   }
   const [tagResults, allContacts, discoveryData, sessionAttendanceMap, funnelSnapshot] = await Promise.all([
     Promise.all(OUTREACH_TAGS.map((tag) => fetchByTag2(ghlToken, tag).catch(() => []))),
@@ -42695,12 +43483,12 @@ async function onRequestGet60(context) {
       columns[col].sort((a, b) => b.touchCount - a.touchCount || a.name.localeCompare(b.name));
     }
   }
-  return new Response(JSON.stringify({ columns, cohortMetrics }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ columns, cohortMetrics }), { status: 200, headers: headers5 });
 }
 var GHL_API_BASE50, GHL_LOCATION_ID34, EXCLUDED_EMAILS, FIELD_IDS8, SIX_MONTHS_MS, OUTREACH_TAGS, SESSION_CALENDARS, PACKAGE_CALENDAR_IDS;
 var init_staff_pipeline = __esm({
   "api/staff-pipeline.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
@@ -42773,8 +43561,8 @@ var init_staff_pipeline = __esm({
     __name(fetchAllContacts, "fetchAllContacts");
     __name(fetchStripePurchaseHistory, "fetchStripePurchaseHistory");
     __name(buildCohortMetrics, "buildCohortMetrics");
-    __name(onRequestOptions93, "onRequestOptions");
-    __name(onRequestGet60, "onRequestGet");
+    __name(onRequestOptions94, "onRequestOptions");
+    __name(onRequestGet61, "onRequestGet");
   }
 });
 
@@ -42903,13 +43691,13 @@ async function customProducts(db) {
 }
 async function listStaffProducts(db) {
   let custom = [];
-  let configured = !!db;
+  let configured2 = !!db;
   let error = null;
   if (db) {
     try {
       custom = await customProducts(db);
     } catch (cause) {
-      configured = false;
+      configured2 = false;
       error = cause instanceof Error ? cause.message : String(cause);
     }
   }
@@ -42919,10 +43707,10 @@ async function listStaffProducts(db) {
       const policyOrder = { current: 0, legacy: 1, custom: 2 };
       return (policyOrder[a.salesPolicy] ?? 3) - (policyOrder[b.salesPolicy] ?? 3) || a.name.localeCompare(b.name);
     }),
-    canCreate: configured,
-    storage: configured ? "owned-d1" : "unavailable",
+    canCreate: configured2,
+    storage: configured2 ? "owned-d1" : "unavailable",
     error,
-    coverage: productDefinitionCoverage(builtIns, configured ? custom.length : null)
+    coverage: productDefinitionCoverage(builtIns, configured2 ? custom.length : null)
   };
 }
 async function createStaffProduct(db, input, { actor, id: id3, now } = {}) {
@@ -43022,7 +43810,7 @@ function posCatalogFromProducts(products) {
 var MAX_NAME2, MAX_DESCRIPTION, MAX_REASON, MAX_AMOUNT_CENTS2, CATEGORIES, BUILT_IN_META;
 var init_staff_products = __esm({
   "lib/staff-products.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_staff_pos();
     init_staff_pos_invoice_bridge();
     init_ghl_products();
@@ -43339,7 +44127,7 @@ async function verifyStripeWebhookSignature(rawBody, signatureHeader, webhookSec
 var STRIPE_API;
 var init_stripe_api = __esm({
   "lib/stripe-api.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     STRIPE_API = "https://api.stripe.com/v1";
     __name(encodeForm, "encodeForm");
     __name(stripeRequest, "stripeRequest");
@@ -43357,8 +44145,8 @@ var init_stripe_api = __esm({
 });
 
 // api/staff-pos-sales.js
-function json18(data, status, headers4) {
-  return new Response(JSON.stringify(data), { status, headers: headers4 });
+function json18(data, status, headers5) {
+  return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
 function posPaymentActionAvailable(env, action, sale) {
   if (!POS_PAYMENT_ACTIONS.has(action)) return true;
@@ -43366,11 +44154,11 @@ function posPaymentActionAvailable(env, action, sale) {
   if ((sale?.cart || []).some(ownedNoEffectLine)) return false;
   return env?.STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED === "true";
 }
-function unavailablePaymentResponse(headers4) {
+function unavailablePaymentResponse(headers5) {
   return json18({
     error: "POS payments are temporarily disabled while fulfillment is being verified.",
     code: "pos_fulfillment_not_ready"
-  }, 409, headers4);
+  }, 409, headers5);
 }
 function saleId() {
   return `pos_${crypto.randomUUID()}`;
@@ -43402,21 +44190,21 @@ async function rememberCustomer(env, contactId, customerId) {
   } catch {
   }
 }
-async function onRequestOptions94(context) {
+async function onRequestOptions95(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet61(context) {
+async function onRequestGet62(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
-  const { error } = await requireStaffAuth(context, headers4);
+  const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const id3 = new URL(context.request.url).searchParams.get("id") || "";
   try {
     const sale = await readPosSale(context.env.PORTAL_KV, id3);
-    return sale ? json18({ sale }, 200, headers4) : json18({ error: "Saved cart not found" }, 404, headers4);
+    return sale ? json18({ sale }, 200, headers5) : json18({ error: "Saved cart not found" }, 404, headers5);
   } catch (error2) {
     console.error("[staff-pos-sales] GET", error2 instanceof Error ? error2.message : error2);
-    return json18({ error: "Could not load saved cart" }, 422, headers4);
+    return json18({ error: "Could not load saved cart" }, 422, headers5);
   }
 }
 async function ensureSale(context, body, reviewer, catalog) {
@@ -43590,12 +44378,12 @@ async function chargeSavedCardLeg(context, sale, reviewer, { paymentMethodId, pa
     }
   };
 }
-async function onRequestPost66(context) {
+async function onRequestPost67(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
-  const { error, payload } = await requireStaffAuth(context, headers4);
+  const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const { body, error: bodyError } = await parseJsonBody(context.request, headers4);
+  const { body, error: bodyError } = await parseJsonBody(context.request, headers5);
   if (bodyError) return bodyError;
   const action = typeof body.action === "string" ? body.action : "";
   const reviewer = typeof payload?.user === "string" ? payload.user : "Staff";
@@ -43605,36 +44393,36 @@ async function onRequestPost66(context) {
     if (action === "create") {
       const sale = buildPosSale({ id: saleId(), client: body.client, cart: body.cart, paymentLegs: body.paymentLegs, reviewer, catalog });
       await writePosSale(context.env.PORTAL_KV, sale);
-      return json18({ sale }, 201, headers4);
+      return json18({ sale }, 201, headers5);
     }
     if (action === "start-checkout") {
       const sale = await ensureSale(context, body, reviewer, catalog);
-      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers4);
-      if (!sale.paymentLegs?.length) return json18({ error: "Add a payment method before checkout" }, 400, headers4);
+      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers5);
+      if (!sale.paymentLegs?.length) return json18({ error: "Add a payment method before checkout" }, 400, headers5);
       const result = await openStripeLegs(context, sale, reviewer);
-      return json18(result, 200, headers4);
+      return json18(result, 200, headers5);
     }
     if (action === "charge-saved-card") {
       const sale = await ensureSale(context, body, reviewer, catalog);
-      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers4);
-      if (!sale.paymentLegs?.length) return json18({ error: "Add a payment method before charging" }, 400, headers4);
+      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers5);
+      if (!sale.paymentLegs?.length) return json18({ error: "Add a payment method before charging" }, 400, headers5);
       const result = await chargeSavedCardLeg(context, sale, reviewer, {
         paymentMethodId: body.paymentMethodId,
         paymentLegId: body.paymentLegId,
         confirmed: body.confirmed === true
       });
-      return json18(result, 200, headers4);
+      return json18(result, 200, headers5);
     }
     if (action === "record-cash") {
       const sale = await ensureSale(context, body, reviewer, catalog);
-      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers4);
+      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers5);
       const legId = typeof body.paymentLegId === "string" ? body.paymentLegId : sale.paymentLegs.find((leg2) => leg2.method === "cash" && leg2.status !== "paid")?.id;
-      if (!legId) return json18({ error: "No cash payment leg found" }, 400, headers4);
+      if (!legId) return json18({ error: "No cash payment leg found" }, 400, headers5);
       const cashReceivedCents = Number(body.cashReceivedCents);
       const leg = sale.paymentLegs.find((item) => item.id === legId);
-      if (!leg || leg.method !== "cash") return json18({ error: "Cash leg not found" }, 400, headers4);
+      if (!leg || leg.method !== "cash") return json18({ error: "Cash leg not found" }, 400, headers5);
       if (!Number.isSafeInteger(cashReceivedCents) || cashReceivedCents < leg.amountCents) {
-        return json18({ error: "Cash received must cover the cash leg amount" }, 400, headers4);
+        return json18({ error: "Cash received must cover the cash leg amount" }, 400, headers5);
       }
       const next = markLegPaid(sale, legId, {
         cashReceivedCents,
@@ -43645,45 +44433,45 @@ async function onRequestPost66(context) {
       if (next.status === "paid") {
         const { sale: fulfilled, result } = await fulfillPaidPosSale(context, next, { actor: reviewer });
         await writePosSale(context.env.PORTAL_KV, fulfilled);
-        return json18({ sale: fulfilled, fulfillment: result }, 200, headers4);
+        return json18({ sale: fulfilled, fulfillment: result }, 200, headers5);
       }
-      return json18({ sale: next }, 200, headers4);
+      return json18({ sale: next }, 200, headers5);
     }
     if (action === "fulfill") {
       const id4 = typeof body.id === "string" ? body.id : "";
       const existing2 = await readPosSale(context.env.PORTAL_KV, id4);
-      if (!existing2) return json18({ error: "Saved cart not found" }, 404, headers4);
-      if (!posPaymentActionAvailable(context.env, action, existing2)) return unavailablePaymentResponse(headers4);
-      if (existing2.status !== "paid") return json18({ error: "Sale must be fully paid before fulfillment" }, 400, headers4);
+      if (!existing2) return json18({ error: "Saved cart not found" }, 404, headers5);
+      if (!posPaymentActionAvailable(context.env, action, existing2)) return unavailablePaymentResponse(headers5);
+      if (existing2.status !== "paid") return json18({ error: "Sale must be fully paid before fulfillment" }, 400, headers5);
       const { sale: fulfilled, result } = await fulfillPaidPosSale(context, existing2, { actor: reviewer });
       await writePosSale(context.env.PORTAL_KV, fulfilled);
-      return json18({ sale: fulfilled, fulfillment: result }, 200, headers4);
+      return json18({ sale: fulfilled, fulfillment: result }, 200, headers5);
     }
     const id3 = typeof body.id === "string" ? body.id : "";
     const existing = await readPosSale(context.env.PORTAL_KV, id3);
-    if (!existing) return json18({ error: "Saved cart not found" }, 404, headers4);
+    if (!existing) return json18({ error: "Saved cart not found" }, 404, headers5);
     if (action === "save") {
-      if (body.version !== void 0 && body.version !== existing.version) return json18({ error: "This cart changed elsewhere. Reload it before saving." }, 409, headers4);
+      if (body.version !== void 0 && body.version !== existing.version) return json18({ error: "This cart changed elsewhere. Reload it before saving." }, 409, headers5);
       const sale = updatePosSale(existing, { client: body.client, cart: body.cart, paymentLegs: body.paymentLegs, reviewer, catalog });
       await writePosSale(context.env.PORTAL_KV, sale);
-      return json18({ sale }, 200, headers4);
+      return json18({ sale }, 200, headers5);
     }
     if (action === "preview-checkout-text") {
       const result = buildInactiveTextPreview(existing, reviewer);
       await writePosSale(context.env.PORTAL_KV, result.sale);
-      return json18({ sale: result.sale, preview: result.preview }, 200, headers4);
+      return json18({ sale: result.sale, preview: result.preview }, 200, headers5);
     }
-    return json18({ error: "Unknown POS action" }, 400, headers4);
+    return json18({ error: "Unknown POS action" }, 400, headers5);
   } catch (error2) {
     console.error("[staff-pos-sales] POST", error2 instanceof Error ? error2.message : error2);
     const status = error2?.status === 404 || error2?.status === 409 ? error2.status : 422;
-    return json18({ error: error2 instanceof Error ? error2.message : "Could not save cart" }, status, headers4);
+    return json18({ error: error2 instanceof Error ? error2.message : "Could not save cart" }, status, headers5);
   }
 }
 var POS_PAYMENT_ACTIONS;
 var init_staff_pos_sales = __esm({
   "api/staff-pos-sales.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_staff_pos();
     init_staff_pos_fulfill();
@@ -43703,12 +44491,12 @@ var init_staff_pos_sales = __esm({
     __name(siteOrigin, "siteOrigin");
     __name(storedCustomerId, "storedCustomerId");
     __name(rememberCustomer, "rememberCustomer");
-    __name(onRequestOptions94, "onRequestOptions");
-    __name(onRequestGet61, "onRequestGet");
+    __name(onRequestOptions95, "onRequestOptions");
+    __name(onRequestGet62, "onRequestGet");
     __name(ensureSale, "ensureSale");
     __name(openStripeLegs, "openStripeLegs");
     __name(chargeSavedCardLeg, "chargeSavedCardLeg");
-    __name(onRequestPost66, "onRequestPost");
+    __name(onRequestPost67, "onRequestPost");
   }
 });
 
@@ -43720,8 +44508,8 @@ function responseHeaders7(context, methods) {
     "Cache-Control": "no-store"
   };
 }
-function json19(value, status, headers4) {
-  return new Response(JSON.stringify(value), { status, headers: headers4 });
+function json19(value, status, headers5) {
+  return new Response(JSON.stringify(value), { status, headers: headers5 });
 }
 function publicProduct(product) {
   const { ghlProductId: _providerProductId, ...visible } = product;
@@ -43747,12 +44535,12 @@ function publicCoverage(coverage) {
     }))
   };
 }
-async function onRequestOptions95(context) {
+async function onRequestOptions96(context) {
   return new Response(null, { status: 204, headers: responseHeaders7(context, "GET, POST, OPTIONS") });
 }
-async function onRequestGet62(context) {
-  const headers4 = responseHeaders7(context, "GET, POST, OPTIONS");
-  const { error, payload } = await requireStaffAuth(context, headers4);
+async function onRequestGet63(context) {
+  const headers5 = responseHeaders7(context, "GET, POST, OPTIONS");
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const result = await listStaffProducts(context.env.ATTEND_DB || null);
   return json19({
@@ -43760,57 +44548,57 @@ async function onRequestGet62(context) {
     products: result.products.map(publicProduct),
     coverage: publicCoverage(result.coverage),
     canCreate: result.canCreate && payload?.user === "Eben"
-  }, 200, headers4);
+  }, 200, headers5);
 }
-async function onRequestPost67(context) {
-  const headers4 = responseHeaders7(context, "GET, POST, OPTIONS");
-  const auth = await requireEbenStaffAuth(context, headers4);
+async function onRequestPost68(context) {
+  const headers5 = responseHeaders7(context, "GET, POST, OPTIONS");
+  const auth = await requireEbenStaffAuth(context, headers5);
   if (auth.error) return auth.error;
-  const parsed = await parseJsonBody(context.request, headers4);
+  const parsed = await parseJsonBody(context.request, headers5);
   if (parsed.error) return parsed.error;
   try {
     const product = await createStaffProduct(context.env.ATTEND_DB || null, parsed.body, {
       actor: auth.payload?.user || "Eben"
     });
-    return json19({ product: publicProduct(product) }, 201, headers4);
+    return json19({ product: publicProduct(product) }, 201, headers5);
   } catch (cause) {
     const status = Number(cause?.status) || 500;
     const safeStatus2 = [400, 409, 503].includes(status) ? status : 500;
     if (safeStatus2 === 500) console.error("[staff-products] create", cause instanceof Error ? cause.message : cause);
-    return json19({ error: cause instanceof Error ? cause.message : "Could not create product" }, safeStatus2, headers4);
+    return json19({ error: cause instanceof Error ? cause.message : "Could not create product" }, safeStatus2, headers5);
   }
 }
 var init_staff_products2 = __esm({
   "api/staff-products.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_staff_products();
     __name(responseHeaders7, "responseHeaders");
     __name(json19, "json");
     __name(publicProduct, "publicProduct");
     __name(publicCoverage, "publicCoverage");
-    __name(onRequestOptions95, "onRequestOptions");
-    __name(onRequestGet62, "onRequestGet");
-    __name(onRequestPost67, "onRequestPost");
+    __name(onRequestOptions96, "onRequestOptions");
+    __name(onRequestGet63, "onRequestGet");
+    __name(onRequestPost68, "onRequestPost");
   }
 });
 
 // api/staff-refresh-activity.js
-async function onRequestOptions96(context) {
+async function onRequestOptions97(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost68(context) {
+async function onRequestPost69(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const ac = new AbortController();
     const workerHeaders = context.env.WORKER_AUTH_SECRET ? { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` } : void 0;
-    const kickoff = fetch(WORKER_URL9, {
+    const kickoff = fetch(WORKER_URL14, {
       method: "GET",
       headers: workerHeaders,
       signal: ac.signal
@@ -43824,68 +44612,68 @@ async function onRequestPost68(context) {
         triggered: true,
         message: "Refresh triggered. Re-load the page in 5-15 minutes to see updated activity dates."
       }),
-      { status: 202, headers: headers4 }
+      { status: 202, headers: headers5 }
     );
   } catch (err) {
     const detail = err instanceof Error ? err.message : String(err);
     console.error("[staff-refresh-activity] failed:", detail);
     return new Response(
       JSON.stringify({ error: `Failed to trigger refresh: ${detail}` }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
-var WORKER_URL9;
+var WORKER_URL14;
 var init_staff_refresh_activity = __esm({
   "api/staff-refresh-activity.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
-    WORKER_URL9 = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
-    __name(onRequestOptions96, "onRequestOptions");
-    __name(onRequestPost68, "onRequestPost");
+    WORKER_URL14 = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
+    __name(onRequestOptions97, "onRequestOptions");
+    __name(onRequestPost69, "onRequestPost");
   }
 });
 
 // api/staff-reply-dismiss.js
-async function onRequestOptions97({ request }) {
+async function onRequestOptions98({ request: request2 }) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(request.headers.get("Origin") || "", "POST, OPTIONS")
+    headers: corsHeaders3(request2.headers.get("Origin") || "", "POST, OPTIONS")
   });
 }
-async function onRequestPost69(context) {
-  const { request, env } = context;
-  const origin = request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error } = await requireStaffAuth(context, headers4);
+async function onRequestPost70(context) {
+  const { request: request2, env } = context;
+  const origin = request2.headers.get("Origin") || "";
+  const headers5 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   let body;
   try {
-    body = await request.json();
+    body = await request2.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers5 });
   }
   const { contactId, lastMessageDate } = body;
   if (!contactId || typeof contactId !== "string") {
-    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
   }
   try {
     const current = await env.PORTAL_KV.get(KV_KEY4, "json") || {};
     current[contactId] = lastMessageDate || null;
     await env.PORTAL_KV.put(KV_KEY4, JSON.stringify(current), { expirationTtl: 30 * 86400 });
-    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ ok: true }), { status: 200, headers: headers5 });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: String(err) }), { status: 500, headers: headers5 });
   }
 }
 var KV_KEY4;
 var init_staff_reply_dismiss = __esm({
   "api/staff-reply-dismiss.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     KV_KEY4 = "reply:dismissed";
-    __name(onRequestOptions97, "onRequestOptions");
-    __name(onRequestPost69, "onRequestPost");
+    __name(onRequestOptions98, "onRequestOptions");
+    __name(onRequestPost70, "onRequestPost");
   }
 });
 
@@ -43968,7 +44756,7 @@ async function getStaffRevenue(secretKey, { now = /* @__PURE__ */ new Date(), mo
 var TIME_ZONE, MONTH_COUNT, STRIPE_PAGE_LIMIT;
 var init_staff_revenue = __esm({
   "lib/staff-revenue.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     TIME_ZONE = "America/Los_Angeles";
     MONTH_COUNT = 6;
     STRIPE_PAGE_LIMIT = 20;
@@ -43982,61 +44770,64 @@ var init_staff_revenue = __esm({
 });
 
 // api/staff-revenue.js
-async function onRequestOptions98(context) {
-  return new Response(null, {
-    status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"))
-  });
-}
-async function onRequestGet63(context) {
-  const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
-  try {
-    const { error } = await requireStaffAuth(context, headers4);
-    if (error) return error;
-    if (!context.env.STRIPE_SECRET_KEY) {
-      return new Response(JSON.stringify({ error: "Stripe revenue is not configured" }), { status: 500, headers: headers4 });
-    }
-    const requestedMonths = Number(new URL(context.request.url).searchParams.get("months"));
-    const summary = await getStaffRevenue(context.env.STRIPE_SECRET_KEY, {
-      months: [6, 12, 24].includes(requestedMonths) ? requestedMonths : 12
-    });
-    return new Response(JSON.stringify(summary), { status: 200, headers: headers4 });
-  } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    console.error("[staff-revenue] failed:", detail);
-    return new Response(JSON.stringify({ error: "Unable to load Stripe revenue" }), { status: 422, headers: headers4 });
-  }
-}
-var init_staff_revenue2 = __esm({
-  "api/staff-revenue.js"() {
-    init_functionsRoutes_0_5623767148686312();
-    init_endpoint_guards();
-    init_staff_revenue();
-    __name(onRequestOptions98, "onRequestOptions");
-    __name(onRequestGet63, "onRequestGet");
-  }
-});
-
-// api/staff-save-progress.js
 async function onRequestOptions99(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost70(context) {
+async function onRequestGet64(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
-    if (parseError) return parseError;
-    const { contactId, progress } = body;
-    if (!contactId || !progress) {
-      return new Response(JSON.stringify({ error: "contactId and progress are required" }), { status: 400, headers: headers4 });
+    if (!context.env.STRIPE_SECRET_KEY) {
+      return new Response(JSON.stringify({ error: "Stripe revenue is not configured" }), { status: 500, headers: headers5 });
     }
+    const requestedMonths = Number(new URL(context.request.url).searchParams.get("months"));
+    const summary = await getStaffRevenue(context.env.STRIPE_SECRET_KEY, {
+      months: [6, 12, 24].includes(requestedMonths) ? requestedMonths : 12
+    });
+    return new Response(JSON.stringify(summary), { status: 200, headers: headers5 });
+  } catch (err) {
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("[staff-revenue] failed:", detail);
+    return new Response(JSON.stringify({ error: "Unable to load Stripe revenue" }), { status: 422, headers: headers5 });
+  }
+}
+var init_staff_revenue2 = __esm({
+  "api/staff-revenue.js"() {
+    init_functionsRoutes_0_7504159312216875();
+    init_endpoint_guards();
+    init_staff_revenue();
+    __name(onRequestOptions99, "onRequestOptions");
+    __name(onRequestGet64, "onRequestGet");
+  }
+});
+
+// api/staff-save-progress.js
+async function onRequestOptions100(context) {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders3(context.request.headers.get("Origin"))
+  });
+}
+async function onRequestPost71(context) {
+  const origin = context.request.headers.get("Origin") || "";
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  try {
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
+    if (error) return error;
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
+    if (parseError) return parseError;
+    const { contactId: contactReference, progress } = body;
+    if (!contactReference || !progress) {
+      return new Response(JSON.stringify({ error: "contactId and progress are required" }), { status: 400, headers: headers5 });
+    }
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference)
+    );
     const customFields = [];
     for (const [moduleId, fieldId] of Object.entries(MODULE_FIELDS)) {
       const taught = !!progress.modules?.[moduleId];
@@ -44062,20 +44853,25 @@ async function onRequestPost70(context) {
     if (!updateRes.ok) {
       const errText = await updateRes.text();
       console.error(`[staff-save-progress] Update failed: ${updateRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to save progress" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to save progress" }), { status: 422, headers: headers5 });
     }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-save-progress] Error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE51, MODULE_FIELDS, BODY_FIELDS, YOGA_BLOCK_FIELD;
 var init_staff_save_progress = __esm({
   "api/staff-save-progress.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
+    init_staff_owned_contact_identity();
     GHL_API_BASE51 = "https://services.leadconnectorhq.com";
     MODULE_FIELDS = {
       "suspension-squat": "ppSis1mS8JHM0zFY5WdC",
@@ -44095,8 +44891,8 @@ var init_staff_save_progress = __esm({
       lower: "yeiKwwcNnuUsAAz1LpQt"
     };
     YOGA_BLOCK_FIELD = "dRiVGU2Q2lRbCAaPIQai";
-    __name(onRequestOptions99, "onRequestOptions");
-    __name(onRequestPost70, "onRequestPost");
+    __name(onRequestOptions100, "onRequestOptions");
+    __name(onRequestPost71, "onRequestPost");
   }
 });
 
@@ -44110,31 +44906,41 @@ function maskEmail(e) {
   const [u, d2] = String(e).split("@");
   return `${u.slice(0, 2)}***@${d2 || ""}`;
 }
-async function onRequestOptions100(context) {
+async function onRequestOptions101(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost71(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+async function onRequestPost72(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   let body;
   try {
     body = await context.request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers5 });
   }
-  const contactId = (body.contactId || "").trim();
+  const contactReference = (body.contactId || "").trim();
   const subject2 = (body.subject || "").trim();
   const html = (body.html || "").trim();
-  if (!contactId || !VALID_CONTACT_ID2.test(contactId)) return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers4 });
-  if (!subject2) return new Response(JSON.stringify({ error: "subject is required" }), { status: 400, headers: headers4 });
-  if (!html) return new Response(JSON.stringify({ error: "body is required" }), { status: 400, headers: headers4 });
-  if (subject2.length > MAX_SUBJECT || html.length > MAX_BODY) return new Response(JSON.stringify({ error: "Email too long" }), { status: 400, headers: headers4 });
-  if (BAD_CHARS2.test(subject2) || BAD_CHARS2.test(html)) return new Response(JSON.stringify({ error: "Email has invalid characters" }), { status: 400, headers: headers4 });
+  if (!contactReference) return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers5 });
+  let contactId;
+  try {
+    contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference)
+    );
+  } catch (identityError3) {
+    const status = [400, 404, 409, 503].includes(Number(identityError3?.status)) ? Number(identityError3.status) : 503;
+    return new Response(JSON.stringify({ error: identityError3.message, code: identityError3.code }), { status, headers: headers5 });
+  }
+  if (!VALID_CONTACT_ID2.test(contactId)) return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers5 });
+  if (!subject2) return new Response(JSON.stringify({ error: "subject is required" }), { status: 400, headers: headers5 });
+  if (!html) return new Response(JSON.stringify({ error: "body is required" }), { status: 400, headers: headers5 });
+  if (subject2.length > MAX_SUBJECT || html.length > MAX_BODY) return new Response(JSON.stringify({ error: "Email too long" }), { status: 400, headers: headers5 });
+  if (BAD_CHARS2.test(subject2) || BAD_CHARS2.test(html)) return new Response(JSON.stringify({ error: "Email has invalid characters" }), { status: 400, headers: headers5 });
   const kv = context.env.PORTAL_KV;
   const dedupeKey = `sentmail:${contactId}:${hashKey(subject2 + html)}`;
   if (kv) {
-    if (await kv.get(dedupeKey)) return new Response(JSON.stringify({ success: true, deduped: true }), { status: 200, headers: headers4 });
+    if (await kv.get(dedupeKey)) return new Response(JSON.stringify({ success: true, deduped: true }), { status: 200, headers: headers5 });
     try {
       await kv.put(dedupeKey, "1", { expirationTtl: DEDUPE_TTL_S });
     } catch {
@@ -44151,13 +44957,13 @@ async function onRequestPost71(context) {
   const contactRes = await ghlFetch(context, `${GHL_API_BASE52}/contacts/${encodeURIComponent(contactId)}`);
   if (!contactRes.ok) {
     await releaseDedupe();
-    return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
   }
   const contact = (await contactRes.json()).contact;
   const email = (contact?.email || "").trim();
   if (!email || !VALID_EMAIL.test(email)) {
     await releaseDedupe();
-    return new Response(JSON.stringify({ error: "Contact has no valid email" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Contact has no valid email" }), { status: 400, headers: headers5 });
   }
   const sendRes = await ghlFetch(context, `${GHL_API_BASE52}/conversations/messages`, {
     method: "POST",
@@ -44167,17 +44973,18 @@ async function onRequestPost71(context) {
     await releaseDedupe();
     const errText = await sendRes.text();
     console.error(`[staff-send-email] send failed: ${sendRes.status} ${errText}`);
-    return new Response(JSON.stringify({ error: "Failed to send email" }), { status: 422, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Failed to send email" }), { status: 422, headers: headers5 });
   }
   console.log(`[staff-send-email] sent by ${tokenPayload.user || "staff"} to ${contactId} (${maskEmail(email)}, subj ${subject2.length}c, body ${html.length}c)`);
-  return new Response(JSON.stringify({ success: true, sentTo: maskEmail(email) }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ success: true, sentTo: maskEmail(email) }), { status: 200, headers: headers5 });
 }
 var GHL_API_BASE52, MAX_SUBJECT, MAX_BODY, DEDUPE_TTL_S, VALID_CONTACT_ID2, BAD_CHARS2, VALID_EMAIL;
 var init_staff_send_email = __esm({
   "api/staff-send-email.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
+    init_staff_owned_contact_identity();
     GHL_API_BASE52 = "https://services.leadconnectorhq.com";
     MAX_SUBJECT = 200;
     MAX_BODY = 8e3;
@@ -44187,8 +44994,8 @@ var init_staff_send_email = __esm({
     VALID_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     __name(hashKey, "hashKey");
     __name(maskEmail, "maskEmail");
-    __name(onRequestOptions100, "onRequestOptions");
-    __name(onRequestPost71, "onRequestPost");
+    __name(onRequestOptions101, "onRequestOptions");
+    __name(onRequestPost72, "onRequestPost");
   }
 });
 
@@ -44198,39 +45005,42 @@ function buildMessage(product) {
 
 ${BASE_URL}${product.path}`;
 }
-async function onRequestOptions101(context) {
+async function onRequestOptions102(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost72(context) {
+async function onRequestPost73(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   let claimedDedupeKey = null;
   let claimedDedupeKv = null;
   let smsSent = false;
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
-    const { contactId, product: productKey } = body;
-    if (!contactId) {
-      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers4 });
+    const { contactId: contactReference, product: productKey } = body;
+    if (!contactReference) {
+      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers5 });
     }
     if (!productKey || !PAY_LINK_PRODUCTS[productKey]) {
-      return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Unknown product" }), { status: 400, headers: headers5 });
     }
     const product = PAY_LINK_PRODUCTS[productKey];
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference)
+    );
     const contactRes = await ghlFetch(context, `${GHL_API_BASE53}/contacts/${contactId}`);
     if (!contactRes.ok) {
-      return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
     }
     const contactData = await contactRes.json();
     const contact = contactData.contact;
     if (!contact.phone) {
-      return new Response(JSON.stringify({ error: "Contact has no phone number" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact has no phone number" }), { status: 400, headers: headers5 });
     }
     const dedupeKey = `paylink-sent:${contactId}:${productKey}`;
     const dedupeKv = context.env.PURCHASE_KV || null;
@@ -44241,7 +45051,7 @@ async function onRequestPost72(context) {
           success: true,
           deduped: true,
           message: "This link was already sent moments ago \u2014 not re-sending."
-        }), { status: 200, headers: headers4 });
+        }), { status: 200, headers: headers5 });
       }
       await dedupeKv.put(dedupeKey, (/* @__PURE__ */ new Date()).toISOString(), { expirationTtl: 120 }).catch(() => {
       });
@@ -44261,7 +45071,7 @@ async function onRequestPost72(context) {
       console.error(`[staff-send-paylink] SMS send failed: ${smsRes.status} ${errText}`);
       if (dedupeKv) await dedupeKv.delete(dedupeKey).catch(() => {
       });
-      return new Response(JSON.stringify({ error: "Failed to send SMS" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to send SMS" }), { status: 422, headers: headers5 });
     }
     smsSent = true;
     try {
@@ -44273,22 +45083,27 @@ async function onRequestPost72(context) {
     } catch (err) {
       console.error(`[staff-send-paylink] Tag update failed: ${err.message}`);
     }
-    return new Response(JSON.stringify({ success: true, product: productKey }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true, product: productKey }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-send-paylink] Error:", err.message);
     if (claimedDedupeKey && claimedDedupeKv && !smsSent) {
       await claimedDedupeKv.delete(claimedDedupeKey).catch(() => {
       });
     }
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE53, BASE_URL, PAY_LINK_PRODUCTS;
 var init_staff_send_paylink = __esm({
   "api/staff-send-paylink.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
+    init_staff_owned_contact_identity();
     GHL_API_BASE53 = "https://services.leadconnectorhq.com";
     BASE_URL = "https://link.amarimethod.com";
     PAY_LINK_PRODUCTS = {
@@ -44354,37 +45169,37 @@ var init_staff_send_paylink = __esm({
       }
     };
     __name(buildMessage, "buildMessage");
-    __name(onRequestOptions101, "onRequestOptions");
-    __name(onRequestPost72, "onRequestPost");
+    __name(onRequestOptions102, "onRequestOptions");
+    __name(onRequestPost73, "onRequestPost");
   }
 });
 
 // api/staff-send-receipt.js
-function json20(body, status, headers4) {
-  return new Response(JSON.stringify(body), { status, headers: headers4 });
+function json20(body, status, headers5) {
+  return new Response(JSON.stringify(body), { status, headers: headers5 });
 }
-async function onRequestOptions102(context) {
+async function onRequestOptions103(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS7)
   });
 }
-async function onRequestPost73(context) {
-  const headers4 = {
+async function onRequestPost74(context) {
+  const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS7),
     "Content-Type": "application/json"
   };
-  const { error } = await requireStaffAuth(context, headers4);
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+  const { body, error: parseError } = await parseJsonBody(context.request, headers5);
   if (parseError) return parseError;
   const contactId = typeof body.contactId === "string" ? body.contactId.trim() : "";
   const channel = body.channel === "email" ? "email" : "sms";
-  if (!contactId) return json20({ error: "contactId required" }, 400, headers4);
+  if (!contactId) return json20({ error: "contactId required" }, 400, headers5);
   const stripeKey = context.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) return json20({ error: "Stripe is not configured" }, 503, headers4);
+  if (!stripeKey) return json20({ error: "Stripe is not configured" }, 503, headers5);
   const contactRes = await ghlFetch(context, `${GHL_API_BASE54}/contacts/${contactId}`);
-  if (!contactRes.ok) return json20({ error: "Could not load that contact." }, 404, headers4);
+  if (!contactRes.ok) return json20({ error: "Could not load that contact." }, 404, headers5);
   const contactData = await contactRes.json();
   const contact = contactData.contact || contactData;
   const email = contact.email || "";
@@ -44397,14 +45212,14 @@ async function onRequestPost73(context) {
   const withReceipt = (charges || []).filter((c) => c && c.status === "succeeded" && c.receipt_url).sort((a, b) => (b.created || 0) - (a.created || 0));
   const charge = withReceipt[0];
   if (!charge) {
-    return json20({ error: "No Stripe receipt found for this person yet." }, 404, headers4);
+    return json20({ error: "No Stripe receipt found for this person yet." }, 404, headers5);
   }
   const amount = typeof charge.amount === "number" ? `$${(charge.amount / 100).toFixed(2)}` : "your payment";
   const message = `Here's your Amari Method receipt for ${amount}:
 
 ${charge.receipt_url}`;
   if (channel === "email") {
-    if (!email) return json20({ error: "No email on this contact." }, 400, headers4);
+    if (!email) return json20({ error: "No email on this contact." }, 400, headers5);
     const sendRes = await ghlFetch(context, `${GHL_API_BASE54}/conversations/messages`, {
       method: "POST",
       body: JSON.stringify({
@@ -44417,10 +45232,10 @@ ${charge.receipt_url}`;
     if (!sendRes.ok) {
       const detail = await sendRes.text();
       console.error("[staff-send-receipt] email failed", sendRes.status, detail.slice(0, 200));
-      return json20({ error: "Could not send the receipt email." }, 502, headers4);
+      return json20({ error: "Could not send the receipt email." }, 502, headers5);
     }
   } else {
-    if (!phone) return json20({ error: "No phone on this contact \u2014 try email." }, 400, headers4);
+    if (!phone) return json20({ error: "No phone on this contact \u2014 try email." }, 400, headers5);
     const sendRes = await ghlFetch(context, `${GHL_API_BASE54}/conversations/messages`, {
       method: "POST",
       body: JSON.stringify({
@@ -44432,7 +45247,7 @@ ${charge.receipt_url}`;
     if (!sendRes.ok) {
       const detail = await sendRes.text();
       console.error("[staff-send-receipt] sms failed", sendRes.status, detail.slice(0, 200));
-      return json20({ error: "Could not send the receipt text." }, 502, headers4);
+      return json20({ error: "Could not send the receipt text." }, 502, headers5);
     }
   }
   return json20({
@@ -44441,20 +45256,20 @@ ${charge.receipt_url}`;
     receiptUrl: charge.receipt_url,
     amount: charge.amount,
     chargeId: charge.id
-  }, 200, headers4);
+  }, 200, headers5);
 }
 var GHL_API_BASE54, METHODS7;
 var init_staff_send_receipt = __esm({
   "api/staff-send-receipt.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_ghl();
     init_stripe_charges();
     GHL_API_BASE54 = "https://services.leadconnectorhq.com";
     METHODS7 = "POST, OPTIONS";
     __name(json20, "json");
-    __name(onRequestOptions102, "onRequestOptions");
-    __name(onRequestPost73, "onRequestPost");
+    __name(onRequestOptions103, "onRequestOptions");
+    __name(onRequestPost74, "onRequestPost");
   }
 });
 
@@ -44471,31 +45286,43 @@ function hashKey2(s) {
   for (let i = 0; i < s.length; i++) h = (h << 5) + h + s.charCodeAt(i) >>> 0;
   return h.toString(36);
 }
-async function onRequestOptions103(context) {
+function buildStaffSmsPayload(contactId, message) {
+  return { type: "SMS", contactId, message, fromNumber: PRACTICE_SMS_FROM_NUMBER };
+}
+async function onRequestOptions104(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
-async function onRequestPost74(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+async function onRequestPost75(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   let body;
   try {
     body = await context.request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers5 });
   }
-  const contactId = (body.contactId || "").trim();
+  const contactReference = (body.contactId || "").trim();
   const message = (body.message || "").trim();
-  if (!contactId) return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers4 });
-  if (!VALID_CONTACT_ID3.test(contactId)) return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers4 });
-  if (!message) return new Response(JSON.stringify({ error: "message is required" }), { status: 400, headers: headers4 });
-  if (message.length > MAX_LEN) return new Response(JSON.stringify({ error: "Message too long" }), { status: 400, headers: headers4 });
-  if (BAD_CHARS3.test(message)) return new Response(JSON.stringify({ error: "Message has invalid characters" }), { status: 400, headers: headers4 });
+  if (!contactReference) return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers5 });
+  let contactId;
+  try {
+    contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference)
+    );
+  } catch (identityError3) {
+    const status = [400, 404, 409, 503].includes(Number(identityError3?.status)) ? Number(identityError3.status) : 503;
+    return new Response(JSON.stringify({ error: identityError3.message, code: identityError3.code }), { status, headers: headers5 });
+  }
+  if (!VALID_CONTACT_ID3.test(contactId)) return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers: headers5 });
+  if (!message) return new Response(JSON.stringify({ error: "message is required" }), { status: 400, headers: headers5 });
+  if (message.length > MAX_LEN) return new Response(JSON.stringify({ error: "Message too long" }), { status: 400, headers: headers5 });
+  if (BAD_CHARS3.test(message)) return new Response(JSON.stringify({ error: "Message has invalid characters" }), { status: 400, headers: headers5 });
   const kv = context.env.PORTAL_KV;
   const dedupeKey = `sent:${contactId}:${hashKey2(message)}`;
   if (kv) {
     const seen = await kv.get(dedupeKey);
-    if (seen) return new Response(JSON.stringify({ success: true, deduped: true }), { status: 200, headers: headers4 });
+    if (seen) return new Response(JSON.stringify({ success: true, deduped: true }), { status: 200, headers: headers5 });
     try {
       await kv.put(dedupeKey, "1", { expirationTtl: DEDUPE_TTL_S2 });
     } catch {
@@ -44512,76 +45339,82 @@ async function onRequestPost74(context) {
   const contactRes = await ghlFetch(context, `${GHL_API_BASE55}/contacts/${encodeURIComponent(contactId)}`);
   if (!contactRes.ok) {
     await releaseDedupe();
-    return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
   }
   const contact = (await contactRes.json()).contact;
   const phone = normalizePhone3(contact?.phone);
   if (!phone) {
     await releaseDedupe();
-    return new Response(JSON.stringify({ error: "Contact has no valid phone number" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Contact has no valid phone number" }), { status: 400, headers: headers5 });
   }
   const smsRes = await ghlFetch(context, `${GHL_API_BASE55}/conversations/messages`, {
     method: "POST",
-    body: JSON.stringify({ type: "SMS", contactId, message })
+    body: JSON.stringify(buildStaffSmsPayload(contactId, message))
   });
   if (!smsRes.ok) {
     await releaseDedupe();
     const errText = await smsRes.text();
     console.error(`[staff-send-text] SMS send failed: ${smsRes.status} ${errText}`);
-    return new Response(JSON.stringify({ error: "Failed to send text" }), { status: 422, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Failed to send text" }), { status: 422, headers: headers5 });
   }
   console.log(`[staff-send-text] sent by ${tokenPayload.user || "staff"} to ${contactId} (last4 ${phone.slice(-4)}, ${message.length} chars)`);
-  return new Response(JSON.stringify({ success: true, sentTo: `***${phone.slice(-4)}` }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ success: true, sentTo: `***${phone.slice(-4)}` }), { status: 200, headers: headers5 });
 }
-var GHL_API_BASE55, MAX_LEN, DEDUPE_TTL_S2, VALID_CONTACT_ID3, BAD_CHARS3;
+var GHL_API_BASE55, PRACTICE_SMS_FROM_NUMBER, MAX_LEN, DEDUPE_TTL_S2, VALID_CONTACT_ID3, BAD_CHARS3;
 var init_staff_send_text = __esm({
   "api/staff-send-text.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
+    init_staff_owned_contact_identity();
     GHL_API_BASE55 = "https://services.leadconnectorhq.com";
+    PRACTICE_SMS_FROM_NUMBER = "+16288777673";
     MAX_LEN = 720;
     DEDUPE_TTL_S2 = 300;
     VALID_CONTACT_ID3 = /^[A-Za-z0-9]+$/;
     BAD_CHARS3 = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F-\u009F\u202A-\u202E]/;
     __name(normalizePhone3, "normalizePhone");
     __name(hashKey2, "hashKey");
-    __name(onRequestOptions103, "onRequestOptions");
-    __name(onRequestPost74, "onRequestPost");
+    __name(buildStaffSmsPayload, "buildStaffSmsPayload");
+    __name(onRequestOptions104, "onRequestOptions");
+    __name(onRequestPost75, "onRequestPost");
   }
 });
 
 // api/staff-send-toolkit.js
-async function onRequestOptions104(context) {
+async function onRequestOptions105(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost75(context) {
+async function onRequestPost76(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
-    const { contactId } = body;
-    if (!contactId) {
-      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers4 });
+    const { contactId: contactReference } = body;
+    if (!contactReference) {
+      return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers: headers5 });
     }
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference)
+    );
     const contactRes = await ghlFetch(context, `${GHL_API_BASE56}/contacts/${contactId}`);
     if (!contactRes.ok) {
-      return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
     }
     const contactData = await contactRes.json();
     const contact = contactData.contact;
     const tags = contact.tags || [];
     if (!tags.includes("partner-session-booked") && !tags.includes("affiliate-partner")) {
-      return new Response(JSON.stringify({ error: "Contact is not a partner" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact is not a partner" }), { status: 400, headers: headers5 });
     }
     if (!contact.phone) {
-      return new Response(JSON.stringify({ error: "Contact has no phone number" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact has no phone number" }), { status: 400, headers: headers5 });
     }
     if (!tags.includes("affiliate-partner")) {
       try {
@@ -44638,20 +45471,25 @@ async function onRequestPost75(context) {
     if (!smsRes.ok) {
       const errText = await smsRes.text();
       console.error(`[staff-send-toolkit] SMS send failed: ${smsRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to send SMS" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to send SMS" }), { status: 422, headers: headers5 });
     }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-send-toolkit] Error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
+    }
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE56, GHL_LOCATION_ID35, TOOLKIT_MESSAGE;
 var init_staff_send_toolkit = __esm({
   "api/staff-send-toolkit.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
+    init_staff_owned_contact_identity();
     GHL_API_BASE56 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID35 = "7pIO7FHVAyBT1jKGhfQM";
     TOOLKIT_MESSAGE = `Hey! Here's your Amari Method partner toolkit \u2014 everything you need to refer clients and track your earnings:
@@ -44659,26 +45497,26 @@ var init_staff_send_toolkit = __esm({
 https://www.amarimethod.com/partner-app
 
 Log in with your email and you're all set. Reach out anytime if you have questions!`;
-    __name(onRequestOptions104, "onRequestOptions");
-    __name(onRequestPost75, "onRequestPost");
+    __name(onRequestOptions105, "onRequestOptions");
+    __name(onRequestPost76, "onRequestPost");
   }
 });
 
 // api/staff-session.js
 async function authenticatedResponse(context) {
-  const headers4 = responseHeaders8(context.request.headers.get("Origin"), "");
-  const { error, payload } = await requireStaffAuth(context, headers4);
-  return error || { payload, headers: headers4 };
+  const headers5 = responseHeaders8(context.request.headers.get("Origin"), "");
+  const { error, payload } = await requireStaffAuth(context, headers5);
+  return error || { payload, headers: headers5 };
 }
-async function onRequestOptions105(context) {
+async function onRequestOptions106(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, DELETE, OPTIONS") });
 }
-async function onRequestGet64(context) {
+async function onRequestGet65(context) {
   const result = await authenticatedResponse(context);
   if (result instanceof Response) return result;
   return new Response(JSON.stringify({ authenticated: true, user: result.payload.user }), { status: 200, headers: result.headers });
 }
-async function onRequestPost76(context) {
+async function onRequestPost77(context) {
   const result = await authenticatedResponse(context);
   if (result instanceof Response) return result;
   const token = bearerToken(context.request);
@@ -44692,22 +45530,22 @@ async function onRequestDelete(context) {
 var MAX_AGE_SECONDS, sessionCookie, responseHeaders8, bearerToken;
 var init_staff_session = __esm({
   "api/staff-session.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
     sessionCookie = /* @__PURE__ */ __name((value, maxAge = MAX_AGE_SECONDS) => `${STAFF_SESSION_COOKIE}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`, "sessionCookie");
     responseHeaders8 = /* @__PURE__ */ __name((origin, cookie) => ({ ...corsHeaders3(origin, "GET, POST, DELETE, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store", "Set-Cookie": cookie }), "responseHeaders");
-    bearerToken = /* @__PURE__ */ __name((request) => request.headers.get("Authorization")?.startsWith("Bearer ") ? request.headers.get("Authorization").slice(7) : null, "bearerToken");
+    bearerToken = /* @__PURE__ */ __name((request2) => request2.headers.get("Authorization")?.startsWith("Bearer ") ? request2.headers.get("Authorization").slice(7) : null, "bearerToken");
     __name(authenticatedResponse, "authenticatedResponse");
-    __name(onRequestOptions105, "onRequestOptions");
-    __name(onRequestGet64, "onRequestGet");
-    __name(onRequestPost76, "onRequestPost");
+    __name(onRequestOptions106, "onRequestOptions");
+    __name(onRequestGet65, "onRequestGet");
+    __name(onRequestPost77, "onRequestPost");
     __name(onRequestDelete, "onRequestDelete");
   }
 });
 
 // api/staff-sharpen.js
-async function onRequestOptions106(context) {
+async function onRequestOptions107(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
 async function readCards(env) {
@@ -44717,21 +45555,21 @@ async function readCards(env) {
 async function writeCards(env, cards) {
   await env.PORTAL_KV.put(CARDS_KEY, JSON.stringify({ cards, updatedAt: (/* @__PURE__ */ new Date()).toISOString() }));
 }
-async function onRequestGet65(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload } = await requireStaffAuth(context, headers4);
+async function onRequestGet66(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  return new Response(JSON.stringify({ cards: await readCards(context.env) }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ cards: await readCards(context.env) }), { status: 200, headers: headers5 });
 }
-async function onRequestPost77(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload } = await requireStaffAuth(context, headers4);
+async function onRequestPost78(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   let body;
   try {
     body = await context.request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers5 });
   }
   const { action, id: id3 } = body;
   const category = CATEGORIES2.includes(body.category) ? body.category : "frame";
@@ -44741,18 +45579,18 @@ async function onRequestPost77(context) {
   let cards = await readCards(context.env);
   switch (action) {
     case "add": {
-      if (!title && !text6) return new Response(JSON.stringify({ error: "Card needs a title or body" }), { status: 400, headers: headers4 });
-      if (cards.length >= MAX_CARDS) return new Response(JSON.stringify({ error: "Too many cards" }), { status: 400, headers: headers4 });
+      if (!title && !text6) return new Response(JSON.stringify({ error: "Card needs a title or body" }), { status: 400, headers: headers5 });
+      if (cards.length >= MAX_CARDS) return new Response(JSON.stringify({ error: "Too many cards" }), { status: 400, headers: headers5 });
       cards = [{ id: crypto.randomUUID(), category, title, body: text6, addedBy: payload.user || "staff", createdAt: now }, ...cards];
       break;
     }
     case "edit": {
-      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
+      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers5 });
       cards = cards.map((c) => c.id === id3 ? { ...c, category, title, body: text6 } : c);
       break;
     }
     case "delete": {
-      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
+      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers5 });
       cards = cards.filter((c) => c.id !== id3);
       break;
     }
@@ -44765,34 +45603,34 @@ async function onRequestPost77(context) {
         current.seen[body.cardId] = now.slice(0, 10);
       }
       await context.env.PORTAL_KV.put(seenKey, JSON.stringify(current));
-      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: headers4 });
+      return new Response(JSON.stringify({ ok: true }), { status: 200, headers: headers5 });
     }
     default:
-      return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: headers5 });
   }
   await writeCards(context.env, cards);
-  return new Response(JSON.stringify({ cards }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ cards }), { status: 200, headers: headers5 });
 }
 var CARDS_KEY, MAX_CARDS, MAX_LEN2, CATEGORIES2;
 var init_staff_sharpen = __esm({
   "api/staff-sharpen.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     CARDS_KEY = "staff:sharpen-cards";
     MAX_CARDS = 200;
     MAX_LEN2 = 600;
     CATEGORIES2 = ["frame", "objection", "discovery", "close", "real-call"];
-    __name(onRequestOptions106, "onRequestOptions");
+    __name(onRequestOptions107, "onRequestOptions");
     __name(readCards, "readCards");
     __name(writeCards, "writeCards");
-    __name(onRequestGet65, "onRequestGet");
-    __name(onRequestPost77, "onRequestPost");
+    __name(onRequestGet66, "onRequestGet");
+    __name(onRequestPost78, "onRequestPost");
   }
 });
 
 // api/staff-stripe-cards.js
-function json21(data, status, headers4) {
-  return new Response(JSON.stringify(data), { status, headers: headers4 });
+function json21(data, status, headers5) {
+  return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
 async function storedCustomerId2(env, contactId) {
   const kv = env.PURCHASE_KV || env.PORTAL_KV;
@@ -44811,17 +45649,17 @@ async function rememberCustomer2(env, contactId, customerId) {
   } catch {
   }
 }
-async function onRequestOptions107(context) {
+async function onRequestOptions108(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS") });
 }
-async function onRequestGet66(context) {
+async function onRequestGet67(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
-  const { error } = await requireStaffAuth(context, headers4);
+  const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const contactId = (new URL(context.request.url).searchParams.get("contactId") || "").trim();
-  if (!contactId) return json21({ error: "contactId required" }, 400, headers4);
-  if (contactId.startsWith("draft_")) return json21({ available: false, reason: "draft_client", cards: [] }, 200, headers4);
+  if (!contactId) return json21({ error: "contactId required" }, 400, headers5);
+  if (contactId.startsWith("draft_")) return json21({ available: false, reason: "draft_client", cards: [] }, 200, headers5);
   const secret = context.env.STRIPE_SECRET_KEY;
   if (!secret) {
     await writeOpsLastRun(context.env, OPS_READY_KEYS.stripe, {
@@ -44829,7 +45667,7 @@ async function onRequestGet66(context) {
       checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
       error: "STRIPE_SECRET_KEY not configured"
     });
-    return json21({ available: false, reason: "stripe_not_configured", cards: [] }, 200, headers4);
+    return json21({ available: false, reason: "stripe_not_configured", cards: [] }, 200, headers5);
   }
   try {
     const stored = await storedCustomerId2(context.env, contactId);
@@ -44839,7 +45677,7 @@ async function onRequestGet66(context) {
       checkedAt: (/* @__PURE__ */ new Date()).toISOString()
     });
     if (!customer) {
-      return json21({ available: false, reason: "no_proven_customer", cards: [] }, 200, headers4);
+      return json21({ available: false, reason: "no_proven_customer", cards: [] }, 200, headers5);
     }
     if (customer.id !== stored) await rememberCustomer2(context.env, contactId, customer.id);
     const cards = await listCustomerCards(secret, customer.id);
@@ -44847,7 +45685,7 @@ async function onRequestGet66(context) {
       available: cards.length > 0,
       reason: cards.length ? null : "no_cards",
       cards
-    }, 200, headers4);
+    }, 200, headers5);
   } catch (err) {
     console.error("[staff-stripe-cards]", err instanceof Error ? err.message : err);
     await writeOpsLastRun(context.env, OPS_READY_KEYS.stripe, {
@@ -44855,67 +45693,67 @@ async function onRequestGet66(context) {
       checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
       error: err instanceof Error ? err.message : "lookup_failed"
     });
-    return json21({ available: false, reason: "lookup_failed", cards: [] }, 200, headers4);
+    return json21({ available: false, reason: "lookup_failed", cards: [] }, 200, headers5);
   }
 }
 var init_staff_stripe_cards = __esm({
   "api/staff-stripe-cards.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_stripe_api();
     init_ops_last_run();
     __name(json21, "json");
     __name(storedCustomerId2, "storedCustomerId");
     __name(rememberCustomer2, "rememberCustomer");
-    __name(onRequestOptions107, "onRequestOptions");
-    __name(onRequestGet66, "onRequestGet");
+    __name(onRequestOptions108, "onRequestOptions");
+    __name(onRequestGet67, "onRequestGet");
   }
 });
 
 // api/staff-study.js
-async function onRequestOptions108({ request }) {
+async function onRequestOptions109({ request: request2 }) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(request.headers.get("Origin") || "", "GET, POST, OPTIONS")
+    headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet67(context) {
-  const { request, env } = context;
-  const origin = request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error } = await requireStaffAuth(context, headers4);
+async function onRequestGet68(context) {
+  const { request: request2, env } = context;
+  const origin = request2.headers.get("Origin") || "";
+  const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const url = new URL(request.url);
+  const url = new URL(request2.url);
   const contactId = url.searchParams.get("contactId");
   const studySlug = url.searchParams.get("studySlug");
   if (!contactId) {
-    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
   }
   if (!isKnownStudySlug(studySlug)) {
-    return new Response(JSON.stringify({ error: "valid studySlug required" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "valid studySlug required" }), { status: 400, headers: headers5 });
   }
   try {
     const record3 = await env.PORTAL_KV.get(kvKey2(studySlug, contactId), "json") || null;
-    return new Response(JSON.stringify({ record: record3 }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ record: record3 }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-study] GET error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
-async function onRequestPost78(context) {
-  const { request, env } = context;
-  const origin = request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error } = await requireStaffAuth(context, headers4);
+async function onRequestPost79(context) {
+  const { request: request2, env } = context;
+  const origin = request2.headers.get("Origin") || "";
+  const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const { body, error: parseError } = await parseJsonBody(request, headers4);
+  const { body, error: parseError } = await parseJsonBody(request2, headers5);
   if (parseError) return parseError;
   const { contactId, studySlug, record: record3 } = body;
   if (!contactId || typeof contactId !== "string") {
-    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
   }
   if (!isKnownStudySlug(studySlug)) {
-    return new Response(JSON.stringify({ error: "valid studySlug required" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "valid studySlug required" }), { status: 400, headers: headers5 });
   }
   const nowIso = (/* @__PURE__ */ new Date()).toISOString();
   const normalized = normalizeRecord(record3, nowIso);
@@ -44932,28 +45770,28 @@ async function onRequestPost78(context) {
     } catch (ghlErr) {
       console.error("[staff-study] GHL sessions-done sync failed:", ghlErr.message);
     }
-    return new Response(JSON.stringify({ record: normalized }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ record: normalized }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-study] POST error:", err.message);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE57;
 var init_staff_study = __esm({
   "api/staff-study.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
     GHL_API_BASE57 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions108, "onRequestOptions");
-    __name(onRequestGet67, "onRequestGet");
-    __name(onRequestPost78, "onRequestPost");
+    __name(onRequestOptions109, "onRequestOptions");
+    __name(onRequestGet68, "onRequestGet");
+    __name(onRequestPost79, "onRequestPost");
   }
 });
 
 // api/staff-tasks.js
-async function onRequestOptions109(context) {
+async function onRequestOptions110(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
 async function readState(env) {
@@ -44970,22 +45808,22 @@ async function writeState(env, state) {
 function publicView(state) {
   return { goal: state.goal, rule: state.rule, tasks: state.tasks };
 }
-async function onRequestGet68(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload } = await requireStaffAuth(context, headers4);
+async function onRequestGet69(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const state = await readState(context.env);
-  return new Response(JSON.stringify(publicView(state)), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify(publicView(state)), { status: 200, headers: headers5 });
 }
-async function onRequestPost79(context) {
-  const headers4 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload } = await requireStaffAuth(context, headers4);
+async function onRequestPost80(context) {
+  const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   let body;
   try {
     body = await context.request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: headers5 });
   }
   const { action, id: id3 } = body;
   const text6 = typeof body.text === "string" ? body.text.trim().slice(0, MAX_TEXT_LEN) : "";
@@ -44993,23 +45831,23 @@ async function onRequestPost79(context) {
   const state = await readState(context.env);
   switch (action) {
     case "add": {
-      if (!text6) return new Response(JSON.stringify({ error: "Task text required" }), { status: 400, headers: headers4 });
-      if (state.tasks.length >= MAX_TASKS) return new Response(JSON.stringify({ error: "Too many tasks \u2014 clear some first" }), { status: 400, headers: headers4 });
+      if (!text6) return new Response(JSON.stringify({ error: "Task text required" }), { status: 400, headers: headers5 });
+      if (state.tasks.length >= MAX_TASKS) return new Response(JSON.stringify({ error: "Too many tasks \u2014 clear some first" }), { status: 400, headers: headers5 });
       state.tasks = [...state.tasks, { id: crypto.randomUUID(), text: text6, done: false, addedBy: payload.user || "staff", createdAt: now }];
       break;
     }
     case "edit": {
-      if (!id3 || !text6) return new Response(JSON.stringify({ error: "id and text required" }), { status: 400, headers: headers4 });
+      if (!id3 || !text6) return new Response(JSON.stringify({ error: "id and text required" }), { status: 400, headers: headers5 });
       state.tasks = state.tasks.map((t) => t.id === id3 ? { ...t, text: text6 } : t);
       break;
     }
     case "toggle": {
-      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
+      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers5 });
       state.tasks = state.tasks.map((t) => t.id === id3 ? { ...t, done: !t.done, doneAt: !t.done ? now : null } : t);
       break;
     }
     case "delete": {
-      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers4 });
+      if (!id3) return new Response(JSON.stringify({ error: "id required" }), { status: 400, headers: headers5 });
       state.tasks = state.tasks.filter((t) => t.id !== id3);
       break;
     }
@@ -45026,49 +45864,49 @@ async function onRequestPost79(context) {
       break;
     }
     default:
-      return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: headers5 });
   }
   await writeState(context.env, state);
-  return new Response(JSON.stringify(publicView(state)), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify(publicView(state)), { status: 200, headers: headers5 });
 }
 var TASKS_KEY, MAX_TASKS, MAX_TEXT_LEN, DEFAULT_GOAL, DEFAULT_RULE;
 var init_staff_tasks = __esm({
   "api/staff-tasks.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     TASKS_KEY = "staff:garrett-tasks";
     MAX_TASKS = 50;
     MAX_TEXT_LEN = 280;
     DEFAULT_GOAL = "Today: get people out of pain \u2014 every call is someone you could help.";
     DEFAULT_RULE = "Every call ends with a text \u2014 tap VM + text or Talked + text.";
-    __name(onRequestOptions109, "onRequestOptions");
+    __name(onRequestOptions110, "onRequestOptions");
     __name(readState, "readState");
     __name(writeState, "writeState");
     __name(publicView, "publicView");
-    __name(onRequestGet68, "onRequestGet");
-    __name(onRequestPost79, "onRequestPost");
+    __name(onRequestGet69, "onRequestGet");
+    __name(onRequestPost80, "onRequestPost");
   }
 });
 
 // api/staff-toggle-prepaid.js
-async function onRequestOptions110(context) {
+async function onRequestOptions111(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestPost80(context) {
+async function onRequestPost81(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers4);
+    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
     if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
     const contactId = (body.contactId || "").trim();
     const prepaid = body.prepaid === true;
     if (!contactId) {
-      return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers: headers5 });
     }
     const updateRes = await ghlFetch(context, `${GHL_API_BASE58}/contacts/${contactId}`, {
       method: "PUT",
@@ -45081,44 +45919,44 @@ async function onRequestPost80(context) {
     if (!updateRes.ok) {
       const errText = await updateRes.text();
       console.error(`[staff-toggle-prepaid] Update error: ${updateRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to update prepaid status" }), { status: 422, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Failed to update prepaid status" }), { status: 422, headers: headers5 });
     }
-    return new Response(JSON.stringify({ success: true, prepaid }), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify({ success: true, prepaid }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-toggle-prepaid] Unexpected error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
 var GHL_API_BASE58, FIELD_ID_SESSION_PREPAID;
 var init_staff_toggle_prepaid = __esm({
   "api/staff-toggle-prepaid.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
     GHL_API_BASE58 = "https://services.leadconnectorhq.com";
     FIELD_ID_SESSION_PREPAID = FIELD_IDS.session_prepaid;
-    __name(onRequestOptions110, "onRequestOptions");
-    __name(onRequestPost80, "onRequestPost");
+    __name(onRequestOptions111, "onRequestOptions");
+    __name(onRequestPost81, "onRequestPost");
   }
 });
 
 // api/stream-health.js
-async function onRequestOptions111() {
+async function onRequestOptions112() {
   return new Response(null, {
     status: 204,
     headers: { "Access-Control-Allow-Methods": "GET, OPTIONS" }
   });
 }
-async function onRequestGet69(context) {
-  const headers4 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+async function onRequestGet70(context) {
+  const headers5 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
   const CF_ACCOUNT_ID = context.env.CF_STREAM_ACCOUNT_ID;
   const CF_STREAM_TOKEN = context.env.CF_STREAM_TOKEN;
   const CUSTOMER_CODE = context.env.CF_STREAM_CUSTOMER_CODE;
   if (!CF_ACCOUNT_ID || !CF_STREAM_TOKEN || !CUSTOMER_CODE) {
     return new Response(
       JSON.stringify({ healthy: false, reason: "missing-env", checkedAt: (/* @__PURE__ */ new Date()).toISOString() }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   }
   const exp = Math.floor(Date.now() / 1e3) + 120;
@@ -45136,7 +45974,7 @@ async function onRequestGet69(context) {
   } catch (err) {
     return new Response(
       JSON.stringify({ healthy: false, reason: "fetch-failed", detail: String(err).slice(0, 160), checkedAt: (/* @__PURE__ */ new Date()).toISOString() }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   }
   const signingHealthy = !!(res.ok && json24 && json24.success && json24.result && json24.result.token);
@@ -45161,7 +45999,7 @@ async function onRequestGet69(context) {
         // first CF error message only (no secret material), for the alert detail
         detail: json24 && json24.errors && json24.errors[0] && json24.errors[0].message || null
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   }
   let manifestRes, manifest;
@@ -45180,7 +46018,7 @@ async function onRequestGet69(context) {
         checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
         detail: String(err).slice(0, 160)
       }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   }
   const playlistValid = manifestRes.ok && manifest.startsWith("#EXTM3U") && (manifest.includes("#EXT-X-STREAM-INF") || manifest.includes("#EXTINF"));
@@ -45195,16 +46033,16 @@ async function onRequestGet69(context) {
       // Status/shape only; no playback URL, token, or Stream response body.
       playlistValid
     }),
-    { status: 200, headers: headers4 }
+    { status: 200, headers: headers5 }
   );
 }
 var TEST_UID;
 var init_stream_health = __esm({
   "api/stream-health.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     TEST_UID = "9072ff146ba6434f9463ae78c6616e3d";
-    __name(onRequestOptions111, "onRequestOptions");
-    __name(onRequestGet69, "onRequestGet");
+    __name(onRequestOptions112, "onRequestOptions");
+    __name(onRequestGet70, "onRequestGet");
   }
 });
 
@@ -45218,16 +46056,16 @@ function corsHeaders37(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions112(context) {
+async function onRequestOptions113(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders37(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet70(context) {
+async function onRequestGet71(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = corsHeaders37(origin);
-  headers4["Content-Type"] = "application/json";
+  const headers5 = corsHeaders37(origin);
+  headers5["Content-Type"] = "application/json";
   try {
     const JWT_SECRET = context.env.JWT_SECRET;
     const CF_ACCOUNT_ID = context.env.CF_STREAM_ACCOUNT_ID;
@@ -45238,7 +46076,7 @@ async function onRequestGet70(context) {
       console.error("[stream-token] Missing env vars");
       return new Response(
         JSON.stringify({ error: "Server configuration error" }),
-        { status: 500, headers: headers4 }
+        { status: 500, headers: headers5 }
       );
     }
     const url = new URL(context.request.url);
@@ -45246,14 +46084,14 @@ async function onRequestGet70(context) {
     if (!streamUid || !/^[a-f0-9]{32}$/.test(streamUid)) {
       return new Response(
         JSON.stringify({ error: "Invalid uid parameter" }),
-        { status: 400, headers: headers4 }
+        { status: 400, headers: headers5 }
       );
     }
     const authHeader = context.request.headers.get("Authorization");
     if (!authHeader || !authHeader.startsWith("Bearer ")) {
       return new Response(
         JSON.stringify({ error: "Not authenticated" }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     let tokenPayload;
@@ -45262,7 +46100,7 @@ async function onRequestGet70(context) {
     } catch {
       return new Response(
         JSON.stringify({ error: "Session expired. Please log in again." }),
-        { status: 401, headers: headers4 }
+        { status: 401, headers: headers5 }
       );
     }
     const contactId = tokenPayload.contactId;
@@ -45273,7 +46111,7 @@ async function onRequestGet70(context) {
     if (!contactResponse.ok) {
       return new Response(
         JSON.stringify({ error: "Unable to verify access. Try again." }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const fieldDefs = {};
@@ -45301,7 +46139,7 @@ async function onRequestGet70(context) {
     if (!hasAccess) {
       return new Response(
         JSON.stringify({ error: "No Living Practice access on this account." }),
-        { status: 403, headers: headers4 }
+        { status: 403, headers: headers5 }
       );
     }
     const exp = Math.floor(Date.now() / 1e3) + TOKEN_TTL_SECONDS;
@@ -45321,27 +46159,27 @@ async function onRequestGet70(context) {
       console.error(`[stream-token] Stream API error for uid=${streamUid}: ${JSON.stringify(tokenJson?.errors)}`);
       return new Response(
         JSON.stringify({ error: "Could not generate playback URL. Try again." }),
-        { status: 422, headers: headers4 }
+        { status: 422, headers: headers5 }
       );
     }
     const signedToken = tokenJson.result.token;
     const hlsUrl = `https://customer-${CUSTOMER_CODE}.cloudflarestream.com/${signedToken}/manifest/video.m3u8`;
     return new Response(
       JSON.stringify({ hlsUrl, expiresAt: exp * 1e3 }),
-      { status: 200, headers: headers4 }
+      { status: 200, headers: headers5 }
     );
   } catch (err) {
     console.error("[stream-token] Unhandled error:", err);
     return new Response(
       JSON.stringify({ error: "Internal error" }),
-      { status: 500, headers: headers4 }
+      { status: 500, headers: headers5 }
     );
   }
 }
 var GHL_API_BASE59, GHL_LOCATION_ID36, ALLOWED_ORIGINS38, TOKEN_TTL_SECONDS;
 var init_stream_token = __esm({
   "api/stream-token.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_auth();
     init_portal_helpers();
@@ -45354,8 +46192,8 @@ var init_stream_token = __esm({
     ];
     TOKEN_TTL_SECONDS = 60 * 60;
     __name(corsHeaders37, "corsHeaders");
-    __name(onRequestOptions112, "onRequestOptions");
-    __name(onRequestGet70, "onRequestGet");
+    __name(onRequestOptions113, "onRequestOptions");
+    __name(onRequestGet71, "onRequestGet");
   }
 });
 
@@ -45425,7 +46263,7 @@ async function settleSession(context, session, source) {
     fulfillmentStatus: next.fulfillmentStatus || null
   };
 }
-async function onRequestPost81(context) {
+async function onRequestPost82(context) {
   const secret = context.env.STRIPE_POS_WEBHOOK_SECRET || context.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) {
     console.error("[stripe-pos-webhook] webhook secret not configured");
@@ -45502,7 +46340,7 @@ async function onRequestPost81(context) {
 }
 var init_stripe_pos_webhook = __esm({
   "api/stripe-pos-webhook.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_processed_events();
     init_staff_pos_fulfill();
     init_staff_pos();
@@ -45513,7 +46351,7 @@ var init_stripe_pos_webhook = __esm({
     __name(loadSaleForSession, "loadSaleForSession");
     __name(maybeFulfill, "maybeFulfill");
     __name(settleSession, "settleSession");
-    __name(onRequestPost81, "onRequestPost");
+    __name(onRequestPost82, "onRequestPost");
   }
 });
 
@@ -45550,7 +46388,7 @@ async function ensureStudyBookingConfirmedMarker(context, contactId) {
 var GHL_API_BASE60, STUDY_BOOKING_CONFIRMED_MARKER;
 var init_study_enrollment_marker = __esm({
   "lib/study-enrollment-marker.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     GHL_API_BASE60 = "https://services.leadconnectorhq.com";
     STUDY_BOOKING_CONFIRMED_MARKER = "study-booking-confirmed-before-enrollment";
@@ -45575,8 +46413,8 @@ function configuredStudyBookingPreviewOrigin(env = {}) {
     return null;
   }
 }
-function routeFor(request, env) {
-  const urlOrigin = new URL(request.url).origin;
+function routeFor(request2, env) {
+  const urlOrigin = new URL(request2.url).origin;
   if (PRODUCTION_ORIGINS.has(urlOrigin)) {
     return { mode: "production", urlOrigin, previewOrigin: null };
   }
@@ -45586,9 +46424,9 @@ function routeFor(request, env) {
   }
   return { mode: "invalid", urlOrigin, previewOrigin };
 }
-function studyBookingCorsOrigin(request, env = {}) {
-  const requestOrigin = request.headers.get("Origin") || "";
-  const route = routeFor(request, env);
+function studyBookingCorsOrigin(request2, env = {}) {
+  const requestOrigin = request2.headers.get("Origin") || "";
+  const route = routeFor(request2, env);
   if (route.mode === "production" && PRODUCTION_ORIGINS.has(requestOrigin)) {
     return requestOrigin;
   }
@@ -45663,7 +46501,7 @@ function resolveStudyBookingRuntime(context, options = {}) {
 var PRODUCTION_ORIGINS, PREVIEW_HOST_SUFFIX, StudyBookingRuntimeError;
 var init_study_booking_runtime = __esm({
   "lib/study-booking-runtime.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     PRODUCTION_ORIGINS = /* @__PURE__ */ new Set([
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -45773,7 +46611,7 @@ function validateStudyBooking(input) {
 var STUDY_NAME_FIELD_ID7, STUDY_BOOKING_KIND, VISIT_QUALIFICATION, LIVE_STUDY_BOOKINGS;
 var init_study_booking = __esm({
   "lib/study-booking.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_studies();
     init_study_consent();
     STUDY_NAME_FIELD_ID7 = "1xhxStKyEN47shwjOKC0";
@@ -45836,7 +46674,7 @@ var init_study_booking = __esm({
 });
 
 // api/study-book-v2.js
-function headers3(context) {
+function headers4(context) {
   return {
     "Access-Control-Allow-Origin": studyBookingCorsOrigin(context.request, context.env),
     "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -45847,7 +46685,7 @@ function headers3(context) {
   };
 }
 function json23(data, status, context) {
-  return new Response(JSON.stringify(data), { status, headers: headers3(context) });
+  return new Response(JSON.stringify(data), { status, headers: headers4(context) });
 }
 function validDate2(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value + "T12:00:00Z"));
@@ -46087,13 +46925,13 @@ async function markOperationFailure(db, opKey, error, manualReview) {
     console.error("[study-book] operation failure state:", stateError.message);
   }
 }
-async function onRequestOptions113(context) {
+async function onRequestOptions114(context) {
   return new Response(null, {
     status: 204,
-    headers: headers3(context)
+    headers: headers4(context)
   });
 }
-async function onRequestGet71(context) {
+async function onRequestGet72(context) {
   let runtime;
   try {
     runtime = resolveStudyBookingRuntime(context);
@@ -46121,7 +46959,7 @@ async function onRequestGet71(context) {
     return json23({ error: "Could not load available times. Please try again." }, 422, context);
   }
 }
-async function onRequestPost82(context) {
+async function onRequestPost83(context) {
   let runtime;
   try {
     runtime = resolveStudyBookingRuntime(context, { mutation: true });
@@ -46358,7 +47196,7 @@ async function onRequestPost82(context) {
 var GHL_API_BASE61, GHL_LOCATION_ID37, APPOINTMENT_ENDPOINT, RetryableFlowError, ManualReviewError;
 var init_study_book_v2 = __esm({
   "api/study-book-v2.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ghl();
     init_studies();
     init_datetime();
@@ -46391,7 +47229,7 @@ var init_study_book_v2 = __esm({
         this.name = "ManualReviewError";
       }
     };
-    __name(headers3, "headers");
+    __name(headers4, "headers");
     __name(json23, "json");
     __name(validDate2, "validDate");
     __name(flattenSlots3, "flattenSlots");
@@ -46412,9 +47250,9 @@ var init_study_book_v2 = __esm({
     __name(checkpointedAppointment, "checkpointedAppointment");
     __name(deferEvidence, "deferEvidence");
     __name(markOperationFailure, "markOperationFailure");
-    __name(onRequestOptions113, "onRequestOptions");
-    __name(onRequestGet71, "onRequestGet");
-    __name(onRequestPost82, "onRequestPost");
+    __name(onRequestOptions114, "onRequestOptions");
+    __name(onRequestGet72, "onRequestGet");
+    __name(onRequestPost83, "onRequestPost");
   }
 });
 
@@ -46429,8 +47267,8 @@ function responseHeaders9(origin) {
     Vary: "Origin"
   };
 }
-async function onRequestPost83({ request }) {
-  const origin = request.headers.get("Origin") || "";
+async function onRequestPost84({ request: request2 }) {
+  const origin = request2.headers.get("Origin") || "";
   return new Response(JSON.stringify({
     error: "Study booking now includes choosing the study and qualifications in one entry. Refresh this page.",
     bookingUrl: "/book/study",
@@ -46443,11 +47281,11 @@ async function onRequestPost83({ request }) {
 var ORIGINS;
 var init_study_book = __esm({
   "api/study-book.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_study_book_v2();
     ORIGINS = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(responseHeaders9, "responseHeaders");
-    __name(onRequestPost83, "onRequestPost");
+    __name(onRequestPost84, "onRequestPost");
   }
 });
 
@@ -46494,13 +47332,13 @@ async function checkDailyAudit(kv) {
   const n = Array.isArray(rec.issues) ? rec.issues.length : "?";
   return { label: "Daily audit", state: "green", note: `present for ${ds} (${n} issues)` };
 }
-async function onRequestGet72(context) {
+async function onRequestGet73(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
-  const headers4 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+  const headers5 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
   const kv = context.env.PORTAL_KV;
   if (!kv) {
-    return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: headers5 });
   }
   const [token, reconcile, partner, audit] = await Promise.all([
     checkToken(kv),
@@ -46528,13 +47366,13 @@ async function onRequestGet72(context) {
   const overall = reds.length ? "red" : unknowns.length ? "unknown" : "green";
   return new Response(
     JSON.stringify({ overall, checks, generatedAt: (/* @__PURE__ */ new Date()).toISOString() }),
-    { status: 200, headers: headers4 }
+    { status: 200, headers: headers5 }
   );
 }
 var HOUR4;
 var init_system_health = __esm({
   "api/system-health.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_auth();
     HOUR4 = 3600 * 1e3;
     __name(ageHours3, "ageHours");
@@ -46542,34 +47380,34 @@ var init_system_health = __esm({
     __name(judgeWorker, "judgeWorker");
     __name(checkToken, "checkToken");
     __name(checkDailyAudit, "checkDailyAudit");
-    __name(onRequestGet72, "onRequestGet");
+    __name(onRequestGet73, "onRequestGet");
   }
 });
 
 // api/voice-write.js
-async function onRequestOptions114(context) {
+async function onRequestOptions115(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS")
   });
 }
-async function onRequestPost84(context) {
+async function onRequestPost85(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
+  const headers5 = { ...corsHeaders3(origin, "POST, OPTIONS"), "Content-Type": "application/json" };
   try {
-    const { error, payload } = await requireStaffAuth(context, headers4);
+    const { error, payload } = await requireStaffAuth(context, headers5);
     if (error) return error;
     const apiKey = context.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: "Writer not configured (missing ANTHROPIC_API_KEY)" }), { status: 500, headers: headers4 });
+      return new Response(JSON.stringify({ error: "Writer not configured (missing ANTHROPIC_API_KEY)" }), { status: 500, headers: headers5 });
     }
-    const { body, error: parseError } = await parseJsonBody(context.request, headers4);
+    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
     if (parseError) return parseError;
     const message = (body.message || "").trim();
     const history = Array.isArray(body.history) ? body.history : [];
     const messages = Array.isArray(body.messages) ? body.messages : [...history, ...message ? [{ role: "user", content: message }] : []];
     if (messages.length === 0) {
-      return new Response(JSON.stringify({ error: "message is required" }), { status: 400, headers: headers4 });
+      return new Response(JSON.stringify({ error: "message is required" }), { status: 400, headers: headers5 });
     }
     const userName = payload.user || "Garrett";
     const result = await generateOnBrand({ apiKey, userName, messages });
@@ -46594,33 +47432,33 @@ async function onRequestPost84(context) {
         console.error("[voice-write] history save failed:", err.message);
       }
     }
-    return new Response(JSON.stringify(result), { status: 200, headers: headers4 });
+    return new Response(JSON.stringify(result), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[voice-write] error:", err.message);
-    return new Response(JSON.stringify({ error: "The writer hit a problem. Try again." }), { status: 500, headers: headers4 });
+    return new Response(JSON.stringify({ error: "The writer hit a problem. Try again." }), { status: 500, headers: headers5 });
   }
 }
-async function onRequestGet73(context) {
+async function onRequestGet74(context) {
   const origin = context.request.headers.get("Origin") || "";
-  const headers4 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
-  const { error, payload } = await requireStaffAuth(context, headers4);
+  const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
+  const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const kv = context.env.PORTAL_KV;
-  if (!kv) return new Response(JSON.stringify({ drafts: [] }), { status: 200, headers: headers4 });
+  if (!kv) return new Response(JSON.stringify({ drafts: [] }), { status: 200, headers: headers5 });
   const userName = payload.user || "Garrett";
   const raw = await kv.get(`cos:voice-history:${userName}`).catch(() => null);
-  return new Response(JSON.stringify({ drafts: raw ? JSON.parse(raw) : [] }), { status: 200, headers: headers4 });
+  return new Response(JSON.stringify({ drafts: raw ? JSON.parse(raw) : [] }), { status: 200, headers: headers5 });
 }
 var HISTORY_CAP2;
 var init_voice_write = __esm({
   "api/voice-write.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_endpoint_guards();
     init_voice_engine();
     HISTORY_CAP2 = 25;
-    __name(onRequestOptions114, "onRequestOptions");
-    __name(onRequestPost84, "onRequestPost");
-    __name(onRequestGet73, "onRequestGet");
+    __name(onRequestOptions115, "onRequestOptions");
+    __name(onRequestPost85, "onRequestPost");
+    __name(onRequestGet74, "onRequestGet");
   }
 });
 
@@ -46649,7 +47487,7 @@ async function onRequest(context) {
 }
 var init_path = __esm({
   "portal/[[path]].js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(onRequest, "onRequest");
   }
 });
@@ -46665,17 +47503,17 @@ async function onRequest2(context) {
     const assetUrl = new URL("/staff/index.html", url.origin);
     const response2 = await context.env.ASSETS.fetch(assetUrl);
     if (!response2.ok) return context.next();
-    const headers4 = new Headers(response2.headers);
-    headers4.set("Content-Type", "text/html; charset=utf-8");
-    headers4.set("Cache-Control", "private, no-store");
-    return new Response(response2.body, { status: 200, headers: headers4 });
+    const headers5 = new Headers(response2.headers);
+    headers5.set("Content-Type", "text/html; charset=utf-8");
+    headers5.set("Cache-Control", "private, no-store");
+    return new Response(response2.body, { status: 200, headers: headers5 });
   } catch {
     return context.next();
   }
 }
 var init_path2 = __esm({
   "staff/[[path]].js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     __name(isStaticFile, "isStaticFile");
     __name(onRequest2, "onRequest");
   }
@@ -46706,7 +47544,7 @@ function opsEmbedBootScript() {
 var OPS_SURFACE_URLS, OPS_SURFACE_NAV_CSS;
 var init_ops_surface_nav = __esm({
   "lib/ops-surface-nav.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     OPS_SURFACE_URLS = Object.freeze({
       systems: "https://www.amarimethod.com/ops",
       crmMirror: "https://amari-crm-mirror.eben-fa2.workers.dev/",
@@ -46746,7 +47584,7 @@ var init_ops_surface_nav = __esm({
 });
 
 // ops.js
-async function onRequestGet74() {
+async function onRequestGet75() {
   const html = OPS_HTML.replace("/*__OPS_SURFACE_NAV_CSS__*/", OPS_SURFACE_NAV_CSS).replace("__OPS_SURFACE_NAV__", opsSurfaceNavHtml("systems")).replace("__OPS_EMBED_BOOT__", opsEmbedBootScript());
   return new Response(html, {
     status: 200,
@@ -46760,9 +47598,9 @@ async function onRequestGet74() {
 var OPS_HTML;
 var init_ops = __esm({
   "ops.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_ops_surface_nav();
-    __name(onRequestGet74, "onRequestGet");
+    __name(onRequestGet75, "onRequestGet");
     OPS_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -47757,8 +48595,8 @@ var init_ops = __esm({
 });
 
 // _middleware.js
-function readCookie2(request, name) {
-  const cookieHeader = request.headers.get("Cookie") || "";
+function readCookie2(request2, name) {
+  const cookieHeader = request2.headers.get("Cookie") || "";
   for (const segment of cookieHeader.split(";")) {
     const [key, ...value] = segment.trim().split("=");
     if (key === name) return value.join("=");
@@ -47791,7 +48629,7 @@ async function onRequest3(context) {
 var PUBLIC_STAFF_PATHS;
 var init_middleware = __esm({
   "_middleware.js"() {
-    init_functionsRoutes_0_5623767148686312();
+    init_functionsRoutes_0_7504159312216875();
     init_auth();
     init_endpoint_guards();
     PUBLIC_STAFF_PATHS = /* @__PURE__ */ new Set(["/staff/login", "/staff/access"]);
@@ -47802,10 +48640,10 @@ var init_middleware = __esm({
   }
 });
 
-// ../.wrangler/tmp/pages-koDz9M/functionsRoutes-0.5623767148686312.mjs
+// ../.wrangler/tmp/pages-BjHaTr/functionsRoutes-0.7504159312216875.mjs
 var routes;
-var init_functionsRoutes_0_5623767148686312 = __esm({
-  "../.wrangler/tmp/pages-koDz9M/functionsRoutes-0.5623767148686312.mjs"() {
+var init_functionsRoutes_0_7504159312216875 = __esm({
+  "../.wrangler/tmp/pages-BjHaTr/functionsRoutes-0.7504159312216875.mjs"() {
     init_create_checkout();
     init_create_checkout();
     init_public_slots();
@@ -47915,6 +48753,9 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
     init_send_to_ghl();
     init_shoulder_study_signup();
     init_shoulder_study_signup();
+    init_staff_amari_description_lab();
+    init_staff_amari_description_lab();
+    init_staff_amari_description_lab();
     init_staff_amari_mail_auth();
     init_staff_amari_mail_auth();
     init_staff_amari_mail_auth();
@@ -48857,35 +49698,49 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
         modules: [onRequestPost36]
       },
       {
-        routePath: "/api/staff-amari-mail-auth",
+        routePath: "/api/staff-amari-description-lab",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet30]
       },
       {
-        routePath: "/api/staff-amari-mail-auth",
+        routePath: "/api/staff-amari-description-lab",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions43]
       },
       {
-        routePath: "/api/staff-amari-mail-auth",
+        routePath: "/api/staff-amari-description-lab",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost37]
       },
       {
-        routePath: "/api/staff-amari-mail-callback",
+        routePath: "/api/staff-amari-mail-auth",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet31]
       },
       {
-        routePath: "/api/staff-appointment-readiness",
+        routePath: "/api/staff-amari-mail-auth",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions44]
+      },
+      {
+        routePath: "/api/staff-amari-mail-auth",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost38]
+      },
+      {
+        routePath: "/api/staff-amari-mail-callback",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
@@ -48894,12 +49749,12 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-appointment-readiness",
         mountPath: "/api",
-        method: "OPTIONS",
+        method: "GET",
         middlewares: [],
-        modules: [onRequestOptions44]
+        modules: [onRequestGet33]
       },
       {
-        routePath: "/api/staff-appointments",
+        routePath: "/api/staff-appointment-readiness",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -48908,26 +49763,26 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-appointments",
         mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions46]
+      },
+      {
+        routePath: "/api/staff-appointments",
+        mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost38]
+        modules: [onRequestPost39]
       },
       {
         routePath: "/api/staff-attestation",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet33]
+        modules: [onRequestGet34]
       },
       {
         routePath: "/api/staff-attestation",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions46]
-      },
-      {
-        routePath: "/api/staff-auth",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -48936,61 +49791,61 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-auth",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost39]
-      },
-      {
-        routePath: "/api/staff-automation-watch-access",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions48]
       },
       {
-        routePath: "/api/staff-automation-watch-access",
+        routePath: "/api/staff-auth",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost40]
       },
       {
-        routePath: "/api/staff-automations",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet34]
-      },
-      {
-        routePath: "/api/staff-automations",
+        routePath: "/api/staff-automation-watch-access",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions49]
       },
       {
-        routePath: "/api/staff-automations",
+        routePath: "/api/staff-automation-watch-access",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost41]
       },
       {
-        routePath: "/api/staff-balances",
+        routePath: "/api/staff-automations",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet35]
       },
       {
-        routePath: "/api/staff-balances",
+        routePath: "/api/staff-automations",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions50]
       },
       {
-        routePath: "/api/staff-book",
+        routePath: "/api/staff-automations",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost42]
+      },
+      {
+        routePath: "/api/staff-balances",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet36]
+      },
+      {
+        routePath: "/api/staff-balances",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -48999,26 +49854,26 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-book",
         mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions52]
+      },
+      {
+        routePath: "/api/staff-book",
+        mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost42]
+        modules: [onRequestPost43]
       },
       {
         routePath: "/api/staff-calendars",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet36]
+        modules: [onRequestGet37]
       },
       {
         routePath: "/api/staff-calendars",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions52]
-      },
-      {
-        routePath: "/api/staff-call-coach-run",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49027,40 +49882,40 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-call-coach-run",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost43]
-      },
-      {
-        routePath: "/api/staff-checkin",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions54]
       },
       {
-        routePath: "/api/staff-checkin",
+        routePath: "/api/staff-call-coach-run",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost44]
       },
       {
-        routePath: "/api/staff-clarity-study",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet37]
-      },
-      {
-        routePath: "/api/staff-clarity-study",
+        routePath: "/api/staff-checkin",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions55]
       },
       {
-        routePath: "/api/staff-coach-one",
+        routePath: "/api/staff-checkin",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost45]
+      },
+      {
+        routePath: "/api/staff-clarity-study",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet38]
+      },
+      {
+        routePath: "/api/staff-clarity-study",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49069,23 +49924,30 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-coach-one",
         mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions57]
+      },
+      {
+        routePath: "/api/staff-coach-one",
+        mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost45]
+        modules: [onRequestPost46]
       },
       {
         routePath: "/api/staff-communication-preferences",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet38]
+        modules: [onRequestGet39]
       },
       {
         routePath: "/api/staff-communication-preferences",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions57]
+        modules: [onRequestOptions58]
       },
       {
         routePath: "/api/staff-communication-preferences",
@@ -49099,31 +49961,24 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet39]
+        modules: [onRequestGet40]
       },
       {
         routePath: "/api/staff-community",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions58]
+        modules: [onRequestOptions59]
       },
       {
         routePath: "/api/staff-community-image",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet40]
+        modules: [onRequestGet41]
       },
       {
         routePath: "/api/staff-community-image",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions59]
-      },
-      {
-        routePath: "/api/staff-community-touch",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49132,54 +49987,54 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-community-touch",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost46]
-      },
-      {
-        routePath: "/api/staff-contact",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet41]
-      },
-      {
-        routePath: "/api/staff-contact",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions61]
       },
       {
-        routePath: "/api/staff-contacts",
+        routePath: "/api/staff-community-touch",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost47]
+      },
+      {
+        routePath: "/api/staff-contact",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet42]
       },
       {
-        routePath: "/api/staff-contacts",
+        routePath: "/api/staff-contact",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions62]
       },
       {
-        routePath: "/api/staff-conversations",
+        routePath: "/api/staff-contacts",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet43]
       },
       {
-        routePath: "/api/staff-conversations",
+        routePath: "/api/staff-contacts",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions63]
       },
       {
-        routePath: "/api/staff-crm-mirror-access",
+        routePath: "/api/staff-conversations",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet44]
+      },
+      {
+        routePath: "/api/staff-conversations",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49188,33 +50043,26 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-crm-mirror-access",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost47]
-      },
-      {
-        routePath: "/api/staff-data",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet44]
-      },
-      {
-        routePath: "/api/staff-data",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions65]
       },
       {
-        routePath: "/api/staff-elbow-study",
+        routePath: "/api/staff-crm-mirror-access",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost48]
+      },
+      {
+        routePath: "/api/staff-data",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet45]
       },
       {
-        routePath: "/api/staff-elbow-study",
+        routePath: "/api/staff-data",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49223,117 +50071,124 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-elbow-study",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost48]
-      },
-      {
-        routePath: "/api/staff-exceptions",
-        mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet46]
       },
       {
-        routePath: "/api/staff-exceptions",
+        routePath: "/api/staff-elbow-study",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions67]
       },
       {
-        routePath: "/api/staff-exceptions",
+        routePath: "/api/staff-elbow-study",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost49]
       },
       {
-        routePath: "/api/staff-field-study",
+        routePath: "/api/staff-exceptions",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet47]
       },
       {
-        routePath: "/api/staff-field-study",
+        routePath: "/api/staff-exceptions",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions68]
       },
       {
-        routePath: "/api/staff-field-study",
+        routePath: "/api/staff-exceptions",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost50]
       },
       {
-        routePath: "/api/staff-followup-brief",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions69]
-      },
-      {
-        routePath: "/api/staff-followup-brief",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost51]
-      },
-      {
-        routePath: "/api/staff-followups",
+        routePath: "/api/staff-field-study",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet48]
       },
       {
-        routePath: "/api/staff-followups",
+        routePath: "/api/staff-field-study",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions69]
+      },
+      {
+        routePath: "/api/staff-field-study",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost51]
+      },
+      {
+        routePath: "/api/staff-followup-brief",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions70]
       },
       {
-        routePath: "/api/staff-followups",
+        routePath: "/api/staff-followup-brief",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost52]
       },
       {
-        routePath: "/api/staff-founders-circle",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions71]
-      },
-      {
-        routePath: "/api/staff-founders-circle",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost53]
-      },
-      {
-        routePath: "/api/staff-funnel",
+        routePath: "/api/staff-followups",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet49]
       },
       {
-        routePath: "/api/staff-funnel",
+        routePath: "/api/staff-followups",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions71]
+      },
+      {
+        routePath: "/api/staff-followups",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost53]
+      },
+      {
+        routePath: "/api/staff-founders-circle",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions72]
       },
       {
-        routePath: "/api/staff-funnel-refresh",
+        routePath: "/api/staff-founders-circle",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost54]
+      },
+      {
+        routePath: "/api/staff-funnel",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet50]
+      },
+      {
+        routePath: "/api/staff-funnel",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49342,26 +50197,26 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-funnel-refresh",
         mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions74]
+      },
+      {
+        routePath: "/api/staff-funnel-refresh",
+        mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost54]
+        modules: [onRequestPost55]
       },
       {
         routePath: "/api/staff-gmail-reply-readiness",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet50]
+        modules: [onRequestGet51]
       },
       {
         routePath: "/api/staff-gmail-reply-readiness",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions74]
-      },
-      {
-        routePath: "/api/staff-mark-attended",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49370,37 +50225,44 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-mark-attended",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost55]
-      },
-      {
-        routePath: "/api/staff-media",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet51]
-      },
-      {
-        routePath: "/api/staff-media",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions76]
       },
       {
-        routePath: "/api/staff-media",
+        routePath: "/api/staff-mark-attended",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost56]
       },
       {
-        routePath: "/api/staff-media-file",
+        routePath: "/api/staff-media",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet52]
+      },
+      {
+        routePath: "/api/staff-media",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions77]
+      },
+      {
+        routePath: "/api/staff-media",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost57]
+      },
+      {
+        routePath: "/api/staff-media-file",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet53]
       },
       {
         routePath: "/api/staff-media-file",
@@ -49414,49 +50276,49 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions77]
-      },
-      {
-        routePath: "/api/staff-media-upload",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
         modules: [onRequestOptions78]
       },
       {
         routePath: "/api/staff-media-upload",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost57]
-      },
-      {
-        routePath: "/api/staff-not-a-fit",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions79]
       },
       {
-        routePath: "/api/staff-not-a-fit",
+        routePath: "/api/staff-media-upload",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost58]
       },
       {
-        routePath: "/api/staff-note",
+        routePath: "/api/staff-not-a-fit",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions80]
       },
       {
-        routePath: "/api/staff-note",
+        routePath: "/api/staff-not-a-fit",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost59]
+      },
+      {
+        routePath: "/api/staff-note",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions81]
+      },
+      {
+        routePath: "/api/staff-note",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost60]
       },
       {
         routePath: "/api/staff-note",
@@ -49491,17 +50353,10 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet53]
+        modules: [onRequestGet54]
       },
       {
         routePath: "/api/staff-outreach-cards",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions81]
-      },
-      {
-        routePath: "/api/staff-outreach-upload",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49510,68 +50365,68 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-outreach-upload",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost60]
-      },
-      {
-        routePath: "/api/staff-owed",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet54]
-      },
-      {
-        routePath: "/api/staff-owed",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions83]
       },
       {
-        routePath: "/api/staff-owed-list",
+        routePath: "/api/staff-outreach-upload",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost61]
+      },
+      {
+        routePath: "/api/staff-owed",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet55]
       },
       {
-        routePath: "/api/staff-owed-list",
+        routePath: "/api/staff-owed",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions84]
       },
       {
-        routePath: "/api/staff-owned-contacts",
+        routePath: "/api/staff-owed-list",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet56]
       },
       {
-        routePath: "/api/staff-owned-contacts",
+        routePath: "/api/staff-owed-list",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions85]
       },
       {
-        routePath: "/api/staff-partner-activity",
+        routePath: "/api/staff-owned-contacts",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet57]
       },
       {
-        routePath: "/api/staff-partner-activity",
+        routePath: "/api/staff-owned-contacts",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions86]
       },
       {
-        routePath: "/api/staff-partner-outcome",
+        routePath: "/api/staff-partner-activity",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet58]
+      },
+      {
+        routePath: "/api/staff-partner-activity",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49580,33 +50435,26 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-partner-outcome",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost61]
-      },
-      {
-        routePath: "/api/staff-partner-prospects",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet58]
-      },
-      {
-        routePath: "/api/staff-partner-prospects",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions88]
       },
       {
-        routePath: "/api/staff-partner-rewards",
+        routePath: "/api/staff-partner-outcome",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost62]
+      },
+      {
+        routePath: "/api/staff-partner-prospects",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet59]
       },
       {
-        routePath: "/api/staff-partner-rewards",
+        routePath: "/api/staff-partner-prospects",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49615,75 +50463,75 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-partner-rewards",
         mountPath: "/api",
-        method: "POST",
+        method: "GET",
         middlewares: [],
-        modules: [onRequestPost62]
+        modules: [onRequestGet60]
       },
       {
-        routePath: "/api/staff-partner-toggle-verified",
+        routePath: "/api/staff-partner-rewards",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions90]
       },
       {
-        routePath: "/api/staff-partner-toggle-verified",
+        routePath: "/api/staff-partner-rewards",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost63]
       },
       {
-        routePath: "/api/staff-partner-update-field",
+        routePath: "/api/staff-partner-toggle-verified",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions91]
       },
       {
-        routePath: "/api/staff-partner-update-field",
+        routePath: "/api/staff-partner-toggle-verified",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost64]
       },
       {
-        routePath: "/api/staff-partner-verify",
+        routePath: "/api/staff-partner-update-field",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions92]
       },
       {
-        routePath: "/api/staff-partner-verify",
+        routePath: "/api/staff-partner-update-field",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost65]
       },
       {
-        routePath: "/api/staff-pipeline",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet60]
-      },
-      {
-        routePath: "/api/staff-pipeline",
+        routePath: "/api/staff-partner-verify",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions93]
       },
       {
-        routePath: "/api/staff-pos-sales",
+        routePath: "/api/staff-partner-verify",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost66]
+      },
+      {
+        routePath: "/api/staff-pipeline",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet61]
       },
       {
-        routePath: "/api/staff-pos-sales",
+        routePath: "/api/staff-pipeline",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49692,75 +50540,82 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-pos-sales",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost66]
-      },
-      {
-        routePath: "/api/staff-products",
-        mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet62]
       },
       {
-        routePath: "/api/staff-products",
+        routePath: "/api/staff-pos-sales",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions95]
       },
       {
-        routePath: "/api/staff-products",
+        routePath: "/api/staff-pos-sales",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost67]
       },
       {
-        routePath: "/api/staff-refresh-activity",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions96]
-      },
-      {
-        routePath: "/api/staff-refresh-activity",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost68]
-      },
-      {
-        routePath: "/api/staff-reply-dismiss",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions97]
-      },
-      {
-        routePath: "/api/staff-reply-dismiss",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost69]
-      },
-      {
-        routePath: "/api/staff-revenue",
+        routePath: "/api/staff-products",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet63]
       },
       {
-        routePath: "/api/staff-revenue",
+        routePath: "/api/staff-products",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions96]
+      },
+      {
+        routePath: "/api/staff-products",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost68]
+      },
+      {
+        routePath: "/api/staff-refresh-activity",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions97]
+      },
+      {
+        routePath: "/api/staff-refresh-activity",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost69]
+      },
+      {
+        routePath: "/api/staff-reply-dismiss",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions98]
       },
       {
-        routePath: "/api/staff-save-progress",
+        routePath: "/api/staff-reply-dismiss",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost70]
+      },
+      {
+        routePath: "/api/staff-revenue",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet64]
+      },
+      {
+        routePath: "/api/staff-revenue",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49769,79 +50624,86 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-save-progress",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost70]
-      },
-      {
-        routePath: "/api/staff-send-email",
-        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions100]
       },
       {
-        routePath: "/api/staff-send-email",
+        routePath: "/api/staff-save-progress",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost71]
       },
       {
-        routePath: "/api/staff-send-paylink",
+        routePath: "/api/staff-send-email",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions101]
       },
       {
-        routePath: "/api/staff-send-paylink",
+        routePath: "/api/staff-send-email",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost72]
       },
       {
-        routePath: "/api/staff-send-receipt",
+        routePath: "/api/staff-send-paylink",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions102]
       },
       {
-        routePath: "/api/staff-send-receipt",
+        routePath: "/api/staff-send-paylink",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost73]
       },
       {
-        routePath: "/api/staff-send-text",
+        routePath: "/api/staff-send-receipt",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions103]
       },
       {
-        routePath: "/api/staff-send-text",
+        routePath: "/api/staff-send-receipt",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost74]
       },
       {
-        routePath: "/api/staff-send-toolkit",
+        routePath: "/api/staff-send-text",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions104]
       },
       {
-        routePath: "/api/staff-send-toolkit",
+        routePath: "/api/staff-send-text",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost75]
+      },
+      {
+        routePath: "/api/staff-send-toolkit",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions105]
+      },
+      {
+        routePath: "/api/staff-send-toolkit",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost76]
       },
       {
         routePath: "/api/staff-session",
@@ -49855,66 +50717,52 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet64]
-      },
-      {
-        routePath: "/api/staff-session",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions105]
-      },
-      {
-        routePath: "/api/staff-session",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost76]
-      },
-      {
-        routePath: "/api/staff-sharpen",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
         modules: [onRequestGet65]
       },
       {
-        routePath: "/api/staff-sharpen",
+        routePath: "/api/staff-session",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions106]
       },
       {
-        routePath: "/api/staff-sharpen",
+        routePath: "/api/staff-session",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost77]
       },
       {
-        routePath: "/api/staff-stripe-cards",
+        routePath: "/api/staff-sharpen",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet66]
       },
       {
-        routePath: "/api/staff-stripe-cards",
+        routePath: "/api/staff-sharpen",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions107]
       },
       {
-        routePath: "/api/staff-study",
+        routePath: "/api/staff-sharpen",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost78]
+      },
+      {
+        routePath: "/api/staff-stripe-cards",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet67]
       },
       {
-        routePath: "/api/staff-study",
+        routePath: "/api/staff-stripe-cards",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
@@ -49923,131 +50771,138 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/staff-study",
         mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost78]
-      },
-      {
-        routePath: "/api/staff-tasks",
-        mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet68]
       },
       {
-        routePath: "/api/staff-tasks",
+        routePath: "/api/staff-study",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions109]
       },
       {
-        routePath: "/api/staff-tasks",
+        routePath: "/api/staff-study",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost79]
       },
       {
-        routePath: "/api/staff-toggle-prepaid",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions110]
-      },
-      {
-        routePath: "/api/staff-toggle-prepaid",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost80]
-      },
-      {
-        routePath: "/api/stream-health",
+        routePath: "/api/staff-tasks",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet69]
       },
       {
-        routePath: "/api/stream-health",
+        routePath: "/api/staff-tasks",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions110]
+      },
+      {
+        routePath: "/api/staff-tasks",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost80]
+      },
+      {
+        routePath: "/api/staff-toggle-prepaid",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions111]
       },
       {
-        routePath: "/api/stream-token",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet70]
-      },
-      {
-        routePath: "/api/stream-token",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions112]
-      },
-      {
-        routePath: "/api/stripe-pos-webhook",
+        routePath: "/api/staff-toggle-prepaid",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost81]
       },
       {
-        routePath: "/api/study-book",
+        routePath: "/api/stream-health",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet70]
+      },
+      {
+        routePath: "/api/stream-health",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions112]
+      },
+      {
+        routePath: "/api/stream-token",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet71]
       },
       {
-        routePath: "/api/study-book",
+        routePath: "/api/stream-token",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions113]
       },
       {
-        routePath: "/api/study-book",
-        mountPath: "/api",
-        method: "POST",
-        middlewares: [],
-        modules: [onRequestPost83]
-      },
-      {
-        routePath: "/api/study-book-v2",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet71]
-      },
-      {
-        routePath: "/api/study-book-v2",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions113]
-      },
-      {
-        routePath: "/api/study-book-v2",
+        routePath: "/api/stripe-pos-webhook",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
         modules: [onRequestPost82]
       },
       {
-        routePath: "/api/system-health",
+        routePath: "/api/study-book",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet72]
       },
       {
-        routePath: "/api/voice-write",
+        routePath: "/api/study-book",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions114]
+      },
+      {
+        routePath: "/api/study-book",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost84]
+      },
+      {
+        routePath: "/api/study-book-v2",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet72]
+      },
+      {
+        routePath: "/api/study-book-v2",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions114]
+      },
+      {
+        routePath: "/api/study-book-v2",
+        mountPath: "/api",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost83]
+      },
+      {
+        routePath: "/api/system-health",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
@@ -50056,16 +50911,23 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
       {
         routePath: "/api/voice-write",
         mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet74]
+      },
+      {
+        routePath: "/api/voice-write",
+        mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions114]
+        modules: [onRequestOptions115]
       },
       {
         routePath: "/api/voice-write",
         mountPath: "/api",
         method: "POST",
         middlewares: [],
-        modules: [onRequestPost84]
+        modules: [onRequestPost85]
       },
       {
         routePath: "/portal/:path*",
@@ -50086,7 +50948,7 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
         mountPath: "/",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet74]
+        modules: [onRequestGet75]
       },
       {
         routePath: "/",
@@ -50099,11 +50961,11 @@ var init_functionsRoutes_0_5623767148686312 = __esm({
   }
 });
 
-// ../../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
-init_functionsRoutes_0_5623767148686312();
+// ../../../../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+init_functionsRoutes_0_7504159312216875();
 
-// ../../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
-init_functionsRoutes_0_5623767148686312();
+// ../../../../../../.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
+init_functionsRoutes_0_7504159312216875();
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -50429,12 +51291,12 @@ function pathToRegexp(path, keys, options) {
 }
 __name(pathToRegexp, "pathToRegexp");
 
-// ../../../../../Users/Eben/.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+// ../../../../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
 var escapeRegex = /[.+?^${}()|[\]\\]/g;
-function* executeRequest(request) {
-  const requestPath = new URL(request.url).pathname;
+function* executeRequest(request2) {
+  const requestPath = new URL(request2.url).pathname;
   for (const route of [...routes].reverse()) {
-    if (route.method && route.method !== request.method) {
+    if (route.method && route.method !== request2.method) {
       continue;
     }
     const routeMatcher = match(route.routePath.replace(escapeRegex, "\\$&"), {
@@ -50456,7 +51318,7 @@ function* executeRequest(request) {
     }
   }
   for (const route of routes) {
-    if (route.method && route.method !== request.method) {
+    if (route.method && route.method !== request2.method) {
       continue;
     }
     const routeMatcher = match(route.routePath.replace(escapeRegex, "\\$&"), {
@@ -50482,23 +51344,23 @@ function* executeRequest(request) {
 __name(executeRequest, "executeRequest");
 var pages_template_worker_default = {
   async fetch(originalRequest, env, workerContext) {
-    let request = originalRequest;
-    const handlerIterator = executeRequest(request);
+    let request2 = originalRequest;
+    const handlerIterator = executeRequest(request2);
     let data = {};
     let isFailOpen = false;
     const next = /* @__PURE__ */ __name(async (input, init) => {
       if (input !== void 0) {
         let url = input;
         if (typeof input === "string") {
-          url = new URL(input, request.url).toString();
+          url = new URL(input, request2.url).toString();
         }
-        request = new Request(url, init);
+        request2 = new Request(url, init);
       }
       const result = handlerIterator.next();
       if (result.done === false) {
         const { handler, params, path } = result.value;
         const context = {
-          request: new Request(request.clone()),
+          request: new Request(request2.clone()),
           functionPath: path,
           next,
           params,
@@ -50523,10 +51385,10 @@ var pages_template_worker_default = {
         }
         return cloneResponse(response2);
       } else if ("ASSETS") {
-        const response2 = await env["ASSETS"].fetch(request);
+        const response2 = await env["ASSETS"].fetch(request2);
         return cloneResponse(response2);
       } else {
-        const response2 = await fetch(request);
+        const response2 = await fetch(request2);
         return cloneResponse(response2);
       }
     }, "next");
@@ -50534,7 +51396,7 @@ var pages_template_worker_default = {
       return await next();
     } catch (error) {
       if (isFailOpen) {
-        const response2 = await env["ASSETS"].fetch(request);
+        const response2 = await env["ASSETS"].fetch(request2);
         return cloneResponse(response2);
       }
       throw error;

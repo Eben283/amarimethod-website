@@ -14,7 +14,7 @@ describe("Staff owned appointment identity", () => {
     } }), { status: 200, headers: { "Content-Type": "application/json" } })));
     const identity = await resolveStaffOwnedAppointmentIdentity({ env: { WORKER_AUTH_SECRET: "secret" } }, "ghl-appt");
     expect(identity.ownedAppointmentId).toBe("owned-appt");
-    expect(requireProviderAppointmentIdentity(identity)).toEqual({ appointmentId: "ghl-appt", contactId: "ghl-contact" });
+    expect(requireProviderAppointmentIdentity(identity)).toEqual({ provider: "ghl", appointmentId: "ghl-appt", contactId: "ghl-contact" });
   });
 
   it("does not invent a provider reference for a provider-free appointment", () => {

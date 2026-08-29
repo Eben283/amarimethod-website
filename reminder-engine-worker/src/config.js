@@ -54,12 +54,14 @@ export const DISCOVERY_CALL = Object.freeze({
 
 // In-Person Partner Session: Confirmation & Reminder Flow — a deliberately narrow first
 // cutover slice. It stays shadow-only until its D1 run evidence matches the existing GHL
-// workflow. GHL remains the calendar source and SMS transport during that proof period.
+// workflow. The owned service identity permits a reviewed non-GHL calendar edge while
+// every delivery step remains non-sending shadow evidence.
 export const PARTNER_INITIAL_IN_PERSON = Object.freeze({
   name: "In-Person Partner Session: Confirmation & Reminder Flow",
   definitionVersion: 1,
   flowKey: "partner-initial-in-person",
   calendarIds: Object.freeze(["lfsnaiGiLNL2z12pLKDP"]), // In Person Session for Partners
+  serviceIds: Object.freeze(["partner-initial"]),
   enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: null }),
   cancelOn: Object.freeze(["cancelled"]),
   mode: "shadow",

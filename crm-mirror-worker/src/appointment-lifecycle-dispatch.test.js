@@ -18,6 +18,7 @@ const migrationNames = [
   "0015_owned_communication_commands.sql", "0016_gmail_provider_evidence.sql",
   "0017_gmail_sync_gap_evidence.sql", "0018_gmail_reply_sync_control.sql",
   "0019_owned_appointment_authority.sql", "0020_owned_appointment_lifecycle_dispatch.sql",
+  "0021_provider_neutral_calendar_authority.sql",
 ];
 
 function d1Database() {
@@ -47,9 +48,11 @@ async function seedDispatch(db, overrides = {}) {
     appointment_id: "appt_1234567890abcdef12345678",
     contact_id: "contact-1",
     service_id: "partner-initial",
+    provider: "ghl",
     provider_contact_id: "ghl-contact-1",
     provider_appointment_id: "ghl-appointment-1",
     provider_calendar_id: "lfsnaiGiLNL2z12pLKDP",
+    event_type: "confirmed",
     start_at: "2026-09-01T17:00:00.000Z",
     ...overrides,
   };
@@ -85,12 +88,12 @@ async function seedDispatch(db, overrides = {}) {
       provider_contact_id, provider_appointment_id, provider_calendar_id,
       event_type, start_at, payload_sha256, state, attempts, lease_until,
       created_at, updated_at
-    ) VALUES (?, ?, ?, ?, ?, 'ghl', ?, ?, ?, 'confirmed', ?, ?, 'pending', 0, 0,
+    ) VALUES (?, ?, ?, ?, ?, 'ghl', ?, ?, ?, ?, ?, ?, 'pending', 0, 0,
               '2026-08-29T00:00:00Z', '2026-08-29T00:00:00Z')
   `).run(
     row.id, row.command_id, row.appointment_id, row.contact_id, row.service_id,
     row.provider_contact_id, row.provider_appointment_id, row.provider_calendar_id,
-    row.start_at, overrides.payload_sha256 || payloadSha256,
+    row.event_type, row.start_at, overrides.payload_sha256 || payloadSha256,
   );
   return row;
 }
@@ -115,13 +118,15 @@ describe("owned appointment lifecycle dispatch", () => {
     expect(init.headers.Authorization).toBe("Bearer test-worker-secret");
     expect(JSON.parse(init.body)).toEqual({
       type: "confirmed", recognized: true, status: "confirmed",
-      calendarId: "lfsnaiGiLNL2z12pLKDP", contactId: "ghl-contact-1",
-      appointmentId: "ghl-appointment-1", startAt: "2026-09-01T17:00:00.000Z",
+      calendarId: "lfsnaiGiLNL2z12pLKDP", contactId: "contact-1",
+      appointmentId: "appt_1234567890abcdef12345678", startAt: "2026-09-01T17:00:00.000Z",
       modifiedBy: "user",
       context: {
         source: "owned_crm", commandId: "acmd_1234567890abcdef12345678",
         ownedAppointmentId: "appt_1234567890abcdef12345678",
         ownedContactId: "contact-1", serviceId: "partner-initial",
+        provider: "ghl", providerAppointmentId: "ghl-appointment-1",
+        providerCalendarId: "lfsnaiGiLNL2z12pLKDP", providerContactId: "ghl-contact-1",
       },
     });
     expect(db.sqlite.prepare("SELECT state, attempts, dispatched_at FROM appointment_lifecycle_dispatches").get())
@@ -149,6 +154,33 @@ describe("owned appointment lifecycle dispatch", () => {
       .resolves.toMatchObject({ status: "succeeded", dispatched: 1 });
     expect(db.sqlite.prepare("SELECT state, attempts FROM appointment_lifecycle_dispatches").get())
       .toEqual({ state: "dispatched", attempts: 2 });
+    db.sqlite.close();
+  });
+
+  it("delivers cancellation evidence and requires the reminder engine to acknowledge cancellation", async () => {
+    const db = d1Database();
+    await seedDispatch(db, { event_type: "cancelled" });
+    const fetch = vi.fn(async (_url, init) => {
+      expect(JSON.parse(init.body)).toMatchObject({
+        type: "cancelled",
+        status: "cancelled",
+        appointmentId: "appt_1234567890abcdef12345678",
+        context: { serviceId: "partner-initial" },
+      });
+      return new Response(JSON.stringify({
+        actions: [{ engine: "reminder", action: "cancel", detail: {
+          flowKey: "partner-initial-in-person", cancelledSteps: 4,
+        } }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+
+    await expect(dispatchOwnedAppointmentLifecycles({
+      CRM_DB: db, WORKER_AUTH_SECRET: "test-worker-secret", REMINDER: { fetch },
+    }, Date.parse("2026-08-29T01:00:00Z"))).resolves.toMatchObject({
+      status: "succeeded", dispatched: 1,
+    });
+    expect(db.sqlite.prepare("SELECT state FROM appointment_lifecycle_dispatches").get())
+      .toEqual({ state: "dispatched" });
     db.sqlite.close();
   });
 

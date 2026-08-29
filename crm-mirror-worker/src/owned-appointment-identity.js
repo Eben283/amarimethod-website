@@ -21,6 +21,16 @@ export async function resolveOwnedAppointmentIdentity(db, reference) {
             appointment.provider_calendar_id,
             appointment.authority,
             appointment.provider_sync_state,
+            (SELECT CASE WHEN COUNT(*) = 1 THEN MAX(provider) END
+               FROM external_records
+              WHERE record_id = appointment.id
+                AND object_type = 'appointment'
+                AND external_id = appointment.provider_appointment_id) AS provider,
+            (SELECT COUNT(*)
+               FROM external_records
+              WHERE record_id = appointment.id
+                AND object_type = 'appointment'
+                AND external_id = appointment.provider_appointment_id) AS provider_record_count,
             (SELECT CASE WHEN COUNT(*) = 1 THEN MAX(external_id) END
                FROM external_records
               WHERE contact_id = appointment.contact_id
@@ -52,10 +62,18 @@ export async function resolveOwnedAppointmentIdentity(db, reference) {
       409,
     );
   }
+  if (Number(row.provider_record_count || 0) > 1) {
+    throw new OwnedAppointmentIdentityError(
+      "appointment has ambiguous provider linkage",
+      "provider_appointment_ambiguous",
+      409,
+    );
+  }
   return {
     ownedAppointmentId: row.owned_appointment_id,
     ownedContactId: row.owned_contact_id,
     providerAppointmentId: row.provider_appointment_id || null,
+    provider: row.provider || null,
     providerContactId: row.provider_contact_id || null,
     providerCalendarId: row.provider_calendar_id || null,
     authority: row.authority,

@@ -91,6 +91,7 @@ function publicExecution(row) {
     state: row.state,
     provider: row.provider || null,
     providerRecordId: row.provider_record_id || null,
+    providerCalendarId: row.provider_calendar_id || null,
     attempts: Number(row.attempts || 0),
     leaseUntil: Number(row.lease_until || 0),
     result,
@@ -129,6 +130,64 @@ async function commandByKey(db, actor, idempotencyKey) {
        LEFT JOIN services service ON service.id = appointment.service_id
       WHERE command.actor = ? AND command.idempotency_key = ?`,
   ).bind(actor, idempotencyKey).first();
+}
+
+async function exactLifecycleProviderContact(db, contactId, provider) {
+  if (provider === "google_calendar") return null;
+  if (provider !== "ghl") {
+    throw new OwnedAppointmentError("appointment lifecycle provider is unsupported", "lifecycle_identity_missing", 409);
+  }
+  const linked = await db.prepare(
+    `SELECT CASE WHEN COUNT(*) = 1 THEN MAX(external_id) END AS provider_contact_id,
+            COUNT(*) AS provider_contact_count
+       FROM external_records
+      WHERE contact_id = ? AND provider = 'ghl' AND object_type = 'contact'`,
+  ).bind(contactId).first();
+  if (Number(linked?.provider_contact_count || 0) !== 1 || !linked?.provider_contact_id) {
+    throw new OwnedAppointmentError("appointment lifecycle contact identity is incomplete", "lifecycle_identity_missing", 409);
+  }
+  return linked.provider_contact_id;
+}
+
+async function lifecycleDispatchStatement(db, input, now) {
+  const provider = clean(input?.provider, 40);
+  const providerAppointmentId = clean(input?.providerAppointmentId, 160);
+  const providerCalendarId = clean(input?.providerCalendarId, 160);
+  const eventType = clean(input?.eventType, 20);
+  const startAt = clean(input?.startAt, 80);
+  if (!new Set(["ghl", "google_calendar"]).has(provider) || !providerAppointmentId ||
+      !providerCalendarId || !new Set(["confirmed", "cancelled"]).has(eventType) ||
+      !Number.isFinite(Date.parse(startAt)) ||
+      (provider === "ghl" && providerCalendarId !== PARTNER_INITIAL_CALENDAR_ID)) {
+    throw new OwnedAppointmentError("appointment lifecycle identity is incomplete", "lifecycle_identity_missing", 409);
+  }
+  const providerContactId = await exactLifecycleProviderContact(db, input.contactId, provider);
+  const dispatch = {
+    command_id: input.commandId,
+    appointment_id: input.appointmentId,
+    contact_id: input.contactId,
+    service_id: input.serviceId,
+    provider,
+    provider_contact_id: providerContactId,
+    provider_appointment_id: providerAppointmentId,
+    provider_calendar_id: providerCalendarId,
+    event_type: eventType,
+    start_at: new Date(Date.parse(startAt)).toISOString(),
+  };
+  const { payloadSha256 } = await ownedAppointmentLifecyclePayload(dispatch);
+  return db.prepare(
+    `INSERT INTO appointment_lifecycle_dispatches (
+       id, command_id, appointment_id, contact_id, service_id, provider,
+       provider_contact_id, provider_appointment_id, provider_calendar_id,
+       event_type, start_at, payload_sha256, state, attempts, lease_until,
+       created_at, updated_at
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', 0, 0, ?, ?)`,
+  ).bind(
+    `alife_${input.commandId.slice("acmd_".length)}`, input.commandId,
+    input.appointmentId, input.contactId, input.serviceId, provider,
+    providerContactId, providerAppointmentId, providerCalendarId,
+    eventType, dispatch.start_at, payloadSha256, now, now,
+  );
 }
 
 /**
@@ -266,7 +325,17 @@ export async function captureOwnedManageCommand(db, input, options = {}) {
   if (!IDEMPOTENCY_KEY.test(idempotencyKey)) throw new OwnedAppointmentError("invalid idempotencyKey", "invalid_idempotency_key", 400);
 
   const original = await db.prepare(
-    `SELECT appointment.*, service.duration_minutes, service.buffer_minutes
+    `SELECT appointment.*, service.duration_minutes, service.buffer_minutes,
+            (SELECT CASE WHEN COUNT(*) = 1 THEN MAX(provider) END
+               FROM external_records
+              WHERE record_id = appointment.id
+                AND object_type = 'appointment'
+                AND external_id = appointment.provider_appointment_id) AS linked_provider,
+            (SELECT COUNT(*)
+               FROM external_records
+              WHERE record_id = appointment.id
+                AND object_type = 'appointment'
+                AND external_id = appointment.provider_appointment_id) AS linked_provider_count
        FROM appointments appointment
        LEFT JOIN services service ON service.id = appointment.service_id
       WHERE appointment.id = ? AND appointment.contact_id = ?`,
@@ -303,6 +372,11 @@ export async function captureOwnedManageCommand(db, input, options = {}) {
   }
   if (providerSyncRequired && !original.provider_appointment_id) {
     throw new OwnedAppointmentError("appointment has no verified temporary provider link", "provider_link_missing", 409);
+  }
+  if (providerSyncRequired &&
+      (Number(original.linked_provider_count || 0) !== 1 ||
+       !new Set(["ghl", "google_calendar"]).has(original.linked_provider))) {
+    throw new OwnedAppointmentError("appointment provider link is missing or ambiguous", "provider_link_invalid", 409);
   }
   if (action === "reschedule") {
     if (!timezone || !requestedStartTime || !requestedEndTime || startMs <= nowMs || startMs > nowMs + MAX_FUTURE_MS) {
@@ -356,15 +430,16 @@ export async function captureOwnedManageCommand(db, input, options = {}) {
          id, actor, idempotency_key, action, contact_id, appointment_id,
          source_appointment_id, service_id, requested_start_time,
          requested_end_time, requested_timezone, payload_sha256, state,
-         provider, provider_record_id, attempts, lease_until, result_json,
+         provider, provider_record_id, provider_calendar_id, attempts, lease_until, result_json,
          last_error, created_at, updated_at
        ) VALUES (?, ?, ?, 'cancel', ?, ?, ?, ?, NULL, NULL, NULL, ?, 'accepted',
-                 ?, ?, 0, 0, NULL, NULL, ?, ?)`,
+                 ?, ?, ?, 0, 0, NULL, NULL, ?, ?)`,
     ).bind(
       commandId, actor, idempotencyKey, contactId, appointmentId, appointmentId,
       original.service_id, payloadHash,
-      providerSyncRequired ? "ghl" : null,
+      providerSyncRequired ? original.linked_provider : null,
       providerSyncRequired ? original.provider_appointment_id : null,
+      providerSyncRequired ? original.provider_calendar_id : null,
       now, now,
     );
 
@@ -441,7 +516,7 @@ export async function linkOwnedAppointmentProviderRecord(db, input, options = {}
   const providerRecordId = clean(input?.providerRecordId, 160);
   const providerCalendarId = clean(input?.providerCalendarId, 160) || null;
   const providerStatusRaw = clean(input?.providerStatusRaw, 80) || null;
-  if (provider !== "ghl" || !providerRecordId) {
+  if (!new Set(["ghl", "google_calendar"]).has(provider) || !providerRecordId || !providerCalendarId) {
     throw new OwnedAppointmentError("invalid provider appointment link", "invalid_provider_link", 400);
   }
   const now = new Date(Number(options.nowMs ?? Date.now())).toISOString();
@@ -471,10 +546,10 @@ export async function linkOwnedAppointmentProviderRecord(db, input, options = {}
     const [updated] = await db.batch([
       db.prepare(
         `UPDATE appointment_authority_commands
-            SET provider = ?, provider_record_id = ?, updated_at = ?
+            SET provider = ?, provider_record_id = ?, provider_calendar_id = ?, updated_at = ?
           WHERE id = ? AND actor = ? AND action = 'reschedule' AND state = 'executing'
             AND (provider_record_id IS NULL OR provider_record_id = ?)`,
-      ).bind(provider, providerRecordId, now, row.id, identity.actor, providerRecordId),
+      ).bind(provider, providerRecordId, providerCalendarId, now, row.id, identity.actor, providerRecordId),
       db.prepare(
         `INSERT INTO appointment_authority_events
            (id, command_id, appointment_id, event_type, detail_json, occurred_at)
@@ -513,10 +588,10 @@ export async function linkOwnedAppointmentProviderRecord(db, input, options = {}
     await db.batch([
       db.prepare(
         `UPDATE appointment_authority_commands
-            SET provider = ?, provider_record_id = ?, updated_at = ?
+            SET provider = ?, provider_record_id = ?, provider_calendar_id = ?, updated_at = ?
           WHERE id = ? AND actor = ? AND state = 'executing'
             AND (provider_record_id IS NULL OR provider_record_id = ?)`,
-      ).bind(provider, providerRecordId, now, row.id, identity.actor, providerRecordId),
+      ).bind(provider, providerRecordId, providerCalendarId, now, row.id, identity.actor, providerRecordId),
       db.prepare(
         `UPDATE appointments
             SET provider_appointment_id = ?, provider_calendar_id = ?,
@@ -579,7 +654,7 @@ export async function unlinkOwnedAppointmentProviderRecord(db, input, options = 
     await db.batch([
       db.prepare(
         `UPDATE appointment_authority_commands
-            SET provider = NULL, provider_record_id = NULL, updated_at = ?
+            SET provider = NULL, provider_record_id = NULL, provider_calendar_id = NULL, updated_at = ?
           WHERE id = ? AND actor = ? AND action = 'reschedule'
             AND state = 'executing' AND provider_record_id = ?`,
       ).bind(now, row.id, identity.actor, providerRecordId),
@@ -608,7 +683,7 @@ export async function unlinkOwnedAppointmentProviderRecord(db, input, options = 
     ).bind(identity.actor, now, row.appointment_id, providerRecordId),
     db.prepare(
       `UPDATE appointment_authority_commands
-          SET provider = NULL, provider_record_id = NULL, updated_at = ?
+          SET provider = NULL, provider_record_id = NULL, provider_calendar_id = NULL, updated_at = ?
         WHERE id = ? AND actor = ? AND state = 'executing' AND provider_record_id = ?`,
     ).bind(now, row.id, identity.actor, providerRecordId),
     db.prepare(
@@ -641,7 +716,7 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
       appointmentId: row.appointment_id,
       providerAppointmentId: row.provider_record_id || result.providerAppointmentId || null,
     };
-    await db.batch([
+    const statements = [
       db.prepare(
         `UPDATE appointments
             SET status = 'cancelled', cancelled_at = ?,
@@ -670,7 +745,24 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
            (id, command_id, appointment_id, event_type, detail_json, occurred_at)
          VALUES (?, ?, ?, 'completed', ?, ?)`,
       ).bind(crypto.randomUUID(), row.id, row.appointment_id, JSON.stringify({ provider: row.provider || null }), now),
-    ]);
+    ];
+    if (options.providerSyncRequired !== false && row.service_id === "partner-initial") {
+      const appointment = await db.prepare(
+        "SELECT starts_at FROM appointments WHERE id = ? AND contact_id = ?",
+      ).bind(row.appointment_id, row.contact_id).first();
+      statements.push(await lifecycleDispatchStatement(db, {
+        commandId: row.id,
+        appointmentId: row.appointment_id,
+        contactId: row.contact_id,
+        serviceId: row.service_id,
+        provider: row.provider,
+        providerAppointmentId: row.provider_record_id,
+        providerCalendarId: row.provider_calendar_id,
+        eventType: "cancelled",
+        startAt: appointment?.starts_at,
+      }, now));
+    }
+    await db.batch(statements);
     const completed = await executionById(db, row.id);
     if (completed?.state !== "completed") throw new OwnedAppointmentError("appointment command completion was not accepted", "command_not_executing", 409);
     return publicExecution(completed);
@@ -703,7 +795,7 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
       providerReplacementAppointmentId: row.provider_record_id || result.replacementAppointmentId || null,
     };
     const providerSyncState = options.providerSyncRequired === false ? "not_required" : "synced";
-    const linkDigest = providerRecordId ? await sha256(`ghl\n${providerRecordId}`) : null;
+    const linkDigest = providerRecordId ? await sha256(`${row.provider}\n${providerRecordId}`) : null;
     const statements = [
       mirroredReplacement
         ? db.prepare(
@@ -715,7 +807,7 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
                   last_modified_by = ?, updated_at = ?
             WHERE id = ? AND contact_id = ? AND provider_appointment_id = ?`,
         ).bind(
-          row.service_id, source.provider_calendar_id, result.appointmentStatus || "confirmed",
+          row.service_id, row.provider_calendar_id || source.provider_calendar_id, result.appointmentStatus || "confirmed",
           row.requested_start_time, row.requested_end_time,
           row.requested_timezone || source.timezone, source.id, providerSyncState,
           identity.actor, now, replacementId, row.contact_id, providerRecordId,
@@ -731,7 +823,7 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
                      'owned', ?, 1, ?, ?, ?, ?)`,
         ).bind(
           replacementId, row.contact_id, row.service_id, providerRecordId,
-          source.provider_calendar_id, result.appointmentStatus || "confirmed",
+          row.provider_calendar_id || source.provider_calendar_id, result.appointmentStatus || "confirmed",
           row.requested_start_time, row.requested_end_time,
           row.requested_timezone || source.timezone,
           null, source.id, providerSyncState,
@@ -766,11 +858,27 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
       statements.push(db.prepare(
         `INSERT INTO external_records
            (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
-         VALUES (?, 'ghl', 'appointment', ?, ?, 'appointment', ?, ?)
+         VALUES (?, ?, 'appointment', ?, ?, 'appointment', ?, ?)
          ON CONFLICT(provider, object_type, external_id) DO UPDATE SET
            contact_id = excluded.contact_id, record_type = excluded.record_type,
            record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
-      ).bind(`ext_${linkDigest.slice(0, 24)}`, providerRecordId, row.contact_id, replacementId, now));
+      ).bind(`ext_${linkDigest.slice(0, 24)}`, row.provider, providerRecordId, row.contact_id, replacementId, now));
+    }
+    if (options.providerSyncRequired !== false && row.service_id === "partner-initial") {
+      statements.push(await lifecycleDispatchStatement(db, {
+        commandId: row.id,
+        // Preserve the original owned appointment identity so the reminder
+        // engine retimes the existing lifecycle instead of creating a second
+        // enrollment for the provider replacement record.
+        appointmentId: source.id,
+        contactId: row.contact_id,
+        serviceId: row.service_id,
+        provider: row.provider,
+        providerAppointmentId: row.provider_record_id,
+        providerCalendarId: row.provider_calendar_id || source.provider_calendar_id,
+        eventType: "confirmed",
+        startAt: row.requested_start_time,
+      }, now));
     }
     try {
       await db.batch(statements);
@@ -815,46 +923,25 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
     const lifecycle = await db.prepare(
       `SELECT appointment.id AS appointment_id, appointment.contact_id, appointment.service_id,
               appointment.provider_appointment_id, appointment.provider_calendar_id,
-              appointment.starts_at AS start_at,
-              MIN(external.external_id) AS provider_contact_id,
-              COUNT(external.external_id) AS provider_contact_count
+              appointment.starts_at AS start_at
          FROM appointments appointment
-         LEFT JOIN external_records external
-           ON external.contact_id = appointment.contact_id
-          AND external.provider = 'ghl' AND external.object_type = 'contact'
-        WHERE appointment.id = ?
-        GROUP BY appointment.id`,
+        WHERE appointment.id = ?`,
     ).bind(row.appointment_id).first();
-    if (Number(lifecycle?.provider_contact_count) !== 1 || !lifecycle?.provider_contact_id ||
-        lifecycle.provider_appointment_id !== row.provider_record_id ||
-        lifecycle.provider_calendar_id !== PARTNER_INITIAL_CALENDAR_ID ||
+    if (!lifecycle || lifecycle.provider_appointment_id !== row.provider_record_id ||
         Date.parse(lifecycle.start_at || "") !== Date.parse(row.requested_start_time)) {
       throw new OwnedAppointmentError("appointment lifecycle identity is incomplete", "lifecycle_identity_missing", 409);
     }
-    const dispatch = {
-      command_id: row.id,
-      appointment_id: row.appointment_id,
-      contact_id: row.contact_id,
-      service_id: row.service_id,
-      provider_contact_id: lifecycle.provider_contact_id,
-      provider_appointment_id: lifecycle.provider_appointment_id,
-      provider_calendar_id: lifecycle.provider_calendar_id,
-      start_at: lifecycle.start_at,
-    };
-    const { payloadSha256 } = await ownedAppointmentLifecyclePayload(dispatch);
-    statements.push(db.prepare(
-      `INSERT INTO appointment_lifecycle_dispatches (
-         id, command_id, appointment_id, contact_id, service_id, provider,
-         provider_contact_id, provider_appointment_id, provider_calendar_id,
-         event_type, start_at, payload_sha256, state, attempts, lease_until,
-         created_at, updated_at
-       ) VALUES (?, ?, ?, ?, ?, 'ghl', ?, ?, ?, 'confirmed', ?, ?, 'pending', 0, 0, ?, ?)`,
-    ).bind(
-      `alife_${row.id.slice("acmd_".length)}`, row.id, row.appointment_id,
-      row.contact_id, row.service_id, lifecycle.provider_contact_id,
-      lifecycle.provider_appointment_id, lifecycle.provider_calendar_id,
-      lifecycle.start_at, payloadSha256, now, now,
-    ));
+    statements.push(await lifecycleDispatchStatement(db, {
+      commandId: row.id,
+      appointmentId: row.appointment_id,
+      contactId: row.contact_id,
+      serviceId: row.service_id,
+      provider: row.provider,
+      providerAppointmentId: lifecycle.provider_appointment_id,
+      providerCalendarId: lifecycle.provider_calendar_id,
+      eventType: "confirmed",
+      startAt: lifecycle.start_at,
+    }, now));
   }
   await db.batch(statements);
   const completed = await executionById(db, row.id);
