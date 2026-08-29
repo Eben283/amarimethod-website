@@ -99,6 +99,70 @@ describe("GET /api/staff-amari-mail-callback", () => {
       bookingActivationEnabled: false,
       oauthCredentialFamily: "amari_internal",
     });
+    expect(JSON.parse(env.store.get("google:garrett:last_oauth_result"))).toMatchObject({
+      actor: "Garrett", status: "connected", stage: "complete", code: "grant_verified",
+      bookingActivationEnabled: false,
+    });
+  });
+
+  it("accepts a valid signed calendar state when immediate cross-PoP KV has not propagated", async () => {
+    const env = environment();
+    const state = await calendarState(env);
+    env.store.clear();
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        access_token: "calendar-access", refresh_token: "calendar-refresh", expires_in: 3600,
+        scope: "https://www.googleapis.com/auth/calendar",
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+        id: "garrett@amarimethod.com", summary: "Garrett", accessRole: "owner", primary: true,
+      }] }), { status: 200 })));
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
+      env,
+    });
+
+    expect(response.headers.get("Location")).toContain("staffCalendar=connected");
+    expect(env.store.has("google:garrett:grant_status")).toBe(true);
+  });
+
+  it("persists a safe failure stage without storing partial credentials", async () => {
+    const env = environment();
+    const state = await calendarState(env);
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(new Response(JSON.stringify({ error: "invalid_grant" }), { status: 400 })));
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
+      env,
+    });
+
+    expect(response.headers.get("Location")).toContain("staffCalendar=failed");
+    expect(JSON.parse(env.store.get("google:garrett:last_oauth_result"))).toMatchObject({
+      actor: "Garrett", status: "failed", stage: "token_exchange", code: "token_exchange_failed",
+      bookingActivationEnabled: false,
+    });
+    expect([...env.store.keys()].filter((key) => /access_token|refresh_token|grant_status/.test(key))).toEqual([]);
+  });
+
+  it("rejects a tampered calendar state before KV or Google", async () => {
+    const env = environment();
+    const state = await calendarState(env);
+    env.PORTAL_KV.get.mockClear();
+    env.PORTAL_KV.delete.mockClear();
+    const fetch = vi.fn();
+    vi.stubGlobal("fetch", fetch);
+    const [prefix, payload] = state.split(".");
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${prefix}.${payload}.${"A".repeat(43)}&code=grant-code`),
+      env,
+    });
+
+    expect(response.headers.get("Location")).toContain("staffCalendar=failed");
+    expect(env.PORTAL_KV.get).not.toHaveBeenCalled();
+    expect(env.PORTAL_KV.delete).not.toHaveBeenCalled();
+    expect(fetch).not.toHaveBeenCalled();
   });
 
   it("stores only a verified Amari-domain grant after checking every required exact SendAs identity", async () => {

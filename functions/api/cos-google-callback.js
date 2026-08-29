@@ -3,9 +3,11 @@
 
 import {
   PERSONAL_CALENDAR_CALLBACK_URL,
-  STAFF_CALENDAR_SCOPE,
   consumeStaffCalendarOAuthState,
+  exchangeAndStoreStaffCalendarGrant,
+  isStaffCalendarOAuthState,
   listWritableGoogleCalendars,
+  recordStaffCalendarOAuthResult,
   resolveStaffCalendarActor,
   staffCalendarKey,
 } from "../lib/staff-calendar-oauth.js";
@@ -35,29 +37,53 @@ export async function onRequestGet(context) {
 
   if (!stateKey || !context.env.PORTAL_KV) return redirect(FAILURE_URL);
 
-  const staffGrant = await consumeStaffCalendarOAuthState(context.env, state);
-  const staffFlow = Boolean(staffGrant);
+  if (isStaffCalendarOAuthState(state)) {
+    let staffGrant;
+    try {
+      staffGrant = await consumeStaffCalendarOAuthState(context.env, state);
+    } catch {
+      return redirect(STAFF_FAILURE_URL);
+    }
+    if (!code || url.searchParams.has("error")) {
+      await recordStaffCalendarOAuthResult(context.env, staffGrant.actor, {
+        status: "failed", stage: "authorization", code: "provider_denied",
+      }).catch(() => {});
+      return redirect(STAFF_FAILURE_URL);
+    }
+    try {
+      await exchangeAndStoreStaffCalendarGrant(context, staffGrant, code);
+      await recordStaffCalendarOAuthResult(context.env, staffGrant.actor, {
+        status: "connected", stage: "complete", code: "grant_verified",
+      }).catch(() => {});
+      return redirect(STAFF_SUCCESS_URL);
+    } catch (error) {
+      await recordStaffCalendarOAuthResult(context.env, staffGrant.actor, {
+        status: "failed", stage: error?.stage, code: error?.code,
+      }).catch(() => {});
+      return redirect(STAFF_FAILURE_URL);
+    }
+  }
 
-  const saved = staffFlow ? null : await context.env.PORTAL_KV.get(stateKey);
+  const saved = await context.env.PORTAL_KV.get(stateKey);
   // Always make state single-use, including when Google returned an error.
-  if (!staffFlow) await context.env.PORTAL_KV.delete(stateKey);
-  if ((!saved && !staffGrant) || !code || url.searchParams.has("error")) return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+  await context.env.PORTAL_KV.delete(stateKey);
+  if (!saved || !code || url.searchParams.has("error")) return redirect(FAILURE_URL);
 
   let grant;
   try {
-    grant = staffGrant || JSON.parse(saved);
+    grant = JSON.parse(saved);
   } catch {
-    return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+    return redirect(FAILURE_URL);
   }
-  const actor = staffFlow ? grant.actor : grant.user;
+  const actor = grant.user;
   let identity;
   try {
     identity = resolveStaffCalendarActor(actor);
   } catch {
-    return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+    return redirect(FAILURE_URL);
   }
-  if ((!staffFlow && identity.actor !== "Eben") || !context.env.GOOGLE_OAUTH_CLIENT_ID || !context.env.GOOGLE_OAUTH_CLIENT_SECRET) {
-    return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+  if (identity.actor !== "Eben" || !context.env.GOOGLE_OAUTH_CLIENT_ID || !context.env.GOOGLE_OAUTH_CLIENT_SECRET) {
+    return redirect(FAILURE_URL);
   }
 
   let tokenResponse;
@@ -74,29 +100,28 @@ export async function onRequestGet(context) {
       }).toString(),
     });
   } catch {
-    return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+    return redirect(FAILURE_URL);
   }
-  if (!tokenResponse.ok) return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+  if (!tokenResponse.ok) return redirect(FAILURE_URL);
 
   let token;
   try {
     token = await tokenResponse.json();
   } catch {
-    return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+    return redirect(FAILURE_URL);
   }
-  if (!token.access_token || !token.refresh_token) return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+  if (!token.access_token || !token.refresh_token) return redirect(FAILURE_URL);
 
   const scopes = String(token.scope || "").split(/\s+/).filter(Boolean);
-  if (staffFlow && !scopes.includes(STAFF_CALENDAR_SCOPE)) return redirect(STAFF_FAILURE_URL);
   let calendars;
   try {
     calendars = await listWritableGoogleCalendars(token.access_token);
   } catch {
-    return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+    return redirect(FAILURE_URL);
   }
   const primary = calendars.find((calendar) => calendar.primary);
   if (primary?.id.toLowerCase() !== identity.primaryCalendarId.toLowerCase()) {
-    return redirect(staffFlow ? STAFF_FAILURE_URL : FAILURE_URL);
+    return redirect(FAILURE_URL);
   }
 
   const expiry = Date.now() + Number(token.expires_in || 3600) * 1000;
@@ -125,5 +150,5 @@ export async function onRequestGet(context) {
     console.error("[cos-google-callback] failed to invalidate Calendar context cache", err);
   }
 
-  return redirect(staffFlow ? STAFF_SUCCESS_URL : SUCCESS_URL);
+  return redirect(SUCCESS_URL);
 }

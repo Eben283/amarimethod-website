@@ -43,9 +43,13 @@ describe("Staff Google Calendar authorization", () => {
     expect(authorizationUrl.searchParams.get("client_id")).toBe("amari-internal-client");
     expect(authorizationUrl.searchParams.get("redirect_uri")).toBe("https://www.amarimethod.com/api/staff-amari-mail-callback");
     expect(authorizationUrl.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/calendar");
-    expect(authorizationUrl.searchParams.get("state")).toHaveLength(64);
+    expect(authorizationUrl.searchParams.get("state")).toMatch(/^sc2\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]{43}$/);
+    const statePayload = JSON.parse(new TextDecoder().decode(Uint8Array.from(
+      atob(authorizationUrl.searchParams.get("state").split(".")[1].replaceAll("-", "+").replaceAll("_", "/").padEnd(4 * Math.ceil(authorizationUrl.searchParams.get("state").split(".")[1].length / 4), "=")),
+      (character) => character.charCodeAt(0),
+    )));
     expect(env.PORTAL_KV.put).toHaveBeenCalledWith(
-      `staff-calendar:oauth-state:${authorizationUrl.searchParams.get("state")}`,
+      `staff-calendar:oauth-state:${statePayload.nonce}`,
       expect.stringContaining('"actor":"Garrett"'),
       { expirationTtl: 600 },
     );

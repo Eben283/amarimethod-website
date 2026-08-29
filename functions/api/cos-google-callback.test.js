@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { onRequestGet } from "./cos-google-callback.js";
+import { createStaffCalendarOAuthState } from "../lib/staff-calendar-oauth.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -9,6 +10,9 @@ function context(url, env = {}) {
     env: {
       GOOGLE_OAUTH_CLIENT_ID: "client-id",
       GOOGLE_OAUTH_CLIENT_SECRET: "client-secret",
+      AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "amari-client-id",
+      AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "amari-client-secret",
+      JWT_SECRET: "jwt-secret",
       PORTAL_KV: { get: vi.fn(), delete: vi.fn(), put: vi.fn() },
       ...env,
     },
@@ -42,42 +46,42 @@ describe("GET /api/cos-google-callback", () => {
     expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:eben:grant_status", expect.stringContaining('"primaryCalendarId":"eben@ebenforrest.com"'));
   });
 
-  it("completes Garrett's signed-in Staff calendar grant without activating booking", async () => {
-    const state = "a".repeat(64);
+  it("completes Eben's signed-in Staff calendar grant without activating booking", async () => {
+    const setup = context("https://example.com");
+    const state = await createStaffCalendarOAuthState(setup.env, "Eben");
     const ctx = context(`https://www.amarimethod.com/api/cos-google-callback?state=${state}&code=grant-code`);
-    ctx.env.PORTAL_KV.get.mockImplementation(async (key) => key === `staff-calendar:oauth-state:${state}`
-      ? JSON.stringify({ flow: "staff_appointment_calendar", actor: "Garrett", requiredPrimaryCalendarId: "garrett@amarimethod.com" })
-      : null);
+    ctx.env.PORTAL_KV.get.mockResolvedValue(null);
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({
-        access_token: "garrett-access",
-        refresh_token: "garrett-refresh",
+        access_token: "eben-access",
+        refresh_token: "eben-refresh",
         expires_in: 3600,
         scope: "https://www.googleapis.com/auth/calendar",
       }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
-        id: "garrett@amarimethod.com", summary: "Garrett", accessRole: "owner", primary: true,
+        id: "eben@ebenforrest.com", summary: "Eben", accessRole: "owner", primary: true,
       }] }), { status: 200 })));
 
     const response = await onRequestGet(ctx);
     expect(response.status).toBe(302);
     expect(response.headers.get("Location")).toBe("https://www.amarimethod.com/staff/operations?staffCalendar=connected");
-    expect(ctx.env.PORTAL_KV.delete).toHaveBeenCalledWith(`staff-calendar:oauth-state:${state}`);
-    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:garrett:access_token", "garrett-access");
-    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:garrett:refresh_token", "garrett-refresh");
-    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:garrett:grant_status", expect.stringContaining('"bookingActivationEnabled":false'));
+    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:eben:access_token", "eben-access");
+    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:eben:refresh_token", "eben-refresh");
+    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:eben:grant_status", expect.stringContaining('"bookingActivationEnabled":false'));
   });
 
   it("rejects a Staff grant when the primary calendar belongs to a different identity", async () => {
-    const state = "b".repeat(64);
+    const setup = context("https://example.com");
+    const state = await createStaffCalendarOAuthState(setup.env, "Eben");
     const ctx = context(`https://www.amarimethod.com/api/cos-google-callback?state=${state}&code=grant-code`);
-    ctx.env.PORTAL_KV.get.mockResolvedValue(JSON.stringify({ flow: "staff_appointment_calendar", actor: "Garrett", requiredPrimaryCalendarId: "garrett@amarimethod.com" }));
+    ctx.env.PORTAL_KV.get.mockResolvedValue(null);
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "wrong", refresh_token: "wrong", scope: "https://www.googleapis.com/auth/calendar" }), { status: 200 }))
       .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: "someone@example.com", accessRole: "owner", primary: true }] }), { status: 200 })));
     const response = await onRequestGet(ctx);
     expect(response.headers.get("Location")).toBe("https://www.amarimethod.com/staff/operations?staffCalendar=failed");
-    expect(ctx.env.PORTAL_KV.put).not.toHaveBeenCalled();
+    expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:eben:last_oauth_result", expect.stringContaining('"code":"primary_calendar_mismatch"'), { expirationTtl: 604800 });
+    expect(ctx.env.PORTAL_KV.put.mock.calls.some(([key]) => /access_token|refresh_token|grant_status/.test(key))).toBe(false);
   });
 
   it("rejects an expired or missing state without contacting Google", async () => {

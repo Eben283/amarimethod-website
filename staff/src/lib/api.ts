@@ -425,6 +425,14 @@ export type StaffGoogleCalendarReadiness = {
   grantPresent: boolean;
   grantVerified: boolean;
   authorityMarkerVerified?: boolean;
+  lastOAuthResult?: null | {
+    actor: 'Eben' | 'Garrett';
+    status: 'connected' | 'failed';
+    stage: string;
+    code: string;
+    at: string;
+    bookingActivationEnabled: false;
+  };
   calendars: Array<{
     id: string;
     summary: string;
