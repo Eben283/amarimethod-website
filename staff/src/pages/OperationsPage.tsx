@@ -124,8 +124,16 @@ function PractitionerCalendarReadiness({ callbackState }: { callbackState: strin
   }
 
   const verified = readiness?.grantVerified === true;
+  const lastFailure = readiness?.lastOAuthResult?.status === 'failed' ? readiness.lastOAuthResult : null;
+  const failureStage = lastFailure?.stage === 'token_exchange' ? 'Google token exchange'
+    : lastFailure?.stage === 'scope_readback' ? 'calendar permission readback'
+      : lastFailure?.stage === 'calendar_readback' ? 'writable-calendar readback'
+        : lastFailure?.stage === 'identity_readback' ? 'primary-calendar identity readback'
+          : lastFailure?.stage === 'storage' ? 'secure grant storage'
+            : lastFailure?.stage === 'authorization' ? 'Google authorization'
+              : null;
   const callbackMessage = callbackState === 'failed'
-    ? 'Calendar connection was not completed. Staff booking stayed on its current provider.'
+    ? `Calendar connection was not completed${failureStage ? ` during ${failureStage}` : ''}. Staff booking stayed on its current provider.`
     : callbackState === 'connected' && verified
       ? 'Google verified this practitioner calendar. Staff booking activation is still off.'
       : callbackState === 'connected' && readiness && !loading

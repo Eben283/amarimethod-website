@@ -12,6 +12,8 @@ import {
 import {
   consumeStaffCalendarOAuthState,
   exchangeAndStoreStaffCalendarGrant,
+  isStaffCalendarOAuthState,
+  recordStaffCalendarOAuthResult,
 } from "../lib/staff-calendar-oauth.js";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
@@ -39,14 +41,30 @@ function hasVerifiedSendAs(payload, requiredSender) {
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
   const state = url.searchParams.get("state") || "";
-  const calendarGrant = await consumeStaffCalendarOAuthState(context.env, state);
-  if (calendarGrant) {
+  if (isStaffCalendarOAuthState(state)) {
+    let calendarGrant;
+    try {
+      calendarGrant = await consumeStaffCalendarOAuthState(context.env, state);
+    } catch {
+      return redirect("https://www.amarimethod.com/staff/operations?staffCalendar=failed");
+    }
     const code = url.searchParams.get("code") || "";
-    if (!code || url.searchParams.has("error")) return redirect("https://www.amarimethod.com/staff/operations?staffCalendar=failed");
+    if (!code || url.searchParams.has("error")) {
+      await recordStaffCalendarOAuthResult(context.env, calendarGrant.actor, {
+        status: "failed", stage: "authorization", code: "provider_denied",
+      }).catch(() => {});
+      return redirect("https://www.amarimethod.com/staff/operations?staffCalendar=failed");
+    }
     try {
       await exchangeAndStoreStaffCalendarGrant(context, calendarGrant, code);
+      await recordStaffCalendarOAuthResult(context.env, calendarGrant.actor, {
+        status: "connected", stage: "complete", code: "grant_verified",
+      }).catch(() => {});
       return redirect("https://www.amarimethod.com/staff/operations?staffCalendar=connected");
-    } catch {
+    } catch (error) {
+      await recordStaffCalendarOAuthResult(context.env, calendarGrant.actor, {
+        status: "failed", stage: error?.stage, code: error?.code,
+      }).catch(() => {});
       return redirect("https://www.amarimethod.com/staff/operations?staffCalendar=failed");
     }
   }

@@ -146,6 +146,13 @@ describe('Staff legibility contract', () => {
     expect(training).not.toContain('stale 40-minute Assessment reference');
   });
 
+  it('returns an expired Staff session to the exact OAuth callback result after PIN login', () => {
+    const app = css('App.tsx');
+    expect(app).toContain('state={{ returnTo: `${location.pathname}${location.search}` }}');
+    expect(app).toContain("requested.startsWith('/') && !requested.startsWith('//') && !requested.startsWith('/login')");
+    expect(app).toContain('<Navigate to={returnTo} replace />');
+  });
+
   it('keeps wrong-email investigation out of the daily Home workboard', () => {
     const home = css('pages/HomePage.tsx');
     expect(home).not.toContain('Someone received the wrong automated email?');

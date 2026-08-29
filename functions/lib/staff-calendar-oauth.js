@@ -4,6 +4,10 @@ export const PERSONAL_CALENDAR_CALLBACK_URL = "https://www.amarimethod.com/api/c
 export const AMARI_CALENDAR_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
 export const STAFF_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
 export const STAFF_CALENDAR_STATE_TTL_SECONDS = 10 * 60;
+const STAFF_CALENDAR_STATE_VERSION = "staff-calendar-oauth.v2";
+const STAFF_CALENDAR_STATE_PREFIX = "sc2";
+const STAFF_CALENDAR_RESULT_TTL_SECONDS = 7 * 24 * 60 * 60;
+const encoder = new TextEncoder();
 
 const ACTORS = Object.freeze({
   Eben: Object.freeze({ actor: "Eben", key: "eben", primaryCalendarId: "eben@ebenforrest.com" }),
@@ -48,18 +52,71 @@ export function staffCalendarOAuthConfigured(env, actor) {
 
 function stateValue() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+  return base64url(bytes);
+}
+
+function base64url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+function fromBase64url(value) {
+  const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+}
+
+async function stateKey(secret, usage) {
+  return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [usage]);
+}
+
+async function signState(payload, secret) {
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    await stateKey(secret, "sign"),
+    encoder.encode(`${STAFF_CALENDAR_STATE_VERSION}.${payload}`),
+  );
+  return base64url(new Uint8Array(signature));
+}
+
+function stateFailure(code, stage = "state") {
+  const error = new Error("Staff calendar authorization state was not accepted");
+  error.code = code;
+  error.stage = stage;
+  return error;
+}
+
+function exchangeFailure(message, code, stage, httpStatus = null) {
+  const error = new Error(message);
+  error.code = code;
+  error.stage = stage;
+  if (httpStatus) error.httpStatus = httpStatus;
+  return error;
+}
+
+export function isStaffCalendarOAuthState(state) {
+  return String(state || "").startsWith(`${STAFF_CALENDAR_STATE_PREFIX}.`);
 }
 
 export async function createStaffCalendarOAuthState(env, actor, now = Date.now()) {
   const identity = resolveStaffCalendarActor(actor);
-  const state = stateValue();
+  const nonce = stateValue();
+  const payload = base64url(encoder.encode(JSON.stringify({
+    flow: "staff_appointment_calendar",
+    actor: identity.actor,
+    requiredPrimaryCalendarId: identity.primaryCalendarId,
+    nonce,
+    createdAt: now,
+  })));
+  const state = `${STAFF_CALENDAR_STATE_PREFIX}.${payload}.${await signState(payload, env.JWT_SECRET)}`;
   await env.PORTAL_KV.put(
-    `staff-calendar:oauth-state:${state}`,
+    `staff-calendar:oauth-state:${nonce}`,
     JSON.stringify({
       flow: "staff_appointment_calendar",
       actor: identity.actor,
       requiredPrimaryCalendarId: identity.primaryCalendarId,
+      nonce,
       createdAt: now,
     }),
     { expirationTtl: STAFF_CALENDAR_STATE_TTL_SECONDS },
@@ -67,20 +124,78 @@ export async function createStaffCalendarOAuthState(env, actor, now = Date.now()
   return state;
 }
 
-export async function consumeStaffCalendarOAuthState(env, state) {
-  if (!/^[a-f0-9]{64}$/.test(String(state || ""))) return null;
-  const key = `staff-calendar:oauth-state:${state}`;
+export async function consumeStaffCalendarOAuthState(env, state, now = Date.now()) {
+  if (!isStaffCalendarOAuthState(state)) return null;
+  const [prefix, encoded, suppliedSignature, ...extra] = String(state).split(".");
+  if (prefix !== STAFF_CALENDAR_STATE_PREFIX || extra.length || !/^[A-Za-z0-9_-]{40,900}$/.test(encoded || "") || !/^[A-Za-z0-9_-]{43}$/.test(suppliedSignature || "")) {
+    throw stateFailure("state_invalid");
+  }
+  let verified = false;
+  try {
+    verified = await crypto.subtle.verify(
+      "HMAC",
+      await stateKey(env.JWT_SECRET, "verify"),
+      fromBase64url(suppliedSignature),
+      encoder.encode(`${STAFF_CALENDAR_STATE_VERSION}.${encoded}`),
+    );
+  } catch (error) {
+    if (error?.code) throw error;
+    throw stateFailure("state_invalid");
+  }
+  if (!verified) throw stateFailure("state_invalid");
+
+  let grant;
+  try {
+    grant = JSON.parse(new TextDecoder().decode(fromBase64url(encoded)));
+    const identity = resolveStaffCalendarActor(grant.actor);
+    const createdAt = Number(grant.createdAt);
+    if (grant.flow !== "staff_appointment_calendar"
+        || grant.requiredPrimaryCalendarId !== identity.primaryCalendarId
+        || !/^[A-Za-z0-9_-]{43}$/.test(String(grant.nonce || ""))
+        || !Number.isFinite(createdAt)
+        || createdAt > now + 60_000
+        || now - createdAt > STAFF_CALENDAR_STATE_TTL_SECONDS * 1000) {
+      throw stateFailure("state_expired");
+    }
+  } catch (error) {
+    if (error?.code) throw error;
+    throw stateFailure("state_invalid");
+  }
+
+  const key = `staff-calendar:oauth-state:${grant.nonce}`;
   const saved = await env.PORTAL_KV.get(key);
   await env.PORTAL_KV.delete(key);
-  if (!saved) return null;
-  try {
-    const grant = JSON.parse(saved);
-    const identity = resolveStaffCalendarActor(grant.actor);
-    if (grant.flow !== "staff_appointment_calendar" || grant.requiredPrimaryCalendarId !== identity.primaryCalendarId) return null;
-    return grant;
-  } catch {
-    return null;
+  if (saved) {
+    try {
+      const stored = JSON.parse(saved);
+      if (stored.actor !== grant.actor || stored.requiredPrimaryCalendarId !== grant.requiredPrimaryCalendarId || stored.nonce !== grant.nonce) {
+        throw stateFailure("state_mismatch");
+      }
+    } catch (error) {
+      if (error?.code) throw error;
+      throw stateFailure("state_invalid");
+    }
   }
+  // Cloudflare KV is eventually consistent. The signed, time-bounded state is
+  // the callback authority when an immediate cross-PoP read cannot yet see the
+  // just-written nonce. Google's authorization code remains single-use and is
+  // bound to this exact client and redirect URI.
+  return { ...grant, stateEvidence: saved ? "signature_and_kv" : "signature_only" };
+}
+
+export async function recordStaffCalendarOAuthResult(env, actor, result, now = Date.now()) {
+  const identity = resolveStaffCalendarActor(actor);
+  const status = result?.status === "connected" ? "connected" : "failed";
+  const stage = /^[a-z_]{3,40}$/.test(String(result?.stage || "")) ? String(result.stage) : "unknown";
+  const code = /^[a-z0-9_]{3,64}$/.test(String(result?.code || "")) ? String(result.code) : "authorization_failed";
+  await env.PORTAL_KV.put(staffCalendarKey(identity.actor, "last_oauth_result"), JSON.stringify({
+    actor: identity.actor,
+    status,
+    stage,
+    code,
+    at: new Date(now).toISOString(),
+    bookingActivationEnabled: false,
+  }), { expirationTtl: STAFF_CALENDAR_RESULT_TTL_SECONDS });
 }
 
 export async function listWritableGoogleCalendars(accessToken) {
@@ -106,32 +221,50 @@ export async function listWritableGoogleCalendars(accessToken) {
 export async function exchangeAndStoreStaffCalendarGrant(context, grant, code) {
   const identity = resolveStaffCalendarActor(grant?.actor);
   if (grant?.requiredPrimaryCalendarId !== identity.primaryCalendarId || !code) {
-    throw new Error("invalid Staff calendar grant request");
+    throw exchangeFailure("invalid Staff calendar grant request", "grant_request_invalid", "request");
   }
   const client = staffCalendarOAuthClient(context.env, identity.actor);
-  if (!client.clientId || !client.clientSecret) throw new Error("Staff calendar OAuth client is not configured");
+  if (!client.clientId || !client.clientSecret) {
+    throw exchangeFailure("Staff calendar OAuth client is not configured", "client_unconfigured", "configuration");
+  }
 
-  const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      code,
-      client_id: client.clientId,
-      client_secret: client.clientSecret,
-      redirect_uri: client.callbackUrl,
-      grant_type: "authorization_code",
-    }).toString(),
-  });
-  if (!tokenResponse.ok) throw new Error(`Google token exchange failed: ${tokenResponse.status}`);
+  let tokenResponse;
+  try {
+    tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: client.clientId,
+        client_secret: client.clientSecret,
+        redirect_uri: client.callbackUrl,
+        grant_type: "authorization_code",
+      }).toString(),
+    });
+  } catch {
+    throw exchangeFailure("Google token exchange was unavailable", "token_exchange_unavailable", "token_exchange");
+  }
+  if (!tokenResponse.ok) {
+    throw exchangeFailure("Google token exchange failed", "token_exchange_failed", "token_exchange", tokenResponse.status);
+  }
   const token = await tokenResponse.json();
-  if (!token.access_token || !token.refresh_token) throw new Error("Google did not return a durable calendar grant");
+  if (!token.access_token || !token.refresh_token) {
+    throw exchangeFailure("Google did not return a durable calendar grant", "durable_grant_missing", "token_exchange");
+  }
   const scopes = String(token.scope || "").split(/\s+/).filter(Boolean);
-  if (!scopes.includes(STAFF_CALENDAR_SCOPE)) throw new Error("Google calendar scope was not granted");
+  if (!scopes.includes(STAFF_CALENDAR_SCOPE)) {
+    throw exchangeFailure("Google calendar scope was not granted", "calendar_scope_missing", "scope_readback");
+  }
 
-  const calendars = await listWritableGoogleCalendars(token.access_token);
+  let calendars;
+  try {
+    calendars = await listWritableGoogleCalendars(token.access_token);
+  } catch {
+    throw exchangeFailure("Google Calendar writer readback failed", "calendar_readback_failed", "calendar_readback");
+  }
   const primary = calendars.find((calendar) => calendar.primary);
   if (primary?.id.toLowerCase() !== identity.primaryCalendarId.toLowerCase()) {
-    throw new Error("Google primary calendar does not match the governed Staff identity");
+    throw exchangeFailure("Google primary calendar does not match the governed Staff identity", "primary_calendar_mismatch", "identity_readback");
   }
 
   const expiry = Date.now() + Number(token.expires_in || 3600) * 1000;
@@ -155,7 +288,7 @@ export async function exchangeAndStoreStaffCalendarGrant(context, grant, code) {
     }));
   } catch (error) {
     await Promise.allSettled([...tokenKeys, statusKey].map((key) => context.env.PORTAL_KV.delete(key)));
-    throw error;
+    throw exchangeFailure("Calendar grant storage failed", "grant_storage_failed", "storage");
   }
 
   try {
@@ -209,11 +342,17 @@ export async function staffCalendarGrantReadiness(context, actor) {
     blockers: ["Google Calendar authorization is not configured", "Staff booking remains on its current provider"],
   };
 
-  const [access, refresh, marker] = await Promise.all([
+  const [access, refresh, marker, lastResultRaw] = await Promise.all([
     context.env.PORTAL_KV.get(staffCalendarKey(identity.actor, "access_token")),
     context.env.PORTAL_KV.get(staffCalendarKey(identity.actor, "refresh_token")),
     context.env.PORTAL_KV.get(staffCalendarKey(identity.actor, "grant_status")),
+    context.env.PORTAL_KV.get(staffCalendarKey(identity.actor, "last_oauth_result")),
   ]);
+  let lastOAuthResult = null;
+  try {
+    const parsed = JSON.parse(lastResultRaw);
+    if (parsed?.actor === identity.actor && new Set(["connected", "failed"]).has(parsed?.status)) lastOAuthResult = parsed;
+  } catch { lastOAuthResult = null; }
   const grantPresent = Boolean(access || refresh || marker);
   if (!grantPresent) return {
     actor: identity.actor,
@@ -222,6 +361,7 @@ export async function staffCalendarGrantReadiness(context, actor) {
     connectionStatus: "absent",
     grantPresent: false,
     grantVerified: false,
+    lastOAuthResult,
     calendars: [],
     bookingActivationEnabled: activation,
     blockers: [`No verified Google Calendar grant is connected for ${identity.actor}`, "Staff booking remains on its current provider"],
@@ -249,6 +389,7 @@ export async function staffCalendarGrantReadiness(context, actor) {
       connectionStatus: grantVerified ? "verified" : "invalid",
       grantPresent: true,
       grantVerified,
+      lastOAuthResult,
       authorityMarkerVerified: markerVerified,
       calendars,
       bookingActivationEnabled: activation && configuredCalendarWritable && markerVerified,
@@ -267,6 +408,7 @@ export async function staffCalendarGrantReadiness(context, actor) {
       connectionStatus: "invalid",
       grantPresent: true,
       grantVerified: false,
+      lastOAuthResult,
       calendars: [],
       bookingActivationEnabled: false,
       blockers: ["The stored Google Calendar grant could not be verified", "Staff booking remains on its current provider"],
