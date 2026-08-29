@@ -26,6 +26,84 @@ const foundations = [
 const migration = readMigration("0019_owned_appointment_authority.sql");
 
 describe("owned appointment authority migration", () => {
+  it("preserves the populated production-only appointment observation child", () => {
+    const db = new DatabaseSync(":memory:");
+    db.exec("PRAGMA foreign_keys = ON");
+    for (const foundation of foundations) db.exec(foundation);
+    db.exec(`
+      CREATE TABLE appointment_source_observations (
+        id TEXT PRIMARY KEY,
+        appointment_id TEXT NOT NULL REFERENCES appointments(id) ON DELETE RESTRICT,
+        contact_id TEXT NOT NULL REFERENCES contacts(id) ON DELETE RESTRICT,
+        source TEXT NOT NULL CHECK (source = 'ghl'),
+        provider_calendar_id TEXT,
+        status TEXT NOT NULL,
+        starts_at TEXT,
+        ends_at TEXT,
+        observed_at TEXT NOT NULL,
+        source_key TEXT NOT NULL UNIQUE
+      );
+      CREATE INDEX idx_appointment_source_observations_appointment
+        ON appointment_source_observations(appointment_id, observed_at DESC);
+      INSERT INTO contacts (id, display_name, created_at, updated_at)
+      VALUES ('contact-observed', 'Observed Person', '2026-08-29T00:00:00Z', '2026-08-29T00:00:00Z');
+      INSERT INTO appointments (
+        id, contact_id, service_id, provider_appointment_id,
+        provider_calendar_id, provider_status_raw, status, starts_at,
+        ends_at, timezone, created_at, updated_at
+      ) VALUES (
+        'appointment-observed', 'contact-observed', 'partner-initial', 'ghl-observed',
+        'lfsnaiGiLNL2z12pLKDP', 'confirmed', 'confirmed', '2026-09-01T17:00:00Z',
+        '2026-09-01T18:00:00Z', 'America/Los_Angeles',
+        '2026-08-29T00:00:00Z', '2026-08-29T00:00:00Z'
+      );
+    `);
+    const insert = db.prepare(`
+      INSERT INTO appointment_source_observations (
+        id, appointment_id, contact_id, source, provider_calendar_id,
+        status, starts_at, ends_at, observed_at, source_key
+      ) VALUES (?, 'appointment-observed', 'contact-observed', 'ghl',
+                'lfsnaiGiLNL2z12pLKDP', 'confirmed',
+                '2026-09-01T17:00:00Z', '2026-09-01T18:00:00Z', ?, ?)
+    `);
+    for (let index = 0; index < 227; index += 1) {
+      const suffix = String(index).padStart(3, "0");
+      insert.run(`observation-${suffix}`, `2026-08-29T00:${String(index % 60).padStart(2, "0")}:00Z`, `ghl:observation-${suffix}`);
+    }
+
+    db.exec("BEGIN");
+    db.exec(migration);
+    expect(db.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    db.exec("COMMIT");
+
+    expect(db.prepare("SELECT count(*) AS count FROM appointment_source_observations").get())
+      .toEqual({ count: 227 });
+    expect(db.prepare(`
+      SELECT appointment_id, contact_id, source, provider_calendar_id, status,
+             starts_at, ends_at, source_key
+      FROM appointment_source_observations WHERE id = 'observation-226'
+    `).get()).toEqual({
+      appointment_id: "appointment-observed",
+      contact_id: "contact-observed",
+      source: "ghl",
+      provider_calendar_id: "lfsnaiGiLNL2z12pLKDP",
+      status: "confirmed",
+      starts_at: "2026-09-01T17:00:00Z",
+      ends_at: "2026-09-01T18:00:00Z",
+      source_key: "ghl:observation-226",
+    });
+    expect(db.prepare("PRAGMA foreign_key_list(appointment_source_observations)").all())
+      .toEqual(expect.arrayContaining([expect.objectContaining({
+        table: "appointments", from: "appointment_id", to: "id", on_delete: "RESTRICT",
+      })]));
+    expect(db.prepare(`SELECT tbl_name FROM sqlite_master
+      WHERE type = 'index' AND name = 'idx_appointment_source_observations_appointment'`).get())
+      .toEqual({ tbl_name: "appointment_source_observations" });
+    expect(db.prepare("SELECT name FROM sqlite_master WHERE name = 'appointments_provider_legacy'").get())
+      .toBeUndefined();
+    db.close();
+  });
+
   it("preserves populated appointment dependents and accepts provider-free owned records", () => {
     const db = new DatabaseSync(":memory:");
     db.exec("PRAGMA foreign_keys = ON");
