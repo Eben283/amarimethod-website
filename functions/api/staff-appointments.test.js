@@ -103,7 +103,11 @@ describe("staff appointment management API", () => {
         error: null,
       })),
     }));
-    vi.doMock("../lib/appointment-command-store.js", () => ({ createAppointmentCommandStore: vi.fn(() => store) }));
+    const createOwnedAppointmentManageStore = vi.fn(() => store);
+    vi.doMock("../lib/staff-owned-appointment-store.js", () => ({
+      createOwnedAppointmentManageStore,
+      createOwnedAppointmentScheduleStore: vi.fn(),
+    }));
     vi.doMock("../lib/staff-appointment-manage.js", async (importOriginal) => ({
       ...(await importOriginal()), manageAppointmentCommand,
     }));
@@ -121,6 +125,9 @@ describe("staff appointment management API", () => {
     expect(manageAppointmentCommand).toHaveBeenCalledWith(expect.objectContaining({
       actor: "Garrett", action: "cancel", contactId: "owned_1",
       appointmentId: "owned_appt_1", providerAppointmentId: "appt_1", store,
+    }));
+    expect(createOwnedAppointmentManageStore).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      actor: "Garrett", action: "cancel", contactId: "owned_1", appointmentId: "owned_appt_1",
     }));
   });
 
@@ -211,7 +218,10 @@ describe("staff appointment management API", () => {
         error: null,
       })),
     }));
-    vi.doMock("../lib/staff-owned-appointment-store.js", () => ({ createOwnedAppointmentScheduleStore }));
+    vi.doMock("../lib/staff-owned-appointment-store.js", () => ({
+      createOwnedAppointmentScheduleStore,
+      createOwnedAppointmentManageStore: vi.fn(),
+    }));
     vi.doMock("../lib/staff-appointment-manage.js", async (importOriginal) => ({
       ...(await importOriginal()), scheduleAppointmentCommand,
     }));

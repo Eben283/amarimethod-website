@@ -69,6 +69,12 @@ export function createOwnedAppointmentScheduleStore(context, input) {
       if (claimed.state === "rejected") {
         throw commandError({ error: "appointment_rejected", detail: execution.lastError || "Appointment request was rejected." }, 409);
       }
+      if (claimed.state === "manual_review") {
+        throw commandError({
+          error: "manual_review",
+          detail: execution.lastError || "This appointment change needs manual review before another attempt.",
+        }, 409);
+      }
       if (claimed.state !== "acquired") return { state: claimed.state || "in_progress", operation: execution };
       return {
         state: "acquired",
@@ -116,6 +122,88 @@ export function createOwnedAppointmentScheduleStore(context, input) {
         error: String(error?.message || error || "appointment execution failed").slice(0, 1000),
         manualReview: options.manualReview === true,
         terminal: error?.code === "slot_unavailable" || error?.code === "invalid_schedule_time",
+      });
+      return response.execution;
+    },
+  });
+}
+
+export function createOwnedAppointmentManageStore(context, input) {
+  const actor = String(input?.actor || "");
+  const action = String(input?.action || "");
+  const contactId = String(input?.contactId || "");
+  const appointmentId = String(input?.appointmentId || "");
+  const providerCalendarId = String(input?.providerCalendarId || "");
+  if (!new Set(["Eben", "Garrett"]).has(actor) || !new Set(["cancel", "reschedule"]).has(action) ||
+      !contactId || !appointmentId) {
+    throw new TypeError("owned appointment manage identity required");
+  }
+  let commandId = null;
+
+  return Object.freeze({
+    async claim(command) {
+      const captured = await post(context, actor, {
+        action: "manage",
+        manageAction: action,
+        contactId,
+        appointmentId,
+        idempotencyKey: command.idempotencyKey,
+        ...(action === "reschedule" ? {
+          startTime: command.requestedStartTime,
+          timezone: input.timezone,
+        } : {}),
+      });
+      commandId = captured.command?.commandId;
+      if (!commandId) throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
+      const claimed = await post(context, actor, { action: "claim", commandId });
+      const execution = claimed.execution || {};
+      if (claimed.state === "completed") {
+        return { state: "completed", command: { id: commandId, result: execution.result } };
+      }
+      if (claimed.state === "rejected") {
+        throw commandError({ error: "appointment_rejected", detail: execution.lastError || "Appointment request was rejected." }, 409);
+      }
+      return {
+        state: claimed.state,
+        command: {
+          id: commandId,
+          result: execution.result || null,
+          replacementAppointmentId: action === "reschedule" ? execution.providerRecordId || null : null,
+        },
+      };
+    },
+
+    checkpointReplacement(_ignoredCommandId, providerRecordId) {
+      return post(context, actor, {
+        action: "provider-link",
+        commandId,
+        provider: "ghl",
+        providerRecordId,
+        providerCalendarId,
+        providerStatusRaw: "new",
+      });
+    },
+
+    clearReplacement(_ignoredCommandId, providerRecordId) {
+      return post(context, actor, { action: "provider-unlink", commandId, providerRecordId });
+    },
+
+    async complete(_ignoredCommandId, result) {
+      const response = await post(context, actor, { action: "complete", commandId, result });
+      return response.execution;
+    },
+
+    canonicalResult(result, execution) {
+      return execution?.result || result;
+    },
+
+    async fail(_ignoredCommandId, error, options = {}) {
+      const response = await post(context, actor, {
+        action: "fail",
+        commandId,
+        error: String(error?.message || error || "appointment execution failed").slice(0, 1000),
+        manualReview: options.manualReview === true,
+        terminal: false,
       });
       return response.execution;
     },

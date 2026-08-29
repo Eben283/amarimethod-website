@@ -6,6 +6,7 @@ import { CommunicationCommandError, captureCommunicationCommand, communicationRe
 import { GmailReplyReadinessError, gmailReplyReadiness } from "./gmail-reply-readiness.js";
 import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
 import {
+  captureOwnedManageCommand,
   captureOwnedScheduleCommand,
   claimOwnedAppointmentExecution,
   completeOwnedAppointmentExecution,
@@ -542,6 +543,7 @@ export default {
         }
         const actionFields = {
           schedule: ["action", "contactId", "serviceId", "idempotencyKey", "startTime", "timezone"],
+          manage: ["action", "manageAction", "contactId", "appointmentId", "idempotencyKey", "startTime", "timezone"],
           claim: ["action", "commandId"],
           "provider-link": ["action", "commandId", "provider", "providerRecordId", "providerCalendarId", "providerStatusRaw"],
           "provider-unlink": ["action", "commandId", "providerRecordId"],
@@ -567,6 +569,18 @@ export default {
               timezone: payload.timezone,
             }, { providerSyncRequired });
             return json(appointment.deduped ? 200 : 201, { success: true, appointment });
+          }
+          if (payload?.action === "manage") {
+            const command = await captureOwnedManageCommand(env.CRM_DB, {
+              action: payload.manageAction,
+              contactId: payload.contactId,
+              appointmentId: payload.appointmentId,
+              actor,
+              idempotencyKey: payload.idempotencyKey,
+              startTime: payload.startTime,
+              timezone: payload.timezone,
+            }, { providerSyncRequired });
+            return json(command.deduped ? 200 : 201, { success: true, ...command });
           }
           const identity = { commandId: payload?.commandId, actor };
           if (payload?.action === "claim") {
