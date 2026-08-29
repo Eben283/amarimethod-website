@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { onRequestPost as startAuthorization } from "./staff-amari-mail-auth.js";
 import { onRequestGet as completeAuthorization } from "./staff-amari-mail-callback.js";
+import { onRequestPost as startCalendarAuthorization } from "./staff-google-calendar-auth.js";
 
 afterEach(() => vi.unstubAllGlobals());
 const GRANTED_SCOPES = [
@@ -49,7 +50,57 @@ async function signedState(env, actor = "Eben") {
   return new URL((await response.json()).authorizationUrl).searchParams.get("state");
 }
 
+async function calendarState(env, actor = "Garrett") {
+  const response = await startCalendarAuthorization({
+    request: new Request("https://www.amarimethod.com/api/staff-google-calendar-auth", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${await staffToken(actor)}`, Origin: "https://www.amarimethod.com" },
+    }),
+    env,
+  });
+  return new URL((await response.json()).authorizationUrl).searchParams.get("state");
+}
+
 describe("GET /api/staff-amari-mail-callback", () => {
+  it("completes Garrett's calendar-only grant through the internal Amari OAuth client without connecting mail or activating booking", async () => {
+    const env = environment();
+    const state = await calendarState(env);
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        access_token: "calendar-access",
+        refresh_token: "calendar-refresh",
+        expires_in: 3600,
+        scope: "https://www.googleapis.com/auth/calendar",
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+        id: "garrett@amarimethod.com", summary: "Garrett", accessRole: "owner", primary: true,
+      }] }), { status: 200 })));
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${state}&code=grant-code`),
+      env,
+    });
+
+    expect(response.headers.get("Location")).toBe("https://www.amarimethod.com/staff/operations?staffCalendar=connected");
+    const exchange = new URLSearchParams(fetch.mock.calls[0][1].body);
+    expect(exchange.get("client_id")).toBe("amari-mail-client");
+    expect(exchange.get("client_secret")).toBe("amari-mail-secret");
+    expect(exchange.get("redirect_uri")).toBe("https://www.amarimethod.com/api/staff-amari-mail-callback");
+    expect([...env.store.keys()]).toEqual(expect.arrayContaining([
+      "google:garrett:access_token",
+      "google:garrett:refresh_token",
+      "google:garrett:grant_status",
+    ]));
+    expect([...env.store.keys()].some((key) => key.startsWith("amari-mail:garrett:"))).toBe(false);
+    const marker = JSON.parse(env.store.get("google:garrett:grant_status"));
+    expect(marker).toMatchObject({
+      actor: "Garrett",
+      primaryCalendarId: "garrett@amarimethod.com",
+      bookingActivationEnabled: false,
+      oauthCredentialFamily: "amari_internal",
+    });
+  });
+
   it("stores only a verified Amari-domain grant after checking every required exact SendAs identity", async () => {
     const env = environment();
     const state = await signedState(env);

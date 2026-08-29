@@ -9,6 +9,10 @@ import {
   consumeAmariMailOAuthState,
   resolveAmariMailbox,
 } from "../lib/amari-mail-oauth.js";
+import {
+  consumeStaffCalendarOAuthState,
+  exchangeAndStoreStaffCalendarGrant,
+} from "../lib/staff-calendar-oauth.js";
 
 const TOKEN_URL = "https://oauth2.googleapis.com/token";
 const PROFILE_URL = "https://gmail.googleapis.com/gmail/v1/users/me/profile";
@@ -34,8 +38,19 @@ function hasVerifiedSendAs(payload, requiredSender) {
 
 export async function onRequestGet(context) {
   const url = new URL(context.request.url);
-  if (!amariMailOAuthConfigured(context.env)) return redirect(FAILURE_URL);
   const state = url.searchParams.get("state") || "";
+  const calendarGrant = await consumeStaffCalendarOAuthState(context.env, state);
+  if (calendarGrant) {
+    const code = url.searchParams.get("code") || "";
+    if (!code || url.searchParams.has("error")) return redirect("https://www.amarimethod.com/staff/operations?staffCalendar=failed");
+    try {
+      await exchangeAndStoreStaffCalendarGrant(context, calendarGrant, code);
+      return redirect("https://www.amarimethod.com/staff/operations?staffCalendar=connected");
+    } catch {
+      return redirect("https://www.amarimethod.com/staff/operations?staffCalendar=failed");
+    }
+  }
+  if (!amariMailOAuthConfigured(context.env)) return redirect(FAILURE_URL);
   const grantRequest = await consumeAmariMailOAuthState(context.env, state);
   const code = url.searchParams.get("code") || "";
   if (!grantRequest || !code || url.searchParams.has("error")) return redirect(FAILURE_URL);

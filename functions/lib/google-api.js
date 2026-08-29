@@ -86,11 +86,16 @@ export async function getGoogleToken(context, user) {
 }
 
 async function refreshGoogleToken(context, user, refreshToken) {
-  const clientId = context.env.GOOGLE_OAUTH_CLIENT_ID;
-  const clientSecret = context.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  const usesAmariInternalClient = String(user || "").trim() === "Garrett";
+  const clientId = usesAmariInternalClient
+    ? context.env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID
+    : context.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = usesAmariInternalClient
+    ? context.env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET
+    : context.env.GOOGLE_OAUTH_CLIENT_SECRET;
 
   if (!clientId || !clientSecret) {
-    throw new Error("Missing GOOGLE_OAUTH_CLIENT_ID or GOOGLE_OAUTH_CLIENT_SECRET");
+    throw new Error("Missing OAuth client for the governed Google identity");
   }
 
   const response = await fetch(GOOGLE_TOKEN_URL, {
