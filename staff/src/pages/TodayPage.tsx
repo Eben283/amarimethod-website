@@ -173,6 +173,15 @@ export default function TodayPage() {
         return `${first.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${last.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
       })();
 
+  const visibleSchedule = view === 'day'
+    ? dayAppointments
+    : Object.values(view === 'week' ? weekData : monthData).flat();
+  const truthCounts = visibleSchedule.reduce((counts, appointment) => {
+    const state = appointment.truthState || (view === 'day' ? 'provider_detail' : 'degraded');
+    counts[state] = (counts[state] || 0) + 1;
+    return counts;
+  }, {} as Record<string, number>);
+
   function reloadSelectedDate() {
     if (view === 'day') loadDay(selectedDate);
     else if (view === 'week') loadWeek(selectedDate);
@@ -254,6 +263,16 @@ export default function TodayPage() {
         <button onClick={() => navigateDate(1)} aria-label="Next period" className="p-2 rounded-lg hover:bg-amari-light-sand min-w-[44px] min-h-[44px] flex items-center justify-center">
           <ChevronRight className="w-5 h-5 text-amari-text-muted" />
         </button>
+      </div>
+
+      <div className="mb-4 rounded-lg border border-amari-border bg-white px-3 py-2 text-xs text-amari-text-muted" role="status">
+        {view === 'day' ? (
+          <>Day detail is temporarily provider-backed while contact, payment, and session-ledger reads move together.</>
+        ) : visibleSchedule.length === 0 ? (
+          <>Owned CRM schedule · no appointments in this range.</>
+        ) : (
+          <>Owned CRM schedule · {truthCounts.authoritative || 0} authoritative · {truthCounts.propagating || 0} propagating · {truthCounts.mirrored || 0} mirrored · {truthCounts.degraded || 0} need review.</>
+        )}
       </div>
 
       {/* Content */}

@@ -15,6 +15,7 @@ import {
   unlinkOwnedAppointmentProviderRecord,
 } from "./owned-appointments.js";
 import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
+import { listOwnedAppointmentSchedule } from "./owned-appointment-schedule.js";
 import {
   activeClientOperations,
   communicationsInbox,
@@ -430,7 +431,7 @@ export default {
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
       const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -616,6 +617,22 @@ export default {
           worker: "amari-crm-mirror",
           ...(await appointmentProjectionReadiness(env.CRM_DB, new Date().toISOString())),
         });
+      }
+      if (request.method === "GET" && url.pathname === "/appointments") {
+        try {
+          return json(200, {
+            success: true,
+            worker: "amari-crm-mirror",
+            ...(await listOwnedAppointmentSchedule(env.CRM_DB, {
+              startTime: url.searchParams.get("startTime"),
+              endTime: url.searchParams.get("endTime"),
+              includeCancelled: url.searchParams.get("includeCancelled") === "1",
+            })),
+          }, { "Cache-Control": "no-store" });
+        } catch (error) {
+          if (error instanceof TypeError) return json(400, { error: "invalid_appointment_range" });
+          throw error;
+        }
       }
       if (request.method === "GET" && url.pathname === "/operations") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
