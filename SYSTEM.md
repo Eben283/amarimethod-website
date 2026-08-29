@@ -54,7 +54,7 @@ Last updated: 2026-08-27.
 
 | Name | Kind | Paths | Notes |
 |------|------|-------|-------|
-| Slot policy (duration/interval/buffer) | Native catalog | `functions/lib/booking-slot-policy.js` | Assessment + Follow-up both **50/10/60** on the hour. Partner Initial stays 60. `applyHourPackPreference` + look-busy on public/portal slots. Doc: `decision_booking_slot_model.md` |
+| Slot policy (duration/interval/buffer) | Native catalog | `functions/lib/booking-slot-policy.js` | Assessment + Follow-up both **50/20/60** on the hour. Partner Initial stays 60/20/60. `applyHourPackPreference` + look-busy on public/portal slots. Doc: `decision_booking_slot_model.md` |
 | Public Tock bookers | Native | `book/initial-in-person.html`, `initial-virtual.html`, `discovery-call.html`, `assessment-booking.html` | Two-month; slots via `/api/book/public-slots` |
 | Public study booker | Native | `book/study.html`, `js/study-book.js`, `functions/api/study-book-v2.js` | Single-month, five-study single-entry booking. `/api/study-book-v2` owns the versioned GET/POST contract; legacy `/api/study-book` POST is a non-mutating cached-page guard. |
 | Assessment modal chrome | Native shell | `js/site-v6.js`, `css/site-v6.css` (`.assessment-booking-modal`) | Iframes native `/assessment-booking` |

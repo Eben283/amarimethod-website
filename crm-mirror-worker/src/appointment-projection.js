@@ -236,7 +236,11 @@ export function reconcileAppointmentProjection({ events = [], currentAppointment
   };
 }
 
-/** Explicit cutover blocker; this intentionally does not resolve the policy. */
+/**
+ * The operator-confirmed policy is deliberately distinct from history
+ * reconciliation. A historical ten-minute reference stays visible as evidence,
+ * but it is not allowed to override the current 20-minute runtime policy.
+ */
 export function appointmentBufferReadiness() {
   return {
     state: "confirmed",

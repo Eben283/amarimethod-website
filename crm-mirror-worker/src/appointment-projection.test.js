@@ -110,7 +110,7 @@ describe("owned appointment projection", () => {
 });
 
 describe("appointment buffer readiness evidence", () => {
-  it("does not silently choose between the runtime 20-minute rule and older 10-minute evidence", () => {
+  it("preserves historical 10-minute evidence without overriding the confirmed 20-minute rule", () => {
     expect(appointmentBufferReadiness()).toEqual({
       state: "confirmed",
       runtimeAppOwnedMinutes: 20,
