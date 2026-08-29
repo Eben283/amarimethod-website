@@ -2,6 +2,47 @@
 
 Status: reconciliation (#510), execution-evidence linkage (#517), coverage selection (#519), current inventory (#521), effect-evidence storage (#522), bounded evidence composition (#526), durable consumer retention (#528), offline retention/capture planning (#531), capture integration (#532), and the admission gate (#533) are merged source increments. PR #530 supplies the reviewed CASE-compatible SQL. A separately authorized August 27 physical installation was verified installed-empty/inactive; no new producer or consumer is adopted. The platform adapters below are a local, unpublished source increment, not a runtime release. All existing v1 contracts remain non-authoritative and deliberately unable to make Staff healthy. Earlier unapplied/uninstalled statements below describe their historical source-release checkpoints, not permission to install again.
 
+## Authenticated copy-inventory boundary (local source, not adopted)
+
+`scripts/lib/follow-up-retention-copy-adapters.mjs` is a private, injected
+boundary around the source-only all-copy planner. It requires one fixed Ed25519
+collector and one fixed inspect-only purge capability source for each configured
+store kind: D1, R2, KV, Worker configuration, backup and provider. It adds no
+Worker entrypoint, binding, provider client, credential lookup or default network.
+
+Every inventory page is bound to a fresh random session, exact account/scope,
+reviewed source revision, logical-plan and retention-basis digests, store kind,
+page number, requested cursor and the preceding signed page digest. The adapter
+requires an explicit terminal page for every kind, rejects duplicate or
+cross-kind store/copy identities, and binds D1 pages to the exact configured
+catalog digest. Present access is independently checked before and after each
+collector read. Every page and grant must also remain fresh together when the
+completed result is returned. Only after all six cursor chains close does it
+assemble the existing `follow-up-retention-copy-inventory.v1` object and run the
+unchanged planner over its digest.
+
+The separate capability inspection path first revalidates the complete plan and
+its action digests through the unchanged receipt reconciler. It then verifies a
+fresh, request-bound signed declaration for each exact action/locator. Those
+declarations are permanently `inspect_only`: the returned factory exposes only
+`collectAndPlan` and `inspectCapabilities`, with no execute/delete/list/retry
+method or raw store handle. Inspection accepts only a plan authenticated by the
+same bounded adapter instance; restart or bounded-plan eviction requires a fresh
+collection. Every capability and access grant must remain fresh as one completed
+cohort. Unknown mutation outcomes remain read-only exact-locator reconciliation
+and never grant an automatic retry.
+
+Sixteen focused adapter tests plus the existing forty copy-plan tests cover all
+six sections, signature/request/catalog/deadline mismatch, present-access denial,
+non-terminating cursors, cross-kind copies, hostile getters, caller-modified or
+foreign-instance plans, cohort expiry, forged/stale capability declarations and
+source isolation. Signatures
+authenticate bytes to configured keys; they do **not** prove an honestly deployed
+collector, provider truth, administrative rollback resistance, inventory
+completeness or erasure. All authority, production, adoption, deletion, retry,
+live-source and coherent-rollback claims therefore remain false. No live read,
+write, deletion, deployment or PR publication is part of this increment.
+
 ## Private storage platform adapters (local source, not adopted)
 
 `scripts/lib/follow-up-evidence-storage-adapters.mjs` composes the unchanged gate
