@@ -3,11 +3,8 @@
 // always derived server-side from the governed service or exact appointment.
 
 import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-guards.js";
-import { ghlFetch } from "../lib/ghl.js";
-import { appointmentEndTime, normalizeGhlTimestamp } from "../lib/datetime.js";
-import { fetchGarrettScheduleEvents } from "../lib/app-owned-buffer.js";
+import { normalizeGhlTimestamp } from "../lib/datetime.js";
 import { policyForCalendarId, WORK_HOURS } from "../lib/booking-slot-policy.js";
-import { createConfirmedAppointment } from "../lib/ghl-appointment-handoff.js";
 import { createAppointmentCommandStore } from "../lib/appointment-command-store.js";
 import {
   claimBookingOperation,
@@ -21,9 +18,8 @@ import { internalAvailability, manageAppointmentCommand, scheduleAppointmentComm
 import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
+import { createGhlStaffCalendarProvider } from "../lib/staff-calendar-provider-ghl.js";
 
-const BASE = "https://services.leadconnectorhq.com";
-const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
 const METHODS = "POST, OPTIONS";
 const FORBIDDEN_FIELDS = ["calendarId", "title", "appointmentStatus", "status", "replacementAppointmentId", "timezone", "actor", "user"];
 
@@ -39,100 +35,12 @@ function validDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value || ""));
 }
 
-async function listAppointments(context, contactId) {
-  const response = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}/appointments`);
-  if (!response.ok) throw Object.assign(new Error("Could not load this person’s appointments."), { status: response.status });
-  const data = await response.json();
-  return data.appointments || data.events || [];
-}
-
 function exactAppointment(appointments, appointmentId) {
   return (appointments || []).find((item) => String(item?.id || "") === appointmentId) || null;
 }
 
 function appointmentStatus(appointment) {
   return String(appointment?.appointmentStatus || appointment?.status || "").toLowerCase();
-}
-
-async function cancelProviderAppointment(context, appointment) {
-  const title = clean(appointment?.title, 240) || "Session";
-  const response = await ghlFetch(context, `${BASE}/calendars/events/appointments/${encodeURIComponent(appointment.id)}`, {
-    method: "PUT",
-    body: JSON.stringify({ title, appointmentStatus: "cancelled" }),
-  });
-  if (!response.ok) {
-    const detail = await response.text();
-    throw Object.assign(new Error(`Calendar cancellation failed (${response.status}).`), { status: response.status, detail });
-  }
-}
-
-function providerFor(context, authoritativeContactId) {
-  return Object.freeze({
-    listContactAppointments: () => listAppointments(context, authoritativeContactId),
-    listSchedule: (start, end) => fetchGarrettScheduleEvents(context, start, end),
-    cancelAppointment: (appointment) => cancelProviderAppointment(context, appointment),
-    async createAppointment({ contactId: requestedContactId, booking, startTime, timezone, onCreated }) {
-      const contactId = clean(authoritativeContactId || requestedContactId, 100);
-      if (!contactId || !booking || !policyForCalendarId(booking.calendarId)) {
-        throw new Error("The appointment is missing governed calendar identity.");
-      }
-      const contactResponse = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
-      if (!contactResponse.ok) throw new Error("Could not load the person for this appointment.");
-      const contactData = await contactResponse.json();
-      const contact = contactData.contact || contactData;
-      return createConfirmedAppointment({
-        endpoint: `${BASE}/calendars/events/appointments`,
-        request: (url, options) => ghlFetch(context, url, options),
-        onCreated,
-        payload: {
-          calendarId: booking.calendarId,
-          locationId: LOCATION_ID,
-          contactId,
-          startTime,
-          endTime: appointmentEndTime(startTime, booking.durationMinutes),
-          selectedTimezone: timezone || WORK_HOURS.timezone,
-          title: booking.title,
-          toNotify: true,
-          ignoreDateRange: false,
-          firstName: contact.firstName || contact.first_name || "",
-          lastName: contact.lastName || contact.last_name || "",
-          email: contact.email || "",
-          phone: contact.phone || "",
-        },
-      });
-    },
-    async createReplacement({ original, startTime, timezone, onCreated }) {
-      const contactId = clean(authoritativeContactId, 100);
-      const calendarId = clean(original?.calendarId || original?.calendar_id, 100);
-      const policy = policyForCalendarId(calendarId);
-      if (!contactId || !policy) throw new Error("The original appointment is missing governed calendar identity.");
-
-      const contactResponse = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
-      if (!contactResponse.ok) throw new Error("Could not load the person for this reschedule.");
-      const contactData = await contactResponse.json();
-      const contact = contactData.contact || contactData;
-      return createConfirmedAppointment({
-        endpoint: `${BASE}/calendars/events/appointments`,
-        request: (url, options) => ghlFetch(context, url, options),
-        onCreated,
-        payload: {
-          calendarId,
-          locationId: LOCATION_ID,
-          contactId,
-          startTime,
-          endTime: appointmentEndTime(startTime, policy.durationMinutes),
-          selectedTimezone: timezone || WORK_HOURS.timezone,
-          title: clean(original?.title, 240) || policy.label,
-          toNotify: false,
-          ignoreDateRange: false,
-          firstName: contact.firstName || contact.first_name || "",
-          lastName: contact.lastName || contact.last_name || "",
-          email: contact.email || "",
-          phone: contact.phone || "",
-        },
-      });
-    },
-  });
 }
 
 function scheduleStore(db, { actor, contactId, sessionType, idempotencyKey, startTime, booking }) {
@@ -203,10 +111,11 @@ export async function onRequestPost(context) {
       let original = null;
       let booking = null;
       let calendarId = "";
+      let identity;
       if (appointmentId) {
         if (!contactId) return json({ error: "Choose a person and appointment." }, 400, headers);
-        const identity = await providerIdentity(context, contactId);
-        const appointments = await listAppointments(context, identity.providerContactId);
+        identity = await providerIdentity(context, contactId);
+        const appointments = await createGhlStaffCalendarProvider(context, identity.providerContactId).listContactAppointments();
         original = exactAppointment(appointments, appointmentId);
         if (!original) return json({ error: "Appointment not found for this person." }, 404, headers);
         if (!["new", "confirmed"].includes(appointmentStatus(original))) {
@@ -215,7 +124,7 @@ export async function onRequestPost(context) {
         calendarId = clean(original.calendarId || original.calendar_id, 100);
       } else {
         if (!contactId) return json({ error: "Choose a person." }, 400, headers);
-        await providerIdentity(context, contactId);
+        identity = await providerIdentity(context, contactId);
         booking = resolveStaffBookType(clean(body.sessionType, 64));
         if (!booking) return json({ error: "Choose an appointment type." }, 400, headers);
         calendarId = booking.calendarId;
@@ -223,7 +132,7 @@ export async function onRequestPost(context) {
       if (!policyForCalendarId(calendarId)) return json({ error: "This calendar is not yet governed for Staff scheduling." }, 409, headers);
       const start = Date.parse(normalizeGhlTimestamp(`${startDate}T00:00:00`));
       const end = Date.parse(normalizeGhlTimestamp(`${endDate}T23:59:59`));
-      const events = await fetchGarrettScheduleEvents(context, start, end);
+      const events = await createGhlStaffCalendarProvider(context, identity.providerContactId).listSchedule(start, end);
       return json({
         appointment: original ? {
           id: original.id,
@@ -268,7 +177,7 @@ export async function onRequestPost(context) {
         startTime,
         timezone: WORK_HOURS.timezone,
         store: scheduleStore(context.env.ATTEND_DB, { actor, contactId: identity.ownedContactId, sessionType, idempotencyKey, startTime, booking }),
-        provider: providerFor(context, identity.providerContactId),
+        provider: createGhlStaffCalendarProvider(context, identity.providerContactId),
       });
       context.waitUntil?.(emitPathHop(context.env, {
         pathId: "staff_appointment_manage",
@@ -318,7 +227,7 @@ export async function onRequestPost(context) {
       startTime,
       timezone: WORK_HOURS.timezone,
       store,
-      provider: providerFor(context, identity.providerContactId),
+      provider: createGhlStaffCalendarProvider(context, identity.providerContactId),
     });
     context.waitUntil?.(emitPathHop(context.env, {
       pathId: "staff_appointment_manage",
