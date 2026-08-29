@@ -49,7 +49,10 @@ function fixture() {
     if (path === `${base}/workers/domains`) return list(options.domain ? [{ service: TARGET.caller }] : []);
     if (path === `${base}/workers/durable_objects/namespaces`) return list(options.existingNamespace || state.namespace ? [{ id: NS, script: TARGET.control, class: 'FollowUpRehearsalRegistryV1', use_sqlite: !options.wrongSqlite }] : []);
     if (path === `${base}/r2/buckets/${TARGET.bucket}`) { expect(init.headers['cf-r2-jurisdiction']).toBe('us'); return json({ name: TARGET.bucket, jurisdiction: options.wrongJurisdiction ? 'eu' : 'us', creation_date: approval.bucket.creationDate }); }
-    if (path === `${base}/r2/buckets/${TARGET.bucket}/objects`) return json(options.nonemptyBucket ? [{ key: 'existing' }] : [], { is_truncated: !!options.truncatedBucket });
+    if (path === `${base}/r2/buckets/${TARGET.bucket}/objects`) {
+      const result = options.nonemptyBucket ? [{ key: 'existing' }] : [];
+      return options.omitObjectResultInfo ? json(result) : json(result, { is_truncated: !!options.truncatedBucket });
+    }
     const match = path.match(/\/workers\/scripts\/([^/]+)(.*)$/); if (!match) throw Error('unimplemented synthetic route');
     const [, name, suffix] = match, role = roles.find(r => TARGET[r] === name); expect(role).toBeTruthy(); let worker = state.workers[name];
     if (method === 'PUT') {
@@ -108,6 +111,12 @@ describe('actual release bytes with simulated Git, provider and trusted custody'
     for (const final of puts.slice(3)) expect(hash(final.content)).toBe(candidate.artifact.bundles.find(b => b.role === final.role).sha256);
     expect(puts.filter(p => p.meta.migrations).map(p => p.role)).toEqual(['control']);
     expect(JSON.stringify(result)).not.toContain('PRIVATE KEY'); expect(JSON.stringify(result)).not.toContain('synthetic-test-only-token');
+  });
+  it('accepts Cloudflare\'s successful empty R2 object-list shape without result_info', async () => {
+    const f = fixture(); f.options.omitObjectResultInfo = true;
+    const result = await deployRehearsal(f.args);
+    expect(result).toMatchObject({ status: 'deployed-not-invoked', attemptedWrites: 9 });
+    expect(f.state.secretRoles).toEqual(roles);
   });
   it.each(['existingScript', 'existingNamespace', 'nonemptyBucket', 'truncatedBucket', 'wrongJurisdiction', 'incompleteZones', 'route', 'domain', 'throwRead'])('refuses %s before writes or Worker secrets', async failure => {
     const f = fixture(); f.options[failure] = true; const result = await deployRehearsal(f.args);

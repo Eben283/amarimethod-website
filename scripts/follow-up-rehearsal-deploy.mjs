@@ -202,7 +202,11 @@ export async function deployRehearsal({ execute, approval, approvedDigest, withC
         const b = (await call(`${base}/r2/buckets/${BASE.bucket}`, { r2: true })).result;
         need(b.name === approval.bucket.name && b.jurisdiction === 'us' && b.creation_date === approval.bucket.creationDate);
         const objects = await call(`${base}/r2/buckets/${BASE.bucket}/objects?per_page=1`, { r2: true });
-        need(Array.isArray(objects.result) && objects.result.length === 0 && objects.result_info?.is_truncated === false && !objects.result_info?.cursor);
+        need(Array.isArray(objects.result) && objects.result.length === 0);
+        // Cloudflare currently omits result_info for a successful empty R2
+        // object listing. When pagination metadata is present, it must still
+        // positively establish that there is no continuation.
+        if (objects.result_info !== undefined) need(objects.result_info && objects.result_info.is_truncated === false && !objects.result_info.cursor);
       };
       stage = 'resource-preflight'; await routing(); await emptyBucket();
       need(!(await namespaces()).some(n => ROLES.some(role => n.script === DEPLOY_TARGETS[role]) || n.class === 'FollowUpRehearsalRegistryV1'));
