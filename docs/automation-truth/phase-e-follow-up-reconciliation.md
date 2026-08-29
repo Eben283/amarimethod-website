@@ -202,6 +202,7 @@ tests, and the closed physical installation must never be replayed.
 The approved design defaults now have a separate source-only planning increment:
 
 - `functions/lib/follow-up-retention-policy-plan.js` models original-clock retention, scoped dependency/deletion planning and epoch/witness boundaries.
+- `functions/lib/follow-up-retention-copy-plan.js` binds that logical plan to a complete typed census of D1 originals and R2, KV, Worker-config, backup and provider copies, then requires exact-locator absence readback for every proposed action.
 - `scripts/lib/follow-up-evidence-capture.mjs` models bounded evidence transfer and consumed-attempt readback classification.
 - Their `reminder-engine-worker/src/follow-up-*.test.js` fixtures use synthetic identities and local data only.
 
@@ -219,6 +220,15 @@ outputs are frozen and always deny authority, execution, adoption and retry.
 Independent focused review and tests pass: 107 retention/epoch cases and 68
 capture cases. These synthetic tests establish local contract behavior, not
 production privacy compliance, physical erasure or durable evidence capture.
+
+The copy contract adds 40 synthetic cases for fixed-kind census closure, typed
+versioned locator commitments, account/jurisdiction ownership, record-level
+holds, replay horizons, child-before-parent ordering, unsupported-store refusal
+and receipt/readback reconciliation. Its strongest successful classification is
+that every *planned* exact locator was read back absent. It still reports
+`physicalErasureProven: false` and `externalErasureAuthenticated: false`: the
+inventory and receipts are caller-supplied structural metadata until separately
+reviewed private adapters authenticate the primary stores and providers.
 
 ### Approved implementation targets
 
