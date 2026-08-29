@@ -131,6 +131,19 @@ protected create-only GitHub release consumption and separately authorized HTTPS
 calling. The separate operator gateway validates Access identity and the signed
 principal envelope before one private caller RPC. Its routes remain disabled;
 no existing Staff authentication or production sender is reused or changed.
+`scripts/follow-up-rehearsal-gateway-deploy.mjs` and the host's `deploy-gateway`
+mode add a separate private-only first installation for that fourth Worker, with
+exact caller deployment provenance and actual bundle/settings readback. They do
+not attach a hostname, create Access configuration, or invoke the caller.
+`scripts/follow-up-rehearsal-signing.mjs` signs only typed manifest, request and
+host-policy artifacts using one pinned existing Bitwarden record. It creates no
+keys or records and does not replace execution approval or one-shot authority.
+`scripts/follow-up-rehearsal-gateway-attach.mjs` adds a separately authorized
+first hostname attachment, using the Access readback validator in
+`scripts/lib/follow-up-rehearsal-access-readback.mjs`. It verifies actual installed
+versions and existing Access/DNS/routing evidence before one domain-attachment
+write, including its provider-managed DNS/certificate effects. No Access setup,
+Worker upload, runtime invocation, retry or cleanup is included.
 
 This is not deployed, an approved live test, an operator console, or proof of
 production identity, durability, deletion, or Staff coverage. Actual trusted host,
