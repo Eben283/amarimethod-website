@@ -2,6 +2,7 @@ import { readFileSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
 import {
+  captureOwnedManageCommand,
   captureOwnedScheduleCommand,
   claimOwnedAppointmentExecution,
   completeOwnedAppointmentExecution,
@@ -67,6 +68,33 @@ function seedContact(db) {
     INSERT INTO contacts (id, display_name, created_at, updated_at)
     VALUES ('contact-1', 'Partner Person', '2026-08-28T00:00:00Z', '2026-08-28T00:00:00Z')
   `);
+}
+
+function seedProviderAppointment(db, overrides = {}) {
+  const appointment = {
+    id: "owned-source-1",
+    contactId: "contact-1",
+    serviceId: "partner-initial",
+    providerAppointmentId: "ghl-source-1",
+    providerCalendarId: "lfsnaiGiLNL2z12pLKDP",
+    status: "confirmed",
+    startsAt: "2026-09-03T17:00:00.000Z",
+    endsAt: "2026-09-03T18:00:00.000Z",
+    ...overrides,
+  };
+  db.sqlite.prepare(`
+    INSERT INTO appointments (
+      id, contact_id, service_id, provider_appointment_id, provider_calendar_id,
+      provider_status_raw, status, starts_at, ends_at, timezone,
+      authority, provider_sync_state, revision, created_at, updated_at
+    ) VALUES (?, ?, ?, ?, ?, 'confirmed', ?, ?, ?, 'America/Los_Angeles',
+              'provider_mirror', 'synced', 1, '2026-08-28T00:00:00Z', '2026-08-28T00:00:00Z')
+  `).run(
+    appointment.id, appointment.contactId, appointment.serviceId,
+    appointment.providerAppointmentId, appointment.providerCalendarId,
+    appointment.status, appointment.startsAt, appointment.endsAt,
+  );
+  return appointment;
 }
 
 const input = {
@@ -215,6 +243,174 @@ describe("owned appointment authority", () => {
       .toEqual({ status: "cancelled", provider_sync_state: "not_required", cancelled_at: "2026-08-28T00:00:01.000Z" });
     await expect(claimOwnedAppointmentExecution(db, identity, { nowMs: nowMs + 2_000 }))
       .resolves.toMatchObject({ state: "rejected" });
+    db.sqlite.close();
+  });
+
+  it("owns cancellation intent before propagation and commits canonical cancellation only after readback", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const source = seedProviderAppointment(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedManageCommand(db, {
+      actor: "Garrett", action: "cancel", contactId: source.contactId,
+      appointmentId: source.id, idempotencyKey: "cancel-owned-source-1",
+    }, { nowMs, providerSyncRequired: true });
+    expect(captured).toMatchObject({
+      deduped: false,
+      command: { action: "cancel", appointmentId: source.id, providerRecordId: source.providerAppointmentId },
+    });
+    expect(db.sqlite.prepare("SELECT status, authority FROM appointments WHERE id = ?").get(source.id))
+      .toEqual({ status: "confirmed", authority: "provider_mirror" });
+
+    const identity = { commandId: captured.command.commandId, actor: "Garrett" };
+    await expect(claimOwnedAppointmentExecution(db, identity, { nowMs }))
+      .resolves.toMatchObject({ state: "acquired" });
+    // A fast provider webhook may mirror the cancelled status before the
+    // command completion write. Completion must still promote owned authority.
+    db.sqlite.prepare("UPDATE appointments SET status = 'cancelled' WHERE id = ?").run(source.id);
+    await expect(completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: { action: "cancel", contactId: source.contactId, appointmentStatus: "confirmed" },
+    }, { nowMs: nowMs + 500, providerSyncRequired: true }))
+      .rejects.toMatchObject({ code: "invalid_provider_readback", status: 409 });
+    const completed = await completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: {
+        action: "cancel", contactId: source.contactId,
+        appointmentId: "browser-value", appointmentStatus: "cancelled",
+      },
+    }, { nowMs: nowMs + 1_000, providerSyncRequired: true });
+    expect(completed).toMatchObject({
+      state: "completed",
+      result: { appointmentId: source.id, providerAppointmentId: source.providerAppointmentId },
+    });
+    expect(db.sqlite.prepare("SELECT status, authority, provider_sync_state, revision FROM appointments WHERE id = ?").get(source.id))
+      .toEqual({ status: "cancelled", authority: "owned", provider_sync_state: "synced", revision: 2 });
+    db.sqlite.close();
+  });
+
+  it("adopts a replacement that provider mirroring observed before reschedule completion", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const source = seedProviderAppointment(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedManageCommand(db, {
+      actor: "Garrett", action: "reschedule", contactId: source.contactId,
+      appointmentId: source.id, idempotencyKey: "reschedule-mirror-race-1",
+      startTime: "2026-09-05T10:15:00-07:00", timezone: "America/Los_Angeles",
+    }, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.command.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await linkOwnedAppointmentProviderRecord(db, {
+      ...identity, provider: "ghl", providerRecordId: "ghl-raced-replacement",
+      providerCalendarId: source.providerCalendarId, providerStatusRaw: "confirmed",
+    }, { nowMs: nowMs + 1_000 });
+    db.sqlite.prepare(`
+      INSERT INTO appointments (
+        id, contact_id, service_id, provider_appointment_id, provider_calendar_id,
+        provider_status_raw, status, starts_at, ends_at, timezone,
+        authority, provider_sync_state, revision, created_at, updated_at
+      ) VALUES ('mirrored-replacement', 'contact-1', 'partner-initial',
+                'ghl-raced-replacement', ?, 'confirmed', 'confirmed',
+                '2026-09-05T17:15:00.000Z', '2026-09-05T18:15:00.000Z',
+                'America/Los_Angeles', 'provider_mirror', 'synced', 1, ?, ?)
+    `).run(source.providerCalendarId, "2026-08-28T00:00:01Z", "2026-08-28T00:00:01Z");
+    db.sqlite.prepare(`
+      INSERT INTO external_records
+        (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+      VALUES ('ext-raced', 'ghl', 'appointment', 'ghl-raced-replacement',
+              'contact-1', 'appointment', 'mirrored-replacement', '2026-08-28T00:00:01Z')
+    `).run();
+
+    const completed = await completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: {
+        action: "reschedule", contactId: source.contactId,
+        replacementAppointmentId: "ghl-raced-replacement", appointmentStatus: "confirmed",
+        newStartTime: "2026-09-05T10:15:00-07:00",
+      },
+    }, { nowMs: nowMs + 2_000, providerSyncRequired: true });
+    expect(completed.result).toMatchObject({
+      appointmentId: source.id,
+      replacementAppointmentId: "mirrored-replacement",
+      providerReplacementAppointmentId: "ghl-raced-replacement",
+    });
+    expect(db.sqlite.prepare("SELECT authority, replaces_appointment_id FROM appointments WHERE id = 'mirrored-replacement'").get())
+      .toEqual({ authority: "owned", replaces_appointment_id: source.id });
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM appointments WHERE provider_appointment_id = 'ghl-raced-replacement'").get())
+      .toEqual({ count: 1 });
+    db.sqlite.close();
+  });
+
+  it("commits a reschedule as a new owned appointment linked to the verified provider replacement", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const source = seedProviderAppointment(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const request = {
+      actor: "Eben", action: "reschedule", contactId: source.contactId,
+      appointmentId: source.id, idempotencyKey: "reschedule-owned-source-1",
+      startTime: "2026-09-04T10:15:00-07:00", timezone: "America/Los_Angeles",
+    };
+    const captured = await captureOwnedManageCommand(db, request, { nowMs, providerSyncRequired: true });
+    await expect(captureOwnedManageCommand(db, request, { nowMs, providerSyncRequired: true }))
+      .resolves.toMatchObject({ deduped: true, command: { commandId: captured.command.commandId } });
+    const identity = { commandId: captured.command.commandId, actor: "Eben" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await linkOwnedAppointmentProviderRecord(db, {
+      ...identity, provider: "ghl", providerRecordId: "ghl-replacement-1",
+      providerCalendarId: source.providerCalendarId, providerStatusRaw: "confirmed",
+    }, { nowMs: nowMs + 1_000 });
+    const completed = await completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: { action: "reschedule", contactId: source.contactId,
+        appointmentId: source.providerAppointmentId,
+        replacementAppointmentId: "ghl-replacement-1", appointmentStatus: "confirmed",
+        newStartTime: "2026-09-04T10:15:00-07:00" },
+    }, { nowMs: nowMs + 2_000, providerSyncRequired: true });
+    const replacementId = completed.result.replacementAppointmentId;
+    expect(completed.result).toMatchObject({
+      appointmentId: source.id,
+      providerReplacementAppointmentId: "ghl-replacement-1",
+    });
+    expect(replacementId).toMatch(/^appt_/);
+    expect(db.sqlite.prepare("SELECT status, authority, provider_sync_state FROM appointments WHERE id = ?").get(source.id))
+      .toEqual({ status: "cancelled", authority: "owned", provider_sync_state: "synced" });
+    expect(db.sqlite.prepare(`
+      SELECT contact_id, provider_appointment_id, status, authority, provider_sync_state,
+             replaces_appointment_id, starts_at
+        FROM appointments WHERE id = ?
+    `).get(replacementId)).toEqual({
+      contact_id: source.contactId,
+      provider_appointment_id: "ghl-replacement-1",
+      status: "confirmed",
+      authority: "owned",
+      provider_sync_state: "synced",
+      replaces_appointment_id: source.id,
+      starts_at: "2026-09-04T17:15:00.000Z",
+    });
+    expect(db.sqlite.prepare("SELECT record_id FROM external_records WHERE external_id = 'ghl-replacement-1'").get())
+      .toEqual({ record_id: replacementId });
+    db.sqlite.close();
+  });
+
+  it("surfaces an ambiguous manage execution as owned manual-review truth without changing the appointment status", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const source = seedProviderAppointment(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedManageCommand(db, {
+      actor: "Garrett", action: "cancel", contactId: source.contactId,
+      appointmentId: source.id, idempotencyKey: "cancel-manual-review-1",
+    }, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.command.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    const failed = await failOwnedAppointmentExecution(db, {
+      ...identity, error: "provider readback unavailable", manualReview: true,
+    }, { nowMs: nowMs + 1_000 });
+    expect(failed).toMatchObject({ state: "manual_review" });
+    expect(db.sqlite.prepare("SELECT status, authority, provider_sync_state FROM appointments WHERE id = ?").get(source.id))
+      .toEqual({ status: "confirmed", authority: "owned", provider_sync_state: "manual_review" });
     db.sqlite.close();
   });
 });

@@ -144,8 +144,8 @@ export async function manageAppointmentCommand(input) {
         appointmentStatus: "cancelled",
         reminderVerification: "pending_event_evidence",
       };
-      await store.complete(commandId, result);
-      return result;
+      const completion = await store.complete(commandId, result);
+      return store.canonicalResult?.(result, completion) || result;
     }
     if (status === "cancelled" && action === "reschedule" && claim.command.replacementAppointmentId) {
       const replacement = (await provider.listContactAppointments(contactId))
@@ -168,8 +168,8 @@ export async function manageAppointmentCommand(input) {
         appointmentStatus: normalizeStatus(replacement),
         reminderVerification: "pending_event_evidence",
       };
-      await store.complete(commandId, result);
-      return result;
+      const completion = await store.complete(commandId, result);
+      return store.canonicalResult?.(result, completion) || result;
     }
     if (!MANAGEABLE_STATUSES.has(status)) {
       throw Object.assign(new Error(`This appointment is already ${status || "not manageable"}.`), { code: "appointment_not_manageable" });
@@ -195,8 +195,8 @@ export async function manageAppointmentCommand(input) {
         appointmentStatus: "cancelled",
         reminderVerification: "pending_event_evidence",
       };
-      await store.complete(commandId, result);
-      return result;
+      const completion = await store.complete(commandId, result);
+      return store.canonicalResult?.(result, completion) || result;
     }
 
     const newStartTime = clean(input.startTime, 100);
@@ -301,8 +301,8 @@ export async function manageAppointmentCommand(input) {
       appointmentStatus: "confirmed",
       reminderVerification: "pending_event_evidence",
     };
-    await store.complete(commandId, result);
-    return result;
+    const completion = await store.complete(commandId, result);
+    return store.canonicalResult?.(result, completion) || result;
   } catch (error) {
     await store.fail(commandId, error, { manualReview: !!error?.manualReview });
     throw error;

@@ -5,7 +5,6 @@
 import { corsHeaders, parseJsonBody, requireStaffAuth } from "../lib/endpoint-guards.js";
 import { normalizeGhlTimestamp } from "../lib/datetime.js";
 import { policyForCalendarId, WORK_HOURS } from "../lib/booking-slot-policy.js";
-import { createAppointmentCommandStore } from "../lib/appointment-command-store.js";
 import {
   claimBookingOperation,
   checkpointBookingAppointment,
@@ -19,7 +18,7 @@ import { emitPathHop } from "../lib/ops-path-emit.js";
 import { recordOpsError } from "../lib/ops-alert.js";
 import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 import { createGhlStaffCalendarProvider } from "../lib/staff-calendar-provider-ghl.js";
-import { createOwnedAppointmentScheduleStore } from "../lib/staff-owned-appointment-store.js";
+import { createOwnedAppointmentManageStore, createOwnedAppointmentScheduleStore } from "../lib/staff-owned-appointment-store.js";
 import { requireProviderAppointmentIdentity, resolveStaffOwnedAppointmentIdentity } from "../lib/staff-owned-appointment-identity.js";
 
 const METHODS = "POST, OPTIONS";
@@ -254,15 +253,17 @@ export async function onRequestPost(context) {
   const startTime = clean(body.startTime, 100);
   if (action === "reschedule" && !startTime) return json({ error: "Choose a new time." }, 400, headers);
 
-  let store;
-  try {
-    store = createAppointmentCommandStore(context.env.ATTEND_DB || null);
-  } catch (error) {
-    return json({ error: "Appointment changes are temporarily unavailable; no calendar change was made." }, 500, headers);
-  }
   try {
     const identity = await providerIdentity(context, contactId);
     const appointmentIdentity = await providerAppointmentIdentity(context, appointmentId, identity);
+    const store = createOwnedAppointmentManageStore(context, {
+      actor,
+      action,
+      contactId: identity.ownedContactId,
+      appointmentId: appointmentIdentity.ownedAppointmentId,
+      providerCalendarId: appointmentIdentity.providerCalendarId,
+      timezone: WORK_HOURS.timezone,
+    });
     const result = await manageAppointmentCommand({
       actor,
       action,
