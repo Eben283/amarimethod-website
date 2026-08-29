@@ -7,7 +7,9 @@ import { constants, openSync, closeSync, fstatSync, readFileSync, realpathSync, 
 import { dirname, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { build } from 'esbuild';
-import { deployRehearsal, inspectDeploymentCandidate, validateDeploymentApproval } from './follow-up-rehearsal-deploy.mjs';
+import { deployRehearsal, validateDeploymentApproval } from './follow-up-rehearsal-deploy.mjs';
+import { deployGatewayRehearsal, validateGatewayDeploymentApproval } from './follow-up-rehearsal-gateway-deploy.mjs';
+import { attachGatewayRehearsal, inspectGatewayAttachmentCandidate, validateGatewayAttachmentApproval } from './follow-up-rehearsal-gateway-attach.mjs';
 import { authenticate, VERSION } from '../follow-up-rehearsal-worker/src/protocol.mjs';
 import { validateOperatorAccessConfig, validateOperatorResponse } from '../follow-up-rehearsal-worker/src/operator-access.mjs';
 
@@ -36,7 +38,7 @@ export function hostApprovalSigningBytes(policy) { return Buffer.from(`follow-up
 export function hostApprovalDigest(policy) { return hash(canonical(policy)); }
 
 export async function inspectHostCandidate({ git = gitDefault } = {}) {
-  const toolFiles = hostTools(), base = await inspectDeploymentCandidate({ git }), files = new Map(base.artifact.files.map(f => [f.path, f]));
+  const toolFiles = hostTools(), base = await inspectGatewayAttachmentCandidate({ git }), files = new Map(base.artifact.files.map(f => [f.path, f]));
   const pin = path => {
     need(!path.startsWith('/') && !path.split('/').includes('..') && realpathSync(resolve(ROOT, path)) === resolve(ROOT, path));
     const bytes = readFileSync(resolve(ROOT, path)), sha256 = hash(bytes);
@@ -55,34 +57,39 @@ export async function inspectHostCandidate({ git = gitDefault } = {}) {
   // esbuild is the only nonbuiltin external. Pin both its JS adapter and actual
   // platform executable, not just the package version; no override is accepted.
   need(equal(toolFiles, hostTools()));
-  const artifact = { version: 'follow-up-rehearsal-host-source.v1', revision: base.artifact.revision, deploymentArtifactDigest: base.artifactDigest,
+  const artifact = { version: 'follow-up-rehearsal-host-source.v1', revision: base.artifact.revision, deploymentArtifactDigest: base.artifact.deploymentArtifactDigest, gatewayArtifactDigest: base.artifact.gatewayArtifactDigest, attachmentArtifactDigest: base.artifactDigest,
     files: [...files.values()].sort((a, b) => a.path.localeCompare(b.path)), tools: { ...base.artifact.tools, files: toolFiles, node: process.version }, limits: HOST_LIMITS };
   return { artifact, artifactDigest: hash(canonical(artifact)), dirty: base.dirty, executionAuthorized: false };
 }
 
-export function validateHostApproval(envelope, trustedRoot, now = Date.now()) {
-  exact(envelope, ['policy', 'signature']); exact(trustedRoot, ['keyId', 'publicKey']);
-  const p = envelope.policy;
+// Shared unsigned validation permits custody/signing only after every schema
+// check. It does not authorize execution; validateHostApproval still verifies.
+export function validateHostApprovalPolicy(policy, trustedRoot, now = Date.now()) {
+  exact(trustedRoot, ['keyId', 'publicKey']); const p = detached(policy);
   exact(p, ['version', 'mode', 'releaseId', 'issuedAt', 'expiresAt', 'reviewedRevision', 'hostArtifactDigest', 'ownerKeyId', 'custody', 'ledger', 'operation']);
-  need(p.version === 'follow-up-rehearsal-host-approval.v1' && ['deploy', 'invoke'].includes(p.mode) && HEX.test(p.releaseId) && SHA.test(p.reviewedRevision) && HEX.test(p.hostArtifactDigest));
+  need(p.version === 'follow-up-rehearsal-host-approval.v1' && ['deploy', 'deploy-gateway', 'attach-gateway', 'invoke'].includes(p.mode) && HEX.test(p.releaseId) && SHA.test(p.reviewedRevision) && HEX.test(p.hostArtifactDigest));
   need(Number.isSafeInteger(p.issuedAt) && Number.isSafeInteger(p.expiresAt) && p.issuedAt <= now && now < p.expiresAt && p.expiresAt - p.issuedAt <= 3600000);
   need(p.ownerKeyId === trustedRoot.keyId && /^[A-Za-z0-9_-]{1,64}$/.test(p.ownerKeyId));
   const key = createPublicKey(trustedRoot.publicKey); need(key.asymmetricKeyType === 'ed25519' && key.type === 'public' && !String(trustedRoot.publicKey).includes('PRIVATE'));
-  need(typeof envelope.signature === 'string' && /^[A-Za-z0-9_-]{86}$/.test(envelope.signature) && verify(null, hostApprovalSigningBytes(p), key, Buffer.from(envelope.signature, 'base64url')));
   exact(p.ledger, ['repository', 'refPrefix', 'rulesetId']); need(p.ledger.repository === REPO && p.ledger.refPrefix === PREFIX && Number.isSafeInteger(p.ledger.rulesetId) && p.ledger.rulesetId > 0);
   exact(p.custody, ['executable', 'executableSha256', 'records']); need(typeof p.custody.executable === 'string' && p.custody.executable.startsWith('/') && HEX.test(p.custody.executableSha256));
-  const roles = p.mode === 'deploy' ? ['github', 'cloudflare', 'issuer', 'control', 'caller'] : ['github', 'accessId', 'accessSecret'];
+  const roles = p.mode === 'deploy' ? ['github', 'cloudflare', 'issuer', 'control', 'caller'] : p.mode !== 'invoke' ? ['github', 'cloudflare'] : ['github', 'accessId', 'accessSecret'];
   exact(p.custody.records, roles); const ids = new Set();
   for (const role of roles) { const r = p.custody.records[role]; exact(r, ['id', 'key', 'projectId', 'organizationId', 'revisionDate', 'sha256']);
     need(UUID.test(r.id) && UUID.test(r.projectId) && UUID.test(r.organizationId) && r.key === HOST_RECORD_KEYS[role] && HEX.test(r.sha256) && typeof r.revisionDate === 'string' && Number.isFinite(Date.parse(r.revisionDate)) && !ids.has(r.id)); ids.add(r.id);
   }
-  if (p.mode === 'deploy') { exact(p.operation, ['approvalDigest']); need(HEX.test(p.operation.approvalDigest)); }
+  if (p.mode !== 'invoke') { exact(p.operation, ['approvalDigest']); need(HEX.test(p.operation.approvalDigest)); }
   else { exact(p.operation, ['origin', 'path', 'envelopeDigest', 'publicConfig', 'principal']); need(HEX.test(p.operation.envelopeDigest));
     const config = validateOperatorAccessConfig(p.operation.publicConfig); need(config.origin === p.operation.origin && config.path === p.operation.path);
     exact(p.operation.principal, ['callerId', 'keyId', 'role']);
     need(config.policy.principals.some(v => ['callerId', 'keyId', 'role'].every(k => v[k] === p.operation.principal[k])));
   }
   return detached(p);
+}
+export function validateHostApproval(envelope, trustedRoot, now = Date.now()) {
+  exact(envelope, ['policy', 'signature']); const p = validateHostApprovalPolicy(envelope.policy, trustedRoot, now);
+  need(typeof envelope.signature === 'string' && /^[A-Za-z0-9_-]{86}$/.test(envelope.signature) && verify(null, hostApprovalSigningBytes(p), createPublicKey(trustedRoot.publicKey), Buffer.from(envelope.signature, 'base64url')));
+  return p;
 }
 
 function sourceGuard(candidate, p, git) {
@@ -205,7 +212,7 @@ export async function inspectReleaseStatus({ releaseId, fetch: fetcher = globalT
   } catch { return { status: 'unknown', executionAuthorized: false, retryAllowed: false }; } finally { controller.abort(); }
 }
 
-export async function runRehearsalHost({ execute, hostApproval, trustedRoot, deploymentApproval, requestText, git = gitDefault, fetch: fetcher = globalThis.fetch, runBws = runExactBwsRecord, clock = Date.now, inspect = inspectHostCandidate, deploy = deployRehearsal } = {}) {
+export async function runRehearsalHost({ execute, hostApproval, trustedRoot, deploymentApproval, gatewayApproval, attachmentApproval, requestText, git = gitDefault, fetch: fetcher = globalThis.fetch, runBws = runExactBwsRecord, clock = Date.now, inspect = inspectHostCandidate, deploy = deployRehearsal, deployGateway = deployGatewayRehearsal, attachGateway = attachGatewayRehearsal } = {}) {
   const evidence = { consumptionState: 'not-attempted', githubRequests: 0, githubWrites: 0, githubBytes: 0, operatorAttempts: 0, retryAllowed: false, cleanupAllowed: false };
   let stage = 'approval', closed = false, timer; const controller = new AbortController();
   try {
@@ -214,14 +221,18 @@ export async function runRehearsalHost({ execute, hostApproval, trustedRoot, dep
     const work = async () => {
       stage = 'source-preflight'; const candidate = await inspect({ git }); fresh(); sourceGuard(candidate, p, git); fresh();
       let auth, operatorConfig;
-      if (p.mode === 'deploy') { validateDeploymentApproval(deploymentApproval, p.operation.approvalDigest, clock()); need(deploymentApproval.releaseId === p.releaseId && deploymentApproval.reviewedRevision === p.reviewedRevision && deploymentApproval.expiresAt === p.expiresAt); }
+      if (p.mode !== 'invoke') {
+        const a = p.mode === 'deploy' ? deploymentApproval : p.mode === 'deploy-gateway' ? gatewayApproval : attachmentApproval;
+        (p.mode === 'deploy' ? validateDeploymentApproval : p.mode === 'deploy-gateway' ? validateGatewayDeploymentApproval : validateGatewayAttachmentApproval)(a, p.operation.approvalDigest, clock());
+        need(a.releaseId === p.releaseId && a.reviewedRevision === p.reviewedRevision && a.expiresAt === p.expiresAt);
+      }
       else { need(typeof requestText === 'string' && Buffer.byteLength(requestText) <= HOST_LIMITS.operatorBytes && hash(requestText) === p.operation.envelopeDigest);
         operatorConfig = validateOperatorAccessConfig(p.operation.publicConfig); auth = authenticate(operatorConfig.callerConfig, requestText); auth.fresh();
     need(auth.r.callerId === p.operation.principal.callerId && auth.r.role === p.operation.principal.role && auth.p.keyId === p.operation.principal.keyId);
       }
       const custody = createExactCustody({ policy: p, run: runBws, signal: controller.signal, fresh });
       const http = boundedHttp({ fetcher, fresh, signal: controller.signal, deadline, clock });
-      const approvalDigest = p.mode === 'deploy' ? p.operation.approvalDigest : hostApprovalDigest(p);
+      const approvalDigest = p.mode !== 'invoke' ? p.operation.approvalDigest : hostApprovalDigest(p);
       const consume = async input => { need(equal(input, { releaseId: p.releaseId, approvalDigest, expiresAt: p.expiresAt })); stage = 'consume-release'; sourceGuard(candidate, p, git); fresh(); return consumeGitHubRelease({ policy: p, approvalDigest, custody, http, fresh, evidence, beforeWrite: () => sourceGuard(candidate, p, git) }); };
       // The frozen driver's own window starts later. Tie its transport to this
       // host too: closing this host prevents any later request, even when the
@@ -232,8 +243,8 @@ export async function runRehearsalHost({ execute, hostApproval, trustedRoot, dep
         const body = new ReadableStream({ async pull(stream) { try { fresh(); const item = await reader.read(); fresh(); item.done ? stream.close() : stream.enqueue(item.value); } catch { stream.error(new Error('rehearsal_host_closed')); try { void Promise.resolve(reader.cancel()).catch(() => {}); } catch {} } }, cancel() { try { return reader.cancel(); } catch {} } });
         return new Response(body, { status: response.status, statusText: response.statusText, headers: response.headers });
       };
-      if (p.mode === 'deploy') { stage = 'deployment'; const result = await deploy({ execute: true, approval: deploymentApproval, approvedDigest: approvalDigest, git, fetch: hostFetch, clock, consumeRelease: consume,
-        withCloudflareToken: use => custody('cloudflare', use), withWorkerSecrets: (role, use) => custody(role, value => { const v = JSON.parse(value); need(value === canonical(v)); return use(v); }) });
+      if (p.mode !== 'invoke') { stage = p.mode === 'deploy' ? 'deployment' : p.mode === 'deploy-gateway' ? 'gateway-deployment' : 'gateway-attachment'; const result = await (p.mode === 'deploy' ? deploy : p.mode === 'deploy-gateway' ? deployGateway : attachGateway)({ execute: true, approval: p.mode === 'deploy' ? deploymentApproval : p.mode === 'deploy-gateway' ? gatewayApproval : attachmentApproval, approvedDigest: approvalDigest, git, fetch: hostFetch, clock, consumeRelease: consume,
+        withCloudflareToken: use => custody('cloudflare', use), ...(p.mode === 'deploy' ? { withWorkerSecrets: (role, use) => custody(role, value => { const v = JSON.parse(value); need(value === canonical(v)); return use(v); }) } : {}) });
         fresh(); return { status: result.status, stage: 'deployment-result', ...evidence, deployment: result };
       }
       await consume({ releaseId: p.releaseId, approvalDigest, expiresAt: p.expiresAt }); fresh(); auth.fresh();

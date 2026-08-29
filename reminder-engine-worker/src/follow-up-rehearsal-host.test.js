@@ -7,7 +7,7 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   HOST_LIMITS, HOST_RECORD_KEYS, hostApprovalDigest, hostApprovalSigningBytes,
-  validateHostApproval, runExactBwsRecord, createExactCustody,
+  validateHostApproval, validateHostApprovalPolicy, runExactBwsRecord, createExactCustody,
   consumeGitHubRelease, inspectReleaseStatus, inspectHostCandidate, runRehearsalHost,
 } from '../../scripts/follow-up-rehearsal-host.mjs';
 import { DEPLOY_TARGETS, DEPLOY_LIMITS, deploymentApprovalDigest } from '../../scripts/follow-up-rehearsal-deploy.mjs';
@@ -29,6 +29,9 @@ function envelope(value = policy()) { return { policy: value, signature: sign(nu
 function clone(v) { return JSON.parse(JSON.stringify(v)); }
 
 describe('follow-up rehearsal trusted host policy', () => {
+  it('validates the complete unsigned policy without claiming signature authority', () => { const p = policy(), got = validateHostApprovalPolicy(p, root, NOW); expect(got).toEqual(p); expect(got).not.toBe(p); expect(() => validateHostApproval({ policy: got, signature: 'A'.repeat(86) }, root, NOW)).toThrow(); });
+  it.each(['deploy-gateway', 'attach-gateway'])('accepts only github/cloudflare custody in %s mode', mode => { const p = policy(); p.mode = mode; p.custody.records = { github: p.custody.records.github, cloudflare: p.custody.records.cloudflare }; expect(validateHostApprovalPolicy(p, root, NOW)).toEqual(p); expect(validateHostApproval(envelope(p), root, NOW)).toEqual(p); p.custody.records.caller = policy().custody.records.caller; expect(() => validateHostApprovalPolicy(p, root, NOW)).toThrow(); });
+  it('unsigned validation rejects invalid late-schema fields before signing custody', () => { const p = policy(); p.operation = { approvalDigest: 'not-a-digest' }; expect(() => validateHostApprovalPolicy(p, root, NOW)).toThrow(); });
   it('accepts an externally anchored exact signed deployment policy', () => expect(validateHostApproval(envelope(), root, NOW)).toEqual(policy()));
   it('has a stable digest distinct from its signature', () => expect(hostApprovalDigest(policy())).toMatch(/^[a-f0-9]{64}$/));
   for (const [name, edit] of [
@@ -41,7 +44,7 @@ describe('follow-up rehearsal trusted host policy', () => {
     ['unmapped secret key', p => { p.custody.records.github.key = 'OTHER'; }],
     ['duplicate record ID', p => { p.custody.records.control.id = p.custody.records.issuer.id; }],
     ['unknown field', p => { p.extra = true; }],
-  ]) it(`refuses ${name}`, () => { const p = policy(), e = envelope(p); edit(p, e); if (name !== 'bad signature') e.signature = sign(null, hostApprovalSigningBytes(p), privateKey).toString('base64url'); expect(() => validateHostApproval(e, root, NOW)).toThrow('rehearsal_host_refused'); });
+  ]) it(`refuses ${name}`, () => { const p = policy(), e = envelope(p); edit(p, e); if (name !== 'bad signature') { e.signature = sign(null, hostApprovalSigningBytes(p), privateKey).toString('base64url'); expect(() => validateHostApprovalPolicy(p, root, NOW)).toThrow('rehearsal_host_refused'); } expect(() => validateHostApproval(e, root, NOW)).toThrow('rehearsal_host_refused'); });
 });
 
 describe('exact Bitwarden subprocess custody', () => {
