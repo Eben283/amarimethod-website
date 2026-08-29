@@ -463,10 +463,31 @@ export async function upsertGhlAppointment(db, appointment, contactId, now, proj
     ? await db.prepare("SELECT id FROM services WHERE provider_calendar_id = ?").bind(appointment.calendarId).first()
     : null;
   const existing = await db.prepare(
-    "SELECT id FROM appointments WHERE provider_appointment_id = ?",
+    "SELECT id, authority FROM appointments WHERE provider_appointment_id = ?",
   ).bind(appointment.externalId).first();
   const appointmentId = existing?.id || id();
-  if (existing) {
+  if (existing?.authority === "owned") {
+    // Provider observations prove or contradict owned truth; they never
+    // silently rewrite it. A mismatch stays visible for Staff reconciliation.
+    await db.prepare(
+      `UPDATE appointments
+       SET provider_calendar_id = ?, provider_status_raw = ?,
+           provider_sync_state = CASE
+             WHEN contact_id = ?
+              AND COALESCE(service_id, '') = COALESCE(?, '')
+              AND status = ?
+              AND COALESCE(datetime(starts_at), '') = COALESCE(datetime(?), '')
+              AND COALESCE(datetime(ends_at), '') = COALESCE(datetime(?), '')
+              AND COALESCE(timezone, '') = COALESCE(?, '')
+             THEN 'synced' ELSE 'manual_review' END,
+           updated_at = ?
+       WHERE id = ? AND authority = 'owned'`,
+    ).bind(
+      appointment.calendarId, appointment.providerStatusRaw, contactId, service?.id || null,
+      appointment.status, appointment.startsAt, appointment.endsAt, appointment.timezone,
+      now, appointmentId,
+    ).run();
+  } else if (existing) {
     await db.prepare(
       `UPDATE appointments
        SET contact_id = ?, service_id = ?, provider_calendar_id = ?, provider_status_raw = ?, status = ?,

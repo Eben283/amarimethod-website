@@ -70,6 +70,40 @@ function publicAppointment(row, deduped) {
   };
 }
 
+function publicExecution(row) {
+  if (!row) return null;
+  let result = null;
+  try { result = row.result_json ? JSON.parse(row.result_json) : null; } catch { result = null; }
+  return {
+    commandId: row.id,
+    actor: row.actor,
+    action: row.action,
+    contactId: row.contact_id,
+    appointmentId: row.appointment_id,
+    serviceId: row.service_id,
+    state: row.state,
+    provider: row.provider || null,
+    providerRecordId: row.provider_record_id || null,
+    attempts: Number(row.attempts || 0),
+    leaseUntil: Number(row.lease_until || 0),
+    result,
+    lastError: row.last_error || null,
+  };
+}
+
+async function executionById(db, commandId) {
+  return db.prepare("SELECT * FROM appointment_authority_commands WHERE id = ?")
+    .bind(commandId).first();
+}
+
+function commandIdentity(commandId, actor) {
+  const id = clean(commandId, 100);
+  const staffActor = clean(actor, 80);
+  if (!/^acmd_[a-f0-9]{24}$/.test(id)) throw new OwnedAppointmentError("invalid commandId", "invalid_command", 400);
+  if (!STAFF_ACTOR.test(staffActor)) throw new OwnedAppointmentError("invalid staff actor", "invalid_actor", 400);
+  return { commandId: id, actor: staffActor };
+}
+
 async function commandByKey(db, actor, idempotencyKey) {
   return db.prepare(
     `SELECT command.id AS command_id, command.payload_sha256, command.state AS command_state,
@@ -194,4 +228,238 @@ export async function captureOwnedScheduleCommand(db, input, options = {}) {
     throw new OwnedAppointmentError("idempotency key was already used for another appointment", "idempotency_conflict", 409);
   }
   return publicAppointment(stored, changes(results?.[0]) === 0);
+}
+
+export async function claimOwnedAppointmentExecution(db, input, options = {}) {
+  if (!db) throw new OwnedAppointmentError("appointment storage is unavailable", "storage_unavailable", 500);
+  const identity = commandIdentity(input?.commandId, input?.actor);
+  const nowMs = Number(options.nowMs ?? Date.now());
+  const leaseUntil = nowMs + Number(options.leaseMs ?? 120_000);
+  let row = await executionById(db, identity.commandId);
+  if (!row || row.actor !== identity.actor) throw new OwnedAppointmentError("appointment command not found", "command_not_found", 404);
+  if (row.state === "completed") return { state: "completed", execution: publicExecution(row) };
+  if (row.state === "manual_review") return { state: "manual_review", execution: publicExecution(row) };
+  if (row.state === "rejected") return { state: "rejected", execution: publicExecution(row) };
+  if (row.state === "executing" && Number(row.lease_until) > nowMs) {
+    return { state: "in_progress", execution: publicExecution(row) };
+  }
+  const updated = await db.prepare(
+    `UPDATE appointment_authority_commands
+        SET state = 'executing', attempts = attempts + 1, lease_until = ?,
+            last_error = NULL, updated_at = ?
+      WHERE id = ? AND actor = ?
+        AND (state IN ('accepted', 'retryable') OR (state = 'executing' AND lease_until <= ?))`,
+  ).bind(leaseUntil, new Date(nowMs).toISOString(), identity.commandId, identity.actor, nowMs).run();
+  if (changes(updated) !== 1) {
+    row = await executionById(db, identity.commandId);
+    return {
+      state: row?.state === "completed" ? "completed"
+        : row?.state === "manual_review" ? "manual_review"
+          : row?.state === "rejected" ? "rejected" : "in_progress",
+      execution: publicExecution(row),
+    };
+  }
+  row = await executionById(db, identity.commandId);
+  await db.prepare(
+    `INSERT INTO appointment_authority_events
+       (id, command_id, appointment_id, event_type, detail_json, occurred_at)
+     VALUES (?, ?, ?, 'execution_claimed', ?, ?)`,
+  ).bind(
+    crypto.randomUUID(), row.id, row.appointment_id,
+    JSON.stringify({ attempt: Number(row.attempts), leaseUntil }), new Date(nowMs).toISOString(),
+  ).run();
+  return { state: "acquired", execution: publicExecution(row) };
+}
+
+export async function linkOwnedAppointmentProviderRecord(db, input, options = {}) {
+  if (!db) throw new OwnedAppointmentError("appointment storage is unavailable", "storage_unavailable", 500);
+  const identity = commandIdentity(input?.commandId, input?.actor);
+  const provider = clean(input?.provider, 40);
+  const providerRecordId = clean(input?.providerRecordId, 160);
+  const providerCalendarId = clean(input?.providerCalendarId, 160) || null;
+  const providerStatusRaw = clean(input?.providerStatusRaw, 80) || null;
+  if (provider !== "ghl" || !providerRecordId) {
+    throw new OwnedAppointmentError("invalid provider appointment link", "invalid_provider_link", 400);
+  }
+  const now = new Date(Number(options.nowMs ?? Date.now())).toISOString();
+  const row = await executionById(db, identity.commandId);
+  if (!row || row.actor !== identity.actor) throw new OwnedAppointmentError("appointment command not found", "command_not_found", 404);
+  if (row.state !== "executing") throw new OwnedAppointmentError("appointment command is not executing", "command_not_executing", 409);
+  if (row.provider_record_id && (row.provider !== provider || row.provider_record_id !== providerRecordId)) {
+    throw new OwnedAppointmentError("appointment command is linked to another provider record", "provider_link_conflict", 409);
+  }
+  const appointment = await db.prepare(
+    "SELECT authority, provider_appointment_id FROM appointments WHERE id = ?",
+  ).bind(row.appointment_id).first();
+  if (!appointment || appointment.authority !== "owned" ||
+      (appointment.provider_appointment_id && appointment.provider_appointment_id !== providerRecordId)) {
+    throw new OwnedAppointmentError("owned appointment has another provider record", "provider_link_conflict", 409);
+  }
+  const existing = await db.prepare(
+    `SELECT record_id FROM external_records
+      WHERE provider = ? AND object_type = 'appointment' AND external_id = ?`,
+  ).bind(provider, providerRecordId).first();
+  if (existing && existing.record_id !== row.appointment_id) {
+    throw new OwnedAppointmentError("provider appointment belongs to another owned record", "provider_link_conflict", 409);
+  }
+  const linkDigest = await sha256(`${provider}\n${providerRecordId}`);
+  try {
+    await db.batch([
+      db.prepare(
+        `UPDATE appointment_authority_commands
+            SET provider = ?, provider_record_id = ?, updated_at = ?
+          WHERE id = ? AND actor = ? AND state = 'executing'
+            AND (provider_record_id IS NULL OR provider_record_id = ?)`,
+      ).bind(provider, providerRecordId, now, row.id, identity.actor, providerRecordId),
+      db.prepare(
+        `UPDATE appointments
+            SET provider_appointment_id = ?, provider_calendar_id = ?,
+                provider_status_raw = ?, provider_sync_state = 'pending',
+                last_modified_by = ?, updated_at = ?
+          WHERE id = ? AND authority = 'owned'
+            AND (provider_appointment_id IS NULL OR provider_appointment_id = ?)
+            AND EXISTS (
+              SELECT 1 FROM appointment_authority_commands
+               WHERE id = ? AND state = 'executing' AND provider = ? AND provider_record_id = ?
+            )`,
+      ).bind(
+        providerRecordId, providerCalendarId, providerStatusRaw, identity.actor, now,
+        row.appointment_id, providerRecordId, row.id, provider, providerRecordId,
+      ),
+      db.prepare(
+        `INSERT INTO external_records
+           (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+         SELECT ?, ?, 'appointment', ?, ?, 'appointment', ?, ?
+          WHERE EXISTS (
+            SELECT 1 FROM appointment_authority_commands
+             WHERE id = ? AND state = 'executing' AND provider = ? AND provider_record_id = ?
+          )
+         ON CONFLICT(provider, object_type, external_id) DO UPDATE SET
+           contact_id = excluded.contact_id, record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
+      ).bind(
+        `ext_${linkDigest.slice(0, 24)}`, provider, providerRecordId, row.contact_id,
+        row.appointment_id, now, row.id, provider, providerRecordId,
+      ),
+      db.prepare(
+        `INSERT INTO appointment_authority_events
+           (id, command_id, appointment_id, event_type, detail_json, occurred_at)
+         VALUES (?, ?, ?, 'provider_linked', ?, ?)`,
+      ).bind(crypto.randomUUID(), row.id, row.appointment_id, JSON.stringify({ provider, providerRecordId }), now),
+    ]);
+  } catch (error) {
+    throw new OwnedAppointmentError("provider appointment link was not recorded", "provider_link_conflict", 409);
+  }
+  const linked = await executionById(db, row.id);
+  const linkedAppointment = await db.prepare(
+    "SELECT provider_appointment_id FROM appointments WHERE id = ?",
+  ).bind(row.appointment_id).first();
+  if (linked?.provider_record_id !== providerRecordId || linkedAppointment?.provider_appointment_id !== providerRecordId) {
+    throw new OwnedAppointmentError("provider appointment link was not recorded", "provider_link_conflict", 409);
+  }
+  return publicExecution(linked);
+}
+
+export async function unlinkOwnedAppointmentProviderRecord(db, input, options = {}) {
+  if (!db) throw new OwnedAppointmentError("appointment storage is unavailable", "storage_unavailable", 500);
+  const identity = commandIdentity(input?.commandId, input?.actor);
+  const providerRecordId = clean(input?.providerRecordId, 160);
+  const row = await executionById(db, identity.commandId);
+  if (!row || row.actor !== identity.actor) throw new OwnedAppointmentError("appointment command not found", "command_not_found", 404);
+  if (row.state !== "executing" || !providerRecordId || row.provider_record_id !== providerRecordId) {
+    throw new OwnedAppointmentError("exact provider link is not removable", "provider_unlink_conflict", 409);
+  }
+  const now = new Date(Number(options.nowMs ?? Date.now())).toISOString();
+  await db.batch([
+    db.prepare(
+      `DELETE FROM external_records
+        WHERE provider = ? AND object_type = 'appointment' AND external_id = ? AND record_id = ?`,
+    ).bind(row.provider, providerRecordId, row.appointment_id),
+    db.prepare(
+      `UPDATE appointments
+          SET provider_appointment_id = NULL, provider_calendar_id = NULL,
+              provider_status_raw = NULL, provider_sync_state = 'pending',
+              last_modified_by = ?, updated_at = ?
+        WHERE id = ? AND authority = 'owned' AND provider_appointment_id = ?`,
+    ).bind(identity.actor, now, row.appointment_id, providerRecordId),
+    db.prepare(
+      `UPDATE appointment_authority_commands
+          SET provider = NULL, provider_record_id = NULL, updated_at = ?
+        WHERE id = ? AND actor = ? AND state = 'executing' AND provider_record_id = ?`,
+    ).bind(now, row.id, identity.actor, providerRecordId),
+    db.prepare(
+      `INSERT INTO appointment_authority_events
+         (id, command_id, appointment_id, event_type, detail_json, occurred_at)
+       VALUES (?, ?, ?, 'provider_unlinked', ?, ?)`,
+    ).bind(crypto.randomUUID(), row.id, row.appointment_id, JSON.stringify({ provider: row.provider, providerRecordId }), now),
+  ]);
+  return publicExecution(await executionById(db, row.id));
+}
+
+export async function completeOwnedAppointmentExecution(db, input, options = {}) {
+  if (!db) throw new OwnedAppointmentError("appointment storage is unavailable", "storage_unavailable", 500);
+  const identity = commandIdentity(input?.commandId, input?.actor);
+  const row = await executionById(db, identity.commandId);
+  if (!row || row.actor !== identity.actor) throw new OwnedAppointmentError("appointment command not found", "command_not_found", 404);
+  if (row.state === "completed") return publicExecution(row);
+  if (row.state !== "executing") throw new OwnedAppointmentError("appointment command is not executing", "command_not_executing", 409);
+  if (options.providerSyncRequired !== false && !row.provider_record_id) {
+    throw new OwnedAppointmentError("provider appointment link is not checkpointed", "provider_link_missing", 409);
+  }
+  const now = new Date(Number(options.nowMs ?? Date.now())).toISOString();
+  const result = input?.result && typeof input.result === "object" && !Array.isArray(input.result) ? input.result : {};
+  await db.batch([
+    db.prepare(
+      `UPDATE appointments
+          SET provider_sync_state = ?, updated_at = ?, last_modified_by = ?
+        WHERE id = ? AND authority = 'owned'`,
+    ).bind(options.providerSyncRequired === false ? "not_required" : "synced", now, identity.actor, row.appointment_id),
+    db.prepare(
+      `UPDATE appointment_authority_commands
+          SET state = 'completed', result_json = ?, lease_until = 0,
+              last_error = NULL, updated_at = ?
+        WHERE id = ? AND actor = ? AND state = 'executing'`,
+    ).bind(JSON.stringify(result), now, row.id, identity.actor),
+    db.prepare(
+      `INSERT INTO appointment_authority_events
+         (id, command_id, appointment_id, event_type, detail_json, occurred_at)
+       VALUES (?, ?, ?, 'completed', ?, ?)`,
+    ).bind(crypto.randomUUID(), row.id, row.appointment_id, JSON.stringify({ provider: row.provider || null }), now),
+  ]);
+  return publicExecution(await executionById(db, row.id));
+}
+
+export async function failOwnedAppointmentExecution(db, input, options = {}) {
+  if (!db) throw new OwnedAppointmentError("appointment storage is unavailable", "storage_unavailable", 500);
+  const identity = commandIdentity(input?.commandId, input?.actor);
+  const row = await executionById(db, identity.commandId);
+  if (!row || row.actor !== identity.actor) throw new OwnedAppointmentError("appointment command not found", "command_not_found", 404);
+  if (row.state !== "executing") return publicExecution(row);
+  const terminal = input?.terminal === true && !row.provider_record_id;
+  const state = terminal ? "rejected" : input?.manualReview ? "manual_review" : "retryable";
+  const error = clean(input?.error, 1000) || "appointment execution failed";
+  const now = new Date(Number(options.nowMs ?? Date.now())).toISOString();
+  await db.batch([
+    terminal
+      ? db.prepare(
+        `UPDATE appointments
+            SET status = 'cancelled', cancelled_at = ?, cancellation_reason = ?,
+                provider_sync_state = 'not_required', updated_at = ?, last_modified_by = ?
+          WHERE id = ? AND authority = 'owned'`,
+      ).bind(now, error, now, identity.actor, row.appointment_id)
+      : db.prepare(
+        `UPDATE appointments SET provider_sync_state = ?, updated_at = ?, last_modified_by = ?
+          WHERE id = ? AND authority = 'owned'`,
+      ).bind(state, now, identity.actor, row.appointment_id),
+    db.prepare(
+      `UPDATE appointment_authority_commands
+          SET state = ?, lease_until = 0, last_error = ?, updated_at = ?
+        WHERE id = ? AND actor = ? AND state = 'executing'`,
+    ).bind(state, error, now, row.id, identity.actor),
+    db.prepare(
+      `INSERT INTO appointment_authority_events
+         (id, command_id, appointment_id, event_type, detail_json, occurred_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+    ).bind(crypto.randomUUID(), row.id, row.appointment_id, state, JSON.stringify({ error }), now),
+  ]);
+  return publicExecution(await executionById(db, row.id));
 }

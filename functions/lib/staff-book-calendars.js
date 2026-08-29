@@ -39,12 +39,14 @@ export const STAFF_BOOK_TYPES = {
     label: "Follow-up · package · virtual",
   },
   partner_initial: {
+    serviceId: "partner-initial",
     calendarId: "lfsnaiGiLNL2z12pLKDP",
     durationMinutes: 60,
     title: "Amari Method Partner Initial Session",
     label: "Partner Initial (comp)",
   },
   partner_initial_virtual: {
+    serviceId: "partner-initial-virtual",
     calendarId: "P7T6M1w8wtuRfwAqzOVw",
     durationMinutes: 60,
     title: "Amari Method Partner Initial Session — Virtual",

@@ -142,7 +142,7 @@ CREATE TABLE appointment_authority_commands (
   requested_end_time TEXT,
   requested_timezone TEXT,
   payload_sha256 TEXT NOT NULL,
-  state TEXT NOT NULL CHECK (state IN ('accepted', 'executing', 'completed', 'retryable', 'manual_review')),
+  state TEXT NOT NULL CHECK (state IN ('accepted', 'executing', 'completed', 'retryable', 'manual_review', 'rejected')),
   provider TEXT,
   provider_record_id TEXT,
   attempts INTEGER NOT NULL DEFAULT 0 CHECK (attempts >= 0),
@@ -163,8 +163,8 @@ CREATE TABLE appointment_authority_events (
   command_id TEXT NOT NULL REFERENCES appointment_authority_commands(id) ON DELETE RESTRICT,
   appointment_id TEXT NOT NULL REFERENCES appointments(id) ON DELETE RESTRICT,
   event_type TEXT NOT NULL CHECK (event_type IN (
-    'accepted', 'execution_claimed', 'provider_linked', 'completed',
-    'retryable', 'manual_review', 'cancelled', 'rescheduled'
+    'accepted', 'execution_claimed', 'provider_linked', 'provider_unlinked', 'completed',
+    'retryable', 'manual_review', 'rejected', 'cancelled', 'rescheduled'
   )),
   detail_json TEXT,
   occurred_at TEXT NOT NULL
