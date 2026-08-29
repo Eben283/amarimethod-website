@@ -18,6 +18,7 @@ import '../styles/appointment-manage.css';
 
 export interface ManageableAppointment {
   id: string;
+  providerAppointmentId?: string | null;
   contactId: string;
   contactName: string;
   title: string;

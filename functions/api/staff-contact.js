@@ -8,6 +8,7 @@ import { listPaymentRecordsForContact } from "../lib/session-payment.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 import { parsePacificWallClock } from "../lib/datetime.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -30,12 +31,14 @@ export async function onRequestGet(context) {
 
 
     const url = new URL(context.request.url);
-    const contactId = url.searchParams.get("id");
+    const contactReference = url.searchParams.get("id");
     const debug = url.searchParams.get("debug") === "1";
-    if (!contactId) {
+    if (!contactReference) {
       return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers });
     }
-    const debugInfo = debug ? { contactId, steps: [] } : null;
+    const identity = await resolveOwnedContactIdentity(context, contactReference);
+    const contactId = requireProviderContactIdentity(identity);
+    const debugInfo = debug ? { contactId: identity.ownedContactId, providerContactId: contactId, steps: [] } : null;
 
     // Fetch contact, appointments, notes, conversations, orders, invoices, calendars, and field defs in parallel
     const [contactRes, appointmentsRes, notesRes, conversationsRes, ordersRes, invoicesRes, calendarsRes, fieldDefsRes] = await Promise.all([
@@ -449,7 +452,7 @@ export async function onRequestGet(context) {
     }
 
     const result = {
-      id: contact.id,
+      id: identity.ownedContactId,
       firstName: capitalize(contact.firstName) || "",
       lastName: capitalize(contact.lastName) || "",
       email: contact.email || "",
@@ -486,6 +489,10 @@ export async function onRequestGet(context) {
     return new Response(JSON.stringify(result), { status: 200, headers });
   } catch (err) {
     console.error("[staff-contact] Unexpected error:", err);
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
   }
 }

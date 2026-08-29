@@ -17,6 +17,7 @@ import {
 import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
 import { listOwnedAppointmentSchedule } from "./owned-appointment-schedule.js";
 import { OwnedAppointmentPaymentError, recordOwnedAppointmentPayment } from "./owned-appointment-payments.js";
+import { OwnedAppointmentIdentityError, resolveOwnedAppointmentIdentity } from "./owned-appointment-identity.js";
 import {
   activeClientOperations,
   communicationsInbox,
@@ -618,6 +619,23 @@ export default {
           worker: "amari-crm-mirror",
           ...(await appointmentProjectionReadiness(env.CRM_DB, new Date().toISOString())),
         });
+      }
+      const appointmentIdentity = url.pathname.match(/^\/appointments\/([^/]+)\/identity$/);
+      if (request.method === "GET" && appointmentIdentity) {
+        try {
+          return json(200, {
+            success: true,
+            identity: await resolveOwnedAppointmentIdentity(
+              env.CRM_DB,
+              decodeURIComponent(appointmentIdentity[1]),
+            ),
+          }, { "Cache-Control": "no-store" });
+        } catch (error) {
+          if (error instanceof OwnedAppointmentIdentityError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
       }
       const appointmentPayment = url.pathname.match(/^\/appointments\/([^/]+)\/payment$/);
       if (request.method === "PUT" && appointmentPayment) {

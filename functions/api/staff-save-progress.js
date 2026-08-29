@@ -3,6 +3,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
@@ -52,11 +53,14 @@ export async function onRequestPost(context) {
 
 
     if (parseError) return parseError;
-    const { contactId, progress } = body;
+    const { contactId: contactReference, progress } = body;
 
-    if (!contactId || !progress) {
+    if (!contactReference || !progress) {
       return new Response(JSON.stringify({ error: "contactId and progress are required" }), { status: 400, headers });
     }
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference),
+    );
 
     // Build custom fields array from progress state
     const customFields = [];
@@ -98,6 +102,10 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-save-progress] Error:", err.message);
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
   }
 }

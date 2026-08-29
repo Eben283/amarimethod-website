@@ -3,6 +3,7 @@
 
 import { ghlFetch, applyTagDelta } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -30,11 +31,14 @@ export async function onRequestPost(context) {
     const { body, error: parseError } = await parseJsonBody(context.request, headers);
 
     if (parseError) return parseError;
-    const { contactId } = body;
+    const { contactId: contactReference } = body;
 
-    if (!contactId) {
+    if (!contactReference) {
       return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers });
     }
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference),
+    );
 
     // Verify contact exists and has affiliate-partner tag
     const contactRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}`);
@@ -126,6 +130,10 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-send-toolkit] Error:", err.message);
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
   }
 }

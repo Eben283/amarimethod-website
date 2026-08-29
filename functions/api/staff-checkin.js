@@ -14,6 +14,7 @@
 
 import { ghlFetch, applyTagDelta } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const AGREEMENT_VERSION = "practice-member-v2026-04-17";
@@ -40,11 +41,13 @@ export async function onRequestPost(context) {
 
 
     if (parseError) return parseError;
-    const { contactId, typedName, signatureImage } = body;
+    const { contactId: contactReference, typedName, signatureImage } = body;
 
-    if (!contactId) {
+    if (!contactReference) {
       return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers });
     }
+    const identity = await resolveOwnedContactIdentity(context, contactReference);
+    const contactId = requireProviderContactIdentity(identity);
     if (!typedName || typeof typedName !== "string" || typedName.trim().length < 2) {
       return new Response(JSON.stringify({ error: "Typed name is required" }), { status: 400, headers });
     }
@@ -65,7 +68,7 @@ export async function onRequestPost(context) {
     const userAgent = context.request.headers.get("User-Agent") || null;
 
     const attestationRecord = {
-      contactId,
+      contactId: identity.ownedContactId,
       typedName: typedName.trim(),
       signatureImage,
       agreementVersion: AGREEMENT_VERSION,
@@ -130,6 +133,10 @@ export async function onRequestPost(context) {
     );
   } catch (err) {
     console.error("[staff-checkin] Error:", err.message);
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
   }
 }

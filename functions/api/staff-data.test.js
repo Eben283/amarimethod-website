@@ -59,7 +59,7 @@ describe("staff-data calendar loading", () => {
     ]);
 
     const detailResponse = await onRequestGet({
-      request: new Request("https://www.amarimethod.com/api/staff-data?date=2026-08-03&ownedDetail=1"),
+      request: new Request("https://www.amarimethod.com/api/staff-data?date=2026-08-03"),
       env: { WORKER_AUTH_SECRET: "secret" },
     });
     expect(detailResponse.status).toBe(200);
