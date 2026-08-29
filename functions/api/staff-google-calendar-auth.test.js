@@ -17,6 +17,8 @@ function environment(values = {}) {
     JWT_SECRET: "test-secret",
     GOOGLE_OAUTH_CLIENT_ID: "calendar-client",
     GOOGLE_OAUTH_CLIENT_SECRET: "calendar-secret",
+    AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "amari-internal-client",
+    AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "amari-internal-secret",
     PORTAL_KV: { get: vi.fn(), put: vi.fn(), delete: vi.fn() },
     ...values,
   };
@@ -38,7 +40,8 @@ describe("Staff Google Calendar authorization", () => {
     const payload = await response.json();
     const authorizationUrl = new URL(payload.authorizationUrl);
     expect(payload).toMatchObject({ actor: "Garrett", requiredPrimaryCalendarId: "garrett@amarimethod.com", bookingActivationEnabled: false });
-    expect(authorizationUrl.searchParams.get("redirect_uri")).toBe("https://www.amarimethod.com/api/cos-google-callback");
+    expect(authorizationUrl.searchParams.get("client_id")).toBe("amari-internal-client");
+    expect(authorizationUrl.searchParams.get("redirect_uri")).toBe("https://www.amarimethod.com/api/staff-amari-mail-callback");
     expect(authorizationUrl.searchParams.get("scope")).toBe("https://www.googleapis.com/auth/calendar");
     expect(authorizationUrl.searchParams.get("state")).toHaveLength(64);
     expect(env.PORTAL_KV.put).toHaveBeenCalledWith(

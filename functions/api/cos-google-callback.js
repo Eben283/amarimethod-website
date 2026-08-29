@@ -2,7 +2,7 @@
 // Completes the one-time Google Calendar OAuth reconnect started by COS.
 
 import {
-  STAFF_CALENDAR_CALLBACK_URL,
+  PERSONAL_CALENDAR_CALLBACK_URL,
   STAFF_CALENDAR_SCOPE,
   consumeStaffCalendarOAuthState,
   listWritableGoogleCalendars,
@@ -69,7 +69,7 @@ export async function onRequestGet(context) {
         code,
         client_id: context.env.GOOGLE_OAUTH_CLIENT_ID,
         client_secret: context.env.GOOGLE_OAUTH_CLIENT_SECRET,
-        redirect_uri: STAFF_CALENDAR_CALLBACK_URL,
+        redirect_uri: PERSONAL_CALENDAR_CALLBACK_URL,
         grant_type: "authorization_code",
       }).toString(),
     });

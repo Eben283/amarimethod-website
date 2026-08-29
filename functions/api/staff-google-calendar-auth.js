@@ -3,11 +3,11 @@
 
 import { corsHeaders, requireStaffAuth } from "../lib/endpoint-guards.js";
 import {
-  STAFF_CALENDAR_CALLBACK_URL,
   STAFF_CALENDAR_SCOPE,
   createStaffCalendarOAuthState,
   resolveStaffCalendarActor,
   staffCalendarGrantReadiness,
+  staffCalendarOAuthClient,
   staffCalendarOAuthConfigured,
 } from "../lib/staff-calendar-oauth.js";
 
@@ -46,13 +46,14 @@ export async function onRequestPost(context) {
   } catch {
     return json({ error: "Staff calendar identity is not authorized" }, 403, headers);
   }
-  if (!staffCalendarOAuthConfigured(context.env)) return json({ error: "Google Calendar authorization is not configured" }, 500, headers);
+  if (!staffCalendarOAuthConfigured(context.env, identity.actor)) return json({ error: "Google Calendar authorization is not configured" }, 500, headers);
 
   const state = await createStaffCalendarOAuthState(context.env, identity.actor);
+  const client = staffCalendarOAuthClient(context.env, identity.actor);
   const authorizationUrl = new URL(AUTH_URL);
   authorizationUrl.search = new URLSearchParams({
-    client_id: context.env.GOOGLE_OAUTH_CLIENT_ID,
-    redirect_uri: STAFF_CALENDAR_CALLBACK_URL,
+    client_id: client.clientId,
+    redirect_uri: client.callbackUrl,
     response_type: "code",
     scope: STAFF_CALENDAR_SCOPE,
     access_type: "offline",

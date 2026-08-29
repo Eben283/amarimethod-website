@@ -1,9 +1,39 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { createCalendarEventAt } from "./google-api.js";
+import { createCalendarEventAt, getGoogleToken } from "./google-api.js";
 
 afterEach(() => vi.restoreAllMocks());
 
 describe("scheduled Google Calendar events", () => {
+  it("refreshes Garrett's governed calendar grant with the Amari-internal client", async () => {
+    const store = new Map([
+      ["google:garrett:refresh_token", "garrett-refresh"],
+      ["google:garrett:token_expiry", "0"],
+    ]);
+    const context = {
+      env: {
+        AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "amari-internal-client",
+        AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "amari-internal-secret",
+        GOOGLE_OAUTH_CLIENT_ID: "personal-client",
+        GOOGLE_OAUTH_CLIENT_SECRET: "personal-secret",
+        PORTAL_KV: {
+          get: vi.fn(async (key) => store.get(key) || null),
+          put: vi.fn(async (key, value) => store.set(key, value)),
+        },
+      },
+    };
+    const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
+      access_token: "fresh-garrett-access",
+      expires_in: 3600,
+    }), { status: 200 }));
+
+    await expect(getGoogleToken(context, "Garrett")).resolves.toBe("fresh-garrett-access");
+    const body = new URLSearchParams(fetchMock.mock.calls[0][1].body);
+    expect(body.get("client_id")).toBe("amari-internal-client");
+    expect(body.get("client_secret")).toBe("amari-internal-secret");
+    expect(body.get("refresh_token")).toBe("garrett-refresh");
+    expect(store.get("google:garrett:access_token")).toBe("fresh-garrett-access");
+  });
+
   it("creates a Pacific parking event at the requested time with its requested warning", async () => {
     const fetchMock = vi.spyOn(globalThis, "fetch").mockResolvedValue(new Response(JSON.stringify({
       id: "parking-event-id",
