@@ -93,7 +93,10 @@ function assertCommandInput(input) {
   }
 }
 
-async function loadOriginal(provider, contactId, appointmentId) {
+async function loadOriginal(provider, contactId, appointmentId, fallback = null) {
+  if (typeof provider.getAppointment === "function") {
+    return provider.getAppointment(appointmentId, contactId, fallback || {});
+  }
   const appointments = await provider.listContactAppointments(contactId);
   return (appointments || []).find((appointment) => String(appointment?.id || "") === appointmentId) || null;
 }
@@ -181,7 +184,7 @@ export async function manageAppointmentCommand(input) {
 
     if (action === "cancel") {
       await provider.cancelAppointment(original);
-      const readback = await loadOriginal(provider, contactId, providerAppointmentId);
+      const readback = await loadOriginal(provider, contactId, providerAppointmentId, original);
       if (!readback || normalizeStatus(readback) !== "cancelled") {
         throw Object.assign(new Error("Cancellation was not confirmed by the calendar."), { code: "cancel_not_confirmed", manualReview: true });
       }
@@ -238,8 +241,8 @@ export async function manageAppointmentCommand(input) {
           original,
           startTime: newStartTime,
           timezone,
-          onCreated: async (replacementId) => {
-            await store.checkpointReplacement(commandId, replacementId);
+          onCreated: async (replacementId, providerLink) => {
+            await store.checkpointReplacement(commandId, replacementId, providerLink);
             checkpointedReplacementId = String(replacementId);
           },
         });
@@ -265,7 +268,7 @@ export async function manageAppointmentCommand(input) {
       // A transport error is ambiguous: the provider may have accepted the
       // cancellation before the response was lost. Read back before any
       // compensation so Staff can never accidentally cancel both visits.
-      const afterFailure = await loadOriginal(provider, contactId, providerAppointmentId);
+      const afterFailure = await loadOriginal(provider, contactId, providerAppointmentId, original);
       if (!afterFailure || normalizeStatus(afterFailure) !== "cancelled") {
         try {
           await provider.cancelAppointment(replacement);
@@ -283,9 +286,10 @@ export async function manageAppointmentCommand(input) {
         });
       }
     }
-    const finalAppointments = await provider.listContactAppointments(contactId);
-    const oldReadback = finalAppointments.find((appointment) => String(appointment?.id || "") === providerAppointmentId);
-    const newReadback = finalAppointments.find((appointment) => String(appointment?.id || "") === String(replacement.id));
+    const [oldReadback, newReadback] = await Promise.all([
+      loadOriginal(provider, contactId, providerAppointmentId, original),
+      loadOriginal(provider, contactId, String(replacement.id), replacement),
+    ]);
     if (!oldReadback || normalizeStatus(oldReadback) !== "cancelled" || !newReadback || !MANAGEABLE_STATUSES.has(normalizeStatus(newReadback))) {
       throw Object.assign(new Error("The reschedule could not be fully verified."), { code: "reschedule_not_confirmed", manualReview: true });
     }
@@ -391,8 +395,8 @@ export async function scheduleAppointmentCommand(input) {
         booking,
         startTime,
         timezone,
-        onCreated: async (appointmentId) => {
-          await store.checkpointAppointment(String(appointmentId));
+        onCreated: async (appointmentId, providerLink) => {
+          await store.checkpointAppointment(String(appointmentId), providerLink);
           checkpointedAppointmentId = String(appointmentId);
         },
       });

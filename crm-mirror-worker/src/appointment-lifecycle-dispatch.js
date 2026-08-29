@@ -14,16 +14,19 @@ async function sha256(value) {
 
 export function ownedAppointmentLifecycleEvent(row) {
   if (!row?.command_id || !row?.appointment_id || !row?.contact_id || !row?.service_id ||
-      !row?.provider_contact_id || !row?.provider_appointment_id || !row?.provider_calendar_id || !row?.start_at) {
+      !new Set(["ghl", "google_calendar"]).has(row?.provider) ||
+      (row.provider === "ghl" && !row?.provider_contact_id) ||
+      !row?.provider_appointment_id || !row?.provider_calendar_id || !row?.start_at ||
+      !new Set(["confirmed", "cancelled"]).has(row?.event_type)) {
     throw new TypeError("complete owned appointment lifecycle identity required");
   }
   return {
-    type: "confirmed",
+    type: row.event_type,
     recognized: true,
-    status: "confirmed",
+    status: row.event_type,
     calendarId: row.provider_calendar_id,
-    contactId: row.provider_contact_id,
-    appointmentId: row.provider_appointment_id,
+    contactId: row.contact_id,
+    appointmentId: row.appointment_id,
     startAt: row.start_at,
     modifiedBy: "user",
     context: {
@@ -32,6 +35,10 @@ export function ownedAppointmentLifecycleEvent(row) {
       ownedAppointmentId: row.appointment_id,
       ownedContactId: row.contact_id,
       serviceId: row.service_id,
+      provider: row.provider,
+      providerAppointmentId: row.provider_appointment_id,
+      providerCalendarId: row.provider_calendar_id,
+      providerContactId: row.provider_contact_id || null,
     },
   };
 }
@@ -81,7 +88,7 @@ async function failDispatch(db, row, error, nowMs, manualReview = false) {
 
 function acceptedPartnerAction(actions) {
   return (actions || []).some((action) => action?.engine === "reminder"
-    && new Set(["enroll", "enroll-noop", "reschedule"]).has(action?.action)
+    && new Set(["enroll", "enroll-noop", "reschedule", "cancel"]).has(action?.action)
     && action?.detail?.flowKey === PARTNER_FLOW);
 }
 

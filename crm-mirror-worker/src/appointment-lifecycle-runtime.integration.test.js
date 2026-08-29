@@ -123,7 +123,7 @@ async function applySql(db, sql) {
 async function applyCrmSchema(db) {
   const directory = join(ROOT, "crm-mirror-worker/migrations");
   const names = readdirSync(directory).filter((name) => /^\d{4}_.+\.sql$/.test(name)).sort();
-  expect(names.at(-1)).toBe("0020_owned_appointment_lifecycle_dispatch.sql");
+  expect(names.at(-1)).toBe("0021_provider_neutral_calendar_authority.sql");
   for (const name of names) {
     const sql = readFileSync(join(directory, name), "utf8");
     await applySql(db, sql);
@@ -155,7 +155,9 @@ async function startRuntime() {
           ...base,
           name: "crm",
           script: scripts.crm,
-          bindings: { WORKER_AUTH_SECRET: AUTH, GHL_LOCATION_ID: "synthetic-location" },
+          // Deliberately no GHL credential or location binding. Provider edges
+          // are checkpointed inputs to this owned runtime, never hidden calls.
+          bindings: { WORKER_AUTH_SECRET: AUTH },
           d1Databases: ["CRM_DB", "AUTOMATION_DB"],
           kvNamespaces: ["PORTAL_KV"],
           serviceBindings: { REMINDER: "reminder" },
@@ -309,7 +311,7 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       manualReview: 0,
     });
 
-    const enrollmentId = `${PARTNER_FLOW}:${PROVIDER_APPOINTMENT_ID}`;
+    const enrollmentId = `${PARTNER_FLOW}:${appointmentId}`;
     expect(await reminderDb.prepare(
       `SELECT enrollment_id, flow_key, definition_version, appointment_id, contact_id,
               calendar_id, start_at, status
@@ -318,8 +320,8 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       enrollment_id: enrollmentId,
       flow_key: PARTNER_FLOW,
       definition_version: 1,
-      appointment_id: PROVIDER_APPOINTMENT_ID,
-      contact_id: PROVIDER_CONTACT_ID,
+      appointment_id: appointmentId,
+      contact_id: CONTACT_ID,
       calendar_id: PARTNER_CALENDAR_ID,
       start_at: startAt,
       status: "active",
@@ -335,8 +337,8 @@ describe("owned Partner Initial lifecycle native runtime", () => {
         outcome: "enrolled",
         engine: "reminder",
         flow_key: PARTNER_FLOW,
-        appointment_id: PROVIDER_APPOINTMENT_ID,
-        contact_id: PROVIDER_CONTACT_ID,
+        appointment_id: appointmentId,
+        contact_id: CONTACT_ID,
       }]);
 
     const secondSync = await request(mf, "/sync", {
@@ -359,5 +361,120 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await crmDb.prepare(
       "SELECT state, attempts, last_error FROM appointment_lifecycle_dispatches WHERE command_id = ?",
     ).bind(commandId).first()).toEqual({ state: "dispatched", attempts: 1, last_error: null });
+  }, 30_000);
+
+  it("runs the same owned vertical with a Google calendar checkpoint and no GHL identity or credentials", async () => {
+    const { mf, crmDb, reminderDb } = await startRuntime();
+    const now = Date.now();
+    const startAt = new Date(now + 8 * 86_400_000).toISOString();
+    const recordedAt = new Date(now).toISOString();
+    const googleEventId = "synthetic-google-appointment";
+    const googleCalendarId = "synthetic-garrett@group.calendar.google.com";
+    await crmDb.prepare(
+      `INSERT INTO contacts (id, display_name, created_at, updated_at)
+       VALUES (?, 'Synthetic Partner — Google Authority Proof', ?, ?)`,
+    ).bind(CONTACT_ID, recordedAt, recordedAt).run();
+
+    const capture = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "schedule", contactId: CONTACT_ID, serviceId: "partner-initial",
+        idempotencyKey: "synthetic-partner-google-runtime-proof-v1",
+        startTime: startAt, timezone: "America/Los_Angeles",
+      },
+    });
+    const commandId = capture.appointment.commandId;
+    const appointmentId = capture.appointment.appointmentId;
+    await request(mf, "/appointments/commands", {
+      method: "POST", body: { action: "claim", commandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "provider-link", commandId, provider: "google_calendar",
+        providerRecordId: googleEventId, providerCalendarId: googleCalendarId,
+        providerStatusRaw: "confirmed",
+      },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete", commandId,
+        result: {
+          action: "schedule", actor: "Garrett", contactId: CONTACT_ID,
+          appointmentId, providerAppointmentId: googleEventId,
+          newStartTime: startAt, appointmentStatus: "confirmed",
+          reminderVerification: "pending_event_evidence", authority: "owned",
+        },
+      },
+    });
+
+    expect(await crmDb.prepare(
+      `SELECT provider, provider_contact_id, provider_appointment_id, provider_calendar_id, state
+         FROM appointment_lifecycle_dispatches WHERE command_id = ?`,
+    ).bind(commandId).first()).toEqual({
+      provider: "google_calendar", provider_contact_id: null,
+      provider_appointment_id: googleEventId, provider_calendar_id: googleCalendarId,
+      state: "pending",
+    });
+
+    const sync = await request(mf, "/sync", {
+      method: "POST", body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(sync.results.ownedAppointmentLifecycles).toMatchObject({
+      status: "succeeded", considered: 1, dispatched: 1, retryable: 0, manualReview: 0,
+    });
+    expect(await reminderDb.prepare(
+      `SELECT flow_key, appointment_id, contact_id, calendar_id, status
+         FROM reminder_enrollments WHERE enrollment_id = ?`,
+    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({
+      flow_key: PARTNER_FLOW, appointment_id: appointmentId, contact_id: CONTACT_ID,
+      calendar_id: googleCalendarId, status: "active",
+    });
+    expect(await reminderDb.prepare("SELECT COUNT(*) AS count FROM reminder_steps").first())
+      .toEqual({ count: 6 });
+
+    const cancellation = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "manage", manageAction: "cancel", contactId: CONTACT_ID,
+        appointmentId, idempotencyKey: "synthetic-partner-google-cancel-runtime-proof-v1",
+      },
+    });
+    const cancellationCommandId = cancellation.command.commandId;
+    expect(cancellation.command).toMatchObject({
+      provider: "google_calendar", providerRecordId: googleEventId,
+      providerCalendarId: googleCalendarId,
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST", body: { action: "claim", commandId: cancellationCommandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete", commandId: cancellationCommandId,
+        result: { action: "cancel", contactId: CONTACT_ID, appointmentStatus: "cancelled" },
+      },
+    });
+    expect(await crmDb.prepare(
+      `SELECT provider, provider_contact_id, event_type, state
+         FROM appointment_lifecycle_dispatches WHERE command_id = ?`,
+    ).bind(cancellationCommandId).first()).toEqual({
+      provider: "google_calendar", provider_contact_id: null,
+      event_type: "cancelled", state: "pending",
+    });
+
+    const cancellationSync = await request(mf, "/sync", {
+      method: "POST", body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(cancellationSync.results.ownedAppointmentLifecycles).toMatchObject({
+      status: "succeeded", considered: 1, dispatched: 1,
+    });
+    expect(await reminderDb.prepare(
+      "SELECT status FROM reminder_enrollments WHERE enrollment_id = ?",
+    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({ status: "cancelled" });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ? AND status = 'pending'",
+    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({ count: 0 });
   }, 30_000);
 });

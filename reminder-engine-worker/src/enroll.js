@@ -26,9 +26,14 @@ export function resolveDueAt(at, startMs, nowMs) {
  * Does this event enroll into this flow? Mirrors the GHL appointment_status trigger filters.
  * @returns {boolean}
  */
+export function eventMatchesFlow(event, flow) {
+  return Boolean(flow?.calendarIds?.includes(event?.calendarId) ||
+    flow?.serviceIds?.includes(event?.context?.serviceId));
+}
+
 export function isEligible(event, flow) {
   if (!event || event.recognized !== true) return false;
-  if (!flow.calendarIds.includes(event.calendarId)) return false;
+  if (!eventMatchesFlow(event, flow)) return false;
   if (!flow.enrollOn.statuses.includes(event.type)) return false;
   // GHL's “Event Type = Normal” is independent of status. If an owned
   // workflow declares it, absence is a fail-closed mismatch rather than an

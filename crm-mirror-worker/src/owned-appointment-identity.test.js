@@ -10,11 +10,13 @@ describe("owned appointment identity", () => {
     await expect(resolveOwnedAppointmentIdentity(dbWith([{
       owned_appointment_id: "owned-appt", owned_contact_id: "owned-contact",
       provider_appointment_id: "ghl-appt", provider_contact_id: "ghl-contact",
+      provider: "ghl",
       provider_contact_count: 1,
       provider_calendar_id: "calendar", authority: "owned", provider_sync_state: "synced",
     }]), "ghl-appt")).resolves.toEqual({
       ownedAppointmentId: "owned-appt", ownedContactId: "owned-contact",
       providerAppointmentId: "ghl-appt", providerContactId: "ghl-contact",
+      provider: "ghl",
       providerCalendarId: "calendar", authority: "owned", providerSyncState: "synced",
     });
   });

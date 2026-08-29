@@ -245,4 +245,60 @@ describe("staff appointment management API", () => {
       appointmentId: "appt_owned_1", providerAppointmentId: "ghl_appointment_1", authority: "owned",
     });
   });
+
+  it("selects the owned Google edge for Partner Initial without requiring a GHL contact crosswalk", async () => {
+    vi.doMock("../lib/staff-owned-contact-identity.js", () => ({
+      resolveOwnedContactIdentity: vi.fn(async () => ({ ownedContactId: "owned_1", providerContactId: null })),
+      requireProviderContactIdentity: vi.fn(() => { throw new Error("GHL identity must not be requested"); }),
+    }));
+    const ownedStore = { marker: "owned-google-store" };
+    const createOwnedAppointmentScheduleStore = vi.fn(() => ownedStore);
+    const scheduleAppointmentCommand = vi.fn(async (input) => ({
+      status: "completed", action: "schedule", actor: input.actor,
+      appointmentId: "owned-appointment-1", providerAppointmentId: "google-event-1",
+      authority: "owned", contactId: input.contactId, newStartTime: input.startTime,
+      appointmentStatus: "confirmed",
+    }));
+    vi.doMock("../lib/endpoint-guards.js", () => ({
+      requireStaffAuth: vi.fn(async () => ({ error: null, payload: { role: "staff", user: "Garrett" } })),
+      corsHeaders: () => ({}),
+      parseJsonBody: vi.fn(async () => ({
+        body: {
+          action: "schedule", contactId: "owned_1", sessionType: "partner_initial",
+          startTime: "2026-09-01T10:00:00-07:00", idempotencyKey: "schedule-google-partner-1",
+        },
+        error: null,
+      })),
+    }));
+    vi.doMock("../lib/staff-owned-appointment-store.js", () => ({
+      createOwnedAppointmentScheduleStore,
+      createOwnedAppointmentManageStore: vi.fn(),
+    }));
+    vi.doMock("../lib/staff-appointment-manage.js", async (importOriginal) => ({
+      ...(await importOriginal()), scheduleAppointmentCommand,
+    }));
+    vi.doMock("../lib/ops-path-emit.js", () => ({ emitPathHop: vi.fn(async () => ({})) }));
+    vi.doMock("../lib/ops-alert.js", () => ({ recordOpsError: vi.fn(async () => ({})) }));
+
+    const { onRequestPost } = await import("./staff-appointments.js");
+    const response = await onRequestPost({
+      request: new Request("https://www.amarimethod.com/api/staff-appointments", { method: "POST" }),
+      env: {
+        WORKER_AUTH_SECRET: "secret",
+        STAFF_APPOINTMENT_CALENDAR_PROVIDER: "google_calendar",
+        STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID: "garrett@group.calendar.google.com",
+        STAFF_APPOINTMENT_GOOGLE_USER: "Garrett",
+      },
+      waitUntil: vi.fn(),
+    });
+
+    expect(response.status).toBe(200);
+    expect(scheduleAppointmentCommand).toHaveBeenCalledWith(expect.objectContaining({
+      provider: expect.objectContaining({ provider: "google_calendar" }),
+      store: ownedStore,
+    }));
+    expect(createOwnedAppointmentScheduleStore).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      provider: "google_calendar", providerCalendarId: "garrett@group.calendar.google.com",
+    }));
+  });
 });

@@ -1,7 +1,7 @@
 // Pages-side client for the owned CRM appointment command owner.
 // All durable identity and execution state lives in CRM_DB; this adapter only
 // translates the existing schedule-domain store interface into authenticated
-// Worker calls during the temporary GHL propagation phase.
+// Worker calls through the selected practitioner-calendar propagation edge.
 
 const WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/commands";
 const TIMEOUT_MS = 10_000;
@@ -43,8 +43,11 @@ async function post(context, actor, payload) {
 export function createOwnedAppointmentScheduleStore(context, input) {
   const actor = String(input?.actor || "");
   const serviceId = String(input?.booking?.serviceId || "");
-  const calendarId = String(input?.booking?.calendarId || "");
-  if (!new Set(["Eben", "Garrett"]).has(actor) || !serviceId || !calendarId) {
+  const serviceCalendarId = String(input?.booking?.calendarId || "");
+  const provider = String(input?.provider || "ghl");
+  const providerCalendarId = String(input?.providerCalendarId || serviceCalendarId);
+  if (!new Set(["Eben", "Garrett"]).has(actor) || !serviceId || !serviceCalendarId ||
+      !new Set(["ghl", "google_calendar"]).has(provider) || !providerCalendarId) {
     throw new TypeError("owned appointment store identity required");
   }
   let commandId = null;
@@ -86,13 +89,13 @@ export function createOwnedAppointmentScheduleStore(context, input) {
       };
     },
 
-    checkpointAppointment(providerRecordId) {
+    checkpointAppointment(providerRecordId, link = {}) {
       return post(context, actor, {
         action: "provider-link",
         commandId,
-        provider: "ghl",
+        provider: link.provider || provider,
         providerRecordId,
-        providerCalendarId: calendarId,
+        providerCalendarId: link.providerCalendarId || providerCalendarId,
         providerStatusRaw: "new",
       });
     },
@@ -134,8 +137,9 @@ export function createOwnedAppointmentManageStore(context, input) {
   const contactId = String(input?.contactId || "");
   const appointmentId = String(input?.appointmentId || "");
   const providerCalendarId = String(input?.providerCalendarId || "");
+  const provider = String(input?.provider || "ghl");
   if (!new Set(["Eben", "Garrett"]).has(actor) || !new Set(["cancel", "reschedule"]).has(action) ||
-      !contactId || !appointmentId) {
+      !contactId || !appointmentId || !new Set(["ghl", "google_calendar"]).has(provider)) {
     throw new TypeError("owned appointment manage identity required");
   }
   let commandId = null;
@@ -173,13 +177,13 @@ export function createOwnedAppointmentManageStore(context, input) {
       };
     },
 
-    checkpointReplacement(_ignoredCommandId, providerRecordId) {
+    checkpointReplacement(_ignoredCommandId, providerRecordId, link = {}) {
       return post(context, actor, {
         action: "provider-link",
         commandId,
-        provider: "ghl",
+        provider: link.provider || provider,
         providerRecordId,
-        providerCalendarId,
+        providerCalendarId: link.providerCalendarId || providerCalendarId,
         providerStatusRaw: "new",
       });
     },
