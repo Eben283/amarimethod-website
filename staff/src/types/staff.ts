@@ -58,6 +58,10 @@ export interface TodayAppointment {
   paymentNote?: string | null;
   /** Video conference URL from the GHL appointment (Zoom/Google Meet). Null for in-person. */
   meetingLocation?: string | null;
+  authority?: 'owned' | 'provider_mirror';
+  providerSyncState?: 'not_required' | 'pending' | 'synced' | 'retryable' | 'manual_review';
+  truthState?: 'authoritative' | 'propagating' | 'mirrored' | 'degraded';
+  providerAppointmentId?: string | null;
 }
 
 export interface ContactListItem {

@@ -8,6 +8,7 @@ import { readPaymentRecord } from "../lib/session-payment.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 import { parsePacificWallClock } from "../lib/datetime.js";
+import { fetchOwnedAppointmentSchedule, staffScheduleSummaries } from "../lib/staff-owned-appointment-schedule.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -32,8 +33,6 @@ export async function onRequestGet(context) {
     const { error, payload: tokenPayload } = await requireStaffAuth(context, headers);
     if (error) return error;
 
-
-    const GHL_API_KEY = await getGhlToken(context);
 
     // Support ?date=YYYY-MM-DD and ?endDate=YYYY-MM-DD for ranges
     const url = new URL(context.request.url);
@@ -73,6 +72,21 @@ export async function onRequestGet(context) {
     const rangeEnd = dateToEpochRange(endDateStr);
     const startTime = rangeStart.start;
     const endTime = rangeEnd.end;
+
+    if (summaryOnly) {
+      try {
+        const ownedSchedule = await fetchOwnedAppointmentSchedule(context, { startTime, endTime, includeCancelled });
+        return new Response(JSON.stringify(staffScheduleSummaries(ownedSchedule)), { status: 200, headers });
+      } catch (error) {
+        console.error("[staff-data] Owned appointment schedule failed", error);
+        return new Response(JSON.stringify({
+          error: "Owned appointment schedule is unavailable; provider fallback is disabled.",
+          code: "owned_schedule_unavailable",
+        }), { status: 503, headers });
+      }
+    }
+
+    const GHL_API_KEY = await getGhlToken(context);
 
     // Fetch the calendar definitions once for the Staff display-name mapping
     // and to retain the existing location-calendar allowlist.
@@ -114,30 +128,6 @@ export async function onRequestGet(context) {
 
     // Sort chronologically
     todayEvents.sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-
-    if (summaryOnly) {
-      const summaries = todayEvents.map((event) => ({
-        id: event.id,
-        calendarId: event.calendarId || event.calendar_id || "",
-        contactId: event.contactId || "",
-        contactName: event.title || "Unknown",
-        startTime: event.startTime || event.start_time,
-        endTime: event.endTime || event.end_time,
-        title: event.title || event.calendarName || "Session",
-        calendarName: event.calendarName || "",
-        appointmentStatus: (event.appointmentStatus || event.status || "").toLowerCase(),
-        meetingLocation: event.meetingLocation || null,
-        sessionsRemaining: 0,
-        sessionsCompleted: 0,
-        seriesType: "none",
-        tags: [],
-        sessionPrepaid: false,
-        paymentStatus: "unknown",
-        paymentMethod: null,
-        paymentNote: null,
-      }));
-      return new Response(JSON.stringify(summaries), { status: 200, headers });
-    }
 
     // Fetch custom field definitions
     const fieldDefsResponse = await ghlFetch(context, `${GHL_API_BASE}/locations/${GHL_LOCATION_ID}/customFields`);
