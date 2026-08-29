@@ -4,9 +4,10 @@
 -- appointments are no longer required to invent one.
 --
 -- D1 applies each migration transactionally. defer_foreign_keys keeps the
--- existing notes and session-ledger references valid while their parent table
--- is replaced under the same name. The migration's verification test proves
--- the populated-table path and runs foreign_key_check before commit.
+-- existing notes, session-ledger, and provider-observation references valid
+-- while their parent table is replaced under the same name. The migration's
+-- verification test proves the populated-table path and runs foreign_key_check
+-- before commit.
 
 PRAGMA defer_foreign_keys = ON;
 PRAGMA legacy_alter_table = ON;
@@ -28,6 +29,24 @@ UPDATE services SET buffer_minutes = 20, start_interval_minutes = 15
  WHERE id = 'entrainment';
 UPDATE services SET buffer_minutes = 20, start_interval_minutes = 30
  WHERE id = 'study-session';
+
+-- This provider-observation child predates the checked-in migration chain in
+-- production. Adopt its exact live schema here so clean databases and the
+-- existing populated database converge before the appointment parent rebuild.
+CREATE TABLE IF NOT EXISTS appointment_source_observations (
+  id TEXT PRIMARY KEY,
+  appointment_id TEXT NOT NULL REFERENCES appointments(id) ON DELETE RESTRICT,
+  contact_id TEXT NOT NULL REFERENCES contacts(id) ON DELETE RESTRICT,
+  source TEXT NOT NULL CHECK (source = 'ghl'),
+  provider_calendar_id TEXT,
+  status TEXT NOT NULL,
+  starts_at TEXT,
+  ends_at TEXT,
+  observed_at TEXT NOT NULL,
+  source_key TEXT NOT NULL UNIQUE
+);
+CREATE INDEX IF NOT EXISTS idx_appointment_source_observations_appointment
+  ON appointment_source_observations(appointment_id, observed_at DESC);
 
 -- Keep child-table SQL pointed at `appointments` while the prior table moves
 -- out of the way; the replacement parent is created before the legacy rows are
@@ -83,7 +102,7 @@ SELECT
 FROM appointments_provider_legacy;
 
 -- SQLite correctly retargets child foreign keys when their parent is renamed.
--- Rebuild the two child tables so their constraints point to the replacement
+-- Rebuild all three child tables so their constraints point to the replacement
 -- `appointments` authority before the legacy parent is removed.
 CREATE TABLE session_ledger_entries_owned_authority (
   id TEXT PRIMARY KEY,
@@ -120,6 +139,32 @@ SELECT id, contact_id, appointment_id, body, authored_by, created_at, updated_at
 FROM notes;
 DROP TABLE notes;
 ALTER TABLE notes_owned_authority RENAME TO notes;
+
+CREATE TABLE appointment_source_observations_owned_authority (
+  id TEXT PRIMARY KEY,
+  appointment_id TEXT NOT NULL REFERENCES appointments(id) ON DELETE RESTRICT,
+  contact_id TEXT NOT NULL REFERENCES contacts(id) ON DELETE RESTRICT,
+  source TEXT NOT NULL CHECK (source = 'ghl'),
+  provider_calendar_id TEXT,
+  status TEXT NOT NULL,
+  starts_at TEXT,
+  ends_at TEXT,
+  observed_at TEXT NOT NULL,
+  source_key TEXT NOT NULL UNIQUE
+);
+INSERT INTO appointment_source_observations_owned_authority (
+  id, appointment_id, contact_id, source, provider_calendar_id,
+  status, starts_at, ends_at, observed_at, source_key
+)
+SELECT
+  id, appointment_id, contact_id, source, provider_calendar_id,
+  status, starts_at, ends_at, observed_at, source_key
+FROM appointment_source_observations;
+DROP TABLE appointment_source_observations;
+ALTER TABLE appointment_source_observations_owned_authority
+  RENAME TO appointment_source_observations;
+CREATE INDEX idx_appointment_source_observations_appointment
+  ON appointment_source_observations(appointment_id, observed_at DESC);
 
 DROP TABLE appointments_provider_legacy;
 PRAGMA legacy_alter_table = OFF;
