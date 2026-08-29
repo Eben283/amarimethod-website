@@ -20,6 +20,7 @@ import { recordOpsError } from "../lib/ops-alert.js";
 import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 import { createGhlStaffCalendarProvider } from "../lib/staff-calendar-provider-ghl.js";
 import { createOwnedAppointmentScheduleStore } from "../lib/staff-owned-appointment-store.js";
+import { requireProviderAppointmentIdentity, resolveStaffOwnedAppointmentIdentity } from "../lib/staff-owned-appointment-identity.js";
 
 const METHODS = "POST, OPTIONS";
 const FORBIDDEN_FIELDS = ["calendarId", "title", "appointmentStatus", "status", "replacementAppointmentId", "timezone", "actor", "user"];
@@ -69,12 +70,35 @@ function identityFailure(error, headers) {
   }, [400, 404, 409, 503].includes(status) ? status : 503, headers);
 }
 
+function isIdentityError(error) {
+  const code = String(error?.code || "");
+  return code.startsWith("owned_") || code.startsWith("provider_") || code === "contact_reference_required";
+}
+
 async function providerIdentity(context, reference) {
   const identity = await resolveOwnedContactIdentity(context, reference);
   return Object.freeze({
     ...identity,
     providerContactId: requireProviderContactIdentity(identity),
   });
+}
+
+async function providerAppointmentIdentity(context, reference, contactIdentity) {
+  const identity = await resolveStaffOwnedAppointmentIdentity(context, reference);
+  if (identity.ownedContactId !== contactIdentity.ownedContactId) {
+    const error = new Error("Appointment does not belong to this owned person.");
+    error.code = "owned_appointment_contact_mismatch";
+    error.status = 409;
+    throw error;
+  }
+  const provider = requireProviderAppointmentIdentity(identity);
+  if (provider.contactId !== contactIdentity.providerContactId) {
+    const error = new Error("Appointment provider identity does not match this person.");
+    error.code = "owned_appointment_provider_mismatch";
+    error.status = 409;
+    throw error;
+  }
+  return Object.freeze({ ...identity, ...provider });
 }
 
 export async function onRequestOptions(context) {
@@ -113,11 +137,13 @@ export async function onRequestPost(context) {
       let booking = null;
       let calendarId = "";
       let identity;
+      let appointmentIdentity = null;
       if (appointmentId) {
         if (!contactId) return json({ error: "Choose a person and appointment." }, 400, headers);
         identity = await providerIdentity(context, contactId);
+        appointmentIdentity = await providerAppointmentIdentity(context, appointmentId, identity);
         const appointments = await createGhlStaffCalendarProvider(context, identity.providerContactId).listContactAppointments();
-        original = exactAppointment(appointments, appointmentId);
+        original = exactAppointment(appointments, appointmentIdentity.appointmentId);
         if (!original) return json({ error: "Appointment not found for this person." }, 404, headers);
         if (!["new", "confirmed"].includes(appointmentStatus(original))) {
           return json({ error: `This appointment is already ${appointmentStatus(original) || "not manageable"}.` }, 409, headers);
@@ -136,13 +162,16 @@ export async function onRequestPost(context) {
       const events = await createGhlStaffCalendarProvider(context, identity.providerContactId).listSchedule(start, end);
       return json({
         appointment: original ? {
-          id: original.id,
+          id: appointmentIdentity?.ownedAppointmentId || appointmentId,
           title: original.title || "Session",
           startTime: original.startTime || original.start_time,
           calendarName: original.calendarName || "",
         } : null,
         service: booking ? { id: clean(body.sessionType, 64), label: booking.label, durationMinutes: booking.durationMinutes } : null,
-        slots: internalAvailability({ calendarId, startDate, endDate, events, excludeAppointmentId: appointmentId }),
+        slots: internalAvailability({
+          calendarId, startDate, endDate, events,
+          excludeAppointmentId: original?.id || appointmentId,
+        }),
         timezone: WORK_HOURS.timezone,
         source: "garrett_internal_schedule",
         publicRestrictionsApplied: false,
@@ -150,7 +179,7 @@ export async function onRequestPost(context) {
       }, 200, headers);
     } catch (error) {
       console.error("[staff-appointments] availability failed", error);
-      if (String(error?.code || "").startsWith("owned_") || error?.code === "provider_identity_missing" || error?.code === "contact_reference_required") {
+      if (isIdentityError(error)) {
         return identityFailure(error, headers);
       }
       return json({ error: error?.message || "Could not load Garrett’s internal availability." }, 500, headers);
@@ -209,7 +238,7 @@ export async function onRequestPost(context) {
       context.waitUntil?.(recordOpsError(context.env, "staff-appointments", "Staff appointment schedule failed", {
         actor, action, contactId, sessionType, code: error?.code || "unknown",
       }));
-      if (String(error?.code || "").startsWith("owned_") || error?.code === "provider_identity_missing" || error?.code === "contact_reference_required") {
+      if (isIdentityError(error)) {
         return identityFailure(error, headers);
       }
       const status = ["in_progress", "conflict", "slot_unavailable"].includes(error?.code) ? 409
@@ -233,11 +262,13 @@ export async function onRequestPost(context) {
   }
   try {
     const identity = await providerIdentity(context, contactId);
+    const appointmentIdentity = await providerAppointmentIdentity(context, appointmentId, identity);
     const result = await manageAppointmentCommand({
       actor,
       action,
       contactId: identity.ownedContactId,
-      appointmentId,
+      appointmentId: appointmentIdentity.ownedAppointmentId,
+      providerAppointmentId: appointmentIdentity.appointmentId,
       idempotencyKey,
       startTime,
       timezone: WORK_HOURS.timezone,
@@ -259,7 +290,7 @@ export async function onRequestPost(context) {
     context.waitUntil?.(recordOpsError(context.env, "staff-appointments", "Staff appointment change failed", {
       actor, action, contactId, appointmentId, code: error?.code || "unknown",
     }));
-    if (String(error?.code || "").startsWith("owned_") || error?.code === "provider_identity_missing" || error?.code === "contact_reference_required") {
+    if (isIdentityError(error)) {
       return identityFailure(error, headers);
     }
     const status = error?.code === "appointment_not_found" ? 404

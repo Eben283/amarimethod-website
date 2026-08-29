@@ -8,6 +8,7 @@
 // presenting a blank signature pad to a client who has already signed.
 
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 
 export async function onRequestOptions(context) {
   return new Response(null, {
@@ -26,10 +27,13 @@ export async function onRequestGet(context) {
 
 
     const url = new URL(context.request.url);
-    const contactId = url.searchParams.get("contactId");
-    if (!contactId) {
+    const contactReference = url.searchParams.get("contactId");
+    if (!contactReference) {
       return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers });
     }
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference),
+    );
 
     const kv = context.env.PURCHASE_KV;
     if (!kv) {
@@ -85,6 +89,10 @@ export async function onRequestGet(context) {
     );
   } catch (err) {
     console.error("[staff-attestation] Error:", err.message);
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
   }
 }

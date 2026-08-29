@@ -177,10 +177,11 @@ export default function TodayPage() {
     ? dayAppointments
     : Object.values(view === 'week' ? weekData : monthData).flat();
   const truthCounts = visibleSchedule.reduce((counts, appointment) => {
-    const state = appointment.truthState || (view === 'day' ? 'provider_detail' : 'degraded');
+    const state = appointment.truthState || 'degraded';
     counts[state] = (counts[state] || 0) + 1;
     return counts;
   }, {} as Record<string, number>);
+  const partialDetailCount = visibleSchedule.filter((appointment) => appointment.detailTruth?.overall === 'partial').length;
 
   function reloadSelectedDate() {
     if (view === 'day') loadDay(selectedDate);
@@ -266,12 +267,10 @@ export default function TodayPage() {
       </div>
 
       <div className="mb-4 rounded-lg border border-amari-border bg-white px-3 py-2 text-xs text-amari-text-muted" role="status">
-        {view === 'day' ? (
-          <>Day detail is temporarily provider-backed while contact, payment, and session-ledger reads move together.</>
-        ) : visibleSchedule.length === 0 ? (
+        {visibleSchedule.length === 0 ? (
           <>Owned CRM schedule · no appointments in this range.</>
         ) : (
-          <>Owned CRM schedule · {truthCounts.authoritative || 0} authoritative · {truthCounts.propagating || 0} propagating · {truthCounts.mirrored || 0} mirrored · {truthCounts.degraded || 0} need review.</>
+          <>Owned CRM {view === 'day' ? 'day detail' : 'schedule'} · {truthCounts.authoritative || 0} authoritative · {truthCounts.propagating || 0} propagating · {truthCounts.mirrored || 0} mirrored · {truthCounts.degraded || 0} need review{view === 'day' ? ` · ${partialDetailCount} partial detail` : ''}.</>
         )}
       </div>
 
@@ -294,6 +293,7 @@ export default function TodayPage() {
           onSellLink={(appt) => setSellContactId(appt.contactId)}
           onManage={(appt) => setManageAppointment({
             id: appt.id,
+            providerAppointmentId: appt.providerAppointmentId,
             contactId: appt.contactId,
             contactName: appt.contactName,
             title: appt.title,

@@ -4,6 +4,7 @@
 import { ghlFetch } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 import { isEditableStaffNote } from "../../shared/staff-note-policy.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 
@@ -55,8 +56,11 @@ export async function onRequestPost(context) {
     if (parseError) return parseError;
     const validation = validateNoteUpdate({ contactId: body.contactId, noteId: "new", body: body.body });
     if (validation.error) return validationResponse(validation, headers);
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, validation.contactId),
+    );
 
-    const noteRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${validation.contactId}/notes`, {
+    const noteRes = await ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/notes`, {
       method: "POST",
       body: JSON.stringify({ body: validation.body }),
     });
@@ -70,6 +74,10 @@ export async function onRequestPost(context) {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-note] Unexpected error:", err);
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
   }
 }
@@ -90,10 +98,13 @@ export async function onRequestPut(context) {
 
     const validation = validateNoteUpdate(body);
     if (validation.error) return validationResponse(validation, headers);
+    const contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, validation.contactId),
+    );
 
     // Never rely on the browser to protect audit, automation, or signed notes.
     // GHL owns the record, so read the requested note before authorizing its edit.
-    const existingRes = await ghlFetch(context, buildNoteUpdatePath(validation.contactId, validation.noteId));
+    const existingRes = await ghlFetch(context, buildNoteUpdatePath(contactId, validation.noteId));
     if (!existingRes.ok) {
       const errText = await existingRes.text();
       console.error(`[staff-note] GHL note read before update error: ${existingRes.status} ${errText}`);
@@ -104,7 +115,7 @@ export async function onRequestPut(context) {
       return new Response(JSON.stringify({ error: "Only ordinary Staff notes can be edited" }), { status: 403, headers });
     }
 
-    const noteRes = await ghlFetch(context, buildNoteUpdatePath(validation.contactId, validation.noteId), {
+    const noteRes = await ghlFetch(context, buildNoteUpdatePath(contactId, validation.noteId), {
       method: "PUT",
       body: JSON.stringify({ body: validation.body }),
     });
@@ -118,6 +129,10 @@ export async function onRequestPut(context) {
     return new Response(JSON.stringify({ success: true }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-note] Unexpected update error:", err);
+    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
+      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
+      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers });
+    }
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
   }
 }

@@ -12,6 +12,8 @@ import { NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN } from "../lib/journey-classif
 import { SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS } from "../lib/session-ledger.js";
 import { requireStaffAuth, corsHeaders, parseJsonBody } from "../lib/endpoint-guards.js";
 import { FIELD_IDS as GHL_FIELD_IDS } from "../lib/ghl-fields.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
+import { requireProviderAppointmentIdentity, resolveStaffOwnedAppointmentIdentity } from "../lib/staff-owned-appointment-identity.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -93,14 +95,44 @@ export async function onRequestPost(context) {
     const { body, error: parseError } = await parseJsonBody(context.request, headers);
 
     if (parseError) return parseError;
-    const appointmentId = (body.appointmentId || "").trim();
-    const contactId = (body.contactId || "").trim();
+    const appointmentReference = (body.appointmentId || "").trim();
+    const contactReference = (body.contactId || "").trim();
 
-    if (!appointmentId) {
+    if (!appointmentReference) {
       return new Response(JSON.stringify({ error: "Appointment ID required" }), { status: 400, headers });
     }
-    if (!contactId) {
+    if (!contactReference) {
       return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers });
+    }
+
+    let appointmentId;
+    let contactId;
+    try {
+      const [contactIdentity, appointmentIdentity] = await Promise.all([
+        resolveOwnedContactIdentity(context, contactReference),
+        resolveStaffOwnedAppointmentIdentity(context, appointmentReference),
+      ]);
+      if (appointmentIdentity.ownedContactId !== contactIdentity.ownedContactId) {
+        const mismatch = new Error("Appointment does not belong to this owned person.");
+        mismatch.code = "owned_appointment_contact_mismatch";
+        mismatch.status = 409;
+        throw mismatch;
+      }
+      contactId = requireProviderContactIdentity(contactIdentity);
+      const providerAppointment = requireProviderAppointmentIdentity(appointmentIdentity);
+      if (providerAppointment.contactId !== contactId) {
+        const mismatch = new Error("Appointment provider identity does not match this person.");
+        mismatch.code = "owned_appointment_provider_mismatch";
+        mismatch.status = 409;
+        throw mismatch;
+      }
+      appointmentId = providerAppointment.appointmentId;
+    } catch (identityError) {
+      const status = [400, 404, 409, 503].includes(Number(identityError?.status)) ? Number(identityError.status) : 503;
+      return new Response(JSON.stringify({
+        error: identityError?.message || "Owned appointment identity is unavailable.",
+        code: identityError?.code || "owned_appointment_identity_unavailable",
+      }), { status, headers });
     }
 
     // Fetch contact, appointment details, and field definitions in parallel

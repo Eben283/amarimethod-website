@@ -13,6 +13,21 @@ vi.mock('../lib/session-payment.js', () => ({
   buildPaymentRecord: vi.fn(),
   writePaymentRecord: vi.fn(),
 }));
+vi.mock('../lib/staff-owned-contact-identity.js', () => ({
+  resolveOwnedContactIdentity: vi.fn(async (_context, reference) => ({
+    ownedContactId: `owned-${reference}`, providerContactId: reference,
+  })),
+  requireProviderContactIdentity: vi.fn((identity) => identity.providerContactId),
+}));
+vi.mock('../lib/staff-owned-appointment-identity.js', () => ({
+  resolveStaffOwnedAppointmentIdentity: vi.fn(async (_context, reference) => ({
+    ownedAppointmentId: `owned-${reference}`, ownedContactId: 'owned-c1',
+    providerAppointmentId: reference, providerContactId: 'c1',
+  })),
+  requireProviderAppointmentIdentity: vi.fn((identity) => ({
+    appointmentId: identity.providerAppointmentId, contactId: identity.providerContactId,
+  })),
+}));
 
 import { onRequestPost } from './staff-mark-attended.js';
 import { verifySessionToken } from '../lib/auth.js';

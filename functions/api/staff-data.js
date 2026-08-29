@@ -46,9 +46,10 @@ export async function onRequestGet(context) {
     // lifetime appointments, orders, invoices, order hydration, and payment
     // records) that the detailed day cards require.
     const summaryOnly = url.searchParams.get('summary') === '1';
-    // Rehearsal seam for the complete owned day contract. Default day behavior
-    // stays unchanged until appointment mutations also consume stable owned ids.
-    const ownedDetail = url.searchParams.get('ownedDetail') === '1';
+    // Detailed day reads now default to the owned contract. The explicit zero
+    // is retained only for bounded transition diagnostics; Staff never asks
+    // for it and an owned-read failure has no provider fallback.
+    const ownedDetail = !summaryOnly && url.searchParams.get('ownedDetail') !== '0';
     const now = new Date();
     const pacificFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Los_Angeles',

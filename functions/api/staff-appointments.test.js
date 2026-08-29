@@ -10,6 +10,18 @@ describe("staff appointment management API", () => {
       })),
       requireProviderContactIdentity: vi.fn((identity) => identity.providerContactId),
     }));
+    vi.doMock("../lib/staff-owned-appointment-identity.js", () => ({
+      resolveStaffOwnedAppointmentIdentity: vi.fn(async (_context, reference) => ({
+        ownedAppointmentId: String(reference).startsWith("owned_") ? reference : `owned_${reference}`,
+        ownedContactId: "owned_1",
+        providerAppointmentId: String(reference).replace(/^owned_/, ""),
+        providerContactId: "ghl_owned_1",
+      })),
+      requireProviderAppointmentIdentity: vi.fn((identity) => ({
+        appointmentId: identity.providerAppointmentId,
+        contactId: identity.providerContactId,
+      })),
+    }));
   });
   afterEach(() => vi.useRealTimers());
 
@@ -87,7 +99,7 @@ describe("staff appointment management API", () => {
       requireStaffAuth: vi.fn(async () => ({ error: null, payload: { role: "staff", user: "Garrett" } })),
       corsHeaders: () => ({}),
       parseJsonBody: vi.fn(async () => ({
-        body: { action: "cancel", contactId: "ghl_1", appointmentId: "appt_1", idempotencyKey: "cancel-appt-1" },
+        body: { action: "cancel", contactId: "owned_1", appointmentId: "appt_1", idempotencyKey: "cancel-appt-1" },
         error: null,
       })),
     }));
@@ -107,7 +119,8 @@ describe("staff appointment management API", () => {
 
     expect(response.status).toBe(200);
     expect(manageAppointmentCommand).toHaveBeenCalledWith(expect.objectContaining({
-      actor: "Garrett", action: "cancel", contactId: "owned_1", appointmentId: "appt_1", store,
+      actor: "Garrett", action: "cancel", contactId: "owned_1",
+      appointmentId: "owned_appt_1", providerAppointmentId: "appt_1", store,
     }));
   });
 

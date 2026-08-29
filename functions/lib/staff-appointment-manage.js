@@ -106,6 +106,7 @@ async function loadOriginal(provider, contactId, appointmentId) {
 export async function manageAppointmentCommand(input) {
   assertCommandInput(input);
   const { actor, action, contactId, appointmentId, idempotencyKey, store, provider } = input;
+  const providerAppointmentId = clean(input.providerAppointmentId, 160) || appointmentId;
   if (!store || !provider) throw new TypeError("appointment command dependencies required");
   const now = Number(input.now ?? Date.now());
   const claim = await store.claim({
@@ -125,7 +126,7 @@ export async function manageAppointmentCommand(input) {
 
   const commandId = claim.command.id;
   try {
-    const original = await loadOriginal(provider, contactId, appointmentId);
+    const original = await loadOriginal(provider, contactId, providerAppointmentId);
     if (!original) throw Object.assign(new Error("Appointment not found for this person."), { code: "appointment_not_found" });
     const status = normalizeStatus(original);
 
@@ -180,7 +181,7 @@ export async function manageAppointmentCommand(input) {
 
     if (action === "cancel") {
       await provider.cancelAppointment(original);
-      const readback = await loadOriginal(provider, contactId, appointmentId);
+      const readback = await loadOriginal(provider, contactId, providerAppointmentId);
       if (!readback || normalizeStatus(readback) !== "cancelled") {
         throw Object.assign(new Error("Cancellation was not confirmed by the calendar."), { code: "cancel_not_confirmed", manualReview: true });
       }
@@ -216,7 +217,7 @@ export async function manageAppointmentCommand(input) {
       startDate: dateMatch[1],
       endDate: dateMatch[1],
       events: schedule,
-      excludeAppointmentId: appointmentId,
+      excludeAppointmentId: providerAppointmentId,
       now,
     });
     if (!available.some((slot) => slot.datetime === newStartTime)) {
@@ -264,7 +265,7 @@ export async function manageAppointmentCommand(input) {
       // A transport error is ambiguous: the provider may have accepted the
       // cancellation before the response was lost. Read back before any
       // compensation so Staff can never accidentally cancel both visits.
-      const afterFailure = await loadOriginal(provider, contactId, appointmentId);
+      const afterFailure = await loadOriginal(provider, contactId, providerAppointmentId);
       if (!afterFailure || normalizeStatus(afterFailure) !== "cancelled") {
         try {
           await provider.cancelAppointment(replacement);
@@ -283,7 +284,7 @@ export async function manageAppointmentCommand(input) {
       }
     }
     const finalAppointments = await provider.listContactAppointments(contactId);
-    const oldReadback = finalAppointments.find((appointment) => String(appointment?.id || "") === appointmentId);
+    const oldReadback = finalAppointments.find((appointment) => String(appointment?.id || "") === providerAppointmentId);
     const newReadback = finalAppointments.find((appointment) => String(appointment?.id || "") === String(replacement.id));
     if (!oldReadback || normalizeStatus(oldReadback) !== "cancelled" || !newReadback || !MANAGEABLE_STATUSES.has(normalizeStatus(newReadback))) {
       throw Object.assign(new Error("The reschedule could not be fully verified."), { code: "reschedule_not_confirmed", manualReview: true });

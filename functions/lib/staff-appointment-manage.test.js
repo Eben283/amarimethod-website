@@ -51,14 +51,15 @@ describe("manageAppointmentCommand", () => {
       actor: "Garrett",
       action: "cancel",
       contactId: "contact_1",
-      appointmentId: "appt_1",
+      appointmentId: "owned_appt_1",
+      providerAppointmentId: "appt_1",
       idempotencyKey: "cancel-appt-1",
       store,
       provider,
       now: Date.parse("2026-08-10T09:00:00-07:00"),
     });
 
-    expect(result).toMatchObject({ status: "completed", action: "cancel", appointmentId: "appt_1", actor: "Garrett" });
+    expect(result).toMatchObject({ status: "completed", action: "cancel", appointmentId: "owned_appt_1", actor: "Garrett" });
     expect(completed).toHaveLength(1);
   });
 

@@ -8,6 +8,7 @@
 
 import { ghlFetch } from "../lib/ghl.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
+import { requireProviderContactIdentity, resolveOwnedContactIdentity } from "../lib/staff-owned-contact-identity.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 // The Staff UI is an external client/partner communication surface. Do not let
@@ -58,9 +59,18 @@ export async function onRequestPost(context) {
   try { body = await context.request.json(); }
   catch { return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers }); }
 
-  const contactId = (body.contactId || "").trim();
+  const contactReference = (body.contactId || "").trim();
   const message = (body.message || "").trim();
-  if (!contactId) return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers });
+  if (!contactReference) return new Response(JSON.stringify({ error: "contactId is required" }), { status: 400, headers });
+  let contactId;
+  try {
+    contactId = requireProviderContactIdentity(
+      await resolveOwnedContactIdentity(context, contactReference),
+    );
+  } catch (identityError) {
+    const status = [400, 404, 409, 503].includes(Number(identityError?.status)) ? Number(identityError.status) : 503;
+    return new Response(JSON.stringify({ error: identityError.message, code: identityError.code }), { status, headers });
+  }
   if (!VALID_CONTACT_ID.test(contactId)) return new Response(JSON.stringify({ error: "Invalid contactId" }), { status: 400, headers });
   if (!message) return new Response(JSON.stringify({ error: "message is required" }), { status: 400, headers });
   if (message.length > MAX_LEN) return new Response(JSON.stringify({ error: "Message too long" }), { status: 400, headers });
