@@ -4,7 +4,7 @@ import { EventEmitter } from 'node:events';
 import { PassThrough } from 'node:stream';
 import { readFileSync } from 'node:fs';
 import { SIGNING_RECORD_KEYS, SIGNING_LIMITS, inspectRehearsalSigning, signRehearsalArtifact } from '../../scripts/follow-up-rehearsal-signing.mjs';
-import { HOST_RECORD_KEYS, hostApprovalSigningBytes, validateHostApproval, runExactBwsRecord } from '../../scripts/follow-up-rehearsal-host.mjs';
+import { HOST_RECORD_KEYS, HOST_ACCESS_RECORD_KEYS, hostApprovalSigningBytes, validateHostApproval, runExactBwsRecord } from '../../scripts/follow-up-rehearsal-host.mjs';
 import { VERSION, ACTION_DIGEST, canonical, encode, manifestSigningBytes, requestSigningBytes, authenticate } from '../../follow-up-rehearsal-worker/src/protocol.mjs';
 import { validateCallerConfiguration } from '../../follow-up-rehearsal-worker/src/caller-authorization.mjs';
 import { FOLLOW_UP_REGISTRY_SCHEMA_DIGEST } from '../../scripts/lib/follow-up-evidence-storage-adapters.mjs';
@@ -40,7 +40,7 @@ function hostInvocation() {
   const principal = { callerId: id('caller/operator'), keyId: id('operator'), role: 'operator' };
   const access = { version: 'follow-up-operator-access.v1', origin: 'https://fixture.amarimethod.com', issuer: 'https://fixture.cloudflareaccess.com', audience: H('audience'), manifestDigest: request.body.manifestDigest, scopeDigest: request.body.scopeDigest, issuedAt: at, expiresAt: f.manifest.body.expiresAt, jwks: [{ kid: 'fixture', kty: 'RSA', alg: 'RS256', use: 'sig', n: rsa.n, e: rsa.e }], principals: [{ commonName: 'f'.repeat(32) + '.access', ...principal }] };
   f.host.body.mode = 'invoke'; f.host.body.operation = { origin: access.origin, path: '/v1/rehearsal', envelopeDigest: H(requestText), publicConfig: { ...f.publicConfig, OPERATOR_ACCESS_CONFIG: encode(access) }, principal };
-  f.host.body.custody.records = Object.fromEntries(['github', 'accessId', 'accessSecret'].map((role, i) => [role, { ...f.host.body.custody.records.github, id: uid(i + 1), key: HOST_RECORD_KEYS[role] }]));
+  f.host.body.custody.records = Object.fromEntries(['github', 'accessId', 'accessSecret'].map((role, i) => [role, { ...f.host.body.custody.records.github, id: uid(i + 1), key: HOST_RECORD_KEYS[role] ?? HOST_ACCESS_RECORD_KEYS[principal.role][role] }]));
   f.host.context.requestText = requestText; return f.host;
 }
 
