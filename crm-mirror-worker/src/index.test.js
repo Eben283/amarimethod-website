@@ -44,7 +44,8 @@ describe("CRM mirror request validation", () => {
   });
 
   it("rejects an empty or unsupported source set", () => {
-    expect(() => parseSyncRequest({ sources: ["gmail"] })).toThrow("sources must contain ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
+    expect(() => parseSyncRequest({ sources: ["gmail"] })).toThrow("sources must contain owned-appointment-lifecycles");
+    expect(parseSyncRequest({ sources: ["owned-appointment-lifecycles"] })).toEqual({ sources: ["owned-appointment-lifecycles"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-conversations"] })).toEqual({ sources: ["ghl-conversations"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-conversations-recent"] })).toEqual({ sources: ["ghl-conversations-recent"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-message-export"], pages: 99 })).toEqual({ sources: ["ghl-message-export"], limit: 25, pages: 8 });
@@ -53,7 +54,7 @@ describe("CRM mirror request validation", () => {
   });
 
   it("does not make reconciliation a sync source", () => {
-    expect(() => parseSyncRequest({ sources: ["reconciliation"] })).toThrow("sources must contain ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
+    expect(() => parseSyncRequest({ sources: ["reconciliation"] })).toThrow("sources must contain owned-appointment-lifecycles");
   });
 
   it("bounds the protected reconciliation review queue", () => {
@@ -77,7 +78,7 @@ describe("CRM mirror request validation", () => {
   });
 
   it("does not make approval actions a sync source", () => {
-    expect(() => parseSyncRequest({ sources: ["reconciliation-review"] })).toThrow("sources must contain ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
+    expect(() => parseSyncRequest({ sources: ["reconciliation-review"] })).toThrow("sources must contain owned-appointment-lifecycles");
   });
 
 });

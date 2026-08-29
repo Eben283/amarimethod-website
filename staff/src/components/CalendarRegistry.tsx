@@ -163,6 +163,9 @@ export default function CalendarRegistry({ onViewSchedule }: { onViewSchedule: (
                 ? `${projection.reconciliation?.summary.appointments || 0} appointments reconstructed from ${projection.coverage?.observationsRead || 0} observations; ${projection.reconciliation?.summary.conflicts || 0} blocking conflicts, ${projection.reconciliation?.summary.historicalBaselines || 0} accepted historical baselines, and ${projection.reconciliation?.summary.historyGaps || 0} total history gaps.`
                 : 'Shadow storage is not available yet.'}
               {' '}The live schedule remains provider-backed. {projection.bufferPolicy.runtimeAppOwnedMinutes}-minute turnover is confirmed; the older {projection.bufferPolicy.historicalDocumentedMinutes}-minute references are historical only. {projection.state === 'attention' ? 'Owned booking writes remain blocked by current-state evidence gaps.' : projection.state === 'baseline_ready' ? 'Exact cutover snapshots and pre-projection mirror receipts are accepted without pretending they are original booking events; those historical gaps do not block new owned history.' : 'Current mirror and lifecycle evidence match.'}
+              {' '}{projection.lifecycleDispatch?.configured
+                ? `The owned Partner Initial lifecycle handoff is ${projection.lifecycleDispatch.state}; ${projection.lifecycleDispatch.counts?.dispatched || 0} accepted by the reminder engine, ${projection.lifecycleDispatch.counts?.retryable || 0} retrying, and ${projection.lifecycleDispatch.counts?.manual_review || 0} held for review.`
+                : 'The owned Partner Initial lifecycle handoff is not installed yet.'} This handoff is shadow-only and cannot deliver reminders.
             </p>
           ) : <p>{projectionError || 'Appointment shadow evidence is unavailable.'} The live schedule remains provider-backed.</p>}
         </div>

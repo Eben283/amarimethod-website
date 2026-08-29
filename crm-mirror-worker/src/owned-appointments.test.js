@@ -22,7 +22,7 @@ const migrationNames = [
   "0013_owned_followups.sql", "0014_appointment_projection.sql",
   "0015_owned_communication_commands.sql", "0016_gmail_provider_evidence.sql",
   "0017_gmail_sync_gap_evidence.sql", "0018_gmail_reply_sync_control.sql",
-  "0019_owned_appointment_authority.sql",
+  "0019_owned_appointment_authority.sql", "0020_owned_appointment_lifecycle_dispatch.sql",
 ];
 
 function d1Database() {
@@ -66,7 +66,11 @@ function d1Database() {
 function seedContact(db) {
   db.sqlite.exec(`
     INSERT INTO contacts (id, display_name, created_at, updated_at)
-    VALUES ('contact-1', 'Partner Person', '2026-08-28T00:00:00Z', '2026-08-28T00:00:00Z')
+    VALUES ('contact-1', 'Partner Person', '2026-08-28T00:00:00Z', '2026-08-28T00:00:00Z');
+    INSERT INTO external_records
+      (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+    VALUES ('ext-contact-1', 'ghl', 'contact', 'ghl-contact-1', 'contact-1', 'contact', 'contact-1',
+            '2026-08-28T00:00:00Z')
   `);
 }
 
@@ -177,17 +181,70 @@ describe("owned appointment authority", () => {
 
     const completed = await completeOwnedAppointmentExecution(db, {
       ...identity,
-      result: { providerReadback: "confirmed" },
+      result: {
+        status: "completed", action: "schedule", actor: "Garrett", contactId: "contact-1",
+        appointmentId: captured.appointmentId, providerAppointmentId: "ghl-appointment-1",
+        newStartTime: input.startTime, appointmentStatus: "confirmed",
+        reminderVerification: "pending_event_evidence", authority: "owned",
+      },
     }, { nowMs: nowMs + 3_000, providerSyncRequired: true });
-    expect(completed).toMatchObject({ state: "completed", result: { providerReadback: "confirmed" } });
+    expect(completed).toMatchObject({
+      state: "completed",
+      result: { action: "schedule", appointmentId: captured.appointmentId, providerAppointmentId: "ghl-appointment-1" },
+    });
     expect(db.sqlite.prepare("SELECT provider_appointment_id, provider_sync_state FROM appointments WHERE id = ?")
       .get(captured.appointmentId))
       .toEqual({ provider_appointment_id: "ghl-appointment-1", provider_sync_state: "synced" });
     expect(db.sqlite.prepare("SELECT record_id FROM external_records WHERE provider = 'ghl' AND external_id = ?")
       .get("ghl-appointment-1"))
       .toEqual({ record_id: captured.appointmentId });
+    expect(db.sqlite.prepare(`
+      SELECT command_id, appointment_id, contact_id, service_id, provider_contact_id,
+             provider_appointment_id, provider_calendar_id, event_type, start_at, state, attempts
+        FROM appointment_lifecycle_dispatches WHERE command_id = ?
+    `).get(captured.commandId)).toEqual({
+      command_id: captured.commandId,
+      appointment_id: captured.appointmentId,
+      contact_id: "contact-1",
+      service_id: "partner-initial",
+      provider_contact_id: "ghl-contact-1",
+      provider_appointment_id: "ghl-appointment-1",
+      provider_calendar_id: "lfsnaiGiLNL2z12pLKDP",
+      event_type: "confirmed",
+      start_at: "2026-09-01T17:00:00.000Z",
+      state: "pending",
+      attempts: 0,
+    });
     await expect(claimOwnedAppointmentExecution(db, identity, { nowMs: nowMs + 4_000 }))
       .resolves.toMatchObject({ state: "completed" });
+    db.sqlite.close();
+  });
+
+  it("rejects an inexact schedule readback before committing command or lifecycle truth", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedScheduleCommand(db, input, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await linkOwnedAppointmentProviderRecord(db, {
+      ...identity, provider: "ghl", providerRecordId: "ghl-appointment-wrong-readback",
+      providerCalendarId: "lfsnaiGiLNL2z12pLKDP", providerStatusRaw: "confirmed",
+    }, { nowMs: nowMs + 1_000 });
+
+    await expect(completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: {
+        action: "schedule", contactId: "contact-1", appointmentId: captured.appointmentId,
+        providerAppointmentId: "different-provider-appointment", newStartTime: input.startTime,
+        appointmentStatus: "confirmed",
+      },
+    }, { nowMs: nowMs + 2_000, providerSyncRequired: true }))
+      .rejects.toMatchObject({ code: "invalid_provider_readback", status: 409 });
+    expect(db.sqlite.prepare("SELECT state FROM appointment_authority_commands WHERE id = ?").get(captured.commandId))
+      .toEqual({ state: "executing" });
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM appointment_lifecycle_dispatches").get())
+      .toEqual({ count: 0 });
     db.sqlite.close();
   });
 

@@ -21,6 +21,7 @@ import {
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
 import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlEmail, fetchGhlMessage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
+import { dispatchOwnedAppointmentLifecycles } from "./appointment-lifecycle-dispatch.js";
 
 function result(status = "succeeded") {
   return { status, recordsRead: 0, recordsWritten: 0, recordsSkipped: 0, cursorAfter: null, failureDetail: null };
@@ -36,6 +37,7 @@ export const RECENT_MESSAGE_LIMIT = 20;
 // conversation/client enrichment. A long GHL conversation page must never
 // prevent Stripe from being observed for days while the cron fires normally.
 export const SCHEDULED_SYNC_ORDER = Object.freeze([
+  "owned-appointment-lifecycles",
   "ghl",
   "stripe",
   "stripe-invoices",
@@ -391,6 +393,9 @@ export async function syncStripeInvoices(env, limit, now) {
 export async function syncRequestedProviders(env, sources, limit, now, pages = 8) {
   const selected = new Set(sources);
   const results = {};
+  if (selected.has("owned-appointment-lifecycles")) {
+    results.ownedAppointmentLifecycles = await dispatchOwnedAppointmentLifecycles(env, Date.parse(now), limit);
+  }
   if (selected.has("ghl-conversations-recent")) results.ghlConversationsRecent = await syncRecentGhlConversations(env, limit, now);
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
   if (selected.has("ghl-conversations")) results.ghlConversations = await syncGhlConversations(env, limit, now);
@@ -442,6 +447,10 @@ export async function runScheduledSync(env, now) {
   // the complete communication mirror stays current without re-reading page 1.
   // Historic client records are separately capped below provider rate limits.
   const plan = {
+    "owned-appointment-lifecycles": [
+      (runtime, limit) => dispatchOwnedAppointmentLifecycles(runtime, Date.parse(now), limit),
+      10,
+    ],
     "ghl": [syncGhl, SCHEDULED_SYNC_LIMIT],
     "stripe": [syncStripe, SCHEDULED_SYNC_LIMIT],
     "stripe-invoices": [syncStripeInvoices, SCHEDULED_SYNC_LIMIT],
