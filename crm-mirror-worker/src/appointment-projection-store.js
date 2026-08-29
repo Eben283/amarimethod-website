@@ -103,16 +103,26 @@ export async function appointmentProjectionReadiness(db, generatedAt) {
   const bufferPolicy = appointmentBufferReadiness();
   try {
     const [countRow, eventsResult, currentResult] = await Promise.all([
-      db.prepare("SELECT COUNT(*) AS count FROM appointment_projection_events").bind().first(),
+      db.prepare("SELECT COUNT(*) AS count, MIN(observed_at) AS cutover_at FROM appointment_projection_events").bind().first(),
       db.prepare(
         `SELECT * FROM appointment_projection_events
          ORDER BY COALESCE(provider_occurred_at, observed_at) DESC, observed_at DESC, id DESC
          LIMIT ?`,
       ).bind(READ_LIMIT).all(),
       db.prepare(
-        `SELECT provider_appointment_id, provider_calendar_id, provider_status_raw,
-                status, starts_at, ends_at, timezone
-         FROM appointments`,
+        `SELECT appointment.provider_appointment_id, appointment.provider_calendar_id,
+                appointment.provider_status_raw, appointment.status,
+                appointment.starts_at, appointment.ends_at, appointment.timezone,
+                appointment.authority, appointment.provider_sync_state,
+                appointment.created_at, appointment.updated_at,
+                (SELECT source.last_seen_at
+                   FROM external_records source
+                  WHERE source.provider = 'ghl'
+                    AND source.object_type = 'appointment'
+                    AND source.external_id = appointment.provider_appointment_id
+                  ORDER BY datetime(source.last_seen_at) DESC, source.id DESC
+                  LIMIT 1) AS appointment_last_seen_at
+         FROM appointments appointment`,
       ).bind().all(),
     ]);
     const events = eventsResult.results || [];
@@ -121,6 +131,7 @@ export async function appointmentProjectionReadiness(db, generatedAt) {
       // Reconciliation applies observations in chronological order itself.
       events,
       currentAppointments: currentResult.results || [],
+      projectionCutoverAt: countRow?.cutover_at || null,
     });
     const truncated = totalObservations > events.length;
     if (truncated) {

@@ -179,4 +179,63 @@ describe("appointment buffer readiness evidence", () => {
       historicalBaselines: 1,
     });
   });
+
+  it("accepts an exact pre-projection provider-mirror receipt as an incomplete cutover baseline", () => {
+    const result = reconcileAppointmentProjection({
+      projectionCutoverAt: "2026-08-09T03:45:57.994Z",
+      currentAppointments: [{
+        provider_appointment_id: "legacy-appointment", provider_calendar_id: "calendar-1",
+        provider_status_raw: "confirmed", status: "confirmed",
+        starts_at: "2026-08-10T13:00:00.000Z", ends_at: "2026-08-10T13:50:00.000Z",
+        timezone: null, authority: "provider_mirror", provider_sync_state: "synced",
+        updated_at: "2026-08-07T23:45:11.899Z",
+        appointment_last_seen_at: "2026-08-07T23:45:11.899Z",
+      }],
+    });
+
+    expect(result.records).toContainEqual(expect.objectContaining({
+      providerAppointmentId: "legacy-appointment",
+      state: "baseline",
+      historyComplete: false,
+      observationCount: 0,
+    }));
+    expect(result.issues).toContainEqual(expect.objectContaining({
+      code: "missing_shadow_observation",
+      providerAppointmentId: "legacy-appointment",
+      blocking: false,
+      baselineKind: "preprojection_provider_mirror",
+    }));
+    expect(result.summary).toMatchObject({
+      conflicts: 0,
+      totalIssues: 1,
+      historyGaps: 1,
+      blockingHistoryGaps: 0,
+      historicalBaselines: 1,
+    });
+  });
+
+  it.each([
+    ["receipt timestamp differs", { appointment_last_seen_at: "2026-08-07T23:45:12.000Z" }],
+    ["mirror update is post-cutover", { updated_at: "2026-08-10T00:00:00.000Z", appointment_last_seen_at: "2026-08-10T00:00:00.000Z" }],
+    ["appointment is owned", { authority: "owned" }],
+    ["provider mirror is not synced", { provider_sync_state: "manual_review" }],
+  ])("keeps an unobserved mirror blocking when %s", (_label, override) => {
+    const result = reconcileAppointmentProjection({
+      projectionCutoverAt: "2026-08-09T03:45:57.994Z",
+      currentAppointments: [{
+        provider_appointment_id: "legacy-appointment", status: "confirmed",
+        authority: "provider_mirror", provider_sync_state: "synced",
+        updated_at: "2026-08-07T23:45:11.899Z",
+        appointment_last_seen_at: "2026-08-07T23:45:11.899Z",
+        ...override,
+      }],
+    });
+
+    expect(result.records[0]).toMatchObject({ state: "unobserved", historyComplete: false });
+    expect(result.summary).toMatchObject({
+      conflicts: 1,
+      blockingHistoryGaps: 1,
+      historicalBaselines: 0,
+    });
+  });
 });
