@@ -5,6 +5,7 @@ import { dashboardSessionActor, dashboardSessionCookie, dashboardSessionToken, h
 import { CommunicationCommandError, captureCommunicationCommand, communicationReadiness } from "./owned-sender.js";
 import { GmailReplyReadinessError, gmailReplyReadiness } from "./gmail-reply-readiness.js";
 import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
+import { captureOwnedScheduleCommand, OwnedAppointmentError } from "./owned-appointments.js";
 import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
 import {
   activeClientOperations,
@@ -517,6 +518,42 @@ export default {
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           return json(message === "contact is not mirrored" || message === "follow-up not found" ? 404 : 400, { error: message });
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/appointments/commands") {
+        const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
+        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(400, { error: "recognized_staff_actor_required" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 8_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        const allowed = new Set(["action", "contactId", "serviceId", "idempotencyKey", "startTime", "timezone"]);
+        const unsupported = payload && typeof payload === "object" && !Array.isArray(payload)
+          ? Object.keys(payload).filter((key) => !allowed.has(key))
+          : [];
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        if (payload?.action !== "schedule") return json(400, { error: "unsupported_appointment_action" });
+        try {
+          const appointment = await captureOwnedScheduleCommand(env.CRM_DB, {
+            contactId: payload.contactId,
+            serviceId: payload.serviceId,
+            actor,
+            idempotencyKey: payload.idempotencyKey,
+            startTime: payload.startTime,
+            timezone: payload.timezone,
+          }, {
+            // Compatibility remains required until the separately gated GHL-off
+            // rehearsal. The browser cannot weaken this deployment decision.
+            providerSyncRequired: env.APPOINTMENT_PROVIDER_MODE !== "owned_only",
+          });
+          return json(appointment.deduped ? 200 : 201, { success: true, appointment });
+        } catch (error) {
+          if (error instanceof OwnedAppointmentError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
         }
       }
       if (request.method === "GET" && url.pathname === "/appointments/readiness") {

@@ -83,6 +83,30 @@ describe("CRM mirror request validation", () => {
 });
 
 describe("CRM mirror dashboard access handoff", () => {
+  it("keeps native appointment capture behind Worker auth and recognized Staff identity", async () => {
+    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {} };
+    const request = (headers = {}) => new Request("https://crm.test/appointments/commands", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify({
+        action: "schedule",
+        contactId: "contact-1",
+        serviceId: "partner-initial",
+        idempotencyKey: "partner-session-0001",
+        startTime: "2026-09-01T10:00:00-07:00",
+        timezone: "America/Los_Angeles",
+      }),
+    });
+
+    expect((await worker.fetch(request(), env)).status).toBe(401);
+    const invalidActor = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Unknown Person",
+    }), env);
+    expect(invalidActor.status).toBe(400);
+    await expect(invalidActor.json()).resolves.toEqual({ error: "recognized_staff_actor_required" });
+  });
+
   it("keeps person and family automation evidence behind Worker authentication", async () => {
     const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {}, AUTOMATION_DB: {} };
 
