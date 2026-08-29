@@ -100,11 +100,41 @@ describe("appointment projection store", () => {
     await expect(appointmentProjectionReadiness(db, "2026-08-08T17:05:00.000Z")).resolves.toMatchObject({
       configured: true,
       shadowOnly: true,
-      state: "attention",
+      state: "baseline_ready",
       liveScheduleFallback: true,
       coverage: { observationsRead: 1, totalObservations: 1, truncated: false },
-      reconciliation: { summary: { appointments: 1, observations: 1, conflicts: 1, historyGaps: 1 } },
+      reconciliation: { summary: {
+        appointments: 1, observations: 1, conflicts: 0, totalIssues: 1,
+        historyGaps: 1, blockingHistoryGaps: 0, historicalBaselines: 1,
+      } },
       bufferPolicy: { state: "confirmed" },
+    });
+  });
+
+  it("keeps an unobserved current appointment blocking while separating accepted baselines", async () => {
+    const event = {
+      id: "event-1", provider: "ghl", source_kind: "snapshot", provider_event_id: "snapshot-1",
+      provider_event_type: "sync_initial", provider_appointment_id: "appointment-1", provider_contact_id: "contact-1",
+      provider_calendar_id: "calendar-1", provider_status_raw: "confirmed", normalized_status: "confirmed",
+      starts_at: appointment.startsAt, ends_at: appointment.endsAt, timezone: appointment.timezone,
+      transition_type: "create", provider_occurred_at: null, observed_at: "2026-08-08T17:00:00.000Z", evidence_hash: "hash-1",
+    };
+    const db = {
+      prepare: (sql) => ({ bind: () => ({
+        first: async () => ({ count: 1 }),
+        all: async () => ({ results: sql.includes("appointment_projection_events") ? [event] : [
+          { provider_appointment_id: "appointment-1", provider_calendar_id: "calendar-1", provider_status_raw: "confirmed", status: "confirmed", starts_at: appointment.startsAt, ends_at: appointment.endsAt, timezone: appointment.timezone },
+          { provider_appointment_id: "appointment-2", provider_calendar_id: "calendar-1", provider_status_raw: "confirmed", status: "confirmed", starts_at: appointment.startsAt, ends_at: appointment.endsAt, timezone: appointment.timezone },
+        ] }),
+      }) }),
+    };
+
+    await expect(appointmentProjectionReadiness(db, "2026-08-08T17:05:00.000Z")).resolves.toMatchObject({
+      state: "attention",
+      reconciliation: { summary: {
+        conflicts: 1, totalIssues: 2, historyGaps: 2,
+        blockingHistoryGaps: 1, historicalBaselines: 1,
+      } },
     });
   });
 });

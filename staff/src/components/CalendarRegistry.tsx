@@ -154,15 +154,15 @@ export default function CalendarRegistry({ onViewSchedule }: { onViewSchedule: (
       </div>
 
       <div className={`calendar-registry-projection is-${projection?.state || (projectionError ? 'unavailable' : 'loading')}`}>
-        {projection?.state === 'ready' ? <ShieldCheck aria-hidden="true" /> : projectionLoading ? <Loader2 aria-hidden="true" /> : <AlertTriangle aria-hidden="true" />}
+        {projection?.state === 'ready' || projection?.state === 'baseline_ready' ? <ShieldCheck aria-hidden="true" /> : projectionLoading ? <Loader2 aria-hidden="true" /> : <AlertTriangle aria-hidden="true" />}
         <div>
           <strong>Owned appointment history · shadow only</strong>
           {projectionLoading ? <p>Checking append-only provider evidence…</p> : projection ? (
             <p>
               {projection.configured
-                ? `${projection.reconciliation?.summary.appointments || 0} appointments reconstructed from ${projection.coverage?.observationsRead || 0} observations; ${projection.reconciliation?.summary.conflicts || 0} conflicts and ${projection.reconciliation?.summary.historyGaps || 0} history gaps.`
+                ? `${projection.reconciliation?.summary.appointments || 0} appointments reconstructed from ${projection.coverage?.observationsRead || 0} observations; ${projection.reconciliation?.summary.conflicts || 0} blocking conflicts, ${projection.reconciliation?.summary.historicalBaselines || 0} accepted historical baselines, and ${projection.reconciliation?.summary.historyGaps || 0} total history gaps.`
                 : 'Shadow storage is not available yet.'}
-              {' '}The live schedule remains provider-backed. {projection.bufferPolicy.runtimeAppOwnedMinutes}-minute turnover is confirmed; the older {projection.bufferPolicy.historicalDocumentedMinutes}-minute references are historical only. Owned booking writes remain blocked while the appointment history is reconciled.
+              {' '}The live schedule remains provider-backed. {projection.bufferPolicy.runtimeAppOwnedMinutes}-minute turnover is confirmed; the older {projection.bufferPolicy.historicalDocumentedMinutes}-minute references are historical only. {projection.state === 'attention' ? 'Owned booking writes remain blocked by current-state evidence gaps.' : projection.state === 'baseline_ready' ? 'Exact cutover snapshots are accepted without pretending they are original booking events; those historical gaps do not block new owned history.' : 'Current mirror and lifecycle evidence match.'}
             </p>
           ) : <p>{projectionError || 'Appointment shadow evidence is unavailable.'} The live schedule remains provider-backed.</p>}
         </div>

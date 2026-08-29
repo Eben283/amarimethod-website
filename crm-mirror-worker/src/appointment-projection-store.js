@@ -128,14 +128,22 @@ export async function appointmentProjectionReadiness(db, generatedAt) {
         code: "projection_window_truncated",
         observationsRead: events.length,
         totalObservations,
+        blocking: true,
       });
       reconciliation.summary.conflicts += 1;
+      reconciliation.summary.totalIssues += 1;
       reconciliation.summary.historyGaps += 1;
+      reconciliation.summary.blockingHistoryGaps += 1;
     }
+    const state = reconciliation.summary.conflicts
+      ? "attention"
+      : reconciliation.summary.historicalBaselines
+        ? "baseline_ready"
+        : "ready";
     return {
       configured: true,
       shadowOnly: true,
-      state: reconciliation.summary.conflicts ? "attention" : "ready",
+      state,
       generatedAt,
       liveScheduleFallback: true,
       coverage: { observationsRead: events.length, totalObservations, truncated },

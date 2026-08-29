@@ -31,6 +31,15 @@ The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its i
 
 `/status` reports separate GHL and Stripe health states, treating a paginated GHL pass as healthy while it advances through the cursor; a source is stale after 45 minutes.
 
+The five-minute sweep gives current GHL contacts/appointments and both Stripe
+sources priority before expensive conversation and historic-client enrichment,
+so a slow GHL history page cannot indefinitely starve payment freshness.
+
+Appointment readiness keeps exact `sync_initial` snapshots as visible
+historical baselines with incomplete history; it does not rename them create
+events. Those accepted baselines do not count as current conflicts. Unobserved,
+mismatched, orphaned, colliding, or truncated evidence remains blocking.
+
 Dashboard: open from Staff → Back office → CRM Mirror (Eben-only). That path calls `POST /api/staff-crm-mirror-access`, which mints a one-time `/dashboard-access/:code` handoff server-side. Direct worker URL visits without a session show a locked shell and never accept a pasted bearer secret in the browser. Full-pass completeness ignores GHL contacts confirmed deleted at the source so ghost `external_records` do not keep the mirror in review.
 
 Worker secrets must always be configured outside source control: `WORKER_AUTH_SECRET`, `STRIPE_SECRET_KEY`, `GHL_CLIENT_ID`, `GHL_CLIENT_SECRET`, `AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID`, and `AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET`. Each signed Staff actor's mail authorization is isolated under `amari-mail:eben:*` or `amari-mail:garrett:*` in `PORTAL_KV`; it must never reuse a shared mail grant, the `google:eben:*` Calendar grant, or the general `GOOGLE_OAUTH_CLIENT_ID` / `GOOGLE_OAUTH_CLIENT_SECRET` credentials. The Gmail adapter requires that actor's verified grant-status marker before reading any token. The Staff browser never receives these credentials. Owned delivery remains disabled until the readiness blockers are cleared and independently verified.

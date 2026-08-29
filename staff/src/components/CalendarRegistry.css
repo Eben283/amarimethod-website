@@ -127,6 +127,8 @@
 .calendar-registry-projection.is-loading > svg { animation: calendar-spin 900ms linear infinite; }
 .calendar-registry-projection.is-ready { border-color: #c9ddd7; border-left-color: #4d7776; background: #f0f6f4; }
 .calendar-registry-projection.is-ready > svg { color: #44706f; }
+.calendar-registry-projection.is-baseline_ready { border-color: #d8dfc5; border-left-color: #6d7d4f; background: #f6f8ef; }
+.calendar-registry-projection.is-baseline_ready > svg { color: #657548; }
 .calendar-registry-projection.is-unavailable { border-color: #e4d7d1; border-left-color: #a86f5e; background: #fcf6f3; }
 .calendar-registry-projection.is-unavailable > svg { color: #995c4a; }
 .calendar-registry-projection strong { font-size: 12px; }
