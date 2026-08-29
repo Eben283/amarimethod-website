@@ -25,7 +25,11 @@ const equal = (a, b) => canonical(a) === canonical(b);
 const exact = (v, keys) => need(v && typeof v === 'object' && !Array.isArray(v) && equal(Object.keys(v).sort(), [...keys].sort()));
 const detached = v => { const text = JSON.stringify(v); need(typeof text === 'string' && Buffer.byteLength(text) <= 131072); return JSON.parse(text); };
 export const HOST_LIMITS = Object.freeze({ githubRequests: 16, githubWrites: 2, githubBytes: 1048576, responseBytes: 65536, requestMs: 15000, operationMs: 300000, bwsGets: 5, bwsBytes: 65536, operatorBytes: 65536, operatorMs: 21000 });
-export const HOST_RECORD_KEYS = Object.freeze({ github: 'AMARI_FOLLOWUP_REHEARSAL_LEDGER_GITHUB_TOKEN', cloudflare: 'AMARI_FOLLOWUP_REHEARSAL_CLOUDFLARE_TOKEN', issuer: 'AMARI_FOLLOWUP_REHEARSAL_ISSUER_SECRETS', control: 'AMARI_FOLLOWUP_REHEARSAL_CONTROL_SECRETS', caller: 'AMARI_FOLLOWUP_REHEARSAL_CALLER_SECRETS', accessId: 'AMARI_FOLLOWUP_REHEARSAL_ACCESS_CLIENT_ID', accessSecret: 'AMARI_FOLLOWUP_REHEARSAL_ACCESS_CLIENT_SECRET' });
+export const HOST_RECORD_KEYS = Object.freeze({ github: 'AMARI_FOLLOWUP_REHEARSAL_LEDGER_GITHUB_TOKEN', cloudflare: 'AMARI_FOLLOWUP_REHEARSAL_CLOUDFLARE_TOKEN', issuer: 'AMARI_FOLLOWUP_REHEARSAL_ISSUER_SECRETS', control: 'AMARI_FOLLOWUP_REHEARSAL_CONTROL_SECRETS', caller: 'AMARI_FOLLOWUP_REHEARSAL_CALLER_SECRETS' });
+export const HOST_ACCESS_RECORD_KEYS = Object.freeze(Object.fromEntries(['owner', 'operator', 'reader'].map(role => [role, Object.freeze({
+  accessId: `AMARI_FOLLOWUP_REHEARSAL_ACCESS_${role.toUpperCase()}_CLIENT_ID`,
+  accessSecret: `AMARI_FOLLOWUP_REHEARSAL_ACCESS_${role.toUpperCase()}_CLIENT_SECRET`
+})])));
 const BWS_CONFIG = '# Public configuration only. Never cache session credentials or inherit endpoints.\n[profiles.rehearsal]\nserver_api = "https://api.bitwarden.com"\nserver_identity = "https://identity.bitwarden.com"\nstate_opt_out = "true"\n';
 const gitDefault = args => execFileSync('git', args, { cwd: ROOT, encoding: 'buffer', timeout: 15000, maxBuffer: 2097152, stdio: ['ignore', 'pipe', 'pipe'], env: { PATH: process.env.PATH, GIT_TERMINAL_PROMPT: '0', GIT_NO_REPLACE_OBJECTS: '1', GIT_CONFIG_NOSYSTEM: '1' } });
 function hostTools() {
@@ -72,18 +76,21 @@ export function validateHostApprovalPolicy(policy, trustedRoot, now = Date.now()
   need(p.ownerKeyId === trustedRoot.keyId && /^[A-Za-z0-9_-]{1,64}$/.test(p.ownerKeyId));
   const key = createPublicKey(trustedRoot.publicKey); need(key.asymmetricKeyType === 'ed25519' && key.type === 'public' && !String(trustedRoot.publicKey).includes('PRIVATE'));
   exact(p.ledger, ['repository', 'refPrefix', 'rulesetId']); need(p.ledger.repository === REPO && p.ledger.refPrefix === PREFIX && Number.isSafeInteger(p.ledger.rulesetId) && p.ledger.rulesetId > 0);
+  let accessKeys;
+  if (p.mode === 'invoke') {
+    exact(p.operation, ['origin', 'path', 'envelopeDigest', 'publicConfig', 'principal']); need(HEX.test(p.operation.envelopeDigest));
+    const config = validateOperatorAccessConfig(p.operation.publicConfig); need(config.origin === p.operation.origin && config.path === p.operation.path);
+    exact(p.operation.principal, ['callerId', 'keyId', 'role']); accessKeys = HOST_ACCESS_RECORD_KEYS[p.operation.principal.role]; need(accessKeys);
+    need(config.policy.principals.some(v => ['callerId', 'keyId', 'role'].every(k => v[k] === p.operation.principal[k])));
+  }
   exact(p.custody, ['executable', 'executableSha256', 'records']); need(typeof p.custody.executable === 'string' && p.custody.executable.startsWith('/') && HEX.test(p.custody.executableSha256));
   const roles = p.mode === 'deploy' ? ['github', 'cloudflare', 'issuer', 'control', 'caller'] : p.mode !== 'invoke' ? ['github', 'cloudflare'] : ['github', 'accessId', 'accessSecret'];
   exact(p.custody.records, roles); const ids = new Set();
   for (const role of roles) { const r = p.custody.records[role]; exact(r, ['id', 'key', 'projectId', 'organizationId', 'revisionDate', 'sha256']);
-    need(UUID.test(r.id) && UUID.test(r.projectId) && UUID.test(r.organizationId) && r.key === HOST_RECORD_KEYS[role] && HEX.test(r.sha256) && typeof r.revisionDate === 'string' && Number.isFinite(Date.parse(r.revisionDate)) && !ids.has(r.id)); ids.add(r.id);
+    const expectedKey = HOST_RECORD_KEYS[role] ?? accessKeys?.[role];
+    need(UUID.test(r.id) && UUID.test(r.projectId) && UUID.test(r.organizationId) && r.key === expectedKey && HEX.test(r.sha256) && typeof r.revisionDate === 'string' && Number.isFinite(Date.parse(r.revisionDate)) && !ids.has(r.id)); ids.add(r.id);
   }
   if (p.mode !== 'invoke') { exact(p.operation, ['approvalDigest']); need(HEX.test(p.operation.approvalDigest)); }
-  else { exact(p.operation, ['origin', 'path', 'envelopeDigest', 'publicConfig', 'principal']); need(HEX.test(p.operation.envelopeDigest));
-    const config = validateOperatorAccessConfig(p.operation.publicConfig); need(config.origin === p.operation.origin && config.path === p.operation.path);
-    exact(p.operation.principal, ['callerId', 'keyId', 'role']);
-    need(config.policy.principals.some(v => ['callerId', 'keyId', 'role'].every(k => v[k] === p.operation.principal[k])));
-  }
   return detached(p);
 }
 export function validateHostApproval(envelope, trustedRoot, now = Date.now()) {

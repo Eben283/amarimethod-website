@@ -6,7 +6,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
-  HOST_LIMITS, HOST_RECORD_KEYS, hostApprovalDigest, hostApprovalSigningBytes,
+  HOST_LIMITS, HOST_RECORD_KEYS, HOST_ACCESS_RECORD_KEYS, hostApprovalDigest, hostApprovalSigningBytes,
   validateHostApproval, validateHostApprovalPolicy, runExactBwsRecord, createExactCustody,
   consumeGitHubRelease, inspectReleaseStatus, inspectHostCandidate, runRehearsalHost,
 } from '../../scripts/follow-up-rehearsal-host.mjs';
@@ -148,7 +148,7 @@ describe('host integration with explicitly synthetic Git/provider identities', (
   function invocation(options = {}) {
     const f = publicOperatorFixture(), p = policy(); p.mode = 'invoke'; p.operation = { origin: f.origin, path: '/v1/rehearsal', envelopeDigest: H(f.requestText), publicConfig: f.publicConfig, principal: f.principal };
     const values = { github: 'github-token-at-least-twenty-characters', accessId: f.accessId, accessSecret: 'cfast_synthetic-never-a-real-secret' };
-    p.custody.records = Object.fromEntries(['github', 'accessId', 'accessSecret'].map((role, i) => [role, { ...policy().custody.records.github, id: UUIDS[i], key: HOST_RECORD_KEYS[role], sha256: H(values[role]) }]));
+    p.custody.records = Object.fromEntries(['github', 'accessId', 'accessSecret'].map((role, i) => [role, { ...policy().custody.records.github, id: UUIDS[i], key: HOST_RECORD_KEYS[role] ?? HOST_ACCESS_RECORD_KEYS[f.principal.role][role], sha256: H(values[role]) }]));
     const ledger = mockLedger(options), gets = [], posts = [];
     const runBws = async ({ record }) => { const role = Object.keys(p.custody.records).find(k => p.custody.records[k].id === record.id); gets.push(role); return { ...record, value: values[role] }; };
     const fetcher = async (url, opts) => { if (url.startsWith('https://api.github.com/')) { const r = await ledger.http(url, opts); return new Response(r.bytes, { status: r.status, headers: r.headers }); } posts.push({ url, opts }); if (options.lostOperator) throw Error('unknown post');
@@ -158,6 +158,7 @@ describe('host integration with explicitly synthetic Git/provider identities', (
     return { f, p, gets, posts, ledger, run: extra => runRehearsalHost({ execute: true, hostApproval: envelope(p), trustedRoot: root, requestText: f.requestText, git: fakeGit, fetch: fetcher, runBws, inspect: async () => syntheticCandidate(), ...extra }) };
   }
   it('consumes durably before Access custody and forwards exact signed bytes once', async () => { const x = invocation(), r = await x.run(); expect(r).toMatchObject({ status: 'invocation-response', consumptionState: 'consumed', githubWrites: 2, operatorAttempts: 1 }); expect(x.gets).toEqual(['github', 'accessId', 'accessSecret']); expect(x.posts).toHaveLength(1); expect(x.posts[0]).toMatchObject({ url: x.f.origin + '/v1/rehearsal', opts: { method: 'POST', body: x.f.requestText, redirect: 'error', headers: { 'CF-Access-Client-Id': x.f.accessId } } }); });
+  it('refuses another principal role\'s Access record names before custody', async () => { const x = invocation(); x.p.custody.records.accessId.key = HOST_ACCESS_RECORD_KEYS.owner.accessId; x.p.custody.records.accessSecret.key = HOST_ACCESS_RECORD_KEYS.owner.accessSecret; expect((await x.run()).status).toBe('refused'); expect(x.gets).toEqual([]); expect(x.posts).toEqual([]); });
   it('refuses without execute before all custody and HTTP', async () => { const x = invocation(); expect((await x.run({ execute: false })).status).toBe('refused'); expect(x.gets).toEqual([]); expect(x.posts).toEqual([]); });
   it('refuses oversized host input before custody', async () => { const x = invocation(); expect((await x.run({ hostApproval: { oversized: 'x'.repeat(131073) } })).status).toBe('refused'); expect(x.gets).toEqual([]); });
   it('refuses altered signed bytes before custody', async () => { const x = invocation(); expect((await x.run({ requestText: x.f.requestText + ' ' })).status).toBe('refused'); expect(x.gets).toEqual([]); });
