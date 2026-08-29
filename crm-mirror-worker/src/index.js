@@ -16,6 +16,7 @@ import {
 } from "./owned-appointments.js";
 import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
 import { listOwnedAppointmentSchedule } from "./owned-appointment-schedule.js";
+import { OwnedAppointmentPaymentError, recordOwnedAppointmentPayment } from "./owned-appointment-payments.js";
 import {
   activeClientOperations,
   communicationsInbox,
@@ -618,6 +619,25 @@ export default {
           ...(await appointmentProjectionReadiness(env.CRM_DB, new Date().toISOString())),
         });
       }
+      const appointmentPayment = url.pathname.match(/^\/appointments\/([^/]+)\/payment$/);
+      if (request.method === "PUT" && appointmentPayment) {
+        try {
+          const payload = await actionPayload(request);
+          const payment = await recordOwnedAppointmentPayment(
+            env.CRM_DB,
+            decodeURIComponent(appointmentPayment[1]),
+            payload.contactId,
+            payload,
+            new Date().toISOString(),
+          );
+          return json(200, { success: true, payment });
+        } catch (error) {
+          if (error instanceof OwnedAppointmentPaymentError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
       if (request.method === "GET" && url.pathname === "/appointments") {
         try {
           return json(200, {
@@ -627,6 +647,7 @@ export default {
               startTime: url.searchParams.get("startTime"),
               endTime: url.searchParams.get("endTime"),
               includeCancelled: url.searchParams.get("includeCancelled") === "1",
+              includeDetail: url.searchParams.get("detail") === "1",
             })),
           }, { "Cache-Control": "no-store" });
         } catch (error) {

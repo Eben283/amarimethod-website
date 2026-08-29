@@ -8,7 +8,7 @@ import { readPaymentRecord } from "../lib/session-payment.js";
 import { countsTowardLifetime } from "../lib/journey-classification.js";
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 import { parsePacificWallClock } from "../lib/datetime.js";
-import { fetchOwnedAppointmentSchedule, staffScheduleSummaries } from "../lib/staff-owned-appointment-schedule.js";
+import { fetchOwnedAppointmentSchedule, staffScheduleDetails, staffScheduleSummaries } from "../lib/staff-owned-appointment-schedule.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -46,6 +46,9 @@ export async function onRequestGet(context) {
     // lifetime appointments, orders, invoices, order hydration, and payment
     // records) that the detailed day cards require.
     const summaryOnly = url.searchParams.get('summary') === '1';
+    // Rehearsal seam for the complete owned day contract. Default day behavior
+    // stays unchanged until appointment mutations also consume stable owned ids.
+    const ownedDetail = url.searchParams.get('ownedDetail') === '1';
     const now = new Date();
     const pacificFormatter = new Intl.DateTimeFormat('en-CA', {
       timeZone: 'America/Los_Angeles',
@@ -73,12 +76,16 @@ export async function onRequestGet(context) {
     const startTime = rangeStart.start;
     const endTime = rangeEnd.end;
 
-    if (summaryOnly) {
+    if (summaryOnly || ownedDetail) {
       try {
-        const ownedSchedule = await fetchOwnedAppointmentSchedule(context, { startTime, endTime, includeCancelled });
-        return new Response(JSON.stringify(staffScheduleSummaries(ownedSchedule)), { status: 200, headers });
+        const ownedSchedule = await fetchOwnedAppointmentSchedule(context, {
+          startTime, endTime, includeCancelled, includeDetail: ownedDetail,
+        });
+        return new Response(JSON.stringify(
+          ownedDetail ? staffScheduleDetails(ownedSchedule) : staffScheduleSummaries(ownedSchedule),
+        ), { status: 200, headers });
       } catch (error) {
-        console.error("[staff-data] Owned appointment schedule failed", error);
+        console.error("[staff-data] Owned appointment schedule read failed", error);
         return new Response(JSON.stringify({
           error: "Owned appointment schedule is unavailable; provider fallback is disabled.",
           code: "owned_schedule_unavailable",

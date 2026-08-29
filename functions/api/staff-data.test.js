@@ -20,6 +20,9 @@ describe("staff-data calendar loading", () => {
       sessionsRemaining: 0, sessionsCompleted: 0, seriesType: "none", tags: [],
       sessionPrepaid: false, truthState: "authoritative",
     }]);
+    const staffScheduleDetails = vi.fn(() => [{
+      id: "appt-owned-detail-1", paymentStatus: "unknown", detailTruth: { overall: "partial" },
+    }]);
 
     vi.doMock("../lib/endpoint-guards.js", () => ({
       requireStaffAuth: vi.fn(async () => ({ error: null, payload: { user: "Eben" } })),
@@ -32,6 +35,7 @@ describe("staff-data calendar loading", () => {
     }));
     vi.doMock("../lib/staff-owned-appointment-schedule.js", () => ({
       fetchOwnedAppointmentSchedule,
+      staffScheduleDetails,
       staffScheduleSummaries,
     }));
 
@@ -53,5 +57,16 @@ describe("staff-data calendar loading", () => {
         truthState: "authoritative",
       }),
     ]);
+
+    const detailResponse = await onRequestGet({
+      request: new Request("https://www.amarimethod.com/api/staff-data?date=2026-08-03&ownedDetail=1"),
+      env: { WORKER_AUTH_SECRET: "secret" },
+    });
+    expect(detailResponse.status).toBe(200);
+    expect(staffScheduleDetails).toHaveBeenCalledOnce();
+    expect(await detailResponse.json()).toEqual([
+      expect.objectContaining({ id: "appt-owned-detail-1", paymentStatus: "unknown" }),
+    ]);
+    expect(ghlFetch).not.toHaveBeenCalled();
   });
 });

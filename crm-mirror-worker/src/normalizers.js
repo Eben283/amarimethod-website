@@ -190,6 +190,10 @@ export function normalizeGhlAppointment(raw, contactExternalId) {
     startsAt: text(raw.startTime || raw.startAt || raw.start_time),
     endsAt: text(raw.endTime || raw.endAt || raw.end_time),
     timezone: text(raw.selectedTimezone || raw.timezone),
+    meetingLocation: text(
+      raw.meetingLocation || raw.meeting_location || raw.address ||
+      (typeof raw.location === "string" ? raw.location : raw.location?.url || raw.location?.address),
+    ),
   };
 }
 

@@ -8,6 +8,7 @@ export async function fetchOwnedAppointmentSchedule(context, input) {
     endTime: new Date(input.endTime).toISOString(),
   });
   if (input.includeCancelled) params.set("includeCancelled", "1");
+  if (input.includeDetail) params.set("detail", "1");
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
@@ -24,6 +25,36 @@ export async function fetchOwnedAppointmentSchedule(context, input) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+export function staffScheduleDetails(schedule) {
+  if (schedule.detailIncluded !== true) throw new Error("Owned appointment detail was not included.");
+  return schedule.appointments.map((appointment) => ({
+    id: appointment.id,
+    calendarId: appointment.providerCalendarId || "",
+    contactId: appointment.contactId,
+    contactName: appointment.contactName,
+    startTime: appointment.startTime,
+    endTime: appointment.endTime,
+    title: appointment.serviceName || "Session",
+    calendarName: appointment.serviceName || "Session",
+    appointmentStatus: appointment.status,
+    meetingLocation: appointment.meetingLocation || null,
+    sessionsRemaining: appointment.sessionsRemaining,
+    sessionsCompleted: appointment.sessionsCompleted,
+    seriesType: appointment.seriesType,
+    tags: appointment.tags,
+    sessionPrepaid: appointment.sessionPrepaid,
+    paymentStatus: appointment.paymentStatus,
+    paymentMethod: appointment.paymentMethod,
+    paymentNote: appointment.paymentNote,
+    enrichmentFailed: appointment.enrichmentFailed,
+    authority: appointment.authority,
+    providerSyncState: appointment.providerSyncState,
+    truthState: appointment.truthState,
+    providerAppointmentId: appointment.providerAppointmentId,
+    detailTruth: appointment.detailTruth,
+  }));
 }
 
 export function staffScheduleSummaries(schedule) {

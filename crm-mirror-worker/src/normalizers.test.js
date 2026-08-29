@@ -72,11 +72,13 @@ describe("CRM mirror normalizers", () => {
       startAt: "2026-08-01T17:00:00.000Z",
       endAt: "2026-08-01T17:50:00.000Z",
       selectedTimezone: "America/Los_Angeles",
+      meetingLocation: "https://meet.example.test/appointment",
     }, "ghl_1")).toMatchObject({
       externalId: "appt_1",
       contactExternalId: "ghl_1",
       calendarId: "calendar_1",
       status: "no_show",
+      meetingLocation: "https://meet.example.test/appointment",
     });
   });
 

@@ -45,6 +45,8 @@ CREATE TABLE appointments (
   starts_at TEXT,
   ends_at TEXT,
   timezone TEXT,
+  meeting_location TEXT,
+  provider_meeting_location TEXT,
   replaces_appointment_id TEXT REFERENCES appointments(id) ON DELETE SET NULL,
   cancelled_at TEXT,
   cancellation_reason TEXT,
@@ -65,6 +67,7 @@ CREATE TABLE appointments (
 INSERT INTO appointments (
   id, contact_id, service_id, provider_appointment_id, provider_calendar_id,
   provider_status_raw, status, starts_at, ends_at, timezone,
+  meeting_location, provider_meeting_location,
   replaces_appointment_id, cancelled_at, cancellation_reason,
   attendance_marked_at, attendance_marked_by, authority,
   provider_sync_state, revision, created_by, last_modified_by,
@@ -73,6 +76,7 @@ INSERT INTO appointments (
 SELECT
   id, contact_id, service_id, provider_appointment_id, provider_calendar_id,
   provider_status_raw, status, starts_at, ends_at, timezone,
+  NULL, NULL,
   replaces_appointment_id, cancelled_at, cancellation_reason,
   attendance_marked_at, attendance_marked_by, 'provider_mirror',
   'synced', 1, NULL, NULL, created_at, updated_at
@@ -126,6 +130,54 @@ CREATE INDEX idx_appointments_status_start
   ON appointments(status, starts_at);
 CREATE INDEX idx_appointments_authority_sync
   ON appointments(authority, provider_sync_state, starts_at);
+
+-- Per-visit payment truth belongs beside the owned appointment identity. This
+-- table starts empty: absence means unknown, never unpaid. Existing KV records
+-- require an explicit, reviewed import before they can become D1 evidence.
+CREATE TABLE appointment_payment_records (
+  appointment_id TEXT PRIMARY KEY REFERENCES appointments(id) ON DELETE RESTRICT,
+  contact_id TEXT NOT NULL REFERENCES contacts(id) ON DELETE RESTRICT,
+  status TEXT NOT NULL CHECK (status IN (
+    'paid', 'comped', 'on-package', 'pay-next-visit', 'owed', 'unknown'
+  )),
+  method TEXT CHECK (method IS NULL OR method IN ('stripe', 'cash', 'venmo', 'check', 'other')),
+  note TEXT,
+  amount_cents INTEGER CHECK (amount_cents IS NULL OR amount_cents >= 0),
+  source TEXT NOT NULL,
+  recorded_by TEXT NOT NULL,
+  recorded_at TEXT NOT NULL,
+  updated_at TEXT NOT NULL,
+  CHECK (status <> 'paid' OR method IS NOT NULL OR source = 'stripe-auto')
+);
+CREATE INDEX idx_appointment_payment_contact
+  ON appointment_payment_records(contact_id, recorded_at DESC);
+
+CREATE TABLE appointment_payment_events (
+  id TEXT PRIMARY KEY,
+  appointment_id TEXT NOT NULL REFERENCES appointments(id) ON DELETE RESTRICT,
+  contact_id TEXT NOT NULL REFERENCES contacts(id) ON DELETE RESTRICT,
+  status TEXT NOT NULL CHECK (status IN (
+    'paid', 'comped', 'on-package', 'pay-next-visit', 'owed', 'unknown'
+  )),
+  method TEXT,
+  note TEXT,
+  amount_cents INTEGER,
+  source TEXT NOT NULL,
+  recorded_by TEXT NOT NULL,
+  occurred_at TEXT NOT NULL
+);
+CREATE INDEX idx_appointment_payment_events_appointment
+  ON appointment_payment_events(appointment_id, occurred_at);
+CREATE TRIGGER appointment_payment_events_reject_update
+BEFORE UPDATE ON appointment_payment_events
+BEGIN
+  SELECT RAISE(ABORT, 'appointment_payment_events is append-only');
+END;
+CREATE TRIGGER appointment_payment_events_reject_delete
+BEFORE DELETE ON appointment_payment_events
+BEGIN
+  SELECT RAISE(ABORT, 'appointment_payment_events is append-only');
+END;
 
 -- One provider-neutral, idempotent command ledger owns appointment mutations.
 -- It is intentionally inert until a reviewed repository and route write it.

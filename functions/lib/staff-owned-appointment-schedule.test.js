@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { fetchOwnedAppointmentSchedule, staffScheduleSummaries } from "./staff-owned-appointment-schedule.js";
+import { fetchOwnedAppointmentSchedule, staffScheduleDetails, staffScheduleSummaries } from "./staff-owned-appointment-schedule.js";
 
 afterEach(() => vi.unstubAllGlobals());
 
@@ -24,6 +24,29 @@ describe("Staff owned appointment schedule", () => {
       providerAppointmentId: "ghl-1",
     });
     expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Bearer secret");
+  });
+
+  it("maps detailed owned evidence without inventing missing payment truth", () => {
+    const detail = staffScheduleDetails({
+      detailIncluded: true,
+      appointments: [{
+        id: "appt-owned", contactId: "contact-owned", contactName: "Partner Person",
+        serviceName: "Partner Initial Session", startTime: "2026-09-01T17:00:00.000Z",
+        endTime: "2026-09-01T18:00:00.000Z", status: "confirmed", authority: "owned",
+        providerSyncState: "pending", truthState: "propagating", providerAppointmentId: null,
+        providerCalendarId: null, meetingLocation: null, sessionsRemaining: 0, sessionsCompleted: 0,
+        seriesType: "none", tags: ["affiliate-partner"], sessionPrepaid: false,
+        paymentStatus: "unknown", paymentMethod: null, paymentNote: null, enrichmentFailed: false,
+        detailTruth: {
+          overall: "partial", sessionBalance: "provider_mirror", series: "unknown",
+          payment: "unknown", meetingLocation: "unknown",
+        },
+      }],
+    });
+    expect(detail[0]).toMatchObject({
+      id: "appt-owned", paymentStatus: "unknown", sessionPrepaid: false,
+      detailTruth: { overall: "partial", payment: "unknown" },
+    });
   });
 
   it("does not fall back when owned truth is unavailable", async () => {

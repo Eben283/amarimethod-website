@@ -472,6 +472,7 @@ export async function upsertGhlAppointment(db, appointment, contactId, now, proj
     await db.prepare(
       `UPDATE appointments
        SET provider_calendar_id = ?, provider_status_raw = ?,
+           provider_meeting_location = ?,
            provider_sync_state = CASE
              WHEN contact_id = ?
               AND COALESCE(service_id, '') = COALESCE(?, '')
@@ -483,7 +484,8 @@ export async function upsertGhlAppointment(db, appointment, contactId, now, proj
            updated_at = ?
        WHERE id = ? AND authority = 'owned'`,
     ).bind(
-      appointment.calendarId, appointment.providerStatusRaw, contactId, service?.id || null,
+      appointment.calendarId, appointment.providerStatusRaw, appointment.meetingLocation,
+      contactId, service?.id || null,
       appointment.status, appointment.startsAt, appointment.endsAt, appointment.timezone,
       now, appointmentId,
     ).run();
@@ -491,22 +493,22 @@ export async function upsertGhlAppointment(db, appointment, contactId, now, proj
     await db.prepare(
       `UPDATE appointments
        SET contact_id = ?, service_id = ?, provider_calendar_id = ?, provider_status_raw = ?, status = ?,
-           starts_at = ?, ends_at = ?, timezone = ?, updated_at = ?
+           starts_at = ?, ends_at = ?, timezone = ?, provider_meeting_location = ?, updated_at = ?
        WHERE id = ?`,
     ).bind(
       contactId, service?.id || null, appointment.calendarId, appointment.providerStatusRaw, appointment.status,
-      appointment.startsAt, appointment.endsAt, appointment.timezone, now, appointmentId,
+      appointment.startsAt, appointment.endsAt, appointment.timezone, appointment.meetingLocation, now, appointmentId,
     ).run();
   } else {
     await db.prepare(
       `INSERT INTO appointments
        (id, contact_id, service_id, provider_appointment_id, provider_calendar_id, provider_status_raw,
-        status, starts_at, ends_at, timezone, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        status, starts_at, ends_at, timezone, provider_meeting_location, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       appointmentId, contactId, service?.id || null, appointment.externalId, appointment.calendarId,
       appointment.providerStatusRaw, appointment.status, appointment.startsAt, appointment.endsAt,
-      appointment.timezone, now, now,
+      appointment.timezone, appointment.meetingLocation, now, now,
     ).run();
   }
   await db.prepare(
