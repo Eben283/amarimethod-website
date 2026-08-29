@@ -33,6 +33,7 @@ const mocks = vi.hoisted(() => ({
   fetchStripeInvoicesPage: vi.fn(async () => ({ invoices: [{ externalId: "in_1" }], nextCursor: null })),
   fetchStripeCustomer: vi.fn(),
   writeOpsLastRun: vi.fn(),
+  dispatchOwnedAppointmentLifecycles: vi.fn(async () => ({ status: "succeeded", considered: 0, dispatched: 0, retryable: 0, manualReview: 0 })),
 }));
 
 vi.mock("./repository.js", () => ({
@@ -62,6 +63,9 @@ vi.mock("./normalizers.js", () => ({
 vi.mock("../../functions/lib/ops-last-run.js", () => ({
   writeOpsLastRun: mocks.writeOpsLastRun, OPS_LAST_RUN_KEYS: { crmMirror: "crm" },
 }));
+vi.mock("./appointment-lifecycle-dispatch.js", () => ({
+  dispatchOwnedAppointmentLifecycles: mocks.dispatchOwnedAppointmentLifecycles,
+}));
 
 import { backfillGhlClientRecords, runScheduledSync, SCHEDULED_SYNC_ORDER, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
 
@@ -72,7 +76,7 @@ beforeEach(() => {
 describe("scheduled provider fairness", () => {
   it("finishes core GHL and Stripe freshness before expensive enrichment", () => {
     expect(SCHEDULED_SYNC_ORDER).toEqual([
-      "ghl", "stripe", "stripe-invoices", "ghl-conversations-recent",
+      "owned-appointment-lifecycles", "ghl", "stripe", "stripe-invoices", "ghl-conversations-recent",
       "ghl-conversations", "ghl-client-records", "consents",
     ]);
   });

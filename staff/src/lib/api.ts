@@ -264,6 +264,15 @@ export interface AppointmentProjectionReadiness {
   generatedAt: string;
   liveScheduleFallback: true;
   reason?: string;
+  lifecycleDispatch?: {
+    configured: boolean;
+    state: 'ready' | 'pending' | 'attention' | 'unavailable';
+    blocking?: number;
+    reason?: string;
+    shadowOnly?: true;
+    deliveryEnabled?: false;
+    counts?: Record<'pending' | 'executing' | 'retryable' | 'dispatched' | 'manual_review', number>;
+  };
   coverage?: { observationsRead: number; totalObservations: number; truncated: boolean };
   reconciliation?: {
     summary: {

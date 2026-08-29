@@ -5,11 +5,14 @@
 // acceptance evidence. Provider propagation is deliberately a later executor
 // step; capture itself can neither call nor silently fall back to GHL.
 
+import { ownedAppointmentLifecyclePayload } from "./appointment-lifecycle-dispatch.js";
+
 const CONTACT_ID = /^[A-Za-z0-9_-]{1,100}$/;
 const SERVICE_ID = /^[A-Za-z0-9_-]{1,100}$/;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const STAFF_ACTOR = /^[A-Za-z][A-Za-z .'-]{0,78}$/;
 const MAX_FUTURE_MS = 33 * 86_400_000;
+const PARTNER_INITIAL_CALENDAR_ID = "lfsnaiGiLNL2z12pLKDP";
 
 export class OwnedAppointmentError extends Error {
   constructor(message, code, status) {
@@ -778,7 +781,19 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
     if (completed?.state !== "completed") throw new OwnedAppointmentError("appointment command completion was not accepted", "command_not_executing", 409);
     return publicExecution(completed);
   }
-  await db.batch([
+  if (result.action !== "schedule" || result.contactId !== row.contact_id ||
+      result.appointmentId !== row.appointment_id ||
+      !new Set(["new", "confirmed"]).has(result.appointmentStatus) ||
+      Date.parse(result.newStartTime || "") !== Date.parse(row.requested_start_time) ||
+      (options.providerSyncRequired !== false && result.providerAppointmentId !== row.provider_record_id)) {
+    throw new OwnedAppointmentError("schedule provider readback is invalid", "invalid_provider_readback", 409);
+  }
+  const canonicalResult = {
+    ...result,
+    appointmentId: row.appointment_id,
+    providerAppointmentId: row.provider_record_id || result.providerAppointmentId || null,
+  };
+  const statements = [
     db.prepare(
       `UPDATE appointments
           SET provider_sync_state = ?, updated_at = ?, last_modified_by = ?
@@ -789,14 +804,64 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
           SET state = 'completed', result_json = ?, lease_until = 0,
               last_error = NULL, updated_at = ?
         WHERE id = ? AND actor = ? AND state = 'executing'`,
-    ).bind(JSON.stringify(result), now, row.id, identity.actor),
+    ).bind(JSON.stringify(canonicalResult), now, row.id, identity.actor),
     db.prepare(
       `INSERT INTO appointment_authority_events
          (id, command_id, appointment_id, event_type, detail_json, occurred_at)
        VALUES (?, ?, ?, 'completed', ?, ?)`,
     ).bind(crypto.randomUUID(), row.id, row.appointment_id, JSON.stringify({ provider: row.provider || null }), now),
-  ]);
-  return publicExecution(await executionById(db, row.id));
+  ];
+  if (options.providerSyncRequired !== false && row.service_id === "partner-initial") {
+    const lifecycle = await db.prepare(
+      `SELECT appointment.id AS appointment_id, appointment.contact_id, appointment.service_id,
+              appointment.provider_appointment_id, appointment.provider_calendar_id,
+              appointment.starts_at AS start_at,
+              MIN(external.external_id) AS provider_contact_id,
+              COUNT(external.external_id) AS provider_contact_count
+         FROM appointments appointment
+         LEFT JOIN external_records external
+           ON external.contact_id = appointment.contact_id
+          AND external.provider = 'ghl' AND external.object_type = 'contact'
+        WHERE appointment.id = ?
+        GROUP BY appointment.id`,
+    ).bind(row.appointment_id).first();
+    if (Number(lifecycle?.provider_contact_count) !== 1 || !lifecycle?.provider_contact_id ||
+        lifecycle.provider_appointment_id !== row.provider_record_id ||
+        lifecycle.provider_calendar_id !== PARTNER_INITIAL_CALENDAR_ID ||
+        Date.parse(lifecycle.start_at || "") !== Date.parse(row.requested_start_time)) {
+      throw new OwnedAppointmentError("appointment lifecycle identity is incomplete", "lifecycle_identity_missing", 409);
+    }
+    const dispatch = {
+      command_id: row.id,
+      appointment_id: row.appointment_id,
+      contact_id: row.contact_id,
+      service_id: row.service_id,
+      provider_contact_id: lifecycle.provider_contact_id,
+      provider_appointment_id: lifecycle.provider_appointment_id,
+      provider_calendar_id: lifecycle.provider_calendar_id,
+      start_at: lifecycle.start_at,
+    };
+    const { payloadSha256 } = await ownedAppointmentLifecyclePayload(dispatch);
+    statements.push(db.prepare(
+      `INSERT INTO appointment_lifecycle_dispatches (
+         id, command_id, appointment_id, contact_id, service_id, provider,
+         provider_contact_id, provider_appointment_id, provider_calendar_id,
+         event_type, start_at, payload_sha256, state, attempts, lease_until,
+         created_at, updated_at
+       ) VALUES (?, ?, ?, ?, ?, 'ghl', ?, ?, ?, 'confirmed', ?, ?, 'pending', 0, 0, ?, ?)`,
+    ).bind(
+      `alife_${row.id.slice("acmd_".length)}`, row.id, row.appointment_id,
+      row.contact_id, row.service_id, lifecycle.provider_contact_id,
+      lifecycle.provider_appointment_id, lifecycle.provider_calendar_id,
+      lifecycle.start_at, payloadSha256, now, now,
+    ));
+  }
+  await db.batch(statements);
+  const completed = await executionById(db, row.id);
+  if (completed?.state !== "completed") {
+    throw new OwnedAppointmentError("appointment command completion was not accepted", "command_not_executing", 409);
+  }
+  return publicExecution(completed);
 }
 
 export async function failOwnedAppointmentExecution(db, input, options = {}) {

@@ -23,6 +23,12 @@
       "id": "79cff30d0e45419791b0d25cd81961df"
     }
   ],
+  "services": [
+    {
+      "binding": "REMINDER",
+      "service": "reminder-engine"
+    }
+  ],
   "triggers": {
     "crons": ["*/5 * * * *"]
   },

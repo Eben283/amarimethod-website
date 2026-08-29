@@ -16,6 +16,7 @@ import {
   unlinkOwnedAppointmentProviderRecord,
 } from "./owned-appointments.js";
 import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
+import { appointmentLifecycleDispatchReadiness } from "./appointment-lifecycle-dispatch.js";
 import { listOwnedAppointmentSchedule } from "./owned-appointment-schedule.js";
 import { OwnedAppointmentPaymentError, recordOwnedAppointmentPayment } from "./owned-appointment-payments.js";
 import { OwnedAppointmentIdentityError, resolveOwnedAppointmentIdentity } from "./owned-appointment-identity.js";
@@ -214,8 +215,8 @@ function dashboardAccessRecord(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
-  if (!sources.length) throw new Error("sources must contain ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, and/or stripe-invoices");
+  const sources = [...new Set(requested.filter((source) => source === "owned-appointment-lifecycles" || source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
+  if (!sources.length) throw new Error("sources must contain owned-appointment-lifecycles, ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, stripe-invoices, and/or consents");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
   const requestedPages = Number(payload?.pages);
@@ -628,10 +629,12 @@ export default {
         }
       }
       if (request.method === "GET" && url.pathname === "/appointments/readiness") {
+        const lifecycleDispatch = await appointmentLifecycleDispatchReadiness(env.CRM_DB);
         return json(200, {
           success: true,
           worker: "amari-crm-mirror",
           ...(await appointmentProjectionReadiness(env.CRM_DB, new Date().toISOString())),
+          lifecycleDispatch,
         });
       }
       const appointmentIdentity = url.pathname.match(/^\/appointments\/([^/]+)\/identity$/);
