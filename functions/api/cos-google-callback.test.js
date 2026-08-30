@@ -58,9 +58,9 @@ describe("GET /api/cos-google-callback", () => {
         expires_in: 3600,
         scope: "https://www.googleapis.com/auth/calendar",
       }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+      .mockResolvedValueOnce(new Response(JSON.stringify({
         id: "eben@ebenforrest.com", summary: "Eben", accessRole: "owner", primary: true,
-      }] }), { status: 200 })));
+      }), { status: 200 })));
 
     const response = await onRequestGet(ctx);
     expect(response.status).toBe(302);
@@ -77,7 +77,7 @@ describe("GET /api/cos-google-callback", () => {
     ctx.env.PORTAL_KV.get.mockResolvedValue(null);
     vi.stubGlobal("fetch", vi.fn()
       .mockResolvedValueOnce(new Response(JSON.stringify({ access_token: "wrong", refresh_token: "wrong", scope: "https://www.googleapis.com/auth/calendar" }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{ id: "someone@example.com", accessRole: "owner", primary: true }] }), { status: 200 })));
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "someone@example.com", accessRole: "owner", primary: true }), { status: 200 })));
     const response = await onRequestGet(ctx);
     expect(response.headers.get("Location")).toBe("https://www.amarimethod.com/staff/operations?staffCalendar=failed");
     expect(ctx.env.PORTAL_KV.put).toHaveBeenCalledWith("google:eben:last_oauth_result", expect.stringContaining('"code":"primary_calendar_mismatch"'), { expirationTtl: 604800 });
