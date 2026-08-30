@@ -7,6 +7,7 @@ export const STAFF_CALENDAR_STATE_TTL_SECONDS = 10 * 60;
 const STAFF_CALENDAR_STATE_VERSION = "staff-calendar-oauth.v2";
 const STAFF_CALENDAR_STATE_PREFIX = "sc2";
 const STAFF_CALENDAR_RESULT_TTL_SECONDS = 7 * 24 * 60 * 60;
+const WRITABLE_CALENDAR_ROLES = new Set(["owner", "writer", "writerWithoutPrivateAccess"]);
 const encoder = new TextEncoder();
 
 const ACTORS = Object.freeze({
@@ -206,7 +207,7 @@ export async function listWritableGoogleCalendars(accessToken) {
   const body = await response.json();
   if (body?.nextPageToken) throw new Error("Google Calendar writer list exceeded the exact bounded page");
   return (body?.items || [])
-    .filter((item) => !item.deleted && (item.accessRole === "owner" || item.accessRole === "writer"))
+    .filter((item) => !item.deleted && WRITABLE_CALENDAR_ROLES.has(item.accessRole))
     .map((item) => ({
       id: String(item.id || ""),
       summary: String(item.summary || item.id || ""),
@@ -216,6 +217,53 @@ export async function listWritableGoogleCalendars(accessToken) {
       hidden: Boolean(item.hidden),
       timeZone: item.timeZone || null,
     }));
+}
+
+/**
+ * Read the authenticated user's primary calendar directly. The governed Staff
+ * grant only needs this exact calendar; using CalendarList.get("primary")
+ * avoids making a broad list operation a prerequisite for identity proof.
+ * Failures expose only a bounded status/code, never Google's response body.
+ */
+export async function readPrimaryWritableGoogleCalendar(accessToken) {
+  let response;
+  try {
+    response = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList/primary", {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" },
+    });
+  } catch {
+    throw exchangeFailure("Google primary calendar readback was unavailable", "calendar_readback_unavailable", "calendar_readback");
+  }
+  if (!response.ok) {
+    const status = Number(response.status);
+    const code = Number.isInteger(status) && status >= 400 && status <= 599
+      ? `calendar_readback_http_${status}`
+      : "calendar_readback_http_error";
+    throw exchangeFailure("Google primary calendar readback failed", code, "calendar_readback", status || null);
+  }
+  let item;
+  try {
+    item = await response.json();
+  } catch {
+    throw exchangeFailure("Google primary calendar response was invalid", "calendar_readback_invalid_json", "calendar_readback");
+  }
+  const id = String(item?.id || "").trim();
+  const accessRole = String(item?.accessRole || "").trim();
+  if (!id || item?.deleted === true || item?.primary !== true) {
+    throw exchangeFailure("Google primary calendar identity was incomplete", "calendar_readback_invalid_response", "calendar_readback");
+  }
+  if (!WRITABLE_CALENDAR_ROLES.has(accessRole)) {
+    throw exchangeFailure("Google primary calendar is not writable", "primary_calendar_not_writable", "authority_readback");
+  }
+  return {
+    id,
+    summary: String(item.summary || id),
+    accessRole,
+    primary: true,
+    selected: item.selected !== false,
+    hidden: Boolean(item.hidden),
+    timeZone: item.timeZone || null,
+  };
 }
 
 export async function exchangeAndStoreStaffCalendarGrant(context, grant, code) {
@@ -256,16 +304,17 @@ export async function exchangeAndStoreStaffCalendarGrant(context, grant, code) {
     throw exchangeFailure("Google calendar scope was not granted", "calendar_scope_missing", "scope_readback");
   }
 
-  let calendars;
+  let primary;
   try {
-    calendars = await listWritableGoogleCalendars(token.access_token);
-  } catch {
+    primary = await readPrimaryWritableGoogleCalendar(token.access_token);
+  } catch (error) {
+    if (error?.code && error?.stage) throw error;
     throw exchangeFailure("Google Calendar writer readback failed", "calendar_readback_failed", "calendar_readback");
   }
-  const primary = calendars.find((calendar) => calendar.primary);
   if (primary?.id.toLowerCase() !== identity.primaryCalendarId.toLowerCase()) {
     throw exchangeFailure("Google primary calendar does not match the governed Staff identity", "primary_calendar_mismatch", "identity_readback");
   }
+  const calendars = [primary];
 
   const expiry = Date.now() + Number(token.expires_in || 3600) * 1000;
   const tokenKeys = ["access_token", "refresh_token", "token_expiry"].map((name) => staffCalendarKey(identity.actor, name));
@@ -369,8 +418,8 @@ export async function staffCalendarGrantReadiness(context, actor) {
 
   try {
     const token = await getGoogleToken(context, identity.actor);
-    const calendars = await listWritableGoogleCalendars(token);
-    const primary = calendars.find((calendar) => calendar.primary);
+    const primary = await readPrimaryWritableGoogleCalendar(token);
+    const calendars = [primary];
     const grantVerified = primary?.id.toLowerCase() === identity.primaryCalendarId.toLowerCase();
     let markerRecord = null;
     try { markerRecord = JSON.parse(marker); } catch { markerRecord = null; }

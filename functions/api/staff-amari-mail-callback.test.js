@@ -72,9 +72,9 @@ describe("GET /api/staff-amari-mail-callback", () => {
         expires_in: 3600,
         scope: "https://www.googleapis.com/auth/calendar",
       }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+      .mockResolvedValueOnce(new Response(JSON.stringify({
         id: "garrett@amarimethod.com", summary: "Garrett", accessRole: "owner", primary: true,
-      }] }), { status: 200 })));
+      }), { status: 200 })));
 
     const response = await completeAuthorization({
       request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${state}&code=grant-code`),
@@ -86,6 +86,7 @@ describe("GET /api/staff-amari-mail-callback", () => {
     expect(exchange.get("client_id")).toBe("amari-mail-client");
     expect(exchange.get("client_secret")).toBe("amari-mail-secret");
     expect(exchange.get("redirect_uri")).toBe("https://www.amarimethod.com/api/staff-amari-mail-callback");
+    expect(fetch.mock.calls[1][0]).toBe("https://www.googleapis.com/calendar/v3/users/me/calendarList/primary");
     expect([...env.store.keys()]).toEqual(expect.arrayContaining([
       "google:garrett:access_token",
       "google:garrett:refresh_token",
@@ -114,9 +115,9 @@ describe("GET /api/staff-amari-mail-callback", () => {
         access_token: "calendar-access", refresh_token: "calendar-refresh", expires_in: 3600,
         scope: "https://www.googleapis.com/auth/calendar",
       }), { status: 200 }))
-      .mockResolvedValueOnce(new Response(JSON.stringify({ items: [{
+      .mockResolvedValueOnce(new Response(JSON.stringify({
         id: "garrett@amarimethod.com", summary: "Garrett", accessRole: "owner", primary: true,
-      }] }), { status: 200 })));
+      }), { status: 200 })));
 
     const response = await completeAuthorization({
       request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
@@ -142,6 +143,32 @@ describe("GET /api/staff-amari-mail-callback", () => {
       actor: "Garrett", status: "failed", stage: "token_exchange", code: "token_exchange_failed",
       bookingActivationEnabled: false,
     });
+    expect([...env.store.keys()].filter((key) => /access_token|refresh_token|grant_status/.test(key))).toEqual([]);
+  });
+
+  it("records only the bounded Calendar API status when primary readback fails", async () => {
+    const env = environment();
+    const state = await calendarState(env);
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        access_token: "calendar-access", refresh_token: "calendar-refresh", expires_in: 3600,
+        scope: "https://www.googleapis.com/auth/calendar",
+      }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({
+        error: { message: "provider detail must not be retained" },
+      }), { status: 403 })));
+
+    const response = await completeAuthorization({
+      request: new Request(`https://www.amarimethod.com/api/staff-amari-mail-callback?state=${encodeURIComponent(state)}&code=grant-code`),
+      env,
+    });
+
+    expect(response.headers.get("Location")).toContain("staffCalendar=failed");
+    expect(JSON.parse(env.store.get("google:garrett:last_oauth_result"))).toMatchObject({
+      actor: "Garrett", status: "failed", stage: "calendar_readback", code: "calendar_readback_http_403",
+      bookingActivationEnabled: false,
+    });
+    expect(JSON.stringify([...env.store.entries()])).not.toContain("provider detail");
     expect([...env.store.keys()].filter((key) => /access_token|refresh_token|grant_status/.test(key))).toEqual([]);
   });
 

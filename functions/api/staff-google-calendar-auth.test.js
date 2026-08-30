@@ -74,9 +74,9 @@ describe("Staff Google Calendar authorization", () => {
       if (key === "google:garrett:token_expiry") return String(Date.now() + 60 * 60 * 1000);
       return null;
     });
-    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({ items: [{
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(JSON.stringify({
       id: "garrett@amarimethod.com", summary: "Garrett", accessRole: "owner", primary: true, timeZone: "America/Los_Angeles",
-    }] }), { status: 200 })));
+    }), { status: 200 })));
     const response = await onRequestGet({ request: await request(), env });
     expect(await response.json()).toMatchObject({
       connectionStatus: "verified",
