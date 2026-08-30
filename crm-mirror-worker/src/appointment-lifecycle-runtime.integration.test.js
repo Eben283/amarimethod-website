@@ -7,6 +7,7 @@ import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const AUTH = "synthetic-runtime-proof-secret";
+const WEBHOOK_SECRET = "synthetic-runtime-webhook-secret";
 const CONTACT_ID = "synthetic-partner-contact";
 const PROVIDER_CONTACT_ID = "synthetic-ghl-contact";
 const PROVIDER_APPOINTMENT_ID = "synthetic-ghl-appointment";
@@ -166,7 +167,10 @@ async function startRuntime() {
           ...base,
           name: "reminder",
           script: scripts.reminder,
-          bindings: { WORKER_AUTH_SECRET: AUTH },
+          bindings: {
+            WORKER_AUTH_SECRET: AUTH,
+            GHL_APPOINTMENT_WEBHOOK_SECRET: WEBHOOK_SECRET,
+          },
           d1Databases: ["REMINDER_DB"],
           kvNamespaces: ["PORTAL_KV"],
         },
@@ -191,6 +195,21 @@ async function request(mf, pathname, { method = "GET", body } = {}) {
       "X-Staff-Actor": "Garrett",
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  const payload = await response.json();
+  expect(response.status, JSON.stringify(payload)).toBeLessThan(300);
+  return payload;
+}
+
+async function ghlWebhook(mf, body) {
+  const reminder = await mf.getWorker("reminder");
+  const response = await reminder.fetch("http://reminder.test/webhook", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Webhook-Secret": WEBHOOK_SECRET,
+    },
+    body: JSON.stringify(body),
   });
   const payload = await response.json();
   expect(response.status, JSON.stringify(payload)).toBeLessThan(300);
@@ -311,7 +330,7 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       manualReview: 0,
     });
 
-    const enrollmentId = `${PARTNER_FLOW}:${appointmentId}`;
+    const enrollmentId = `${PARTNER_FLOW}:${PROVIDER_APPOINTMENT_ID}`;
     expect(await reminderDb.prepare(
       `SELECT enrollment_id, flow_key, definition_version, appointment_id, contact_id,
               calendar_id, start_at, status
@@ -320,8 +339,8 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       enrollment_id: enrollmentId,
       flow_key: PARTNER_FLOW,
       definition_version: 1,
-      appointment_id: appointmentId,
-      contact_id: CONTACT_ID,
+      appointment_id: PROVIDER_APPOINTMENT_ID,
+      contact_id: PROVIDER_CONTACT_ID,
       calendar_id: PARTNER_CALENDAR_ID,
       start_at: startAt,
       status: "active",
@@ -337,9 +356,29 @@ describe("owned Partner Initial lifecycle native runtime", () => {
         outcome: "enrolled",
         engine: "reminder",
         flow_key: PARTNER_FLOW,
-        appointment_id: appointmentId,
-        contact_id: CONTACT_ID,
+        appointment_id: PROVIDER_APPOINTMENT_ID,
+        contact_id: PROVIDER_CONTACT_ID,
       }]);
+
+    const partnerQueue = (await reminderDb.prepare(
+      "SELECT step_index, due_at, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(enrollmentId).all()).results;
+    const providerReplay = await ghlWebhook(mf, {
+      appointment: {
+        id: PROVIDER_APPOINTMENT_ID,
+        calendarId: PARTNER_CALENDAR_ID,
+        contactId: PROVIDER_CONTACT_ID,
+        startTime: startAt,
+        appointmentStatus: "confirmed",
+        modifiedBy: "user",
+      },
+    });
+    expect(providerReplay.actions).toContainEqual({
+      engine: "reminder", action: "enroll-noop", detail: { flowKey: PARTNER_FLOW },
+    });
+    expect((await reminderDb.prepare(
+      "SELECT step_index, due_at, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(enrollmentId).all()).results).toEqual(partnerQueue);
 
     const secondSync = await request(mf, "/sync", {
       method: "POST",
@@ -365,9 +404,9 @@ describe("owned Partner Initial lifecycle native runtime", () => {
   }, 30_000);
 
   it.each([
-    ["discovery-call", "USgPsktqRcuomdUgpShL"],
-    ["discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR"],
-  ])("runs owned %s through the real CRM binding into the non-sending discovery shadow flow", async (serviceId, calendarId) => {
+    ["discovery-call", "USgPsktqRcuomdUgpShL", "owned-first"],
+    ["discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR", "provider-first"],
+  ])("runs owned %s through the real CRM binding and deduplicates %s dual ingress", async (serviceId, calendarId, ingressOrder) => {
     const { mf, crmDb, reminderDb } = await startRuntime();
     const now = Date.now();
     const startAt = new Date(now + 7 * 86_400_000).toISOString();
@@ -435,6 +474,21 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await crmDb.prepare(
       "SELECT state FROM appointment_lifecycle_dispatches WHERE command_id = ?",
     ).bind(commandId).first()).toEqual({ state: "pending" });
+    const confirmedProviderEvent = {
+      appointment: {
+        id: providerAppointmentId,
+        calendarId,
+        contactId: PROVIDER_CONTACT_ID,
+        startTime: startAt,
+        appointmentStatus: "confirmed",
+        modifiedBy: "user",
+      },
+    };
+    if (ingressOrder === "provider-first") {
+      expect((await ghlWebhook(mf, confirmedProviderEvent)).actions).toContainEqual({
+        engine: "reminder", action: "enroll", detail: { flowKey: "discovery-call" },
+      });
+    }
     const sync = await request(mf, "/sync", {
       method: "POST",
       body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
@@ -443,14 +497,14 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       status: "succeeded", considered: 1, dispatched: 1, manualReview: 0,
     });
 
-    const enrollmentId = `discovery-call:${appointmentId}`;
+    const enrollmentId = `discovery-call:${providerAppointmentId}`;
     expect(await reminderDb.prepare(
       `SELECT flow_key, appointment_id, contact_id, calendar_id, status
          FROM reminder_enrollments WHERE enrollment_id = ?`,
     ).bind(enrollmentId).first()).toEqual({
       flow_key: "discovery-call",
-      appointment_id: appointmentId,
-      contact_id: CONTACT_ID,
+      appointment_id: providerAppointmentId,
+      contact_id: PROVIDER_CONTACT_ID,
       calendar_id: calendarId,
       status: "active",
     });
@@ -463,6 +517,25 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await crmDb.prepare(
       "SELECT state, attempts, last_error FROM appointment_lifecycle_dispatches WHERE command_id = ?",
     ).bind(commandId).first()).toEqual({ state: "dispatched", attempts: 1, last_error: null });
+
+    const queueBeforeReplay = (await reminderDb.prepare(
+      "SELECT step_index, due_at, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(enrollmentId).all()).results;
+    const providerReplay = await ghlWebhook(mf, confirmedProviderEvent);
+    expect(providerReplay.actions).toContainEqual({
+      engine: "reminder", action: "enroll-noop", detail: { flowKey: "discovery-call" },
+    });
+    expect(await reminderDb.prepare("SELECT COUNT(*) AS count FROM reminder_enrollments").first())
+      .toEqual({ count: 1 });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ?",
+    ).bind(enrollmentId).first()).toEqual({ count: 7 });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM automation_events WHERE flow_key = 'discovery-call' AND outcome = 'enrolled'",
+    ).first()).toEqual({ count: 1 });
+    expect((await reminderDb.prepare(
+      "SELECT step_index, due_at, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(enrollmentId).all()).results).toEqual(queueBeforeReplay);
 
     const cancellation = await request(mf, "/appointments/commands", {
       method: "POST",
@@ -491,6 +564,23 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       "SELECT event_type, state FROM appointment_lifecycle_dispatches WHERE command_id = ?",
     ).bind(cancellationCommandId).first()).toEqual({ event_type: "cancelled", state: "pending" });
 
+    const cancelledProviderEvent = {
+      appointment: {
+        id: providerAppointmentId,
+        calendarId,
+        contactId: PROVIDER_CONTACT_ID,
+        startTime: startAt,
+        appointmentStatus: "cancelled",
+        modifiedBy: "user",
+      },
+    };
+    if (ingressOrder === "provider-first") {
+      expect((await ghlWebhook(mf, cancelledProviderEvent)).actions).toContainEqual({
+        engine: "reminder", action: "cancel",
+        detail: { flowKey: "discovery-call", cancelledSteps: 7 },
+      });
+    }
+
     const cancellationSync = await request(mf, "/sync", {
       method: "POST",
       body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
@@ -504,6 +594,10 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await reminderDb.prepare(
       "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ? AND status = 'pending'",
     ).bind(enrollmentId).first()).toEqual({ count: 0 });
+    expect((await ghlWebhook(mf, cancelledProviderEvent)).actions).toContainEqual({
+      engine: "reminder", action: "cancel",
+      detail: { flowKey: "discovery-call", cancelledSteps: 0 },
+    });
   }, 30_000);
 
   it("runs the same owned vertical with a Google calendar checkpoint and no GHL identity or credentials", async () => {
@@ -570,8 +664,8 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await reminderDb.prepare(
       `SELECT flow_key, appointment_id, contact_id, calendar_id, status
          FROM reminder_enrollments WHERE enrollment_id = ?`,
-    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({
-      flow_key: PARTNER_FLOW, appointment_id: appointmentId, contact_id: CONTACT_ID,
+    ).bind(`${PARTNER_FLOW}:${googleEventId}`).first()).toEqual({
+      flow_key: PARTNER_FLOW, appointment_id: googleEventId, contact_id: CONTACT_ID,
       calendar_id: googleCalendarId, status: "active",
     });
     expect(await reminderDb.prepare("SELECT COUNT(*) AS count FROM reminder_steps").first())
@@ -615,9 +709,9 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     });
     expect(await reminderDb.prepare(
       "SELECT status FROM reminder_enrollments WHERE enrollment_id = ?",
-    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({ status: "cancelled" });
+    ).bind(`${PARTNER_FLOW}:${googleEventId}`).first()).toEqual({ status: "cancelled" });
     expect(await reminderDb.prepare(
       "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ? AND status = 'pending'",
-    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({ count: 0 });
+    ).bind(`${PARTNER_FLOW}:${googleEventId}`).first()).toEqual({ count: 0 });
   }, 30_000);
 });

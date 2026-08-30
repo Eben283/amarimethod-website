@@ -45,8 +45,16 @@ export function ownedAppointmentLifecycleEvent(row) {
     recognized: true,
     status: row.event_type,
     calendarId: row.provider_calendar_id,
-    contactId: row.contact_id,
-    appointmentId: row.appointment_id,
+    // GHL's existing webhook and Reminder store use the provider contact id.
+    // Match it during transition so ingress order cannot change enrollment
+    // identity; the owned contact remains explicit in context. Google has no
+    // GHL contact crosswalk and therefore keeps the owned contact id.
+    contactId: row.provider === "ghl" ? row.provider_contact_id : row.contact_id,
+    // Reminder's transition-era idempotency key is the provider appointment
+    // identity used by the existing GHL webhook. Keep the owned identity in
+    // context so the same event remains traceable to CRM authority while an
+    // owned dispatch and a provider replay converge on one enrollment/queue.
+    appointmentId: row.provider_appointment_id,
     startAt: row.start_at,
     modifiedBy: "user",
     context: {

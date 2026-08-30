@@ -126,8 +126,8 @@ describe("owned appointment lifecycle dispatch", () => {
     expect(init.headers.Authorization).toBe("Bearer test-worker-secret");
     expect(JSON.parse(init.body)).toEqual({
       type: "confirmed", recognized: true, status: "confirmed",
-      calendarId: "lfsnaiGiLNL2z12pLKDP", contactId: "contact-1",
-      appointmentId: "appt_1234567890abcdef12345678", startAt: "2026-09-01T17:00:00.000Z",
+      calendarId: "lfsnaiGiLNL2z12pLKDP", contactId: "ghl-contact-1",
+      appointmentId: "ghl-appointment-1", startAt: "2026-09-01T17:00:00.000Z",
       modifiedBy: "user",
       context: {
         source: "owned_crm", commandId: "acmd_1234567890abcdef12345678",
@@ -221,8 +221,11 @@ describe("owned appointment lifecycle dispatch", () => {
       expect(JSON.parse(init.body)).toMatchObject({
         type: "cancelled",
         status: "cancelled",
-        appointmentId: "appt_1234567890abcdef12345678",
-        context: { serviceId: "partner-initial" },
+        appointmentId: "ghl-appointment-1",
+        context: {
+          serviceId: "partner-initial",
+          ownedAppointmentId: "appt_1234567890abcdef12345678",
+        },
       });
       return new Response(JSON.stringify({
         actions: [{ engine: "reminder", action: "cancel", detail: {
