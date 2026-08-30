@@ -5,14 +5,16 @@
 // acceptance evidence. Provider propagation is deliberately a later executor
 // step; capture itself can neither call nor silently fall back to GHL.
 
-import { ownedAppointmentLifecyclePayload } from "./appointment-lifecycle-dispatch.js";
+import {
+  ownedAppointmentLifecycleContract,
+  ownedAppointmentLifecyclePayload,
+} from "./appointment-lifecycle-dispatch.js";
 
 const CONTACT_ID = /^[A-Za-z0-9_-]{1,100}$/;
 const SERVICE_ID = /^[A-Za-z0-9_-]{1,100}$/;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const STAFF_ACTOR = /^[A-Za-z][A-Za-z .'-]{0,78}$/;
 const MAX_FUTURE_MS = 33 * 86_400_000;
-const PARTNER_INITIAL_CALENDAR_ID = "lfsnaiGiLNL2z12pLKDP";
 
 export class OwnedAppointmentError extends Error {
   constructor(message, code, status) {
@@ -155,10 +157,13 @@ async function lifecycleDispatchStatement(db, input, now) {
   const providerCalendarId = clean(input?.providerCalendarId, 160);
   const eventType = clean(input?.eventType, 20);
   const startAt = clean(input?.startAt, 80);
+  const contract = ownedAppointmentLifecycleContract(input?.serviceId);
   if (!new Set(["ghl", "google_calendar"]).has(provider) || !providerAppointmentId ||
       !providerCalendarId || !new Set(["confirmed", "cancelled"]).has(eventType) ||
       !Number.isFinite(Date.parse(startAt)) ||
-      (provider === "ghl" && providerCalendarId !== PARTNER_INITIAL_CALENDAR_ID)) {
+      !contract ||
+      (provider === "ghl" && providerCalendarId !== contract.ghlCalendarId) ||
+      (provider === "google_calendar" && !contract.googleCalendarAllowed)) {
     throw new OwnedAppointmentError("appointment lifecycle identity is incomplete", "lifecycle_identity_missing", 409);
   }
   const providerContactId = await exactLifecycleProviderContact(db, input.contactId, provider);
@@ -746,7 +751,7 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
          VALUES (?, ?, ?, 'completed', ?, ?)`,
       ).bind(crypto.randomUUID(), row.id, row.appointment_id, JSON.stringify({ provider: row.provider || null }), now),
     ];
-    if (options.providerSyncRequired !== false && row.service_id === "partner-initial") {
+    if (options.providerSyncRequired !== false && ownedAppointmentLifecycleContract(row.service_id)) {
       const appointment = await db.prepare(
         "SELECT starts_at FROM appointments WHERE id = ? AND contact_id = ?",
       ).bind(row.appointment_id, row.contact_id).first();
@@ -864,7 +869,7 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
            record_id = excluded.record_id, last_seen_at = excluded.last_seen_at`,
       ).bind(`ext_${linkDigest.slice(0, 24)}`, row.provider, providerRecordId, row.contact_id, replacementId, now));
     }
-    if (options.providerSyncRequired !== false && row.service_id === "partner-initial") {
+    if (options.providerSyncRequired !== false && ownedAppointmentLifecycleContract(row.service_id)) {
       statements.push(await lifecycleDispatchStatement(db, {
         commandId: row.id,
         // Preserve the original owned appointment identity so the reminder
@@ -919,7 +924,7 @@ export async function completeOwnedAppointmentExecution(db, input, options = {})
        VALUES (?, ?, ?, 'completed', ?, ?)`,
     ).bind(crypto.randomUUID(), row.id, row.appointment_id, JSON.stringify({ provider: row.provider || null }), now),
   ];
-  if (options.providerSyncRequired !== false && row.service_id === "partner-initial") {
+  if (options.providerSyncRequired !== false && ownedAppointmentLifecycleContract(row.service_id)) {
     const lifecycle = await db.prepare(
       `SELECT appointment.id AS appointment_id, appointment.contact_id, appointment.service_id,
               appointment.provider_appointment_id, appointment.provider_calendar_id,

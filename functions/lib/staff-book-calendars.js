@@ -9,12 +9,14 @@ export const STAFF_BOOK_TYPES = {
     label: "Assessment ($29)",
   },
   discovery_call: {
+    serviceId: "discovery-call",
     calendarId: "USgPsktqRcuomdUgpShL",
     durationMinutes: 15,
     title: "Amari Method Discovery Call",
     label: "Discovery call (free)",
   },
   discovery_virtual: {
+    serviceId: "discovery-call-virtual",
     calendarId: "ZEIGFHBi17SpZ3Ezi5DR",
     durationMinutes: 15,
     title: "Amari Method Discovery Call — Virtual",

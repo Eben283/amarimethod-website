@@ -30,6 +30,18 @@ describe("staff-book-calendars", () => {
     expect(booking.calendarId).toBe("Ggz6VP9Vg5T05WBCiPmz");
     expect(booking.durationMinutes).toBe(50);
   });
+
+  it("assigns exact owned service identity only to the reviewed discovery calendars", () => {
+    expect(resolveStaffBookType("discovery_call")).toMatchObject({
+      serviceId: "discovery-call",
+      calendarId: "USgPsktqRcuomdUgpShL",
+    });
+    expect(resolveStaffBookType("discovery_virtual")).toMatchObject({
+      serviceId: "discovery-call-virtual",
+      calendarId: "ZEIGFHBi17SpZ3Ezi5DR",
+    });
+    expect(resolveStaffBookType("ambassador_discovery")).not.toHaveProperty("serviceId");
+  });
 });
 
 describe("flattenSlots", () => {

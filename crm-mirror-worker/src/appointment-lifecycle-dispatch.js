@@ -1,7 +1,23 @@
 const DEFAULT_LIMIT = 10;
 const DEFAULT_LEASE_MS = 120_000;
 const MANUAL_REVIEW_AFTER = 24;
-const PARTNER_FLOW = "partner-initial-in-person";
+const LIFECYCLE_CONTRACTS = Object.freeze({
+  "partner-initial": Object.freeze({
+    flowKey: "partner-initial-in-person",
+    ghlCalendarId: "lfsnaiGiLNL2z12pLKDP",
+    googleCalendarAllowed: true,
+  }),
+  "discovery-call": Object.freeze({
+    flowKey: "discovery-call",
+    ghlCalendarId: "USgPsktqRcuomdUgpShL",
+    googleCalendarAllowed: false,
+  }),
+  "discovery-call-virtual": Object.freeze({
+    flowKey: "discovery-call",
+    ghlCalendarId: "ZEIGFHBi17SpZ3Ezi5DR",
+    googleCalendarAllowed: false,
+  }),
+});
 
 function changes(result) {
   return Number(result?.meta?.changes ?? result?.changes ?? 0);
@@ -13,9 +29,13 @@ async function sha256(value) {
 }
 
 export function ownedAppointmentLifecycleEvent(row) {
+  const contract = ownedAppointmentLifecycleContract(row?.service_id);
   if (!row?.command_id || !row?.appointment_id || !row?.contact_id || !row?.service_id ||
+      !contract ||
       !new Set(["ghl", "google_calendar"]).has(row?.provider) ||
       (row.provider === "ghl" && !row?.provider_contact_id) ||
+      (row.provider === "ghl" && row.provider_calendar_id !== contract.ghlCalendarId) ||
+      (row.provider === "google_calendar" && !contract.googleCalendarAllowed) ||
       !row?.provider_appointment_id || !row?.provider_calendar_id || !row?.start_at ||
       !new Set(["confirmed", "cancelled"]).has(row?.event_type)) {
     throw new TypeError("complete owned appointment lifecycle identity required");
@@ -41,6 +61,10 @@ export function ownedAppointmentLifecycleEvent(row) {
       providerContactId: row.provider_contact_id || null,
     },
   };
+}
+
+export function ownedAppointmentLifecycleContract(serviceId) {
+  return LIFECYCLE_CONTRACTS[String(serviceId || "")] || null;
 }
 
 export async function ownedAppointmentLifecyclePayload(row) {
@@ -86,16 +110,18 @@ async function failDispatch(db, row, error, nowMs, manualReview = false) {
   return state;
 }
 
-function acceptedPartnerAction(actions) {
+function acceptedLifecycleAction(actions, serviceId) {
+  const flowKey = ownedAppointmentLifecycleContract(serviceId)?.flowKey;
+  if (!flowKey) return false;
   return (actions || []).some((action) => action?.engine === "reminder"
     && new Set(["enroll", "enroll-noop", "reschedule", "cancel"]).has(action?.action)
-    && action?.detail?.flowKey === PARTNER_FLOW);
+    && action?.detail?.flowKey === flowKey);
 }
 
 /**
- * Deliver completed owned Partner Initial appointments to the existing
- * shadow-only reminder engine. The service binding is mandatory: same-account
- * workers.dev subrequests are intentionally not a supported fallback.
+ * Deliver completed owned appointment lifecycles to the existing shadow-only
+ * reminder engine. The service binding is mandatory: same-account workers.dev
+ * subrequests are intentionally not a supported fallback.
  */
 export async function dispatchOwnedAppointmentLifecycles(env, nowMs = Date.now(), limit = DEFAULT_LIMIT) {
   const db = env?.CRM_DB;
@@ -133,8 +159,8 @@ export async function dispatchOwnedAppointmentLifecycles(env, nowMs = Date.now()
       });
       const body = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(`reminder engine responded ${response.status}`);
-      if (!acceptedPartnerAction(body.actions)) {
-        await failDispatch(db, row, "reminder engine did not acknowledge the Partner Initial lifecycle", nowMs, true);
+      if (!acceptedLifecycleAction(body.actions, row.service_id)) {
+        await failDispatch(db, row, "reminder engine did not acknowledge the exact owned appointment lifecycle", nowMs, true);
         summary.manualReview += 1;
         continue;
       }

@@ -230,6 +230,55 @@ describe("owned appointment authority", () => {
     db.sqlite.close();
   });
 
+  it.each([
+    ["discovery-call", "USgPsktqRcuomdUgpShL"],
+    ["discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR"],
+  ])("captures and queues the %s lifecycle without duplicating GHL delivery", async (serviceId, calendarId) => {
+    const db = d1Database();
+    seedContact(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const discoveryInput = {
+      ...input,
+      serviceId,
+      idempotencyKey: `${serviceId}-0001`,
+      startTime: "2026-09-01T10:15:00-07:00",
+    };
+    const captured = await captureOwnedScheduleCommand(db, discoveryInput, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await linkOwnedAppointmentProviderRecord(db, {
+      ...identity,
+      provider: "ghl",
+      providerRecordId: `ghl-${serviceId}`,
+      providerCalendarId: calendarId,
+      providerStatusRaw: "confirmed",
+    }, { nowMs: nowMs + 1_000 });
+
+    await completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: {
+        status: "completed", action: "schedule", actor: "Garrett", contactId: "contact-1",
+        appointmentId: captured.appointmentId, providerAppointmentId: `ghl-${serviceId}`,
+        newStartTime: discoveryInput.startTime, appointmentStatus: "confirmed",
+        reminderVerification: "pending_event_evidence", authority: "owned",
+      },
+    }, { nowMs: nowMs + 2_000, providerSyncRequired: true });
+
+    expect(db.sqlite.prepare("SELECT authority, provider_sync_state FROM appointments WHERE id = ?")
+      .get(captured.appointmentId)).toEqual({ authority: "owned", provider_sync_state: "synced" });
+    expect(db.sqlite.prepare(`
+      SELECT service_id, provider, provider_calendar_id, event_type, state
+        FROM appointment_lifecycle_dispatches WHERE command_id = ?
+    `).get(captured.commandId)).toEqual({
+      service_id: serviceId,
+      provider: "ghl",
+      provider_calendar_id: calendarId,
+      event_type: "confirmed",
+      state: "pending",
+    });
+    db.sqlite.close();
+  });
+
   it("rejects an inexact schedule readback before committing command or lifecycle truth", async () => {
     const db = d1Database();
     seedContact(db);

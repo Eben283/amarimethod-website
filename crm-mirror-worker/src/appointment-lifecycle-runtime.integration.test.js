@@ -361,6 +361,149 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await crmDb.prepare(
       "SELECT state, attempts, last_error FROM appointment_lifecycle_dispatches WHERE command_id = ?",
     ).bind(commandId).first()).toEqual({ state: "dispatched", attempts: 1, last_error: null });
+
+  }, 30_000);
+
+  it.each([
+    ["discovery-call", "USgPsktqRcuomdUgpShL"],
+    ["discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR"],
+  ])("runs owned %s through the real CRM binding into the non-sending discovery shadow flow", async (serviceId, calendarId) => {
+    const { mf, crmDb, reminderDb } = await startRuntime();
+    const now = Date.now();
+    const startAt = new Date(now + 7 * 86_400_000).toISOString();
+    const recordedAt = new Date(now).toISOString();
+    const providerAppointmentId = `synthetic-${serviceId}`;
+    await crmDb.batch([
+      crmDb.prepare(
+        `INSERT INTO contacts (id, display_name, created_at, updated_at)
+         VALUES (?, 'Synthetic Discovery — Runtime Proof', ?, ?)`,
+      ).bind(CONTACT_ID, recordedAt, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO external_records
+           (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+         VALUES ('synthetic-discovery-contact-crosswalk', 'ghl', 'contact', ?, ?, 'contact', ?, ?)`,
+      ).bind(PROVIDER_CONTACT_ID, CONTACT_ID, CONTACT_ID, recordedAt),
+    ]);
+
+    const capture = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "schedule",
+        contactId: CONTACT_ID,
+        serviceId,
+        idempotencyKey: `synthetic-${serviceId}-runtime-proof-v1`,
+        startTime: startAt,
+        timezone: "America/Los_Angeles",
+      },
+    });
+    const commandId = capture.appointment.commandId;
+    const appointmentId = capture.appointment.appointmentId;
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: { action: "claim", commandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "provider-link",
+        commandId,
+        provider: "ghl",
+        providerRecordId: providerAppointmentId,
+        providerCalendarId: calendarId,
+        providerStatusRaw: "confirmed",
+      },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete",
+        commandId,
+        result: {
+          action: "schedule",
+          actor: "Garrett",
+          contactId: CONTACT_ID,
+          appointmentId,
+          providerAppointmentId,
+          newStartTime: startAt,
+          appointmentStatus: "confirmed",
+          reminderVerification: "pending_event_evidence",
+          authority: "owned",
+        },
+      },
+    });
+
+    expect(await crmDb.prepare(
+      "SELECT state FROM appointment_lifecycle_dispatches WHERE command_id = ?",
+    ).bind(commandId).first()).toEqual({ state: "pending" });
+    const sync = await request(mf, "/sync", {
+      method: "POST",
+      body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(sync.results.ownedAppointmentLifecycles).toMatchObject({
+      status: "succeeded", considered: 1, dispatched: 1, manualReview: 0,
+    });
+
+    const enrollmentId = `discovery-call:${appointmentId}`;
+    expect(await reminderDb.prepare(
+      `SELECT flow_key, appointment_id, contact_id, calendar_id, status
+         FROM reminder_enrollments WHERE enrollment_id = ?`,
+    ).bind(enrollmentId).first()).toEqual({
+      flow_key: "discovery-call",
+      appointment_id: appointmentId,
+      contact_id: CONTACT_ID,
+      calendar_id: calendarId,
+      status: "active",
+    });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ?",
+    ).bind(enrollmentId).first()).toEqual({ count: 7 });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM automation_events WHERE flow_key = 'discovery-call' AND outcome = 'enrolled'",
+    ).first()).toEqual({ count: 1 });
+    expect(await crmDb.prepare(
+      "SELECT state, attempts, last_error FROM appointment_lifecycle_dispatches WHERE command_id = ?",
+    ).bind(commandId).first()).toEqual({ state: "dispatched", attempts: 1, last_error: null });
+
+    const cancellation = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "manage",
+        manageAction: "cancel",
+        contactId: CONTACT_ID,
+        appointmentId,
+        idempotencyKey: `synthetic-${serviceId}-cancel-runtime-proof-v1`,
+      },
+    });
+    const cancellationCommandId = cancellation.command.commandId;
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: { action: "claim", commandId: cancellationCommandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete",
+        commandId: cancellationCommandId,
+        result: { action: "cancel", contactId: CONTACT_ID, appointmentStatus: "cancelled" },
+      },
+    });
+    expect(await crmDb.prepare(
+      "SELECT event_type, state FROM appointment_lifecycle_dispatches WHERE command_id = ?",
+    ).bind(cancellationCommandId).first()).toEqual({ event_type: "cancelled", state: "pending" });
+
+    const cancellationSync = await request(mf, "/sync", {
+      method: "POST",
+      body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(cancellationSync.results.ownedAppointmentLifecycles).toMatchObject({
+      status: "succeeded", considered: 1, dispatched: 1,
+    });
+    expect(await reminderDb.prepare(
+      "SELECT status FROM reminder_enrollments WHERE enrollment_id = ?",
+    ).bind(enrollmentId).first()).toEqual({ status: "cancelled" });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ? AND status = 'pending'",
+    ).bind(enrollmentId).first()).toEqual({ count: 0 });
   }, 30_000);
 
   it("runs the same owned vertical with a Google calendar checkpoint and no GHL identity or credentials", async () => {
