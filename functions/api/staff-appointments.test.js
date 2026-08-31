@@ -246,6 +246,62 @@ describe("staff appointment management API", () => {
     });
   });
 
+  it.each([
+    ["discovery_call", "discovery-call", "USgPsktqRcuomdUgpShL"],
+    ["discovery_virtual", "discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR"],
+    ["ambassador_discovery", "partnership-discovery", "aVE54Qf4lrbYTB0zFqXy"],
+  ])("captures %s in the owned CRM before the unchanged GHL edge", async (sessionType, serviceId, calendarId) => {
+    const ownedStore = { marker: `owned-${serviceId}` };
+    const createOwnedAppointmentScheduleStore = vi.fn(() => ownedStore);
+    const scheduleAppointmentCommand = vi.fn(async (input) => ({
+      status: "completed", action: "schedule", actor: input.actor,
+      appointmentId: `appt_${serviceId}`, providerAppointmentId: `ghl_${serviceId}`,
+      authority: "owned", contactId: input.contactId, newStartTime: input.startTime,
+      appointmentStatus: "confirmed", reminderVerification: "pending_event_evidence",
+    }));
+    vi.doMock("../lib/endpoint-guards.js", () => ({
+      requireStaffAuth: vi.fn(async () => ({ error: null, payload: { role: "staff", user: "Garrett" } })),
+      corsHeaders: () => ({}),
+      parseJsonBody: vi.fn(async () => ({
+        body: {
+          action: "schedule", contactId: "owned_1", sessionType,
+          startTime: "2026-09-02T10:00:00-07:00", idempotencyKey: `schedule-${serviceId}`,
+        },
+        error: null,
+      })),
+    }));
+    vi.doMock("../lib/staff-owned-appointment-store.js", () => ({
+      createOwnedAppointmentScheduleStore,
+      createOwnedAppointmentManageStore: vi.fn(),
+    }));
+    vi.doMock("../lib/staff-appointment-manage.js", async (importOriginal) => ({
+      ...(await importOriginal()), scheduleAppointmentCommand,
+    }));
+    vi.doMock("../lib/ops-path-emit.js", () => ({ emitPathHop: vi.fn(async () => ({})) }));
+    vi.doMock("../lib/ops-alert.js", () => ({ recordOpsError: vi.fn(async () => ({})) }));
+
+    const { onRequestPost } = await import("./staff-appointments.js");
+    const response = await onRequestPost({
+      request: new Request("https://www.amarimethod.com/api/staff-appointments", { method: "POST" }),
+      env: {
+        WORKER_AUTH_SECRET: "secret",
+        STAFF_APPOINTMENT_CALENDAR_PROVIDER: "google_calendar",
+      },
+      waitUntil: vi.fn(),
+    });
+
+    expect(response.status).toBe(200);
+    expect(createOwnedAppointmentScheduleStore).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
+      actor: "Garrett", contactId: "owned_1", sessionType,
+      booking: expect.objectContaining({ serviceId, calendarId }),
+      provider: "ghl", providerCalendarId: calendarId,
+    }));
+    expect(scheduleAppointmentCommand).toHaveBeenCalledWith(expect.objectContaining({
+      store: ownedStore,
+      provider: expect.objectContaining({ provider: "ghl" }),
+    }));
+  });
+
   it("selects the owned Google edge for Partner Initial without requiring a GHL contact crosswalk", async () => {
     vi.doMock("../lib/staff-owned-contact-identity.js", () => ({
       resolveOwnedContactIdentity: vi.fn(async () => ({ ownedContactId: "owned_1", providerContactId: null })),

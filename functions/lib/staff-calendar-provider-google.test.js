@@ -52,6 +52,12 @@ describe("owned Google Staff calendar adapter", () => {
     expect(configuredStaffCalendarProviderForBooking(
       { STAFF_APPOINTMENT_CALENDAR_PROVIDER: "google_calendar" }, { serviceId: "partner-initial-virtual" },
     )).toBe("ghl");
+    expect(configuredStaffCalendarProviderForBooking(
+      { STAFF_APPOINTMENT_CALENDAR_PROVIDER: "google_calendar" }, { serviceId: "discovery-call" },
+    )).toBe("ghl");
+    expect(configuredStaffCalendarProviderForBooking(
+      { STAFF_APPOINTMENT_CALENDAR_PROVIDER: "google_calendar" }, { serviceId: "discovery-call-virtual" },
+    )).toBe("ghl");
     expect(() => createGoogleStaffCalendarProvider({ env: {} }, "owned-contact-1"))
       .toThrow(/not configured/);
   });

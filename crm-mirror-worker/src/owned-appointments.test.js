@@ -24,6 +24,7 @@ const migrationNames = [
   "0017_gmail_sync_gap_evidence.sql", "0018_gmail_reply_sync_control.sql",
   "0019_owned_appointment_authority.sql", "0020_owned_appointment_lifecycle_dispatch.sql",
   "0021_provider_neutral_calendar_authority.sql",
+  "0022_partnership_discovery_service.sql",
 ];
 
 function d1Database() {
@@ -227,6 +228,106 @@ describe("owned appointment authority", () => {
     });
     await expect(claimOwnedAppointmentExecution(db, identity, { nowMs: nowMs + 4_000 }))
       .resolves.toMatchObject({ state: "completed" });
+    db.sqlite.close();
+  });
+
+  it.each([
+    ["discovery-call", "USgPsktqRcuomdUgpShL"],
+    ["discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR"],
+  ])("captures and queues the %s lifecycle without duplicating GHL delivery", async (serviceId, calendarId) => {
+    const db = d1Database();
+    seedContact(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const discoveryInput = {
+      ...input,
+      serviceId,
+      idempotencyKey: `${serviceId}-0001`,
+      startTime: "2026-09-01T10:15:00-07:00",
+    };
+    const captured = await captureOwnedScheduleCommand(db, discoveryInput, { nowMs, providerSyncRequired: true });
+    const identity = { commandId: captured.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await linkOwnedAppointmentProviderRecord(db, {
+      ...identity,
+      provider: "ghl",
+      providerRecordId: `ghl-${serviceId}`,
+      providerCalendarId: calendarId,
+      providerStatusRaw: "confirmed",
+    }, { nowMs: nowMs + 1_000 });
+
+    await completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: {
+        status: "completed", action: "schedule", actor: "Garrett", contactId: "contact-1",
+        appointmentId: captured.appointmentId, providerAppointmentId: `ghl-${serviceId}`,
+        newStartTime: discoveryInput.startTime, appointmentStatus: "confirmed",
+        reminderVerification: "pending_event_evidence", authority: "owned",
+      },
+    }, { nowMs: nowMs + 2_000, providerSyncRequired: true });
+
+    expect(db.sqlite.prepare("SELECT authority, provider_sync_state FROM appointments WHERE id = ?")
+      .get(captured.appointmentId)).toEqual({ authority: "owned", provider_sync_state: "synced" });
+    expect(db.sqlite.prepare(`
+      SELECT service_id, provider, provider_calendar_id, event_type, state
+        FROM appointment_lifecycle_dispatches WHERE command_id = ?
+    `).get(captured.commandId)).toEqual({
+      service_id: serviceId,
+      provider: "ghl",
+      provider_calendar_id: calendarId,
+      event_type: "confirmed",
+      state: "pending",
+    });
+    db.sqlite.close();
+  });
+
+  it("captures Partnership Discovery without inventing a generic discovery lifecycle", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const partnershipInput = {
+      ...input,
+      serviceId: "partnership-discovery",
+      idempotencyKey: "partnership-discovery-0001",
+      startTime: "2026-09-01T10:30:00-07:00",
+    };
+    const captured = await captureOwnedScheduleCommand(db, partnershipInput, {
+      nowMs, providerSyncRequired: true,
+    });
+    const identity = { commandId: captured.commandId, actor: "Garrett" };
+    await claimOwnedAppointmentExecution(db, identity, { nowMs });
+    await linkOwnedAppointmentProviderRecord(db, {
+      ...identity,
+      provider: "ghl",
+      providerRecordId: "ghl-partnership-discovery-1",
+      providerCalendarId: "aVE54Qf4lrbYTB0zFqXy",
+      providerStatusRaw: "confirmed",
+    }, { nowMs: nowMs + 1_000 });
+
+    await completeOwnedAppointmentExecution(db, {
+      ...identity,
+      result: {
+        status: "completed", action: "schedule", actor: "Garrett", contactId: "contact-1",
+        appointmentId: captured.appointmentId,
+        providerAppointmentId: "ghl-partnership-discovery-1",
+        newStartTime: partnershipInput.startTime,
+        appointmentStatus: "confirmed",
+        reminderVerification: "pending_event_evidence",
+        authority: "owned",
+      },
+    }, { nowMs: nowMs + 2_000, providerSyncRequired: true });
+
+    expect(db.sqlite.prepare(`
+      SELECT service_id, authority, provider_sync_state, provider_calendar_id
+        FROM appointments WHERE id = ?
+    `).get(captured.appointmentId)).toEqual({
+      service_id: "partnership-discovery",
+      authority: "owned",
+      provider_sync_state: "synced",
+      provider_calendar_id: "aVE54Qf4lrbYTB0zFqXy",
+    });
+    expect(db.sqlite.prepare(`
+      SELECT COUNT(*) AS count FROM appointment_lifecycle_dispatches WHERE command_id = ?
+    `).get(captured.commandId)).toEqual({ count: 0 });
     db.sqlite.close();
   });
 

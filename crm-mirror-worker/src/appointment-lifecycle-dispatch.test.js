@@ -19,6 +19,7 @@ const migrationNames = [
   "0017_gmail_sync_gap_evidence.sql", "0018_gmail_reply_sync_control.sql",
   "0019_owned_appointment_authority.sql", "0020_owned_appointment_lifecycle_dispatch.sql",
   "0021_provider_neutral_calendar_authority.sql",
+  "0022_partnership_discovery_service.sql",
 ];
 
 function d1Database() {
@@ -82,6 +83,14 @@ async function seedDispatch(db, overrides = {}) {
       '2026-08-29T00:00:00Z', '2026-08-29T00:00:00Z'
     )
   `);
+  if (row.service_id !== "partner-initial" || row.provider_calendar_id !== "lfsnaiGiLNL2z12pLKDP") {
+    db.sqlite.prepare(
+      "UPDATE appointments SET service_id = ?, provider_calendar_id = ? WHERE id = ?",
+    ).run(row.service_id, row.provider_calendar_id, row.appointment_id);
+    db.sqlite.prepare(
+      "UPDATE appointment_authority_commands SET service_id = ? WHERE id = ?",
+    ).run(row.service_id, row.command_id);
+  }
   db.sqlite.prepare(`
     INSERT INTO appointment_lifecycle_dispatches (
       id, command_id, appointment_id, contact_id, service_id, provider,
@@ -118,8 +127,8 @@ describe("owned appointment lifecycle dispatch", () => {
     expect(init.headers.Authorization).toBe("Bearer test-worker-secret");
     expect(JSON.parse(init.body)).toEqual({
       type: "confirmed", recognized: true, status: "confirmed",
-      calendarId: "lfsnaiGiLNL2z12pLKDP", contactId: "contact-1",
-      appointmentId: "appt_1234567890abcdef12345678", startAt: "2026-09-01T17:00:00.000Z",
+      calendarId: "lfsnaiGiLNL2z12pLKDP", contactId: "ghl-contact-1",
+      appointmentId: "ghl-appointment-1", startAt: "2026-09-01T17:00:00.000Z",
       modifiedBy: "user",
       context: {
         source: "owned_crm", commandId: "acmd_1234567890abcdef12345678",
@@ -135,6 +144,55 @@ describe("owned appointment lifecycle dispatch", () => {
       configured: true, state: "ready", blocking: 0, shadowOnly: true, deliveryEnabled: false,
       counts: { dispatched: 1 },
     });
+    db.sqlite.close();
+  });
+
+  it.each([
+    ["discovery-call", "USgPsktqRcuomdUgpShL"],
+    ["discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR"],
+  ])("delivers the exact owned %s event only when the discovery shadow flow acknowledges it", async (serviceId, calendarId) => {
+    const db = d1Database();
+    await seedDispatch(db, { service_id: serviceId, provider_calendar_id: calendarId });
+    const fetch = vi.fn(async (_url, init) => {
+      expect(JSON.parse(init.body)).toMatchObject({
+        calendarId,
+        context: { serviceId, providerCalendarId: calendarId },
+      });
+      return new Response(JSON.stringify({
+        actions: [{ engine: "reminder", action: "enroll", detail: { flowKey: "discovery-call" } }],
+      }), { status: 200, headers: { "Content-Type": "application/json" } });
+    });
+
+    await expect(dispatchOwnedAppointmentLifecycles({
+      CRM_DB: db, WORKER_AUTH_SECRET: "test-worker-secret", REMINDER: { fetch },
+    }, Date.parse("2026-08-29T01:00:00Z"))).resolves.toMatchObject({
+      status: "succeeded", dispatched: 1, manualReview: 0,
+    });
+    expect(db.sqlite.prepare("SELECT state FROM appointment_lifecycle_dispatches").get())
+      .toEqual({ state: "dispatched" });
+    db.sqlite.close();
+  });
+
+  it("quarantines a cross-flow acknowledgement instead of accepting unrelated lifecycle work", async () => {
+    const db = d1Database();
+    await seedDispatch(db, {
+      service_id: "discovery-call",
+      provider_calendar_id: "USgPsktqRcuomdUgpShL",
+    });
+    const fetch = vi.fn(async () => new Response(JSON.stringify({
+      actions: [{ engine: "reminder", action: "enroll", detail: { flowKey: "partner-initial-in-person" } }],
+    }), { status: 200, headers: { "Content-Type": "application/json" } }));
+
+    await expect(dispatchOwnedAppointmentLifecycles({
+      CRM_DB: db, WORKER_AUTH_SECRET: "test-worker-secret", REMINDER: { fetch },
+    }, Date.parse("2026-08-29T01:00:00Z"))).resolves.toMatchObject({
+      status: "attention", dispatched: 0, manualReview: 1,
+    });
+    expect(db.sqlite.prepare("SELECT state, last_error FROM appointment_lifecycle_dispatches").get())
+      .toEqual({
+        state: "manual_review",
+        last_error: "reminder engine did not acknowledge the exact owned appointment lifecycle",
+      });
     db.sqlite.close();
   });
 
@@ -164,8 +222,11 @@ describe("owned appointment lifecycle dispatch", () => {
       expect(JSON.parse(init.body)).toMatchObject({
         type: "cancelled",
         status: "cancelled",
-        appointmentId: "appt_1234567890abcdef12345678",
-        context: { serviceId: "partner-initial" },
+        appointmentId: "ghl-appointment-1",
+        context: {
+          serviceId: "partner-initial",
+          ownedAppointmentId: "appt_1234567890abcdef12345678",
+        },
       });
       return new Response(JSON.stringify({
         actions: [{ engine: "reminder", action: "cancel", detail: {

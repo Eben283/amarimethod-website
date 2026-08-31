@@ -142,6 +142,16 @@ export async function onRequestPost(context) {
       return json({ error: "Choose an available time." }, 400, headers);
     }
     if (!idempotencyKey) return json({ error: "idempotencyKey required" }, 400, headers);
+    // Owned services must enter through /api/staff-appointments so the CRM
+    // command is accepted before the temporary provider edge can mutate. Keep
+    // this legacy endpoint available only for services that have not reached
+    // that authority boundary yet; never let it become a parallel bypass.
+    if (booking.serviceId) {
+      return json({
+        error: "Use the Staff appointment manager for this appointment type.",
+        code: "owned_appointment_route_required",
+      }, 409, headers);
+    }
 
     const cacheKey = `staff-book:${contactId}:${idempotencyKey}`;
     const existing = await context.env.PORTAL_KV?.get(cacheKey, "json");

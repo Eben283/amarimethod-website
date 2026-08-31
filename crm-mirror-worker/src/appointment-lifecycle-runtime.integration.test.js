@@ -7,6 +7,7 @@ import { Miniflare, convertV4MiniflareOptions } from "miniflare";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const AUTH = "synthetic-runtime-proof-secret";
+const WEBHOOK_SECRET = "synthetic-runtime-webhook-secret";
 const CONTACT_ID = "synthetic-partner-contact";
 const PROVIDER_CONTACT_ID = "synthetic-ghl-contact";
 const PROVIDER_APPOINTMENT_ID = "synthetic-ghl-appointment";
@@ -123,7 +124,7 @@ async function applySql(db, sql) {
 async function applyCrmSchema(db) {
   const directory = join(ROOT, "crm-mirror-worker/migrations");
   const names = readdirSync(directory).filter((name) => /^\d{4}_.+\.sql$/.test(name)).sort();
-  expect(names.at(-1)).toBe("0021_provider_neutral_calendar_authority.sql");
+  expect(names.at(-1)).toBe("0022_partnership_discovery_service.sql");
   for (const name of names) {
     const sql = readFileSync(join(directory, name), "utf8");
     await applySql(db, sql);
@@ -166,7 +167,10 @@ async function startRuntime() {
           ...base,
           name: "reminder",
           script: scripts.reminder,
-          bindings: { WORKER_AUTH_SECRET: AUTH },
+          bindings: {
+            WORKER_AUTH_SECRET: AUTH,
+            GHL_APPOINTMENT_WEBHOOK_SECRET: WEBHOOK_SECRET,
+          },
           d1Databases: ["REMINDER_DB"],
           kvNamespaces: ["PORTAL_KV"],
         },
@@ -191,6 +195,21 @@ async function request(mf, pathname, { method = "GET", body } = {}) {
       "X-Staff-Actor": "Garrett",
     },
     ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+  });
+  const payload = await response.json();
+  expect(response.status, JSON.stringify(payload)).toBeLessThan(300);
+  return payload;
+}
+
+async function ghlWebhook(mf, body) {
+  const reminder = await mf.getWorker("reminder");
+  const response = await reminder.fetch("http://reminder.test/webhook", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-Webhook-Secret": WEBHOOK_SECRET,
+    },
+    body: JSON.stringify(body),
   });
   const payload = await response.json();
   expect(response.status, JSON.stringify(payload)).toBeLessThan(300);
@@ -311,7 +330,7 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       manualReview: 0,
     });
 
-    const enrollmentId = `${PARTNER_FLOW}:${appointmentId}`;
+    const enrollmentId = `${PARTNER_FLOW}:${PROVIDER_APPOINTMENT_ID}`;
     expect(await reminderDb.prepare(
       `SELECT enrollment_id, flow_key, definition_version, appointment_id, contact_id,
               calendar_id, start_at, status
@@ -320,8 +339,8 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       enrollment_id: enrollmentId,
       flow_key: PARTNER_FLOW,
       definition_version: 1,
-      appointment_id: appointmentId,
-      contact_id: CONTACT_ID,
+      appointment_id: PROVIDER_APPOINTMENT_ID,
+      contact_id: PROVIDER_CONTACT_ID,
       calendar_id: PARTNER_CALENDAR_ID,
       start_at: startAt,
       status: "active",
@@ -337,9 +356,29 @@ describe("owned Partner Initial lifecycle native runtime", () => {
         outcome: "enrolled",
         engine: "reminder",
         flow_key: PARTNER_FLOW,
-        appointment_id: appointmentId,
-        contact_id: CONTACT_ID,
+        appointment_id: PROVIDER_APPOINTMENT_ID,
+        contact_id: PROVIDER_CONTACT_ID,
       }]);
+
+    const partnerQueue = (await reminderDb.prepare(
+      "SELECT step_index, due_at, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(enrollmentId).all()).results;
+    const providerReplay = await ghlWebhook(mf, {
+      appointment: {
+        id: PROVIDER_APPOINTMENT_ID,
+        calendarId: PARTNER_CALENDAR_ID,
+        contactId: PROVIDER_CONTACT_ID,
+        startTime: startAt,
+        appointmentStatus: "confirmed",
+        modifiedBy: "user",
+      },
+    });
+    expect(providerReplay.actions).toContainEqual({
+      engine: "reminder", action: "enroll-noop", detail: { flowKey: PARTNER_FLOW },
+    });
+    expect((await reminderDb.prepare(
+      "SELECT step_index, due_at, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(enrollmentId).all()).results).toEqual(partnerQueue);
 
     const secondSync = await request(mf, "/sync", {
       method: "POST",
@@ -361,6 +400,280 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await crmDb.prepare(
       "SELECT state, attempts, last_error FROM appointment_lifecycle_dispatches WHERE command_id = ?",
     ).bind(commandId).first()).toEqual({ state: "dispatched", attempts: 1, last_error: null });
+
+  }, 30_000);
+
+  it.each([
+    ["discovery-call", "USgPsktqRcuomdUgpShL", "owned-first"],
+    ["discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR", "provider-first"],
+  ])("runs owned %s through the real CRM binding and deduplicates %s dual ingress", async (serviceId, calendarId, ingressOrder) => {
+    const { mf, crmDb, reminderDb } = await startRuntime();
+    const now = Date.now();
+    const startAt = new Date(now + 7 * 86_400_000).toISOString();
+    const recordedAt = new Date(now).toISOString();
+    const providerAppointmentId = `synthetic-${serviceId}`;
+    await crmDb.batch([
+      crmDb.prepare(
+        `INSERT INTO contacts (id, display_name, created_at, updated_at)
+         VALUES (?, 'Synthetic Discovery — Runtime Proof', ?, ?)`,
+      ).bind(CONTACT_ID, recordedAt, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO external_records
+           (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+         VALUES ('synthetic-discovery-contact-crosswalk', 'ghl', 'contact', ?, ?, 'contact', ?, ?)`,
+      ).bind(PROVIDER_CONTACT_ID, CONTACT_ID, CONTACT_ID, recordedAt),
+    ]);
+
+    const capture = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "schedule",
+        contactId: CONTACT_ID,
+        serviceId,
+        idempotencyKey: `synthetic-${serviceId}-runtime-proof-v1`,
+        startTime: startAt,
+        timezone: "America/Los_Angeles",
+      },
+    });
+    const commandId = capture.appointment.commandId;
+    const appointmentId = capture.appointment.appointmentId;
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: { action: "claim", commandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "provider-link",
+        commandId,
+        provider: "ghl",
+        providerRecordId: providerAppointmentId,
+        providerCalendarId: calendarId,
+        providerStatusRaw: "confirmed",
+      },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete",
+        commandId,
+        result: {
+          action: "schedule",
+          actor: "Garrett",
+          contactId: CONTACT_ID,
+          appointmentId,
+          providerAppointmentId,
+          newStartTime: startAt,
+          appointmentStatus: "confirmed",
+          reminderVerification: "pending_event_evidence",
+          authority: "owned",
+        },
+      },
+    });
+
+    expect(await crmDb.prepare(
+      "SELECT state FROM appointment_lifecycle_dispatches WHERE command_id = ?",
+    ).bind(commandId).first()).toEqual({ state: "pending" });
+    const confirmedProviderEvent = {
+      appointment: {
+        id: providerAppointmentId,
+        calendarId,
+        contactId: PROVIDER_CONTACT_ID,
+        startTime: startAt,
+        appointmentStatus: "confirmed",
+        modifiedBy: "user",
+      },
+    };
+    if (ingressOrder === "provider-first") {
+      expect((await ghlWebhook(mf, confirmedProviderEvent)).actions).toContainEqual({
+        engine: "reminder", action: "enroll", detail: { flowKey: "discovery-call" },
+      });
+    }
+    const sync = await request(mf, "/sync", {
+      method: "POST",
+      body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(sync.results.ownedAppointmentLifecycles).toMatchObject({
+      status: "succeeded", considered: 1, dispatched: 1, manualReview: 0,
+    });
+
+    const enrollmentId = `discovery-call:${providerAppointmentId}`;
+    expect(await reminderDb.prepare(
+      `SELECT flow_key, appointment_id, contact_id, calendar_id, status
+         FROM reminder_enrollments WHERE enrollment_id = ?`,
+    ).bind(enrollmentId).first()).toEqual({
+      flow_key: "discovery-call",
+      appointment_id: providerAppointmentId,
+      contact_id: PROVIDER_CONTACT_ID,
+      calendar_id: calendarId,
+      status: "active",
+    });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ?",
+    ).bind(enrollmentId).first()).toEqual({ count: 7 });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM automation_events WHERE flow_key = 'discovery-call' AND outcome = 'enrolled'",
+    ).first()).toEqual({ count: 1 });
+    expect(await crmDb.prepare(
+      "SELECT state, attempts, last_error FROM appointment_lifecycle_dispatches WHERE command_id = ?",
+    ).bind(commandId).first()).toEqual({ state: "dispatched", attempts: 1, last_error: null });
+
+    const queueBeforeReplay = (await reminderDb.prepare(
+      "SELECT step_index, due_at, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(enrollmentId).all()).results;
+    const providerReplay = await ghlWebhook(mf, confirmedProviderEvent);
+    expect(providerReplay.actions).toContainEqual({
+      engine: "reminder", action: "enroll-noop", detail: { flowKey: "discovery-call" },
+    });
+    expect(await reminderDb.prepare("SELECT COUNT(*) AS count FROM reminder_enrollments").first())
+      .toEqual({ count: 1 });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ?",
+    ).bind(enrollmentId).first()).toEqual({ count: 7 });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM automation_events WHERE flow_key = 'discovery-call' AND outcome = 'enrolled'",
+    ).first()).toEqual({ count: 1 });
+    expect((await reminderDb.prepare(
+      "SELECT step_index, due_at, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(enrollmentId).all()).results).toEqual(queueBeforeReplay);
+
+    const cancellation = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "manage",
+        manageAction: "cancel",
+        contactId: CONTACT_ID,
+        appointmentId,
+        idempotencyKey: `synthetic-${serviceId}-cancel-runtime-proof-v1`,
+      },
+    });
+    const cancellationCommandId = cancellation.command.commandId;
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: { action: "claim", commandId: cancellationCommandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete",
+        commandId: cancellationCommandId,
+        result: { action: "cancel", contactId: CONTACT_ID, appointmentStatus: "cancelled" },
+      },
+    });
+    expect(await crmDb.prepare(
+      "SELECT event_type, state FROM appointment_lifecycle_dispatches WHERE command_id = ?",
+    ).bind(cancellationCommandId).first()).toEqual({ event_type: "cancelled", state: "pending" });
+
+    const cancelledProviderEvent = {
+      appointment: {
+        id: providerAppointmentId,
+        calendarId,
+        contactId: PROVIDER_CONTACT_ID,
+        startTime: startAt,
+        appointmentStatus: "cancelled",
+        modifiedBy: "user",
+      },
+    };
+    if (ingressOrder === "provider-first") {
+      expect((await ghlWebhook(mf, cancelledProviderEvent)).actions).toContainEqual({
+        engine: "reminder", action: "cancel",
+        detail: { flowKey: "discovery-call", cancelledSteps: 7 },
+      });
+    }
+
+    const cancellationSync = await request(mf, "/sync", {
+      method: "POST",
+      body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(cancellationSync.results.ownedAppointmentLifecycles).toMatchObject({
+      status: "succeeded", considered: 1, dispatched: 1,
+    });
+    expect(await reminderDb.prepare(
+      "SELECT status FROM reminder_enrollments WHERE enrollment_id = ?",
+    ).bind(enrollmentId).first()).toEqual({ status: "cancelled" });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ? AND status = 'pending'",
+    ).bind(enrollmentId).first()).toEqual({ count: 0 });
+    expect((await ghlWebhook(mf, cancelledProviderEvent)).actions).toContainEqual({
+      engine: "reminder", action: "cancel",
+      detail: { flowKey: "discovery-call", cancelledSteps: 0 },
+    });
+  }, 30_000);
+
+  it("captures Partnership Discovery through the real CRM binding without dispatching the wrong lifecycle", async () => {
+    const { mf, crmDb, reminderDb } = await startRuntime();
+    const now = Date.now();
+    const startAt = new Date(now + 7 * 86_400_000).toISOString();
+    const recordedAt = new Date(now).toISOString();
+    await crmDb.batch([
+      crmDb.prepare(
+        `INSERT INTO contacts (id, display_name, created_at, updated_at)
+         VALUES (?, 'Synthetic Partnership Discovery', ?, ?)`,
+      ).bind(CONTACT_ID, recordedAt, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO external_records
+           (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+         VALUES ('synthetic-partnership-contact-crosswalk', 'ghl', 'contact', ?, ?, 'contact', ?, ?)`,
+      ).bind(PROVIDER_CONTACT_ID, CONTACT_ID, CONTACT_ID, recordedAt),
+    ]);
+
+    const capture = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "schedule",
+        contactId: CONTACT_ID,
+        serviceId: "partnership-discovery",
+        idempotencyKey: "synthetic-partnership-discovery-runtime-proof-v1",
+        startTime: startAt,
+        timezone: "America/Los_Angeles",
+      },
+    });
+    const commandId = capture.appointment.commandId;
+    const appointmentId = capture.appointment.appointmentId;
+    await request(mf, "/appointments/commands", {
+      method: "POST", body: { action: "claim", commandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "provider-link", commandId, provider: "ghl",
+        providerRecordId: "synthetic-partnership-discovery-appointment",
+        providerCalendarId: "aVE54Qf4lrbYTB0zFqXy",
+        providerStatusRaw: "confirmed",
+      },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete", commandId,
+        result: {
+          action: "schedule", actor: "Garrett", contactId: CONTACT_ID,
+          appointmentId,
+          providerAppointmentId: "synthetic-partnership-discovery-appointment",
+          newStartTime: startAt, appointmentStatus: "confirmed",
+          reminderVerification: "pending_event_evidence", authority: "owned",
+        },
+      },
+    });
+
+    expect(await crmDb.prepare(`
+      SELECT service_id, provider_calendar_id, authority, provider_sync_state
+        FROM appointments WHERE id = ?
+    `).bind(appointmentId).first()).toEqual({
+      service_id: "partnership-discovery",
+      provider_calendar_id: "aVE54Qf4lrbYTB0zFqXy",
+      authority: "owned",
+      provider_sync_state: "synced",
+    });
+    expect(await crmDb.prepare(
+      "SELECT COUNT(*) AS count FROM appointment_lifecycle_dispatches WHERE command_id = ?",
+    ).bind(commandId).first()).toEqual({ count: 0 });
+    const sync = await request(mf, "/sync", {
+      method: "POST", body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(sync.results.ownedAppointmentLifecycles).toMatchObject({ considered: 0, dispatched: 0 });
+    expect(await reminderDb.prepare("SELECT COUNT(*) AS count FROM reminder_enrollments").first())
+      .toEqual({ count: 0 });
   }, 30_000);
 
   it("runs the same owned vertical with a Google calendar checkpoint and no GHL identity or credentials", async () => {
@@ -427,8 +740,8 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await reminderDb.prepare(
       `SELECT flow_key, appointment_id, contact_id, calendar_id, status
          FROM reminder_enrollments WHERE enrollment_id = ?`,
-    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({
-      flow_key: PARTNER_FLOW, appointment_id: appointmentId, contact_id: CONTACT_ID,
+    ).bind(`${PARTNER_FLOW}:${googleEventId}`).first()).toEqual({
+      flow_key: PARTNER_FLOW, appointment_id: googleEventId, contact_id: CONTACT_ID,
       calendar_id: googleCalendarId, status: "active",
     });
     expect(await reminderDb.prepare("SELECT COUNT(*) AS count FROM reminder_steps").first())
@@ -472,9 +785,9 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     });
     expect(await reminderDb.prepare(
       "SELECT status FROM reminder_enrollments WHERE enrollment_id = ?",
-    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({ status: "cancelled" });
+    ).bind(`${PARTNER_FLOW}:${googleEventId}`).first()).toEqual({ status: "cancelled" });
     expect(await reminderDb.prepare(
       "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ? AND status = 'pending'",
-    ).bind(`${PARTNER_FLOW}:${appointmentId}`).first()).toEqual({ count: 0 });
+    ).bind(`${PARTNER_FLOW}:${googleEventId}`).first()).toEqual({ count: 0 });
   }, 30_000);
 });
