@@ -14,6 +14,7 @@ import {
   fetchGhlMessage,
   fetchStripeCustomer,
   fetchStripeInvoicesPage,
+  withGhlProviderInvocation,
 } from "./providers.js";
 
 const env = {
@@ -345,5 +346,23 @@ describe("GHL contact pagination", () => {
     await expect(fetchGhlContact(env, "stalled")).rejects.toThrow("GHL read timed out after 5ms");
     fetch.mockResolvedValueOnce(Response.json({ message: { id: "message_1" } }));
     await expect(fetchGhlMessage(env, "message_1")).resolves.toEqual({ id: "message_1" });
+  });
+
+  it("does not carry a poisoned provider queue into the next Worker invocation", async () => {
+    _setGhlProviderTimingForTests({ minIntervalMs: 0, sleep: async () => {}, random: () => 0 });
+    const poisoned = withGhlProviderInvocation(env);
+    let markStalledFetchStarted;
+    const stalledFetchStarted = new Promise((resolve) => { markStalledFetchStarted = resolve; });
+    fetch.mockImplementationOnce(() => {
+      markStalledFetchStarted();
+      return new Promise(() => {});
+    });
+    void fetchGhlContact(poisoned, "stalled");
+    await stalledFetchStarted;
+
+    const nextInvocation = withGhlProviderInvocation(env);
+    fetch.mockResolvedValueOnce(Response.json({ contact: { id: "healthy" } }));
+
+    await expect(fetchGhlContact(nextInvocation, "healthy")).resolves.toEqual({ id: "healthy" });
   });
 });
