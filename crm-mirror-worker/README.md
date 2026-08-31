@@ -49,9 +49,12 @@ Appointment readiness keeps exact `sync_initial` snapshots as visible
 historical baselines with incomplete history; it does not rename them create
 events. It also recognizes an older provider-mirror row only when its exact
 external-record receipt matches the same pre-projection importer timestamp.
-Those accepted baselines do not count as current conflicts. Owned, unsynced,
-post-cutover, receipt-mismatched, orphaned, colliding, or truncated evidence
-remains blocking.
+Those accepted baselines do not count as current conflicts. The GHL projection
+reconciles only appointments with an exact GHL crosswalk; provider-neutral
+owned appointments are reconciled separately against their command, completion,
+and exact provider-link evidence in the append-only authority ledger. Unsynced,
+incomplete, receipt-mismatched, orphaned, colliding, or truncated evidence
+remains blocking in the ledger that owns it.
 
 Dashboard: open from Staff → Back office → CRM Mirror (Eben-only). That path calls `POST /api/staff-crm-mirror-access`, which mints a one-time `/dashboard-access/:code` handoff server-side. Direct worker URL visits without a session show a locked shell and never accept a pasted bearer secret in the browser. Full-pass completeness ignores GHL contacts confirmed deleted at the source so ghost `external_records` do not keep the mirror in review.
 
@@ -69,7 +72,7 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 - `GET /reconciliation/queue?limit=25` — authenticated, bounded review candidates with their source evidence; read-only.
 - `GET /reconciliation/review?limit=25` — authenticated read-only workspace data: candidates, unmatched purchases, and package-classification exceptions.
 - `GET /appointments?startTime=…&endTime=…` — bounded owned schedule rows with stable appointment/contact identity and explicit authoritative, propagating, mirrored, or degraded truth state.
-- `GET /appointments/readiness` — appointment projection reconciliation plus aggregate lifecycle-outbox state; no contact or provider payloads.
+- `GET /appointments/readiness` — GHL appointment projection reconciliation, provider-neutral owned-authority reconciliation, and aggregate lifecycle-outbox state; no contact payloads.
 - `POST /appointments/commands` — Worker-authenticated, recognized-Staff schedule capture and leased execution checkpointing under owned contact/service identity. It atomically rejects collisions, records append-only command evidence, and makes no provider call.
 
 The root dashboard does **not** accept a pasted worker bearer secret in the browser. Operator access is minted by `POST /dashboard-access-link` (bearer, server-side only) into a one-time five-minute handoff URL backed by an opaque high-entropy code in KV; redeeming `/dashboard-access/:code` sets a signed eight-hour HttpOnly browser session and never exposes `WORKER_AUTH_SECRET` in the URL. Staff opens this via `POST /api/staff-crm-mirror-access` (Eben JWT). The root server-renders aggregate counts and source health once the session is present, so the health summary remains visible even in a browser that cannot run the dashboard JavaScript. That session can read only the dashboard's GET endpoints; `POST /sync` and `POST /dashboard-session` continue to require the bearer credential on every request (machine/operator tooling, not the staff UI).
