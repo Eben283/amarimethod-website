@@ -1,0 +1,48 @@
+name: deploy Reminder Engine
+
+# The Reminder Engine owns live Initial in-person delivery as well as every
+# shadow lifecycle. A release must therefore come from exact reviewed main,
+# retain the existing bindings/secrets, and carry durable source provenance.
+# Raw Wrangler uploads from an arbitrary checkout are unsupported.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: reminder-engine-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: source-attested Worker release
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - run: npm ci
+      - name: Refuse a stale workflow revision
+        run: |
+          git fetch origin main
+          test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
+      - run: npm run check:reminder-engine-release
+      # Reuse the production Worker deploy credential already held in
+      # Bitwarden. The value is neither stored in GitHub nor rendered.
+      - name: Retrieve Reminder Engine deploy credential from Bitwarden
+        uses: bitwarden/sm-action@v2
+        with:
+          access_token: ${{ secrets.BWS_CRM_MIRROR_READ_TOKEN }}
+          secrets: |
+            ${{ vars.BWS_CRM_MIRROR_DEPLOY_SECRET_ID }} > CLOUDFLARE_API_TOKEN
+      - name: Deploy and verify exact source provenance
+        run: npm run deploy:reminder-engine -- --deploy --approved-revision "$GITHUB_SHA"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
