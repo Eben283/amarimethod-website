@@ -37,9 +37,13 @@ The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its i
 
 `/status` reports separate GHL and Stripe health states, treating a paginated GHL pass as healthy while it advances through the cursor; a source is stale after 45 minutes.
 
-The five-minute sweep first drains bounded owned appointment lifecycle evidence, then gives current GHL contacts/appointments and both Stripe
-sources priority before expensive conversation and historic-client enrichment,
-so a slow GHL history page cannot indefinitely starve payment freshness.
+The five-minute sweep first drains bounded owned appointment lifecycle evidence and the newest three GHL conversations. It then rotates one bounded
+provider lane: current GHL contacts/appointments, Stripe charges/invoices, or
+historical GHL conversation/client enrichment. Every core source is therefore
+attempted at least once per fifteen minutes, inside the 45-minute freshness
+contract, without combining hundreds of provider/database subrequests into one
+invocation. GHL pacing queues are invocation-scoped; a terminated cron cannot
+leave a dead promise in a warm isolate and poison later syncs.
 
 Appointment readiness keeps exact `sync_initial` snapshots as visible
 historical baselines with incomplete history; it does not rename them create

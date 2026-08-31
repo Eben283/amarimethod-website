@@ -67,21 +67,22 @@ vi.mock("./appointment-lifecycle-dispatch.js", () => ({
   dispatchOwnedAppointmentLifecycles: mocks.dispatchOwnedAppointmentLifecycles,
 }));
 
-import { backfillGhlClientRecords, runScheduledSync, SCHEDULED_SYNC_ORDER, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
+import { backfillGhlClientRecords, runScheduledSync, SCHEDULED_SYNC_LANES, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
 });
 
 describe("scheduled provider fairness", () => {
-  it("finishes core GHL and Stripe freshness before expensive enrichment", () => {
-    expect(SCHEDULED_SYNC_ORDER).toEqual([
-      "owned-appointment-lifecycles", "ghl", "stripe", "stripe-invoices", "ghl-conversations-recent",
-      "ghl-conversations", "ghl-client-records", "consents",
+  it("rotates bounded lanes while retaining recent communication freshness", () => {
+    expect(SCHEDULED_SYNC_LANES).toEqual([
+      ["owned-appointment-lifecycles", "ghl-conversations-recent", "ghl", "consents"],
+      ["owned-appointment-lifecycles", "ghl-conversations-recent", "stripe", "stripe-invoices", "consents"],
+      ["owned-appointment-lifecycles", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"],
     ]);
   });
 
-  it("executes the core provider calls before either conversation sweep", async () => {
+  it("keeps each cron pass inside its selected provider lane", async () => {
     const calls = [];
     mocks.fetchGhlContactsPage.mockImplementation(async () => {
       calls.push("ghl");
@@ -104,6 +105,15 @@ describe("scheduled provider fairness", () => {
     mocks.getSyncCursor.mockImplementation(async (_db, key) => key === "ghl-conversations" ? "2026-08-20T00:00:00.000Z" : null);
 
     await runScheduledSync({ CRM_DB: {}, AUTOMATION_DB: {} }, "2026-08-29T08:15:00.000Z");
+    expect(calls).toEqual(["ghl-conversations-recent", "ghl"]);
+
+    calls.length = 0;
+    await runScheduledSync({ CRM_DB: {}, AUTOMATION_DB: {} }, "2026-08-29T08:20:00.000Z");
+    expect(calls).toEqual(["ghl-conversations-recent", "stripe", "stripe-invoices"]);
+
+    calls.length = 0;
+    await runScheduledSync({ CRM_DB: {}, AUTOMATION_DB: {} }, "2026-08-29T08:25:00.000Z");
+    expect(calls).toEqual(["ghl-conversations-recent", "ghl-conversations"]);
 
     mocks.fetchGhlContactsPage.mockReset();
     mocks.fetchStripeChargesPage.mockReset();
@@ -111,9 +121,6 @@ describe("scheduled provider fairness", () => {
     mocks.fetchGhlConversationsPage.mockReset();
     mocks.getSyncCursor.mockReset().mockResolvedValue(null);
 
-    expect(calls).toEqual([
-      "ghl", "stripe", "stripe-invoices", "ghl-conversations-recent", "ghl-conversations",
-    ]);
   });
 });
 

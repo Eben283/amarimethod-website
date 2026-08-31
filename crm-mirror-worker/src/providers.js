@@ -9,9 +9,27 @@ const GHL_FALLBACK_BASE_MS = 250;
 const GHL_SERVER_JITTER_MS = 100;
 const GHL_REQUEST_TIMEOUT_MS = 8_000;
 
-let ghlReadTail = Promise.resolve();
-let lastGhlRequestAt = null;
+const GHL_INVOCATION_GATE = Symbol("amari.crmMirror.ghlInvocationGate");
+let fallbackGate = newGhlGate();
 let ghlTimingOverride = null;
+
+function newGhlGate() {
+  return { tail: Promise.resolve(), lastRequestAt: null };
+}
+
+// A Worker isolate can serve many invocations. Never let one invocation's
+// pending I/O promise become the head of another invocation's provider queue:
+// if Cloudflare terminates the first pass, every later cron would otherwise
+// wait forever on work that can no longer complete in its request context.
+export function withGhlProviderInvocation(env) {
+  const runtime = { ...(env || {}) };
+  Object.defineProperty(runtime, GHL_INVOCATION_GATE, { value: newGhlGate() });
+  return runtime;
+}
+
+function ghlGate(env) {
+  return env?.[GHL_INVOCATION_GATE] || fallbackGate;
+}
 
 function defaultTiming() {
   return {
@@ -35,8 +53,7 @@ export function _setGhlProviderTimingForTests(overrides) {
 }
 
 export function _resetGhlProviderGateForTests() {
-  ghlReadTail = Promise.resolve();
-  lastGhlRequestAt = null;
+  fallbackGate = newGhlGate();
   ghlTimingOverride = null;
 }
 
@@ -96,27 +113,29 @@ function ghlRateError(response, deferredMs = null) {
   return new Error(`GHL read failed (429${suffix})`);
 }
 
-async function paceGhlRead(clock) {
-  if (lastGhlRequestAt != null) {
-    const waitMs = lastGhlRequestAt + clock.minIntervalMs - clock.now();
+async function paceGhlRead(gate, clock) {
+  if (gate.lastRequestAt != null) {
+    const waitMs = gate.lastRequestAt + clock.minIntervalMs - clock.now();
     if (waitMs > 0) await clock.sleep(waitMs);
   }
-  lastGhlRequestAt = clock.now();
+  gate.lastRequestAt = clock.now();
 }
 
-function serializeGhlRead(task) {
-  const current = ghlReadTail.then(task, task);
-  ghlReadTail = current.catch(() => {});
+function serializeGhlRead(env, task) {
+  const gate = ghlGate(env);
+  const current = gate.tail.then(task, task);
+  gate.tail = current.catch(() => {});
   return current;
 }
 
 async function ghlResponse(env, path) {
-  return serializeGhlRead(async () => {
+  return serializeGhlRead(env, async () => {
+    const gate = ghlGate(env);
     const clock = timing();
     const token = await getAccessToken(env);
 
     for (let attempt = 1; attempt <= GHL_MAX_ATTEMPTS; attempt += 1) {
-      await paceGhlRead(clock);
+      await paceGhlRead(gate, clock);
       const controller = new AbortController();
       let timeoutId;
       const request = fetch(`${GHL_BASE}${path}`, {

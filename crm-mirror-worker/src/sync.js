@@ -30,21 +30,20 @@ function result(status = "succeeded") {
 // A cron pass remains deliberately bounded. GHL contacts are paginated, so the
 // cursor advances through the full mirror across runs instead of doing one large
 // provider read. This is observation-only: these functions write only CRM_DB.
-export const SCHEDULED_SYNC_LIMIT = 50;
+export const SCHEDULED_GHL_CONTACT_LIMIT = 20;
+export const SCHEDULED_STRIPE_LIMIT = 25;
 export const RECENT_CONVERSATION_LIMIT = 10;
 export const RECENT_MESSAGE_LIMIT = 20;
-// Core provider freshness must finish before historically expensive
-// conversation/client enrichment. A long GHL conversation page must never
-// prevent Stripe from being observed for days while the cron fires normally.
-export const SCHEDULED_SYNC_ORDER = Object.freeze([
-  "owned-appointment-lifecycles",
-  "ghl",
-  "stripe",
-  "stripe-invoices",
-  "ghl-conversations-recent",
-  "ghl-conversations",
-  "ghl-client-records",
-  "consents",
+export const SCHEDULED_RECENT_CONVERSATION_LIMIT = 3;
+export const SCHEDULED_HISTORICAL_CONVERSATION_LIMIT = 3;
+// The five-minute cron rotates bounded lanes. Running every provider and both
+// conversation sweeps in one invocation exceeded the platform's execution
+// boundary and starved every later source. Each core provider is still read at
+// least every fifteen minutes, within the 45-minute freshness contract.
+export const SCHEDULED_SYNC_LANES = Object.freeze([
+  Object.freeze(["owned-appointment-lifecycles", "ghl-conversations-recent", "ghl", "consents"]),
+  Object.freeze(["owned-appointment-lifecycles", "ghl-conversations-recent", "stripe", "stripe-invoices", "consents"]),
+  Object.freeze(["owned-appointment-lifecycles", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"]),
 ]);
 
 function newestMessage(messages) {
@@ -179,7 +178,7 @@ export async function syncGhlConversations(env, limit, now) {
       if (!contactId) { outcome.recordsSkipped += 1; continue; }
       const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
       outcome.recordsWritten += 1;
-      const listedMessages = await fetchGhlConversationMessages(env, thread.externalId);
+      const listedMessages = await fetchGhlConversationMessages(env, thread.externalId, RECENT_MESSAGE_LIMIT);
       for (const listedMessage of listedMessages) {
         if (emailRevisionIds(listedMessage).length) {
           outcome.recordsWritten += await deleteGhlEmailContainerEvent(env.CRM_DB, listedMessage.id || listedMessage.messageId || listedMessage.emailMessageId);
@@ -451,15 +450,18 @@ export async function runScheduledSync(env, now) {
       (runtime, limit) => dispatchOwnedAppointmentLifecycles(runtime, Date.parse(now), limit),
       10,
     ],
-    "ghl": [syncGhl, SCHEDULED_SYNC_LIMIT],
-    "stripe": [syncStripe, SCHEDULED_SYNC_LIMIT],
-    "stripe-invoices": [syncStripeInvoices, SCHEDULED_SYNC_LIMIT],
-    "ghl-conversations-recent": [syncRecentGhlConversations, RECENT_CONVERSATION_LIMIT],
-    "ghl-conversations": [syncGhlConversations, SCHEDULED_SYNC_LIMIT],
-    "ghl-client-records": [backfillGhlClientRecords, 10],
+    "ghl": [syncGhl, SCHEDULED_GHL_CONTACT_LIMIT],
+    "stripe": [syncStripe, SCHEDULED_STRIPE_LIMIT],
+    "stripe-invoices": [syncStripeInvoices, SCHEDULED_STRIPE_LIMIT],
+    "ghl-conversations-recent": [syncRecentGhlConversations, SCHEDULED_RECENT_CONVERSATION_LIMIT],
+    "ghl-conversations": [syncGhlConversations, SCHEDULED_HISTORICAL_CONVERSATION_LIMIT],
+    "ghl-client-records": [backfillGhlClientRecords, 3],
     "consents": [syncNativeBookingConsents, 0],
   };
-  for (const provider of SCHEDULED_SYNC_ORDER) {
+  const minute = new Date(now).getUTCMinutes();
+  const laneIndex = Number.isFinite(minute) ? Math.floor(minute / 5) % SCHEDULED_SYNC_LANES.length : 0;
+  const providers = SCHEDULED_SYNC_LANES[laneIndex];
+  for (const provider of providers) {
     const [sync, limit] = plan[provider];
     try {
       results[provider] = await sync(env, limit, now);
@@ -472,7 +474,7 @@ export async function runScheduledSync(env, now) {
       };
     }
   }
-  console.log(JSON.stringify({ event: "crm_mirror_scheduled_sync", limit: SCHEDULED_SYNC_LIMIT, results }));
+  console.log(JSON.stringify({ event: "crm_mirror_scheduled_sync", laneIndex, providers, results }));
   await writeCrmMirrorLastRun(env, results, now);
   return results;
 }

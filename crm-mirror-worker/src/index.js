@@ -50,7 +50,7 @@ import {
   recordConsentObservation,
 } from "./repository.js";
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
-import { fetchGhlContact } from "./providers.js";
+import { fetchGhlContact, withGhlProviderInvocation } from "./providers.js";
 import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 import { personAutomationInspection } from "./person-automation-inspection.js";
 import { familyAutomationInspection } from "./family-automation-inspection.js";
@@ -271,6 +271,7 @@ async function actionPayload(request, maximum = 4096) {
 
 export default {
   async fetch(request, env) {
+    env = withGhlProviderInvocation(env);
     const url = new URL(request.url);
     if (request.method === "POST" && url.pathname === "/webhooks/ghl") return processGhlWebhook(request, env);
     // The shell has no data or action controls. Data endpoints remain protected.
@@ -797,7 +798,7 @@ export default {
   },
 
   async scheduled(_controller, env, ctx) {
-    ctx.waitUntil(runScheduledSync(env, new Date().toISOString()));
+    ctx.waitUntil(runScheduledSync(withGhlProviderInvocation(env), new Date().toISOString()));
   },
 };
 
