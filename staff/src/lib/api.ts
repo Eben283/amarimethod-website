@@ -273,6 +273,27 @@ export interface AppointmentProjectionReadiness {
     deliveryEnabled?: false;
     counts?: Record<'pending' | 'executing' | 'retryable' | 'dispatched' | 'manual_review', number>;
   };
+  ownedAuthority?: {
+    configured: boolean;
+    state: 'ready' | 'attention' | 'unavailable';
+    appendOnlyEvidence: true;
+    reason?: string;
+    coverage?: { appointmentsRead: number; totalAppointments: number; truncated: boolean };
+    reconciliation?: {
+      summary: { appointments: number; verified: number; attention: number; blocking: number };
+      records: Array<{
+        appointmentId: string;
+        providerAppointmentId: string | null;
+        status: string;
+        providerSyncState: string;
+        evidenceSource: 'appointment_authority_events';
+        completedCommands: number;
+        state: 'verified' | 'attention';
+        issueCodes: string[];
+      }>;
+      issues: Array<{ code: string; appointmentId?: string }>;
+    };
+  };
   coverage?: { observationsRead: number; totalObservations: number; truncated: boolean };
   reconciliation?: {
     summary: {

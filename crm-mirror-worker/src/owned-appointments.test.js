@@ -11,6 +11,8 @@ import {
   OwnedAppointmentError,
   unlinkOwnedAppointmentProviderRecord,
 } from "./owned-appointments.js";
+import { ownedAppointmentAuthorityReadiness } from "./owned-appointment-readiness.js";
+import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
 
 const migrationNames = [
   "0001_initial_schema.sql", "0002_purchase_reconciliation_candidates.sql",
@@ -400,6 +402,26 @@ describe("owned appointment authority", () => {
     expect(db.sqlite.prepare(
       "SELECT record_id FROM external_records WHERE provider = 'google_calendar' AND external_id = ?",
     ).get("google-event-1")).toEqual({ record_id: captured.appointmentId });
+    await expect(ownedAppointmentAuthorityReadiness(db, "2026-08-28T00:00:03.000Z"))
+      .resolves.toMatchObject({
+        configured: true,
+        state: "ready",
+        reconciliation: {
+          summary: { appointments: 1, verified: 1, attention: 0, blocking: 0 },
+          records: [expect.objectContaining({
+            appointmentId: captured.appointmentId,
+            providerAppointmentId: "google-event-1",
+            state: "verified",
+            evidenceSource: "appointment_authority_events",
+          })],
+        },
+      });
+    await expect(appointmentProjectionReadiness(db, "2026-08-28T00:00:03.000Z"))
+      .resolves.toMatchObject({
+        configured: true,
+        state: "ready",
+        reconciliation: { summary: { appointments: 0, conflicts: 0 } },
+      });
     db.sqlite.close();
   });
 
@@ -547,6 +569,18 @@ describe("owned appointment authority", () => {
       provider_calendar_id: "garrett-appointments@group.calendar.google.com",
       event_type: "cancelled",
     });
+    await expect(ownedAppointmentAuthorityReadiness(db, "2026-08-28T00:00:02.000Z"))
+      .resolves.toMatchObject({
+        state: "ready",
+        reconciliation: {
+          summary: { appointments: 1, verified: 1, blocking: 0 },
+          records: [expect.objectContaining({
+            appointmentId: source.id,
+            status: "cancelled",
+            state: "verified",
+          })],
+        },
+      });
     db.sqlite.close();
   });
 

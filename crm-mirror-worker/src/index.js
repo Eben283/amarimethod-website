@@ -16,6 +16,7 @@ import {
   unlinkOwnedAppointmentProviderRecord,
 } from "./owned-appointments.js";
 import { appointmentProjectionReadiness } from "./appointment-projection-store.js";
+import { ownedAppointmentAuthorityReadiness } from "./owned-appointment-readiness.js";
 import { appointmentLifecycleDispatchReadiness } from "./appointment-lifecycle-dispatch.js";
 import { listOwnedAppointmentSchedule } from "./owned-appointment-schedule.js";
 import { OwnedAppointmentPaymentError, recordOwnedAppointmentPayment } from "./owned-appointment-payments.js";
@@ -630,11 +631,23 @@ export default {
         }
       }
       if (request.method === "GET" && url.pathname === "/appointments/readiness") {
-        const lifecycleDispatch = await appointmentLifecycleDispatchReadiness(env.CRM_DB);
+        const generatedAt = new Date().toISOString();
+        const [projection, ownedAuthority, lifecycleDispatch] = await Promise.all([
+          appointmentProjectionReadiness(env.CRM_DB, generatedAt),
+          ownedAppointmentAuthorityReadiness(env.CRM_DB, generatedAt),
+          appointmentLifecycleDispatchReadiness(env.CRM_DB),
+        ]);
+        const state = projection.state === "unavailable" || ownedAuthority.state === "unavailable"
+          ? "unavailable"
+          : projection.state === "attention" || ownedAuthority.state === "attention"
+            ? "attention"
+            : projection.state;
         return json(200, {
           success: true,
           worker: "amari-crm-mirror",
-          ...(await appointmentProjectionReadiness(env.CRM_DB, new Date().toISOString())),
+          ...projection,
+          state,
+          ownedAuthority,
           lifecycleDispatch,
         });
       }

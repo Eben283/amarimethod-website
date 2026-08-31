@@ -122,7 +122,15 @@ export async function appointmentProjectionReadiness(db, generatedAt) {
                     AND source.external_id = appointment.provider_appointment_id
                   ORDER BY datetime(source.last_seen_at) DESC, source.id DESC
                   LIMIT 1) AS appointment_last_seen_at
-         FROM appointments appointment`,
+         FROM appointments appointment
+        WHERE EXISTS (
+          SELECT 1 FROM external_records provider_link
+           WHERE provider_link.provider = 'ghl'
+             AND provider_link.object_type = 'appointment'
+             AND provider_link.external_id = appointment.provider_appointment_id
+             AND provider_link.record_type = 'appointment'
+             AND provider_link.record_id = appointment.id
+        )`,
       ).bind().all(),
     ]);
     const events = eventsResult.results || [];
