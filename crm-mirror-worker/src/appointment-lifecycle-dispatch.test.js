@@ -19,6 +19,7 @@ const migrationNames = [
   "0017_gmail_sync_gap_evidence.sql", "0018_gmail_reply_sync_control.sql",
   "0019_owned_appointment_authority.sql", "0020_owned_appointment_lifecycle_dispatch.sql",
   "0021_provider_neutral_calendar_authority.sql",
+  "0022_partnership_discovery_service.sql",
 ];
 
 function d1Database() {

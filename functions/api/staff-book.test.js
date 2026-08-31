@@ -31,7 +31,7 @@ describe("staff-book-calendars", () => {
     expect(booking.durationMinutes).toBe(50);
   });
 
-  it("assigns exact owned service identity only to the reviewed discovery calendars", () => {
+  it("assigns exact owned service identity to each reviewed discovery calendar", () => {
     expect(resolveStaffBookType("discovery_call")).toMatchObject({
       serviceId: "discovery-call",
       calendarId: "USgPsktqRcuomdUgpShL",
@@ -40,7 +40,10 @@ describe("staff-book-calendars", () => {
       serviceId: "discovery-call-virtual",
       calendarId: "ZEIGFHBi17SpZ3Ezi5DR",
     });
-    expect(resolveStaffBookType("ambassador_discovery")).not.toHaveProperty("serviceId");
+    expect(resolveStaffBookType("ambassador_discovery")).toMatchObject({
+      serviceId: "partnership-discovery",
+      calendarId: "aVE54Qf4lrbYTB0zFqXy",
+    });
   });
 });
 
@@ -151,6 +154,36 @@ describe("staff-book API", () => {
     });
     expect(res.status).toBe(400);
   });
+
+  it.each(["discovery_call", "discovery_virtual", "ambassador_discovery", "partner_initial"])(
+    "blocks the legacy %s mutation route after owned authority exists",
+    async (sessionType) => {
+      const ghlFetch = vi.fn();
+      vi.doMock("../lib/endpoint-guards.js", () => ({
+        requireStaffAuth: vi.fn(async () => ({ error: null, payload: { user: "eben" } })),
+        corsHeaders: () => ({ "Access-Control-Allow-Origin": "*" }),
+        parseJsonBody: vi.fn(async () => ({
+          body: {
+            action: "book", contactId: "c1", sessionType,
+            startTime: "2026-09-02T10:00:00-07:00",
+            idempotencyKey: `legacy-route-${sessionType}`,
+          },
+          error: null,
+        })),
+      }));
+      vi.doMock("../lib/ghl.js", () => ({ ghlFetch }));
+
+      const { onRequestPost } = await import("./staff-book.js");
+      const response = await onRequestPost({
+        request: new Request("https://example.com/api/staff-book", { method: "POST" }),
+        env: {},
+      });
+
+      expect(response.status).toBe(409);
+      await expect(response.json()).resolves.toMatchObject({ code: "owned_appointment_route_required" });
+      expect(ghlFetch).not.toHaveBeenCalled();
+    },
+  );
 
   it("keeps slot-provider failures in the JSON 500 contract", async () => {
     vi.doMock("../lib/endpoint-guards.js", () => ({

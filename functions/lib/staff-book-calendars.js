@@ -23,6 +23,7 @@ export const STAFF_BOOK_TYPES = {
     label: "Discovery call · virtual (free)",
   },
   ambassador_discovery: {
+    serviceId: "partnership-discovery",
     calendarId: "aVE54Qf4lrbYTB0zFqXy",
     durationMinutes: 15,
     title: "Amari Method Partnership Discovery Call",

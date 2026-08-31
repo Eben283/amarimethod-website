@@ -124,7 +124,7 @@ async function applySql(db, sql) {
 async function applyCrmSchema(db) {
   const directory = join(ROOT, "crm-mirror-worker/migrations");
   const names = readdirSync(directory).filter((name) => /^\d{4}_.+\.sql$/.test(name)).sort();
-  expect(names.at(-1)).toBe("0021_provider_neutral_calendar_authority.sql");
+  expect(names.at(-1)).toBe("0022_partnership_discovery_service.sql");
   for (const name of names) {
     const sql = readFileSync(join(directory, name), "utf8");
     await applySql(db, sql);
@@ -598,6 +598,82 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       engine: "reminder", action: "cancel",
       detail: { flowKey: "discovery-call", cancelledSteps: 0 },
     });
+  }, 30_000);
+
+  it("captures Partnership Discovery through the real CRM binding without dispatching the wrong lifecycle", async () => {
+    const { mf, crmDb, reminderDb } = await startRuntime();
+    const now = Date.now();
+    const startAt = new Date(now + 7 * 86_400_000).toISOString();
+    const recordedAt = new Date(now).toISOString();
+    await crmDb.batch([
+      crmDb.prepare(
+        `INSERT INTO contacts (id, display_name, created_at, updated_at)
+         VALUES (?, 'Synthetic Partnership Discovery', ?, ?)`,
+      ).bind(CONTACT_ID, recordedAt, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO external_records
+           (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+         VALUES ('synthetic-partnership-contact-crosswalk', 'ghl', 'contact', ?, ?, 'contact', ?, ?)`,
+      ).bind(PROVIDER_CONTACT_ID, CONTACT_ID, CONTACT_ID, recordedAt),
+    ]);
+
+    const capture = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "schedule",
+        contactId: CONTACT_ID,
+        serviceId: "partnership-discovery",
+        idempotencyKey: "synthetic-partnership-discovery-runtime-proof-v1",
+        startTime: startAt,
+        timezone: "America/Los_Angeles",
+      },
+    });
+    const commandId = capture.appointment.commandId;
+    const appointmentId = capture.appointment.appointmentId;
+    await request(mf, "/appointments/commands", {
+      method: "POST", body: { action: "claim", commandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "provider-link", commandId, provider: "ghl",
+        providerRecordId: "synthetic-partnership-discovery-appointment",
+        providerCalendarId: "aVE54Qf4lrbYTB0zFqXy",
+        providerStatusRaw: "confirmed",
+      },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete", commandId,
+        result: {
+          action: "schedule", actor: "Garrett", contactId: CONTACT_ID,
+          appointmentId,
+          providerAppointmentId: "synthetic-partnership-discovery-appointment",
+          newStartTime: startAt, appointmentStatus: "confirmed",
+          reminderVerification: "pending_event_evidence", authority: "owned",
+        },
+      },
+    });
+
+    expect(await crmDb.prepare(`
+      SELECT service_id, provider_calendar_id, authority, provider_sync_state
+        FROM appointments WHERE id = ?
+    `).bind(appointmentId).first()).toEqual({
+      service_id: "partnership-discovery",
+      provider_calendar_id: "aVE54Qf4lrbYTB0zFqXy",
+      authority: "owned",
+      provider_sync_state: "synced",
+    });
+    expect(await crmDb.prepare(
+      "SELECT COUNT(*) AS count FROM appointment_lifecycle_dispatches WHERE command_id = ?",
+    ).bind(commandId).first()).toEqual({ count: 0 });
+    const sync = await request(mf, "/sync", {
+      method: "POST", body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(sync.results.ownedAppointmentLifecycles).toMatchObject({ considered: 0, dispatched: 0 });
+    expect(await reminderDb.prepare("SELECT COUNT(*) AS count FROM reminder_enrollments").first())
+      .toEqual({ count: 0 });
   }, 30_000);
 
   it("runs the same owned vertical with a Google calendar checkpoint and no GHL identity or credentials", async () => {

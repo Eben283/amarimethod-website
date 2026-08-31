@@ -249,6 +249,7 @@ describe("staff appointment management API", () => {
   it.each([
     ["discovery_call", "discovery-call", "USgPsktqRcuomdUgpShL"],
     ["discovery_virtual", "discovery-call-virtual", "ZEIGFHBi17SpZ3Ezi5DR"],
+    ["ambassador_discovery", "partnership-discovery", "aVE54Qf4lrbYTB0zFqXy"],
   ])("captures %s in the owned CRM before the unchanged GHL edge", async (sessionType, serviceId, calendarId) => {
     const ownedStore = { marker: `owned-${serviceId}` };
     const createOwnedAppointmentScheduleStore = vi.fn(() => ownedStore);
