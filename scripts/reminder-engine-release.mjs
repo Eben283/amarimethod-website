@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 
 const REPOSITORY_ROOT = new URL('../', import.meta.url);
 const WORKER_ROOT = new URL('../reminder-engine-worker/', import.meta.url);
+export const CHILD_PROCESS_MAX_BUFFER_BYTES = 256 * 1024 * 1024;
 
 // The Worker imports shared Functions code and the owned Gmail adapter at
 // bundle time. Attest that complete source closure, not only its top-level
@@ -21,6 +22,7 @@ function runGit(args, options = {}) {
   return execFileSync('git', args, {
     cwd: fileURLToPath(REPOSITORY_ROOT),
     encoding: options.encoding || 'utf8',
+    maxBuffer: CHILD_PROCESS_MAX_BUFFER_BYTES,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
 }
@@ -34,6 +36,10 @@ export function provenanceForRevision({ revision, archive }) {
     revision,
     tag: `git-${revision}`,
   };
+}
+
+export function sourceArchiveForRevision(revision) {
+  return runGit(['archive', '--format=tar', revision, ...PROVENANCE_PATHS], { encoding: 'buffer' });
 }
 
 export function assertVersionProvenance(version, provenance) {
@@ -89,7 +95,7 @@ export function localProvenance() {
     throw new Error(`Reminder Engine release refused: HEAD ${revision} is not the exact origin/main revision ${remoteMain}.`);
   }
 
-  const archive = runGit(['archive', '--format=tar', revision, ...PROVENANCE_PATHS], { encoding: 'buffer' });
+  const archive = sourceArchiveForRevision(revision);
   return provenanceForRevision({ revision, archive });
 }
 
@@ -130,6 +136,7 @@ async function deploy(provenance) {
   ], {
     cwd: fileURLToPath(WORKER_ROOT),
     encoding: 'utf8',
+    maxBuffer: CHILD_PROCESS_MAX_BUFFER_BYTES,
     stdio: 'pipe',
   });
   process.stdout.write(result.stdout || '');

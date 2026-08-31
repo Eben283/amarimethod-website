@@ -5,12 +5,22 @@ import { fileURLToPath } from 'node:url';
 import { INITIAL_IN_PERSON_WORKFLOW } from '../reminder-engine-worker/src/initial-in-person-workflow.js';
 import { PARTNER_INITIAL_IN_PERSON } from '../reminder-engine-worker/src/config.js';
 import {
+  CHILD_PROCESS_MAX_BUFFER_BYTES,
   PROVENANCE_PATHS,
   assertBindingsPreserved,
   assertRequiredBindings,
   assertVersionProvenance,
   provenanceForRevision,
+  sourceArchiveForRevision,
 } from './reminder-engine-release.mjs';
+
+test('allows the complete source archive and Wrangler output to exceed Node child-process defaults', () => {
+  assert.equal(CHILD_PROCESS_MAX_BUFFER_BYTES, 256 * 1024 * 1024);
+  const releaseSource = readFileSync(fileURLToPath(new URL('./reminder-engine-release.mjs', import.meta.url)), 'utf8');
+  assert.match(releaseSource, /execFileSync\('git',[\s\S]*maxBuffer: CHILD_PROCESS_MAX_BUFFER_BYTES/);
+  assert.match(releaseSource, /spawnSync\('npx',[\s\S]*maxBuffer: CHILD_PROCESS_MAX_BUFFER_BYTES/);
+  assert.ok(sourceArchiveForRevision('HEAD').length > 1024 * 1024);
+});
 
 test('records the exact Git revision and complete Worker source closure', () => {
   const provenance = provenanceForRevision({ revision: 'a'.repeat(40), archive: Buffer.from('worker source') });
