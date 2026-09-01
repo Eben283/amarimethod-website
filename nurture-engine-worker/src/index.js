@@ -2,6 +2,7 @@
 //   scheduled() : the cron sweep (fires or shadow-logs every due step)
 //   fetch()     : authenticated HTTP surface
 //     POST /event  { ...appointment event | kinded quiz/purchase/tag event }  → enroll/exit
+//     POST /import { enrollments: [fresh provider cursor evidence...] }         → shadow-safe transfer
 //     POST /run                                                               → sweep now (ops)
 //     GET  /status                                                            → liveness
 //
@@ -10,23 +11,17 @@
 // endpoint (send-to-ghl.js → quiz.submitted), the purchase webhook path, and the GHL→code tag
 // bridge all land here.
 //
-// Secrets/bindings (wrangler.toml): NURTURE_DB (D1), WORKER_AUTH_SECRET (fetch gate). Active
-// mode additionally needs GHL token access for the send adapter, contact reads (branch steps),
-// and onEnter tag writes; shadow mode — the default — touches none of them.
+// Secrets/bindings (wrangler.toml): NURTURE_DB (D1), CRM_DB (owned people/tags/attributes),
+// WORKER_AUTH_SECRET (fetch gate). Shadow mode is the default and never sends.
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { handleEvent, runSweep } from "./engine.js";
-import { handleTagWebhook, fetchContactTags } from "./tag-bridge.js";
+import { handleTagWebhook } from "./tag-bridge.js";
+import { handleEnrollmentImport } from "./import-enrollments.js";
+import { ownedNurtureDeliveryReadiness } from "./delivery-readiness.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
-
-// Entry guards read the contact's real tags when the token cache is bound; without it the
-// engine falls back to its shadow-optimistic guardUnchecked behavior.
-function guardDeps(env) {
-  if (!env.PORTAL_KV) return {};
-  return { getContactTags: (contactId) => fetchContactTags(env, contactId) };
-}
 
 export default {
   async scheduled(event, env, ctx) {
@@ -57,8 +52,13 @@ export default {
         } catch {
           return json(400, { error: "invalid JSON" });
         }
-        const { actions } = await handleEvent(env, event, Date.now(), guardDeps(env));
+        // Direct owned events must resolve guard state through CRM_DB. The separate legacy
+        // /tag-webhook remains a bounded transition adapter, but it cannot override this path.
+        const { actions } = await handleEvent(env, event, Date.now());
         return json(200, { success: true, actions });
+      }
+      if (request.method === "POST" && url.pathname === "/import") {
+        return await handleEnrollmentImport(request, env, Date.now());
       }
       if (request.method === "POST" && url.pathname === "/run") {
         const counts = await runSweep(env, Date.now());
@@ -66,6 +66,9 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "nurture-engine", now: Date.now() });
+      }
+      if (request.method === "GET" && url.pathname === "/delivery-readiness") {
+        return json(200, { success: true, ...(await ownedNurtureDeliveryReadiness(env.NURTURE_DB, env.CRM_DB, env)) });
       }
       return json(404, { error: "not found" });
     } catch (err) {

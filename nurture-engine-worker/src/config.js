@@ -6,8 +6,8 @@
 // Canonical shape (from acquisition-nurture.md):
 //   sequenceId  stable id; namespaces enrollments + the automation_events log + idempotency
 //   entry       { on: <event spec>, guard?: { notTags: [...] }, onEnter?: { addTags: [...] } }
-//               guard tags are read at enroll time; onEnter tags are written back to GHL in
-//               active mode AND fed back through the engine as tag events (so Flow 3 enrolling
+//               guard tags are read from owned CRM at enroll time; onEnter tags are written to
+//               owned CRM in active mode AND fed back through the engine as tag events (so Flow 3 enrolling
 //               exits Flows 1+2 without a round-trip)
 //   mode        "shadow" | "active" — shadow computes + logs would_send, never sends; DEFAULT
 //               shadow so a new sequence always runs beside GHL until deliberately switched on
@@ -53,8 +53,8 @@ const deepFreeze = (obj) => {
 };
 
 // Flow 1 Quiz to Pain Consultation email flow. The live source structure, all branch values,
-// waits, subjects, preheaders, and bodies were captured by 2026-07-12. Exact rendering and
-// an owned delivery adapter are still deliberately absent, so this remains shadow-only.
+// waits, subjects, preheaders, and bodies were captured by 2026-07-12. Exact native rendering
+// is allowlisted; owned delivery remains deliberately absent, so this stays shadow-only.
 export const FLOW_1_QUIZ = deepFreeze({
   name: "Quiz to Pain Consultation email flow",
   definitionVersion: 2,
@@ -110,8 +110,8 @@ export const FLOW_1_QUIZ = deepFreeze({
 });
 
 // Flow 2 Pain Consutation to first booking email flow (live GHL name keeps the typo).
-// The 2026-08-07 source is a Draft $29 / 50-minute Assessment path. It remains shadow-only;
-// owned copy rendering, delivery, and lifecycle activation have not been approved.
+// The 2026-08-07 source is a Draft $29 / 50-minute Assessment path. Exact native rendering is
+// allowlisted, but delivery and lifecycle activation remain unresolved, so this stays shadow-only.
 export const FLOW_2_POST_DISCOVERY = deepFreeze({
   name: "Pain Consutation to first booking email flow",
   definitionVersion: 2,
@@ -153,7 +153,7 @@ export const FLOW_3_POST_INITIAL = deepFreeze({
     on: { kind: "appointment", statuses: ["showed"], calendarIds: [INITIAL_IN_PERSON, INITIAL_VIRTUAL] },
     guard: { notTags: ["affiliate-partner"] },
     // This tag IS the exit signal for Flows 1+2 — the engine feeds it back through the exit
-    // pass on enrollment (and writes the real GHL tag in active mode for the transition window).
+    // pass on enrollment (and writes the owned CRM tag only after an active-mode cutover).
     onEnter: { addTags: [TAG_WORKFLOW_3] },
   },
   steps: [

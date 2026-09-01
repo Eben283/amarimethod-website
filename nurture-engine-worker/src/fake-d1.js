@@ -17,8 +17,11 @@ export function fakeD1() {
         enrollments.set(id, { enrollment_id: id, sequence_id, definition_version, contact_id, entered_at, status, guard_unchecked });
         return { meta: { changes: 1 } };
       }
-      if (/INSERT INTO nurture_steps/.test(sql)) {
+      if (/INSERT(?: OR IGNORE)? INTO nurture_steps/.test(sql)) {
         const [enrollment_id, step_index, after, kind, template, due_at, status] = a;
+        if (steps.some((step) => step.enrollment_id === enrollment_id && step.step_index === step_index)) {
+          return { meta: { changes: 0 } };
+        }
         steps.push({ enrollment_id, step_index, after, kind, template, due_at, status });
         return { meta: { changes: 1 } };
       }
@@ -35,6 +38,15 @@ export function fakeD1() {
       if (/UPDATE nurture_steps SET status = \? WHERE enrollment_id = \? AND step_index = \?/.test(sql)) {
         const [status, id, idx] = a; let c = 0;
         for (const s of steps) if (s.enrollment_id === id && s.step_index === idx) { s.status = status; c++; }
+        return { meta: { changes: c } };
+      }
+      if (/UPDATE nurture_steps SET status = 'dispatching'/.test(sql)) {
+        const [id, idx] = a; let c = 0;
+        for (const s of steps) {
+          if (s.enrollment_id === id && s.step_index === idx && s.status === "pending") {
+            s.status = "dispatching"; c++;
+          }
+        }
         return { meta: { changes: c } };
       }
       if (/UPDATE nurture_enrollments SET status = 'exited'/.test(sql)) {
@@ -72,5 +84,15 @@ export function fakeD1() {
       return { results: [] };
     },
   });
-  return { prepare, _enrollments: enrollments, _steps: steps, _events: events };
+  return {
+    prepare,
+    async batch(statements) {
+      const results = [];
+      for (const statement of statements) results.push(await statement.run());
+      return results;
+    },
+    _enrollments: enrollments,
+    _steps: steps,
+    _events: events,
+  };
 }

@@ -204,8 +204,17 @@ describe("owned automation registry", () => {
     expect(quiz.cutoverReadiness).toEqual(expect.objectContaining({
       status: "not_eligible",
       requirements: expect.arrayContaining([
+        expect.objectContaining({ code: "owned_quiz_intake_built", status: "proven" }),
+        expect.objectContaining({ code: "owned_quiz_shadow_handoff_built", status: "proven" }),
+        expect.objectContaining({ code: "owned_quiz_retention_plan_built", status: "proven" }),
+        expect.objectContaining({ code: "retention_execution_policy_pending", status: "blocked" }),
+        expect.objectContaining({ code: "public_quiz_bridge_pending", status: "blocked" }),
         expect.objectContaining({ code: "owned_contact_reads_built", status: "proven" }),
-        expect.objectContaining({ code: "owned_delivery_missing", status: "blocked" }),
+        expect.objectContaining({ code: "enrollment_transfer_built", status: "proven" }),
+        expect.objectContaining({ code: "live_enrollment_snapshot_pending", status: "review" }),
+        expect.objectContaining({ code: "owned_delivery_built", status: "proven" }),
+        expect.objectContaining({ code: "delivery_exception_visibility_built", status: "proven" }),
+        expect.objectContaining({ code: "terminal_delivery_receipts_missing", status: "blocked" }),
       ]),
     }));
     expect(assessment.cutoverReadiness).toEqual(expect.objectContaining({
@@ -230,10 +239,15 @@ describe("owned automation registry", () => {
           expect.objectContaining({ code: "source_structure_reconciled", status: "proven" }),
           expect.objectContaining({ code: "current_practice_purchase_exit_owned", status: "proven" }),
           expect.objectContaining({ code: "owned_template_renderer_built", status: "proven" }),
-          expect.objectContaining({ code: "owned_delivery_missing", status: "blocked" }),
+          expect.objectContaining({ code: "owned_delivery_built", status: "proven" }),
+          expect.objectContaining({ code: "terminal_delivery_receipts_missing", status: "blocked" }),
         ]),
       }),
     }));
+    expect(postInitial.cutoverReadiness.requirements).toEqual(expect.arrayContaining([
+      expect.objectContaining({ code: "enrollment_transfer_built", status: "proven" }),
+      expect.objectContaining({ code: "live_enrollment_snapshot_pending", status: "review" }),
+    ]));
     expect(postInitial.steps).toHaveLength(2);
     expect(postInitial.messagePreview.notices).toHaveLength(2);
     expect(postInitial.exits.filter((exit) => exit.kind === "appointment").flatMap((exit) => exit.calendarIds)).toEqual(expect.arrayContaining([

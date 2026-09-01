@@ -20,31 +20,22 @@ export function enrollmentId(sequenceId, contactId) {
  */
 export async function saveEnrollment(db, enrollment) {
   const id = enrollmentId(enrollment.sequenceId, enrollment.contactId);
-  const ins = await db
-    .prepare(
+  const statements = [db.prepare(
       `INSERT INTO nurture_enrollments
          (enrollment_id, sequence_id, definition_version, contact_id, entered_at, status, guard_unchecked)
        VALUES (?,?,?,?,?,?,?)
        ON CONFLICT(enrollment_id) DO NOTHING`,
-    )
-    .bind(
+    ).bind(
       id, enrollment.sequenceId, enrollment.definitionVersion ?? 1, enrollment.contactId, enrollment.enteredAt,
       enrollment.status ?? "active", enrollment.guardUnchecked ? 1 : 0,
-    )
-    .run();
-
-  if (changesOf(ins) !== 1) return { created: false, enrollmentId: id };
-
-  for (const s of enrollment.steps) {
-    await db
-      .prepare(
-        `INSERT INTO nurture_steps (enrollment_id, step_index, after, kind, template, due_at, status)
-         VALUES (?,?,?,?,?,?,?)`,
-      )
-      .bind(id, s.stepIndex, s.after, s.kind, s.template, s.dueAt, s.status)
-      .run();
-  }
-  return { created: true, enrollmentId: id };
+    ), ...enrollment.steps.map((s) => db.prepare(
+      `INSERT OR IGNORE INTO nurture_steps (enrollment_id, step_index, after, kind, template, due_at, status)
+       VALUES (?,?,?,?,?,?,?)`,
+    ).bind(id, s.stepIndex, s.after, s.kind, s.template, s.dueAt, s.status))];
+  // D1 batch is transactional. The enrollment and every step either commit together or not at
+  // all; INSERT OR IGNORE also makes an exact replay row-stable.
+  const results = await db.batch(statements);
+  return { created: changesOf(results?.[0]) === 1, enrollmentId: id };
 }
 
 /**
@@ -107,6 +98,17 @@ export async function markStep(db, id, stepIndex, status) {
     .prepare(`UPDATE nurture_steps SET status = ? WHERE enrollment_id = ? AND step_index = ?`)
     .bind(status, id, stepIndex)
     .run();
+}
+
+// Claim before crossing the external delivery boundary. Only one concurrent sweep can change
+// pending→dispatching; a crash after this point leaves an explicit stuck claim for Staff review
+// and is never auto-retried into a duplicate email.
+export async function claimStep(db, id, stepIndex) {
+  const result = await db
+    .prepare(`UPDATE nurture_steps SET status = 'dispatching' WHERE enrollment_id = ? AND step_index = ? AND status = 'pending'`)
+    .bind(id, stepIndex)
+    .run();
+  return changesOf(result) === 1;
 }
 
 export async function appendEvent(db, r) {

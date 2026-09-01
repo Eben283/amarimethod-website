@@ -83,19 +83,45 @@ describe("enroll — entry guard", () => {
 });
 
 describe("importEnrollment — mid-sequence cutover (15 in-flight in Flow 1, 1 in Flow 3)", () => {
-  it("computes dueAt from the ORIGINAL entry time and never back-fires already-due steps", () => {
-    const enteredAt = NOW - 8 * DAY; // entered 8 days ago: emails 1 (+0d), 2 (+3d), 3 (+7d) already handled by GHL
-    const e = importEnrollment(FLOW_1_QUIZ, { contactId: "cont_9", enteredAt }, NOW);
-    expect(e.enteredAt).toBe(enteredAt);
+  const evidence = (overrides = {}) => ({
+    contactId: "cont_9",
+    enteredAt: NOW - 8 * DAY,
+    nextStepIndex: 3,
+    nextDueAt: NOW + 2 * DAY,
+    capturedAt: NOW - 5 * 60 * 1000,
+    cursorSource: "provider_enrollment_history",
+    ...overrides,
+  });
+
+  it("uses a fresh observed cursor and never back-fires provider-owned steps", () => {
+    const e = importEnrollment(FLOW_1_QUIZ, evidence(), NOW);
+    expect(e.enteredAt).toBe(NOW - 8 * DAY);
     expect(e.status).toBe("active");
     expect(e.steps.map((s) => s.status)).toEqual([
       "imported", "imported", "imported", "pending", "pending", "pending",
     ]);
-    expect(e.steps[3].dueAt).toBe(enteredAt + 10 * DAY); // day 10, in 2 days — engine takes over here
+    expect(e.steps[3].dueAt).toBe(NOW + 2 * DAY); // provider and native schedule agree
+    expect(e.importEvidence.nextStepIndex).toBe(3);
   });
 
-  it("a fully-elapsed sequence imports with every step marked imported (nothing to fire)", () => {
-    const e = importEnrollment(FLOW_1_QUIZ, { contactId: "cont_9", enteredAt: NOW - 40 * DAY }, NOW);
-    expect(e.steps.every((s) => s.status === "imported")).toBe(true);
+  it("rejects time-only inference, stale evidence, and an out-of-range cursor", () => {
+    expect(() => importEnrollment(FLOW_1_QUIZ, { contactId: "cont_9", enteredAt: NOW - 8 * DAY }, NOW))
+      .toThrow("nextDueAt");
+    expect(() => importEnrollment(FLOW_1_QUIZ, evidence({ capturedAt: NOW - 2 * 3600000 }), NOW))
+      .toThrow("stale");
+    expect(() => importEnrollment(FLOW_1_QUIZ, evidence({ nextStepIndex: 6 }), NOW))
+      .toThrow("nextStepIndex");
+  });
+
+  it("rejects a cursor whose shown next time disagrees with the original enrollment schedule", () => {
+    expect(() => importEnrollment(FLOW_1_QUIZ, evidence({ nextDueAt: NOW + 3 * DAY }), NOW))
+      .toThrow("does not match");
+  });
+
+  it("rejects an already-overdue next action instead of guessing whether the provider sent it", () => {
+    expect(() => importEnrollment(FLOW_1_QUIZ, evidence({
+      enteredAt: NOW - 11 * DAY,
+      nextDueAt: NOW - DAY,
+    }), NOW)).toThrow("already due");
   });
 });

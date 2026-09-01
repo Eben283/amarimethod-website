@@ -25,8 +25,8 @@ binding = "CRM_DB"
 database_name = "amari-crm-mirror"
 database_id = "91a5a51d-0319-4c6d-9a6b-36bee3805e62"
 
-# Token cache for read-only GHL API lookups (tag bridge + entry-guard tag reads; the
-# ghl-token-refresh worker keeps the token fresh).
+# Token cache used only by the bounded legacy /tag-webhook adapter for a read-only GHL tag
+# lookup. Direct /event guards, branches, recipients, and tag writes use CRM_DB.
 [[kv_namespaces]]
 binding = "PORTAL_KV"
 id = "79cff30d0e45419791b0d25cd81961df"
@@ -38,4 +38,7 @@ head_sampling_rate = 1
 # Secrets (set once in this dir): WORKER_AUTH_SECRET (same value as the other workers + Pages env).
 #   echo "<secret>" | npx wrangler secret put WORKER_AUTH_SECRET
 # GHL_WEBHOOK_SECRET (same value as the Pages purchase webhooks — the /tag-webhook gate).
-# Active mode only (later): GHL_CLIENT_ID, GHL_CLIENT_SECRET for send/tag-write.
+# Native Gmail delivery additionally requires the actor-scoped Amari Google OAuth client secrets
+# plus BOTH NURTURE_EMAIL_DELIVERY_RELEASE=approved and a valid JSON
+# NURTURE_EMAIL_SEQUENCE_ALLOWLIST. Neither release gate is declared here; every sequence remains
+# source-level shadow, and provider submission is not claimed as terminal delivery evidence.

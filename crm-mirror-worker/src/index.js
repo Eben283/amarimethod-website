@@ -2,7 +2,7 @@ import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-
 import { dashboardHtml } from "./dashboard.js";
 import { clientDeskHtml } from "./client-desk.js";
 import { dashboardSessionActor, dashboardSessionCookie, dashboardSessionToken, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
-import { CommunicationCommandError, captureCommunicationCommand, communicationReadiness } from "./owned-sender.js";
+import { CommunicationCommandError, communicationReadiness } from "./owned-sender.js";
 import { GmailReplyReadinessError, gmailReplyReadiness } from "./gmail-reply-readiness.js";
 import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
 import {
@@ -56,6 +56,10 @@ import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 import { personAutomationInspection } from "./person-automation-inspection.js";
 import { familyAutomationInspection } from "./family-automation-inspection.js";
 import { automationFamily } from "../../functions/lib/automation-families.js";
+import { ownedQuizIntakeReadiness, OwnedQuizIntakeError, upsertOwnedQuizIntake } from "./owned-quiz-intake.js";
+import { ownedQuizNurtureDispatchReadiness } from "./quiz-nurture-dispatch.js";
+import { captureStaffCommunicationCommand, ownedEmailDispatchReadiness } from "./owned-email-dispatch.js";
+import { ownedQuizRetentionReadiness } from "./owned-quiz-retention.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -216,8 +220,8 @@ function dashboardAccessRecord(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "owned-appointment-lifecycles" || source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
-  if (!sources.length) throw new Error("sources must contain owned-appointment-lifecycles, ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, stripe-invoices, and/or consents");
+  const sources = [...new Set(requested.filter((source) => source === "owned-appointment-lifecycles" || source === "owned-quiz-nurture" || source === "owned-email-dispatch" || source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
+  if (!sources.length) throw new Error("sources must contain owned-appointment-lifecycles, owned-quiz-nurture, owned-email-dispatch, ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, stripe-invoices, and/or consents");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
   const requestedPages = Number(payload?.pages);
@@ -424,7 +428,7 @@ export default {
           : [];
         if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
         try {
-          const command = await captureCommunicationCommand(env.CRM_DB, { ...payload, actor }, new Date().toISOString());
+          const command = await captureStaffCommunicationCommand(env.CRM_DB, { ...payload, actor }, new Date().toISOString());
           return json(command.deduped ? 200 : 201, { success: true, command });
         } catch (error) {
           if (error instanceof CommunicationCommandError) {
@@ -437,7 +441,7 @@ export default {
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
       const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -475,8 +479,28 @@ export default {
       if (request.method === "GET" && url.pathname === "/readiness") {
         return json(200, { success: true, worker: "amari-crm-mirror", ...(await mirrorReadiness(env.CRM_DB, new Date().toISOString())) });
       }
+      if (request.method === "GET" && url.pathname === "/quiz-intake/readiness") {
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await ownedQuizIntakeReadiness(env.CRM_DB, new Date().toISOString())),
+          nurtureDispatch: await ownedQuizNurtureDispatchReadiness(env.CRM_DB),
+        }, { "Cache-Control": "no-store" });
+      }
+      if (request.method === "GET" && url.pathname === "/quiz-intake/retention-readiness") {
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await ownedQuizRetentionReadiness(env.CRM_DB, env.AUTOMATION_DB, new Date().toISOString())),
+        }, { "Cache-Control": "no-store" });
+      }
       if (request.method === "GET" && (url.pathname === "/sender/readiness" || url.pathname === "/communications/outbox/readiness")) {
-        return json(200, { success: true, worker: "amari-crm-mirror", ...(await communicationReadiness(env.CRM_DB, env)) });
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await communicationReadiness(env.CRM_DB, env)),
+          emailDispatch: await ownedEmailDispatchReadiness(env.CRM_DB, env),
+        });
       }
       if (request.method === "GET" && url.pathname === "/gmail/reply-readiness") {
         try {
@@ -533,6 +557,28 @@ export default {
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           return json(message === "contact is not mirrored" || message === "follow-up not found" ? 404 : 400, { error: message });
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/contacts/quiz-intake") {
+        // Defense in depth: this sensitive server-to-server write checks Worker auth again
+        // at the route even though the global dispatcher has already denied unauthenticated
+        // non-dashboard requests. The public browser never receives this bearer secret.
+        const denied = requireWorkerAuth(request, env);
+        if (denied) return denied;
+        let payload;
+        try {
+          payload = await actionPayload(request, 24_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        try {
+          const result = await upsertOwnedQuizIntake(env.CRM_DB, payload, new Date().toISOString());
+          return json(result.deduped ? 200 : 201, { success: true, ...result });
+        } catch (error) {
+          if (error instanceof OwnedQuizIntakeError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
         }
       }
       if (request.method === "POST" && url.pathname === "/appointments/commands") {

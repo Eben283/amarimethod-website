@@ -14,12 +14,14 @@ describe("Partnership Discovery owned service migration", () => {
     db.exec("PRAGMA foreign_keys = ON");
     const names = readdirSync(new URL("../migrations/", import.meta.url))
       .filter((name) => /^\d{4}_.+\.sql$/.test(name)).sort();
-    expect(names.at(-1)).toBe("0022_partnership_discovery_service.sql");
-    names.slice(0, -1).forEach((name) => apply(db, name));
+    const target = "0022_partnership_discovery_service.sql";
+    const targetIndex = names.indexOf(target);
+    expect(targetIndex).toBeGreaterThan(-1);
+    names.slice(0, targetIndex).forEach((name) => apply(db, name));
 
     const beforeCount = db.prepare("SELECT COUNT(*) AS count FROM services").get().count;
     const existing = db.prepare("SELECT * FROM services WHERE id = 'discovery-call'").get();
-    apply(db, names.at(-1));
+    apply(db, target);
 
     expect(db.prepare(`
       SELECT id, name, service_family, duration_minutes, package_eligible,

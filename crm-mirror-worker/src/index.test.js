@@ -46,6 +46,7 @@ describe("CRM mirror request validation", () => {
   it("rejects an empty or unsupported source set", () => {
     expect(() => parseSyncRequest({ sources: ["gmail"] })).toThrow("sources must contain owned-appointment-lifecycles");
     expect(parseSyncRequest({ sources: ["owned-appointment-lifecycles"] })).toEqual({ sources: ["owned-appointment-lifecycles"], limit: 25, pages: 8 });
+    expect(parseSyncRequest({ sources: ["owned-quiz-nurture"] })).toEqual({ sources: ["owned-quiz-nurture"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-conversations"] })).toEqual({ sources: ["ghl-conversations"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-conversations-recent"] })).toEqual({ sources: ["ghl-conversations-recent"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-message-export"], pages: 99 })).toEqual({ sources: ["ghl-message-export"], limit: 25, pages: 8 });
@@ -395,19 +396,30 @@ describe("CRM mirror dashboard access handoff", () => {
       outboxAvailable: true,
       deliveryEnabled: false,
       fallbackProvider: null,
+      emailDispatch: expect.objectContaining({
+        configured: false,
+        state: "unavailable",
+        deliveryEnabled: false,
+        release: expect.objectContaining({ sourceMode: "shadow", enabled: false, fallbackProvider: null }),
+      }),
       channels: [
         expect.objectContaining({
           channel: "email",
           configurationDetected: true,
           deliveryEnabled: false,
           blockers: expect.arrayContaining([
-            "the existing personal Google OAuth project is unusable for Amari mail",
-            "an Amari-owned Google OAuth grant is not verified",
-            "exact Amari send-as identities are not verified",
-            "DKIM and DMARC are not verified",
-            "inbound Gmail reply sync is not implemented",
-            "provider outcomes are not ingested into Communication",
+            "the signed actor must have an exact verified Amari mailbox grant and Google send-as identity",
+            "sender-domain DKIM and DMARC evidence must be reviewed before activation",
+            "Gmail reply sync control must be separately baselined and enabled",
+            "delivery command dispatcher is not activated",
+            "provider outcome synchronization remains dormant and terminal delivery success is undefined",
           ]),
+          capabilities: expect.objectContaining({
+            submissionAdapterImplemented: true,
+            replyProviderAdapterImplemented: true,
+            replySyncControlImplemented: true,
+            providerOutcomeEvidenceImplemented: true,
+          }),
         }),
         expect.objectContaining({ channel: "sms", configurationDetected: false, deliveryEnabled: false }),
       ],

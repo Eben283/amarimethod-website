@@ -2,8 +2,8 @@
 //
 // Same beside-GHL safety boundary as the reminder engine: any sequence whose mode isn't
 // explicitly "active" NEVER sends — a due step is recorded as `would_send` and marked, so the
-// engine runs alongside GHL without a duplicate email reaching a lead. Shadow also never reads
-// GHL: a due branch step logs its candidate templates unresolved (zero creds, zero API calls).
+// engine runs alongside the legacy owner without a duplicate email reaching a lead. Shadow does
+// not read any provider: a due branch step logs candidate templates unresolved.
 //
 // Active mode resolves branch steps against a FRESH contact read at send time (per the brief:
 // branch state at enrollment time is stale by the time the step fires).
@@ -12,8 +12,9 @@
 //   deps.logEvent(record)                      append to automation_events
 //   deps.markStep(enrollment, idx, status)     persist the step's new status
 //   deps.getContactFields(contactId)           fresh contact custom-field read (active branches)
-//   deps.renderMessage(seq, step, enr, tpl)    resolve the copy template → ghl-send params
-//   deps.send(message)                         -> { success, messageId?, error? }
+//   deps.renderMessage(seq, step, enr, tpl)    resolve native recipient and copy payload
+//   deps.claimStep(enrollment, idx)            atomic pending→dispatching claim
+//   deps.send(message)                         -> { success, messageId?, receiptState?, error? }
 
 /**
  * Resolve which template a step sends, given the step's config definition and the contact's
@@ -102,20 +103,35 @@ export async function processStep({ enrollment, step, sequence }, deps, nowMs) {
   // A throwing render/send fails THIS step only — one bad template must never kill the
   // whole sweep (spec-05 finding; reachable only in active mode).
   let res;
+  let message;
   try {
-    const message = await deps.renderMessage(sequence, step, enrollment, template);
+    message = await deps.renderMessage(sequence, step, enrollment, template);
+    if (deps.claimStep) {
+      const claimed = await deps.claimStep(enrollment, step.stepIndex);
+      if (!claimed) return { outcome: "skip", reason: "dispatch_claim_lost" };
+      await deps.logEvent({
+        ...base,
+        action: "dispatch_started",
+        outcome: "dispatching",
+        detail: { template },
+      });
+    }
     res = await deps.send(message);
   } catch (err) {
     res = { success: false, error: String((err && err.message) || err) };
   }
   const ok = !!(res && res.success);
+  const outcome = ok && ["submitted", "submission_unreconciled"].includes(res.receiptState)
+    ? res.receiptState : ok ? "sent" : "failed";
   await deps.logEvent({
     ...base,
     action: "send",
-    outcome: ok ? "sent" : "failed",
+    outcome,
     message_ref: (res && res.messageId) || null,
-    detail: ok ? { template } : { template, error: res && res.error },
+    detail: ok
+      ? { template, deliveryKey: message?.deliveryKey || null, provider: res.provider || null, receiptState: res.receiptState || "terminal_unknown", terminal: res.terminal ?? null, evidenceError: res.evidenceError || null }
+      : { template, error: res && res.error, code: res && res.code, retryable: res && res.retryable === true },
   });
-  await deps.markStep(enrollment, step.stepIndex, ok ? "sent" : "failed");
-  return { outcome: ok ? "sent" : "failed" };
+  await deps.markStep(enrollment, step.stepIndex, outcome);
+  return { outcome };
 }

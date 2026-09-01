@@ -12,6 +12,7 @@ function deps(over = {}) {
   return {
     logEvent: vi.fn().mockResolvedValue(undefined),
     markStep: vi.fn().mockResolvedValue(undefined),
+    claimStep: vi.fn().mockResolvedValue(true),
     getContactFields: vi.fn().mockResolvedValue({ primaryPainLocation: "Hips" }),
     renderMessage: vi.fn().mockResolvedValue({ channel: "email", contactId: "cont_1", subject: "s", html: "<p>b</p>" }),
     send: vi.fn().mockResolvedValue({ success: true, messageId: "m_1" }),
@@ -115,6 +116,48 @@ describe("processStep — active mode", () => {
     expect(d.send).toHaveBeenCalledTimes(1);
     expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({ outcome: "sent", message_ref: "m_1" }));
     expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 0, "sent");
+    expect(d.claimStep).toHaveBeenCalledWith(expect.anything(), 0);
+    expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({ action: "dispatch_started", outcome: "dispatching" }));
+  });
+
+  it("records a Gmail acceptance as submitted, not terminally delivered", async () => {
+    const d = deps({ send: vi.fn().mockResolvedValue({
+      success: true, messageId: "gmail-1", provider: "google-workspace", receiptState: "submitted", terminal: false,
+    }) });
+    const out = await processStep({ enrollment: enrollment(), step: emailStep, sequence: activeSeq }, d, NOW);
+    expect(out.outcome).toBe("submitted");
+    expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "submitted",
+      message_ref: "gmail-1",
+      detail: expect.objectContaining({ receiptState: "submitted", terminal: false }),
+    }));
+    expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 0, "submitted");
+  });
+
+  it("preserves an accepted-but-unreconciled submission as a non-retryable exception", async () => {
+    const d = deps({ send: vi.fn().mockResolvedValue({
+      success: true,
+      messageId: "gmail-1",
+      provider: "google-workspace",
+      receiptState: "submission_unreconciled",
+      terminal: false,
+      evidenceError: "D1 unavailable",
+    }) });
+    const out = await processStep({ enrollment: enrollment(), step: emailStep, sequence: activeSeq }, d, NOW);
+    expect(out.outcome).toBe("submission_unreconciled");
+    expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 0, "submission_unreconciled");
+    expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({
+      outcome: "submission_unreconciled",
+      detail: expect.objectContaining({ evidenceError: "D1 unavailable" }),
+    }));
+  });
+
+  it("does not send when another sweep wins the atomic dispatch claim", async () => {
+    const d = deps({ claimStep: vi.fn().mockResolvedValue(false) });
+    const out = await processStep({ enrollment: enrollment(), step: emailStep, sequence: activeSeq }, d, NOW);
+    expect(out).toEqual({ outcome: "skip", reason: "dispatch_claim_lost" });
+    expect(d.send).not.toHaveBeenCalled();
+    expect(d.markStep).not.toHaveBeenCalled();
   });
 
   it("resolves a branch against a FRESH contact read at send time (brief RED test c)", async () => {

@@ -5,10 +5,10 @@
 //       onEnter tags back through exits (Flow 3 enrolling exits Flows 1+2 without a round-trip).
 //   runSweep(env, nowMs)                — the cron: fire (or shadow-log) every due step.
 //
-// Optional deps (wired later; safe defaults keep shadow zero-GHL):
+// Optional deps (primarily tests; production defaults use owned CRM):
 //   getContactTags(contactId)  → string[]  guard reads. Default: unknown (null) — shadow
 //       enrolls flagged guardUnchecked, active fails closed (see enroll.js).
-//   addContactTags(contactId, tags)        active-mode onEnter tag write (transition window).
+//   addContactTags(contactId, tags)        active-mode owned-CRM onEnter tag write.
 //       Shadow never calls it; an active sequence without it fails loudly, not silently.
 
 import { SEQUENCES } from "./config.js";
@@ -16,7 +16,7 @@ import { toNurtureEvent, eventMatches } from "./events.js";
 import { enroll } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import {
-  saveEnrollment, loadDueSteps, markStep, appendEvent, exitEnrollment, enrollmentId,
+  saveEnrollment, loadDueSteps, markStep, claimStep, appendEvent, exitEnrollment, enrollmentId,
 } from "./store.js";
 import {
   addOwnedContactTags,
@@ -25,6 +25,7 @@ import {
   readOwnedContactTags,
 } from "./owned-contact.js";
 import { renderNurtureTemplate } from "./templates.js";
+import { deliverNurtureEmail } from "./email-delivery.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 async function exitPass(db, event, nowMs, actions) {
@@ -127,9 +128,9 @@ export async function handleEvent(env, raw, nowMs, deps = {}) {
 }
 
 /**
- * Cron sweep: process every due pending step. Shadow sequences log would_send and never send
- * (and never read GHL); active sequences resolve branches against a fresh contact read and send
- * via the shared GHL adapter. Returns per-outcome counts.
+ * Cron sweep: process every due pending step. Shadow sequences log would_send and never send.
+ * Active sequences resolve branches, recipients, and copy through owned CRM; delivery remains
+ * fail-closed until a separate native sender and receipt boundary is enabled.
  */
 export async function runSweep(env, nowMs, limit = 100) {
   const db = env.NURTURE_DB;
@@ -139,22 +140,33 @@ export async function runSweep(env, nowMs, limit = 100) {
   const deps = {
     logEvent: (r) => appendEvent(db, r),
     markStep: (enr, idx, status) => markStep(db, enrollmentId(enr.sequenceId, enr.contactId), idx, status),
+    claimStep: (enr, idx) => claimStep(db, enrollmentId(enr.sequenceId, enr.contactId), idx),
     getContactFields: env.CRM_DB
       ? (contactReference) => readOwnedContactFields(env.CRM_DB, contactReference)
       : async () => { throw new Error("owned CRM contact store is not configured"); },
     renderMessage: async (sequence, step, enrollment, templateId) => {
-      const recipient = await readOwnedContactRecipient(env.CRM_DB, enrollment.contactId);
+      const [recipient, fields] = await Promise.all([
+        readOwnedContactRecipient(env.CRM_DB, enrollment.contactId),
+        readOwnedContactFields(env.CRM_DB, enrollment.contactId),
+      ]);
       return {
         recipient: { contactId: recipient.id, email: recipient.email },
-        ...renderNurtureTemplate(templateId, { "contact.first_name": recipient.firstName }),
+        sequenceId: sequence.sequenceId,
+        deliveryKey: `${sequence.sequenceId}:${recipient.id}:v${enrollment.definitionVersion}:s${step.stepIndex}`,
+        ...renderNurtureTemplate(templateId, {
+          "contact.first_name": recipient.firstName,
+          "contact.primary_pain_location": fields.primaryPainLocation,
+          "contact.pain_pattern_signature": fields.painPatternSignature,
+          "contact.pain_duration": fields.painDuration,
+        }),
       };
     },
-    // Rendering and addressing are native. Delivery remains an explicit fail-closed boundary;
-    // never fall back to the GHL conversations adapter for a system intended to supersede GHL.
-    send: async () => { throw new Error("owned nurture email delivery is not enabled"); },
+    // Three independent gates remain: sequence.mode=active in reviewed source, an exact release
+    // flag, and a JSON sequence allowlist in the environment. No GHL fallback exists.
+    send: (message) => deliverNurtureEmail(env, message),
   };
 
-  const counts = { would_send: 0, sent: 0, failed: 0, skip: 0 };
+  const counts = { would_send: 0, submitted: 0, submission_unreconciled: 0, sent: 0, failed: 0, skip: 0 };
   for (const item of due) {
     const sequence = seqByKey[item.enrollment.sequenceId];
     if (!sequence) continue;
