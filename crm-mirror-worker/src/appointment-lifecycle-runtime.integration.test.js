@@ -4,7 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
-import { NO_SHOW_RECOVERY_WORKFLOW } from "../../reminder-engine-worker/src/no-show-recovery-workflow.js";
+import { NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY_WORKFLOW } from "../../reminder-engine-worker/src/no-show-recovery-workflow.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const AUTH = "synthetic-runtime-proof-secret";
@@ -20,6 +20,15 @@ let scripts;
 let egress = 0;
 
 const BRIDGE = `export default { fetch(request, env) { return env.CRM.fetch(request); } };`;
+const OWNED_SMS = `export default { async fetch(request) {
+  const body = await request.json();
+  if (request.headers.get("Authorization") !== "Bearer ${AUTH}"
+      || !/^\\+[1-9][0-9]{7,14}$/.test(body?.to || "")
+      || !body?.text || !body?.idempotencyKey) {
+    return Response.json({ success: false }, { status: 400 });
+  }
+  return Response.json({ success: true, messageId: "synthetic-owned-sms:" + body.to });
+} };`;
 
 async function bundle(entryPoint) {
   const result = await build({
@@ -172,9 +181,20 @@ async function startRuntime() {
           bindings: {
             WORKER_AUTH_SECRET: AUTH,
             GHL_APPOINTMENT_WEBHOOK_SECRET: WEBHOOK_SECRET,
+            NO_SHOW_BEHAVIOR_RELEASE: "approved",
+            NO_SHOW_DELIVERY_RELEASE: "approved",
+            NO_SHOW_RECOVERY_URL: "https://www.amarimethod.com/appointment/recovery",
+            AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "synthetic-client",
+            AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "synthetic-secret",
           },
           d1Databases: { REMINDER_DB: "reminder-db", CRM_DB: "crm-db" },
           kvNamespaces: ["PORTAL_KV"],
+          serviceBindings: { OWNED_SMS: "owned-sms" },
+        },
+        {
+          ...base,
+          name: "owned-sms",
+          script: OWNED_SMS,
         },
       ],
     }),
@@ -552,6 +572,99 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     expect(await reminderDb.prepare(
       "SELECT COUNT(*) AS count FROM automation_events WHERE flow_key = ? AND action = 'exited'",
     ).bind(NO_SHOW_FLOW).first()).toEqual({ count: 1 });
+  }, 30_000);
+
+  it("delivers an active affiliate no-show SMS from owned CRM through the provider-neutral edge with durable evidence", async () => {
+    const { mf, crmDb, reminderDb } = await startRuntime();
+    const now = Date.now();
+    const recordedAt = new Date(now).toISOString();
+    const appointmentId = "owned-no-show-appointment";
+    const providerAppointmentId = "legacy-no-show-appointment";
+    const providerContactId = "legacy-no-show-contact";
+    const phone = "+14155550123";
+    await crmDb.batch([
+      crmDb.prepare(
+        `INSERT INTO contacts
+           (id, display_name, first_name, email_normalized, phone_e164, created_at, updated_at)
+         VALUES (?, 'Synthetic Affiliate — Owned SMS', 'Avery', 'avery@example.test', ?, ?, ?)`,
+      ).bind(CONTACT_ID, phone, recordedAt, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO external_records
+           (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+         VALUES ('synthetic-owned-sms-contact-crosswalk', 'ghl', 'contact', ?, ?, 'contact', ?, ?)`,
+      ).bind(providerContactId, CONTACT_ID, CONTACT_ID, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO appointments
+           (id, contact_id, service_id, provider_appointment_id, provider_calendar_id,
+            provider_status_raw, status, starts_at, ends_at, timezone,
+            authority, provider_sync_state, revision, created_at, updated_at)
+         VALUES (?, ?, 'partner-initial', ?, ?, 'noshow', 'no_show', ?, ?,
+                 'America/Los_Angeles', 'provider_mirror', 'synced', 1, ?, ?)`,
+      ).bind(
+        appointmentId, CONTACT_ID, providerAppointmentId, PARTNER_CALENDAR_ID,
+        new Date(now - 60 * 60_000).toISOString(), new Date(now - 10 * 60_000).toISOString(),
+        recordedAt, recordedAt,
+      ),
+    ]);
+    await reminderDb.prepare(
+      `INSERT INTO workflow_versions
+         (workflow_id, version, state, document, created_at, published_at)
+       VALUES (?, ?, 'published', ?, ?, ?)`,
+    ).bind(
+      NO_SHOW_FLOW, NO_SHOW_RECOVERY_RELEASE_WORKFLOW.version,
+      JSON.stringify(NO_SHOW_RECOVERY_RELEASE_WORKFLOW), now, now,
+    ).run();
+
+    const reminder = await mf.getWorker("reminder");
+    const eventResponse = await reminder.fetch("http://reminder.test/event", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${AUTH}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recognized: true, type: "noshow", status: "no-show", appointmentEventType: "normal",
+        calendarId: PARTNER_CALENDAR_ID, contactId: providerContactId,
+        appointmentId: providerAppointmentId,
+        startAt: new Date(now - 60 * 60_000).toISOString(), modifiedBy: "user",
+        context: { affiliatePartner: "true" },
+      }),
+    });
+    expect(eventResponse.status).toBe(200);
+    expect((await eventResponse.json()).actions).toContainEqual({
+      engine: "reminder", action: "enroll", detail: { flowKey: NO_SHOW_FLOW },
+    });
+    const runResponse = await reminder.fetch("http://reminder.test/run", {
+      method: "POST", headers: { Authorization: `Bearer ${AUTH}` },
+    });
+    expect(runResponse.status).toBe(200);
+
+    const enrollmentId = `${NO_SHOW_FLOW}:${providerAppointmentId}`;
+    expect(await reminderDb.prepare(
+      "SELECT status FROM reminder_steps WHERE enrollment_id = ? AND step_index = 0",
+    ).bind(enrollmentId).first()).toEqual({ status: "sent" });
+    expect(await reminderDb.prepare(
+      `SELECT flow_key, enrollment_id, step_index, definition_version, channel, provider,
+              state, provider_reference
+         FROM owned_delivery_attempts WHERE enrollment_id = ?`,
+    ).bind(enrollmentId).first()).toEqual({
+      flow_key: NO_SHOW_FLOW,
+      enrollment_id: enrollmentId,
+      step_index: 0,
+      definition_version: 4,
+      channel: "sms",
+      provider: "owned-sms",
+      state: "accepted",
+      provider_reference: `synthetic-owned-sms:${phone}`,
+    });
+    expect(await reminderDb.prepare(
+      `SELECT COUNT(*) AS count FROM owned_delivery_receipts
+        WHERE provider = 'owned-sms' AND provider_reference = ? AND proof_level = 'accepted'`,
+    ).bind(`synthetic-owned-sms:${phone}`).first()).toEqual({ count: 1 });
+    const event = await reminderDb.prepare(
+      `SELECT outcome, channel, message_ref FROM automation_events
+        WHERE flow_key = ? AND action = 'send' ORDER BY id DESC LIMIT 1`,
+    ).bind(NO_SHOW_FLOW).first();
+    expect(event).toEqual({
+      outcome: "sent", channel: "sms", message_ref: `synthetic-owned-sms:${phone}`,
+    });
   }, 30_000);
 
   it.each([
