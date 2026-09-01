@@ -58,7 +58,7 @@ describe("POST /workflow-release — No Show", () => {
     AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "client",
     AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "secret",
     OWNED_SMS: { fetch() {} },
-    NO_SHOW_RECOVERY_URL: "https://www.amarimethod.com/appointment/recovery",
+    APPOINTMENT_MANAGE_LINK_SECRET: "appointment-manage-link-secret-at-least-32-characters",
     NO_SHOW_BEHAVIOR_RELEASE: "approved",
     NO_SHOW_DELIVERY_RELEASE: "approved",
     ...over,

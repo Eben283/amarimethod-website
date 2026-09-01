@@ -3,9 +3,11 @@ import { sendOwnedEmail } from "./gmail-test-send.js";
 import { executeOwnedDeliveryEffect } from "./owned-delivery-evidence.js";
 import { ownedSmsConfigured, sendOwnedSms, validOwnedSmsRecipient } from "./owned-sms.js";
 import { renderWorkflowText } from "./workflow-definition.js";
+import { issueAppointmentManageToken } from "../../functions/lib/appointment-manage-token.js";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const OWNED_ORIGIN = "https://www.amarimethod.com";
+const RECOVERY_LINK_TTL_MS = 14 * 24 * 60 * 60 * 1000;
 const clean = (value) => String(value || "").trim();
 
 function normalizedDnd(value) {
@@ -27,8 +29,34 @@ export function noShowDeliveryReadiness(env) {
   if (!env?.REMINDER_DB?.prepare || !env?.REMINDER_DB?.batch) return { eligible: false, reason: "delivery-evidence-unavailable" };
   if (!gmailConfigured(env)) return { eligible: false, reason: "owned-email-unavailable" };
   if (!ownedSmsConfigured(env)) return { eligible: false, reason: "owned-sms-unavailable" };
-  if (!ownedNoShowRecoveryUrl(env?.NO_SHOW_RECOVERY_URL)) return { eligible: false, reason: "owned-recovery-link-unavailable" };
+  if (clean(env?.APPOINTMENT_MANAGE_LINK_SECRET).length < 32) return { eligible: false, reason: "owned-recovery-link-unavailable" };
   return { eligible: true };
+}
+
+export async function createNoShowRecoveryLink(
+  env,
+  context,
+  issuedAtMs = Date.now(),
+  verificationNowMs = Date.now(),
+) {
+  if (!context?.appointmentId || !context?.ownedContactId || !Number.isInteger(Number(context?.revision)) ||
+      clean(context?.status).toLowerCase() !== "no_show" || !clean(context?.serviceId) ||
+      !new Set(["owned", "provider_mirror"]).has(clean(context?.authority)) ||
+      !new Set(["synced", "not_required"]).has(clean(context?.providerSyncState))) {
+    throw new Error("owned no-show recovery identity is unavailable");
+  }
+  const token = await issueAppointmentManageToken(env?.APPOINTMENT_MANAGE_LINK_SECRET, {
+    appointmentId: context.appointmentId,
+    contactId: context.ownedContactId,
+    revision: Number(context.revision),
+    capabilities: ["recovery"],
+    iat: issuedAtMs,
+    exp: issuedAtMs + RECOVERY_LINK_TTL_MS,
+  }, verificationNowMs);
+  const link = new URL("/appointment/manage", OWNED_ORIGIN);
+  link.searchParams.set("action", "recovery");
+  link.searchParams.set("token", token);
+  return link.toString();
 }
 
 export function noShowDeliveryEligibility(env, flow, step, enrollment) {
@@ -50,7 +78,9 @@ export async function readNoShowDeliveryContext(db, enrollment) {
   const result = await db.prepare(
     `SELECT appointment.id AS appointment_id, appointment.contact_id,
             appointment.provider_appointment_id, appointment.provider_calendar_id,
-            appointment.status, contact.first_name, contact.display_name,
+            appointment.status, appointment.service_id, appointment.authority,
+            appointment.provider_sync_state, appointment.revision,
+            contact.first_name, contact.display_name,
             contact.email_normalized, contact.phone_e164, contact.archived_at,
             COALESCE((SELECT attribute_value FROM contact_attributes
                        WHERE contact_id = contact.id AND attribute_key = 'system.dnd'
@@ -91,6 +121,11 @@ export async function readNoShowDeliveryContext(db, enrollment) {
   return Object.freeze({
     appointmentId: row.appointment_id,
     ownedContactId: row.contact_id,
+    serviceId: row.service_id,
+    status: row.status,
+    authority: row.authority,
+    providerSyncState: row.provider_sync_state,
+    revision: Number(row.revision),
     firstName: clean(row.first_name) || clean(row.display_name).split(/\s+/)[0] || "there",
     clientEmail: clean(row.email_normalized).toLowerCase(),
     clientPhone: clean(row.phone_e164),
@@ -116,9 +151,10 @@ export async function deliverNoShowStep(env, step, enrollment, services = {}, wo
       : await readNoShowDeliveryContext(env.CRM_DB, enrollment);
     const blocked = clientPolicy(context, node.message.channel);
     if (blocked) return { success: false, error: blocked };
+    const stableIssueTime = Number.isFinite(Number(step?.dueAt)) ? Number(step.dueAt) : Date.now();
     const rescheduleLink = services.recoveryUrl
       ? ownedNoShowRecoveryUrl(await services.recoveryUrl(context, enrollment))
-      : ownedNoShowRecoveryUrl(env.NO_SHOW_RECOVERY_URL);
+      : ownedNoShowRecoveryUrl(await createNoShowRecoveryLink(env, context, stableIssueTime));
     if (["reschedule-sms", "one-day-follow-up"].includes(step.template) && !rescheduleLink) {
       return { success: false, error: "owned no-show recovery link is unavailable" };
     }

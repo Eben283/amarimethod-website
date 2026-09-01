@@ -55,7 +55,7 @@ NURTURE_ENGINE_URL = "https://nurture-engine.eben-fa2.workers.dev"
 # SOURCE_REVISION, and WORKER_VERSION. Adding the import alone performs no reliability read/write.
 # No Show delivery is also fail-closed by default. A coordinated release must
 # bind CRM_DB, REMINDER_DB, the verified Garrett Google Workspace grant, an
-# OWNED_SMS service, and a same-origin NO_SHOW_RECOVERY_URL; set both exact
+# OWNED_SMS service and the shared APPOINTMENT_MANAGE_LINK_SECRET; set both exact
 # approvals; then publish active v4 from reviewed shadow v3 through the
 # authenticated /workflow-release endpoint. None of those release values or
 # the SMS binding belongs in an ordinary deployment.

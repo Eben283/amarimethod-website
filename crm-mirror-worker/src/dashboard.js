@@ -103,6 +103,15 @@ const DASHBOARD_HTML = `<!doctype html>
       </section>
 
       <section class="section">
+        <h2>Missed-session review requests</h2>
+        <p>These are client-confirmed requests to review a missed appointment. They are evidence only: no appointment, session credit, charge, message, or decision is created here.</p>
+        <div class="grid">
+          <article class="card"><span class="label">Pending review</span><strong class="value" id="recovery-pending">—</strong><span class="detail">Exact missed-appointment revisions awaiting Staff review</span></article>
+        </div>
+        <article class="review-shell section"><div class="review-core"><h3>Recovery review queue</h3><p>Read-only intake ordered by request time. Approval and scheduling are intentionally separate.</p><ul class="review-list" id="recovery-request-list"></ul></div></article>
+      </section>
+
+      <section class="section">
         <h2>Ledger cutover review</h2>
         <p>These are proposed opening balances copied from the current GHL fields. Approving a proposal only records the cutover decision—it does not create a ledger entry or change any client balance.</p>
         <div class="grid">
@@ -172,17 +181,19 @@ const DASHBOARD_HTML = `<!doctype html>
           });
         };
         try {
-          const [statusResponse, operationsResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
+          const [statusResponse, operationsResponse, recoveryResponse, cutoverResponse, reconciliationResponse, reviewResponse, reviewSessionResponse] = await Promise.all([
             dashboardFetch("/status"),
             dashboardFetch("/operations?limit=25"),
+            dashboardFetch("/appointments/recovery-requests?limit=25"),
             dashboardFetch("/ledger-cutover?limit=25"),
             dashboardFetch("/reconciliation"),
             dashboardFetch("/reconciliation/review?limit=50"),
             dashboardFetch("/review-session"),
           ]);
-          if (!statusResponse.ok || !operationsResponse.ok || !cutoverResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
+          if (!statusResponse.ok || !operationsResponse.ok || !recoveryResponse.ok || !cutoverResponse.ok || !reconciliationResponse.ok || !reviewResponse.ok || !reviewSessionResponse.ok) throw new Error("operator access was denied");
           const status = await statusResponse.json();
           const operations = await operationsResponse.json();
+          const recovery = await recoveryResponse.json();
           const cutover = await cutoverResponse.json();
           const reconciliation = await reconciliationResponse.json();
           const review = await reviewResponse.json();
@@ -193,6 +204,7 @@ const DASHBOARD_HTML = `<!doctype html>
           set("purchases", status.purchases);
           set("active-clients", operations.totalActiveClients);
           set("upcoming-appointments", operations.totalUpcomingAppointments);
+          set("recovery-pending", recovery.requests.length + (recovery.truncated ? "+" : ""));
           set("cutover-pending", cutover.pending);
           set("cutover-approved", cutover.approved);
           set("cutover-ledger", cutover.shadowOpeningEntries);
@@ -355,6 +367,7 @@ const DASHBOARD_HTML = `<!doctype html>
           });
           render("active-client-list", operations.activeClients, (row) => row.display_name || "Unnamed client", (row) => row.sessions_remaining + " sessions remaining · " + (row.series_type || "series not set") + " · " + (row.next_appointment_at ? scheduleTime(row.next_appointment_at) : "No upcoming appointment"));
           render("upcoming-appointment-list", operations.upcomingAppointments, (row) => row.display_name || "Unnamed client", (row) => scheduleTime(row.starts_at) + " · " + (row.service_name || "Unmapped service") + " · " + row.status);
+          render("recovery-request-list", recovery.requests, (row) => row.contactName || "Unnamed client", (row) => scheduleTime(row.startsAt) + " · " + (row.serviceName || "Unmapped service") + " · requested " + scheduleTime(row.requestedAt));
           render("ledger-cutover-candidates", cutover.candidates, (row) => row.display_name || row.email_normalized || "Unnamed client", (row) => row.proposed_credits + " proposed opening sessions · " + row.state.replaceAll("_", " "), (item, row) => {
             if (row.state !== "pending_review") return;
             const actions = document.createElement("div");

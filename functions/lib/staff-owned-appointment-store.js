@@ -3,7 +3,9 @@
 // translates the existing schedule-domain store interface into authenticated
 // Worker calls through the selected practitioner-calendar propagation edge.
 
-const WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/commands";
+const WORKER_ORIGIN = "https://amari-crm-mirror.eben-fa2.workers.dev";
+const COMMAND_PATH = "/appointments/commands";
+const RECOVERY_PATH = "/appointments/recovery-requests";
 const TIMEOUT_MS = 10_000;
 
 function commandError(body, status) {
@@ -14,12 +16,12 @@ function commandError(body, status) {
   return error;
 }
 
-async function post(context, actor, payload) {
+async function post(context, actor, payload, pathname = COMMAND_PATH) {
   if (!context?.env?.WORKER_AUTH_SECRET) throw commandError({ error: "owned_appointment_unavailable" }, 503);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const response = await fetch(WORKER_URL, {
+    const response = await fetch(`${WORKER_ORIGIN}${pathname}`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`,
@@ -38,6 +40,24 @@ async function post(context, actor, payload) {
   } finally {
     clearTimeout(timer);
   }
+}
+
+export async function captureOwnedAppointmentRecoveryRequest(context, input) {
+  const appointmentId = String(input?.appointmentId || "").trim();
+  const contactId = String(input?.contactId || "").trim();
+  const appointmentRevision = Number(input?.appointmentRevision);
+  if (!appointmentId || !contactId || !Number.isInteger(appointmentRevision) || appointmentRevision < 1) {
+    throw new TypeError("owned appointment recovery identity required");
+  }
+  const response = await post(context, "Client", {
+    appointmentId,
+    contactId,
+    appointmentRevision,
+  }, RECOVERY_PATH);
+  if (!response?.request?.requestId) {
+    throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
+  }
+  return response.request;
 }
 
 export function createOwnedAppointmentScheduleStore(context, input) {

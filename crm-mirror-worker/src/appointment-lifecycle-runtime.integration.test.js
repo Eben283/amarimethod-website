@@ -135,7 +135,7 @@ async function applySql(db, sql) {
 async function applyCrmSchema(db) {
   const directory = join(ROOT, "crm-mirror-worker/migrations");
   const names = readdirSync(directory).filter((name) => /^\d{4}_.+\.sql$/.test(name)).sort();
-  expect(names.at(-1)).toBe("0024_owned_email_dispatch_control.sql");
+  expect(names.at(-1)).toBe("0025_appointment_recovery_requests.sql");
   for (const name of names) {
     const sql = readFileSync(join(directory, name), "utf8");
     await applySql(db, sql);
@@ -183,7 +183,7 @@ async function startRuntime() {
             GHL_APPOINTMENT_WEBHOOK_SECRET: WEBHOOK_SECRET,
             NO_SHOW_BEHAVIOR_RELEASE: "approved",
             NO_SHOW_DELIVERY_RELEASE: "approved",
-            NO_SHOW_RECOVERY_URL: "https://www.amarimethod.com/appointment/recovery",
+            APPOINTMENT_MANAGE_LINK_SECRET: "appointment-manage-link-secret-at-least-32-characters",
             AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "synthetic-client",
             AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "synthetic-secret",
           },
@@ -606,6 +606,47 @@ describe("owned Partner Initial lifecycle native runtime", () => {
         recordedAt, recordedAt,
       ),
     ]);
+    const captureRecovery = () => mf.dispatchFetch("http://runtime.test/appointments/recovery-requests", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${AUTH}`,
+        "Content-Type": "application/json",
+        "X-Staff-Actor": "Client",
+      },
+      body: JSON.stringify({
+        appointmentId,
+        contactId: CONTACT_ID,
+        appointmentRevision: 1,
+      }),
+    });
+    const firstRecovery = await captureRecovery();
+    expect(firstRecovery.status).toBe(201);
+    await expect(firstRecovery.json()).resolves.toMatchObject({
+      request: { appointmentId, contactId: CONTACT_ID, state: "pending_review", deduped: false },
+    });
+    const replayRecovery = await captureRecovery();
+    expect(replayRecovery.status).toBe(200);
+    await expect(replayRecovery.json()).resolves.toMatchObject({
+      request: { appointmentId, state: "pending_review", deduped: true },
+    });
+    const recoveryQueue = await mf.dispatchFetch("http://runtime.test/appointments/recovery-requests?limit=25", {
+      headers: { Authorization: `Bearer ${AUTH}` },
+    });
+    expect(recoveryQueue.status).toBe(200);
+    await expect(recoveryQueue.json()).resolves.toMatchObject({
+      requests: [{ appointmentId, contactId: CONTACT_ID, state: "pending_review" }],
+      truncated: false,
+    });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM appointment_recovery_requests").first())
+      .toEqual({ count: 1 });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM appointment_recovery_request_events").first())
+      .toEqual({ count: 1 });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM appointment_authority_commands").first())
+      .toEqual({ count: 0 });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM appointment_payment_records").first())
+      .toEqual({ count: 0 });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM owned_communication_commands").first())
+      .toEqual({ count: 0 });
     await reminderDb.prepare(
       `INSERT INTO workflow_versions
          (workflow_id, version, state, document, created_at, published_at)

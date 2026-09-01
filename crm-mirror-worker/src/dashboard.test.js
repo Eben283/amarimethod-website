@@ -20,7 +20,10 @@ describe("CRM mirror dashboard", () => {
     expect(html).toContain('dashboardFetch("/review-session")');
     expect(html).toContain('dashboardFetch("/status")');
     expect(html).toContain('dashboardFetch("/operations?limit=25")');
+    expect(html).toContain('dashboardFetch("/appointments/recovery-requests?limit=25")');
     expect(html).toContain("Active client operations");
+    expect(html).toContain("Missed-session review requests");
+    expect(html).toContain("no appointment, session credit, charge, message, or decision is created here");
     expect(html).toContain("Client profiles");
     expect(html).toContain("Ledger cutover review");
     expect(html).toContain("Monitoring only; GHL remains production");

@@ -85,6 +85,34 @@ describe("CRM mirror request validation", () => {
 });
 
 describe("CRM mirror dashboard access handoff", () => {
+  it("keeps recovery intake Worker-authenticated, Client-scoped, and unable to accept booking or entitlement fields", async () => {
+    const url = "https://crm.test/appointments/recovery-requests";
+    const payload = {
+      appointmentId: "appointment-1",
+      contactId: "contact-1",
+      appointmentRevision: 3,
+      grantSession: true,
+    };
+    const request = (headers = {}) => new Request(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify(payload),
+    });
+    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {} };
+    expect((await worker.fetch(request(), env)).status).toBe(401);
+    const staff = await worker.fetch(request({
+      Authorization: "Bearer test-secret", "X-Staff-Actor": "Garrett",
+    }), env);
+    expect(staff.status).toBe(403);
+    await expect(staff.json()).resolves.toEqual({ error: "client_recovery_request_required" });
+    const client = await worker.fetch(request({
+      Authorization: "Bearer test-secret", "X-Staff-Actor": "Client",
+    }), env);
+    expect(client.status).toBe(400);
+    await expect(client.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["grantSession"] });
+    expect((await worker.fetch(new Request(url), env)).status).toBe(401);
+  });
+
   it("keeps native appointment capture behind Worker auth and recognized Staff identity", async () => {
     const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {} };
     const request = (headers = {}) => new Request("https://crm.test/appointments/commands", {

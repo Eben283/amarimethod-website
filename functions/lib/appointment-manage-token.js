@@ -2,7 +2,7 @@ const TOKEN_VERSION = 1;
 const MAX_TTL_MS = 35 * 24 * 60 * 60 * 1000;
 const FUTURE_IAT_SKEW_MS = 5 * 60 * 1000;
 const ID = /^[A-Za-z0-9_-]{1,160}$/;
-const CAPABILITIES = new Set(["cancel", "reschedule", "calendar"]);
+const CAPABILITIES = new Set(["cancel", "reschedule", "calendar", "recovery"]);
 const EXPECTED_KEYS = Object.freeze([
   "appointmentId", "capabilities", "contactId", "exp", "iat", "revision", "v",
 ]);
