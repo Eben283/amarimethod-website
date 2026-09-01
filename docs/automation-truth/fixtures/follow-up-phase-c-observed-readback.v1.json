@@ -68,7 +68,7 @@
   "phaseB": {
     "compilerArtifactSha256": "721e97360e624eba9be1a597871a6759868e9d053049559e828a260e194aa591",
     "compiledPlanDigest": "bcb4d5b17c69b06c4d0101e78a28a7f83a019b9d7cc62fe8a2edcf6faebff415",
-    "releaseManifestDigest": "9becab2f90086f304496d2ac564cd86be2c2b4b36659905f8908f25985a45150",
+    "releaseManifestDigest": "9e16ddfdd0ff2977133186c20ea6e6649fd9bc2308a604d6baa430d1027a48b2",
     "runtimeReference": false
   }
 }

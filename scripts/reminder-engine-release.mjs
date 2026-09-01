@@ -80,7 +80,7 @@ export function assertBindingsPreserved(beforeVersion, afterVersion) {
 
 export function assertRequiredBindings(version) {
   const present = requiredBindingNames(version);
-  const missing = ['REMINDER_DB', 'ATTEND_DB', 'PORTAL_KV', 'NURTURE', 'NURTURE_ENGINE_URL', 'WORKER_AUTH_SECRET']
+  const missing = ['REMINDER_DB', 'CRM_DB', 'ATTEND_DB', 'PORTAL_KV', 'NURTURE', 'NURTURE_ENGINE_URL', 'WORKER_AUTH_SECRET']
     .filter((name) => !present.has(name));
   if (missing.length) throw new Error(`Reminder Engine release is missing required bindings: ${missing.join(', ')}.`);
 }
