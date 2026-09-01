@@ -176,4 +176,64 @@ describe("quiz submission boundary", () => {
     expect(await duplicate.json()).toEqual({ success: true, duplicate: true });
     expect(fetchSpy.mock.calls.some(([url]) => String(url).includes("services.leadconnectorhq.com"))).toBe(false);
   });
+
+  it("keeps GHL as the compatibility write while completing the public idempotency record", async () => {
+    const values = new Map();
+    const kv = protectionKV({
+      get: vi.fn(async (key) => values.get(key) || null),
+      put: vi.fn(async (key, value) => { values.set(key, value); }),
+      delete: vi.fn(async (key) => { values.delete(key); }),
+    });
+    const fetchSpy = vi.fn(async (url) => {
+      if (String(url).includes("siteverify")) return turnstileSuccess();
+      if (String(url).endsWith("/contacts/upsert")) {
+        return Response.json({ contact: { id: "ghl-contact-1" } });
+      }
+      if (String(url).endsWith("/contacts/ghl-contact-1")) return Response.json({ success: true });
+      throw new Error(`unexpected request: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const response = await onRequestPost(context(validSubmission({ turnstileToken: "valid" }), {
+      "cf-iplatitude": "37.7749",
+      "cf-iplongitude": "-122.4194",
+    }, {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: kv,
+      GHL_API_KEY: "ghl-secret",
+      OWNED_QUIZ_BRIDGE_RELEASE: "approved",
+      CRM_MIRROR: { fetch: vi.fn(() => { throw new Error("source-shadow bridge must not run"); }) },
+      WORKER_AUTH_SECRET: "worker-secret",
+    }));
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({ success: true, audience: "bay-area" });
+    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect([...values.entries()]).toEqual(expect.arrayContaining([
+      [expect.stringMatching(/^quiz_submission:/), "completed"],
+    ]));
+    expect(kv.delete).not.toHaveBeenCalled();
+  });
+
+  it("releases the public idempotency record when the compatibility write fails", async () => {
+    const values = new Map();
+    const kv = protectionKV({
+      get: vi.fn(async (key) => values.get(key) || null),
+      put: vi.fn(async (key, value) => { values.set(key, value); }),
+      delete: vi.fn(async (key) => { values.delete(key); }),
+    });
+    vi.stubGlobal("fetch", vi.fn(async (url) => String(url).includes("siteverify")
+      ? turnstileSuccess()
+      : new Response("provider unavailable", { status: 500 })));
+
+    const response = await onRequestPost(context(validSubmission({ turnstileToken: "valid" }), {}, {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: kv,
+      GHL_API_KEY: "ghl-secret",
+    }));
+
+    expect(response.status).toBe(422);
+    expect(kv.delete).toHaveBeenCalledWith(expect.stringMatching(/^quiz_submission:/));
+    expect([...values.keys()].some((key) => key.startsWith("quiz_submission:"))).toBe(false);
+  });
 });

@@ -3,6 +3,14 @@ import { readFile } from "node:fs/promises";
 
 const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
 const build = String(pkg.scripts?.build || "");
+const ownedQuizBridge = await readFile(
+  new URL("../functions/lib/owned-quiz-intake-forward.js", import.meta.url),
+  "utf8",
+);
+const publicQuizHandler = await readFile(
+  new URL("../functions/api/send-to-ghl.js", import.meta.url),
+  "utf8",
+);
 
 assert.ok(build, "package.json must define scripts.build");
 assert.match(
@@ -48,6 +56,27 @@ assert.equal(
   pkg.scripts?.["build:pages-functions"],
   "npx --yes wrangler@4.125.0 pages functions build functions --outdir .wrangler/pages-functions-build && cp .wrangler/pages-functions-build/index.js dist/_worker.js",
   "Pages Functions must be compiled from functions/ into the deployed dist/_worker.js",
+);
+
+assert.match(
+  ownedQuizBridge,
+  /export const OWNED_QUIZ_BRIDGE_SOURCE_MODE = ["']shadow["']/,
+  "owned quiz intake must remain source-level shadow until separately reviewed",
+);
+assert.doesNotMatch(
+  ownedQuizBridge,
+  /export const OWNED_QUIZ_BRIDGE_SOURCE_MODE = ["']active["']/,
+  "an environment-only change must not activate owned quiz intake",
+);
+assert.ok(
+  publicQuizHandler.indexOf("forwardOwnedQuizIntake(")
+    < publicQuizHandler.indexOf("getGhlToken(context)"),
+  "owned quiz capture must precede the temporary GHL compatibility write",
+);
+assert.doesNotMatch(
+  publicQuizHandler,
+  /emitNurtureEvent\s*\(/,
+  "the public quiz must not enroll nurture through a provider contact ID",
 );
 
 console.log("✓ build contract is fail-fast and lockfile-driven");

@@ -3,7 +3,10 @@
 // Uses 2-step process: upsert contact, then PUT custom fields separately
 
 import { ghlHeaders, getGhlToken } from "../lib/ghl.js";
-import { emitNurtureEvent } from "../lib/engine-forward.js";
+import {
+  forwardOwnedQuizIntake,
+  ownedQuizIntakePayload,
+} from "../lib/owned-quiz-intake-forward.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
@@ -104,6 +107,25 @@ async function submissionKey(body) {
   const bytes = new TextEncoder().encode(JSON.stringify(body));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+async function releaseSubmissionProtection(kv, key) {
+  if (!kv || !key) return;
+  try {
+    await kv.delete(key);
+  } catch (error) {
+    console.error("[send-to-ghl] Failed to release submission protection:", error);
+  }
+}
+
+async function completeSubmissionProtection(kv, key) {
+  try {
+    await kv.put(key, "completed", { expirationTtl: IDEMPOTENCY_TTL_SECONDS });
+  } catch (error) {
+    // The accepted path has already reached its terminal outcome. Keep the
+    // processing marker rather than returning an error that invites a retry.
+    console.error("[send-to-ghl] Failed to finalize submission protection:", error);
+  }
 }
 
 // The quiz is public, but it is still a narrowly defined lead-intake contract.
@@ -228,6 +250,7 @@ export async function onRequestPost(context) {
   const headers = corsHeaders(origin);
   headers["Content-Type"] = "application/json";
 
+  let submissionProtection = null;
   try {
     if (!isAllowedOrigin(origin)) {
       return json(headers, { error: "Submission must come from the Amari quiz." }, 403);
@@ -259,8 +282,10 @@ export async function onRequestPost(context) {
       return json(headers, { error: "Submission protection unavailable." }, 422);
     }
 
+    let ownedIdempotencyKey;
     try {
-      const idempotencyKey = `quiz_submission:${await submissionKey(body)}`;
+      ownedIdempotencyKey = await submissionKey(body);
+      const idempotencyKey = `quiz_submission:${ownedIdempotencyKey}`;
       if (await kv.get(idempotencyKey)) {
         return json(headers, { success: true, duplicate: true }, 200);
       }
@@ -273,6 +298,7 @@ export async function onRequestPost(context) {
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: RATE_LIMIT_TTL_SECONDS });
       await kv.put(idempotencyKey, "processing", { expirationTtl: IDEMPOTENCY_TTL_SECONDS });
+      submissionProtection = { kv, key: idempotencyKey };
     } catch (err) {
       console.error("[send-to-ghl] KV protection failed:", err);
       return json(headers, { error: "Submission protection unavailable." }, 422);
@@ -281,13 +307,8 @@ export async function onRequestPost(context) {
     // Preview verification uses Cloudflare's test keys and must never reach
     // GHL. Production has no such mode.
     if (context.env.QUIZ_SUBMISSION_MODE === "verify_only") {
+      await completeSubmissionProtection(submissionProtection.kv, submissionProtection.key);
       return json(headers, { success: true, verificationOnly: true }, 200);
-    }
-
-    const GHL_API_KEY = await getGhlToken(context);
-    if (!GHL_API_KEY) {
-      console.error("[send-to-ghl] GHL_API_KEY not configured");
-      return json(headers, { error: "Server configuration error" }, 500);
     }
 
     // Build tags array
@@ -333,6 +354,33 @@ export async function onRequestPost(context) {
       tags.push(`audience-${audience}`);
     }
 
+    const resultsSummary = buildResultsSummary(body);
+    const ownedCapture = await forwardOwnedQuizIntake(
+      context.env,
+      ownedQuizIntakePayload(body, {
+        idempotencyKey: ownedIdempotencyKey,
+        audience,
+        resultsSummary,
+      }),
+    );
+    if (!ownedCapture.ok) {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
+      console.error(`[send-to-ghl] Owned intake unavailable: ${ownedCapture.error}`);
+      return json(headers, { error: "Owned contact capture unavailable." }, 422);
+    }
+
+    // GHL stays the compatibility owner until the separately gated cutover.
+    // Owned capture is source-shadow today; once reviewed active, it must
+    // succeed first so GHL can never become the sole durable identity again.
+    const GHL_API_KEY = await getGhlToken(context);
+    if (!GHL_API_KEY) {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
+      console.error("[send-to-ghl] GHL_API_KEY not configured");
+      return json(headers, { error: "Server configuration error" }, 500);
+    }
+
     // Referral tracking
     const referralSource = body.referralSource;
     if (referralSource) {
@@ -363,6 +411,8 @@ export async function onRequestPost(context) {
     if (!upsertResponse.ok) {
       const errorText = await upsertResponse.text();
       console.error(`[send-to-ghl] GHL upsert error: ${upsertResponse.status} ${errorText}`);
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
       return new Response(
         JSON.stringify({ error: "Failed to save contact" }),
         { status: 422, headers }
@@ -372,19 +422,9 @@ export async function onRequestPost(context) {
     const upsertData = await upsertResponse.json();
     const contactId = upsertData.contact?.id;
 
-    // Quiz-submitted event → nurture engine (Flow 1 entry). Fire-and-forget, dormant until
-    // the NURTURE_ENGINE_URL Pages env exists (GHL exit — replaces the "quiz submitted" tag
-    // trigger). Never delays or breaks the quiz response.
-    if (contactId) {
-      emitNurtureEvent(context, { kind: "quiz.submitted", contactId });
-    }
-
     // ---- STEP 2: Update custom fields via PUT ----
     // This is a separate call because upsert doesn't reliably save custom fields
     if (contactId) {
-      // Build the formatted summary
-      const resultsSummary = buildResultsSummary(body);
-
       const customFields = [
         // Existing fields
         { id: FIELD_IDS.painPatternSignature, field_value: String(body.patternSignature || "Unknown") },
@@ -426,11 +466,17 @@ export async function onRequestPost(context) {
       }
     }
 
+    await completeSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+    submissionProtection = null;
+
     return new Response(
       JSON.stringify({ success: true, audience }),
       { status: 200, headers }
     );
   } catch (err) {
+    if (submissionProtection) {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+    }
     console.error("[send-to-ghl] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
