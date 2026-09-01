@@ -1,0 +1,45 @@
+name: deploy Nurture Engine
+
+# Nurture stays shadow-only in this release lane. Deployments must still use exact reviewed
+# main, preserve every binding/secret, and carry durable source provenance. Raw Wrangler uploads
+# from arbitrary checkouts are unsupported.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: nurture-engine-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: source-attested Worker release
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - run: npm ci
+      - name: Refuse a stale workflow revision
+        run: |
+          git fetch origin main
+          test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
+      - run: npm run check:nurture-engine-release
+      - name: Retrieve Nurture Engine deploy credential from Bitwarden
+        uses: bitwarden/sm-action@v2
+        with:
+          access_token: ${{ secrets.BWS_CRM_MIRROR_READ_TOKEN }}
+          secrets: |
+            ${{ vars.BWS_CRM_MIRROR_DEPLOY_SECRET_ID }} > CLOUDFLARE_API_TOKEN
+      - name: Deploy and verify exact source provenance
+        run: npm run deploy:nurture-engine -- --deploy --approved-revision "$GITHUB_SHA"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b

@@ -18,6 +18,13 @@ binding = "NURTURE_DB"
 database_name = "amari-automation"
 database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
 
+# Provider-neutral people, tags, and branch attributes. The Worker accepts transition-era
+# provider contact IDs only through external_records and then acts on the owned contact.
+[[d1_databases]]
+binding = "CRM_DB"
+database_name = "amari-crm-mirror"
+database_id = "91a5a51d-0319-4c6d-9a6b-36bee3805e62"
+
 # Token cache for read-only GHL API lookups (tag bridge + entry-guard tag reads; the
 # ghl-token-refresh worker keeps the token fresh).
 [[kv_namespaces]]

@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS nurture_steps (
   kind          TEXT,     -- email | branch | branch_map
   template      TEXT,     -- null for branch kinds (resolved fresh at send time)
   due_at        INTEGER NOT NULL,
-  status        TEXT NOT NULL DEFAULT 'pending', -- pending | sent | would_send | failed | exited | imported
+  status        TEXT NOT NULL DEFAULT 'pending', -- pending | sent | would_send | failed | exited | imported | retired
   PRIMARY KEY (enrollment_id, step_index)
 );
 CREATE INDEX IF NOT EXISTS idx_nurture_steps_due ON nurture_steps (status, due_at);

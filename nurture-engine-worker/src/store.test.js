@@ -47,7 +47,7 @@ describe("loadDueSteps", () => {
     expect(due[0].step.stepIndex).toBe(0);
     expect(due[1].step.stepIndex).toBe(1);
     expect(due[0].enrollment.sequenceId).toBe("flow-1-quiz");
-    expect(due[0].enrollment.definitionVersion).toBe(1);
+    expect(due[0].enrollment.definitionVersion).toBe(2);
   });
 
   it("marked steps leave the due-queue", async () => {
