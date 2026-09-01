@@ -110,7 +110,7 @@ export default function TrainingPage() {
             <a href="/staff/resources/garrett-amari-practice-sales-worksheet.pdf" target="_blank" rel="noreferrer">
               <FileText aria-hidden="true" /><span><strong>$5,400 Amari Practice sales worksheet</strong><small>50-minute Assessment conversation and decision worksheet</small></span><ChevronRight aria-hidden="true" />
             </a>
-            <a href="/staff/resources/acq-closer-handbook-how-to-win-original.pdf" target="_blank" rel="noreferrer">
+            <a href="/api/staff-media-file?id=719b798d-c178-4f77-b465-c068f39ef9dc" target="_blank" rel="noreferrer">
               <FileText aria-hidden="true" /><span><strong>ACQ Closer Handbook — original</strong><small>Original scanned reference used for the Amari rewrite</small></span><ChevronRight aria-hidden="true" />
             </a>
             <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf" target="_blank" rel="noreferrer">
