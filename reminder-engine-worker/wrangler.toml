@@ -58,7 +58,8 @@ NURTURE_ENGINE_URL = "https://nurture-engine.eben-fa2.workers.dev"
 # then publish v3 through the authenticated /workflow-release endpoint. Neither
 # variable belongs in an ordinary deployment.
 # Partner Initial also stays source-level shadow. No ordinary release declares
-# its two approval flags or an OWNED_SMS service binding.
+# its two approval flags, an OWNED_SMS service binding, or the shared
+# APPOINTMENT_MANAGE_LINK_SECRET used by Reminder issuance and Pages validation.
 
 [observability]
 enabled = true

@@ -583,12 +583,17 @@ export default {
       }
       if (request.method === "POST" && url.pathname === "/appointments/commands") {
         const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
-        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(400, { error: "recognized_staff_actor_required" });
         let payload;
         try {
           payload = await actionPayload(request, 8_000);
         } catch (error) {
           return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!new Set(["Eben", "Garrett", "Client"]).has(actor)) {
+          return json(400, { error: "recognized_staff_actor_required" });
+        }
+        if (actor === "Client" && payload?.action === "schedule") {
+          return json(403, { error: "client_schedule_forbidden" });
         }
         const actionFields = {
           schedule: ["action", "contactId", "serviceId", "idempotencyKey", "startTime", "timezone"],

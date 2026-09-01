@@ -338,7 +338,7 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     ).bind(enrollmentId).first()).toEqual({
       enrollment_id: enrollmentId,
       flow_key: PARTNER_FLOW,
-      definition_version: 2,
+      definition_version: 3,
       appointment_id: PROVIDER_APPOINTMENT_ID,
       contact_id: PROVIDER_CONTACT_ID,
       calendar_id: PARTNER_CALENDAR_ID,

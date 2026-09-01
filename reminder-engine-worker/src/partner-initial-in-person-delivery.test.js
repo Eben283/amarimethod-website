@@ -1,10 +1,12 @@
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it, vi } from "vitest";
 import {
+  createPartnerInitialManageLinks,
   deliverPartnerInitialInPersonStep,
   partnerInitialInPersonDeliveryEligibility,
   readPartnerInitialDeliveryContext,
 } from "./partner-initial-in-person-delivery.js";
+import { verifyAppointmentManageToken } from "../../functions/lib/appointment-manage-token.js";
 import {
   PARTNER_INITIAL_IN_PERSON,
   PARTNER_INITIAL_IN_PERSON_WORKFLOW,
@@ -90,7 +92,10 @@ const context = Object.freeze({
   clientPhone: "+14155550123",
   additionalInformation: "Left shoulder and hip",
   startAt: "2026-09-01T17:00:00.000Z",
+  endAt: "2026-09-01T18:00:00.000Z",
   timezone: "America/Los_Angeles",
+  meetingLocation: "662 8th Ave, San Francisco, CA 94118",
+  revision: 2,
   dnd: false,
   emailConsent: "granted",
   smsConsent: "granted",
@@ -124,6 +129,7 @@ function releaseEnv(patch = {}) {
     PARTNER_INITIAL_IN_PERSON_DELIVERY_RELEASE: "approved",
     CRM_DB: { prepare() {} },
     REMINDER_DB: { prepare() {}, batch() {} },
+    APPOINTMENT_MANAGE_LINK_SECRET: "appointment-manage-test-secret-that-is-at-least-32-bytes",
     OWNED_SMS: { fetch: vi.fn() },
     WORKER_AUTH_SECRET: "worker-secret",
     GARRETT_INTERNAL_EMAIL: "garrett@amarimethod.com",
@@ -156,6 +162,9 @@ describe("Partner Initial provider-neutral delivery", () => {
       releaseEnv({ REMINDER_DB: null }), flow, { template: "confirmation" }, enrollment,
     ).reason).toBe("delivery-evidence-unavailable");
     expect(partnerInitialInPersonDeliveryEligibility(
+      releaseEnv({ APPOINTMENT_MANAGE_LINK_SECRET: "" }), flow, { template: "confirmation" }, enrollment,
+    ).reason).toBe("owned-manage-links-unavailable");
+    expect(partnerInitialInPersonDeliveryEligibility(
       releaseEnv({ OWNED_SMS: null }), flow, { template: "confirmation" }, enrollment,
     ).reason).toBe("owned-sms-unavailable");
     expect(partnerInitialInPersonDeliveryEligibility(
@@ -179,7 +188,35 @@ describe("Partner Initial provider-neutral delivery", () => {
       clientPhone: "+14155550123",
       additionalInformation: "Left shoulder and hip",
       startAt: "2026-09-02T18:00:00.000Z",
+      endAt: "2026-09-02T19:00:00.000Z",
     }));
+  });
+
+  it("issues bounded owned manage links plus provider-neutral calendar exports", async () => {
+    const now = Date.parse("2026-08-31T17:00:00.000Z");
+    const generated = await createPartnerInitialManageLinks(releaseEnv(), context, now);
+    const reschedule = new URL(generated.rescheduleLink);
+    const cancellation = new URL(generated.cancellationLink);
+    const ical = new URL(generated.icalLink);
+    expect(reschedule.origin).toBe("https://www.amarimethod.com");
+    expect(reschedule.pathname).toBe("/appointment/manage");
+    expect(reschedule.searchParams.get("action")).toBe("reschedule");
+    expect(cancellation.searchParams.get("action")).toBe("cancel");
+    expect(ical.pathname).toBe("/api/appointment-calendar");
+    expect(generated.googleCalendarLink).toContain("calendar.google.com/calendar/render");
+    expect(generated.googleCalendarLink).toContain("20260901T170000Z%2F20260901T180000Z");
+    const claims = await verifyAppointmentManageToken(
+      releaseEnv().APPOINTMENT_MANAGE_LINK_SECRET,
+      reschedule.searchParams.get("token"),
+      { nowMs: now + 1, capability: "reschedule" },
+    );
+    expect(claims).toEqual(expect.objectContaining({
+      appointmentId: "appointment-owned",
+      contactId: "contact-owned",
+      revision: 2,
+    }));
+    expect(cancellation.searchParams.get("token")).toBe(reschedule.searchParams.get("token"));
+    expect(ical.searchParams.get("token")).toBe(reschedule.searchParams.get("token"));
   });
 
   it("renders the exact confirmation from owned context and requires owned HTTPS manage links", async () => {

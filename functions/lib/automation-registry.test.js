@@ -28,7 +28,7 @@ describe("owned automation registry", () => {
       expect(definition.definitionVersion).toBe(
         definition.id === "reminder:initial-in-person" ? 4
           : definition.id === "reminder:initial-virtual" ? 5
-          : definition.id === "reminder:partner-initial-in-person" ? 2
+          : definition.id === "reminder:partner-initial-in-person" ? 3
           : definition.id === "reminder:no-show-recovery" ? 2
           : definition.id === "nurture:flow-1-quiz" ? 2
           : definition.id === "nurture:flow-2-post-discovery" ? 2
@@ -110,9 +110,9 @@ describe("owned automation registry", () => {
           expect.objectContaining({ code: "native_lifecycle_shadow_proven", status: "proven" }),
           expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
           expect.objectContaining({ code: "owned_delivery_contract_built", status: "proven" }),
-          expect.objectContaining({ code: "owned_client_manage_links_pending", status: "blocked" }),
+          expect.objectContaining({ code: "owned_client_manage_links_built", status: "proven" }),
           expect.objectContaining({ code: "owned_sms_provider_pending", status: "blocked" }),
-          expect.objectContaining({ code: "durable_effect_receipts_pending", status: "blocked" }),
+          expect.objectContaining({ code: "durable_effect_receipts_built", status: "proven" }),
         ]),
       }),
       source: {

@@ -159,6 +159,7 @@ describe("provider-neutral automation families", () => {
           requirements: expect.arrayContaining([
             expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
             expect.objectContaining({ code: "owned_delivery_contract_built", status: "proven" }),
+            expect.objectContaining({ code: "owned_client_manage_links_built", status: "proven" }),
             expect.objectContaining({ code: "owned_sms_provider_pending", status: "blocked" }),
           ]),
         }),

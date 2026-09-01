@@ -87,7 +87,7 @@ const FLOW_3_POST_INITIAL_MESSAGE_PREVIEW = Object.freeze({
 const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
   status: "not_eligible",
   label: "Not eligible for active delivery",
-  summary: "One canonical source document now drives scheduling, Staff preview, and the provider-neutral delivery contract. It is hard-shadow while client management links, owned SMS, durable effect receipts, and the No Show-series exit remain unresolved.",
+  summary: "One canonical source document now drives scheduling, Staff preview, secure client management links, and the provider-neutral delivery contract. It remains hard-shadow while owned SMS and the No Show-series exit are unresolved.",
   requirements: Object.freeze([
     Object.freeze({
       code: "native_lifecycle_shadow_proven",
@@ -108,10 +108,10 @@ const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
       detail: "The six exact messages now live in the executable workflow document. The adapter resolves stable owned appointment/contact/service identity, follows reschedule lineage, applies DND/consent checks, uses E.164 destinations instead of provider contact IDs, and fails closed on missing inputs.",
     }),
     Object.freeze({
-      code: "owned_client_manage_links_pending",
-      status: "blocked",
-      label: "Create owned reschedule and cancellation links",
-      detail: "The confirmation and day-before copy require secure client-facing manage links. The adapter refuses those nodes until owned HTTPS links exist; provider links are not a fallback.",
+      code: "owned_client_manage_links_built",
+      status: "proven",
+      label: "Issue owned reschedule and cancellation links",
+      detail: "HMAC-signed links bind one owned contact, appointment revision, expiry, and capability. GET is read-only; a same-origin POST confirms the action through the owned command journal, with exact provider readback and stale-revision refusal. Calendar export uses owned appointment truth.",
     }),
     Object.freeze({
       code: "owned_sms_provider_pending",
@@ -120,10 +120,10 @@ const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
       detail: "The lifecycle passes an E.164 destination and idempotency key to a provider-neutral SMS contract, but no owned SMS service is selected or bound. GHL contact delivery is not used as a fallback.",
     }),
     Object.freeze({
-      code: "durable_effect_receipts_pending",
-      status: "blocked",
+      code: "durable_effect_receipts_built",
+      status: "proven",
       label: "Close delivery effects durably",
-      detail: "Provider submission, terminal outcome, and crash-safe idempotency must be recorded in the reliability spine before any active Partner Initial document can be accepted.",
+      detail: "Every attempt is hashed, compare-and-set claimed once, append-only receipted on acceptance, and held ambiguous without automatic resend when transport outcome is uncertain. Exact accepted replays do not resend.",
     }),
     Object.freeze({
       code: "quiet_period_evidence_pending",

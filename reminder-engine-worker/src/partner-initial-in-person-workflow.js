@@ -2,18 +2,18 @@ import { defineWorkflow, executableFlow } from "./workflow-definition.js";
 
 // Source verified from the published GHL workflow
 // "In-Person Partner Session: Confirmation & Reminder Flow". The document is
-// intentionally hard-shadow: the former workflow's No Show-series exit, owned
-// client management links, and an owned SMS provider are not yet replaceable.
+// intentionally hard-shadow: the former workflow's No Show-series exit and an
+// owned SMS provider are not yet replaceable. Signed owned client management
+// links are now source-complete, but cannot weaken either remaining gate.
 // defineWorkflow refuses to accept an active document while any source gap is
 // present, so environment variables cannot silently turn this into a sender.
 export const PARTNER_INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
   id: "partner-initial-in-person",
   name: "In-Person Partner Session: Confirmation & Reminder Flow",
-  version: 2,
+  version: 3,
   executionMode: "shadow",
   sourceGaps: [
     "no_show_series_exit_not_owned",
-    "owned_client_manage_links_missing",
     "owned_sms_provider_unselected",
   ],
   trigger: {
