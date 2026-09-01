@@ -15,7 +15,6 @@ export const PARTNER_INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
     "no_show_series_exit_not_owned",
     "owned_client_manage_links_missing",
     "owned_sms_provider_unselected",
-    "durable_effect_receipts_missing",
   ],
   trigger: {
     event: "appointment_status_changed",

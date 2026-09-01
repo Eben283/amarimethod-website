@@ -123,6 +123,7 @@ function releaseEnv(patch = {}) {
     PARTNER_INITIAL_IN_PERSON_BEHAVIOR_RELEASE: "approved",
     PARTNER_INITIAL_IN_PERSON_DELIVERY_RELEASE: "approved",
     CRM_DB: { prepare() {} },
+    REMINDER_DB: { prepare() {}, batch() {} },
     OWNED_SMS: { fetch: vi.fn() },
     WORKER_AUTH_SECRET: "worker-secret",
     GARRETT_INTERNAL_EMAIL: "garrett@amarimethod.com",
@@ -152,6 +153,9 @@ describe("Partner Initial provider-neutral delivery", () => {
       releaseEnv({ CRM_DB: null }), flow, { template: "confirmation" }, enrollment,
     ).reason).toBe("owned-crm-unavailable");
     expect(partnerInitialInPersonDeliveryEligibility(
+      releaseEnv({ REMINDER_DB: null }), flow, { template: "confirmation" }, enrollment,
+    ).reason).toBe("delivery-evidence-unavailable");
+    expect(partnerInitialInPersonDeliveryEligibility(
       releaseEnv({ OWNED_SMS: null }), flow, { template: "confirmation" }, enrollment,
     ).reason).toBe("owned-sms-unavailable");
     expect(partnerInitialInPersonDeliveryEligibility(
@@ -180,9 +184,11 @@ describe("Partner Initial provider-neutral delivery", () => {
 
   it("renders the exact confirmation from owned context and requires owned HTTPS manage links", async () => {
     let sent;
+    let effect;
     const services = {
       readContext: async () => context,
       manageLinks: async () => links,
+      executeEffect: async (_db, candidate, transport) => { effect = candidate; return transport(); },
       sendEmail: async (_env, message) => { sent = message; return { success: true, messageId: "gmail-1" }; },
     };
     const result = await deliverPartnerInitialInPersonStep(
@@ -195,6 +201,13 @@ describe("Partner Initial provider-neutral delivery", () => {
       actor: "Eben",
       subject: "Your partner session is confirmed",
       preheader: "See you soon. Here are your session details.",
+      idempotencyKey: "partner-initial:appointment-owned:v2:1",
+    }));
+    expect(effect).toEqual(expect.objectContaining({
+      enrollmentId: "partner-initial-in-person:ghl-appointment-original",
+      provider: "gmail-eben",
+      channel: "email",
+      recipient: "avery@example.com",
       idempotencyKey: "partner-initial:appointment-owned:v2:1",
     }));
     expect(sent.text).toContain("Hi Avery,");
@@ -210,8 +223,10 @@ describe("Partner Initial provider-neutral delivery", () => {
 
   it("uses E.164 destinations rather than provider contact ids and fails closed on policy", async () => {
     let sent;
+    let effect;
     const services = {
       readContext: async () => context,
+      executeEffect: async (_db, candidate, transport) => { effect = candidate; return transport(); },
       sendSms: async (message) => { sent = message; return { success: true, messageId: "sms-1" }; },
     };
     const result = await deliverPartnerInitialInPersonStep(
@@ -224,6 +239,12 @@ describe("Partner Initial provider-neutral delivery", () => {
       text: "Hi Avery, just a friendly reminder that your appointment with Garrett is in one hour.",
       idempotencyKey: "partner-initial:appointment-owned:v2:4",
     });
+    expect(effect).toEqual(expect.objectContaining({
+      provider: "owned-sms",
+      channel: "sms",
+      recipient: "+14155550123",
+      idempotencyKey: "partner-initial:appointment-owned:v2:4",
+    }));
 
     const blocked = await deliverPartnerInitialInPersonStep(
       releaseEnv(), { template: "one-hour-sms", stepIndex: 4 }, enrollment,
