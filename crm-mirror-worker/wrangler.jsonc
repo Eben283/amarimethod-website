@@ -27,6 +27,10 @@
     {
       "binding": "REMINDER",
       "service": "reminder-engine"
+    },
+    {
+      "binding": "NURTURE",
+      "service": "nurture-engine"
     }
   ],
   "triggers": {

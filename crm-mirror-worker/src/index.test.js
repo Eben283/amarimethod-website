@@ -46,6 +46,7 @@ describe("CRM mirror request validation", () => {
   it("rejects an empty or unsupported source set", () => {
     expect(() => parseSyncRequest({ sources: ["gmail"] })).toThrow("sources must contain owned-appointment-lifecycles");
     expect(parseSyncRequest({ sources: ["owned-appointment-lifecycles"] })).toEqual({ sources: ["owned-appointment-lifecycles"], limit: 25, pages: 8 });
+    expect(parseSyncRequest({ sources: ["owned-quiz-nurture"] })).toEqual({ sources: ["owned-quiz-nurture"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-conversations"] })).toEqual({ sources: ["ghl-conversations"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-conversations-recent"] })).toEqual({ sources: ["ghl-conversations-recent"], limit: 25, pages: 8 });
     expect(parseSyncRequest({ sources: ["ghl-message-export"], pages: 99 })).toEqual({ sources: ["ghl-message-export"], limit: 25, pages: 8 });

@@ -7,7 +7,8 @@ the live nurture owner.
 
 Authenticated routes:
 
-- `POST /event` accepts normalized entry/exit events.
+- `POST /event` accepts normalized entry/exit events, including the exact owned quiz event handed
+  off by CRM Mirror's durable shadow outbox.
 - `POST /import` accepts a reviewed batch of fresh provider-enrollment cursor evidence. It rejects
   time-only guesses, stale snapshots, schedule mismatches, and already-overdue next actions.
 - `POST /run` performs a sweep.

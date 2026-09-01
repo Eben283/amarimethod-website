@@ -57,6 +57,7 @@ import { personAutomationInspection } from "./person-automation-inspection.js";
 import { familyAutomationInspection } from "./family-automation-inspection.js";
 import { automationFamily } from "../../functions/lib/automation-families.js";
 import { ownedQuizIntakeReadiness, OwnedQuizIntakeError, upsertOwnedQuizIntake } from "./owned-quiz-intake.js";
+import { ownedQuizNurtureDispatchReadiness } from "./quiz-nurture-dispatch.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -217,8 +218,8 @@ function dashboardAccessRecord(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "owned-appointment-lifecycles" || source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
-  if (!sources.length) throw new Error("sources must contain owned-appointment-lifecycles, ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, stripe-invoices, and/or consents");
+  const sources = [...new Set(requested.filter((source) => source === "owned-appointment-lifecycles" || source === "owned-quiz-nurture" || source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
+  if (!sources.length) throw new Error("sources must contain owned-appointment-lifecycles, owned-quiz-nurture, ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, stripe-invoices, and/or consents");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
   const requestedPages = Number(payload?.pages);
@@ -481,6 +482,7 @@ export default {
           success: true,
           worker: "amari-crm-mirror",
           ...(await ownedQuizIntakeReadiness(env.CRM_DB, new Date().toISOString())),
+          nurtureDispatch: await ownedQuizNurtureDispatchReadiness(env.CRM_DB),
         }, { "Cache-Control": "no-store" });
       }
       if (request.method === "GET" && (url.pathname === "/sender/readiness" || url.pathname === "/communications/outbox/readiness")) {

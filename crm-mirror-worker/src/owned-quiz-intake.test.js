@@ -118,6 +118,13 @@ describe("owned quiz intake", () => {
     expect(db.sqlite.prepare(
       "SELECT retention_until FROM quiz_intake_submissions",
     ).get().retention_until).toBe("2027-10-06T16:00:00.000Z");
+    expect(db.sqlite.prepare(
+      "SELECT state, attempts, event_json FROM quiz_nurture_dispatches",
+    ).get()).toEqual({
+      state: "pending",
+      attempts: 0,
+      event_json: JSON.stringify({ kind: "quiz.submitted", contactId: result.contactId }),
+    });
     expect(() => db.sqlite.prepare(
       "UPDATE quiz_intake_submissions SET normalized_json = '{}'",
     ).run()).toThrow(/append-only/);
@@ -222,7 +229,12 @@ describe("owned quiz intake", () => {
       headers: { Authorization: "Bearer worker-secret" },
     }), env);
     expect(readiness.status).toBe(200);
-    await expect(readiness.json()).resolves.toMatchObject({ state: "ready", total: 1, expired: 0 });
+    await expect(readiness.json()).resolves.toMatchObject({
+      state: "ready",
+      total: 1,
+      expired: 0,
+      nurtureDispatch: { configured: true, state: "pending", blocking: 1, shadowOnly: true, deliveryEnabled: false },
+    });
     db.sqlite.close();
   });
 

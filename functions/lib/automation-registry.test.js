@@ -205,6 +205,7 @@ describe("owned automation registry", () => {
       status: "not_eligible",
       requirements: expect.arrayContaining([
         expect.objectContaining({ code: "owned_quiz_intake_built", status: "proven" }),
+        expect.objectContaining({ code: "owned_quiz_shadow_handoff_built", status: "proven" }),
         expect.objectContaining({ code: "public_quiz_bridge_pending", status: "blocked" }),
         expect.objectContaining({ code: "owned_contact_reads_built", status: "proven" }),
         expect.objectContaining({ code: "enrollment_transfer_built", status: "proven" }),

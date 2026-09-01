@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import { assertVersionProvenance, provenanceForRevision } from './crm-mirror-release.mjs';
 
@@ -12,4 +13,13 @@ test('rejects a Worker version whose durable metadata is not the approved source
   const provenance = provenanceForRevision({ revision: 'b'.repeat(40), archive: Buffer.from('worker source') });
   assert.throws(() => assertVersionProvenance({ annotations: { message: 'stale local artifact' } }, provenance), /missing the approved provenance/);
   assert.doesNotThrow(() => assertVersionProvenance({ annotations: { message: provenance.message, tag: provenance.tag } }, provenance));
+});
+
+test('release source retains both owned lifecycle service bindings', () => {
+  const config = JSON.parse(readFileSync(new URL('../crm-mirror-worker/wrangler.jsonc', import.meta.url), 'utf8'));
+  const services = Object.fromEntries((config.services || []).map((entry) => [entry.binding, entry.service]));
+  assert.deepEqual(services, {
+    REMINDER: 'reminder-engine',
+    NURTURE: 'nurture-engine',
+  });
 });
