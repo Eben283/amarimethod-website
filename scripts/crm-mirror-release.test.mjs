@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import test from 'node:test';
-import { assertVersionProvenance, provenanceForRevision } from './crm-mirror-release.mjs';
+import {
+  CHILD_PROCESS_MAX_BUFFER_BYTES,
+  assertVersionProvenance,
+  provenanceForRevision,
+  sourceArchiveForRevision,
+} from './crm-mirror-release.mjs';
+
+test('attests the complete Worker tree with a bounded large child-process buffer', () => {
+  assert.equal(CHILD_PROCESS_MAX_BUFFER_BYTES, 256 * 1024 * 1024);
+  assert.ok(sourceArchiveForRevision('HEAD').length > 1024 * 1024);
+});
 
 test('records the exact Git revision and source artifact digest', () => {
   const provenance = provenanceForRevision({ revision: 'a'.repeat(40), archive: Buffer.from('worker source') });
