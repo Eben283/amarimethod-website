@@ -206,6 +206,8 @@ describe("owned automation registry", () => {
       requirements: expect.arrayContaining([
         expect.objectContaining({ code: "owned_quiz_intake_built", status: "proven" }),
         expect.objectContaining({ code: "owned_quiz_shadow_handoff_built", status: "proven" }),
+        expect.objectContaining({ code: "owned_quiz_retention_plan_built", status: "proven" }),
+        expect.objectContaining({ code: "retention_execution_policy_pending", status: "blocked" }),
         expect.objectContaining({ code: "public_quiz_bridge_pending", status: "blocked" }),
         expect.objectContaining({ code: "owned_contact_reads_built", status: "proven" }),
         expect.objectContaining({ code: "enrollment_transfer_built", status: "proven" }),

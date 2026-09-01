@@ -30,3 +30,13 @@ test('owned Staff email dispatcher remains source-level shadow and cannot be env
   assert.doesNotMatch(source, /export const OWNED_EMAIL_SOURCE_MODE = ["']active["']/);
   assert.match(source, /fallbackProvider:\s*null/);
 });
+
+test('owned quiz retention remains aggregate read-only with no destructive execution seam', () => {
+  const source = readFileSync(new URL('../crm-mirror-worker/src/owned-quiz-retention.js', import.meta.url), 'utf8');
+  const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
+  assert.doesNotMatch(source, /\bDELETE\s+FROM\b/i);
+  assert.match(source, /deletionEnabled:\s*false/);
+  assert.match(source, /executionContract:\s*["']not_exposed["']/);
+  assert.match(router, /request\.method === ["']GET["'] && url\.pathname === ["']\/quiz-intake\/retention-readiness["']/);
+  assert.doesNotMatch(router, /request\.method === ["'](?:POST|PUT|PATCH|DELETE)["'] && url\.pathname === ["']\/quiz-intake\/retention-readiness["']/);
+});

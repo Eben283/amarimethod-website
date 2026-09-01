@@ -59,6 +59,7 @@ import { automationFamily } from "../../functions/lib/automation-families.js";
 import { ownedQuizIntakeReadiness, OwnedQuizIntakeError, upsertOwnedQuizIntake } from "./owned-quiz-intake.js";
 import { ownedQuizNurtureDispatchReadiness } from "./quiz-nurture-dispatch.js";
 import { captureStaffCommunicationCommand, ownedEmailDispatchReadiness } from "./owned-email-dispatch.js";
+import { ownedQuizRetentionReadiness } from "./owned-quiz-retention.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -440,7 +441,7 @@ export default {
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
       const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -484,6 +485,13 @@ export default {
           worker: "amari-crm-mirror",
           ...(await ownedQuizIntakeReadiness(env.CRM_DB, new Date().toISOString())),
           nurtureDispatch: await ownedQuizNurtureDispatchReadiness(env.CRM_DB),
+        }, { "Cache-Control": "no-store" });
+      }
+      if (request.method === "GET" && url.pathname === "/quiz-intake/retention-readiness") {
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await ownedQuizRetentionReadiness(env.CRM_DB, env.AUTOMATION_DB, new Date().toISOString())),
         }, { "Cache-Control": "no-store" });
       }
       if (request.method === "GET" && (url.pathname === "/sender/readiness" || url.pathname === "/communications/outbox/readiness")) {
