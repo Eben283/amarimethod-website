@@ -1,4 +1,4 @@
-import { fetchTodaysAppointments } from "./appointments.js";
+import { fetchTodaysAppointmentsWithRetry } from "./appointments.js";
 import {
   computeMorningTimes,
   dueKinds,
@@ -11,6 +11,7 @@ import { MORNING_SMS_DEFINITION } from "./config.js";
 import { defineMorningSmsWorkflow, renderWorkflowCopy, stepForHandler } from "./workflow-definition.js";
 
 const IDEMPOTENCY_TTL_S = 36 * 60 * 60; // survive past midnight PT
+const AGENDA_FAILURE_TTL_S = 14 * 24 * 60 * 60;
 
 function modeOf(env) {
   const m = String(env.MORNING_SMS_MODE || "shadow").toLowerCase();
@@ -45,9 +46,28 @@ async function finish(env, summary) {
     schedule: summary.schedule,
     definitionId: summary.definitionId,
     definitionVersion: summary.definitionVersion,
+    agendaLookup: summary.agendaLookup || null,
     executedNodeIds: summary.executedNodeIds,
   });
   return summary;
+}
+
+async function recordAgendaLookupFailure(env, lookup, nowMs, dateKey) {
+  const kv = env.PORTAL_KV;
+  if (!kv) return;
+  const safeAttemptCount = Math.max(1, Number(lookup?.attempts) || 1);
+  const key = `ops:morning-sms:agenda-failure:${dateKey}:${nowMs}`;
+  try {
+    await kv.put(key, JSON.stringify({
+      at: new Date(nowMs).toISOString(),
+      dateKey,
+      status: "unavailable",
+      attempts: safeAttemptCount,
+      reason: String(lookup?.error || "calendar-read-failed"),
+    }), { expirationTtl: AGENDA_FAILURE_TTL_S });
+  } catch {
+    // Failure evidence must never block a later recovery attempt or SMS.
+  }
 }
 
 /**
@@ -72,6 +92,7 @@ export async function runMorningSms(env, opts = {}) {
     sends: [],
     skipped: [],
     errors: [],
+    agendaLookup: null,
   };
 
   if (recipients.length === 0) {
@@ -79,14 +100,15 @@ export async function runMorningSms(env, opts = {}) {
     return finish(env, summary);
   }
 
-  let appointments = null;
-  try {
-    summary.executedNodeIds.push(stepForHandler(definition, "read_todays_appointments").id);
-    appointments = await fetchTodaysAppointments(env, nowMs, timeZone);
-    summary.executedNodeIds.push(stepForHandler(definition, "identify_last_package_session").id);
-  } catch (err) {
-    summary.errors.push(`appointment lookup: ${err.message}`);
-  }
+  summary.executedNodeIds.push(stepForHandler(definition, "read_todays_appointments").id);
+  const lookup = await fetchTodaysAppointmentsWithRetry(env, nowMs, timeZone);
+  const appointments = lookup.appointments;
+  summary.agendaLookup = {
+    status: appointments === null ? "unavailable" : "ok",
+    attempts: lookup.attempts,
+    reason: appointments === null ? lookup.error : null,
+  };
+  summary.executedNodeIds.push(stepForHandler(definition, "identify_last_package_session").id);
 
   const firstAppointmentMs = appointments?.[0]?.startMs ?? null;
 
@@ -113,6 +135,10 @@ export async function runMorningSms(env, opts = {}) {
     ? opts.forceKinds
     : dueKinds(nowMs, schedule.firstAtMs, schedule.secondAtMs, definition.trigger.sendGraceMs ?? SEND_GRACE_MS);
 
+  if (appointments === null) {
+    await recordAgendaLookupFailure(env, lookup, nowMs, schedule.dateKey);
+  }
+
   if (kinds.length === 0) {
     summary.skipped.push("nothing due in grace window");
     return finish(env, summary);
@@ -122,6 +148,13 @@ export async function runMorningSms(env, opts = {}) {
   const dry = Boolean(opts.dryRun) || mode === "shadow";
 
   for (const kind of kinds) {
+    // Do not send a misleading fallback or consume idempotency. The next
+    // five-minute cron remains eligible to recover the full agenda.
+    if (kind === "prepare" && appointments === null) {
+      summary.errors.push(`appointment lookup unavailable after ${lookup.attempts} attempts (${lookup.error})`);
+      summary.skipped.push({ kind, reason: "appointment-lookup-unavailable-will-retry" });
+      continue;
+    }
     const composeStep = stepForHandler(definition, "compose_agenda");
     if (!summary.executedNodeIds.includes(composeStep.id)) summary.executedNodeIds.push(composeStep.id);
     const sendStep = stepForHandler(definition, "send_due_sms", (step) => step.messageKind === kind);

@@ -76,10 +76,10 @@ describe("copy", () => {
       { startMs: Date.parse("2026-07-30T15:00:00Z"), contactName: "Ada Lovelace", calendarName: "Initial Session" },
       { startMs: Date.parse("2026-07-30T18:30:00Z"), contactName: "Grace Hopper", calendarName: "Follow-up Session" },
     ]);
-    assert.equal(body, "Today's appointments:\n8:00 AM — Ada Lovelace · Initial Session\n11:30 AM — Grace Hopper · Follow-up Session\n\nTime to prepare for the day.");
+    assert.equal(body, "Today's appointments:\n8:00 AM — Ada Lovelace\n11:30 AM — Grace Hopper\n\nTime to prepare for the day.");
   });
 
-  it("labels only an appointment proven to be the last package session", () => {
+  it("labels evidence-backed sales opportunities while retaining name and time", () => {
     const body = formatDailyAgenda([
       {
         startMs: Date.parse("2026-07-30T15:00:00Z"),
@@ -91,12 +91,13 @@ describe("copy", () => {
         startMs: Date.parse("2026-07-30T18:30:00Z"),
         contactName: "Grace Hopper",
         calendarName: "Entrainment",
-        lastPackageSession: false,
+        firstAndOnlyAppointment: true,
+        secondToLastStudySession: true,
       },
     ]);
     assert.equal(
       body,
-      "Today's appointments:\n8:00 AM — Ada Lovelace · Follow-up Session · LAST PACKAGE SESSION\n11:30 AM — Grace Hopper · Entrainment\n\nTime to prepare for the day.",
+      "Today's appointments:\n8:00 AM — Ada Lovelace · SELL: LAST PACKAGE SESSION\n11:30 AM — Grace Hopper · SELL: FIRST / ONLY APPOINTMENT · SELL: SECOND-TO-LAST STUDY SESSION\n\nTime to prepare for the day.",
     );
   });
 

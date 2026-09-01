@@ -1,7 +1,7 @@
 import { afterEach, describe, it } from "node:test";
 import assert from "node:assert/strict";
 import { _resetForTests } from "../../functions/lib/ghl-worker-token.js";
-import { fetchTodaysAppointments, LOCATION_ID } from "./appointments.js";
+import { fetchTodaysAppointments, fetchTodaysAppointmentsWithRetry, LOCATION_ID } from "./appointments.js";
 
 const originalFetch = globalThis.fetch;
 
@@ -69,6 +69,8 @@ describe("fetchTodaysAppointments", () => {
         calendarName: "Assessment",
         title: null,
         lastPackageSession: false,
+        firstAndOnlyAppointment: false,
+        secondToLastStudySession: false,
       },
       {
         startMs: Date.parse("2026-08-05T11:00:00-07:00"),
@@ -78,6 +80,8 @@ describe("fetchTodaysAppointments", () => {
         calendarName: "Follow-up Session",
         title: null,
         lastPackageSession: false,
+        firstAndOnlyAppointment: false,
+        secondToLastStudySession: false,
       },
     ]);
   });
@@ -105,5 +109,61 @@ describe("fetchTodaysAppointments", () => {
     );
 
     assert.equal(appointments, null);
+  });
+
+  it("retries the complete calendar sweep after a transient calendar failure", async () => {
+    let failuresRemaining = 1;
+    globalThis.fetch = async (input) => {
+      const url = new URL(input);
+      if (url.pathname === "/calendars/") return jsonResponse({ calendars: [{ id: "cal-1", name: "Assessment" }] });
+      if (failuresRemaining-- > 0) return new Response("rate limited", { status: 429 });
+      return jsonResponse({ events: [] });
+    };
+
+    const result = await fetchTodaysAppointmentsWithRetry(
+      env(),
+      Date.parse("2026-08-05T15:00:00Z"),
+      "America/Los_Angeles",
+      { attempts: 2, delayMs: 0 },
+    );
+
+    assert.deepEqual(result, { appointments: [], error: null, attempts: 2 });
+  });
+
+  it("fills an absent event name and flags only proven first/only and second-to-last study opportunities", async () => {
+    const studyCalendarId = "J1N09B6bRYPOGNyVAfmX";
+    globalThis.fetch = async (input) => {
+      const url = new URL(input);
+      if (url.pathname === "/calendars/") return jsonResponse({ calendars: [
+        { id: "cal-assessment", name: "Assessment" },
+        { id: studyCalendarId, name: "Amari Study 15-Minute Session" },
+      ] });
+      if (url.pathname === "/calendars/events") {
+        if (url.searchParams.get("calendarId") === "cal-assessment") return jsonResponse({ events: [{
+          startTime: "2026-08-05T09:00:00-07:00", contactId: "first-only", appointmentStatus: "confirmed",
+        }] });
+        return jsonResponse({ events: [{
+          startTime: "2026-08-05T10:00:00-07:00", contactId: "study-second", contactName: "Grace Hopper", appointmentStatus: "confirmed",
+        }] });
+      }
+      if (url.pathname === "/contacts/first-only") return jsonResponse({ contact: { firstName: "Ada", lastName: "Lovelace", customFields: [] } });
+      if (url.pathname === "/contacts/first-only/appointments") return jsonResponse({ appointments: [
+        { calendarId: "cal-assessment", appointmentStatus: "confirmed" },
+      ] });
+      if (url.pathname === "/contacts/study-second") return jsonResponse({ contact: { customFields: [] } });
+      if (url.pathname === "/contacts/study-second/appointments") return jsonResponse({ appointments: [
+        { calendarId: studyCalendarId, appointmentStatus: "showed" },
+      ] });
+      throw new Error(`Unexpected fetch ${url.pathname}`);
+    };
+
+    const appointments = await fetchTodaysAppointments(env(), Date.parse("2026-08-05T15:00:00Z"));
+
+    assert.deepEqual(appointments.map(({ contactName, firstAndOnlyAppointment, secondToLastStudySession }) => ({
+      contactName, firstAndOnlyAppointment, secondToLastStudySession,
+    })), [
+      { contactName: "Ada Lovelace", firstAndOnlyAppointment: true, secondToLastStudySession: false },
+      { contactName: "Grace Hopper", firstAndOnlyAppointment: false, secondToLastStudySession: true },
+    ]);
   });
 });

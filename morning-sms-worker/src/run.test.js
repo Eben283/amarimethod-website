@@ -100,7 +100,7 @@ describe("runMorningSms", () => {
 
     assert.equal(
       summary.sends[0].body,
-      "Today's appointments:\n9:00 AM / Test Member · Assessment\n\nTime to prepare for the day.",
+      "Today's appointments:\n9:00 AM / Test Member\n\nTime to prepare for the day.",
     );
   });
 
@@ -128,7 +128,7 @@ describe("runMorningSms", () => {
     assert.equal(summary.schedule.appointmentCount, 1);
     assert.equal(
       summary.sends[0].body,
-      "Today's appointments:\n9:00 AM — Test Member · Assessment\n\nTime to prepare for the day.",
+      "Today's appointments:\n9:00 AM — Test Member\n\nTime to prepare for the day.",
     );
     assert.equal(summary.sends[0].result.shadowed, true);
   });
@@ -148,6 +148,24 @@ describe("runMorningSms", () => {
       "morning-run-evidence",
     ]);
     assert.deepEqual(summary.skipped, ["nothing due in grace window"]);
+  });
+
+  it("leaves prepare eligible for the next cron instead of sending a bad fallback", async () => {
+    const env = testEnv();
+    globalThis.fetch = async (input) => {
+      const url = new URL(input);
+      if (url.pathname === "/calendars/") return Response.json({ calendars: [{ id: "cal-fail", name: "Assessment" }] });
+      return new Response("rate limited", { status: 429 });
+    };
+
+    const summary = await runMorningSms(env, {
+      nowMs: Date.parse("2026-08-05T15:00:00Z"),
+      forceKinds: ["prepare"],
+    });
+
+    assert.equal(summary.sends.length, 0);
+    assert.deepEqual(summary.skipped, [{ kind: "prepare", reason: "appointment-lookup-unavailable-will-retry" }]);
+    assert.deepEqual(summary.agendaLookup, { status: "unavailable", attempts: 2, reason: "ghl-429" });
   });
 
   it("marks the package-ending appointment from the authoritative ledger", async () => {
@@ -202,7 +220,7 @@ describe("runMorningSms", () => {
 
     assert.equal(
       summary.sends[0].body,
-      "Today's appointments:\n9:00 AM — Test Member · Follow-up Session — In Person (Package) · LAST PACKAGE SESSION\n\nTime to prepare for the day.",
+      "Today's appointments:\n9:00 AM — Test Member · SELL: LAST PACKAGE SESSION\n\nTime to prepare for the day.",
     );
   });
 });
