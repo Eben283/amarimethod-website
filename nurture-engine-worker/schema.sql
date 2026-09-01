@@ -25,7 +25,7 @@ CREATE TABLE IF NOT EXISTS nurture_steps (
   kind          TEXT,     -- email | branch | branch_map
   template      TEXT,     -- null for branch kinds (resolved fresh at send time)
   due_at        INTEGER NOT NULL,
-  status        TEXT NOT NULL DEFAULT 'pending', -- pending | sent | would_send | failed | exited | imported | retired
+  status        TEXT NOT NULL DEFAULT 'pending', -- pending | dispatching | submitted | submission_unreconciled | sent | would_send | failed | exited | imported | retired
   PRIMARY KEY (enrollment_id, step_index)
 );
 CREATE INDEX IF NOT EXISTS idx_nurture_steps_due ON nurture_steps (status, due_at);
@@ -41,7 +41,7 @@ CREATE TABLE IF NOT EXISTS automation_events (
   contact_id     TEXT,
   appointment_id TEXT,
   step_index     INTEGER,
-  action         TEXT,     -- enrolled | would_send | send | cancelled | exited | would_tag | tagged
+  action         TEXT,     -- enrolled | imported | would_send | send | cancelled | exited | would_tag | tagged
   outcome        TEXT,     -- would_send | sent | delivered | failed | bounced | cancelled | ...
   channel        TEXT,     -- sms | email
   message_ref    TEXT,     -- transport message id (not the body — PII posture, see DASHBOARD-PLAN)

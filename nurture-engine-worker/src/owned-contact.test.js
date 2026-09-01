@@ -58,16 +58,41 @@ describe("owned nurture contact adapter", () => {
     await expect(resolveOwnedNurtureContact(db, "duplicate")).rejects.toThrow("ambiguous");
   });
 
-  it("reads guards and maps the legacy provider attribute to the native branch key", async () => {
+  it("reads guards and maps legacy provider attributes to native nurture keys", async () => {
     const db = fakeD1({
       contacts: [ada],
       tags: { "owned-1": ["affiliate-partner", "quiz submitted"] },
       attributes: {
-        "owned-1": [{ source: "ghl", attribute_key: "vKZTVAG7601lgV8413du", attribute_value: "Hips" }],
+        "owned-1": [
+          { source: "ghl", attribute_key: "vKZTVAG7601lgV8413du", attribute_value: "Hips" },
+          { source: "ghl", attribute_key: "BvTGZ9O9ayecw5f0Nj76", attribute_value: "Soft Tissue Tension" },
+          { source: "ghl", attribute_key: "wrYzlW0ta2SGD8cI5iTM", attribute_value: "6-12 months" },
+        ],
       },
     });
     expect(await readOwnedContactTags(db, "owned-1")).toEqual(["affiliate-partner", "quiz submitted"]);
-    expect(await readOwnedContactFields(db, "owned-1")).toEqual({ primaryPainLocation: "Hips" });
+    expect(await readOwnedContactFields(db, "owned-1")).toEqual({
+      primaryPainLocation: "Hips",
+      painPatternSignature: "Soft Tissue Tension",
+      painDuration: "6-12 months",
+    });
+  });
+
+  it("prefers stable owned attributes and returns explicit nulls for unavailable copy fields", async () => {
+    const db = fakeD1({
+      contacts: [ada],
+      attributes: {
+        "owned-1": [
+          { source: "ghl", attribute_key: "vKZTVAG7601lgV8413du", attribute_value: "Hips" },
+          { source: "owned", attribute_key: "primaryPainLocation", attribute_value: "Lower back" },
+        ],
+      },
+    });
+    expect(await readOwnedContactFields(db, "owned-1")).toEqual({
+      primaryPainLocation: "Lower back",
+      painPatternSignature: null,
+      painDuration: null,
+    });
   });
 
   it("requires a deliverable owned recipient and writes native tags idempotently", async () => {

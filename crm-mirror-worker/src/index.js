@@ -56,6 +56,7 @@ import { runScheduledSync, syncRequestedProviders } from "./sync.js";
 import { personAutomationInspection } from "./person-automation-inspection.js";
 import { familyAutomationInspection } from "./family-automation-inspection.js";
 import { automationFamily } from "../../functions/lib/automation-families.js";
+import { ownedQuizIntakeReadiness, OwnedQuizIntakeError, upsertOwnedQuizIntake } from "./owned-quiz-intake.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -437,7 +438,7 @@ export default {
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
       const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -474,6 +475,13 @@ export default {
       }
       if (request.method === "GET" && url.pathname === "/readiness") {
         return json(200, { success: true, worker: "amari-crm-mirror", ...(await mirrorReadiness(env.CRM_DB, new Date().toISOString())) });
+      }
+      if (request.method === "GET" && url.pathname === "/quiz-intake/readiness") {
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await ownedQuizIntakeReadiness(env.CRM_DB, new Date().toISOString())),
+        }, { "Cache-Control": "no-store" });
       }
       if (request.method === "GET" && (url.pathname === "/sender/readiness" || url.pathname === "/communications/outbox/readiness")) {
         return json(200, { success: true, worker: "amari-crm-mirror", ...(await communicationReadiness(env.CRM_DB, env)) });
@@ -533,6 +541,28 @@ export default {
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
           return json(message === "contact is not mirrored" || message === "follow-up not found" ? 404 : 400, { error: message });
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/contacts/quiz-intake") {
+        // Defense in depth: this sensitive server-to-server write checks Worker auth again
+        // at the route even though the global dispatcher has already denied unauthenticated
+        // non-dashboard requests. The public browser never receives this bearer secret.
+        const denied = requireWorkerAuth(request, env);
+        if (denied) return denied;
+        let payload;
+        try {
+          payload = await actionPayload(request, 24_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        try {
+          const result = await upsertOwnedQuizIntake(env.CRM_DB, payload, new Date().toISOString());
+          return json(result.deduped ? 200 : 201, { success: true, ...result });
+        } catch (error) {
+          if (error instanceof OwnedQuizIntakeError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
         }
       }
       if (request.method === "POST" && url.pathname === "/appointments/commands") {

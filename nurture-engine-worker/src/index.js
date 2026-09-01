@@ -2,6 +2,7 @@
 //   scheduled() : the cron sweep (fires or shadow-logs every due step)
 //   fetch()     : authenticated HTTP surface
 //     POST /event  { ...appointment event | kinded quiz/purchase/tag event }  → enroll/exit
+//     POST /import { enrollments: [fresh provider cursor evidence...] }         → shadow-safe transfer
 //     POST /run                                                               → sweep now (ops)
 //     GET  /status                                                            → liveness
 //
@@ -16,6 +17,8 @@
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { handleEvent, runSweep } from "./engine.js";
 import { handleTagWebhook } from "./tag-bridge.js";
+import { handleEnrollmentImport } from "./import-enrollments.js";
+import { ownedNurtureDeliveryReadiness } from "./delivery-readiness.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json" };
 const json = (status, obj) => new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
@@ -54,12 +57,18 @@ export default {
         const { actions } = await handleEvent(env, event, Date.now());
         return json(200, { success: true, actions });
       }
+      if (request.method === "POST" && url.pathname === "/import") {
+        return await handleEnrollmentImport(request, env, Date.now());
+      }
       if (request.method === "POST" && url.pathname === "/run") {
         const counts = await runSweep(env, Date.now());
         return json(200, { success: true, counts });
       }
       if (request.method === "GET" && url.pathname === "/status") {
         return json(200, { success: true, worker: "nurture-engine", now: Date.now() });
+      }
+      if (request.method === "GET" && url.pathname === "/delivery-readiness") {
+        return json(200, { success: true, ...(await ownedNurtureDeliveryReadiness(env.NURTURE_DB, env.CRM_DB, env)) });
       }
       return json(404, { error: "not found" });
     } catch (err) {

@@ -38,4 +38,7 @@ head_sampling_rate = 1
 # Secrets (set once in this dir): WORKER_AUTH_SECRET (same value as the other workers + Pages env).
 #   echo "<secret>" | npx wrangler secret put WORKER_AUTH_SECRET
 # GHL_WEBHOOK_SECRET (same value as the Pages purchase webhooks — the /tag-webhook gate).
-# No sender credential is consumed. Native delivery is a separate, currently fail-closed gate.
+# Native Gmail delivery additionally requires the actor-scoped Amari Google OAuth client secrets
+# plus BOTH NURTURE_EMAIL_DELIVERY_RELEASE=approved and a valid JSON
+# NURTURE_EMAIL_SEQUENCE_ALLOWLIST. Neither release gate is declared here; every sequence remains
+# source-level shadow, and provider submission is not claimed as terminal delivery evidence.

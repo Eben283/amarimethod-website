@@ -5,6 +5,8 @@
 
 const AFTER_RE = /^(?:0|\+(\d+))([dh])$/;
 const UNIT_MS = { d: 86400000, h: 3600000 };
+export const IMPORT_CURSOR_TOLERANCE_MS = 5 * 60 * 1000;
+export const IMPORT_EVIDENCE_MAX_AGE_MS = 60 * 60 * 1000;
 
 /**
  * Parse a step's `after` offset ("0d", "+3d", "+12h") to ms. Throws on anything else —
@@ -72,21 +74,56 @@ export function enroll(event, sequence, contact, nowMs) {
 }
 
 /**
- * Import a mid-sequence GHL enrollment at cutover (the 15 in-flight Flow 1 + 1 Flow 3
- * contacts). Due-times are computed from the ORIGINAL entry time; any step already due at
- * import is marked "imported" — GHL owned that send, the engine must never back-fire it.
+ * Plan an exact mid-sequence provider enrollment transfer. Time alone is not proof that a
+ * provider actually completed a step: delayed/manual workflow actions can make a due-time
+ * cursor lie. The caller must therefore supply a fresh, observed next-step cursor and its
+ * scheduled time. Earlier steps become immutable imported history; the observed next step and
+ * everything after it remain pending. A stale, mismatched, or already-overdue cursor fails
+ * closed so activation can neither replay history nor silently skip an ambiguous action.
  */
-export function importEnrollment(sequence, { contactId, enteredAt }, nowMs) {
-  const steps = buildSteps(sequence, enteredAt).map((s) =>
-    s.dueAt <= nowMs ? { ...s, status: "imported" } : s,
-  );
+export function importEnrollment(sequence, evidence, nowMs) {
+  if (!sequence || !Array.isArray(sequence.steps)) throw new Error("sequence is required");
+  if (!evidence || typeof evidence !== "object") throw new Error("import evidence is required");
+  const { contactId, enteredAt, nextStepIndex, nextDueAt, capturedAt, cursorSource } = evidence;
+  if (typeof contactId !== "string" || !contactId.trim()) throw new Error("contactId is required");
+  for (const [name, value] of Object.entries({ enteredAt, nextDueAt, capturedAt, nowMs })) {
+    if (!Number.isSafeInteger(value) || value < 0) throw new Error(`${name} must be a millisecond timestamp`);
+  }
+  if (cursorSource !== "provider_enrollment_history") {
+    throw new Error("cursorSource must be provider_enrollment_history");
+  }
+  if (enteredAt > capturedAt) throw new Error("enteredAt cannot be after capturedAt");
+  if (capturedAt > nowMs + IMPORT_CURSOR_TOLERANCE_MS) throw new Error("capturedAt cannot be in the future");
+  if (nowMs - capturedAt > IMPORT_EVIDENCE_MAX_AGE_MS) throw new Error("import evidence is stale");
+  if (!Number.isInteger(nextStepIndex) || nextStepIndex < 0 || nextStepIndex >= sequence.steps.length) {
+    throw new Error("nextStepIndex must identify a pending sequence step");
+  }
+
+  const scheduled = buildSteps(sequence, enteredAt);
+  const expectedNextDueAt = scheduled[nextStepIndex].dueAt;
+  if (Math.abs(expectedNextDueAt - nextDueAt) > IMPORT_CURSOR_TOLERANCE_MS) {
+    throw new Error("observed next action does not match the sequence schedule");
+  }
+  if (nextDueAt <= nowMs) {
+    throw new Error("observed next action is already due; resolve provider state before import");
+  }
+
+  const steps = scheduled.map((step) => (
+    step.stepIndex < nextStepIndex ? { ...step, status: "imported" } : step
+  ));
   return {
     sequenceId: sequence.sequenceId,
     definitionVersion: sequence.definitionVersion,
-    contactId,
+    contactId: contactId.trim(),
     enteredAt,
     status: "active",
     guardUnchecked: false,
     steps,
+    importEvidence: Object.freeze({
+      cursorSource,
+      capturedAt,
+      nextStepIndex,
+      nextDueAt,
+    }),
   };
 }

@@ -53,8 +53,8 @@ const deepFreeze = (obj) => {
 };
 
 // Flow 1 Quiz to Pain Consultation email flow. The live source structure, all branch values,
-// waits, subjects, preheaders, and bodies were captured by 2026-07-12. Exact rendering and
-// an owned delivery adapter are still deliberately absent, so this remains shadow-only.
+// waits, subjects, preheaders, and bodies were captured by 2026-07-12. Exact native rendering
+// is allowlisted; owned delivery remains deliberately absent, so this stays shadow-only.
 export const FLOW_1_QUIZ = deepFreeze({
   name: "Quiz to Pain Consultation email flow",
   definitionVersion: 2,
@@ -110,8 +110,8 @@ export const FLOW_1_QUIZ = deepFreeze({
 });
 
 // Flow 2 Pain Consutation to first booking email flow (live GHL name keeps the typo).
-// The 2026-08-07 source is a Draft $29 / 50-minute Assessment path. It remains shadow-only;
-// owned copy rendering, delivery, and lifecycle activation have not been approved.
+// The 2026-08-07 source is a Draft $29 / 50-minute Assessment path. Exact native rendering is
+// allowlisted, but delivery and lifecycle activation remain unresolved, so this stays shadow-only.
 export const FLOW_2_POST_DISCOVERY = deepFreeze({
   name: "Pain Consutation to first booking email flow",
   definitionVersion: 2,

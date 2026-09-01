@@ -3,7 +3,26 @@
 // every returned identity is the owned CRM contact ID.
 
 const LEGACY_PRIMARY_PAIN_LOCATION = "vKZTVAG7601lgV8413du";
+const LEGACY_PAIN_PATTERN_SIGNATURE = "BvTGZ9O9ayecw5f0Nj76";
+const LEGACY_PAIN_DURATION = "wrYzlW0ta2SGD8cI5iTM";
 const OWNED_PRIMARY_PAIN_LOCATION = "primaryPainLocation";
+const OWNED_PAIN_PATTERN_SIGNATURE = "painPatternSignature";
+const OWNED_PAIN_DURATION = "painDuration";
+
+const NURTURE_FIELDS = Object.freeze({
+  primaryPainLocation: Object.freeze({
+    owned: OWNED_PRIMARY_PAIN_LOCATION,
+    legacy: LEGACY_PRIMARY_PAIN_LOCATION,
+  }),
+  painPatternSignature: Object.freeze({
+    owned: OWNED_PAIN_PATTERN_SIGNATURE,
+    legacy: LEGACY_PAIN_PATTERN_SIGNATURE,
+  }),
+  painDuration: Object.freeze({
+    owned: OWNED_PAIN_DURATION,
+    legacy: LEGACY_PAIN_DURATION,
+  }),
+});
 
 async function resolveRows(db, contactReference) {
   if (!db) throw new Error("owned CRM contact store is not configured");
@@ -50,22 +69,30 @@ export async function readOwnedContactFields(db, contactReference) {
     SELECT source, attribute_key, attribute_value
       FROM contact_attributes
      WHERE contact_id = ?
-       AND attribute_key IN (?, ?)
-     ORDER BY CASE WHEN attribute_key = ? THEN 0 ELSE 1 END,
-              CASE WHEN source = 'owned' THEN 0 ELSE 1 END,
-              updated_at DESC
+       AND attribute_key IN (?, ?, ?, ?, ?, ?)
+     ORDER BY updated_at DESC
   `).bind(
     contact.id,
     OWNED_PRIMARY_PAIN_LOCATION,
     LEGACY_PRIMARY_PAIN_LOCATION,
-    OWNED_PRIMARY_PAIN_LOCATION,
+    OWNED_PAIN_PATTERN_SIGNATURE,
+    LEGACY_PAIN_PATTERN_SIGNATURE,
+    OWNED_PAIN_DURATION,
+    LEGACY_PAIN_DURATION,
   ).all();
-  const value = (result?.results || [])
-    .map((row) => row.attribute_value)
-    .find((candidate) => candidate != null && String(candidate).trim() !== "");
-  return Object.freeze({
-    primaryPainLocation: value == null ? null : String(value).trim(),
-  });
+  const rows = result?.results || [];
+  const valueFor = ({ owned, legacy }) => {
+    const candidates = [
+      rows.find((row) => row.source === "owned" && row.attribute_key === owned),
+      rows.find((row) => row.attribute_key === owned),
+      rows.find((row) => row.attribute_key === legacy),
+    ];
+    const match = candidates.find((row) => row?.attribute_value != null && String(row.attribute_value).trim());
+    return match ? String(match.attribute_value).trim() : null;
+  };
+  return Object.freeze(Object.fromEntries(
+    Object.entries(NURTURE_FIELDS).map(([key, definition]) => [key, valueFor(definition)]),
+  ));
 }
 
 export async function readOwnedContactRecipient(db, contactReference) {

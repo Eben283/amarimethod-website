@@ -1,7 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import {
   enrollmentId, saveEnrollment, loadDueSteps, loadActiveEnrollments,
-  markStep, appendEvent, exitEnrollment,
+  markStep, claimStep, appendEvent, exitEnrollment,
 } from "./store.js";
 import { enroll } from "./enroll.js";
 import { FLOW_1_QUIZ } from "./config.js";
@@ -24,8 +24,11 @@ describe("enrollmentId", () => {
 
 describe("saveEnrollment", () => {
   it("persists the enrollment + its steps", async () => {
+    const batch = vi.spyOn(db, "batch");
     const { created } = await saveEnrollment(db, freshEnrollment());
     expect(created).toBe(true);
+    expect(batch).toHaveBeenCalledTimes(1);
+    expect(batch.mock.calls[0][0]).toHaveLength(7); // one enrollment + six steps, one D1 transaction
     expect(db._enrollments.size).toBe(1);
     expect(db._steps).toHaveLength(6);
   });
@@ -53,6 +56,15 @@ describe("loadDueSteps", () => {
   it("marked steps leave the due-queue", async () => {
     await saveEnrollment(db, freshEnrollment());
     await markStep(db, enrollmentId("flow-1-quiz", "cont_1"), 0, "would_send");
+    expect(await loadDueSteps(db, NOW)).toHaveLength(0);
+  });
+
+  it("claims a pending delivery step exactly once before external I/O", async () => {
+    await saveEnrollment(db, freshEnrollment());
+    const id = enrollmentId("flow-1-quiz", "cont_1");
+    await expect(claimStep(db, id, 0)).resolves.toBe(true);
+    await expect(claimStep(db, id, 0)).resolves.toBe(false);
+    expect(db._steps[0].status).toBe("dispatching");
     expect(await loadDueSteps(db, NOW)).toHaveLength(0);
   });
 });

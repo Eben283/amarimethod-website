@@ -42,6 +42,12 @@ describe("fetch — auth gate (brief RED test d: forged payloads never mutate en
     expect(env.NURTURE_DB._enrollments.size).toBe(0);
   });
 
+  it("rejects an unauthenticated /import before any transfer mutation", async () => {
+    const res = await worker.fetch(post("/import", { enrollments: [] }), env);
+    expect(res.status).toBe(401);
+    expect(env.NURTURE_DB._enrollments.size).toBe(0);
+  });
+
   it("fails closed when the secret is unset", async () => {
     const res = await worker.fetch(post("/event", { kind: "quiz.submitted", contactId: "c1" }), { NURTURE_DB: fakeD1() });
     expect(res.status).toBe(503);
@@ -82,6 +88,16 @@ describe("fetch — authenticated surface", () => {
     );
     expect(res.status).toBe(200);
     expect((await res.json()).worker).toBe("nurture-engine");
+  });
+
+  it("GET /delivery-readiness is authenticated and aggregate-only", async () => {
+    const unauthorized = await worker.fetch(new Request("https://nurture-engine.example/delivery-readiness"), env);
+    expect(unauthorized.status).toBe(401);
+    const authorized = await worker.fetch(new Request("https://nurture-engine.example/delivery-readiness", {
+      headers: { Authorization: `Bearer ${SECRET}` },
+    }), env);
+    expect(authorized.status).toBe(200);
+    expect(await authorized.json()).toEqual(expect.objectContaining({ success: true, state: "unavailable" }));
   });
 
   it("unknown routes 404; bad JSON never 5xxs into a Cloudflare error page", async () => {
