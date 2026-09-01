@@ -185,12 +185,14 @@ describe("owned automation registry", () => {
       })],
       messagePreview: expect.objectContaining({ status: "delivery_built_release_gated", sourceDecisionChecks: expect.any(Array) }),
       cutoverReadiness: expect.objectContaining({
-        status: "proof_ready",
+        status: "not_eligible",
         requirements: expect.arrayContaining([
           expect.objectContaining({ code: "source_copy_reconciled", status: "proven" }),
           expect.objectContaining({ code: "owned_rebooking_equivalence_proven", status: "proven" }),
           expect.objectContaining({ code: "delivery_adapter_built", status: "proven" }),
-          expect.objectContaining({ code: "terminal_sms_receipts_built", status: "proven" }),
+          expect.objectContaining({ code: "owned_recovery_route_pending", status: "blocked" }),
+          expect.objectContaining({ code: "owned_sms_provider_pending", status: "blocked" }),
+          expect.objectContaining({ code: "durable_effect_receipts_built", status: "proven" }),
           expect.objectContaining({ code: "missed_count_owner_retained", status: "proven" }),
         ]),
       }),

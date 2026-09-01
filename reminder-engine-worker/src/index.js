@@ -8,9 +8,9 @@
 // The Pages webhook (functions/api/appointment-webhook.js → appointment-dispatch.js) posts the typed
 // event to /event rather than importing engine code — clean decoupling, no cross-bundle import.
 //
-// Secrets/bindings (wrangler.toml): REMINDER_DB (D1), WORKER_AUTH_SECRET (fetch gate). Active mode
-// additionally needs GHL token access (PORTAL_KV + GHL_CLIENT_ID/SECRET) for the send adapter;
-// shadow mode — the default — touches neither.
+// Secrets/bindings (wrangler.toml): REMINDER_DB (D1), WORKER_AUTH_SECRET (fetch gate). Shadow mode
+// is the default. Each active lifecycle must independently prove its owned CRM, delivery service,
+// sender grant, durable evidence, and recovery-link bindings before publication.
 
 import { requireWorkerAuth } from "../../functions/lib/worker-auth.js";
 import { handleEvent, backfillShadowEnrollment, retireLegacyShadowEnrollment } from "./engine.js";
@@ -25,6 +25,7 @@ import { INITIAL_IN_PERSON_WORKFLOW } from "./initial-in-person-workflow.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
+import { noShowDeliveryReadiness } from "./no-show-delivery.js";
 import { ASSESSMENT_PAID_BOOKING_WORKFLOW } from "../../functions/lib/assessment-paid-booking-workflow.js";
 import { ensurePublishedWorkflow, publishedWorkflow, saveDraftWorkflow, publishDraftWorkflow, publishBundledWorkflow } from "./workflow-store.js";
 import { appendEvent } from "./store.js";
@@ -180,6 +181,10 @@ export default {
         if (body?.workflowId !== NO_SHOW_RECOVERY_WORKFLOW.id) return json(400, { error: "unsupported workflow release" });
         if (env.NO_SHOW_BEHAVIOR_RELEASE !== "approved" || env.NO_SHOW_DELIVERY_RELEASE !== "approved") {
           return json(403, { error: "No Show behavior and delivery release are not both approved" });
+        }
+        const readiness = noShowDeliveryReadiness(env);
+        if (!readiness.eligible) {
+          return json(503, { error: "No Show owned delivery is not ready", reason: readiness.reason });
         }
         const current = await publishedWorkflow(env.REMINDER_DB, NO_SHOW_RECOVERY_WORKFLOW.id);
         if (current?.version === NO_SHOW_RECOVERY_RELEASE_WORKFLOW.version && current.executionMode === "active") {

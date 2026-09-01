@@ -3,9 +3,9 @@ import { executeOwnedDeliveryEffect } from "./owned-delivery-evidence.js";
 import { issueAppointmentManageToken } from "../../functions/lib/appointment-manage-token.js";
 import { partnerInitialInPersonNode } from "./partner-initial-in-person-workflow.js";
 import { renderWorkflowText } from "./workflow-definition.js";
+import { ownedSmsConfigured, sendOwnedSms, validOwnedSmsRecipient } from "./owned-sms.js";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const E164 = /^\+[1-9][0-9]{7,14}$/;
 const RELEASED = "approved";
 const PUBLIC_ORIGIN = "https://www.amarimethod.com";
 const STUDIO_ADDRESS = "662 8th Ave, San Francisco, CA 94118";
@@ -195,8 +195,8 @@ export function partnerInitialInPersonDeliveryEligibility(env, flow, step, enrol
   if (!env?.CRM_DB?.prepare) return { eligible: false, reason: "owned-crm-unavailable" };
   if (!env?.REMINDER_DB?.prepare || !env?.REMINDER_DB?.batch) return { eligible: false, reason: "delivery-evidence-unavailable" };
   if (clean(env?.APPOINTMENT_MANAGE_LINK_SECRET).length < 32) return { eligible: false, reason: "owned-manage-links-unavailable" };
-  if (!env?.OWNED_SMS?.fetch || !clean(env.WORKER_AUTH_SECRET)) return { eligible: false, reason: "owned-sms-unavailable" };
-  if (!EMAIL.test(clean(env.GARRETT_INTERNAL_EMAIL)) || !E164.test(clean(env.GARRETT_INTERNAL_PHONE_E164))) {
+  if (!ownedSmsConfigured(env)) return { eligible: false, reason: "owned-sms-unavailable" };
+  if (!EMAIL.test(clean(env.GARRETT_INTERNAL_EMAIL)) || !validOwnedSmsRecipient(env.GARRETT_INTERNAL_PHONE_E164)) {
     return { eligible: false, reason: "internal-recipient-not-configured" };
   }
   return { eligible: true };
@@ -217,25 +217,6 @@ function clientPolicy(context, channel) {
   if (channel === "email" && context.emailConsent === "revoked") return "email_opted_out";
   if (channel === "sms" && context.smsConsent === "revoked") return "sms_opted_out";
   return null;
-}
-
-async function sendOwnedSms(env, message) {
-  if (!env?.OWNED_SMS?.fetch || !env?.WORKER_AUTH_SECRET) {
-    return { success: false, error: "owned SMS provider is unavailable" };
-  }
-  const response = await env.OWNED_SMS.fetch("https://owned-sms/messages", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${env.WORKER_AUTH_SECRET}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(message),
-  });
-  const body = await response.json().catch(() => ({}));
-  if (!response.ok || body?.success !== true || !clean(body?.messageId)) {
-    return { success: false, error: `owned SMS provider rejected the command (${response.status})` };
-  }
-  return { success: true, messageId: clean(body.messageId) };
 }
 
 /**
@@ -303,7 +284,7 @@ export async function deliverPartnerInitialInPersonStep(env, step, enrollment, s
       };
     }
     const recipient = node.message.audience === "internal" ? clean(env.GARRETT_INTERNAL_PHONE_E164) : context.clientPhone;
-    if (!E164.test(recipient)) return { success: false, error: "recipient phone is unavailable", recipient };
+    if (!validOwnedSmsRecipient(recipient)) return { success: false, error: "recipient phone is unavailable", recipient };
     const sendSms = services.sendSms || ((message) => sendOwnedSms(env, message));
     return {
       recipient,

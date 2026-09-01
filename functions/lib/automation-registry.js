@@ -187,15 +187,17 @@ const ASSESSMENT_NO_SHOW_CUTOVER_READINESS = Object.freeze({
 });
 
 const NO_SHOW_RECOVERY_CUTOVER_READINESS = Object.freeze({
-  status: "proof_ready",
-  label: "Delivery built; live release still gated",
-  summary: "The exact source path, owned delivery adapter, rebooking exits, and terminal SMS receipt reconciliation are built. GHL remains the live sender until a separately approved release.",
+  status: "not_eligible",
+  label: "Owned contract built; provider and recovery route still gated",
+  summary: "The exact source path, provider-neutral delivery contract, rebooking exits, and durable effect receipts are built. GHL remains the live sender while the owned recovery route and SMS provider are absent.",
   requirements: Object.freeze([
     Object.freeze({ code: "source_structure_reconciled", status: "proven", label: "Source structure reconciled", detail: "The exact 11 Normal/no-show calendars, five contact-mode filters, affiliate branch, regular three-message branch, two one-day waits, and two appointmentRescheduled=false checks are represented." }),
     Object.freeze({ code: "source_copy_reconciled", status: "proven", label: "Source copy reconciled", detail: "Both SMS messages, email subjects, preheaders, bodies, and destinations are exact source values." }),
     Object.freeze({ code: "owned_rebooking_equivalence_proven", status: "proven", label: "Owned rebooking exit proven", detail: "The controlled all-DND proof demonstrated affiliate and regular enrollment plus confirmed-rebooking cancellation without client sends." }),
-    Object.freeze({ code: "delivery_adapter_built", status: "proven", label: "Owned delivery built", detail: "The exact SMS and Garrett email templates render through the owned GHL conversations and Gmail adapters behind two disabled release gates." }),
-    Object.freeze({ code: "terminal_sms_receipts_built", status: "proven", label: "Terminal SMS receipt reconciliation built", detail: "No Show SMS provider references are reconciled into immutable delivery-status events with flow-specific health evidence." }),
+    Object.freeze({ code: "delivery_adapter_built", status: "proven", label: "Provider-neutral owned delivery built", detail: "The exact SMS and Garrett email templates read owned CRM identity, consent and E.164/email destinations, then use only the owned SMS service and verified Garrett Google Workspace adapters with durable idempotent effect receipts. No GHL read or sender fallback remains." }),
+    Object.freeze({ code: "owned_recovery_route_pending", status: "blocked", label: "Publish the owned no-show recovery route", detail: "Release requires one exact same-origin recovery URL. Cross-origin, credential-bearing, fragment and API URLs fail closed; no production route is configured by source." }),
+    Object.freeze({ code: "owned_sms_provider_pending", status: "blocked", label: "Select and prove the owned SMS edge", detail: "The contract requires an E.164 destination, authenticated service binding and idempotency key. No SMS provider or cost has been selected or configured, and GHL Conversations is not a fallback." }),
+    Object.freeze({ code: "durable_effect_receipts_built", status: "proven", label: "Durable delivery effects built", detail: "Each email or SMS attempt binds the exact enrollment, definition, node, recipient hash and rendered request; uncertain transport is held for manual reconciliation rather than resent." }),
     Object.freeze({ code: "missed_count_owner_retained", status: "proven", label: "Keep the missed-count owner in GHL", detail: "The separate Published No Show — Increment Missed Count workflow remains the sole live counter owner. An owned durable observer is built but disabled; it records an expected increment and Staff exception evidence without changing the contact field or claiming parity." }),
     Object.freeze({ code: "ghl_retirement_not_approved", status: "review", label: "Keep GHL live until activation", detail: "The Published No Show Email SMS series remains the rollback sender until a separately approved coordinated cutover." }),
   ]),

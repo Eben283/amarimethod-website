@@ -52,7 +52,13 @@ describe("POST /workflow-release — No Show", () => {
   });
   const env = (over = {}) => ({
     WORKER_AUTH_SECRET: "test-secret",
-    REMINDER_DB: {},
+    REMINDER_DB: { prepare() {}, batch() {} },
+    CRM_DB: { prepare() {} },
+    PORTAL_KV: {},
+    AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "client",
+    AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "secret",
+    OWNED_SMS: { fetch() {} },
+    NO_SHOW_RECOVERY_URL: "https://www.amarimethod.com/appointment/recovery",
     NO_SHOW_BEHAVIOR_RELEASE: "approved",
     NO_SHOW_DELIVERY_RELEASE: "approved",
     ...over,
@@ -61,6 +67,16 @@ describe("POST /workflow-release — No Show", () => {
   it("requires both independent release approvals", async () => {
     const response = await worker.fetch(request(), env({ NO_SHOW_DELIVERY_RELEASE: undefined }));
     expect(response.status).toBe(403);
+    expect(publishedWorkflow).not.toHaveBeenCalled();
+  });
+
+  it("refuses publication while any owned delivery dependency is absent", async () => {
+    const response = await worker.fetch(request(), env({ OWNED_SMS: undefined }));
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({
+      error: "No Show owned delivery is not ready",
+      reason: "owned-sms-unavailable",
+    });
     expect(publishedWorkflow).not.toHaveBeenCalled();
   });
 
@@ -76,9 +92,9 @@ describe("POST /workflow-release — No Show", () => {
     publishDraftWorkflow.mockResolvedValue(NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
     const response = await worker.fetch(request(), env());
     expect(response.status).toBe(200);
-    expect(saveDraftWorkflow).toHaveBeenCalledWith({}, NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
-    expect(publishDraftWorkflow).toHaveBeenCalledWith({}, "no-show-recovery", 4, 3);
-    expect(appendEvent).toHaveBeenCalledWith({}, expect.objectContaining({
+    expect(saveDraftWorkflow).toHaveBeenCalledWith(expect.any(Object), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
+    expect(publishDraftWorkflow).toHaveBeenCalledWith(expect.any(Object), "no-show-recovery", 4, 3);
+    expect(appendEvent).toHaveBeenCalledWith(expect.any(Object), expect.objectContaining({
       flowKey: "no-show-recovery",
       definitionVersion: 4,
       action: "workflow_published",
