@@ -1,12 +1,14 @@
 import { defineWorkflow, executableFlow } from "./workflow-definition.js";
 
 // Source-reconciled replacement for GHL's published `No Show Email SMS series`.
-// It remains shadow-only until the owned confirmed-rebooking exit is proven
-// equivalent to GHL's two appointmentRescheduled checks and delivery is proven.
+// The provider-neutral confirmed-rebooking exit is source-complete: an owned
+// Partner Initial event resolves the stable CRM person plus the exact GHL alias
+// before cancelling pending recovery. The document remains shadow-only until
+// its reviewed v3 publication and the separate delivery release are approved.
 export const NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
   id: "no-show-recovery",
   name: "No Show Email SMS series",
-  version: 2,
+  version: 3,
   executionMode: "shadow",
   trigger: {
     event: "appointment_status_changed",
@@ -36,6 +38,7 @@ export const NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
   exits: [{
     event: "confirmed",
     effect: "exit_contact_pending",
+    serviceIds: ["partner-initial"],
     label: "Cancel pending recovery after a confirmed rebooking",
   }],
   sourceDecisionChecks: [
@@ -113,10 +116,10 @@ export const NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
 // This candidate is inert until the separately gated behavior-release endpoint
 // replaces the already-published v2 shadow document. Keeping the release as a
 // distinct version makes the source, D1 publication, and rollback boundary
-// explicit rather than letting an environment variable silently redefine v2.
+// explicit rather than letting an environment variable silently redefine v3.
 export const NO_SHOW_RECOVERY_RELEASE_WORKFLOW = defineWorkflow({
   ...NO_SHOW_RECOVERY_WORKFLOW,
-  version: 3,
+  version: 4,
   executionMode: "active",
 });
 
