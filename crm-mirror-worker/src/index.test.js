@@ -107,6 +107,13 @@ describe("CRM mirror dashboard access handoff", () => {
     }), env);
     expect(invalidActor.status).toBe(400);
     await expect(invalidActor.json()).resolves.toEqual({ error: "recognized_staff_actor_required" });
+
+    const clientSchedule = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Client",
+    }), env);
+    expect(clientSchedule.status).toBe(403);
+    await expect(clientSchedule.json()).resolves.toEqual({ error: "client_schedule_forbidden" });
   });
 
   it("keeps person and family automation evidence behind Worker authentication", async () => {

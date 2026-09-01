@@ -138,7 +138,7 @@ export function createOwnedAppointmentManageStore(context, input) {
   const appointmentId = String(input?.appointmentId || "");
   const providerCalendarId = String(input?.providerCalendarId || "");
   const provider = String(input?.provider || "ghl");
-  if (!new Set(["Eben", "Garrett"]).has(actor) || !new Set(["cancel", "reschedule"]).has(action) ||
+  if (!new Set(["Eben", "Garrett", "Client"]).has(actor) || !new Set(["cancel", "reschedule"]).has(action) ||
       !contactId || !appointmentId || !new Set(["ghl", "google_calendar"]).has(provider)) {
     throw new TypeError("owned appointment manage identity required");
   }

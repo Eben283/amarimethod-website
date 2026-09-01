@@ -19,8 +19,17 @@ export async function resolveOwnedAppointmentIdentity(db, reference) {
             appointment.contact_id AS owned_contact_id,
             appointment.provider_appointment_id,
             appointment.provider_calendar_id,
+            appointment.service_id,
+            service.name AS service_name,
+            appointment.status,
+            appointment.starts_at,
+            appointment.ends_at,
+            appointment.timezone,
+            appointment.meeting_location,
+            appointment.provider_meeting_location,
             appointment.authority,
             appointment.provider_sync_state,
+            appointment.revision,
             (SELECT CASE WHEN COUNT(*) = 1 THEN MAX(provider) END
                FROM external_records
               WHERE record_id = appointment.id
@@ -42,6 +51,7 @@ export async function resolveOwnedAppointmentIdentity(db, reference) {
                 AND provider = 'ghl'
                 AND object_type = 'contact') AS provider_contact_count
        FROM appointments appointment
+       LEFT JOIN services service ON service.id = appointment.service_id
       WHERE appointment.id = ? OR appointment.provider_appointment_id = ?
       ORDER BY CASE WHEN appointment.id = ? THEN 0 ELSE 1 END
       LIMIT 2`,
@@ -76,7 +86,15 @@ export async function resolveOwnedAppointmentIdentity(db, reference) {
     provider: row.provider || null,
     providerContactId: row.provider_contact_id || null,
     providerCalendarId: row.provider_calendar_id || null,
+    serviceId: row.service_id || null,
+    serviceName: row.service_name || "Session",
+    status: row.status,
+    startsAt: row.starts_at,
+    endsAt: row.ends_at,
+    timezone: row.timezone,
+    meetingLocation: row.meeting_location || row.provider_meeting_location || null,
     authority: row.authority,
     providerSyncState: row.provider_sync_state,
+    revision: Number(row.revision || 1),
   };
 }

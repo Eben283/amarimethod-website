@@ -1,11 +1,14 @@
 import { sendOwnedEmail } from "./gmail-test-send.js";
 import { executeOwnedDeliveryEffect } from "./owned-delivery-evidence.js";
+import { issueAppointmentManageToken } from "../../functions/lib/appointment-manage-token.js";
 import { partnerInitialInPersonNode } from "./partner-initial-in-person-workflow.js";
 import { renderWorkflowText } from "./workflow-definition.js";
 
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const E164 = /^\+[1-9][0-9]{7,14}$/;
 const RELEASED = "approved";
+const PUBLIC_ORIGIN = "https://www.amarimethod.com";
+const STUDIO_ADDRESS = "662 8th Ave, San Francisco, CA 94118";
 const CLIENT_LINK_FIELDS = Object.freeze({
   confirmation: Object.freeze(["rescheduleLink", "cancellationLink", "googleCalendarLink", "icalLink"]),
   "day-before": Object.freeze(["rescheduleLink", "cancellationLink"]),
@@ -42,6 +45,48 @@ function dateParts(startAt, timezone) {
   }
   if (!date || !time || !zone) throw new Error("owned appointment time is incomplete");
   return { date, time, zone };
+}
+
+function googleCalendarTimestamp(value) {
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) throw new Error("owned appointment calendar time is invalid");
+  return date.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+
+export async function createPartnerInitialManageLinks(env, context, nowMs = Date.now()) {
+  const startMs = Date.parse(context?.startAt || "");
+  const endMs = Date.parse(context?.endAt || "");
+  if (!Number.isFinite(startMs) || !Number.isFinite(endMs) || endMs <= startMs || startMs <= nowMs) {
+    throw new Error("owned appointment calendar window is invalid");
+  }
+  const token = await issueAppointmentManageToken(env?.APPOINTMENT_MANAGE_LINK_SECRET, {
+    appointmentId: context.appointmentId,
+    contactId: context.ownedContactId,
+    revision: context.revision,
+    capabilities: ["cancel", "reschedule", "calendar"],
+    iat: nowMs,
+    exp: Math.min(startMs + 2 * 60 * 60 * 1000, nowMs + 35 * 24 * 60 * 60 * 1000),
+  }, nowMs);
+  const manage = new URL("/appointment/manage", PUBLIC_ORIGIN);
+  manage.searchParams.set("token", token);
+  const cancellation = new URL(manage);
+  cancellation.searchParams.set("action", "cancel");
+  const reschedule = new URL(manage);
+  reschedule.searchParams.set("action", "reschedule");
+  const ical = new URL("/api/appointment-calendar", PUBLIC_ORIGIN);
+  ical.searchParams.set("token", token);
+  const google = new URL("https://calendar.google.com/calendar/render");
+  google.searchParams.set("action", "TEMPLATE");
+  google.searchParams.set("text", context.serviceName);
+  google.searchParams.set("dates", `${googleCalendarTimestamp(context.startAt)}/${googleCalendarTimestamp(context.endAt)}`);
+  google.searchParams.set("location", context.meetingLocation || STUDIO_ADDRESS);
+  google.searchParams.set("details", "Your Amari partner session with Garrett.");
+  return Object.freeze({
+    rescheduleLink: reschedule.toString(),
+    cancellationLink: cancellation.toString(),
+    googleCalendarLink: google.toString(),
+    icalLink: ical.toString(),
+  });
 }
 
 /**
@@ -125,7 +170,9 @@ export async function readPartnerInitialDeliveryContext(db, enrollment) {
     clientPhone: clean(row.phone_e164),
     additionalInformation: clean(row.additional_information),
     startAt: row.starts_at,
+    endAt: row.ends_at,
     timezone: clean(row.timezone) || "America/Los_Angeles",
+    meetingLocation: clean(row.provider_meeting_location) || clean(row.meeting_location) || STUDIO_ADDRESS,
     dnd: normalizedDnd(row.dnd_state),
     emailConsent: clean(row.email_consent_state) || "unknown",
     smsConsent: clean(row.sms_consent_state) || "unknown",
@@ -147,6 +194,7 @@ export function partnerInitialInPersonDeliveryEligibility(env, flow, step, enrol
   if (!partnerInitialInPersonNode(step?.template, flow.workflowDocument)) return { eligible: false, reason: "not-owned-step" };
   if (!env?.CRM_DB?.prepare) return { eligible: false, reason: "owned-crm-unavailable" };
   if (!env?.REMINDER_DB?.prepare || !env?.REMINDER_DB?.batch) return { eligible: false, reason: "delivery-evidence-unavailable" };
+  if (clean(env?.APPOINTMENT_MANAGE_LINK_SECRET).length < 32) return { eligible: false, reason: "owned-manage-links-unavailable" };
   if (!env?.OWNED_SMS?.fetch || !clean(env.WORKER_AUTH_SECRET)) return { eligible: false, reason: "owned-sms-unavailable" };
   if (!EMAIL.test(clean(env.GARRETT_INTERNAL_EMAIL)) || !E164.test(clean(env.GARRETT_INTERNAL_PHONE_E164))) {
     return { eligible: false, reason: "internal-recipient-not-configured" };
@@ -204,8 +252,10 @@ export async function deliverPartnerInitialInPersonStep(env, step, enrollment, s
     const context = services.readContext
       ? await services.readContext(env, enrollment)
       : await readPartnerInitialDeliveryContext(env.CRM_DB, enrollment);
-    const links = requiredLinks(step.template, services.manageLinks
-      ? await services.manageLinks(context, enrollment)
+    const links = requiredLinks(step.template, CLIENT_LINK_FIELDS[step.template]?.length
+      ? (services.manageLinks
+        ? await services.manageLinks(context, enrollment)
+        : await createPartnerInitialManageLinks(env, context))
       : {});
     const when = dateParts(context.startAt, context.timezone);
     const values = {
@@ -221,13 +271,14 @@ export async function deliverPartnerInitialInPersonStep(env, step, enrollment, s
     };
     const subject = renderWorkflowText(node.message.subject, values);
     const text = renderWorkflowText(node.message.body, values);
-    const idempotencyKey = `partner-initial:${context.appointmentId}:v${enrollment.definitionVersion || 2}:${step.stepIndex}`;
+    const definitionVersion = Number(enrollment.definitionVersion || workflow?.version || 3);
+    const idempotencyKey = `partner-initial:${context.appointmentId}:v${definitionVersion}:${step.stepIndex}`;
     const executeEffect = services.executeEffect || executeOwnedDeliveryEffect;
     const evidenceBase = {
       flowKey: "partner-initial-in-person",
       enrollmentId: `partner-initial-in-person:${clean(enrollment.appointmentId)}`,
       stepIndex: Number(step.stepIndex),
-      definitionVersion: Number(enrollment.definitionVersion || 2),
+      definitionVersion,
       idempotencyKey,
       channel: node.message.channel,
       subject,
