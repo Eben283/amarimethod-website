@@ -74,10 +74,17 @@ describe("recordGmailProviderSubmission", () => {
     expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_provider_submissions").get().count).toBe(1);
   });
 
-  it("requires the server-owned Garrett mailbox and a real owned contact", async () => {
-    const { db, now } = fixture();
-    await expect(recordGmailProviderSubmission(db, submission({ mailboxActor: "Eben", grantOwner: "eben@amarimethod.com" }), now))
-      .rejects.toThrow("Garrett mailbox");
+  it("accepts either exact owned mailbox, rejects crossed identity, and requires a real owned contact", async () => {
+    const { raw, db, now } = fixture();
+    await expect(recordGmailProviderSubmission(db, submission({
+      mailboxActor: "Eben",
+      grantOwner: "eben@amarimethod.com",
+      submissionRef: "desk:contact-1:email:one",
+      providerMessageId: "gmail-message-eben",
+    }), now)).resolves.toMatchObject({ providerMessageId: "gmail-message-eben" });
+    expect(raw.prepare("SELECT COUNT(*) AS count FROM gmail_provider_submissions").get().count).toBe(1);
+    await expect(recordGmailProviderSubmission(db, submission({ mailboxActor: "Eben" }), now))
+      .rejects.toThrow("exact owned Amari mailbox");
     await expect(recordGmailProviderSubmission(db, submission({ contactId: "missing-contact" }), now))
       .rejects.toThrow();
   });

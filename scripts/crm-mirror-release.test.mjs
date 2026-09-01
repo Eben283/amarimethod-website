@@ -23,3 +23,10 @@ test('release source retains both owned lifecycle service bindings', () => {
     NURTURE: 'nurture-engine',
   });
 });
+
+test('owned Staff email dispatcher remains source-level shadow and cannot be environment-activated', () => {
+  const source = readFileSync(new URL('../crm-mirror-worker/src/owned-email-dispatch.js', import.meta.url), 'utf8');
+  assert.match(source, /export const OWNED_EMAIL_SOURCE_MODE = ["']shadow["']/);
+  assert.doesNotMatch(source, /export const OWNED_EMAIL_SOURCE_MODE = ["']active["']/);
+  assert.match(source, /fallbackProvider:\s*null/);
+});

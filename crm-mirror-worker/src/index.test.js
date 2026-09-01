@@ -396,6 +396,12 @@ describe("CRM mirror dashboard access handoff", () => {
       outboxAvailable: true,
       deliveryEnabled: false,
       fallbackProvider: null,
+      emailDispatch: expect.objectContaining({
+        configured: false,
+        state: "unavailable",
+        deliveryEnabled: false,
+        release: expect.objectContaining({ sourceMode: "shadow", enabled: false, fallbackProvider: null }),
+      }),
       channels: [
         expect.objectContaining({
           channel: "email",

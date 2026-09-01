@@ -2,7 +2,7 @@ import { requireWorkerAuth, workerAuthActive } from "../../functions/lib/worker-
 import { dashboardHtml } from "./dashboard.js";
 import { clientDeskHtml } from "./client-desk.js";
 import { dashboardSessionActor, dashboardSessionCookie, dashboardSessionToken, hasDashboardSession, hasReviewSession, reviewSessionCookie } from "./dashboard-session.js";
-import { CommunicationCommandError, captureCommunicationCommand, communicationReadiness } from "./owned-sender.js";
+import { CommunicationCommandError, communicationReadiness } from "./owned-sender.js";
 import { GmailReplyReadinessError, gmailReplyReadiness } from "./gmail-reply-readiness.js";
 import { createOwnedFollowup, listOwnedFollowups, setOwnedFollowupCompletion } from "./owned-followups.js";
 import {
@@ -58,6 +58,7 @@ import { familyAutomationInspection } from "./family-automation-inspection.js";
 import { automationFamily } from "../../functions/lib/automation-families.js";
 import { ownedQuizIntakeReadiness, OwnedQuizIntakeError, upsertOwnedQuizIntake } from "./owned-quiz-intake.js";
 import { ownedQuizNurtureDispatchReadiness } from "./quiz-nurture-dispatch.js";
+import { captureStaffCommunicationCommand, ownedEmailDispatchReadiness } from "./owned-email-dispatch.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -218,8 +219,8 @@ function dashboardAccessRecord(value) {
 
 function parseSyncRequest(payload) {
   const requested = Array.isArray(payload?.sources) ? payload.sources : DEFAULT_SOURCES;
-  const sources = [...new Set(requested.filter((source) => source === "owned-appointment-lifecycles" || source === "owned-quiz-nurture" || source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
-  if (!sources.length) throw new Error("sources must contain owned-appointment-lifecycles, owned-quiz-nurture, ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, stripe-invoices, and/or consents");
+  const sources = [...new Set(requested.filter((source) => source === "owned-appointment-lifecycles" || source === "owned-quiz-nurture" || source === "owned-email-dispatch" || source === "ghl" || source === "ghl-conversations-recent" || source === "ghl-conversations" || source === "ghl-message-export" || source === "ghl-client-records" || source === "stripe" || source === "stripe-invoices" || source === "consents"))];
+  if (!sources.length) throw new Error("sources must contain owned-appointment-lifecycles, owned-quiz-nurture, owned-email-dispatch, ghl, ghl-conversations-recent, ghl-conversations, ghl-message-export, ghl-client-records, stripe, stripe-invoices, and/or consents");
   const requestedLimit = Number(payload?.limit);
   const limit = Number.isInteger(requestedLimit) ? Math.min(Math.max(requestedLimit, 1), 50) : 25;
   const requestedPages = Number(payload?.pages);
@@ -426,7 +427,7 @@ export default {
           : [];
         if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
         try {
-          const command = await captureCommunicationCommand(env.CRM_DB, { ...payload, actor }, new Date().toISOString());
+          const command = await captureStaffCommunicationCommand(env.CRM_DB, { ...payload, actor }, new Date().toISOString());
           return json(command.deduped ? 200 : 201, { success: true, command });
         } catch (error) {
           if (error instanceof CommunicationCommandError) {
@@ -486,7 +487,12 @@ export default {
         }, { "Cache-Control": "no-store" });
       }
       if (request.method === "GET" && (url.pathname === "/sender/readiness" || url.pathname === "/communications/outbox/readiness")) {
-        return json(200, { success: true, worker: "amari-crm-mirror", ...(await communicationReadiness(env.CRM_DB, env)) });
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...(await communicationReadiness(env.CRM_DB, env)),
+          emailDispatch: await ownedEmailDispatchReadiness(env.CRM_DB, env),
+        });
       }
       if (request.method === "GET" && url.pathname === "/gmail/reply-readiness") {
         try {

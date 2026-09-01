@@ -35,6 +35,7 @@ const mocks = vi.hoisted(() => ({
   writeOpsLastRun: vi.fn(),
   dispatchOwnedAppointmentLifecycles: vi.fn(async () => ({ status: "succeeded", considered: 0, dispatched: 0, retryable: 0, manualReview: 0 })),
   dispatchOwnedQuizNurture: vi.fn(async () => ({ status: "succeeded", considered: 0, dispatched: 0, retryable: 0, manualReview: 0 })),
+  dispatchOwnedEmails: vi.fn(async () => ({ status: "disabled", considered: 0, submitted: 0, retryable: 0, manualReview: 0 })),
 }));
 
 vi.mock("./repository.js", () => ({
@@ -70,6 +71,9 @@ vi.mock("./appointment-lifecycle-dispatch.js", () => ({
 vi.mock("./quiz-nurture-dispatch.js", () => ({
   dispatchOwnedQuizNurture: mocks.dispatchOwnedQuizNurture,
 }));
+vi.mock("./owned-email-dispatch.js", () => ({
+  dispatchOwnedEmails: mocks.dispatchOwnedEmails,
+}));
 
 import { backfillGhlClientRecords, runScheduledSync, SCHEDULED_SYNC_LANES, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
 
@@ -80,9 +84,9 @@ beforeEach(() => {
 describe("scheduled provider fairness", () => {
   it("rotates bounded lanes while retaining recent communication freshness", () => {
     expect(SCHEDULED_SYNC_LANES).toEqual([
-      ["owned-appointment-lifecycles", "owned-quiz-nurture", "ghl-conversations-recent", "ghl", "consents"],
-      ["owned-appointment-lifecycles", "owned-quiz-nurture", "ghl-conversations-recent", "stripe", "stripe-invoices", "consents"],
-      ["owned-appointment-lifecycles", "owned-quiz-nurture", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"],
+      ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl", "consents"],
+      ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "stripe", "stripe-invoices", "consents"],
+      ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"],
     ]);
   });
 

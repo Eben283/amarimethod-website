@@ -23,6 +23,7 @@ import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, 
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 import { dispatchOwnedAppointmentLifecycles } from "./appointment-lifecycle-dispatch.js";
 import { dispatchOwnedQuizNurture } from "./quiz-nurture-dispatch.js";
+import { dispatchOwnedEmails } from "./owned-email-dispatch.js";
 
 function result(status = "succeeded") {
   return { status, recordsRead: 0, recordsWritten: 0, recordsSkipped: 0, cursorAfter: null, failureDetail: null };
@@ -42,9 +43,9 @@ export const SCHEDULED_HISTORICAL_CONVERSATION_LIMIT = 3;
 // boundary and starved every later source. Each core provider is still read at
 // least every fifteen minutes, within the 45-minute freshness contract.
 export const SCHEDULED_SYNC_LANES = Object.freeze([
-  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "ghl-conversations-recent", "ghl", "consents"]),
-  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "ghl-conversations-recent", "stripe", "stripe-invoices", "consents"]),
-  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"]),
+  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl", "consents"]),
+  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "stripe", "stripe-invoices", "consents"]),
+  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"]),
 ]);
 
 function newestMessage(messages) {
@@ -399,6 +400,9 @@ export async function syncRequestedProviders(env, sources, limit, now, pages = 8
   if (selected.has("owned-quiz-nurture")) {
     results.ownedQuizNurture = await dispatchOwnedQuizNurture(env, Date.parse(now), limit);
   }
+  if (selected.has("owned-email-dispatch")) {
+    results.ownedEmailDispatch = await dispatchOwnedEmails(env, Date.parse(now), limit);
+  }
   if (selected.has("ghl-conversations-recent")) results.ghlConversationsRecent = await syncRecentGhlConversations(env, limit, now);
   if (selected.has("ghl")) results.ghl = await syncGhl(env, limit, now);
   if (selected.has("ghl-conversations")) results.ghlConversations = await syncGhlConversations(env, limit, now);
@@ -456,6 +460,10 @@ export async function runScheduledSync(env, now) {
     ],
     "owned-quiz-nurture": [
       (runtime, limit) => dispatchOwnedQuizNurture(runtime, Date.parse(now), limit),
+      10,
+    ],
+    "owned-email-dispatch": [
+      (runtime, limit) => dispatchOwnedEmails(runtime, Date.parse(now), limit),
       10,
     ],
     "ghl": [syncGhl, SCHEDULED_GHL_CONTACT_LIMIT],

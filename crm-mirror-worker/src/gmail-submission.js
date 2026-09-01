@@ -7,6 +7,10 @@ const FIELDS = new Set([
   "gmailThreadId", "rfcMessageId", "subject", "body", "submittedAt",
 ]);
 const IDENTIFIER = /^[A-Za-z0-9@._:+<>\/-]{1,512}$/;
+const OWNED_MAILBOXES = Object.freeze({
+  Eben: "eben@amarimethod.com",
+  Garrett: "garrett@amarimethod.com",
+});
 
 function exact(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) throw new Error("Gmail submission evidence is required");
@@ -37,8 +41,8 @@ export async function recordGmailProviderSubmission(db, input, now = new Date().
   exact(input);
   const mailboxActor = text(input.mailboxActor, "mailboxActor", 40);
   const grantOwner = text(input.grantOwner, "grantOwner", 320).toLowerCase();
-  if (mailboxActor !== "Garrett" || grantOwner !== "garrett@amarimethod.com") {
-    throw new Error("nurture Gmail submission must use the Garrett mailbox");
+  if (!Object.hasOwn(OWNED_MAILBOXES, mailboxActor) || grantOwner !== OWNED_MAILBOXES[mailboxActor]) {
+    throw new Error("Gmail submission must use the actor's exact owned Amari mailbox");
   }
   const submissionRef = identifier(input.submissionRef, "submissionRef");
   const contactId = identifier(input.contactId, "contactId");

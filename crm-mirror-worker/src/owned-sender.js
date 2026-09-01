@@ -37,7 +37,7 @@ function normalizedDnd(value) {
   return ["true", "1", "yes", "on", "dnd"].includes(String(value || "").trim().toLowerCase());
 }
 
-function normalizeCommand(input) {
+export function normalizeCommunicationCommand(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     throw new CommunicationCommandError("communication command is required", "invalid_command", 400);
   }
@@ -152,14 +152,14 @@ async function sha256(value) {
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
 
-function maskDestination(channel, value) {
+export function maskCommunicationDestination(channel, value) {
   if (!value) return null;
   if (channel === "sms") return `***${String(value).replace(/\D/g, "").slice(-4)}`;
   const [local, domain] = String(value).split("@");
   return `${local.slice(0, 2)}***@${domain}`;
 }
 
-async function commandContact(db, contactId) {
+export async function loadCommunicationContact(db, contactId) {
   return db.prepare(
     `SELECT contact.id, contact.display_name, contact.email_normalized, contact.phone_e164,
             COALESCE((SELECT attribute_value FROM contact_attributes
@@ -195,8 +195,8 @@ function commandResult(row, deduped) {
 // all three append-only records remain local to this implementation.
 export async function captureCommunicationCommand(db, input, now = new Date().toISOString()) {
   if (!db) throw new CommunicationCommandError("communication storage is unavailable", "storage_unavailable", 500);
-  const command = normalizeCommand(input);
-  const contact = await commandContact(db, command.contactId);
+  const command = normalizeCommunicationCommand(input);
+  const contact = await loadCommunicationContact(db, command.contactId);
   if (!contact) throw new CommunicationCommandError("contact not found", "contact_not_found", 404);
 
   const consents = [
@@ -207,7 +207,7 @@ export async function captureCommunicationCommand(db, input, now = new Date().to
   const deliveryState = eligibility.policyEligible ? "not_sent_delivery_unavailable" : "not_sent_policy_blocked";
   const policyState = eligibility.policyEligible ? "eligible" : "blocked";
   const destination = command.channel === "email" ? contact.email_normalized : contact.phone_e164;
-  const destinationMasked = maskDestination(command.channel, destination);
+  const destinationMasked = maskCommunicationDestination(command.channel, destination);
   const contentHash = await sha256(`${command.channel}\n${command.subject || ""}\n${command.body}`);
   const commandKeyHash = await sha256(`${command.actor}\n${command.idempotencyKey}`);
   const commandId = `cmd_${commandKeyHash.slice(0, 24)}`;
