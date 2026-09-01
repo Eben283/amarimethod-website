@@ -9,6 +9,8 @@ import { dateKeyInZone, zonedTimeToUtcMs } from "./schedule.js";
 
 const GHL_BASE = "https://services.leadconnectorhq.com";
 export const LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+const STUDY_CALENDAR_ID = "J1N09B6bRYPOGNyVAfmX";
+const STUDY_SESSIONS_DONE_FIELD_ID = "Q9DqX2C4ml2TGW679UlM";
 
 const CANCELLED = new Set(["cancelled", "canceled", "invalid", "no_show", "noshow"]);
 const LEDGER_FIELD_DEFS = Object.freeze({
@@ -35,6 +37,16 @@ async function ghlGet(env, path) {
     throw new Error(`GHL ${res.status}: ${text.slice(0, 200)}`);
   }
   return res.json();
+}
+
+function lookupErrorReason(err) {
+  const message = String(err?.message || "");
+  const ghlStatus = /^GHL (\d{3}):/.exec(message)?.[1];
+  if (ghlStatus) return `ghl-${ghlStatus}`;
+  if (/PORTAL_KV binding/i.test(message)) return "missing-kv-binding";
+  if (/GHL_CLIENT_ID|GHL_CLIENT_SECRET/i.test(message)) return "missing-ghl-credentials";
+  if (/fetch failed|network|timeout/i.test(message)) return "network";
+  return "calendar-read-failed";
 }
 
 function dayRangeMs(dateKey, timeZone) {
@@ -78,12 +90,103 @@ function appointmentFromEvent(event, calendar) {
     contactName: text(
       event?.contactName ||
       event?.contact_name ||
-      [event?.firstName, event?.lastName].filter(Boolean).join(" "),
+      [event?.firstName || event?.contact?.firstName, event?.lastName || event?.contact?.lastName].filter(Boolean).join(" "),
     ) || null,
     calendarName: text(event?.calendarName || calendar?.name) || null,
-    title: text(event?.title) || null,
+    title: text(event?.title || event?.appointmentTitle || event?.name) || null,
     lastPackageSession: false,
+    firstAndOnlyAppointment: false,
+    secondToLastStudySession: false,
   };
+}
+
+function contactName(contact) {
+  return text(contact?.contactName || [contact?.firstName, contact?.lastName].filter(Boolean).join(" ")) || null;
+}
+
+function customFieldValue(contact, fieldId) {
+  const fields = Array.isArray(contact?.customFields) ? contact.customFields : [];
+  const field = fields.find((candidate) => String(candidate?.id || candidate?.key || "") === fieldId);
+  return field?.value ?? null;
+}
+
+function activeAppointments(appointments) {
+  return appointments.filter(isActive);
+}
+
+function isInitialOrAssessment(appointment) {
+  return /\b(initial|assessment)\b/i.test(`${appointment?.calendarName || ""} ${appointment?.title || ""}`);
+}
+
+function isCompletedStudyAppointment(appointment) {
+  const status = String(appointment?.appointmentStatus || appointment?.status || "").toLowerCase();
+  const calendarId = text(appointment?.calendarId || appointment?.calendar_id);
+  return calendarId === STUDY_CALENDAR_ID && ["showed", "completed"].includes(status);
+}
+
+async function fetchContactContext(env, contactId) {
+  const [contactData, appointmentsData] = await Promise.all([
+    ghlGet(env, `/contacts/${contactId}`),
+    ghlGet(env, `/contacts/${contactId}/appointments`),
+  ]);
+  return {
+    contact: contactData.contact || contactData || {},
+    appointments: appointmentsData.appointments || appointmentsData.events || [],
+  };
+}
+
+/**
+ * Add sales cues only when the supporting contact history proves them. These
+ * lookups are deliberately optional: an enrichment failure never drops or
+ * delays an otherwise complete agenda.
+ */
+async function enrichNamesAndSalesOpportunities(env, appointments) {
+  const byContact = new Map();
+  for (const appointment of appointments) {
+    if (!appointment.contactId) continue;
+    const group = byContact.get(appointment.contactId) || [];
+    group.push(appointment);
+    byContact.set(appointment.contactId, group);
+  }
+
+  for (const [contactId, todaysAppointments] of byContact) {
+    const needsName = todaysAppointments.some((appointment) => !appointment.contactName);
+    const initialCandidate = todaysAppointments.some(isInitialOrAssessment);
+    const studyCandidate = todaysAppointments.some((appointment) => appointment.calendarId === STUDY_CALENDAR_ID);
+    if (!needsName && !initialCandidate && !studyCandidate) continue;
+
+    try {
+      const context = await fetchContactContext(env, contactId);
+      const name = contactName(context.contact);
+      if (name) {
+        for (const appointment of todaysAppointments) {
+          if (!appointment.contactName) appointment.contactName = name;
+        }
+      }
+
+      // A first/only opportunity requires exactly one non-cancelled appointment
+      // in the contact's complete appointment history; do not infer it merely
+      // because today's calendar happens to contain one appointment.
+      if (activeAppointments(context.appointments).length === 1) {
+        for (const appointment of todaysAppointments) {
+          if (isInitialOrAssessment(appointment)) appointment.firstAndOnlyAppointment = true;
+        }
+      }
+
+      // Studies are three sessions. Prefer the authoritative completed counter;
+      // the completed-history fallback is only used when it agrees exactly.
+      const completedRaw = customFieldValue(context.contact, STUDY_SESSIONS_DONE_FIELD_ID);
+      const completedField = completedRaw == null || completedRaw === "" ? null : Number(completedRaw);
+      const completedByHistory = context.appointments.filter(isCompletedStudyAppointment).length;
+      if (completedField === 1 || (completedField == null && completedByHistory === 1)) {
+        for (const appointment of todaysAppointments) {
+          if (appointment.calendarId === STUDY_CALENDAR_ID) appointment.secondToLastStudySession = true;
+        }
+      }
+    } catch (err) {
+      console.warn(`[morning-sms] contact opportunity context ${contactId} failed: ${err.message}`);
+    }
+  }
 }
 
 async function fetchContactLedger(env, contactId) {
@@ -158,9 +261,9 @@ async function markLastPackageSessions(env, appointments) {
  * Returns null when any required GHL read is unavailable and [] only when the
  * complete calendar set was read successfully and the day is genuinely empty.
  */
-export async function fetchTodaysAppointments(env, nowMs, timeZone = "America/Los_Angeles") {
-  if (!env?.PORTAL_KV) return null;
-  if (!env.GHL_CLIENT_ID || !env.GHL_CLIENT_SECRET) return null;
+export async function fetchTodaysAppointmentsResult(env, nowMs, timeZone = "America/Los_Angeles") {
+  if (!env?.PORTAL_KV) return { appointments: null, error: "missing-kv-binding" };
+  if (!env.GHL_CLIENT_ID || !env.GHL_CLIENT_SECRET) return { appointments: null, error: "missing-ghl-credentials" };
 
   const dateKey = dateKeyInZone(nowMs, timeZone);
   const { start, end } = dayRangeMs(dateKey, timeZone);
@@ -171,7 +274,7 @@ export async function fetchTodaysAppointments(env, nowMs, timeZone = "America/Lo
     calendars = calData.calendars || [];
   } catch (err) {
     console.warn(`[morning-sms] calendar list failed: ${err.message}`);
-    return null;
+    return { appointments: null, error: lookupErrorReason(err) };
   }
 
   const appointments = [];
@@ -190,12 +293,39 @@ export async function fetchTodaysAppointments(env, nowMs, timeZone = "America/Lo
       }
     } catch (err) {
       console.warn(`[morning-sms] events ${cal.id} failed: ${err.message}`);
-      return null;
+      return { appointments: null, error: lookupErrorReason(err) };
     }
   }
   appointments.sort((a, b) => a.startMs - b.startMs);
+  await enrichNamesAndSalesOpportunities(env, appointments);
   await markLastPackageSessions(env, appointments);
-  return appointments;
+  return { appointments, error: null };
+}
+
+/**
+ * Read the complete agenda once. Kept as the simple public helper for callers
+ * that only need appointments, while the runner uses the retrying result API.
+ */
+export async function fetchTodaysAppointments(env, nowMs, timeZone = "America/Los_Angeles") {
+  const result = await fetchTodaysAppointmentsResult(env, nowMs, timeZone);
+  return result.appointments;
+}
+
+/**
+ * A transient GHL calendar failure must not turn into a bad agenda. Retry the
+ * complete sweep, preserving the all-or-nothing contract against partial lists.
+ */
+export async function fetchTodaysAppointmentsWithRetry(env, nowMs, timeZone = "America/Los_Angeles", { attempts = 2, delayMs = 250 } = {}) {
+  let result = { appointments: null, error: "calendar-read-failed" };
+  const totalAttempts = Math.max(1, Math.floor(attempts));
+  for (let attempt = 1; attempt <= totalAttempts; attempt++) {
+    result = await fetchTodaysAppointmentsResult(env, nowMs, timeZone);
+    if (result.appointments !== null) return { ...result, attempts: attempt };
+    if (attempt < totalAttempts && delayMs > 0) {
+      await new Promise((resolve) => setTimeout(resolve, delayMs * attempt));
+    }
+  }
+  return { ...result, attempts: totalAttempts };
 }
 
 /** Earliest active appointment start for schedule pull-forward. */

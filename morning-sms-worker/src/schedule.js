@@ -114,17 +114,12 @@ function agendaTime(startMs, timeZone) {
 }
 
 function appointmentLabel(appointment) {
-  const name = String(appointment?.contactName || "").trim();
-  const detail = String(
-    appointment?.calendarName || appointment?.title || "Appointment",
-  ).trim();
-  let label;
-  if (!name) label = detail;
-  else if (detail.toLowerCase().includes(name.toLowerCase())) label = detail;
-  else label = `${name} · ${detail}`;
-  return appointment?.lastPackageSession
-    ? `${label} · LAST PACKAGE SESSION`
-    : label;
+  const name = String(appointment?.contactName || "Name unavailable").trim();
+  const salesCues = [];
+  if (appointment?.firstAndOnlyAppointment) salesCues.push("SELL: FIRST / ONLY APPOINTMENT");
+  if (appointment?.secondToLastStudySession) salesCues.push("SELL: SECOND-TO-LAST STUDY SESSION");
+  if (appointment?.lastPackageSession) salesCues.push("SELL: LAST PACKAGE SESSION");
+  return salesCues.length ? `${name} · ${salesCues.join(" · ")}` : name;
 }
 
 function renderAgendaCopy(template, values) {

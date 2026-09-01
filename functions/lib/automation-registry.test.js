@@ -32,7 +32,7 @@ describe("owned automation registry", () => {
           : definition.id === "nurture:flow-1-quiz" ? 2
           : definition.id === "nurture:flow-2-post-discovery" ? 2
           : definition.id === "nurture:flow-3-post-initial" ? 2
-          : definition.id === "morning-sms:daily-staff-brief" ? 2 : 1,
+          : definition.id === "morning-sms:daily-staff-brief" ? 4 : 1,
       );
       expect(definition.name).toBeTruthy();
       expect(["shadow", "active"]).toContain(definition.mode);
@@ -59,7 +59,7 @@ describe("owned automation registry", () => {
         footer: "Time to prepare for the day.",
       },
       steps: expect.arrayContaining([
-        expect.objectContaining({ id: "morning-last-session", handler: "identify_last_package_session", type: "reconcile", result: "LAST PACKAGE SESSION" }),
+        expect.objectContaining({ id: "morning-last-session", handler: "identify_last_package_session", type: "reconcile", result: "SELL cues" }),
         expect.objectContaining({
           id: "morning-send-agenda",
           handler: "send_due_sms",
@@ -67,7 +67,7 @@ describe("owned automation registry", () => {
           type: "sms",
           audience: "Eben and Garrett",
           logic: expect.arrayContaining([
-            "Append LAST PACKAGE SESSION only when the owned package ledger proves it with high confidence or a manual lock.",
+            "Append SELL: LAST PACKAGE SESSION only when the owned package ledger proves it with high confidence or a manual lock.",
             "Send the completed agenda separately to Eben and Garrett.",
           ]),
         }),
