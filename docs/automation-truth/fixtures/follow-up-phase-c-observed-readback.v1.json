@@ -60,7 +60,7 @@
   },
   "schema": {
     "databaseId": "089d810a-9d2d-43a4-8f1d-dc3620835557",
-    "expectedHead": { "migrationId": "reliability-spine-v1", "version": 1, "sourceSha256": "d5e4648f4f8367245ab17cd137a9854cf1a27c66fcbf7e99d69c64b2df548564" },
+    "expectedHead": { "migrationId": "reliability-spine-v1", "version": 1, "sourceSha256": "73640a2098788520a5279343ae04007927874b87e24d75f423ada9bd8b075db1" },
     "remoteHead": { "migrationId": "reliability-spine-v1", "version": 1, "sourceSha256": null },
     "expectedTables": ["source_events", "lifecycle_instances", "lifecycle_obligations", "command_attempts", "provider_receipts", "lifecycle_exceptions"],
     "observedTables": ["source_events", "lifecycle_instances", "lifecycle_obligations", "command_attempts", "provider_receipts", "lifecycle_exceptions"]

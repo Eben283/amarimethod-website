@@ -1,4 +1,5 @@
 import { sendOwnedEmail } from "./gmail-test-send.js";
+import { executeOwnedDeliveryEffect } from "./owned-delivery-evidence.js";
 import { partnerInitialInPersonNode } from "./partner-initial-in-person-workflow.js";
 import { renderWorkflowText } from "./workflow-definition.js";
 
@@ -145,6 +146,7 @@ export function partnerInitialInPersonDeliveryEligibility(env, flow, step, enrol
   }
   if (!partnerInitialInPersonNode(step?.template, flow.workflowDocument)) return { eligible: false, reason: "not-owned-step" };
   if (!env?.CRM_DB?.prepare) return { eligible: false, reason: "owned-crm-unavailable" };
+  if (!env?.REMINDER_DB?.prepare || !env?.REMINDER_DB?.batch) return { eligible: false, reason: "delivery-evidence-unavailable" };
   if (!env?.OWNED_SMS?.fetch || !clean(env.WORKER_AUTH_SECRET)) return { eligible: false, reason: "owned-sms-unavailable" };
   if (!EMAIL.test(clean(env.GARRETT_INTERNAL_EMAIL)) || !E164.test(clean(env.GARRETT_INTERNAL_PHONE_E164))) {
     return { eligible: false, reason: "internal-recipient-not-configured" };
@@ -220,6 +222,17 @@ export async function deliverPartnerInitialInPersonStep(env, step, enrollment, s
     const subject = renderWorkflowText(node.message.subject, values);
     const text = renderWorkflowText(node.message.body, values);
     const idempotencyKey = `partner-initial:${context.appointmentId}:v${enrollment.definitionVersion || 2}:${step.stepIndex}`;
+    const executeEffect = services.executeEffect || executeOwnedDeliveryEffect;
+    const evidenceBase = {
+      flowKey: "partner-initial-in-person",
+      enrollmentId: `partner-initial-in-person:${clean(enrollment.appointmentId)}`,
+      stepIndex: Number(step.stepIndex),
+      definitionVersion: Number(enrollment.definitionVersion || 2),
+      idempotencyKey,
+      channel: node.message.channel,
+      subject,
+      text,
+    };
     if (node.message.audience === "client") {
       const blocked = clientPolicy(context, node.message.channel);
       if (blocked) return { success: false, error: blocked };
@@ -231,13 +244,24 @@ export async function deliverPartnerInitialInPersonStep(env, step, enrollment, s
       const actor = clean(node.message.from).toLowerCase().includes("garrett@") ? "Garrett" : "Eben";
       return {
         recipient,
-        ...(await sendEmail(env, { to: recipient, subject, text, preheader: node.message.preheader, actor, idempotencyKey })),
+        ...(await executeEffect(env.REMINDER_DB, {
+          ...evidenceBase,
+          recipient,
+          provider: `gmail-${actor.toLowerCase()}`,
+        }, () => sendEmail(env, { to: recipient, subject, text, preheader: node.message.preheader, actor, idempotencyKey }))),
       };
     }
     const recipient = node.message.audience === "internal" ? clean(env.GARRETT_INTERNAL_PHONE_E164) : context.clientPhone;
     if (!E164.test(recipient)) return { success: false, error: "recipient phone is unavailable", recipient };
     const sendSms = services.sendSms || ((message) => sendOwnedSms(env, message));
-    return { recipient, ...(await sendSms({ to: recipient, text, idempotencyKey })) };
+    return {
+      recipient,
+      ...(await executeEffect(env.REMINDER_DB, {
+        ...evidenceBase,
+        recipient,
+        provider: "owned-sms",
+      }, () => sendSms({ to: recipient, text, idempotencyKey }))),
+    };
   } catch (error) {
     return { success: false, error: String(error?.message || error) };
   }
