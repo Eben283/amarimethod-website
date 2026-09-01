@@ -4,13 +4,19 @@ import { fileURLToPath } from 'node:url';
 
 const REPOSITORY_ROOT = new URL('../', import.meta.url);
 const WORKER_PATH = 'crm-mirror-worker';
+export const CHILD_PROCESS_MAX_BUFFER_BYTES = 256 * 1024 * 1024;
 
 function runGit(args, options = {}) {
   return execFileSync('git', args, {
     cwd: fileURLToPath(REPOSITORY_ROOT),
     encoding: options.encoding || 'utf8',
+    maxBuffer: CHILD_PROCESS_MAX_BUFFER_BYTES,
     stdio: ['ignore', 'pipe', 'pipe'],
   });
+}
+
+export function sourceArchiveForRevision(revision) {
+  return runGit(['archive', '--format=tar', revision, WORKER_PATH], { encoding: 'buffer' });
 }
 
 export function provenanceForRevision({ revision, archive }) {
@@ -41,8 +47,7 @@ export function localProvenance() {
     throw new Error(`CRM Mirror release refused: HEAD ${revision} is not the exact origin/main revision ${remoteMain}.`);
   }
 
-  const archive = runGit(['archive', '--format=tar', revision, WORKER_PATH], { encoding: 'buffer' });
-  return provenanceForRevision({ revision, archive });
+  return provenanceForRevision({ revision, archive: sourceArchiveForRevision(revision) });
 }
 
 function parseVersionId(output) {
