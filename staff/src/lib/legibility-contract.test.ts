@@ -141,6 +141,8 @@ describe('Staff legibility contract', () => {
     expect(training).toContain('Reference');
     expect(training).toContain('/staff/resources/garrett-amari-practice-sales-worksheet.pdf');
     expect(training).toContain('50-minute Assessment conversation and decision worksheet');
+    expect(training).toContain('/staff/resources/acq-closer-handbook-how-to-win-original.pdf');
+    expect(training).toContain('ACQ Closer Handbook — original');
     expect(training).toContain('/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf');
     expect(training).toContain('Sales scripts');
     expect(training).not.toContain('stale 40-minute Assessment reference');
