@@ -70,6 +70,13 @@ These responsive WebP derivatives are from the owner-provided `Photos-1-001 (4).
 | `optimized/garrett-shoulder-movement-*` | Garrett demonstrating shoulder movement | Power Posture or self-guided movement article card |
 | `optimized/garrett-neck-awareness-*` | Garrett demonstrating neck awareness | Jaw/neck article card |
 
+## KEEP — homepage sport context (2026-09-01)
+
+| File | Approved use |
+|---|---|
+| `tennis-court-overhead.webp` | Homepage Method band; Eben-supplied and explicitly approved for this placement. |
+| `running-group-concrete.webp` | Homepage Hips & Knees tile; Eben-supplied and explicitly approved for this placement. |
+
 ## KEEP — refined condition heroes (clean outputs of the refine pass)
 | File | Depicts |
 |---|---|
