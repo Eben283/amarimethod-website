@@ -87,7 +87,7 @@ const FLOW_3_POST_INITIAL_MESSAGE_PREVIEW = Object.freeze({
 const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
   status: "not_eligible",
   label: "Not eligible for active delivery",
-  summary: "One canonical source document now drives scheduling, Staff preview, secure client management links, and the provider-neutral delivery contract. It remains hard-shadow while owned SMS and the No Show-series exit are unresolved.",
+  summary: "One canonical source document now drives scheduling, Staff preview, secure client management links, and the provider-neutral delivery contract. The owned No Show-series exit is built but its reviewed shadow document is not published; owned SMS also remains unselected.",
   requirements: Object.freeze([
     Object.freeze({
       code: "native_lifecycle_shadow_proven",
@@ -96,10 +96,16 @@ const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
       detail: "Confirmed enrollment, immediate would-send evidence, and cancellation of all four future reminders were proven beside the live flow on Aug. 9. No message was sent.",
     }),
     Object.freeze({
-      code: "no_show_series_exit_not_owned",
+      code: "no_show_series_exit_owned",
+      status: "proven",
+      label: "Exit No Show Email SMS series by owned person",
+      detail: "Confirmed Partner Initial events close every active No Show recovery enrollment for the exact owned contact and its one verified legacy GHL alias. The operation preserves completed evidence, cancels only pending work, isolates other contacts, and fails closed on a missing or ambiguous crosswalk.",
+    }),
+    Object.freeze({
+      code: "no_show_series_exit_shadow_publish_pending",
       status: "blocked",
-      label: "Exit No Show Email SMS series on confirmation",
-      detail: "This is the first action in the live confirmation workflow. It is still owned by GHL and must be preserved and proven before activation.",
+      label: "Publish the reviewed No Show shadow document",
+      detail: "The provider-neutral exit lives in v3 source but is not installed in the Reminder workflow registry. Publishing that shadow-only document is a separate D1/runtime gate and cannot send a message.",
     }),
     Object.freeze({
       code: "owned_delivery_contract_built",
@@ -261,7 +267,15 @@ function reminderDefinition(flow) {
     trigger: clone({ calendarIds: flow.calendarIds, ...flow.enrollOn }),
     exits: clone([
       ...flow.cancelOn.map((status) => ({ kind: "appointment", statuses: [status] })),
-      ...(flow.exitOn || []).map((status) => ({ kind: "rebooking", statuses: [status], scope: "contact" })),
+      ...(flow.exitOn || []).map((status) => {
+        const exit = (flow.workflowDocument?.exits || []).find((candidate) => (
+          candidate.effect === "exit_contact_pending" && candidate.event === status
+        ));
+        return {
+          kind: "rebooking", statuses: [status], scope: "contact",
+          ...(exit?.serviceIds?.length ? { serviceIds: clone(exit.serviceIds) } : {}),
+        };
+      }),
     ]),
     steps: flow.steps.map((step, stepIndex) => ({ stepIndex, ...clone(step) })),
     source: {

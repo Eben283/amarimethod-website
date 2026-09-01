@@ -64,23 +64,23 @@ describe("POST /workflow-release — No Show", () => {
     expect(publishedWorkflow).not.toHaveBeenCalled();
   });
 
-  it("stops if the currently published source contract is not exact v2 shadow", async () => {
+  it("stops if the currently published source contract is not exact v3 shadow", async () => {
     publishedWorkflow.mockResolvedValue({ ...NO_SHOW_RECOVERY_WORKFLOW, version: 9 });
     const response = await worker.fetch(request(), env());
     expect(response.status).toBe(409);
     expect(saveDraftWorkflow).not.toHaveBeenCalled();
   });
 
-  it("publishes exact v3 active and appends its audited release event", async () => {
+  it("publishes exact v4 active and appends its audited release event", async () => {
     publishedWorkflow.mockResolvedValue(NO_SHOW_RECOVERY_WORKFLOW);
     publishDraftWorkflow.mockResolvedValue(NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
     const response = await worker.fetch(request(), env());
     expect(response.status).toBe(200);
     expect(saveDraftWorkflow).toHaveBeenCalledWith({}, NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
-    expect(publishDraftWorkflow).toHaveBeenCalledWith({}, "no-show-recovery", 3, 2);
+    expect(publishDraftWorkflow).toHaveBeenCalledWith({}, "no-show-recovery", 4, 3);
     expect(appendEvent).toHaveBeenCalledWith({}, expect.objectContaining({
       flowKey: "no-show-recovery",
-      definitionVersion: 3,
+      definitionVersion: 4,
       action: "workflow_published",
       outcome: "published",
       detail: { actor: "Eben", lane: "no_show_behavior_release" },

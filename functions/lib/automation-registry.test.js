@@ -28,8 +28,8 @@ describe("owned automation registry", () => {
       expect(definition.definitionVersion).toBe(
         definition.id === "reminder:initial-in-person" ? 4
           : definition.id === "reminder:initial-virtual" ? 5
-          : definition.id === "reminder:partner-initial-in-person" ? 3
-          : definition.id === "reminder:no-show-recovery" ? 2
+          : definition.id === "reminder:partner-initial-in-person" ? 4
+          : definition.id === "reminder:no-show-recovery" ? 3
           : definition.id === "nurture:flow-1-quiz" ? 2
           : definition.id === "nurture:flow-2-post-discovery" ? 2
           : definition.id === "nurture:flow-3-post-initial" ? 2
@@ -108,7 +108,8 @@ describe("owned automation registry", () => {
         status: "not_eligible",
         requirements: expect.arrayContaining([
           expect.objectContaining({ code: "native_lifecycle_shadow_proven", status: "proven" }),
-          expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
+          expect.objectContaining({ code: "no_show_series_exit_owned", status: "proven" }),
+          expect.objectContaining({ code: "no_show_series_exit_shadow_publish_pending", status: "blocked" }),
           expect.objectContaining({ code: "owned_delivery_contract_built", status: "proven" }),
           expect.objectContaining({ code: "owned_client_manage_links_built", status: "proven" }),
           expect.objectContaining({ code: "owned_sms_provider_pending", status: "blocked" }),
@@ -179,7 +180,9 @@ describe("owned automation registry", () => {
       name: "No Show Email SMS series",
       mode: "shadow",
       trigger: expect.objectContaining({ statuses: ["noshow"], eventTypes: ["normal"] }),
-      exits: [expect.objectContaining({ kind: "rebooking", statuses: ["confirmed"], scope: "contact" })],
+      exits: [expect.objectContaining({
+        kind: "rebooking", statuses: ["confirmed"], scope: "contact", serviceIds: ["partner-initial"],
+      })],
       messagePreview: expect.objectContaining({ status: "delivery_built_release_gated", sourceDecisionChecks: expect.any(Array) }),
       cutoverReadiness: expect.objectContaining({
         status: "proof_ready",

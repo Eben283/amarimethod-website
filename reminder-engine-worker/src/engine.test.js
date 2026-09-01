@@ -8,6 +8,7 @@ import { handleEvent, mergeExecutionFlows, runSweep } from "./engine.js";
 import { loadDueSteps } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
+import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 
 // Minimal stateful fake D1 (same shape as store.test.js's).
 function fakeD1() {
@@ -317,6 +318,22 @@ describe("Assessment no-show recovery", () => {
 });
 
 describe("partner in-person reminder slice", () => {
+  it("fails the owned confirmation before enrollment when No Show exit identity is unavailable", async () => {
+    env.REMINDER_DB._workflowDocuments.set("no-show-recovery", NO_SHOW_RECOVERY_WORKFLOW);
+    await expect(handleEvent(env, event({
+      calendarId: "google-calendar", appointmentId: "google-partner-appt",
+      contactId: "owned-contact", type: "confirmed",
+      context: {
+        source: "owned_crm", ownedContactId: "owned-contact",
+        provider: "google_calendar", providerContactId: null, serviceId: "partner-initial",
+      },
+    }), NOW)).rejects.toMatchObject({ code: "owned_contact_crosswalk_unavailable" });
+    expect(env.REMINDER_DB._enrollments.has("partner-initial-in-person:google-partner-appt")).toBe(false);
+    expect(env.REMINDER_DB._events).toContainEqual(expect.objectContaining({
+      flow_key: "no-show-recovery", action: "exit_identity_blocked", outcome: "blocked",
+    }));
+  });
+
   it("shadows the documented confirmation sequence and suppresses it on cancellation", async () => {
     const partner = event({
       calendarId: "lfsnaiGiLNL2z12pLKDP",
