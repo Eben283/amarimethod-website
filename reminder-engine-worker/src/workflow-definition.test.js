@@ -4,6 +4,7 @@ import { INITIAL_VIRTUAL, INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-wor
 import { STAFF_MANAGED_WORKFLOW_IDS } from "./index.js";
 import { defineWorkflow } from "./workflow-definition.js";
 import { NO_SHOW_RECOVERY, NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
+import { PARTNER_INITIAL_IN_PERSON, PARTNER_INITIAL_IN_PERSON_WORKFLOW } from "./partner-initial-in-person-workflow.js";
 
 describe("canonical workflow definition", () => {
   it("allows Staff to draft and publish the staged Initial Virtual definition", () => {
@@ -29,6 +30,15 @@ describe("canonical workflow definition", () => {
     })));
     expect(INITIAL_VIRTUAL.steps).toHaveLength(6);
     expect(INITIAL_VIRTUAL_WORKFLOW.nodes.find((node) => node.at === "reschedule")?.action.template).toBe("reschedule-confirmation");
+  });
+
+  it("derives provider-neutral service routing and rejects activation while Partner Initial gaps remain", () => {
+    expect(PARTNER_INITIAL_IN_PERSON.serviceIds).toEqual(["partner-initial"]);
+    expect(PARTNER_INITIAL_IN_PERSON.workflowDocument).toBe(PARTNER_INITIAL_IN_PERSON_WORKFLOW);
+    expect(() => defineWorkflow({
+      ...PARTNER_INITIAL_IN_PERSON_WORKFLOW,
+      executionMode: "active",
+    })).toThrow("unresolved source gaps");
   });
 
   it("rejects incomplete and duplicate-node documents", () => {

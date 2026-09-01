@@ -71,6 +71,14 @@ describe("flow shapes vs the twin specs", () => {
     expect(PARTNER_INITIAL_IN_PERSON.enrollOn.statuses).toEqual(["confirmed"]);
     expect(PARTNER_INITIAL_IN_PERSON.cancelOn).toEqual(["cancelled"]);
     expect(PARTNER_INITIAL_IN_PERSON.mode).toBe("shadow");
+    expect(PARTNER_INITIAL_IN_PERSON.definitionVersion).toBe(2);
+    expect(PARTNER_INITIAL_IN_PERSON.serviceIds).toEqual(["partner-initial"]);
+    expect(PARTNER_INITIAL_IN_PERSON.workflowDocument.sourceGaps).toEqual([
+      "no_show_series_exit_not_owned",
+      "owned_client_manage_links_missing",
+      "owned_sms_provider_unselected",
+      "durable_effect_receipts_missing",
+    ]);
     expect(PARTNER_INITIAL_IN_PERSON.steps.map((s) => `${s.at}:${s.type}`)).toEqual([
       "enroll:internal_email", "enroll:email", "start-1440m:email",
       "start-60m:email", "start-60m:sms", "start-60m:internal_sms",

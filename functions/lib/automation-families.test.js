@@ -142,7 +142,7 @@ describe("provider-neutral automation families", () => {
     expect(familyForDefinition("purchase", "missing")).toBeNull();
   });
 
-  it("registers the first partner cutover slice with its shadow-only source copy", () => {
+  it("registers the Partner Initial provider-neutral delivery contract as hard-shadow", () => {
     const family = automationFamily("partner-session-lifecycle");
     expect(family).toEqual(expect.objectContaining({
       counts: expect.objectContaining({ ownedDefinitions: 1 }),
@@ -153,16 +153,19 @@ describe("provider-neutral automation families", () => {
           calendarIds: ["lfsnaiGiLNL2z12pLKDP"],
           statuses: ["confirmed"],
         }),
-        messagePreview: expect.objectContaining({ status: "source_verified_read_only" }),
+        messagePreview: expect.objectContaining({ status: "owned_delivery_contract_hard_shadow" }),
         cutoverReadiness: expect.objectContaining({
           status: "not_eligible",
           requirements: expect.arrayContaining([
             expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
+            expect.objectContaining({ code: "owned_delivery_contract_built", status: "proven" }),
+            expect.objectContaining({ code: "owned_sms_provider_pending", status: "blocked" }),
           ]),
         }),
       })],
     }));
-    expect(family.evidence.gaps.map((gap) => gap.code)).toContain("owned_delivery_templates_not_loaded");
+    expect(family.evidence.gaps.map((gap) => gap.code)).toContain("owned_delivery_contract_hard_shadow");
+    expect(family.evidence.gaps.map((gap) => gap.code)).not.toContain("owned_delivery_templates_not_loaded");
   });
 
   it("labels a source-only family honestly", () => {

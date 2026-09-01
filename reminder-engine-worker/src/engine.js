@@ -21,6 +21,7 @@ import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 import { deliverNoShowStep, noShowDeliveryEligibility } from "./no-show-delivery.js";
+import { deliverPartnerInitialInPersonStep, partnerInitialInPersonDeliveryEligibility } from "./partner-initial-in-person-delivery.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
 
 export function mergeExecutionFlows(staticFlows, canonicalFlows) {
@@ -248,6 +249,11 @@ export async function runSweep(env, nowMs, limit = 100) {
       const virtualCutover = initialVirtualCutoverEligibility(env, flow, step, enrollment);
       if (virtualCutover.eligible) {
         const result = await deliverInitialVirtualStep(env, step, enrollment, {}, flow.workflowDocument);
+        return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
+      }
+      const partnerInitialCutover = partnerInitialInPersonDeliveryEligibility(env, flow, step, enrollment);
+      if (partnerInitialCutover.eligible) {
+        const result = await deliverPartnerInitialInPersonStep(env, step, enrollment, {}, flow.workflowDocument);
         return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
       }
       const followUpCutover = followUpDeliveryEligibility(env, flow, step, enrollment);

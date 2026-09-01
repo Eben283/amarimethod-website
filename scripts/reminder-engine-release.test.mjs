@@ -39,7 +39,7 @@ test('rejects a Worker version whose durable metadata is not the approved source
 });
 
 test('requires every production persistence, service, and authentication binding', () => {
-  const names = ['REMINDER_DB', 'ATTEND_DB', 'PORTAL_KV', 'NURTURE', 'NURTURE_ENGINE_URL', 'WORKER_AUTH_SECRET'];
+  const names = ['REMINDER_DB', 'CRM_DB', 'ATTEND_DB', 'PORTAL_KV', 'NURTURE', 'NURTURE_ENGINE_URL', 'WORKER_AUTH_SECRET'];
   assert.doesNotThrow(() => assertRequiredBindings({ resources: { bindings: names.map((name) => ({ name })) } }));
   assert.throws(() => assertRequiredBindings({ resources: { bindings: names.slice(1).map((name) => ({ name })) } }), /REMINDER_DB/);
 });
