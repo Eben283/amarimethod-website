@@ -1,7 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../../functions/lib/ghl-send.js", () => ({ sendConversationMessage: vi.fn() }));
-
 import worker from "./index.js";
 import { fakeD1 } from "./fake-d1.js";
 
@@ -12,6 +10,21 @@ const post = (path, body, auth) =>
     headers: { "Content-Type": "application/json", ...(auth ? { Authorization: `Bearer ${auth}` } : {}) },
     body: JSON.stringify(body),
   });
+
+const ownedCrmD1 = (tags = []) => ({
+  prepare(sql) {
+    return {
+      bind() { return this; },
+      async all() {
+        if (/FROM contacts contact/.test(sql)) {
+          return { results: [{ id: "owned-1", first_name: "A", email_normalized: "a@example.com" }] };
+        }
+        if (/FROM contact_tags/.test(sql)) return { results: tags.map((tag) => ({ tag })) };
+        throw new Error(`unexpected owned CRM query: ${sql}`);
+      },
+    };
+  },
+});
 
 let env;
 beforeEach(() => { env = { NURTURE_DB: fakeD1(), WORKER_AUTH_SECRET: SECRET }; });
@@ -43,6 +56,23 @@ describe("fetch — authenticated surface", () => {
     expect(body.success).toBe(true);
     expect(body.actions).toContainEqual(expect.objectContaining({ action: "enroll" }));
     expect(env.NURTURE_DB._enrollments.size).toBe(1);
+  });
+
+  it("POST /event reads entry guards from owned CRM even when the legacy GHL token cache is bound", async () => {
+    env.CRM_DB = ownedCrmD1(["ambassador-prospect"]);
+    env.PORTAL_KV = { get: vi.fn(() => { throw new Error("legacy GHL token cache must not be read"); }) };
+    const event = {
+      type: "showed", recognized: true, status: "showed",
+      calendarId: "USgPsktqRcuomdUgpShL", contactId: "ghl-transition-id",
+      appointmentId: "appt-1", startAt: "2026-08-31T10:00:00-07:00", modifiedBy: "user",
+    };
+
+    const res = await worker.fetch(post("/event", event, SECRET), env);
+
+    expect(res.status).toBe(200);
+    expect((await res.json()).actions).toContainEqual(expect.objectContaining({ action: "guard-blocked" }));
+    expect(env.NURTURE_DB._enrollments.size).toBe(0);
+    expect(env.PORTAL_KV.get).not.toHaveBeenCalled();
   });
 
   it("GET /status answers", async () => {

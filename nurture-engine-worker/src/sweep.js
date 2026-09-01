@@ -2,8 +2,8 @@
 //
 // Same beside-GHL safety boundary as the reminder engine: any sequence whose mode isn't
 // explicitly "active" NEVER sends — a due step is recorded as `would_send` and marked, so the
-// engine runs alongside GHL without a duplicate email reaching a lead. Shadow also never reads
-// GHL: a due branch step logs its candidate templates unresolved (zero creds, zero API calls).
+// engine runs alongside the legacy owner without a duplicate email reaching a lead. Shadow does
+// not read any provider: a due branch step logs candidate templates unresolved.
 //
 // Active mode resolves branch steps against a FRESH contact read at send time (per the brief:
 // branch state at enrollment time is stale by the time the step fires).
@@ -12,7 +12,7 @@
 //   deps.logEvent(record)                      append to automation_events
 //   deps.markStep(enrollment, idx, status)     persist the step's new status
 //   deps.getContactFields(contactId)           fresh contact custom-field read (active branches)
-//   deps.renderMessage(seq, step, enr, tpl)    resolve the copy template → ghl-send params
+//   deps.renderMessage(seq, step, enr, tpl)    resolve native recipient and copy payload
 //   deps.send(message)                         -> { success, messageId?, error? }
 
 /**

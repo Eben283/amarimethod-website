@@ -6,8 +6,8 @@
 // Canonical shape (from acquisition-nurture.md):
 //   sequenceId  stable id; namespaces enrollments + the automation_events log + idempotency
 //   entry       { on: <event spec>, guard?: { notTags: [...] }, onEnter?: { addTags: [...] } }
-//               guard tags are read at enroll time; onEnter tags are written back to GHL in
-//               active mode AND fed back through the engine as tag events (so Flow 3 enrolling
+//               guard tags are read from owned CRM at enroll time; onEnter tags are written to
+//               owned CRM in active mode AND fed back through the engine as tag events (so Flow 3 enrolling
 //               exits Flows 1+2 without a round-trip)
 //   mode        "shadow" | "active" — shadow computes + logs would_send, never sends; DEFAULT
 //               shadow so a new sequence always runs beside GHL until deliberately switched on
@@ -153,7 +153,7 @@ export const FLOW_3_POST_INITIAL = deepFreeze({
     on: { kind: "appointment", statuses: ["showed"], calendarIds: [INITIAL_IN_PERSON, INITIAL_VIRTUAL] },
     guard: { notTags: ["affiliate-partner"] },
     // This tag IS the exit signal for Flows 1+2 — the engine feeds it back through the exit
-    // pass on enrollment (and writes the real GHL tag in active mode for the transition window).
+    // pass on enrollment (and writes the owned CRM tag only after an active-mode cutover).
     onEnter: { addTags: [TAG_WORKFLOW_3] },
   },
   steps: [

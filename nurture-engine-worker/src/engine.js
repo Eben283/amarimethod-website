@@ -5,10 +5,10 @@
 //       onEnter tags back through exits (Flow 3 enrolling exits Flows 1+2 without a round-trip).
 //   runSweep(env, nowMs)                — the cron: fire (or shadow-log) every due step.
 //
-// Optional deps (wired later; safe defaults keep shadow zero-GHL):
+// Optional deps (primarily tests; production defaults use owned CRM):
 //   getContactTags(contactId)  → string[]  guard reads. Default: unknown (null) — shadow
 //       enrolls flagged guardUnchecked, active fails closed (see enroll.js).
-//   addContactTags(contactId, tags)        active-mode onEnter tag write (transition window).
+//   addContactTags(contactId, tags)        active-mode owned-CRM onEnter tag write.
 //       Shadow never calls it; an active sequence without it fails loudly, not silently.
 
 import { SEQUENCES } from "./config.js";
@@ -127,9 +127,9 @@ export async function handleEvent(env, raw, nowMs, deps = {}) {
 }
 
 /**
- * Cron sweep: process every due pending step. Shadow sequences log would_send and never send
- * (and never read GHL); active sequences resolve branches against a fresh contact read and send
- * via the shared GHL adapter. Returns per-outcome counts.
+ * Cron sweep: process every due pending step. Shadow sequences log would_send and never send.
+ * Active sequences resolve branches, recipients, and copy through owned CRM; delivery remains
+ * fail-closed until a separate native sender and receipt boundary is enabled.
  */
 export async function runSweep(env, nowMs, limit = 100) {
   const db = env.NURTURE_DB;

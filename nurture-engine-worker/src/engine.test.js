@@ -1,12 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-// Shadow sequences never send, but engine.js imports the adapter for active mode — mock it and
-// assert it is NEVER called while the default-shadow sequences run.
-vi.mock("../../functions/lib/ghl-send.js", () => ({ sendConversationMessage: vi.fn() }));
-
 import { handleEvent, runSweep } from "./engine.js";
 import { loadDueSteps } from "./store.js";
-import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { fakeD1 } from "./fake-d1.js";
 
 const NOW = Date.parse("2026-07-12T10:00:00-07:00");
@@ -117,7 +112,6 @@ describe("handleEvent — exits (the five deleted remove-from workflows)", () =>
     await handleEvent(env, appt({ type: "booked", modifiedBy: "customer" }), NOW + 3 * DAY);
     const counts = await runSweep(env, NOW + 3 * DAY);
     expect(counts.would_send).toBe(0);
-    expect(sendConversationMessage).not.toHaveBeenCalled();
   });
 
   it("a booking on the AMBASSADOR discovery calendar also exits Flow 1 (the 2026-03-05 fix)", async () => {
@@ -148,7 +142,6 @@ describe("runSweep — shadow (default)", () => {
     const counts = await runSweep(env, NOW); // only Email 1 (0d) is due
     expect(counts.would_send).toBe(1);
     expect(counts.sent).toBe(0);
-    expect(sendConversationMessage).not.toHaveBeenCalled();
     expect(await loadDueSteps(env.NURTURE_DB, NOW)).toHaveLength(0); // out of the queue
     expect(env.NURTURE_DB._events.filter((e) => e.outcome === "would_send")).toHaveLength(1);
   });

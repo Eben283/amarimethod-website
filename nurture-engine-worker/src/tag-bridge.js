@@ -25,10 +25,7 @@ const json = (status, obj) => new Response(JSON.stringify(obj), { status, header
 const QUIZ_TAG = "quiz submitted";
 const EXIT_TAGS = ["booked discovery call - workflow 2", "workflow 3 (customer attended 1st session)"];
 
-/**
- * Read a contact's tags from the GHL API. Exported so /event can reuse it for entry-guard
- * reads (removes guardUnchecked noise from the shadow log).
- */
+/** Read current GHL tags only for the bounded legacy /tag-webhook transition adapter. */
 export async function fetchContactTags(env, contactId) {
   const token = await getAccessToken(env);
   const res = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
