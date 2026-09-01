@@ -163,13 +163,17 @@ describe("owned sender foundation", () => {
     expect(deliveryReadiness({ PORTAL_KV: {}, GOOGLE_OAUTH_CLIENT_ID: "personal-id", GOOGLE_OAUTH_CLIENT_SECRET: "personal-secret" }).channels[0])
       .toMatchObject({ configurationDetected: false });
     expect(deliveryReadiness().channels[0].blockers).toEqual(expect.arrayContaining([
-      "the existing personal Google OAuth project is unusable for Amari mail",
-      "an Amari-owned Google OAuth grant is not verified",
-      "exact Amari send-as identities are not verified",
-      "DKIM and DMARC are not verified",
-      "inbound Gmail reply sync is not implemented",
-      "provider outcomes are not ingested into Communication",
+      "the signed actor must have an exact verified Amari mailbox grant and Google send-as identity",
+      "sender-domain DKIM and DMARC evidence must be reviewed before activation",
+      "Gmail reply sync control must be separately baselined and enabled",
+      "provider outcome synchronization remains dormant and terminal delivery success is undefined",
     ]));
+    expect(deliveryReadiness().channels[0].capabilities).toEqual({
+      submissionAdapterImplemented: true,
+      replyProviderAdapterImplemented: true,
+      replySyncControlImplemented: true,
+      providerOutcomeEvidenceImplemented: true,
+    });
     expect(deliveryReadiness().channels).toEqual(expect.arrayContaining([
       expect.objectContaining({ channel: "email", providerCandidate: "google-workspace", state: "unavailable" }),
       expect.objectContaining({ channel: "sms", providerCandidate: null, state: "unavailable" }),
