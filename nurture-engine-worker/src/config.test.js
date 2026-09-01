@@ -12,6 +12,7 @@ describe("registry", () => {
       "flow-1-quiz", "flow-2-post-discovery", "flow-3-post-initial",
     ]);
     for (const s of SEQUENCES) expect(s.mode).toBe("shadow");
+    expect(SEQUENCES.map((s) => s.definitionVersion)).toEqual([2, 2, 2]);
   });
 
   it("configs are frozen (immutable by construction)", () => {
@@ -83,6 +84,15 @@ describe("Flow 2 — post-discovery", () => {
 });
 
 describe("Flow 3 — post-initial", () => {
+  it("matches the current published two-email source and carries a new immutable definition version", () => {
+    expect(FLOW_3_POST_INITIAL.definitionVersion).toBe(2);
+    expect(FLOW_3_POST_INITIAL.steps).toEqual([
+      { after: "0d", kind: "email", template: "f3-email-1-protocols-portal" },
+      { after: "+5d", kind: "email", template: "f3-email-2-practice-going" },
+    ]);
+    expect(FLOW_3_POST_INITIAL.steps.some((step) => step.template === "f3-email-3-series-pitch")).toBe(false);
+  });
+
   it("enters on showed on either initial calendar, guarded against affiliate-partner, and writes the workflow-3 tag", () => {
     for (const calendarId of ["G7OAnnJuFbMF6nQSlZVQ", "ySmht5hx4uZGEpgZrlCw"]) {
       const showed = { kind: "appointment", type: "showed", calendarId, contactId: "c1", appointmentId: "a1", modifiedBy: null };
@@ -92,22 +102,28 @@ describe("Flow 3 — post-initial", () => {
     expect(FLOW_3_POST_INITIAL.entry.onEnter).toEqual({ addTags: ["workflow 3 (customer attended 1st session)"] });
   });
 
-  it("exits on any of the 4 series/upgrade products (the deleted remove-from workflow's purchase fan-in)", () => {
+  it("exits on the 4 provider-source series/upgrades and both current native Practice products", () => {
     for (const productId of [
       "69986faa724ecd2343ebaa6e", "69987357c839790426996114",
       "6998739230cc6054f9bba62d", "699873d6990b71ebc1fa26b4",
+      "6a683360017263178d05d1a3", "6a66cde7ef7b07f122ad46fb",
     ]) {
       expect(FLOW_3_POST_INITIAL.exits.some((x) => eventMatches(x, { kind: "purchase", contactId: "c1", productId }))).toBe(true);
     }
   });
 
-  it("exits on a booking on any of the 5 follow-up/entrainment calendars, and NOT on others", () => {
+  it("preserves booking/confirmation exits on 5 legacy calendars and confirmed-only exits on 2 current calendars", () => {
     const booked = (calendarId) => ({ kind: "appointment", type: "booked", calendarId, contactId: "c1", appointmentId: "a1", modifiedBy: "customer" });
     for (const cal of [
       "ZO1jlGfy01rsxVqicoSB", "bJFkhVP35Ecwh4tLnSmy", "SKDVOL8wtUN6Ne0ppbC9",
       "oVn77FcecFY16iS2pHyP", "B5aGXLoS4kzAjZAMMXxk",
     ]) {
       expect(FLOW_3_POST_INITIAL.exits.some((x) => eventMatches(x, booked(cal)))).toBe(true);
+      expect(FLOW_3_POST_INITIAL.exits.some((x) => eventMatches(x, { ...booked(cal), type: "confirmed" }))).toBe(true);
+    }
+    for (const cal of ["wO5lnu7BOQOHEJ5YQU0f", "waHmG2mHNThPfMVuNJWG"]) {
+      expect(FLOW_3_POST_INITIAL.exits.some((x) => eventMatches(x, booked(cal)))).toBe(false);
+      expect(FLOW_3_POST_INITIAL.exits.some((x) => eventMatches(x, { ...booked(cal), type: "confirmed" }))).toBe(true);
     }
     // RED test (c) from the brief: a non-listed calendar does NOT exit
     expect(FLOW_3_POST_INITIAL.exits.some((x) => eventMatches(x, booked("USgPsktqRcuomdUgpShL")))).toBe(false);

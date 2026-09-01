@@ -31,7 +31,7 @@ describe("enroll — scheduling is keyed off ENROLLMENT time, offsets cumulative
     expect(e.contactId).toBe("cont_1");
     expect(e.enteredAt).toBe(NOW);
     expect(e.status).toBe("active");
-    expect(e.steps.map((s) => s.dueAt)).toEqual([NOW, NOW + 5 * DAY, NOW + 10 * DAY]);
+    expect(e.steps.map((s) => s.dueAt)).toEqual([NOW, NOW + 5 * DAY]);
     expect(e.steps.every((s) => s.status === "pending")).toBe(true);
   });
 

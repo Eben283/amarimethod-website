@@ -29,6 +29,9 @@ describe("owned automation registry", () => {
         definition.id === "reminder:initial-in-person" ? 4
           : definition.id === "reminder:initial-virtual" ? 5
           : definition.id === "reminder:no-show-recovery" ? 2
+          : definition.id === "nurture:flow-1-quiz" ? 2
+          : definition.id === "nurture:flow-2-post-discovery" ? 2
+          : definition.id === "nurture:flow-3-post-initial" ? 2
           : definition.id === "morning-sms:daily-staff-brief" ? 2 : 1,
       );
       expect(definition.name).toBeTruthy();
@@ -191,6 +194,56 @@ describe("owned automation registry", () => {
       waHmG2mHNThPfMVuNJWG: "contact",
     });
     expect(noShow.messagePreview.notices).toHaveLength(4);
+  });
+
+  it("publishes honest nurture cutover gates and the current two-email post-initial source", () => {
+    const quiz = findAutomationDefinition("nurture", "flow-1-quiz");
+    const assessment = findAutomationDefinition("nurture", "flow-2-post-discovery");
+    const postInitial = findAutomationDefinition("nurture", "flow-3-post-initial");
+
+    expect(quiz.cutoverReadiness).toEqual(expect.objectContaining({
+      status: "not_eligible",
+      requirements: expect.arrayContaining([
+        expect.objectContaining({ code: "owned_contact_reads_built", status: "proven" }),
+        expect.objectContaining({ code: "owned_delivery_missing", status: "blocked" }),
+      ]),
+    }));
+    expect(assessment.cutoverReadiness).toEqual(expect.objectContaining({
+      status: "not_eligible",
+      requirements: expect.arrayContaining([
+        expect.objectContaining({ code: "activation_owner_unresolved", status: "review" }),
+      ]),
+    }));
+    expect(postInitial).toEqual(expect.objectContaining({
+      definitionVersion: 2,
+      mode: "shadow",
+      messagePreview: expect.objectContaining({
+        status: "source_verified_read_only",
+        notices: expect.arrayContaining([
+          expect.objectContaining({ stepIndex: 0, subject: "Your protocols are in the portal, {{contact.first_name}}" }),
+          expect.objectContaining({ stepIndex: 1, subject: "How's the practice going, {{contact.first_name}}?" }),
+        ]),
+      }),
+      cutoverReadiness: expect.objectContaining({
+        status: "not_eligible",
+        requirements: expect.arrayContaining([
+          expect.objectContaining({ code: "source_structure_reconciled", status: "proven" }),
+          expect.objectContaining({ code: "current_practice_purchase_exit_owned", status: "proven" }),
+          expect.objectContaining({ code: "owned_template_renderer_built", status: "proven" }),
+          expect.objectContaining({ code: "owned_delivery_missing", status: "blocked" }),
+        ]),
+      }),
+    }));
+    expect(postInitial.steps).toHaveLength(2);
+    expect(postInitial.messagePreview.notices).toHaveLength(2);
+    expect(postInitial.exits.filter((exit) => exit.kind === "appointment").flatMap((exit) => exit.calendarIds)).toEqual(expect.arrayContaining([
+      "wO5lnu7BOQOHEJ5YQU0f",
+      "waHmG2mHNThPfMVuNJWG",
+    ]));
+    expect(postInitial.exits.find((exit) => exit.kind === "purchase").productIds).toEqual(expect.arrayContaining([
+      "6a683360017263178d05d1a3",
+      "6a66cde7ef7b07f122ad46fb",
+    ]));
   });
 
   it("returns detached read models so API consumers cannot mutate engine config", () => {

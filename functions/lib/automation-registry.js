@@ -7,6 +7,7 @@
 
 import { FLOWS } from "../../reminder-engine-worker/src/config.js";
 import { SEQUENCES } from "../../nurture-engine-worker/src/config.js";
+import { flow3MessagePreview } from "../../nurture-engine-worker/src/templates.js";
 import { MORNING_SMS_DEFINITION } from "../../morning-sms-worker/src/config.js";
 
 export const REGISTRY_VERSION = 1;
@@ -87,6 +88,12 @@ const ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW = Object.freeze({
     Object.freeze({ stepIndex: 1, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", body: "Hi {{contact.first_name}},\n\nLooks like we missed each other. Life happens. No judgment.\n\nQuick note on our policy: missed appointments are considered used sessions. We do review rescheduling requests case by case, and series participants receive one complimentary emergency reschedule per series. We ask for 24 hours notice for future changes.\n\nIf you'd like to reschedule:\n\nReschedule Your Session\n\nOr just reply here and I'll help find a time.\n\nGarrett" }),
     Object.freeze({ stepIndex: 2, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", body: "Hi {{contact.first_name}},\n\nI know life gets busy. Scheduling is hard. But your body doesn't stop sending signals just because the calendar got in the way.\n\nIf something is still bothering you, it's worth looking into. Usually something is working too hard because something else isn't working enough. That pattern doesn't fix itself.\n\nWhenever you're ready:\n\nBook Your Session\n\nOr just reply here and I'll help find a time.\n\nGarrett" }),
   ]),
+});
+
+const FLOW_3_POST_INITIAL_MESSAGE_PREVIEW = Object.freeze({
+  status: "source_verified_read_only",
+  label: "Exact current two-email source copy from the owned fail-closed template catalog. The former Day-10 series pitch is deleted; delivery remains disabled.",
+  notices: Object.freeze(flow3MessagePreview().map(Object.freeze)),
 });
 
 // Read-only activation map for the first cutover slice. This is deliberately outside the
@@ -185,6 +192,48 @@ const NO_SHOW_RECOVERY_CUTOVER_READINESS = Object.freeze({
   ]),
 });
 
+const NURTURE_CUTOVER_READINESS = Object.freeze({
+  "flow-1-quiz": Object.freeze({
+    status: "not_eligible",
+    label: "Source captured; native delivery is not built",
+    summary: "The six-step quiz nurture schedule, provider-neutral contact reads, and exits are modeled in shadow. GHL remains the live owner until exact copy rendering, delivery, and enrollment transfer are proven.",
+    requirements: Object.freeze([
+      Object.freeze({ code: "source_contract_captured", status: "proven", label: "Current source contract captured", detail: "The live waits, pain-location branches, subjects, preheaders, bodies, and discovery exits are recorded in the canonical workflow register." }),
+      Object.freeze({ code: "owned_contact_reads_built", status: "proven", label: "Read branches and guards from the owned CRM", detail: "All pain-location branches use the stable primaryPainLocation key; the owned CRM adapter resolves identity, tags, and the legacy provider attribute at the boundary." }),
+      Object.freeze({ code: "owned_template_renderer_missing", status: "blocked", label: "Render exact copy from Amari", detail: "Template keys are schedule markers only; no executable, allowlisted native message catalog exists." }),
+      Object.freeze({ code: "owned_delivery_missing", status: "blocked", label: "Deliver and reconcile email", detail: "The nurture worker has no enabled owned email sender or terminal failure evidence." }),
+      Object.freeze({ code: "enrollment_transfer_pending", status: "review", label: "Transfer live positions without replay", detail: "Read the live queue at cutover and import each remaining contact at its original cursor so no historical email back-fires." }),
+      Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep Quiz to Pain Consultation email flow live", detail: "Retirement requires a coordinated cutover after native shadow evidence and delivery receipts agree." }),
+    ]),
+  }),
+  "flow-2-post-discovery": Object.freeze({
+    status: "not_eligible",
+    label: "Draft source modeled; activation path is unresolved",
+    summary: "The $29 Assessment nurture structure and provider-neutral contact reads are modeled in shadow, but the source workflow is Draft and native copy rendering, delivery, and activation semantics are incomplete.",
+    requirements: Object.freeze([
+      Object.freeze({ code: "source_contract_captured", status: "proven", label: "Current Draft source captured", detail: "The showed entry, partner exclusion, immediate email, Day-4 branch, and Initial/Assessment booking exits are represented." }),
+      Object.freeze({ code: "activation_owner_unresolved", status: "review", label: "Choose the native activation moment", detail: "The provider workflow is intentionally Draft. Native activation must be tied to the owned Assessment journey, not inferred from an inactive provider flow." }),
+      Object.freeze({ code: "owned_contact_reads_built", status: "proven", label: "Read branches and guards from the owned CRM", detail: "The personalized/chronic branch uses primaryPainLocation and the owned CRM adapter supplies tags and values fail-closed." }),
+      Object.freeze({ code: "owned_template_renderer_missing", status: "blocked", label: "Render exact Assessment copy from Amari", detail: "The three exact source variants are not an executable native template catalog." }),
+      Object.freeze({ code: "owned_delivery_missing", status: "blocked", label: "Deliver and reconcile email", detail: "No owned nurture email sender or terminal failure path is enabled." }),
+    ]),
+  }),
+  "flow-3-post-initial": Object.freeze({
+    status: "not_eligible",
+    label: "Current two-email source reconciled; delivery is not built",
+    summary: "The published two-email source, all 11 provider removal triggers, and explicit 6-/12-week native purchase exits are represented in shadow. GHL remains live while native rendering, delivery, and position transfer are completed.",
+    requirements: Object.freeze([
+      Object.freeze({ code: "source_structure_reconciled", status: "proven", label: "Current source structure reconciled", detail: "The former Day-10 pitch and empty wait are absent; the two emails, seven calendar exits, and four legacy purchase exits match the published source." }),
+      Object.freeze({ code: "source_copy_reconciled", status: "proven", label: "Exact source copy captured", detail: "Both current emails are exposed below as read-only source evidence." }),
+      Object.freeze({ code: "current_practice_purchase_exit_owned", status: "proven", label: "Own 6- and 12-week purchase exits", detail: "Both current Practice product IDs are explicit native exits and are already carried by the existing normalized purchase event path." }),
+      Object.freeze({ code: "owned_template_renderer_built", status: "proven", label: "Render exact copy from Amari", detail: "Both current messages live in an immutable, fail-closed native catalog that rejects unknown templates and missing merge fields." }),
+      Object.freeze({ code: "owned_delivery_missing", status: "blocked", label: "Deliver and reconcile email", detail: "No owned nurture email sender or terminal failure path is enabled." }),
+      Object.freeze({ code: "enrollment_transfer_pending", status: "review", label: "Transfer live positions without replay", detail: "Any active provider enrollment must be imported at its original cursor before retirement." }),
+      Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep First session to follow up session email flow live", detail: "Retirement requires coordinated native activation and receipt evidence." }),
+    ]),
+  }),
+});
+
 function reminderDefinition(flow) {
   const definition = {
     id: `reminder:${flow.flowKey}`,
@@ -234,7 +283,7 @@ function reminderDefinition(flow) {
 }
 
 function nurtureDefinition(sequence) {
-  return {
+  const definition = {
     id: `nurture:${sequence.sequenceId}`,
     engine: "nurture",
     key: sequence.sequenceId,
@@ -249,6 +298,11 @@ function nurtureDefinition(sequence) {
       path: "nurture-engine-worker/src/config.js",
     },
   };
+  definition.cutoverReadiness = clone(NURTURE_CUTOVER_READINESS[sequence.sequenceId]);
+  if (sequence.sequenceId === "flow-3-post-initial") {
+    definition.messagePreview = clone(FLOW_3_POST_INITIAL_MESSAGE_PREVIEW);
+  }
+  return definition;
 }
 
 const DEFINITIONS = Object.freeze([

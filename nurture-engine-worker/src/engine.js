@@ -18,7 +18,13 @@ import { processStep } from "./sweep.js";
 import {
   saveEnrollment, loadDueSteps, markStep, appendEvent, exitEnrollment, enrollmentId,
 } from "./store.js";
-import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
+import {
+  addOwnedContactTags,
+  readOwnedContactFields,
+  readOwnedContactRecipient,
+  readOwnedContactTags,
+} from "./owned-contact.js";
+import { renderNurtureTemplate } from "./templates.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 
 async function exitPass(db, event, nowMs, actions) {
@@ -72,9 +78,13 @@ export async function handleEvent(env, raw, nowMs, deps = {}) {
   const event = toNurtureEvent(raw);
   if (!event) return { actions };
 
-  const getContactTags = deps.getContactTags || (async () => null);
+  const getContactTags = deps.getContactTags || (env.CRM_DB
+    ? (contactReference) => readOwnedContactTags(env.CRM_DB, contactReference)
+    : async () => null);
   const fullDeps = {
-    addContactTags: async () => { throw new Error("active-mode tag writes not built yet"); },
+    addContactTags: env.CRM_DB
+      ? (contactReference, tags) => addOwnedContactTags(env.CRM_DB, contactReference, tags, nowMs)
+      : async () => { throw new Error("owned CRM tag store is not configured"); },
     ...deps,
   };
 
@@ -129,11 +139,19 @@ export async function runSweep(env, nowMs, limit = 100) {
   const deps = {
     logEvent: (r) => appendEvent(db, r),
     markStep: (enr, idx, status) => markStep(db, enrollmentId(enr.sequenceId, enr.contactId), idx, status),
-    // active-mode only; contact reads + copy templates are later bricks, so an active sequence
-    // fails loudly rather than sending a blank or misbranched message. Shadow never reaches these.
-    getContactFields: async () => { throw new Error("active-mode contact reads not built yet"); },
-    renderMessage: async () => { throw new Error("active-mode templates not built yet"); },
-    send: (msg) => sendConversationMessage({ env }, msg),
+    getContactFields: env.CRM_DB
+      ? (contactReference) => readOwnedContactFields(env.CRM_DB, contactReference)
+      : async () => { throw new Error("owned CRM contact store is not configured"); },
+    renderMessage: async (sequence, step, enrollment, templateId) => {
+      const recipient = await readOwnedContactRecipient(env.CRM_DB, enrollment.contactId);
+      return {
+        recipient: { contactId: recipient.id, email: recipient.email },
+        ...renderNurtureTemplate(templateId, { "contact.first_name": recipient.firstName }),
+      };
+    },
+    // Rendering and addressing are native. Delivery remains an explicit fail-closed boundary;
+    // never fall back to the GHL conversations adapter for a system intended to supersede GHL.
+    send: async () => { throw new Error("owned nurture email delivery is not enabled"); },
   };
 
   const counts = { would_send: 0, sent: 0, failed: 0, skip: 0 };

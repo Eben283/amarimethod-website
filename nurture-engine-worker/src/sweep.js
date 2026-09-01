@@ -62,6 +62,20 @@ export async function processStep({ enrollment, step, sequence }, deps, nowMs) {
     channel: "email", // every nurture step is an email
   };
 
+  // A newer immutable definition may intentionally remove a future step (Flow 3 v2 removed
+  // the former Day-10 pitch). Retire an old queued step explicitly; never crash the sweep and
+  // never reinterpret the old index as different copy.
+  if (!stepDef) {
+    await deps.logEvent({
+      ...base,
+      action: "definition_step_retired",
+      outcome: "retired",
+      detail: { enrollmentDefinitionVersion: enrollment.definitionVersion, currentDefinitionVersion: sequence.definitionVersion },
+    });
+    await deps.markStep(enrollment, step.stepIndex, "retired");
+    return { outcome: "skip", reason: "definition_step_retired" };
+  }
+
   // Shadow is the default: anything not explicitly "active" observes without sending.
   if (sequence.mode !== "active") {
     await deps.logEvent({

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { resolveTemplate, processStep } from "./sweep.js";
-import { FLOW_1_QUIZ } from "./config.js";
+import { FLOW_1_QUIZ, FLOW_3_POST_INITIAL } from "./config.js";
 
 const NOW = Date.parse("2026-07-15T10:00:00-07:00");
 
-const enrollment = () => ({ sequenceId: "flow-1-quiz", contactId: "cont_1" });
+const enrollment = () => ({ sequenceId: "flow-1-quiz", definitionVersion: 1, contactId: "cont_1" });
 const emailStep = { stepIndex: 0, after: "0d", kind: "email", template: "f1-email-1-quiz-results", dueAt: NOW, status: "pending" };
 const branchStep = { stepIndex: 1, after: "+3d", kind: "branch", template: null, dueAt: NOW, status: "pending" };
 
@@ -12,7 +12,7 @@ function deps(over = {}) {
   return {
     logEvent: vi.fn().mockResolvedValue(undefined),
     markStep: vi.fn().mockResolvedValue(undefined),
-    getContactFields: vi.fn().mockResolvedValue({ vKZTVAG7601lgV8413du: "Hips" }),
+    getContactFields: vi.fn().mockResolvedValue({ primaryPainLocation: "Hips" }),
     renderMessage: vi.fn().mockResolvedValue({ channel: "email", contactId: "cont_1", subject: "s", html: "<p>b</p>" }),
     send: vi.fn().mockResolvedValue({ success: true, messageId: "m_1" }),
     ...over,
@@ -30,16 +30,16 @@ describe("resolveTemplate — branch semantics against contact fields", () => {
   });
 
   it("filled_not_other: filled and not Other → yes; empty or Other → no (the chronic fallback)", () => {
-    expect(resolveTemplate(branchDef, { vKZTVAG7601lgV8413du: "Hips" })).toBe("f1-email-2");
-    expect(resolveTemplate(branchDef, { vKZTVAG7601lgV8413du: "Other" })).toBe("f1-email-2-chronic");
-    expect(resolveTemplate(branchDef, { vKZTVAG7601lgV8413du: "" })).toBe("f1-email-2-chronic");
+    expect(resolveTemplate(branchDef, { primaryPainLocation: "Hips" })).toBe("f1-email-2");
+    expect(resolveTemplate(branchDef, { primaryPainLocation: "Other" })).toBe("f1-email-2-chronic");
+    expect(resolveTemplate(branchDef, { primaryPainLocation: "" })).toBe("f1-email-2-chronic");
     expect(resolveTemplate(branchDef, {})).toBe("f1-email-2-chronic");
   });
 
   it("branch_map: maps the field value, falls to default for unknown values", () => {
-    expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "Lower back" })).toBe("f1-email-4a-spinal-wave");
-    expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "Elbows" })).toBe("f1-email-4d-hand-balancer");
-    expect(resolveTemplate(mapDef, { vKZTVAG7601lgV8413du: "somewhere else" })).toBe("f1-email-4c-chronic");
+    expect(resolveTemplate(mapDef, { primaryPainLocation: "Lower back" })).toBe("f1-email-4a-spinal-wave");
+    expect(resolveTemplate(mapDef, { primaryPainLocation: "Elbows" })).toBe("f1-email-4d-hand-balancer");
+    expect(resolveTemplate(mapDef, { primaryPainLocation: "somewhere else" })).toBe("f1-email-4c-chronic");
   });
 
   it("branch with UNKNOWN fields (null) resolves to null — the caller decides what that means", () => {
@@ -48,6 +48,21 @@ describe("resolveTemplate — branch semantics against contact fields", () => {
 });
 
 describe("processStep — shadow mode (the beside-GHL safety guarantee)", () => {
+  it("retires a queued step removed by a newer immutable definition without rendering or sending", async () => {
+    const d = deps();
+    const oldStep = { status: "pending", stepIndex: 2, dueAt: NOW };
+    const out = await processStep({ enrollment: enrollment(), step: oldStep, sequence: FLOW_3_POST_INITIAL }, d, NOW);
+    expect(out).toEqual({ outcome: "skip", reason: "definition_step_retired" });
+    expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({
+      action: "definition_step_retired",
+      outcome: "retired",
+      detail: { enrollmentDefinitionVersion: 1, currentDefinitionVersion: 2 },
+    }));
+    expect(d.markStep).toHaveBeenCalledWith(expect.anything(), 2, "retired");
+    expect(d.renderMessage).not.toHaveBeenCalled();
+    expect(d.send).not.toHaveBeenCalled();
+  });
+
   const shadowSeq = FLOW_1_QUIZ; // mode: "shadow"
 
   it("NEVER sends, NEVER reads the contact; logs would_send and marks the step", async () => {
@@ -70,7 +85,7 @@ describe("processStep — shadow mode (the beside-GHL safety guarantee)", () => 
     expect(out.outcome).toBe("would_send");
     expect(d.getContactFields).not.toHaveBeenCalled();
     expect(d.logEvent).toHaveBeenCalledWith(expect.objectContaining({
-      detail: expect.objectContaining({ template: null, branch: "vKZTVAG7601lgV8413du", variants: ["f1-email-2", "f1-email-2-chronic"] }),
+      detail: expect.objectContaining({ template: null, branch: "primaryPainLocation", variants: ["f1-email-2", "f1-email-2-chronic"] }),
     }));
   });
 
@@ -103,7 +118,7 @@ describe("processStep — active mode", () => {
   });
 
   it("resolves a branch against a FRESH contact read at send time (brief RED test c)", async () => {
-    const d = deps({ getContactFields: vi.fn().mockResolvedValue({ vKZTVAG7601lgV8413du: "Other" }) });
+    const d = deps({ getContactFields: vi.fn().mockResolvedValue({ primaryPainLocation: "Other" }) });
     await processStep({ enrollment: enrollment(), step: branchStep, sequence: activeSeq }, d, NOW);
     expect(d.getContactFields).toHaveBeenCalledWith("cont_1");
     expect(d.renderMessage).toHaveBeenCalledWith(activeSeq, expect.anything(), expect.anything(), "f1-email-2-chronic");
