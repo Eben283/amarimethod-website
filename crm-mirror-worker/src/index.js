@@ -60,6 +60,11 @@ import { ownedQuizIntakeReadiness, OwnedQuizIntakeError, upsertOwnedQuizIntake }
 import { ownedQuizNurtureDispatchReadiness } from "./quiz-nurture-dispatch.js";
 import { captureStaffCommunicationCommand, ownedEmailDispatchReadiness } from "./owned-email-dispatch.js";
 import { ownedQuizRetentionReadiness } from "./owned-quiz-retention.js";
+import {
+  AppointmentRecoveryRequestError,
+  captureAppointmentRecoveryRequest,
+  listAppointmentRecoveryRequests,
+} from "./appointment-recovery-requests.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -441,7 +446,7 @@ export default {
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
       const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/appointments/recovery-requests", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -676,6 +681,50 @@ export default {
           return json(400, { error: "unsupported_appointment_action" });
         } catch (error) {
           if (error instanceof OwnedAppointmentError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
+      if (request.method === "GET" && url.pathname === "/appointments/recovery-requests") {
+        try {
+          const limit = parseQueueLimit(url.searchParams.get("limit"));
+          const page = await listAppointmentRecoveryRequests(env.CRM_DB, {
+            state: url.searchParams.get("state") === "all" ? "all" : "pending_review",
+            limit: Math.min(limit + 1, 100),
+          });
+          return json(200, {
+            success: true,
+            worker: "amari-crm-mirror",
+            requests: page.slice(0, limit),
+            truncated: page.length > limit,
+          }, { "Cache-Control": "no-store" });
+        } catch (error) {
+          if (error instanceof AppointmentRecoveryRequestError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/appointments/recovery-requests") {
+        const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
+        if (actor !== "Client") return json(403, { error: "client_recovery_request_required" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 2_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        const allowed = new Set(["appointmentId", "contactId", "appointmentRevision"]);
+        const unsupported = payload && typeof payload === "object" && !Array.isArray(payload)
+          ? Object.keys(payload).filter((key) => !allowed.has(key))
+          : [];
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const captured = await captureAppointmentRecoveryRequest(env.CRM_DB, payload, new Date().toISOString());
+          return json(captured.deduped ? 200 : 201, { success: true, request: captured });
+        } catch (error) {
+          if (error instanceof AppointmentRecoveryRequestError) {
             return json(error.status, { error: error.code, detail: error.message });
           }
           throw error;

@@ -3,11 +3,17 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const resolve = vi.fn();
 const availability = vi.fn();
 const execute = vi.fn();
+const resolveRecovery = vi.fn();
+const executeRecovery = vi.fn();
 
 vi.mock("../lib/client-appointment-manage.js", () => ({
   resolveClientAppointmentManageContext: resolve,
   clientAppointmentAvailability: availability,
   executeClientAppointmentManage: execute,
+}));
+vi.mock("../lib/client-no-show-recovery.js", () => ({
+  resolveClientNoShowRecoveryContext: resolveRecovery,
+  executeClientNoShowRecoveryRequest: executeRecovery,
 }));
 
 const { onRequestGet, onRequestPost } = await import("./manage.js");
@@ -26,6 +32,8 @@ beforeEach(() => {
     slots: [{ datetime: "2026-09-11T10:00:00-07:00" }],
   });
   execute.mockReset().mockResolvedValue({ action: "cancel", appointmentStatus: "cancelled" });
+  resolveRecovery.mockReset().mockResolvedValue({ identity });
+  executeRecovery.mockReset().mockResolvedValue({ requestId: "recovery-1", state: "pending_review" });
 });
 
 describe("public appointment manage page", () => {
@@ -52,6 +60,20 @@ describe("public appointment manage page", () => {
     expect(html).toContain("Choose a new time");
     expect(html).toContain('value="2026-09-11T10:00:00-07:00"');
     expect(resolve).toHaveBeenCalledWith(expect.anything(), "signed-token", "reschedule");
+    expect(execute).not.toHaveBeenCalled();
+  });
+
+  it("keeps recovery GET read-only and states the review-only contract", async () => {
+    const response = await onRequestGet({
+      request: new Request("https://www.amarimethod.com/appointment/manage?action=recovery&token=signed-token"),
+      env: {},
+    });
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).toContain("Request a reschedule review");
+    expect(html).toContain("does not book a time, grant a session, charge a payment, or guarantee approval");
+    expect(resolveRecovery).toHaveBeenCalledWith(expect.anything(), "signed-token");
+    expect(executeRecovery).not.toHaveBeenCalled();
     expect(execute).not.toHaveBeenCalled();
   });
 
@@ -83,5 +105,24 @@ describe("public appointment manage page", () => {
     expect(response.status).toBe(200);
     expect(await response.text()).toContain("Your appointment is cancelled");
     expect(execute).toHaveBeenCalledWith(context, "signed-token", "cancel", "");
+  });
+
+  it("records a same-origin recovery review without invoking appointment management", async () => {
+    const body = new URLSearchParams({ token: "signed-token", action: "recovery" });
+    const context = {
+      request: new Request("https://www.amarimethod.com/appointment/manage", {
+        method: "POST",
+        headers: { Origin: "https://www.amarimethod.com", "Content-Type": "application/x-www-form-urlencoded" },
+        body,
+      }),
+      env: {},
+    };
+    const response = await onRequestPost(context);
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).toContain("Your request is recorded");
+    expect(html).toContain("No appointment, session credit, charge, or automatic message was created");
+    expect(executeRecovery).toHaveBeenCalledWith(context, "signed-token");
+    expect(execute).not.toHaveBeenCalled();
   });
 });

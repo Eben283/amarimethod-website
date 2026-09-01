@@ -58,4 +58,12 @@ describe("appointment manage bearer tokens", () => {
     expect(await appointmentManageIdempotencyKey(token, "reschedule", "2026-09-08T18:00:00.000Z")).not.toBe(cancel);
     expect(cancel).not.toContain(token);
   });
+
+  it("issues a recovery-only bearer without granting appointment mutation capabilities", async () => {
+    const token = await issueAppointmentManageToken(SECRET, claims({ capabilities: ["recovery"] }), NOW);
+    await expect(verifyAppointmentManageToken(SECRET, token, { capability: "recovery", nowMs: NOW + 1 }))
+      .resolves.toMatchObject({ capabilities: ["recovery"] });
+    await expect(verifyAppointmentManageToken(SECRET, token, { capability: "cancel", nowMs: NOW + 1 }))
+      .rejects.toThrow(/not granted/);
+  });
 });

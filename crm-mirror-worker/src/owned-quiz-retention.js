@@ -15,6 +15,7 @@ export const CONTACT_FOREIGN_KEY_COVERAGE = Object.freeze([
   ["appointment_lifecycle_dispatches", "contact_id"],
   ["appointment_payment_events", "contact_id"],
   ["appointment_payment_records", "contact_id"],
+  ["appointment_recovery_requests", "contact_id"],
   ["appointment_source_observations", "contact_id"],
   ["appointments", "contact_id"],
   ["client_desk_seen", "contact_id"],

@@ -1,14 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
-  deliverNoShowStep, noShowDeliveryEligibility, noShowDeliveryReadiness,
+  createNoShowRecoveryLink, deliverNoShowStep, noShowDeliveryEligibility, noShowDeliveryReadiness,
   ownedNoShowRecoveryUrl, readNoShowDeliveryContext,
 } from "./no-show-delivery.js";
+import { verifyAppointmentManageToken } from "../../functions/lib/appointment-manage-token.js";
 import { NO_SHOW_RECOVERY_RELEASE_WORKFLOW } from "./no-show-recovery-workflow.js";
 
 const db = { prepare() {}, batch() {} };
 const env = {
   NO_SHOW_DELIVERY_RELEASE: "approved",
-  NO_SHOW_RECOVERY_URL: "https://www.amarimethod.com/appointment/recovery",
+  APPOINTMENT_MANAGE_LINK_SECRET: "appointment-manage-link-secret-at-least-32-characters",
   WORKER_AUTH_SECRET: "proof-secret",
   CRM_DB: db,
   REMINDER_DB: db,
@@ -32,6 +33,11 @@ const enrollment = {
 const contactContext = {
   appointmentId: "owned-appointment-1",
   ownedContactId: "owned-contact-1",
+  serviceId: "partner-initial",
+  status: "no_show",
+  authority: "provider_mirror",
+  providerSyncState: "synced",
+  revision: 3,
   firstName: "Avery",
   clientEmail: "avery@example.test",
   clientPhone: "+14155550123",
@@ -41,9 +47,7 @@ const contactContext = {
 };
 const services = (capture, over = {}) => ({
   readContext: async () => ({ ...contactContext, ...(over.context || {}) }),
-  recoveryUrl: async () => over.recoveryUrl === undefined
-    ? "https://www.amarimethod.com/appointment/recovery"
-    : over.recoveryUrl,
+  ...(over.recoveryUrl === undefined ? {} : { recoveryUrl: async () => over.recoveryUrl }),
   executeEffect: async (_db, effect, transport) => { capture?.({ effect }); return transport(); },
   sendEmail: async (_env, message) => { capture?.({ message }); return { success: true, messageId: "email-1" }; },
   sendSms: async (message) => { capture?.({ message }); return { success: true, messageId: "sms-1" }; },
@@ -61,9 +65,29 @@ describe("No Show delivery release gate", () => {
       .toEqual({ eligible: true });
     expect(noShowDeliveryReadiness({ ...env, OWNED_SMS: undefined }))
       .toEqual({ eligible: false, reason: "owned-sms-unavailable" });
-    expect(noShowDeliveryReadiness({ ...env, NO_SHOW_RECOVERY_URL: "https://evil.test/rebook" }))
+    expect(noShowDeliveryReadiness({ ...env, APPOINTMENT_MANAGE_LINK_SECRET: "short" }))
       .toEqual({ eligible: false, reason: "owned-recovery-link-unavailable" });
     expect(ownedNoShowRecoveryUrl("https://www.amarimethod.com/api/private")).toBeNull();
+  });
+
+  it("issues an exact recovery-only signed link for the missed owned appointment revision", async () => {
+    const now = Date.parse("2026-09-01T20:00:00.000Z");
+    const value = await createNoShowRecoveryLink(env, contactContext, now, now + 1);
+    expect(await createNoShowRecoveryLink(env, contactContext, now, now + 60_000)).toBe(value);
+    const link = new URL(value);
+    expect(link.origin).toBe("https://www.amarimethod.com");
+    expect(link.pathname).toBe("/appointment/manage");
+    expect(link.searchParams.get("action")).toBe("recovery");
+    await expect(verifyAppointmentManageToken(
+      env.APPOINTMENT_MANAGE_LINK_SECRET,
+      link.searchParams.get("token"),
+      { capability: "recovery", nowMs: now + 1 },
+    )).resolves.toMatchObject({
+      appointmentId: "owned-appointment-1",
+      contactId: "owned-contact-1",
+      revision: 3,
+      capabilities: ["recovery"],
+    });
   });
 
   it("renders the affiliate SMS to an E.164 destination with durable owned identity", async () => {
@@ -88,7 +112,7 @@ describe("No Show delivery release gate", () => {
       if (capture.message) sent = capture.message;
     }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
     expect(result).toMatchObject({ success: true, recipient: "+14155550123" });
-    expect(sent.text).toContain("https://www.amarimethod.com/appointment/recovery");
+    expect(sent.text).toContain("https://www.amarimethod.com/appointment/manage?action=recovery&token=");
   });
 
   it("sends both emails from the verified Garrett identity with exact metadata", async () => {
@@ -98,7 +122,7 @@ describe("No Show delivery release gate", () => {
     }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
     expect(result).toMatchObject({ success: true, recipient: "avery@example.test" });
     expect(sent).toMatchObject({ actor: "Garrett", subject: "About your missed session", preheader: "Here's how to reschedule" });
-    expect(sent.text).toContain("https://www.amarimethod.com/appointment/recovery");
+    expect(sent.text).toContain("https://www.amarimethod.com/appointment/manage?action=recovery&token=");
     expect(sent.idempotencyKey).toBe("no-show-recovery:owned-appointment-1:v4:1");
   });
 
@@ -119,7 +143,9 @@ describe("No Show delivery release gate", () => {
     const rows = [{
       appointment_id: "owned-appointment-1", contact_id: "owned-contact-1",
       provider_appointment_id: "appointment-1", provider_calendar_id: enrollment.calendarId,
-      status: "no_show", first_name: "Avery", display_name: "Avery Example",
+      status: "no_show", service_id: "partner-initial", authority: "provider_mirror",
+      provider_sync_state: "synced", revision: 3,
+      first_name: "Avery", display_name: "Avery Example",
       email_normalized: "avery@example.test", phone_e164: "+14155550123",
       archived_at: null, dnd_state: "off", email_consent_state: "granted", sms_consent_state: "granted",
     }];

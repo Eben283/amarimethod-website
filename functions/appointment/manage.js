@@ -3,6 +3,10 @@ import {
   executeClientAppointmentManage,
   resolveClientAppointmentManageContext,
 } from "../lib/client-appointment-manage.js";
+import {
+  executeClientNoShowRecoveryRequest,
+  resolveClientNoShowRecoveryContext,
+} from "../lib/client-no-show-recovery.js";
 
 const HEADERS = Object.freeze({
   "Cache-Control": "private, no-store, max-age=0",
@@ -51,8 +55,12 @@ export async function onRequestGet(context) {
   const url = new URL(context.request.url);
   const token = url.searchParams.get("token") || "";
   const action = url.searchParams.get("action") || "";
-  if (!new Set(["cancel", "reschedule"]).has(action)) return unavailable({ status: 400 });
+  if (!new Set(["cancel", "reschedule", "recovery"]).has(action)) return unavailable({ status: 400 });
   try {
+    if (action === "recovery") {
+      const { identity } = await resolveClientNoShowRecoveryContext(context, token);
+      return response(frame(`<h1>Request a reschedule review?</h1><p class="summary">Missed appointments count as used sessions. This asks Amari to review your situation; it does not book a time, grant a session, charge a payment, or guarantee approval.</p>${appointmentFacts(identity)}<form method="post" action="/appointment/manage"><input type="hidden" name="token" value="${escapeHtml(token)}"><input type="hidden" name="action" value="recovery"><button type="submit">Send review request</button><a class="button secondary" href="/">Not now</a></form><p class="note">Opening this link makes no change. Only the confirmation button records a pending Staff review.</p>`, "Request a reschedule review"));
+    }
     const resolved = await resolveClientAppointmentManageContext(context, token, action);
     const identity = resolved.identity;
     if (action === "cancel") {
@@ -81,6 +89,10 @@ export async function onRequestPost(context) {
   const action = String(form.get("action") || "");
   const startTime = String(form.get("startTime") || "");
   try {
+    if (action === "recovery") {
+      await executeClientNoShowRecoveryRequest(context, token);
+      return response(frame('<h1>Your request is recorded.</h1><p class="summary">It is pending Amari review. No appointment, session credit, charge, or automatic message was created.</p><p><a class="button" href="mailto:hello@amarimethod.com">Contact Amari</a></p>', "Review requested"));
+    }
     const result = await executeClientAppointmentManage(context, token, action, startTime);
     const message = action === "cancel"
       ? "Your appointment is cancelled."
