@@ -28,7 +28,10 @@ export function resolveDueAt(at, startMs, nowMs) {
  */
 export function eventMatchesFlow(event, flow) {
   return Boolean(flow?.calendarIds?.includes(event?.calendarId) ||
-    flow?.serviceIds?.includes(event?.context?.serviceId));
+    flow?.serviceIds?.includes(event?.context?.serviceId) ||
+    flow?.workflowDocument?.exits?.some((exit) => exit.effect === "exit_contact_pending"
+      && exit.event === event?.type
+      && exit.serviceIds?.includes(event?.context?.serviceId)));
 }
 
 export function isEligible(event, flow) {

@@ -28,7 +28,8 @@ describe("owned automation registry", () => {
       expect(definition.definitionVersion).toBe(
         definition.id === "reminder:initial-in-person" ? 4
           : definition.id === "reminder:initial-virtual" ? 5
-          : definition.id === "reminder:no-show-recovery" ? 2
+          : definition.id === "reminder:partner-initial-in-person" ? 4
+          : definition.id === "reminder:no-show-recovery" ? 3
           : definition.id === "nurture:flow-1-quiz" ? 2
           : definition.id === "nurture:flow-2-post-discovery" ? 2
           : definition.id === "nurture:flow-3-post-initial" ? 2
@@ -80,14 +81,14 @@ describe("owned automation registry", () => {
     }));
   });
 
-  it("exposes source-verified partner message copy as a read-only shadow preview", () => {
+  it("exposes the canonical Partner Initial copy and provider-neutral hard-shadow blockers", () => {
     const definition = findAutomationDefinition("reminder", "partner-initial-in-person");
 
     expect(definition).toEqual(expect.objectContaining({
       name: "In-Person Partner Session: Confirmation & Reminder Flow",
       mode: "shadow",
       messagePreview: expect.objectContaining({
-        status: "source_verified_read_only",
+        status: "owned_delivery_contract_hard_shadow",
         notices: expect.arrayContaining([
           expect.objectContaining({
             stepIndex: 1,
@@ -107,10 +108,18 @@ describe("owned automation registry", () => {
         status: "not_eligible",
         requirements: expect.arrayContaining([
           expect.objectContaining({ code: "native_lifecycle_shadow_proven", status: "proven" }),
-          expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
-          expect.objectContaining({ code: "delivery_templates_and_adapter_not_owned", status: "blocked" }),
+          expect.objectContaining({ code: "no_show_series_exit_owned", status: "proven" }),
+          expect.objectContaining({ code: "no_show_series_exit_shadow_publish_pending", status: "blocked" }),
+          expect.objectContaining({ code: "owned_delivery_contract_built", status: "proven" }),
+          expect.objectContaining({ code: "owned_client_manage_links_built", status: "proven" }),
+          expect.objectContaining({ code: "owned_sms_provider_pending", status: "blocked" }),
+          expect.objectContaining({ code: "durable_effect_receipts_built", status: "proven" }),
         ]),
       }),
+      source: {
+        kind: "owned_code",
+        path: "reminder-engine-worker/src/partner-initial-in-person-workflow.js",
+      },
     }));
     expect(definition.messagePreview.notices).toHaveLength(6);
   });
@@ -171,16 +180,22 @@ describe("owned automation registry", () => {
       name: "No Show Email SMS series",
       mode: "shadow",
       trigger: expect.objectContaining({ statuses: ["noshow"], eventTypes: ["normal"] }),
-      exits: [expect.objectContaining({ kind: "rebooking", statuses: ["confirmed"], scope: "contact" })],
+      exits: [expect.objectContaining({
+        kind: "rebooking", statuses: ["confirmed"], scope: "contact", serviceIds: ["partner-initial"],
+      })],
       messagePreview: expect.objectContaining({ status: "delivery_built_release_gated", sourceDecisionChecks: expect.any(Array) }),
       cutoverReadiness: expect.objectContaining({
-        status: "proof_ready",
+        status: "not_eligible",
         requirements: expect.arrayContaining([
           expect.objectContaining({ code: "source_copy_reconciled", status: "proven" }),
           expect.objectContaining({ code: "owned_rebooking_equivalence_proven", status: "proven" }),
           expect.objectContaining({ code: "delivery_adapter_built", status: "proven" }),
-          expect.objectContaining({ code: "terminal_sms_receipts_built", status: "proven" }),
-          expect.objectContaining({ code: "missed_count_owner_retained", status: "proven" }),
+          expect.objectContaining({ code: "owned_recovery_intake_built", status: "proven" }),
+          expect.objectContaining({ code: "owned_recovery_runtime_pending", status: "blocked" }),
+          expect.objectContaining({ code: "owned_sms_provider_pending", status: "blocked" }),
+          expect.objectContaining({ code: "durable_effect_receipts_built", status: "proven" }),
+          expect.objectContaining({ code: "owned_missed_truth_built", status: "proven" }),
+          expect.objectContaining({ code: "missed_count_runtime_retained", status: "review" }),
         ]),
       }),
       source: { kind: "owned_code", path: "reminder-engine-worker/src/no-show-recovery-workflow.js" },

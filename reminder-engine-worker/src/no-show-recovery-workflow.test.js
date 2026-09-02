@@ -20,6 +20,7 @@ describe("No Show Email SMS series source stage", () => {
     expect(NO_SHOW_RECOVERY_WORKFLOW.executionMode).toBe("shadow");
     expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.statuses).toEqual(["noshow"]);
     expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.eventTypes).toEqual(["normal"]);
+    expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.serviceIds).toBeUndefined();
     expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.calendarIds).toHaveLength(11);
     expect(NO_SHOW_RECOVERY_WORKFLOW.trigger.contactModeByCalendar).toEqual({
       G7OAnnJuFbMF6nQSlZVQ: "contact",
@@ -29,16 +30,17 @@ describe("No Show Email SMS series source stage", () => {
       waHmG2mHNThPfMVuNJWG: "contact",
     });
     expect(NO_SHOW_RECOVERY.exitOn).toEqual(["confirmed"]);
+    expect(NO_SHOW_RECOVERY.workflowDocument.exits[0].serviceIds).toEqual(["partner-initial"]);
   });
 
   it("keeps the release candidate as a distinct active version", () => {
     expect(NO_SHOW_RECOVERY_RELEASE_WORKFLOW).toEqual(expect.objectContaining({
       id: "no-show-recovery",
-      version: 3,
+      version: 4,
       executionMode: "active",
     }));
     expect(NO_SHOW_RECOVERY_RELEASE_WORKFLOW.nodes).toEqual(NO_SHOW_RECOVERY_WORKFLOW.nodes);
-    expect(NO_SHOW_RECOVERY_WORKFLOW).toEqual(expect.objectContaining({ version: 2, executionMode: "shadow" }));
+    expect(NO_SHOW_RECOVERY_WORKFLOW).toEqual(expect.objectContaining({ version: 3, executionMode: "shadow" }));
   });
 
   it("creates only the soft affiliate SMS for affiliate partners", () => {
@@ -55,6 +57,14 @@ describe("No Show Email SMS series source stage", () => {
 
   it("fails closed with zero message steps when affiliate status is unreadable", () => {
     expect(enroll(event("unknown"), NO_SHOW_RECOVERY, NOW).steps).toEqual([]);
+  });
+
+  it("uses the owned Partner Initial service only as a confirmed exit, never as a no-show enrollment trigger", () => {
+    expect(enroll({
+      ...event("false"),
+      calendarId: "owned-google-calendar",
+      context: { affiliatePartner: "false", serviceId: "partner-initial" },
+    }, NO_SHOW_RECOVERY, NOW)).toBeNull();
   });
 
   it("pins the exact source copy and two source reschedule checks", () => {

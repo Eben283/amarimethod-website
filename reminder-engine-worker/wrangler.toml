@@ -17,6 +17,14 @@ binding = "REMINDER_DB"
 database_name = "amari-automation"
 database_id = "089d810a-9d2d-43a4-8f1d-dc3620835557"
 
+# Provider-neutral contact, consent, service, and appointment delivery context.
+# The Partner Initial document is hard-shadow and cannot send while its declared
+# source gaps remain open; this binding only closes the former GHL-read dependency.
+[[d1_databases]]
+binding = "CRM_DB"
+database_name = "amari-crm-mirror"
+database_id = "91a5a51d-0319-4c6d-9a6b-36bee3805e62"
+
 # Durable checkout-slot/booking-operation state. The one-minute recovery guard
 # only reads recent public Assessment intents from this database and resumes the
 # existing Pages fulfillment handler; it never owns a second booking path.
@@ -46,9 +54,14 @@ NURTURE_ENGINE_URL = "https://nurture-engine.eben-fa2.workers.dev"
 # FOLLOW_UP_RELIABILITY_SPINE_ENABLED=enabled, FOLLOW_UP_RELIABILITY_SOURCE_VERSION,
 # SOURCE_REVISION, and WORKER_VERSION. Adding the import alone performs no reliability read/write.
 # No Show delivery is also fail-closed by default. A coordinated release must
-# set both NO_SHOW_BEHAVIOR_RELEASE=approved and NO_SHOW_DELIVERY_RELEASE=approved,
-# then publish v3 through the authenticated /workflow-release endpoint. Neither
-# variable belongs in an ordinary deployment.
+# bind CRM_DB, REMINDER_DB, the verified Garrett Google Workspace grant, an
+# OWNED_SMS service and the shared APPOINTMENT_MANAGE_LINK_SECRET; set both exact
+# approvals; then publish active v4 from reviewed shadow v3 through the
+# authenticated /workflow-release endpoint. None of those release values or
+# the SMS binding belongs in an ordinary deployment.
+# Partner Initial also stays source-level shadow. No ordinary release declares
+# its two approval flags, an OWNED_SMS service binding, or the shared
+# APPOINTMENT_MANAGE_LINK_SECRET used by Reminder issuance and Pages validation.
 
 [observability]
 enabled = true

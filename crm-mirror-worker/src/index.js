@@ -60,6 +60,22 @@ import { ownedQuizIntakeReadiness, OwnedQuizIntakeError, upsertOwnedQuizIntake }
 import { ownedQuizNurtureDispatchReadiness } from "./quiz-nurture-dispatch.js";
 import { captureStaffCommunicationCommand, ownedEmailDispatchReadiness } from "./owned-email-dispatch.js";
 import { ownedQuizRetentionReadiness } from "./owned-quiz-retention.js";
+import {
+  AppointmentRecoveryRequestError,
+  captureAppointmentRecoveryRequest,
+  listAppointmentRecoveryRequests,
+} from "./appointment-recovery-requests.js";
+import { MissedAppointmentTruthError, readMissedAppointmentTruth } from "./missed-appointment-truth.js";
+import {
+  captureOwnedAppointmentAttendance,
+  OwnedAppointmentAttendanceError,
+} from "./owned-appointment-attendance.js";
+import { captureOwnedNoteVersion, OwnedNoteError, readOwnedNotes } from "./owned-notes.js";
+import { captureOwnedTaskVersion, OwnedTaskError, readOwnedTasks } from "./owned-tasks.js";
+import {
+  captureOwnedContactClassification,
+  OwnedContactClassificationError,
+} from "./owned-contact-classifications.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -274,6 +290,68 @@ async function actionPayload(request, maximum = 4096) {
   }
 }
 
+async function withOwnedNotes(db, profile, limit) {
+  if (!profile?.contact?.id) return profile;
+  const authority = await readOwnedNotes(db, { contactId: profile.contact.id, limit });
+  const owned = authority.notes || [];
+  const notes = [...(profile.notes || []), ...owned]
+    .sort((left, right) => String(right.updated_at || right.created_at || "")
+      .localeCompare(String(left.updated_at || left.created_at || "")))
+    .slice(0, limit);
+  const noteActivity = owned.map((note) => ({
+    activity_type: "note",
+    occurred_at: note.updated_at,
+    direction: null,
+    channel: null,
+    delivery_status: null,
+    subject: null,
+    body: note.body,
+    status: "owned",
+    detail: note.authored_by,
+    amount_cents: null,
+    currency: null,
+  }));
+  const activityTimeline = [...(profile.activityTimeline || []), ...noteActivity]
+    .sort((left, right) => String(right.occurred_at || "").localeCompare(String(left.occurred_at || "")))
+    .slice(0, limit);
+  return { ...profile, notes, activityTimeline, ownedNoteAuthority: authority };
+}
+
+async function withOwnedTasks(db, profile, limit) {
+  if (!profile?.contact?.id) return profile;
+  const authority = await readOwnedTasks(db, { contactId: profile.contact.id, limit });
+  const owned = authority.tasks || [];
+  const tasks = [...(profile.tasks || []), ...owned]
+    .sort((left, right) => {
+      const leftCompleted = Boolean(left.completed_at || left.status === "completed");
+      const rightCompleted = Boolean(right.completed_at || right.status === "completed");
+      if (leftCompleted !== rightCompleted) return Number(leftCompleted) - Number(rightCompleted);
+      if (Boolean(left.due_at) !== Boolean(right.due_at)) return left.due_at ? -1 : 1;
+      const dueOrder = String(left.due_at || "").localeCompare(String(right.due_at || ""));
+      if (dueOrder) return dueOrder;
+      return String(right.updated_at || right.created_at || "")
+        .localeCompare(String(left.updated_at || left.created_at || ""));
+    })
+    .slice(0, limit);
+  const taskActivity = owned.map((task) => ({
+    activity_type: "task",
+    occurred_at: task.updated_at,
+    direction: null,
+    channel: null,
+    delivery_status: null,
+    subject: task.title,
+    body: null,
+    status: task.status,
+    detail: task.due_at,
+    amount_cents: null,
+    currency: null,
+  }));
+  const activityTimeline = [...(profile.activityTimeline || []), ...taskActivity]
+    .sort((left, right) => String(right.occurred_at || "").localeCompare(String(left.occurred_at || "")))
+    .slice(0, limit);
+  return { ...profile, tasks, activityTimeline, ownedTaskAuthority: authority };
+}
+
 export default {
   async fetch(request, env) {
     env = withGhlProviderInvocation(env);
@@ -437,11 +515,104 @@ export default {
           throw error;
         }
       }
+      if (request.method === "POST" && url.pathname === "/notes/commands") {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff_session_required" });
+        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(403, { error: "named_staff_session_required" });
+        if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid_request_origin" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 8_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          return json(400, { error: "invalid_request", detail: "JSON object required" });
+        }
+        const allowedByAction = {
+          create: new Set(["action", "contactId", "appointmentId", "idempotencyKey", "body"]),
+          revise: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey", "body"]),
+          archive: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey"]),
+          restore: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey"]),
+        };
+        const allowed = allowedByAction[payload.action] || new Set(["action"]);
+        const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const note = await captureOwnedNoteVersion(env.CRM_DB, { ...payload, actor }, new Date().toISOString());
+          return json(note.deduped ? 200 : 201, { success: true, note });
+        } catch (error) {
+          if (error instanceof OwnedNoteError) return json(error.status, { error: error.code, detail: error.message });
+          throw error;
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/tasks/commands") {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff_session_required" });
+        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(403, { error: "named_staff_session_required" });
+        if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid_request_origin" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 4_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          return json(400, { error: "invalid_request", detail: "JSON object required" });
+        }
+        const allowedByAction = {
+          create: new Set(["action", "contactId", "appointmentId", "idempotencyKey", "title", "dueAt"]),
+          revise: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey", "title", "dueAt"]),
+          complete: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
+          reopen: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
+          archive: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
+          restore: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
+        };
+        const allowed = allowedByAction[payload.action] || new Set(["action"]);
+        const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const task = await captureOwnedTaskVersion(env.CRM_DB, { ...payload, actor }, new Date().toISOString());
+          return json(task.deduped ? 200 : 201, { success: true, task });
+        } catch (error) {
+          if (error instanceof OwnedTaskError) return json(error.status, { error: error.code, detail: error.message });
+          throw error;
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/contacts/classification-commands") {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff_session_required" });
+        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(403, { error: "named_staff_session_required" });
+        if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid_request_origin" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 2_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          return json(400, { error: "invalid_request", detail: "JSON object required" });
+        }
+        const allowed = new Set(["action", "contactId", "idempotencyKey", "value"]);
+        const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const classification = await captureOwnedContactClassification(
+            env.CRM_DB, { ...payload, actor }, new Date().toISOString(),
+          );
+          return json(classification.deduped ? 200 : 201, { success: true, classification });
+        } catch (error) {
+          if (error instanceof OwnedContactClassificationError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
       const contactDetail = url.pathname.match(/^\/contacts\/([^/]+)$/);
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
       const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/appointments/missed-truth", "/appointments/recovery-requests", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -581,14 +752,54 @@ export default {
           throw error;
         }
       }
+      if (request.method === "POST" && url.pathname === "/appointments/attendance-commands") {
+        const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
+        if (!new Set(["Eben", "Garrett"]).has(actor)) {
+          return json(400, { error: "recognized_staff_actor_required" });
+        }
+        let payload;
+        try {
+          payload = await actionPayload(request, 2_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          return json(400, { error: "invalid_request", detail: "JSON object required" });
+        }
+        const allowed = new Set([
+          "appointmentId", "contactId", "idempotencyKey", "targetStatus", "expectedRevision",
+        ]);
+        const unsupported = payload && typeof payload === "object" && !Array.isArray(payload)
+          ? Object.keys(payload).filter((key) => !allowed.has(key))
+          : [];
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const command = await captureOwnedAppointmentAttendance(
+            env.CRM_DB,
+            { ...payload, actor },
+            new Date().toISOString(),
+          );
+          return json(command.deduped ? 200 : 201, { success: true, command });
+        } catch (error) {
+          if (error instanceof OwnedAppointmentAttendanceError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
       if (request.method === "POST" && url.pathname === "/appointments/commands") {
         const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
-        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(400, { error: "recognized_staff_actor_required" });
         let payload;
         try {
           payload = await actionPayload(request, 8_000);
         } catch (error) {
           return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!new Set(["Eben", "Garrett", "Client"]).has(actor)) {
+          return json(400, { error: "recognized_staff_actor_required" });
+        }
+        if (actor === "Client" && payload?.action === "schedule") {
+          return json(403, { error: "client_schedule_forbidden" });
         }
         const actionFields = {
           schedule: ["action", "contactId", "serviceId", "idempotencyKey", "startTime", "timezone"],
@@ -671,6 +882,67 @@ export default {
           return json(400, { error: "unsupported_appointment_action" });
         } catch (error) {
           if (error instanceof OwnedAppointmentError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
+      if (request.method === "GET" && url.pathname === "/appointments/recovery-requests") {
+        try {
+          const limit = parseQueueLimit(url.searchParams.get("limit"));
+          const page = await listAppointmentRecoveryRequests(env.CRM_DB, {
+            state: url.searchParams.get("state") === "all" ? "all" : "pending_review",
+            limit: Math.min(limit + 1, 100),
+          });
+          return json(200, {
+            success: true,
+            worker: "amari-crm-mirror",
+            requests: page.slice(0, limit),
+            truncated: page.length > limit,
+          }, { "Cache-Control": "no-store" });
+        } catch (error) {
+          if (error instanceof AppointmentRecoveryRequestError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
+      if (request.method === "GET" && url.pathname === "/appointments/missed-truth") {
+        try {
+          return json(200, {
+            success: true,
+            worker: "amari-crm-mirror",
+            ...(await readMissedAppointmentTruth(env.CRM_DB, {
+              contactId: url.searchParams.get("contactId"),
+              limit: parseQueueLimit(url.searchParams.get("limit")),
+            })),
+          }, { "Cache-Control": "no-store" });
+        } catch (error) {
+          if (error instanceof MissedAppointmentTruthError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/appointments/recovery-requests") {
+        const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
+        if (actor !== "Client") return json(403, { error: "client_recovery_request_required" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 2_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        const allowed = new Set(["appointmentId", "contactId", "appointmentRevision"]);
+        const unsupported = payload && typeof payload === "object" && !Array.isArray(payload)
+          ? Object.keys(payload).filter((key) => !allowed.has(key))
+          : [];
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const captured = await captureAppointmentRecoveryRequest(env.CRM_DB, payload, new Date().toISOString());
+          return json(captured.deduped ? 200 : 201, { success: true, request: captured });
+        } catch (error) {
+          if (error instanceof AppointmentRecoveryRequestError) {
             return json(error.status, { error: error.code, detail: error.message });
           }
           throw error;
@@ -794,19 +1066,51 @@ export default {
       }
       if (request.method === "GET" && clientDeskDetail) {
         const limit = parseClientDeskLimit(url.searchParams.get("limit"));
-        const profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
+        let profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
         if (!profile) return json(404, { error: "contact not found" });
+        profile = await withOwnedNotes(env.CRM_DB, profile, limit);
+        profile = await withOwnedTasks(env.CRM_DB, profile, limit);
         const automationEvidence = await personAutomationInspection(env.AUTOMATION_DB, profile.contact);
-        return json(200, { success: true, worker: "amari-crm-mirror", ...profile, automationEvidence });
+        let missedAppointmentTruth;
+        try {
+          missedAppointmentTruth = await readMissedAppointmentTruth(env.CRM_DB, {
+            contactId: profile.contact.id,
+            limit: 25,
+          });
+        } catch (error) {
+          if (!(error instanceof MissedAppointmentTruthError)) throw error;
+          missedAppointmentTruth = {
+            version: "owned-missed-appointment-truth.v1",
+            readOnly: true,
+            mutableCounterWritten: false,
+            authorityPromoted: false,
+            state: "unavailable",
+            reason: error.code,
+            summary: null,
+            legacyObservation: null,
+            missedAppointments: [],
+          };
+        }
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...profile,
+          automationEvidence,
+          missedAppointmentTruth,
+        });
       }
       if (request.method === "GET" && contactDetail) {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
-        const profile = await contactProfile(
+        let profile = await contactProfile(
           env.CRM_DB,
           decodeURIComponent(contactDetail[1]),
           limit,
           new Date().toISOString(),
         );
+        if (profile) {
+          profile = await withOwnedNotes(env.CRM_DB, profile, limit);
+          profile = await withOwnedTasks(env.CRM_DB, profile, limit);
+        }
         return profile
           ? json(200, { success: true, worker: "amari-crm-mirror", ...profile })
           : json(404, { error: "contact not found" });

@@ -12,10 +12,13 @@ const TERMINAL_DISPATCH_STATES = new Set(["dispatched"]);
 
 export const CONTACT_FOREIGN_KEY_COVERAGE = Object.freeze([
   ["appointment_authority_commands", "contact_id"],
+  ["appointment_attendance_commands", "contact_id"],
   ["appointment_lifecycle_dispatches", "contact_id"],
   ["appointment_payment_events", "contact_id"],
   ["appointment_payment_records", "contact_id"],
+  ["appointment_recovery_requests", "contact_id"],
   ["appointment_source_observations", "contact_id"],
+  ["appointment_status_facts", "contact_id"],
   ["appointments", "contact_id"],
   ["client_desk_seen", "contact_id"],
   ["client_notes", "contact_id"],
@@ -35,6 +38,9 @@ export const CONTACT_FOREIGN_KEY_COVERAGE = Object.freeze([
   ["notes", "contact_id"],
   ["outbound_delivery_attempts", "contact_id"],
   ["owned_communication_commands", "contact_id"],
+  ["owned_contact_classification_commands", "contact_id"],
+  ["owned_note_versions", "contact_id"],
+  ["owned_task_versions", "contact_id"],
   ["owned_followups", "contact_id"],
   ["purchase_reconciliation_candidates", "contact_id"],
   ["purchases", "contact_id"],

@@ -39,12 +39,19 @@ function wallClock(date, minuteOfDay) {
  * while the real practitioner calendar and Amari turnover buffers remain the
  * authority for collisions. No public show-layer preference is applied here.
  */
-export function internalAvailability({ calendarId, startDate, endDate, events = [], excludeAppointmentId = null, now = Date.now() }) {
+export function internalAvailability({
+  calendarId, startDate, endDate, events = [], excludeAppointmentId = null,
+  now = Date.now(), intervalMinutes = INTERNAL_START_INTERVAL_MINUTES,
+}) {
   const policy = policyForCalendarId(calendarId);
   const start = dateEpoch(startDate);
   const end = dateEpoch(endDate);
+  const interval = Number(intervalMinutes);
   if (!policy || !Number.isFinite(start) || !Number.isFinite(end) || end < start || end - start > 32 * DAY_MS) {
     throw new TypeError("valid governed calendar and date range required");
+  }
+  if (!Number.isInteger(interval) || interval < INTERNAL_START_INTERVAL_MINUTES || interval > 120) {
+    throw new TypeError("valid appointment start interval required");
   }
 
   const open = minutes(WORK_HOURS.firstSessionStart);
@@ -55,7 +62,7 @@ export function internalAvailability({ calendarId, startDate, endDate, events = 
   for (let cursor = start; cursor <= end; cursor += DAY_MS) {
     const date = dateString(cursor);
     if (!WORK_HOURS.weekdays.includes(weekday(date))) continue;
-    for (let at = open; at <= last; at += INTERNAL_START_INTERVAL_MINUTES) {
+    for (let at = open; at <= last; at += interval) {
       const datetime = wallClock(date, at);
       if (Date.parse(datetime) <= Number(now)) continue;
       if (!slotRespectsAppBuffer(datetime, calendarId, blocking)) continue;
@@ -86,7 +93,7 @@ function appointmentStart(appointment) {
 }
 
 function assertCommandInput(input) {
-  if (!new Set(["Eben", "Garrett"]).has(input.actor)) throw new TypeError("recognized Staff actor required");
+  if (!new Set(["Eben", "Garrett", "Client"]).has(input.actor)) throw new TypeError("recognized appointment actor required");
   if (!new Set(["cancel", "reschedule"]).has(input.action)) throw new TypeError("valid appointment action required");
   if (!clean(input.contactId, 100) || !clean(input.appointmentId, 100) || !clean(input.idempotencyKey, 160)) {
     throw new TypeError("complete appointment command identity required");
@@ -222,6 +229,7 @@ export async function manageAppointmentCommand(input) {
       events: schedule,
       excludeAppointmentId: providerAppointmentId,
       now,
+      intervalMinutes: actor === "Client" ? policyForCalendarId(calendarId).intervalMinutes : INTERNAL_START_INTERVAL_MINUTES,
     });
     if (!available.some((slot) => slot.datetime === newStartTime)) {
       throw Object.assign(new Error("That time is no longer open on Garrett’s schedule."), { code: "slot_unavailable" });

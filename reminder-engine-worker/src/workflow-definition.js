@@ -39,6 +39,7 @@ export function defineWorkflow(document) {
   requireText(document?.name, "workflow name");
   if (!Number.isInteger(document?.version) || document.version < 1) throw new Error("workflow version must be a positive integer");
   if (!Array.isArray(document?.trigger?.calendarIds) || !document.trigger.calendarIds.length) throw new Error("workflow trigger needs a calendar");
+  optionalStringList(document.trigger.serviceIds, "workflow trigger service ids");
   optionalStringList(document.trigger.statuses, "workflow trigger statuses");
   optionalStringList(document.trigger.eventTypes, "workflow trigger event types");
   optionalStringList(document.sourceGaps, "workflow source gaps");
@@ -94,6 +95,7 @@ export function executableFlow(workflow) {
     definitionVersion: workflow.version,
     flowKey: workflow.id,
     calendarIds: workflow.trigger.calendarIds,
+    serviceIds: workflow.trigger.serviceIds,
     enrollOn: {
       statuses: workflow.trigger.statuses,
       eventTypes: workflow.trigger.eventTypes,

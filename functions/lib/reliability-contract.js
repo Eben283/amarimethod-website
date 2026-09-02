@@ -18,12 +18,12 @@ export const FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
 });
 export const NO_SHOW_COUNTER_RELIABILITY_ROUTE = Object.freeze({
   accepted: Object.freeze([
-    Object.freeze({ id: "durable-receipt", transition: "received", label: "Record durable no-show receipt", detail: "Amari stores the authenticated GHL no-show identity and payload hash before assessing the counter obligation." }),
+    Object.freeze({ id: "durable-receipt", transition: "received", label: "Record durable no-show receipt", detail: "Amari stores the authenticated GHL no-show identity and payload hash before assessing the canonical status obligation." }),
     Object.freeze({ id: "authenticate-source", transition: "authenticated", label: "Verify source authenticity", detail: "The event must pass the authenticated appointment-webhook boundary." }),
     Object.freeze({ id: "normalize-identity", transition: "normalized", label: "Normalize the exact no-show", detail: "Amari requires the appointment, person, start time, No Show status, Normal event type, and an approved calendar." }),
-    Object.freeze({ id: "expected-increment", transition: "accepted", label: "Record expected missed-count increment", detail: "A durable lifecycle records one expected increment plus the ingest-time GHL field observation. GHL remains the sole live counter owner; the observation is not parity proof." }),
+    Object.freeze({ id: "owned-status-reconciliation", transition: "accepted", label: "Reconcile owned missed-status truth", detail: "A durable lifecycle expects the same appointment to appear in CRM's immutable status facts. The derived count writes no mutable contact field; the ingest-time GHL field remains non-authoritative comparison evidence." }),
   ]),
-  rejected: Object.freeze({ id: "reliability-exception", transition: "rejected", label: "Open Staff reliability exception", detail: "Incomplete or ineligible no-show evidence is retained as a named Staff exception and never changes the contact counter." }),
+  rejected: Object.freeze({ id: "reliability-exception", transition: "rejected", label: "Open Staff reliability exception", detail: "Incomplete or ineligible no-show evidence is retained as a named Staff exception and never changes an appointment or contact counter." }),
 });
 export const RAW_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 export const NORMALIZED_RETENTION_MS = 400 * 24 * 60 * 60 * 1000;

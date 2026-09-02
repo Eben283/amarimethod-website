@@ -41,6 +41,55 @@ test('owned Staff email dispatcher remains source-level shadow and cannot be env
   assert.match(source, /fallbackProvider:\s*null/);
 });
 
+test('owned attendance mutation remains source-level shadow and provider-free', () => {
+  const source = readFileSync(new URL('../crm-mirror-worker/src/owned-appointment-attendance.js', import.meta.url), 'utf8');
+  const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
+  assert.match(source, /export const OWNED_ATTENDANCE_SOURCE_MODE = ["']shadow["']/);
+  assert.doesNotMatch(source, /export const OWNED_ATTENDANCE_SOURCE_MODE = ["']active["']/);
+  assert.match(source, /providerFallback:\s*null/);
+  assert.match(source, /providerWrite:\s*false/);
+  assert.match(source, /sessionLedgerWrite:\s*false/);
+  assert.match(source, /paymentWrite:\s*false/);
+  assert.match(router, /captureOwnedAppointmentAttendance\(\s*env\.CRM_DB/);
+  assert.doesNotMatch(router, /OWNED_ATTENDANCE_SOURCE_MODE\s*:\s*env\./);
+});
+
+test('owned note authority remains source-level shadow, provider-free, and non-destructive', () => {
+  const source = readFileSync(new URL('../crm-mirror-worker/src/owned-notes.js', import.meta.url), 'utf8');
+  const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
+  assert.match(source, /export const OWNED_NOTE_SOURCE_MODE = ["']shadow["']/);
+  assert.doesNotMatch(source, /export const OWNED_NOTE_SOURCE_MODE = ["']active["']/);
+  assert.match(source, /providerFallback:\s*null/);
+  assert.match(source, /providerWrite:\s*false/);
+  assert.match(source, /destructiveDeleteExposed:\s*false/);
+  assert.match(router, /captureOwnedNoteVersion\(env\.CRM_DB/);
+  assert.doesNotMatch(router, /OWNED_NOTE_SOURCE_MODE\s*:\s*env\./);
+});
+
+test('owned task authority remains source-level shadow, provider-free, and non-destructive', () => {
+  const source = readFileSync(new URL('../crm-mirror-worker/src/owned-tasks.js', import.meta.url), 'utf8');
+  const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
+  assert.match(source, /export const OWNED_TASK_SOURCE_MODE = ["']shadow["']/);
+  assert.doesNotMatch(source, /export const OWNED_TASK_SOURCE_MODE = ["']active["']/);
+  assert.match(source, /providerFallback:\s*null/);
+  assert.match(source, /providerWrite:\s*false/);
+  assert.match(source, /destructiveDeleteExposed:\s*false/);
+  assert.match(router, /captureOwnedTaskVersion\(env\.CRM_DB/);
+  assert.doesNotMatch(router, /OWNED_TASK_SOURCE_MODE\s*:\s*env\./);
+});
+
+test('owned contact classifications remain source-level shadow and provider-free', () => {
+  const source = readFileSync(new URL('../crm-mirror-worker/src/owned-contact-classifications.js', import.meta.url), 'utf8');
+  const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
+  assert.match(source, /export const OWNED_CLASSIFICATION_SOURCE_MODE = ["']shadow["']/);
+  assert.doesNotMatch(source, /export const OWNED_CLASSIFICATION_SOURCE_MODE = ["']active["']/);
+  assert.match(source, /providerFallback:\s*null/);
+  assert.match(source, /providerWrite:\s*false/);
+  assert.match(source, /destructiveEvidenceDelete:\s*false/);
+  assert.match(router, /captureOwnedContactClassification\(\s*env\.CRM_DB/);
+  assert.doesNotMatch(router, /OWNED_CLASSIFICATION_SOURCE_MODE\s*:\s*env\./);
+});
+
 test('owned quiz retention remains aggregate read-only with no destructive execution seam', () => {
   const source = readFileSync(new URL('../crm-mirror-worker/src/owned-quiz-retention.js', import.meta.url), 'utf8');
   const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');

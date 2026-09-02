@@ -8,7 +8,7 @@ import { FLOWS } from "./config.js";
 import { enroll, backfillEnrollment, eventMatchesFlow } from "./enroll.js";
 import { processStep } from "./sweep.js";
 import { resolvePipelineMoves } from "./pipeline.js";
-import { saveEnrollment, saveBackfilledEnrollment, retireLegacyEnrollment, retimeEnrollment, queueRescheduleConfirmation, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, enrollmentId } from "./store.js";
+import { saveEnrollment, saveBackfilledEnrollment, retireLegacyEnrollment, retimeEnrollment, queueRescheduleConfirmation, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, exitEnrollmentsForContacts, enrollmentId } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { writeOpsLastRun, OPS_LAST_RUN_KEYS } from "../../functions/lib/ops-last-run.js";
 import { assessmentCutoverEligibility, assessmentTestEligibility, renderAssessmentConfirmation } from "./assessment-test-delivery.js";
@@ -21,7 +21,9 @@ import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
 import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 import { deliverNoShowStep, noShowDeliveryEligibility } from "./no-show-delivery.js";
+import { deliverPartnerInitialInPersonStep, partnerInitialInPersonDeliveryEligibility } from "./partner-initial-in-person-delivery.js";
 import { ensurePublishedWorkflow, publishedWorkflow, workflowVersion, asExecutableWorkflow } from "./workflow-store.js";
+import { ownedContactAliases } from "./owned-contact-identity.js";
 
 export function mergeExecutionFlows(staticFlows, canonicalFlows) {
   const canonicalOnly = new Set([INITIAL_IN_PERSON_WORKFLOW.id, INITIAL_VIRTUAL_WORKFLOW.id, FOLLOW_UP_WORKFLOW.id, NO_SHOW_RECOVERY_WORKFLOW.id]);
@@ -58,7 +60,13 @@ export async function handleEvent(env, event, nowMs, { workflowOverrides = [] } 
   const actions = [];
   if (!event || event.recognized !== true) return { actions };
 
-  const flows = (await executionFlows(env, workflowOverrides)).filter((flow) => eventMatchesFlow(event, flow));
+  const flows = (await executionFlows(env, workflowOverrides))
+    .filter((flow) => eventMatchesFlow(event, flow))
+    // A confirmation workflow may depend on first removing pending recovery
+    // for the same person. Preserve that source order across all providers and
+    // fail before creating the new queue if exact exit identity is unavailable.
+    .sort((left, right) => Number(Boolean(right.exitOn?.includes(event.type)))
+      - Number(Boolean(left.exitOn?.includes(event.type))));
   for (const flow of flows) {
     if (flow.enrollOn.statuses.includes(event.type)) {
       const enrollment = enroll(event, flow, nowMs);
@@ -115,13 +123,25 @@ export async function handleEvent(env, event, nowMs, { workflowOverrides = [] } 
     }
 
     if (flow.exitOn && flow.exitOn.includes(event.type) && event.contactId) {
-      const { cancelledSteps, exitedEnrollments } = await exitEnrollmentsForContact(db, flow.flowKey, event.contactId);
+      let contactAliases;
+      try {
+        contactAliases = await ownedContactAliases(env, event);
+      } catch (error) {
+        await appendEvent(db, {
+          ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
+          definitionVersion: flow.definitionVersion, appointmentId: event.appointmentId,
+          action: "exit_identity_blocked", outcome: "blocked",
+          detail: { reason: error?.code || "owned_contact_identity_unavailable" },
+        });
+        throw error;
+      }
+      const { cancelledSteps, exitedEnrollments } = await exitEnrollmentsForContacts(db, flow.flowKey, contactAliases);
       if (exitedEnrollments > 0) {
         await appendEvent(db, {
           ts: nowMs, engine: "reminder", flowKey: flow.flowKey, contactId: event.contactId,
           definitionVersion: flow.definitionVersion, appointmentId: event.appointmentId,
           action: "exited", outcome: "exited",
-          detail: { reason: "confirmed_rebooking", cancelledSteps, exitedEnrollments },
+          detail: { reason: "confirmed_rebooking", identityScope: "owned_contact", aliasesMatched: contactAliases.length, cancelledSteps, exitedEnrollments },
         });
         actions.push({ engine: "reminder", action: "exit", detail: { flowKey: flow.flowKey, cancelledSteps, exitedEnrollments } });
       }
@@ -248,6 +268,11 @@ export async function runSweep(env, nowMs, limit = 100) {
       const virtualCutover = initialVirtualCutoverEligibility(env, flow, step, enrollment);
       if (virtualCutover.eligible) {
         const result = await deliverInitialVirtualStep(env, step, enrollment, {}, flow.workflowDocument);
+        return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
+      }
+      const partnerInitialCutover = partnerInitialInPersonDeliveryEligibility(env, flow, step, enrollment);
+      if (partnerInitialCutover.eligible) {
+        const result = await deliverPartnerInitialInPersonStep(env, step, enrollment, {}, flow.workflowDocument);
         return { handled: true, kind: "cutover", recipient: result.recipient || null, result };
       }
       const followUpCutover = followUpDeliveryEligibility(env, flow, step, enrollment);

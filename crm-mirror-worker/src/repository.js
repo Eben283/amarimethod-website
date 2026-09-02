@@ -493,11 +493,14 @@ export async function upsertGhlAppointment(db, appointment, contactId, now, proj
     await db.prepare(
       `UPDATE appointments
        SET contact_id = ?, service_id = ?, provider_calendar_id = ?, provider_status_raw = ?, status = ?,
-           starts_at = ?, ends_at = ?, timezone = ?, provider_meeting_location = ?, updated_at = ?
+           starts_at = ?, ends_at = ?, timezone = ?, provider_meeting_location = ?,
+           revision = CASE WHEN status <> ? THEN revision + 1 ELSE revision END,
+           updated_at = ?
        WHERE id = ?`,
     ).bind(
       contactId, service?.id || null, appointment.calendarId, appointment.providerStatusRaw, appointment.status,
-      appointment.startsAt, appointment.endsAt, appointment.timezone, appointment.meetingLocation, now, appointmentId,
+      appointment.startsAt, appointment.endsAt, appointment.timezone, appointment.meetingLocation,
+      appointment.status, now, appointmentId,
     ).run();
   } else {
     await db.prepare(
@@ -1101,10 +1104,10 @@ export async function contactProfile(db, contactId, limit, now) {
        WHERE contact.id = ?`,
     ).bind(contactId),
     db.prepare(
-      "SELECT tag FROM contact_tags WHERE contact_id = ? ORDER BY tag",
+      "SELECT DISTINCT tag FROM contact_tags WHERE contact_id = ? ORDER BY tag",
     ).bind(contactId),
     db.prepare(
-      "SELECT role FROM contact_roles WHERE contact_id = ? ORDER BY role",
+      "SELECT DISTINCT role FROM contact_roles WHERE contact_id = ? ORDER BY role",
     ).bind(contactId),
     db.prepare(
       `SELECT attribute_key, attribute_value, source, updated_at

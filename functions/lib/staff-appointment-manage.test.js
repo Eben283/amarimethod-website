@@ -106,6 +106,29 @@ describe("manageAppointmentCommand", () => {
     });
   });
 
+  it("does not let a client-tampered form select a Staff-only quarter-hour start", async () => {
+    const original = {
+      id: "old_client", contactId: "contact_1", calendarId: "lfsnaiGiLNL2z12pLKDP",
+      serviceId: "partner-initial", title: "Partner Initial Session", appointmentStatus: "confirmed",
+      startTime: "2026-08-12T13:00:00-07:00", endTime: "2026-08-12T14:00:00-07:00",
+    };
+    const store = {
+      claim: async () => ({ state: "acquired", command: { id: "cmd_client", replacementAppointmentId: null } }),
+      fail: async () => {},
+    };
+    const provider = {
+      listContactAppointments: async () => [original],
+      listSchedule: async () => [original],
+      createReplacement: async () => { throw new Error("client-only slot must not create"); },
+    };
+    await expect(manageAppointmentCommand({
+      actor: "Client", action: "reschedule", contactId: "contact_1", appointmentId: "owned_client",
+      providerAppointmentId: "old_client", idempotencyKey: "client-manage:signed",
+      startTime: "2026-08-12T10:15:00-07:00", timezone: "America/Los_Angeles",
+      store, provider, now: Date.parse("2026-08-10T09:00:00-07:00"),
+    })).rejects.toMatchObject({ code: "slot_unavailable" });
+  });
+
   it("cancels the replacement and keeps the original when the old cancellation fails", async () => {
     const order = [];
     let appointments = [{

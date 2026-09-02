@@ -24,6 +24,8 @@ export { INITIAL_VIRTUAL } from "./initial-virtual-workflow.js";
 import { INITIAL_VIRTUAL } from "./initial-virtual-workflow.js";
 export { NO_SHOW_RECOVERY } from "./no-show-recovery-workflow.js";
 import { NO_SHOW_RECOVERY } from "./no-show-recovery-workflow.js";
+export { PARTNER_INITIAL_IN_PERSON } from "./partner-initial-in-person-workflow.js";
+import { PARTNER_INITIAL_IN_PERSON } from "./partner-initial-in-person-workflow.js";
 
 // Discovery Call — Confirmation & Reminder Flow (twin: discovery-call-confirmation-reminder-
 // flow.yaml, published, 3 calendars). GHL trigger is `confirmed` only — with auto-confirm that
@@ -49,29 +51,6 @@ export const DISCOVERY_CALL = Object.freeze({
     { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true },
     { at: "start-15m", type: "sms", template: "fifteen-min-sms", skipIfPast: true },
     { at: "start-15m", type: "internal_sms", template: "fifteen-min-internal", skipIfPast: true },
-  ]),
-});
-
-// In-Person Partner Session: Confirmation & Reminder Flow — a deliberately narrow first
-// cutover slice. It stays shadow-only until its D1 run evidence matches the existing GHL
-// workflow. The owned service identity permits a reviewed non-GHL calendar edge while
-// every delivery step remains non-sending shadow evidence.
-export const PARTNER_INITIAL_IN_PERSON = Object.freeze({
-  name: "In-Person Partner Session: Confirmation & Reminder Flow",
-  definitionVersion: 1,
-  flowKey: "partner-initial-in-person",
-  calendarIds: Object.freeze(["lfsnaiGiLNL2z12pLKDP"]), // In Person Session for Partners
-  serviceIds: Object.freeze(["partner-initial"]),
-  enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: null }),
-  cancelOn: Object.freeze(["cancelled"]),
-  mode: "shadow",
-  steps: Object.freeze([
-    { at: "enroll", type: "internal_email", template: "booked-internal", skipIfPast: false },
-    { at: "enroll", type: "email", template: "confirmation", skipIfPast: false },
-    { at: "start-1440m", type: "email", template: "day-before", skipIfPast: true },
-    { at: "start-60m", type: "email", template: "starting-soon", skipIfPast: true },
-    { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
-    { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true },
   ]),
 });
 

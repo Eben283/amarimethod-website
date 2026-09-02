@@ -54,16 +54,19 @@ describe("No Show missed-count shadow", () => {
     expect(raw.prepare("SELECT COUNT(*) count FROM source_events").get().count).toBe(0);
   });
 
-  it("records one durable lifecycle and one GHL-retained increment obligation", async () => {
+  it("records one durable lifecycle and one owned status-reconciliation obligation", async () => {
     const result = await captureNoShowCounterShadow({ env, event: event(), rawPayload: RAW, nowMs: NOW });
     expect(result).toMatchObject({ enabled: true, applicable: true, accepted: true, created: true });
     expect(raw.prepare("SELECT family, scope, definition_version FROM lifecycle_instances").get())
-      .toEqual({ family: "no-show-missed-count", scope: "normal-no-show-counter-shadow", definition_version: 1 });
+      .toEqual({ family: "no-show-missed-count", scope: "normal-no-show-owned-truth-shadow", definition_version: 2 });
     expect(raw.prepare("SELECT obligation_key, kind, owner_role, closer, state FROM lifecycle_obligations").get())
-      .toEqual({ obligation_key: "increment-missed-appointments", kind: "contact_field_increment", owner_role: "ghl-retained", closer: "No Show — Increment Missed Count", state: "pending" });
+      .toEqual({ obligation_key: "reconcile-owned-missed-status", kind: "canonical_status_reconciliation", owner_role: "amari-owned-shadow", closer: "CRM appointment status facts", state: "pending" });
     const normalized = JSON.parse(raw.prepare("SELECT normalized_json FROM source_events").get().normalized_json);
     expect(normalized).toMatchObject({ observedAtIngest: 2, observedField: MISSED_APPOINTMENTS_FIELD, liveOwner: "No Show — Increment Missed Count" });
     expect(normalized.observationLimitation).toContain("not increment proof");
+    expect(normalized.ownedTruth).toEqual(expect.objectContaining({
+      store: "CRM_DB.appointment_status_facts", mutableCounterWritten: false, authorityPromoted: false,
+    }));
     expect(raw.prepare("SELECT transition FROM source_event_transitions ORDER BY sequence").all().map((row) => row.transition))
       .toEqual(["received", "authenticated", "normalized", "accepted"]);
   });
