@@ -484,6 +484,72 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(storageTouches).toBe(0);
   });
 
+  it("keeps owned task commands named-Staff-only, source-shadow, and unable to accept provider fields", async () => {
+    const values = new Map();
+    let storageTouches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      OWNED_TASK_SOURCE_MODE: "active",
+      PORTAL_KV: {
+        put: async (key, value) => values.set(key, value),
+        get: async (key) => values.get(key) || null,
+        delete: async (key) => values.delete(key),
+      },
+      CRM_DB: {
+        prepare() {
+          storageTouches += 1;
+          throw new Error("source-shadow route must not touch storage");
+        },
+      },
+    };
+    const payload = {
+      action: "create",
+      contactId: "contact-1",
+      appointmentId: "appointment-1",
+      idempotencyKey: "owned-task-command-0001",
+      title: "Confirm the client's next practice plan",
+      dueAt: "2026-09-02T10:00:00-07:00",
+    };
+    const request = (cookie, extra = {}) => new Request("https://crm.test/tasks/commands", {
+      method: "POST",
+      headers: {
+        ...(cookie ? { Cookie: cookie } : {}),
+        Origin: "https://crm.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...payload, ...extra }),
+    });
+
+    expect((await worker.fetch(request(null), env)).status).toBe(401);
+    const genericSession = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const genericCookie = genericSession.headers.get("Set-Cookie");
+    const unnamed = await worker.fetch(request(genericCookie), env);
+    expect(unnamed.status).toBe(403);
+    await expect(unnamed.json()).resolves.toEqual({ error: "named_staff_session_required" });
+
+    const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Eben" },
+    }), env);
+    const accessBody = await access.json();
+    const handoff = await worker.fetch(new Request(accessBody.url), env);
+    const namedCookie = handoff.headers.get("Set-Cookie");
+
+    const unsupported = await worker.fetch(request(namedCookie, { providerTaskId: "ghl-task-1" }), env);
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerTaskId"] });
+
+    const shadow = await worker.fetch(request(namedCookie), env);
+    expect(shadow.status).toBe(503);
+    await expect(shadow.json()).resolves.toEqual({
+      error: "owned_task_shadow_only",
+      detail: "owned task commands remain source-level shadow",
+    });
+    expect(storageTouches).toBe(0);
+  });
+
   it("keeps sender readiness behind staff authentication", async () => {
     const env = { WORKER_AUTH_SECRET: "test-secret" };
     const denied = await worker.fetch(new Request("https://crm.test/sender/readiness"), env);
