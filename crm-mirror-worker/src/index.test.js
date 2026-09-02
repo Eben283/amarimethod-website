@@ -127,6 +127,60 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(batches).toBe(1);
   });
 
+  it("keeps attendance mutation source-pinned shadow despite environment flags", async () => {
+    let storageTouches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      OWNED_ATTENDANCE_SOURCE_MODE: "active",
+      CRM_DB: {
+        prepare() {
+          storageTouches += 1;
+          throw new Error("source-shadow route must not touch storage");
+        },
+      },
+    };
+    const request = (headers = {}, extra = {}) => new Request(
+      "https://crm.test/appointments/attendance-commands",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify({
+          appointmentId: "appointment-1",
+          contactId: "contact-1",
+          idempotencyKey: "attendance-command-0001",
+          targetStatus: "attended",
+          expectedRevision: 1,
+          ...extra,
+        }),
+      },
+    );
+    expect((await worker.fetch(request(), env)).status).toBe(401);
+    const invalidActor = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Client",
+    }), env);
+    expect(invalidActor.status).toBe(400);
+    await expect(invalidActor.json()).resolves.toEqual({ error: "recognized_staff_actor_required" });
+
+    const unsupported = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Garrett",
+    }, { grantSession: true }), env);
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["grantSession"] });
+
+    const shadow = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Garrett",
+    }), env);
+    expect(shadow.status).toBe(503);
+    await expect(shadow.json()).resolves.toEqual({
+      error: "owned_attendance_shadow_only",
+      detail: "owned attendance commands remain source-level shadow",
+    });
+    expect(storageTouches).toBe(0);
+  });
+
   it("keeps recovery intake Worker-authenticated, Client-scoped, and unable to accept booking or entitlement fields", async () => {
     const url = "https://crm.test/appointments/recovery-requests";
     const payload = {

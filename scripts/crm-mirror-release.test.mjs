@@ -41,6 +41,19 @@ test('owned Staff email dispatcher remains source-level shadow and cannot be env
   assert.match(source, /fallbackProvider:\s*null/);
 });
 
+test('owned attendance mutation remains source-level shadow and provider-free', () => {
+  const source = readFileSync(new URL('../crm-mirror-worker/src/owned-appointment-attendance.js', import.meta.url), 'utf8');
+  const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
+  assert.match(source, /export const OWNED_ATTENDANCE_SOURCE_MODE = ["']shadow["']/);
+  assert.doesNotMatch(source, /export const OWNED_ATTENDANCE_SOURCE_MODE = ["']active["']/);
+  assert.match(source, /providerFallback:\s*null/);
+  assert.match(source, /providerWrite:\s*false/);
+  assert.match(source, /sessionLedgerWrite:\s*false/);
+  assert.match(source, /paymentWrite:\s*false/);
+  assert.match(router, /captureOwnedAppointmentAttendance\(\s*env\.CRM_DB/);
+  assert.doesNotMatch(router, /OWNED_ATTENDANCE_SOURCE_MODE\s*:\s*env\./);
+});
+
 test('owned quiz retention remains aggregate read-only with no destructive execution seam', () => {
   const source = readFileSync(new URL('../crm-mirror-worker/src/owned-quiz-retention.js', import.meta.url), 'utf8');
   const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
