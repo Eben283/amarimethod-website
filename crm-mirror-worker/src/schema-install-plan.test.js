@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { canonicalJson } from "../../functions/lib/automation-truth-phase-b.js";
 import {
   CRM_PRODUCTION_V22_BOUNDARY,
   assessCrmSchemaRecovery,
@@ -10,6 +11,7 @@ import {
   classifyCrmSchemaInstallOutcome,
   createCrmSchemaInstallArtifact,
   createCrmSchemaInstallBatchRequest,
+  createCrmSchemaImportTransport,
   crmSchemaReadbackQueries,
   deriveCrmSchemaCatalogDelta,
   normalizedCrmCatalogDigest,
@@ -95,7 +97,7 @@ describe("CRM schema-only v22 to v30 install plan", () => {
     expect(artifact.productionWriteAuthorized).toBe(false);
   });
 
-  it("pins one REST batch request with 101 complete statements", () => {
+  it("pins the rejected Query API batch as exact no-retry evidence", () => {
     const request = createCrmSchemaInstallBatchRequest();
     expect(request).toMatchObject({
       kind: "d1_rest_query_batch_v1",
@@ -109,6 +111,50 @@ describe("CRM schema-only v22 to v30 install plan", () => {
       expect(Object.keys(entry)).toEqual(["sql"]);
       expect(splitCrmSchemaSqlStatements(entry.sql)).toEqual([entry.sql]);
     }
+  });
+
+  it("pins one SQL-file import operation with cached-init handling and no retry", () => {
+    const transport = createCrmSchemaImportTransport();
+    expect(transport).toMatchObject({
+      kind: "d1_remote_sql_file_import_v1",
+      endpoint: "import",
+      parser: "provider_sql_file_ingestion",
+      logicalImportOperations: 1,
+      artifact: {
+        bytes: 46181,
+        sha256: "5be18c203f2fbf6051ad454d0fc84e0335f55a6261ef5b91e0eccc215135fb8e",
+        etagMd5: "f059063a3c391dbe41d6f46f196c95ca",
+        expectedStatementCount: 101,
+      },
+      operationTimeoutMs: 300000,
+      retryAllowed: false,
+      uncertainPhasePolicy: "stop_without_reissuing_init_or_ingest_then_primary_readback",
+      manifestBytes: 1801,
+      sha256: "654045f8a269f8fb6bac565a14c636a9bb3cd041d01fd20908943326dd53fbb7",
+    });
+    expect(transport.protocol.init).toMatchObject({
+      databaseMutation: "provider_state_dependent",
+      mayBeginCachedIngestion: true,
+      maximumRequests: 1,
+    });
+    expect(transport.protocol.upload).toMatchObject({ databaseMutation: false, maximumRequests: 1 });
+    expect(transport.protocol.ingest).toMatchObject({
+      condition: "only_after_verified_upload",
+      databaseMutation: true,
+      maximumRequests: 1,
+    });
+    expect(transport.protocol.poll).toMatchObject({
+      databaseMutation: false,
+      observesBackgroundMutation: true,
+      maximumRequests: 60,
+    });
+    expect(transport.rejectedQueryTransports).toEqual([
+      { kind: "d1_rest_query_single_sql_v1", payloadSha256: transport.artifact.sha256 },
+      { kind: "d1_rest_query_batch_v1", requestSha256: "2e4015ee122171177fadec4475beaa74f58b42d263b61324af275a98454bf150" },
+    ]);
+    const { manifestBytes, sha256: manifestSha256, ...manifest } = transport;
+    expect(Buffer.byteLength(canonicalJson(manifest))).toBe(manifestBytes);
+    expect(sha256(canonicalJson(manifest))).toBe(manifestSha256);
   });
 
   it("splits only top-level boundaries and rejects explicit transaction control", () => {

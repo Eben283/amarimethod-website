@@ -7,7 +7,7 @@ import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { canonicalJson } from "../functions/lib/automation-truth-phase-b.js";
 
-export const CRM_SCHEMA_INSTALL_CONTRACT = "crm-schema-install-plan.v2";
+export const CRM_SCHEMA_INSTALL_CONTRACT = "crm-schema-install-plan.v3";
 export const CRM_DATABASE = Object.freeze({
   id: "91a5a51d-0319-4c6d-9a6b-36bee3805e62",
   name: "amari-crm-mirror",
@@ -58,6 +58,12 @@ const EXPECTED_BATCH_REQUEST = Object.freeze({
   bytes: 48039,
   sha256: "2e4015ee122171177fadec4475beaa74f58b42d263b61324af275a98454bf150",
 });
+const EXPECTED_IMPORT_TRANSPORT = Object.freeze({
+  artifactMd5: "f059063a3c391dbe41d6f46f196c95ca",
+  statementCount: 101,
+  manifestBytes: 1801,
+  sha256: "654045f8a269f8fb6bac565a14c636a9bb3cd041d01fd20908943326dd53fbb7",
+});
 const EXPECTED_DELTA = Object.freeze({
   count: 117,
   sha256: "506daf9eb086b8462f5d4a8e37132244812d9b5495a4936150e90720d1e2214f",
@@ -77,6 +83,7 @@ const RESULT_FLAGS = Object.freeze({
 });
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const md5 = (value) => createHash("md5").update(value).digest("hex");
 const catalogKey = (row) => `${row.type}:${row.name}`;
 const sortedCatalog = (rows) => [...rows].sort((left, right) =>
   left.type.localeCompare(right.type) || left.name.localeCompare(right.name));
@@ -245,7 +252,7 @@ export function splitCrmSchemaSqlStatements(sql) {
   return Object.freeze(statements);
 }
 
-/** Exact one-HTTP-request D1 REST batch body; no credential or transport path. */
+/** Exact rejected Query API batch body, retained only as no-retry evidence. */
 export function createCrmSchemaInstallBatchRequest() {
   const artifact = createCrmSchemaInstallArtifact();
   const statements = splitCrmSchemaSqlStatements(artifact.sql);
@@ -264,6 +271,87 @@ export function createCrmSchemaInstallBatchRequest() {
     throw new Error("install_batch_request_mismatch");
   }
   return request;
+}
+
+/**
+ * Exact source-only contract for one D1 SQL-file import operation. Only the
+ * provider-returned upload URL, filename and bookmark are variable. `init` may
+ * begin ingestion when the provider already has the artifact; otherwise one
+ * verified upload permits one `ingest`. No phase may be retried after an
+ * uncertain result.
+ */
+export function createCrmSchemaImportTransport() {
+  const artifact = createCrmSchemaInstallArtifact();
+  const artifactMd5 = md5(artifact.sql);
+  const statementCount = splitCrmSchemaSqlStatements(artifact.sql).length;
+  if (artifactMd5 !== EXPECTED_IMPORT_TRANSPORT.artifactMd5
+    || statementCount !== EXPECTED_IMPORT_TRANSPORT.statementCount) {
+    throw new Error("install_import_transport_mismatch");
+  }
+  const manifest = Object.freeze({
+    kind: "d1_remote_sql_file_import_v1",
+    endpoint: "import",
+    parser: "provider_sql_file_ingestion",
+    logicalImportOperations: 1,
+    artifact: Object.freeze({
+      bytes: artifact.bytes,
+      sha256: artifact.sha256,
+      etagMd5: artifactMd5,
+      expectedStatementCount: statementCount,
+    }),
+    protocol: Object.freeze({
+      init: Object.freeze({
+        method: "POST",
+        body: Object.freeze({ action: "init", etag: artifactMd5 }),
+        databaseMutation: "provider_state_dependent",
+        mayBeginCachedIngestion: true,
+        maximumRequests: 1,
+      }),
+      upload: Object.freeze({
+        method: "PUT",
+        urlSource: "provider_init_upload_url",
+        filenameSource: "provider_init_filename",
+        body: "exact_artifact_bytes",
+        requireResponseEtagMd5: artifactMd5,
+        databaseMutation: false,
+        maximumRequests: 1,
+      }),
+      ingest: Object.freeze({
+        method: "POST",
+        bodyTemplate: Object.freeze({ action: "ingest", filename: "provider_init_filename", etag: artifactMd5 }),
+        condition: "only_after_verified_upload",
+        databaseMutation: true,
+        maximumRequests: 1,
+      }),
+      poll: Object.freeze({
+        method: "POST",
+        bodyTemplate: Object.freeze({ action: "poll", current_bookmark: "provider_previous_at_bookmark" }),
+        databaseMutation: false,
+        observesBackgroundMutation: true,
+        maximumRequests: 60,
+      }),
+    }),
+    operationTimeoutMs: 300000,
+    retryAllowed: false,
+    uncertainPhasePolicy: "stop_without_reissuing_init_or_ingest_then_primary_readback",
+    rejectedQueryTransports: Object.freeze([
+      Object.freeze({ kind: "d1_rest_query_single_sql_v1", payloadSha256: artifact.sha256 }),
+      Object.freeze({ kind: "d1_rest_query_batch_v1", requestSha256: EXPECTED_BATCH_REQUEST.sha256 }),
+    ]),
+    ...RESULT_FLAGS,
+  });
+  const json = canonicalJson(manifest);
+  const manifestBytes = Buffer.byteLength(json);
+  const manifestSha256 = sha256(json);
+  if (manifestBytes !== EXPECTED_IMPORT_TRANSPORT.manifestBytes
+    || manifestSha256 !== EXPECTED_IMPORT_TRANSPORT.sha256) {
+    throw new Error("install_import_manifest_mismatch");
+  }
+  return Object.freeze({
+    ...manifest,
+    manifestBytes,
+    sha256: manifestSha256,
+  });
 }
 
 function createLedger(db) {
@@ -571,7 +659,7 @@ export function planCrmSchemaInstall(options) {
     if (options.recovery === null) return result("pending", { reasonCodes: ["missing_recovery_metadata"] });
     validateRecovery(options.recovery, now);
     const artifact = createCrmSchemaInstallArtifact();
-    const batchRequest = createCrmSchemaInstallBatchRequest();
+    const importTransport = createCrmSchemaImportTransport();
     const delta = deriveCrmSchemaCatalogDelta();
     const afterCatalog = sortedCatalog([...options.snapshot.catalog, ...delta.rows]);
     const body = {
@@ -586,11 +674,12 @@ export function planCrmSchemaInstall(options) {
       recovery: options.recovery,
       artifact: { sha256: artifact.sha256, bytes: artifact.bytes, migrations: artifact.migrations },
       transport: {
-        kind: batchRequest.kind,
-        endpoint: batchRequest.endpoint,
-        statementCount: batchRequest.statementCount,
-        bytes: batchRequest.bytes,
-        sha256: batchRequest.sha256,
+        kind: importTransport.kind,
+        endpoint: importTransport.endpoint,
+        artifactMd5: importTransport.artifact.etagMd5,
+        statementCount: importTransport.artifact.expectedStatementCount,
+        manifestBytes: importTransport.manifestBytes,
+        sha256: importTransport.sha256,
       },
       expectedAfterCatalogCount: afterCatalog.length,
       expectedAfterCatalogSha256: catalogDigest(afterCatalog),
@@ -605,7 +694,8 @@ export function planCrmSchemaInstall(options) {
         "separate_exact_execution_approval_required",
         "fresh_primary_revalidation_required_at_execution",
         "recovery_bookmark_not_authenticated_by_offline_plan",
-        "single_transaction_batch_requires_execution_readback",
+        "single_logical_file_import_requires_execution_readback",
+        "query_api_transports_rejected_no_retry",
         "immediate_read_only_primary_readback_required",
       ],
     });
@@ -740,7 +830,11 @@ function cli() {
     process.stdout.write(canonicalJson(createCrmSchemaInstallBatchRequest().body));
     return;
   }
-  process.stderr.write("Usage: node scripts/crm-schema-install-plan.mjs artifact-sql|artifact-manifest|artifact-batch-manifest|artifact-batch-json\n");
+  if (command === "artifact-import-manifest") {
+    process.stdout.write(`${JSON.stringify(createCrmSchemaImportTransport(), null, 2)}\n`);
+    return;
+  }
+  process.stderr.write("Usage: node scripts/crm-schema-install-plan.mjs artifact-sql|artifact-manifest|artifact-batch-manifest|artifact-batch-json|artifact-import-manifest\n");
   process.exitCode = 64;
 }
 
