@@ -9,10 +9,12 @@ import {
   captureLocalCrmSchemaSnapshot,
   classifyCrmSchemaInstallOutcome,
   createCrmSchemaInstallArtifact,
+  createCrmSchemaInstallBatchRequest,
   crmSchemaReadbackQueries,
   deriveCrmSchemaCatalogDelta,
   normalizedCrmCatalogDigest,
   planCrmSchemaInstall,
+  splitCrmSchemaSqlStatements,
   verifyCrmSchemaTransition,
 } from "../../scripts/crm-schema-install-plan.mjs";
 
@@ -69,6 +71,17 @@ function seedPopulatedFixture(db) {
     .run("contact_fixture", "client", "ghl", "2026-08-30T00:00:00.000Z");
 }
 
+function executeAtomicBatch(db, statements) {
+  db.exec("BEGIN IMMEDIATE");
+  try {
+    for (const statement of statements) db.exec(statement);
+    db.exec("COMMIT");
+  } catch (error) {
+    db.exec("ROLLBACK");
+    throw error;
+  }
+}
+
 describe("CRM schema-only v22 to v30 install plan", () => {
   it("pins exact migration bytes and emits only eight Wrangler-compatible ledger inserts", () => {
     const artifact = createCrmSchemaInstallArtifact();
@@ -80,6 +93,65 @@ describe("CRM schema-only v22 to v30 install plan", () => {
     expect(artifact.sql).not.toMatch(/\b(?:DROP|DELETE|UPDATE)\s+(?:DATABASE|d1_migrations)\b/i);
     expect(artifact.executionAuthorized).toBe(false);
     expect(artifact.productionWriteAuthorized).toBe(false);
+  });
+
+  it("pins one REST batch request with 101 complete statements", () => {
+    const request = createCrmSchemaInstallBatchRequest();
+    expect(request).toMatchObject({
+      kind: "d1_rest_query_batch_v1",
+      endpoint: "query",
+      statementCount: 101,
+      bytes: 48039,
+      sha256: "2e4015ee122171177fadec4475beaa74f58b42d263b61324af275a98454bf150",
+    });
+    expect(request.body.batch).toHaveLength(101);
+    for (const entry of request.body.batch) {
+      expect(Object.keys(entry)).toEqual(["sql"]);
+      expect(splitCrmSchemaSqlStatements(entry.sql)).toEqual([entry.sql]);
+    }
+  });
+
+  it("splits only top-level boundaries and rejects explicit transaction control", () => {
+    const sql = `-- rollback is documentation, not a command
+      CREATE TABLE sample(value TEXT);
+      INSERT INTO sample(value) VALUES ('semi;colon and COMMIT');
+      CREATE TRIGGER sample_ai AFTER INSERT ON sample BEGIN
+        INSERT INTO sample(value) VALUES (CASE WHEN NEW.value = 'x;y' THEN 'a;b' ELSE 'c' END);
+      END;
+      /* BEGIN TRANSACTION in a comment is inert */
+      SELECT value FROM sample;`;
+    expect(splitCrmSchemaSqlStatements(sql)).toHaveLength(4);
+    for (const control of ["BEGIN;", "BEGIN IMMEDIATE;", "COMMIT;", "ROLLBACK;"]) {
+      expect(() => splitCrmSchemaSqlStatements(control)).toThrow("explicit_transaction_not_allowed");
+    }
+  });
+
+  it("executes the split request atomically in the local SQLite model and rolls back a failed batch", () => {
+    const db = v22Database();
+    try {
+      seedPopulatedFixture(db);
+      const before = captureLocalCrmSchemaSnapshot(db, { capturedAt: 10 });
+      const statements = createCrmSchemaInstallBatchRequest().body.batch.map(({ sql }) => sql);
+      executeAtomicBatch(db, statements);
+      const after = captureLocalCrmSchemaSnapshot(db, { capturedAt: 11 });
+      expect(verifyCrmSchemaTransition(before, after)).toMatchObject({ status: "verified" });
+      expect(after.tableCounts.appointment_status_facts).toBe(1);
+
+      const installedDigest = sha256(JSON.stringify({
+        catalog: after.catalog,
+        counts: after.tableCounts,
+        ledger: after.migrations,
+      }));
+      expect(() => executeAtomicBatch(db, statements)).toThrow(/UNIQUE constraint failed: d1_migrations\.name/);
+      const replayReadback = captureLocalCrmSchemaSnapshot(db, { capturedAt: 12 });
+      expect(sha256(JSON.stringify({
+        catalog: replayReadback.catalog,
+        counts: replayReadback.tableCounts,
+        ledger: replayReadback.migrations,
+      }))).toBe(installedDigest);
+    } finally {
+      db.close();
+    }
   });
 
   it("derives and pins the exact additive catalog from executed migrations", () => {
