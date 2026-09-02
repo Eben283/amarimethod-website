@@ -7,7 +7,7 @@ import { DatabaseSync } from "node:sqlite";
 import { pathToFileURL } from "node:url";
 import { canonicalJson } from "../functions/lib/automation-truth-phase-b.js";
 
-export const CRM_SCHEMA_INSTALL_CONTRACT = "crm-schema-install-plan.v1";
+export const CRM_SCHEMA_INSTALL_CONTRACT = "crm-schema-install-plan.v2";
 export const CRM_DATABASE = Object.freeze({
   id: "91a5a51d-0319-4c6d-9a6b-36bee3805e62",
   name: "amari-crm-mirror",
@@ -52,6 +52,11 @@ const POPULATED_TARGET_TABLE = "appointment_status_facts";
 const EXPECTED_ARTIFACT = Object.freeze({
   bytes: 46181,
   sha256: "5be18c203f2fbf6051ad454d0fc84e0335f55a6261ef5b91e0eccc215135fb8e",
+});
+const EXPECTED_BATCH_REQUEST = Object.freeze({
+  statementCount: 101,
+  bytes: 48039,
+  sha256: "2e4015ee122171177fadec4475beaa74f58b42d263b61324af275a98454bf150",
 });
 const EXPECTED_DELTA = Object.freeze({
   count: 117,
@@ -141,6 +146,124 @@ export function createCrmSchemaInstallArtifact() {
     statementScope: "exact_migration_bytes_plus_eight_d1_migrations_inserts",
     ...RESULT_FLAGS,
   });
+}
+
+/** Split reviewed SQLite text only at complete top-level statement boundaries. */
+export function splitCrmSchemaSqlStatements(sql) {
+  if (typeof sql !== "string" || !sql.trim()) throw new Error("invalid_install_sql");
+  const statements = [];
+  let current = "";
+  let word = "";
+  let statementWordCount = 0;
+  let compoundDepth = 0;
+  let mode = null;
+
+  const finishWord = () => {
+    if (!word) return;
+    const token = word.toUpperCase();
+    if (statementWordCount === 0 && ["BEGIN", "COMMIT", "ROLLBACK", "END"].includes(token)) {
+      throw new Error("explicit_transaction_not_allowed");
+    }
+    if (token === "BEGIN" || token === "CASE") compoundDepth += 1;
+    if (token === "END") {
+      if (compoundDepth === 0) throw new Error("unexpected_compound_end");
+      compoundDepth -= 1;
+    }
+    statementWordCount += 1;
+    word = "";
+  };
+
+  for (let index = 0; index < sql.length; index += 1) {
+    const char = sql[index];
+    const next = sql[index + 1];
+    current += char;
+    if (mode === "line_comment") {
+      if (char === "\n") mode = null;
+      continue;
+    }
+    if (mode === "block_comment") {
+      if (char === "*" && next === "/") {
+        current += next;
+        index += 1;
+        mode = null;
+      }
+      continue;
+    }
+    if (mode) {
+      const marker = mode === "bracket" ? "]" : mode;
+      if (char === marker) {
+        if (mode !== "bracket" && next === marker) {
+          current += next;
+          index += 1;
+        } else {
+          mode = null;
+        }
+      }
+      continue;
+    }
+    if (char === "-" && next === "-") {
+      finishWord();
+      current += next;
+      index += 1;
+      mode = "line_comment";
+      continue;
+    }
+    if (char === "/" && next === "*") {
+      finishWord();
+      current += next;
+      index += 1;
+      mode = "block_comment";
+      continue;
+    }
+    if (char === "'" || char === '"' || char === "`") {
+      finishWord();
+      mode = char;
+      continue;
+    }
+    if (char === "[") {
+      finishWord();
+      mode = "bracket";
+      continue;
+    }
+    if (/[A-Za-z0-9_]/.test(char)) {
+      word += char;
+      continue;
+    }
+    finishWord();
+    if (char === ";" && compoundDepth === 0) {
+      const statement = current.trim();
+      if (statement) statements.push(statement);
+      current = "";
+      statementWordCount = 0;
+    }
+  }
+  finishWord();
+  if (mode === "block_comment" || mode === "'" || mode === '"' || mode === "`" || mode === "bracket"
+    || compoundDepth !== 0) throw new Error("incomplete_install_sql");
+  if (current.trim()) statements.push(current.trim());
+  if (statements.length === 0) throw new Error("empty_install_batch");
+  return Object.freeze(statements);
+}
+
+/** Exact one-HTTP-request D1 REST batch body; no credential or transport path. */
+export function createCrmSchemaInstallBatchRequest() {
+  const artifact = createCrmSchemaInstallArtifact();
+  const statements = splitCrmSchemaSqlStatements(artifact.sql);
+  const body = Object.freeze({ batch: Object.freeze(statements.map((sql) => Object.freeze({ sql }))) });
+  const json = canonicalJson(body);
+  const request = Object.freeze({
+    kind: "d1_rest_query_batch_v1",
+    endpoint: "query",
+    statementCount: statements.length,
+    bytes: Buffer.byteLength(json),
+    sha256: sha256(json),
+    body,
+  });
+  if (request.statementCount !== EXPECTED_BATCH_REQUEST.statementCount
+    || request.bytes !== EXPECTED_BATCH_REQUEST.bytes || request.sha256 !== EXPECTED_BATCH_REQUEST.sha256) {
+    throw new Error("install_batch_request_mismatch");
+  }
+  return request;
 }
 
 function createLedger(db) {
@@ -448,6 +571,7 @@ export function planCrmSchemaInstall(options) {
     if (options.recovery === null) return result("pending", { reasonCodes: ["missing_recovery_metadata"] });
     validateRecovery(options.recovery, now);
     const artifact = createCrmSchemaInstallArtifact();
+    const batchRequest = createCrmSchemaInstallBatchRequest();
     const delta = deriveCrmSchemaCatalogDelta();
     const afterCatalog = sortedCatalog([...options.snapshot.catalog, ...delta.rows]);
     const body = {
@@ -461,6 +585,13 @@ export function planCrmSchemaInstall(options) {
       basisTableCounts: options.snapshot.tableCounts,
       recovery: options.recovery,
       artifact: { sha256: artifact.sha256, bytes: artifact.bytes, migrations: artifact.migrations },
+      transport: {
+        kind: batchRequest.kind,
+        endpoint: batchRequest.endpoint,
+        statementCount: batchRequest.statementCount,
+        bytes: batchRequest.bytes,
+        sha256: batchRequest.sha256,
+      },
       expectedAfterCatalogCount: afterCatalog.length,
       expectedAfterCatalogSha256: catalogDigest(afterCatalog),
       expectedAfterMigrationCount: options.snapshot.migrations.length + TARGET_NAMES.length,
@@ -474,7 +605,7 @@ export function planCrmSchemaInstall(options) {
         "separate_exact_execution_approval_required",
         "fresh_primary_revalidation_required_at_execution",
         "recovery_bookmark_not_authenticated_by_offline_plan",
-        "atomic_transport_not_proven_by_offline_plan",
+        "single_transaction_batch_requires_execution_readback",
         "immediate_read_only_primary_readback_required",
       ],
     });
@@ -495,6 +626,7 @@ function planIdentityBody(plan) {
     basisTableCounts: plan.basisTableCounts,
     recovery: plan.recovery,
     artifact: plan.artifact,
+    transport: plan.transport,
     expectedAfterCatalogCount: plan.expectedAfterCatalogCount,
     expectedAfterCatalogSha256: plan.expectedAfterCatalogSha256,
     expectedAfterMigrationCount: plan.expectedAfterMigrationCount,
@@ -599,7 +731,16 @@ function cli() {
     process.stdout.write(`${JSON.stringify({ ...manifest, additiveCatalog: { count: delta.count, sha256: delta.sha256 } }, null, 2)}\n`);
     return;
   }
-  process.stderr.write("Usage: node scripts/crm-schema-install-plan.mjs artifact-sql|artifact-manifest\n");
+  if (command === "artifact-batch-manifest") {
+    const { body: _body, ...manifest } = createCrmSchemaInstallBatchRequest();
+    process.stdout.write(`${JSON.stringify(manifest, null, 2)}\n`);
+    return;
+  }
+  if (command === "artifact-batch-json") {
+    process.stdout.write(canonicalJson(createCrmSchemaInstallBatchRequest().body));
+    return;
+  }
+  process.stderr.write("Usage: node scripts/crm-schema-install-plan.mjs artifact-sql|artifact-manifest|artifact-batch-manifest|artifact-batch-json\n");
   process.exitCode = 64;
 }
 
