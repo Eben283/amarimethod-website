@@ -71,6 +71,7 @@ import {
   OwnedAppointmentAttendanceError,
 } from "./owned-appointment-attendance.js";
 import { captureOwnedNoteVersion, OwnedNoteError, readOwnedNotes } from "./owned-notes.js";
+import { captureOwnedTaskVersion, OwnedTaskError, readOwnedTasks } from "./owned-tasks.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -312,6 +313,41 @@ async function withOwnedNotes(db, profile, limit) {
   return { ...profile, notes, activityTimeline, ownedNoteAuthority: authority };
 }
 
+async function withOwnedTasks(db, profile, limit) {
+  if (!profile?.contact?.id) return profile;
+  const authority = await readOwnedTasks(db, { contactId: profile.contact.id, limit });
+  const owned = authority.tasks || [];
+  const tasks = [...(profile.tasks || []), ...owned]
+    .sort((left, right) => {
+      const leftCompleted = Boolean(left.completed_at || left.status === "completed");
+      const rightCompleted = Boolean(right.completed_at || right.status === "completed");
+      if (leftCompleted !== rightCompleted) return Number(leftCompleted) - Number(rightCompleted);
+      if (Boolean(left.due_at) !== Boolean(right.due_at)) return left.due_at ? -1 : 1;
+      const dueOrder = String(left.due_at || "").localeCompare(String(right.due_at || ""));
+      if (dueOrder) return dueOrder;
+      return String(right.updated_at || right.created_at || "")
+        .localeCompare(String(left.updated_at || left.created_at || ""));
+    })
+    .slice(0, limit);
+  const taskActivity = owned.map((task) => ({
+    activity_type: "task",
+    occurred_at: task.updated_at,
+    direction: null,
+    channel: null,
+    delivery_status: null,
+    subject: task.title,
+    body: null,
+    status: task.status,
+    detail: task.due_at,
+    amount_cents: null,
+    currency: null,
+  }));
+  const activityTimeline = [...(profile.activityTimeline || []), ...taskActivity]
+    .sort((left, right) => String(right.occurred_at || "").localeCompare(String(left.occurred_at || "")))
+    .slice(0, limit);
+  return { ...profile, tasks, activityTimeline, ownedTaskAuthority: authority };
+}
+
 export default {
   async fetch(request, env) {
     env = withGhlProviderInvocation(env);
@@ -503,6 +539,39 @@ export default {
           return json(note.deduped ? 200 : 201, { success: true, note });
         } catch (error) {
           if (error instanceof OwnedNoteError) return json(error.status, { error: error.code, detail: error.message });
+          throw error;
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/tasks/commands") {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff_session_required" });
+        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(403, { error: "named_staff_session_required" });
+        if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid_request_origin" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 4_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          return json(400, { error: "invalid_request", detail: "JSON object required" });
+        }
+        const allowedByAction = {
+          create: new Set(["action", "contactId", "appointmentId", "idempotencyKey", "title", "dueAt"]),
+          revise: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey", "title", "dueAt"]),
+          complete: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
+          reopen: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
+          archive: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
+          restore: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
+        };
+        const allowed = allowedByAction[payload.action] || new Set(["action"]);
+        const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const task = await captureOwnedTaskVersion(env.CRM_DB, { ...payload, actor }, new Date().toISOString());
+          return json(task.deduped ? 200 : 201, { success: true, task });
+        } catch (error) {
+          if (error instanceof OwnedTaskError) return json(error.status, { error: error.code, detail: error.message });
           throw error;
         }
       }
@@ -967,6 +1036,7 @@ export default {
         let profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
         if (!profile) return json(404, { error: "contact not found" });
         profile = await withOwnedNotes(env.CRM_DB, profile, limit);
+        profile = await withOwnedTasks(env.CRM_DB, profile, limit);
         const automationEvidence = await personAutomationInspection(env.AUTOMATION_DB, profile.contact);
         let missedAppointmentTruth;
         try {
@@ -1004,7 +1074,10 @@ export default {
           limit,
           new Date().toISOString(),
         );
-        if (profile) profile = await withOwnedNotes(env.CRM_DB, profile, limit);
+        if (profile) {
+          profile = await withOwnedNotes(env.CRM_DB, profile, limit);
+          profile = await withOwnedTasks(env.CRM_DB, profile, limit);
+        }
         return profile
           ? json(200, { success: true, worker: "amari-crm-mirror", ...profile })
           : json(404, { error: "contact not found" });
