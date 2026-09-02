@@ -12,9 +12,10 @@ import {
   assessCrmSchemaRecovery,
   assessCrmSchemaSnapshot,
   crmSchemaReadbackQueries,
+  splitCrmSchemaSqlStatements,
 } from "./crm-schema-install-plan.mjs";
 
-export const CRM_CONTACT_PROFILE_SCHEMA_CONTRACT = "crm-contact-profile-schema-install-plan.v1";
+export const CRM_CONTACT_PROFILE_SCHEMA_CONTRACT = "crm-contact-profile-schema-install-plan.v2";
 export const CRM_V30_BOUNDARY = Object.freeze({
   migrationCount: 32,
   lastMigration: "0030_owned_contact_classifications.sql",
@@ -26,6 +27,12 @@ const MIGRATION_SHA256 = "b2d80fe9fb58528bf7adebbed6f1de45b3d3b7237a28725874f6cd
 const EXPECTED_ARTIFACT = Object.freeze({
   bytes: 13177,
   sha256: "b3b8017ffbf9472ed8423edd40cf2aabcf1b0efe2acb12a8a3cebdc228430248",
+});
+const EXPECTED_IMPORT_TRANSPORT = Object.freeze({
+  artifactMd5: "751480a9353460a2f9025eca0f6153ca",
+  statementCount: 23,
+  manifestBytes: 1533,
+  sha256: "0a3662ef7cadfc8816f36f9432874961da7dffb1150e75df87fd4cfa4ff15125",
 });
 const EXPECTED_TRANSFORM = Object.freeze({
   localBeforeCount: 346,
@@ -52,6 +59,7 @@ const RESULT_FLAGS = Object.freeze({
 });
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const md5 = (value) => createHash("md5").update(value).digest("hex");
 const catalogKey = (row) => `${row.type}:${row.name}`;
 const sortedCatalog = (rows) => [...rows].sort((left, right) =>
   left.type.localeCompare(right.type) || left.name.localeCompare(right.name));
@@ -114,6 +122,77 @@ export function createCrmContactProfileSchemaArtifact() {
     sha256: artifactSha256,
     statementScope: "exact_0031_migration_bytes_plus_one_d1_migrations_insert",
     ...RESULT_FLAGS,
+  });
+}
+
+/** Exact source-only D1 SQL-file import contract for the reviewed 0031 artifact. */
+export function createCrmContactProfileSchemaImportTransport() {
+  const artifact = createCrmContactProfileSchemaArtifact();
+  const artifactMd5 = md5(artifact.sql);
+  const statementCount = splitCrmSchemaSqlStatements(artifact.sql).length;
+  if (artifactMd5 !== EXPECTED_IMPORT_TRANSPORT.artifactMd5
+    || statementCount !== EXPECTED_IMPORT_TRANSPORT.statementCount) {
+    throw new Error("install_import_transport_mismatch");
+  }
+  const manifest = Object.freeze({
+    kind: "d1_remote_sql_file_import_v1",
+    endpoint: "import",
+    parser: "provider_sql_file_ingestion",
+    logicalImportOperations: 1,
+    artifact: Object.freeze({
+      bytes: artifact.bytes,
+      sha256: artifact.sha256,
+      etagMd5: artifactMd5,
+      expectedStatementCount: statementCount,
+    }),
+    protocol: Object.freeze({
+      init: Object.freeze({
+        method: "POST",
+        body: Object.freeze({ action: "init", etag: artifactMd5 }),
+        databaseMutation: "provider_state_dependent",
+        mayBeginCachedIngestion: true,
+        maximumRequests: 1,
+      }),
+      upload: Object.freeze({
+        method: "PUT",
+        urlSource: "provider_init_upload_url",
+        filenameSource: "provider_init_filename",
+        body: "exact_artifact_bytes",
+        requireResponseEtagMd5: artifactMd5,
+        databaseMutation: false,
+        maximumRequests: 1,
+      }),
+      ingest: Object.freeze({
+        method: "POST",
+        bodyTemplate: Object.freeze({ action: "ingest", filename: "provider_init_filename", etag: artifactMd5 }),
+        condition: "only_after_verified_upload",
+        databaseMutation: true,
+        maximumRequests: 1,
+      }),
+      poll: Object.freeze({
+        method: "POST",
+        bodyTemplate: Object.freeze({ action: "poll", current_bookmark: "provider_previous_at_bookmark" }),
+        databaseMutation: false,
+        observesBackgroundMutation: true,
+        maximumRequests: 60,
+      }),
+    }),
+    operationTimeoutMs: 300000,
+    retryAllowed: false,
+    uncertainPhasePolicy: "stop_without_reissuing_init_or_ingest_then_primary_readback",
+    ...RESULT_FLAGS,
+  });
+  const json = canonicalJson(manifest);
+  const manifestBytes = Buffer.byteLength(json);
+  const manifestSha256 = sha256(json);
+  if (manifestBytes !== EXPECTED_IMPORT_TRANSPORT.manifestBytes
+    || manifestSha256 !== EXPECTED_IMPORT_TRANSPORT.sha256) {
+    throw new Error("install_import_manifest_mismatch");
+  }
+  return Object.freeze({
+    ...manifest,
+    manifestBytes,
+    sha256: manifestSha256,
   });
 }
 
@@ -390,6 +469,7 @@ function planBody(plan) {
     basisTableCounts: plan.basisTableCounts,
     recovery: plan.recovery,
     artifact: plan.artifact,
+    transport: plan.transport,
     expectedAfterCatalogCount: plan.expectedAfterCatalogCount,
     expectedAfterCatalogSha256: plan.expectedAfterCatalogSha256,
     expectedAfterMigrationCount: plan.expectedAfterMigrationCount,
@@ -415,6 +495,7 @@ export function planCrmContactProfileSchemaInstall(options, now = Date.now()) {
     const recovery = assessCrmSchemaRecovery(options.recovery, now);
     if (recovery.status !== "proven") return result("refused", { reasonCodes: recovery.reasonCodes });
     const artifact = createCrmContactProfileSchemaArtifact();
+    const transport = createCrmContactProfileSchemaImportTransport();
     const afterCatalog = transformCatalog(options.snapshot.catalog, deriveCrmContactProfileCatalogTransform());
     const body = {
       contract: CRM_CONTACT_PROFILE_SCHEMA_CONTRACT,
@@ -427,6 +508,14 @@ export function planCrmContactProfileSchemaInstall(options, now = Date.now()) {
       basisTableCounts: options.snapshot.tableCounts,
       recovery: options.recovery,
       artifact: { sha256: artifact.sha256, bytes: artifact.bytes, migrations: artifact.migrations },
+      transport: {
+        kind: transport.kind,
+        endpoint: transport.endpoint,
+        artifactMd5: transport.artifact.etagMd5,
+        statementCount: transport.artifact.expectedStatementCount,
+        manifestBytes: transport.manifestBytes,
+        sha256: transport.sha256,
+      },
       expectedAfterCatalogCount: afterCatalog.length,
       expectedAfterCatalogSha256: digestRows(afterCatalog),
       expectedAfterMigrationCount: options.snapshot.migrations.length + 1,
@@ -440,7 +529,7 @@ export function planCrmContactProfileSchemaInstall(options, now = Date.now()) {
         "separate_exact_execution_approval_required",
         "fresh_primary_revalidation_required_at_execution",
         "recovery_bookmark_not_authenticated_by_offline_plan",
-        "atomic_transport_not_proven_by_offline_plan",
+        "single_logical_file_import_requires_execution_readback",
         "immediate_read_only_primary_readback_required",
       ],
     });
@@ -533,7 +622,11 @@ function cli() {
     }, null, 2)}\n`);
     return;
   }
-  process.stderr.write("Usage: node scripts/crm-contact-profile-schema-install-plan.mjs artifact-sql|artifact-manifest\n");
+  if (command === "artifact-import-manifest") {
+    process.stdout.write(`${JSON.stringify(createCrmContactProfileSchemaImportTransport(), null, 2)}\n`);
+    return;
+  }
+  process.stderr.write("Usage: node scripts/crm-contact-profile-schema-install-plan.mjs artifact-sql|artifact-manifest|artifact-import-manifest\n");
   process.exitCode = 64;
 }
 

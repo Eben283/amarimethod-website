@@ -1,6 +1,6 @@
 # CRM contact-profile schema install plan
 
-`scripts/crm-contact-profile-schema-install-plan.mjs` is the separate offline,
+`scripts/crm-contact-profile-schema-install-plan.mjs` v2 is the separate offline,
 fail-closed installer and readback verifier for migration 0031. It starts only
 at an exact v30 CRM boundary. It does not connect to Cloudflare, read a secret,
 write a remote database, deploy a Worker, call a provider, send a message,
@@ -27,7 +27,23 @@ Reviewers can render the manifest or exact SQL without network access:
 ```sh
 node scripts/crm-contact-profile-schema-install-plan.mjs artifact-manifest
 node scripts/crm-contact-profile-schema-install-plan.mjs artifact-sql
+node scripts/crm-contact-profile-schema-install-plan.mjs artifact-import-manifest
 ```
+
+The reviewed production transport is Cloudflare's dedicated D1 SQL-file import
+path already proven by the exact v22-to-v30 installation. Its source-only
+manifest pins the artifact's MD5 ETag, one `init`, one exact-byte upload and
+`ingest` only when requested, at most 60 polls over 300 seconds, and no reissued
+`init` or `ingest` after uncertainty. The `init` request is correctly treated as
+potentially mutating because a provider-cached artifact may begin processing
+without a separate upload or `ingest`. Immediate primary readback remains the
+only installation success basis. The transport manifest itself grants no
+execution authority.
+
+- artifact MD5 ETag `751480a9353460a2f9025eca0f6153ca`
+- 23 local statement boundaries
+- canonical import manifest: 1,533 bytes, SHA-256
+  `0a3662ef7cadfc8816f36f9432874961da7dffb1150e75df87fd4cfa4ff15125`
 
 The production planner accepts only a fresh primary readback of the pinned
 production CRM database with replication disabled, exact v30 catalog and
