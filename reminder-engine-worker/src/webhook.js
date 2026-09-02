@@ -236,9 +236,10 @@ export async function handleWebhook(request, env, nowMs) {
   const actions = [];
   const errors = [];
 
-  // Shadow evidence is deliberately non-blocking: GHL remains the sole live owner of the
-  // missed-count Math Operation. A capture failure is visible in owned automation evidence,
-  // but never retries the webhook or risks duplicating GHL's increment.
+  // Shadow evidence is deliberately non-blocking: the retained GHL Math Operation stays live
+  // until a separately approved cutover, while owned truth is derived from immutable CRM
+  // appointment revisions. A capture failure remains visible without retrying the webhook or
+  // risking a duplicate legacy increment.
   let noShowCounterReliability = { enabled: false, applicable: false };
   try {
     noShowCounterReliability = await captureNoShowCounterShadow({ env, event, rawPayload: rawBody, nowMs });

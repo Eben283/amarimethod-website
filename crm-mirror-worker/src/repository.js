@@ -493,11 +493,14 @@ export async function upsertGhlAppointment(db, appointment, contactId, now, proj
     await db.prepare(
       `UPDATE appointments
        SET contact_id = ?, service_id = ?, provider_calendar_id = ?, provider_status_raw = ?, status = ?,
-           starts_at = ?, ends_at = ?, timezone = ?, provider_meeting_location = ?, updated_at = ?
+           starts_at = ?, ends_at = ?, timezone = ?, provider_meeting_location = ?,
+           revision = CASE WHEN status <> ? THEN revision + 1 ELSE revision END,
+           updated_at = ?
        WHERE id = ?`,
     ).bind(
       contactId, service?.id || null, appointment.calendarId, appointment.providerStatusRaw, appointment.status,
-      appointment.startsAt, appointment.endsAt, appointment.timezone, appointment.meetingLocation, now, appointmentId,
+      appointment.startsAt, appointment.endsAt, appointment.timezone, appointment.meetingLocation,
+      appointment.status, now, appointmentId,
     ).run();
   } else {
     await db.prepare(

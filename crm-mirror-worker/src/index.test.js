@@ -85,6 +85,48 @@ describe("CRM mirror request validation", () => {
 });
 
 describe("CRM mirror dashboard access handoff", () => {
+  it("keeps missed-appointment truth authenticated, read-only, and explicit about legacy non-authority", async () => {
+    let batches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: {
+        prepare(sql) {
+          return { sql, bind(...values) { return { sql, values }; } };
+        },
+        async batch() {
+          batches += 1;
+          return [
+            { results: [{ id: "contact-1", display_name: "Avery", legacy_missed_appointments: "3" }] },
+            { results: [{ appointments: 2, missed_appointments: 1, missing_facts: 0, baseline_facts: 2, current_mismatches: 0 }] },
+            { results: [{
+              appointment_id: "appointment-1", appointment_revision: 2, normalized_status: "no_show",
+              authority: "provider_mirror", source_kind: "migration_baseline", history_complete: 0,
+              effective_at: "2026-08-01T18:00:00.000Z", recorded_at: "2026-08-01T18:00:00.000Z",
+              starts_at: "2026-08-01T17:00:00.000Z", ends_at: "2026-08-01T18:00:00.000Z",
+              service_name: "Partner Initial Session",
+            }] },
+          ];
+        },
+      },
+    };
+    const url = "https://crm.test/appointments/missed-truth?contactId=contact-1";
+    expect((await worker.fetch(new Request(url), env)).status).toBe(401);
+    const response = await worker.fetch(new Request(url, {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      readOnly: true,
+      mutableCounterWritten: false,
+      authorityPromoted: false,
+      state: "baseline",
+      summary: { missedAppointments: 1 },
+      legacyObservation: { observedValue: 3, matchesDerived: false, authoritative: false },
+    });
+    expect(batches).toBe(1);
+  });
+
   it("keeps recovery intake Worker-authenticated, Client-scoped, and unable to accept booking or entitlement fields", async () => {
     const url = "https://crm.test/appointments/recovery-requests";
     const payload = {

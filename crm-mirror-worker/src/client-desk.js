@@ -221,6 +221,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     const invoices = data.invoices || [];
     const notes = data.notes || [];
     const automationEvidence = data.automationEvidence || { configured: false, enrollments: [], events: [] };
+    const missedTruth = data.missedAppointmentTruth || { state: 'unavailable', summary: null, legacyObservation: null, missedAppointments: [] };
     const paymentSummary = paymentFacts(paymentRows);
     const nextAppointment = appointments.filter((appointment) => appointment.starts_at && new Date(appointment.starts_at).getTime() >= Date.now()).sort((a, b) => new Date(a.starts_at) - new Date(b.starts_at))[0];
     const statusCards = [
@@ -229,6 +230,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       statusLauncher('Payments', money(paymentSummary.spentCents, paymentSummary.currency) + ' Stripe evidence · ' + paymentRows.length + ' transaction' + (paymentRows.length === 1 ? '' : 's'), 'payments', 'record-payments'),
       statusLauncher('Notes', notes.length + ' note' + (notes.length === 1 ? '' : 's'), 'notes', 'record-notes'),
       statusLauncher('Workflows', workflowSummary(automationEvidence), 'workflows', 'record-workflows'),
+      statusLauncher('Missed sessions', missedTruth.summary ? missedTruth.summary.missedAppointments + ' derived · ' + missedTruth.state : 'Truth unavailable', 'missed', 'record-missed'),
     ].join('');
     const dnd = String(management['system.dnd'] || '').toLowerCase() === 'on' ? 'On' : 'Off';
     const identities = [['Email', c.email_normalized], ['Mobile', c.phone_e164], ['Owner', management['system.owner'] || 'Not mirrored'], ['Followers', management['system.followers'] || 'Not mirrored'], ['DND', dnd]].map((pair) => '<div class="identity-value"><span class="identity-label">' + esc(pair[0]) + '</span><span>' + esc(pair[1] || '—') + '</span></div>').join('');
@@ -242,6 +244,10 @@ const CLIENT_DESK_HTML = `<!doctype html>
       '<section class="record-section"><h3>Payment &amp; access</h3><div class="identity-grid ' + accessStatus + '">' + accessSummary + '</div><p class="source-note">' + esc(paymentAccess.detail || 'Stripe payment evidence and GHL access are mirrored separately. This view never changes either system.') + '</p></section>' +
       (state ? '<section class="record-section"><h3>Current plan</h3><div class="identity-grid">' + state + '</div></section>' : '') +
       '<section class="record-section" id="record-workflows" tabindex="-1"><div class="record-section-heading"><h3>Workflows</h3><span class="record-section-count">' + (automationEvidence.enrollments || []).length + ' enrollment' + ((automationEvidence.enrollments || []).length === 1 ? '' : 's') + '</span></div>' + workflowWorkspaceMarkup(automationEvidence, c.id) + '</section>' +
+      '<section class="record-section" id="record-missed" tabindex="-1"><div class="record-section-heading"><h3>Missed-session truth</h3><span class="record-section-count">' + (missedTruth.summary ? missedTruth.summary.missedAppointments + ' derived' : 'unavailable') + '</span></div>' +
+        (missedTruth.summary
+          ? '<div class="identity-grid"><div class="identity-value"><span class="identity-label">Owned derived count</span><span>' + esc(missedTruth.summary.missedAppointments) + '</span></div><div class="identity-value"><span class="identity-label">Coverage</span><span>' + esc(missedTruth.state) + '</span></div><div class="identity-value"><span class="identity-label">GHL field observed</span><span>' + esc(missedTruth.legacyObservation?.observedValue ?? '—') + '</span></div><div class="identity-value"><span class="identity-label">Comparison</span><span>' + esc(missedTruth.legacyObservation?.matchesDerived == null ? 'not comparable' : missedTruth.legacyObservation.matchesDerived ? 'matches' : 'mismatch') + '</span></div></div><p class="source-note">Derived read-only from the latest immutable appointment revision. Baseline means the current state is retained but pre-cutover event history is incomplete. The GHL contact field is comparison evidence, not authority.</p>'
+          : '<p class="empty-small">Owned missed-session truth is unavailable. Do not rely on the legacy contact field as authority.</p>') + '</section>' +
       '<section class="record-section" id="record-appointments" tabindex="-1"><div class="record-section-heading"><h3>Appointments</h3><span class="record-section-count">' + appointments.length + ' total</span></div>' + appointmentHistoryMarkup(appointments) + '</section>' +
       '<section class="record-section" id="record-payments" tabindex="-1">' + paymentWorkspaceMarkup(paymentRows, c) + '</section>' +
       '<section class="record-section"><h3>Invoices</h3><div class="compact-list">' + (compactCards(invoices, 'invoice') || empty('invoices', 'Invoices are mirrored from Stripe when their source customer relationship is unambiguous.')) + '</div></section>' +
