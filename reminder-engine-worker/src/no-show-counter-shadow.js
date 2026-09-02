@@ -1,6 +1,7 @@
-// Shadow-only reliability observer for the GHL-owned missed-appointment counter.
-// Importing this module is inert. Even when enabled it never writes to GHL and never
-// claims that the retained Math Operation completed; it records one expected obligation.
+// Shadow-only reliability observer for owned missed-appointment truth.
+// Importing this module is inert. Even when enabled it never writes to GHL or a
+// mutable counter; it records the source receipt that must reconcile to the
+// canonical CRM appointment-status fact for this no-show.
 
 import {
   NO_SHOW_MISSED_COUNT_FAMILY,
@@ -58,6 +59,12 @@ function normalizedEvidence(event) {
     observedField: MISSED_APPOINTMENTS_FIELD,
     observationLimitation: "The contact value was read during ingest and may be before or after GHL's live Math Operation; it is not increment proof.",
     liveOwner: "No Show — Increment Missed Count",
+    ownedTruth: {
+      store: "CRM_DB.appointment_status_facts",
+      derivation: "latest canonical revision per appointment where status is no_show",
+      mutableCounterWritten: false,
+      authorityPromoted: false,
+    },
   };
 }
 
@@ -131,18 +138,18 @@ export async function captureNoShowCounterShadow({ env, event, rawPayload, nowMs
     runtimeVersion,
     lifecycle: {
       family: NO_SHOW_MISSED_COUNT_FAMILY,
-      scope: "normal-no-show-counter-shadow",
+      scope: "normal-no-show-owned-truth-shadow",
       personId: event.contactId,
       appointmentId: event.appointmentId,
-      definitionVersion: 1,
+      definitionVersion: 2,
       runtimeVersion,
     },
     obligations: [{
-      obligationKey: "increment-missed-appointments",
-      kind: "contact_field_increment",
+      obligationKey: "reconcile-owned-missed-status",
+      kind: "canonical_status_reconciliation",
       deadlineAt: nowMs + 5 * 60 * 1000,
-      ownerRole: "ghl-retained",
-      closer: "No Show — Increment Missed Count",
+      ownerRole: "amari-owned-shadow",
+      closer: "CRM appointment status facts",
       initialState: "pending",
     }],
   });

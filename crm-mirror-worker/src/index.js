@@ -65,6 +65,7 @@ import {
   captureAppointmentRecoveryRequest,
   listAppointmentRecoveryRequests,
 } from "./appointment-recovery-requests.js";
+import { MissedAppointmentTruthError, readMissedAppointmentTruth } from "./missed-appointment-truth.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -446,7 +447,7 @@ export default {
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
       const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/appointments/recovery-requests", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
+      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/appointments/missed-truth", "/appointments/recovery-requests", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -706,6 +707,23 @@ export default {
           throw error;
         }
       }
+      if (request.method === "GET" && url.pathname === "/appointments/missed-truth") {
+        try {
+          return json(200, {
+            success: true,
+            worker: "amari-crm-mirror",
+            ...(await readMissedAppointmentTruth(env.CRM_DB, {
+              contactId: url.searchParams.get("contactId"),
+              limit: parseQueueLimit(url.searchParams.get("limit")),
+            })),
+          }, { "Cache-Control": "no-store" });
+        } catch (error) {
+          if (error instanceof MissedAppointmentTruthError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
       if (request.method === "POST" && url.pathname === "/appointments/recovery-requests") {
         const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
         if (actor !== "Client") return json(403, { error: "client_recovery_request_required" });
@@ -851,7 +869,33 @@ export default {
         const profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
         if (!profile) return json(404, { error: "contact not found" });
         const automationEvidence = await personAutomationInspection(env.AUTOMATION_DB, profile.contact);
-        return json(200, { success: true, worker: "amari-crm-mirror", ...profile, automationEvidence });
+        let missedAppointmentTruth;
+        try {
+          missedAppointmentTruth = await readMissedAppointmentTruth(env.CRM_DB, {
+            contactId: profile.contact.id,
+            limit: 25,
+          });
+        } catch (error) {
+          if (!(error instanceof MissedAppointmentTruthError)) throw error;
+          missedAppointmentTruth = {
+            version: "owned-missed-appointment-truth.v1",
+            readOnly: true,
+            mutableCounterWritten: false,
+            authorityPromoted: false,
+            state: "unavailable",
+            reason: error.code,
+            summary: null,
+            legacyObservation: null,
+            missedAppointments: [],
+          };
+        }
+        return json(200, {
+          success: true,
+          worker: "amari-crm-mirror",
+          ...profile,
+          automationEvidence,
+          missedAppointmentTruth,
+        });
       }
       if (request.method === "GET" && contactDetail) {
         const limit = parseQueueLimit(url.searchParams.get("limit"));

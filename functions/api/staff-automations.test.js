@@ -101,7 +101,7 @@ describe("staff-automations — views", () => {
       health: expect.objectContaining({ truth: "Unknown", reason: "authority_unavailable" }),
       route: expect.objectContaining({
         accepted: expect.arrayContaining([
-          expect.objectContaining({ transition: "accepted", label: "Record expected missed-count increment" }),
+          expect.objectContaining({ transition: "accepted", label: "Reconcile owned missed-status truth" }),
         ]),
       }),
     }));

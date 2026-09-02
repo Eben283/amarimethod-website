@@ -330,8 +330,8 @@ describe("Client Desk message rendering", () => {
       appointments: [{ status: "confirmed", starts_at: "2026-08-10T14:00:00.000Z" }],
     });
 
-    for (const label of ["Open record", "Activity", "Appointments", "Payments", "Notes"]) expect(rendered).toContain(label);
-    for (const target of ["activity", "appointments", "payments", "notes"]) expect(rendered).toContain(`data-record-target="${target}"`);
+    for (const label of ["Open record", "Activity", "Appointments", "Payments", "Notes", "Missed sessions"]) expect(rendered).toContain(label);
+    for (const target of ["activity", "appointments", "payments", "notes", "missed"]) expect(rendered).toContain(`data-record-target="${target}"`);
     expect(rendered).toContain('<button class="status-card"');
     expect(rendered).toContain('class="status-arrow"');
     expect(rendered).toContain("DND");
@@ -340,9 +340,34 @@ describe("Client Desk message rendering", () => {
     expect(rendered).not.toContain("Email permission");
     expect(rendered).not.toContain("Consent status not mirrored");
     expect(rendered).toContain("DND is shown as on or off.");
+    expect(rendered).toContain("Owned missed-session truth is unavailable");
 
     const dndOn = helpers.profileMarkup({ contact: { display_name: "Test client" }, fields: [{ attribute_key: "system.dnd", attribute_value: "on" }] });
     expect(dndOn).toContain(">On<");
+  });
+
+  it("shows the derived missed-session count without presenting the GHL field as authority", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { profileMarkup }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.profileMarkup({
+      contact: { id: "contact-1", display_name: "Avery Example" },
+      missedAppointmentTruth: {
+        state: "baseline",
+        summary: { missedAppointments: 1, baselineFacts: 2, missingFacts: 0, currentMismatches: 0 },
+        legacyObservation: { observedValue: 3, matchesDerived: false, authoritative: false },
+        missedAppointments: [{ appointmentId: "appointment-1" }],
+      },
+    });
+    expect(rendered).toContain("Missed-session truth");
+    expect(rendered).toContain("1 derived · baseline");
+    expect(rendered).toContain("GHL field observed");
+    expect(rendered).toContain(">3<");
+    expect(rendered).toContain(">mismatch<");
+    expect(rendered).toContain("comparison evidence, not authority");
   });
 
   it("opens a person's exact owned workflows without asking Staff to find them again", () => {
