@@ -81,15 +81,22 @@ export async function readNoShowDeliveryContext(db, enrollment) {
             appointment.status, appointment.service_id, appointment.authority,
             appointment.provider_sync_state, appointment.revision,
             contact.first_name, contact.display_name,
-            contact.email_normalized, contact.phone_e164, contact.archived_at,
+            contact.email_normalized, contact.phone_e164,
+            contact.email_authority, contact.phone_authority, contact.archived_at,
             COALESCE((SELECT attribute_value FROM contact_attributes
                        WHERE contact_id = contact.id AND attribute_key = 'system.dnd'
                        ORDER BY datetime(updated_at) DESC LIMIT 1), 'off') AS dnd_state,
             COALESCE((SELECT state FROM consents
-                       WHERE contact_id = contact.id AND channel = 'email' AND state <> 'unknown'
+                       WHERE contact_id = contact.id AND channel = 'email'
+                         AND CASE WHEN contact.email_authority = 'owned'
+                           THEN destination_normalized = contact.email_normalized AND destination_sha256 IS NOT NULL
+                           ELSE state <> 'unknown' AND (destination_normalized IS NULL OR destination_normalized = contact.email_normalized) END
                        ORDER BY datetime(effective_at) DESC, id DESC LIMIT 1), 'unknown') AS email_consent_state,
             COALESCE((SELECT state FROM consents
-                       WHERE contact_id = contact.id AND channel = 'sms' AND state <> 'unknown'
+                       WHERE contact_id = contact.id AND channel = 'sms'
+                         AND CASE WHEN contact.phone_authority = 'owned'
+                           THEN destination_normalized = contact.phone_e164 AND destination_sha256 IS NOT NULL
+                           ELSE state <> 'unknown' AND (destination_normalized IS NULL OR destination_normalized = contact.phone_e164) END
                        ORDER BY datetime(effective_at) DESC, id DESC LIMIT 1), 'unknown') AS sms_consent_state
        FROM appointments appointment
        JOIN contacts contact ON contact.id = appointment.contact_id

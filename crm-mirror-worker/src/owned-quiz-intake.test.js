@@ -12,7 +12,7 @@ import worker from "./index.js";
 function d1Database() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys = ON");
-  for (const name of ["0001_initial_schema.sql", "0023_owned_quiz_intake.sql"]) {
+  for (const name of ["0001_initial_schema.sql", "0023_owned_quiz_intake.sql", "0031_owned_contact_profile_authority.sql"]) {
     sqlite.exec(readFileSync(new URL(`../migrations/${name}`, import.meta.url), "utf8"));
   }
   const statement = (sql, args = []) => ({
@@ -166,6 +166,32 @@ describe("owned quiz intake", () => {
     expect(db.sqlite.prepare(
       "SELECT attribute_value FROM contact_attributes WHERE contact_id = 'existing-1' AND attribute_key = 'primaryPainLocation'",
     ).get().attribute_value).toBe("Lower back");
+    db.sqlite.close();
+  });
+
+  it("does not let quiz intake overwrite a Staff-owned name or phone destination", async () => {
+    const db = d1Database();
+    db.sqlite.prepare(`
+      INSERT INTO contacts
+        (id, first_name, last_name, display_name, email_normalized, phone_e164,
+         name_authority, name_revision, phone_authority, phone_revision, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, 'owned', 3, 'owned', 2, ?, ?)
+    `).run("existing-owned", "Staff", "Truth", "Staff Truth", "ari@example.test", "+14155550000",
+      "2026-08-01T00:00:00.000Z", "2026-08-01T00:00:00.000Z");
+
+    const result = await upsertOwnedQuizIntake(db, valid({
+      firstName: "Quiz", lastName: "Overwrite", phone: "415-555-9999",
+    }), "2026-09-01T16:00:00.000Z");
+    expect(result.contactId).toBe("existing-owned");
+    expect(db.sqlite.prepare(
+      `SELECT first_name,last_name,display_name,phone_e164,
+              name_authority,name_revision,phone_authority,phone_revision
+         FROM contacts WHERE id='existing-owned'`,
+    ).get()).toEqual({
+      first_name: "Staff", last_name: "Truth", display_name: "Staff Truth",
+      phone_e164: "+14155550000", name_authority: "owned", name_revision: 3,
+      phone_authority: "owned", phone_revision: 2,
+    });
     db.sqlite.close();
   });
 

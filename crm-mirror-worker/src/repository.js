@@ -146,7 +146,11 @@ export async function upsertGhlContact(db, contact, now) {
   if (contactId) {
     await db.prepare(
       `UPDATE contacts
-       SET first_name = ?, last_name = ?, display_name = ?, email_normalized = ?, phone_e164 = ?,
+       SET first_name = CASE WHEN name_authority = 'owned' THEN first_name ELSE ? END,
+           last_name = CASE WHEN name_authority = 'owned' THEN last_name ELSE ? END,
+           display_name = CASE WHEN name_authority = 'owned' THEN display_name ELSE ? END,
+           email_normalized = CASE WHEN email_authority = 'owned' THEN email_normalized ELSE ? END,
+           phone_e164 = CASE WHEN phone_authority = 'owned' THEN phone_e164 ELSE ? END,
            referral_source_label = ?, updated_at = ?
        WHERE id = ?`,
     ).bind(

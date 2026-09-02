@@ -11,6 +11,7 @@ function d1Database() {
   for (const path of [
     "../../crm-mirror-worker/migrations/0001_initial_schema.sql",
     "../../crm-mirror-worker/migrations/0023_owned_quiz_intake.sql",
+    "../../crm-mirror-worker/migrations/0031_owned_contact_profile_authority.sql",
   ]) sqlite.exec(readFileSync(new URL(path, import.meta.url), "utf8"));
   const statement = (sql, args = []) => ({
     bind: (...values) => statement(sql, values),

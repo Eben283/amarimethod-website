@@ -17,7 +17,10 @@ function d1Database() {
   sqlite.exec(`
     CREATE TABLE contacts (
       id TEXT PRIMARY KEY, first_name TEXT, last_name TEXT, display_name TEXT NOT NULL,
-      email_normalized TEXT, phone_e164 TEXT, created_at TEXT, updated_at TEXT, archived_at TEXT
+      email_normalized TEXT, phone_e164 TEXT, created_at TEXT, updated_at TEXT, archived_at TEXT,
+      name_authority TEXT NOT NULL DEFAULT 'provider_mirror', name_revision INTEGER NOT NULL DEFAULT 0,
+      email_authority TEXT NOT NULL DEFAULT 'provider_mirror', email_revision INTEGER NOT NULL DEFAULT 0,
+      phone_authority TEXT NOT NULL DEFAULT 'provider_mirror', phone_revision INTEGER NOT NULL DEFAULT 0
     );
     CREATE TABLE services (id TEXT PRIMARY KEY, name TEXT, service_family TEXT);
     CREATE TABLE appointments (
@@ -30,7 +33,8 @@ function d1Database() {
       contact_id TEXT, source TEXT, attribute_key TEXT, attribute_value TEXT, updated_at TEXT
     );
     CREATE TABLE consents (
-      id TEXT, contact_id TEXT, channel TEXT, state TEXT, effective_at TEXT
+      id TEXT, contact_id TEXT, channel TEXT, state TEXT, effective_at TEXT,
+      destination_normalized TEXT, destination_sha256 TEXT
     );
     CREATE TABLE external_records (
       id TEXT, provider TEXT, object_type TEXT, external_id TEXT,
@@ -51,7 +55,9 @@ function d1Database() {
 
 function seedRescheduledAppointment(db) {
   db.sqlite.exec(`
-    INSERT INTO contacts VALUES (
+    INSERT INTO contacts
+      (id, first_name, last_name, display_name, email_normalized, phone_e164, created_at, updated_at, archived_at)
+    VALUES (
       'contact-owned', 'Avery', 'Partner', 'Avery Partner',
       'avery@example.com', '+14155550123', '2026-09-01', '2026-09-01', NULL
     );
@@ -76,8 +82,10 @@ function seedRescheduledAppointment(db) {
       'contact-owned', 'owned', 'additional_information', 'Left shoulder and hip',
       '2026-09-01T00:00:00.000Z'
     );
-    INSERT INTO consents VALUES ('email-consent', 'contact-owned', 'email', 'granted', '2026-09-01T00:00:00.000Z');
-    INSERT INTO consents VALUES ('sms-consent', 'contact-owned', 'sms', 'granted', '2026-09-01T00:00:00.000Z');
+    INSERT INTO consents (id, contact_id, channel, state, effective_at)
+      VALUES ('email-consent', 'contact-owned', 'email', 'granted', '2026-09-01T00:00:00.000Z');
+    INSERT INTO consents (id, contact_id, channel, state, effective_at)
+      VALUES ('sms-consent', 'contact-owned', 'sms', 'granted', '2026-09-01T00:00:00.000Z');
   `);
 }
 
@@ -190,6 +198,25 @@ describe("Partner Initial provider-neutral delivery", () => {
       startAt: "2026-09-02T18:00:00.000Z",
       endAt: "2026-09-02T19:00:00.000Z",
     }));
+  });
+
+  it("does not inherit legacy consent after Staff owns a new communication destination", async () => {
+    const db = d1Database();
+    seedRescheduledAppointment(db);
+    db.sqlite.prepare(
+      "UPDATE contacts SET email_authority='owned', email_revision=1 WHERE id='contact-owned'",
+    ).run();
+    db.sqlite.prepare(
+      `INSERT INTO consents
+       (id, contact_id, channel, state, effective_at, destination_normalized, destination_sha256)
+       VALUES (?, ?, 'email', 'unknown', ?, ?, ?)`,
+    ).run(
+      "owned-email-consent", "contact-owned", "2026-09-01T01:00:00.000Z",
+      "avery@example.com", "a".repeat(64),
+    );
+    const resolved = await readPartnerInitialDeliveryContext(db, enrollment);
+    expect(resolved.emailConsent).toBe("unknown");
+    expect(resolved.smsConsent).toBe("granted");
   });
 
   it("issues bounded owned manage links plus provider-neutral calendar exports", async () => {

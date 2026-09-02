@@ -17,6 +17,7 @@ const MIGRATIONS = [
   "0015_owned_communication_commands.sql",
   "0016_gmail_provider_evidence.sql",
   "0024_owned_email_dispatch_control.sql",
+  "0031_owned_contact_profile_authority.sql",
 ];
 
 function fixture() {

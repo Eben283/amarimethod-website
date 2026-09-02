@@ -8,7 +8,7 @@ import { dispatchOwnedQuizNurture, ownedQuizNurtureDispatchReadiness } from "./q
 function db() {
   const sqlite = new DatabaseSync(":memory:");
   sqlite.exec("PRAGMA foreign_keys = ON");
-  for (const name of ["0001_initial_schema.sql", "0023_owned_quiz_intake.sql"]) {
+  for (const name of ["0001_initial_schema.sql", "0023_owned_quiz_intake.sql", "0031_owned_contact_profile_authority.sql"]) {
     sqlite.exec(readFileSync(new URL(`../migrations/${name}`, import.meta.url), "utf8"));
   }
   const statement = (sql, args = []) => ({
