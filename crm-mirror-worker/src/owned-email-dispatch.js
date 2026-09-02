@@ -154,12 +154,15 @@ async function claim(db, row, nowMs) {
   return db.prepare(
     `SELECT dispatch.*, command.contact_id, command.actor, command.channel, command.provider,
             command.subject_clean, command.body_clean, command.content_sha256,
-            contact.email_normalized, contact.archived_at,
+            contact.email_normalized, contact.email_authority, contact.archived_at,
             COALESCE((SELECT attribute_value FROM contact_attributes
                       WHERE contact_id = contact.id AND attribute_key = 'system.dnd'
                       ORDER BY datetime(updated_at) DESC LIMIT 1), 'off') AS current_dnd_state,
             COALESCE((SELECT state FROM consents
-                      WHERE contact_id = contact.id AND channel = 'email' AND state <> 'unknown'
+                      WHERE contact_id = contact.id AND channel = 'email'
+                        AND CASE WHEN contact.email_authority = 'owned'
+                          THEN destination_normalized = contact.email_normalized AND destination_sha256 IS NOT NULL
+                          ELSE state <> 'unknown' AND (destination_normalized IS NULL OR destination_normalized = contact.email_normalized) END
                       ORDER BY datetime(effective_at) DESC, id DESC LIMIT 1), 'unknown') AS current_consent_state
        FROM owned_communication_dispatches dispatch
        JOIN owned_communication_commands command ON command.id = dispatch.command_id

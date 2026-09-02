@@ -36,21 +36,6 @@ function clone(value) {
   return value == null ? value : JSON.parse(JSON.stringify(value));
 }
 
-// Registry-only read model. It makes the live source copy inspectable during shadow proof, but
-// is never imported by the reminder engine or a delivery adapter.
-const PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW = Object.freeze({
-  status: "source_verified_read_only",
-  label: "Source-verified read-only copy. This shadow definition does not send messages.",
-  notices: Object.freeze([
-    Object.freeze({ stepIndex: 0, audience: "internal", channel: "email", subject: "{{contact.first_name}} booked a {{calendar.name}}", body: "Hi {{user.first_name}},\n\n{{contact.name}} booked a {{calendar.name}} for {{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n\nStudio: 662 8th Ave, San Francisco, CA 94118" }),
-    Object.freeze({ stepIndex: 1, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "Your partner session is confirmed", preheader: "See you soon. Here are your session details.", body: "Hi {{contact.first_name}},\n\nYour session with Garrett is confirmed:\n\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n662 8th Ave, San Francisco, CA 94118\n\nA few reminders:\n• 60-minute session\n• Wear comfortable clothes\n• Allow time for parking\n\nReschedule {{appointment.reschedule_link}} · Cancel {{appointment.cancellation_link}}\n\nAdd to Google Calendar {{appointment.add_to_google_calendar}} · Add to iCal/Outlook {{appointment.add_to_ical_outlook}}\n\nThe Amari Method Team" }),
-    Object.freeze({ stepIndex: 2, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "See you tomorrow, {{contact.first_name}}", preheader: "Quick reminder about your session tomorrow.", body: "Hi {{contact.first_name}},\n\nJust a heads up about your upcoming session with Garrett:\n\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n662 8th Ave, San Francisco, CA 94118\n\nIf something came up:\nReschedule {{appointment.reschedule_link}} · Cancel {{appointment.cancellation_link}}\n\nThe Amari Method Team" }),
-    Object.freeze({ stepIndex: 3, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "Your session is in 1 hour", preheader: "See you soon.", body: "Hi {{contact.first_name}},\n\nYour session with Garrett is at {{appointment.only_start_time}} {{appointment.timezone}}.\n\n662 8th Ave, San Francisco, CA 94118\n\nThe Amari Method Team" }),
-    Object.freeze({ stepIndex: 4, audience: "client", channel: "sms", body: "Hi {{contact.first_name}}, just a friendly reminder that your appointment with Garrett is in one hour." }),
-    Object.freeze({ stepIndex: 5, audience: "internal", channel: "sms", body: "{{contact.name}}'s {{calendar.name}} appointment at {{appointment.only_start_time}} {{appointment.timezone}}. These were the specific issues this person wanted to address (if applicable): {{contact.additional_information}}" }),
-  ]),
-});
-
 // Registry-only source-copy for the next bounded reminder subset. These constants are never
 // imported by the engine or a sender; they let Staff compare the source copy with the shadow
 // definition before a delivery adapter exists.
@@ -102,7 +87,7 @@ const FLOW_3_POST_INITIAL_MESSAGE_PREVIEW = Object.freeze({
 const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
   status: "not_eligible",
   label: "Not eligible for active delivery",
-  summary: "Shadow enrollment and cancellation are proven. GHL remains the sender until every blocked behavior below has an owned, verified replacement.",
+  summary: "One canonical source document now drives scheduling, Staff preview, secure client management links, and the provider-neutral delivery contract. The owned No Show-series exit is built but its reviewed shadow document is not published; owned SMS also remains unselected.",
   requirements: Object.freeze([
     Object.freeze({
       code: "native_lifecycle_shadow_proven",
@@ -111,16 +96,40 @@ const PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
       detail: "Confirmed enrollment, immediate would-send evidence, and cancellation of all four future reminders were proven beside the live flow on Aug. 9. No message was sent.",
     }),
     Object.freeze({
-      code: "no_show_series_exit_not_owned",
-      status: "blocked",
-      label: "Exit No Show Email SMS series on confirmation",
-      detail: "This is the first action in the live confirmation workflow. It is still owned by GHL and must be preserved and proven before activation.",
+      code: "no_show_series_exit_owned",
+      status: "proven",
+      label: "Exit No Show Email SMS series by owned person",
+      detail: "Confirmed Partner Initial events close every active No Show recovery enrollment for the exact owned contact and its one verified legacy GHL alias. The operation preserves completed evidence, cancels only pending work, isolates other contacts, and fails closed on a missing or ambiguous crosswalk.",
     }),
     Object.freeze({
-      code: "delivery_templates_and_adapter_not_owned",
+      code: "no_show_series_exit_shadow_publish_pending",
       status: "blocked",
-      label: "Deliver the exact messages from Amari",
-      detail: "The six messages below are source-verified previews only. No owned template renderer or email/SMS sender adapter is active.",
+      label: "Publish the reviewed No Show shadow document",
+      detail: "The provider-neutral exit lives in v3 source but is not installed in the Reminder workflow registry. Publishing that shadow-only document is a separate D1/runtime gate and cannot send a message.",
+    }),
+    Object.freeze({
+      code: "owned_delivery_contract_built",
+      status: "proven",
+      label: "Render exact messages from owned CRM truth",
+      detail: "The six exact messages now live in the executable workflow document. The adapter resolves stable owned appointment/contact/service identity, follows reschedule lineage, applies DND/consent checks, uses E.164 destinations instead of provider contact IDs, and fails closed on missing inputs.",
+    }),
+    Object.freeze({
+      code: "owned_client_manage_links_built",
+      status: "proven",
+      label: "Issue owned reschedule and cancellation links",
+      detail: "HMAC-signed links bind one owned contact, appointment revision, expiry, and capability. GET is read-only; a same-origin POST confirms the action through the owned command journal, with exact provider readback and stale-revision refusal. Calendar export uses owned appointment truth.",
+    }),
+    Object.freeze({
+      code: "owned_sms_provider_pending",
+      status: "blocked",
+      label: "Select and prove the owned SMS edge",
+      detail: "The lifecycle passes an E.164 destination and idempotency key to a provider-neutral SMS contract, but no owned SMS service is selected or bound. GHL contact delivery is not used as a fallback.",
+    }),
+    Object.freeze({
+      code: "durable_effect_receipts_built",
+      status: "proven",
+      label: "Close delivery effects durably",
+      detail: "Every attempt is hashed, compare-and-set claimed once, append-only receipted on acceptance, and held ambiguous without automatic resend when transport outcome is uncertain. Exact accepted replays do not resend.",
     }),
     Object.freeze({
       code: "quiet_period_evidence_pending",
@@ -178,16 +187,21 @@ const ASSESSMENT_NO_SHOW_CUTOVER_READINESS = Object.freeze({
 });
 
 const NO_SHOW_RECOVERY_CUTOVER_READINESS = Object.freeze({
-  status: "proof_ready",
-  label: "Delivery built; live release still gated",
-  summary: "The exact source path, owned delivery adapter, rebooking exits, and terminal SMS receipt reconciliation are built. GHL remains the live sender until a separately approved release.",
+  status: "not_eligible",
+  label: "Owned contract and review intake built; production gates remain",
+  summary: "The exact source path, provider-neutral delivery contract, rebooking exits, durable effect receipts, and signed missed-session review intake are built. GHL remains the live sender while the new schema/runtime and owned SMS provider are unreleased.",
   requirements: Object.freeze([
     Object.freeze({ code: "source_structure_reconciled", status: "proven", label: "Source structure reconciled", detail: "The exact 11 Normal/no-show calendars, five contact-mode filters, affiliate branch, regular three-message branch, two one-day waits, and two appointmentRescheduled=false checks are represented." }),
     Object.freeze({ code: "source_copy_reconciled", status: "proven", label: "Source copy reconciled", detail: "Both SMS messages, email subjects, preheaders, bodies, and destinations are exact source values." }),
     Object.freeze({ code: "owned_rebooking_equivalence_proven", status: "proven", label: "Owned rebooking exit proven", detail: "The controlled all-DND proof demonstrated affiliate and regular enrollment plus confirmed-rebooking cancellation without client sends." }),
-    Object.freeze({ code: "delivery_adapter_built", status: "proven", label: "Owned delivery built", detail: "The exact SMS and Garrett email templates render through the owned GHL conversations and Gmail adapters behind two disabled release gates." }),
-    Object.freeze({ code: "terminal_sms_receipts_built", status: "proven", label: "Terminal SMS receipt reconciliation built", detail: "No Show SMS provider references are reconciled into immutable delivery-status events with flow-specific health evidence." }),
-    Object.freeze({ code: "missed_count_owner_retained", status: "proven", label: "Keep the missed-count owner in GHL", detail: "The separate Published No Show — Increment Missed Count workflow remains the sole live counter owner. An owned durable observer is built but disabled; it records an expected increment and Staff exception evidence without changing the contact field or claiming parity." }),
+    Object.freeze({ code: "delivery_adapter_built", status: "proven", label: "Provider-neutral owned delivery built", detail: "The exact SMS and Garrett email templates read owned CRM identity, consent and E.164/email destinations, then use only the owned SMS service and verified Garrett Google Workspace adapters with durable idempotent effect receipts. No GHL read or sender fallback remains." }),
+    Object.freeze({ code: "owned_recovery_intake_built", status: "proven", label: "Signed recovery review intake built", detail: "Reminder issues a recovery-only same-origin bearer for the exact missed appointment revision. Client confirmation appends one idempotent pending Staff review and cannot book, grant, charge, message, or decide anything." }),
+    Object.freeze({ code: "owned_recovery_runtime_pending", status: "blocked", label: "Install and release the recovery runtime", detail: "Migrations 0025–0027 and the reviewed CRM, Reminder, and Pages source are not installed or deployed. Production remains unchanged until separately guarded releases and readback." }),
+    Object.freeze({ code: "owned_sms_provider_pending", status: "blocked", label: "Select and prove the owned SMS edge", detail: "The contract requires an E.164 destination, authenticated service binding and idempotency key. No SMS provider or cost has been selected or configured, and GHL Conversations is not a fallback." }),
+    Object.freeze({ code: "durable_effect_receipts_built", status: "proven", label: "Durable delivery effects built", detail: "Each email or SMS attempt binds the exact enrollment, definition, node, recipient hash and rendered request; uncertain transport is held for manual reconciliation rather than resent." }),
+    Object.freeze({ code: "owned_missed_truth_built", status: "proven", label: "Derive missed appointments from owned status facts", detail: "Migration 0026 retains one immutable canonical status fact per appointment revision and derives the current missed count without a mutable contact field. Corrections append a new revision and naturally leave the count. The durable observer expects CRM reconciliation and preserves GHL's ingest-time number only as non-authoritative comparison evidence." }),
+    Object.freeze({ code: "owned_attendance_command_built", status: "proven", label: "Own attendance and no-show corrections", detail: "Migration 0027 atomically binds one idempotent Staff command to an exact provider-free owned appointment revision, appends immutable evidence, and advances canonical status facts. It cannot write GHL, a provider mirror, sessions, entitlement, payment, messages, or recovery decisions; its production route remains source-pinned shadow." }),
+    Object.freeze({ code: "missed_count_runtime_retained", status: "review", label: "Keep the live GHL counter until cutover", detail: "The Published No Show — Increment Missed Count workflow and contact field remain live until migration 0026, runtime reconciliation, history coverage, and a separately approved authority cutover are read back. Local source does not write either counter." }),
     Object.freeze({ code: "ghl_retirement_not_approved", status: "review", label: "Keep GHL live until activation", detail: "The Published No Show Email SMS series remains the rollback sender until a separately approved coordinated cutover." }),
   ]),
 });
@@ -258,7 +272,15 @@ function reminderDefinition(flow) {
     trigger: clone({ calendarIds: flow.calendarIds, ...flow.enrollOn }),
     exits: clone([
       ...flow.cancelOn.map((status) => ({ kind: "appointment", statuses: [status] })),
-      ...(flow.exitOn || []).map((status) => ({ kind: "rebooking", statuses: [status], scope: "contact" })),
+      ...(flow.exitOn || []).map((status) => {
+        const exit = (flow.workflowDocument?.exits || []).find((candidate) => (
+          candidate.effect === "exit_contact_pending" && candidate.event === status
+        ));
+        return {
+          kind: "rebooking", statuses: [status], scope: "contact",
+          ...(exit?.serviceIds?.length ? { serviceIds: clone(exit.serviceIds) } : {}),
+        };
+      }),
     ]),
     steps: flow.steps.map((step, stepIndex) => ({ stepIndex, ...clone(step) })),
     source: {
@@ -267,8 +289,13 @@ function reminderDefinition(flow) {
     },
   };
   if (flow.flowKey === "partner-initial-in-person") {
-    definition.messagePreview = clone(PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW);
+    definition.messagePreview = {
+      status: "owned_delivery_contract_hard_shadow",
+      label: "Exact source copy rendered by the provider-neutral owned adapter. Delivery is source-level shadow.",
+      notices: clone(flow.workflowDocument.nodes.map((node, stepIndex) => ({ stepIndex, ...node.message }))),
+    };
     definition.cutoverReadiness = clone(PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS);
+    definition.source.path = "reminder-engine-worker/src/partner-initial-in-person-workflow.js";
   }
   if (flow.flowKey === "initial-in-person") {
     definition.messagePreview = clone(INITIAL_IN_PERSON_MESSAGE_PREVIEW);

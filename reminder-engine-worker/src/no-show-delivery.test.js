@@ -1,8 +1,23 @@
 import { describe, expect, it } from "vitest";
-import { deliverNoShowStep, noShowDeliveryEligibility } from "./no-show-delivery.js";
+import {
+  createNoShowRecoveryLink, deliverNoShowStep, noShowDeliveryEligibility, noShowDeliveryReadiness,
+  ownedNoShowRecoveryUrl, readNoShowDeliveryContext,
+} from "./no-show-delivery.js";
+import { verifyAppointmentManageToken } from "../../functions/lib/appointment-manage-token.js";
 import { NO_SHOW_RECOVERY_RELEASE_WORKFLOW } from "./no-show-recovery-workflow.js";
 
-const env = { NO_SHOW_DELIVERY_RELEASE: "approved" };
+const db = { prepare() {}, batch() {} };
+const env = {
+  NO_SHOW_DELIVERY_RELEASE: "approved",
+  APPOINTMENT_MANAGE_LINK_SECRET: "appointment-manage-link-secret-at-least-32-characters",
+  WORKER_AUTH_SECRET: "proof-secret",
+  CRM_DB: db,
+  REMINDER_DB: db,
+  PORTAL_KV: {},
+  AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "client",
+  AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "secret",
+  OWNED_SMS: { fetch() {} },
+};
 const flow = {
   flowKey: "no-show-recovery",
   mode: "active",
@@ -13,13 +28,29 @@ const enrollment = {
   calendarId: "SKDVOL8wtUN6Ne0ppbC9",
   appointmentId: "appointment-1",
   contactId: "contact-1",
+  definitionVersion: 4,
 };
-const appointment = { appointment: { rescheduleLink: "https://example.test/reschedule" } };
-const contact = { contact: { firstName: "Avery", email: "avery@example.test" } };
-const services = (capture) => ({
-  read: async (_env, path) => path.includes("appointments") ? appointment : contact,
-  sendEmail: async (_env, message) => { capture?.(message); return { success: true, messageId: "email-1" }; },
-  sendSms: async (message) => { capture?.(message); return { success: true, messageId: "sms-1" }; },
+const contactContext = {
+  appointmentId: "owned-appointment-1",
+  ownedContactId: "owned-contact-1",
+  serviceId: "partner-initial",
+  status: "no_show",
+  authority: "provider_mirror",
+  providerSyncState: "synced",
+  revision: 3,
+  firstName: "Avery",
+  clientEmail: "avery@example.test",
+  clientPhone: "+14155550123",
+  dnd: false,
+  emailConsent: "granted",
+  smsConsent: "granted",
+};
+const services = (capture, over = {}) => ({
+  readContext: async () => ({ ...contactContext, ...(over.context || {}) }),
+  ...(over.recoveryUrl === undefined ? {} : { recoveryUrl: async () => over.recoveryUrl }),
+  executeEffect: async (_db, effect, transport) => { capture?.({ effect }); return transport(); },
+  sendEmail: async (_env, message) => { capture?.({ message }); return { success: true, messageId: "email-1" }; },
+  sendSms: async (message) => { capture?.({ message }); return { success: true, messageId: "sms-1" }; },
 });
 
 describe("No Show delivery release gate", () => {
@@ -32,36 +63,103 @@ describe("No Show delivery release gate", () => {
       .toEqual({ eligible: false, reason: "not-owned-step" });
     expect(noShowDeliveryEligibility(env, flow, { template: "reschedule-sms" }, enrollment))
       .toEqual({ eligible: true });
+    expect(noShowDeliveryReadiness({ ...env, OWNED_SMS: undefined }))
+      .toEqual({ eligible: false, reason: "owned-sms-unavailable" });
+    expect(noShowDeliveryReadiness({ ...env, APPOINTMENT_MANAGE_LINK_SECRET: "short" }))
+      .toEqual({ eligible: false, reason: "owned-recovery-link-unavailable" });
+    expect(ownedNoShowRecoveryUrl("https://www.amarimethod.com/api/private")).toBeNull();
   });
 
-  it("renders the affiliate SMS from the canonical workflow", async () => {
-    let sent;
-    const result = await deliverNoShowStep(env, { template: "affiliate-soft-sms" }, enrollment, services((message) => { sent = message; }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
-    expect(result).toMatchObject({ success: true, recipient: "contact-1" });
-    expect(sent.message).toBe("Hi Avery, looks like we missed each other today. No worries at all. Just reply here or text me to find another time. - Garrett");
+  it("issues an exact recovery-only signed link for the missed owned appointment revision", async () => {
+    const now = Date.parse("2026-09-01T20:00:00.000Z");
+    const value = await createNoShowRecoveryLink(env, contactContext, now, now + 1);
+    expect(await createNoShowRecoveryLink(env, contactContext, now, now + 60_000)).toBe(value);
+    const link = new URL(value);
+    expect(link.origin).toBe("https://www.amarimethod.com");
+    expect(link.pathname).toBe("/appointment/manage");
+    expect(link.searchParams.get("action")).toBe("recovery");
+    await expect(verifyAppointmentManageToken(
+      env.APPOINTMENT_MANAGE_LINK_SECRET,
+      link.searchParams.get("token"),
+      { capability: "recovery", nowMs: now + 1 },
+    )).resolves.toMatchObject({
+      appointmentId: "owned-appointment-1",
+      contactId: "owned-contact-1",
+      revision: 3,
+      capabilities: ["recovery"],
+    });
   });
 
-  it("renders the appointment-specific reschedule link in the regular SMS", async () => {
+  it("renders the affiliate SMS to an E.164 destination with durable owned identity", async () => {
     let sent;
-    const result = await deliverNoShowStep(env, { template: "reschedule-sms" }, enrollment, services((message) => { sent = message; }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
-    expect(result).toMatchObject({ success: true, recipient: "contact-1" });
-    expect(sent.message).toContain("https://example.test/reschedule");
+    let effect;
+    const result = await deliverNoShowStep(env, { template: "affiliate-soft-sms", stepIndex: 0 }, enrollment, services((capture) => {
+      if (capture.message) sent = capture.message;
+      if (capture.effect) effect = capture.effect;
+    }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
+    expect(result).toMatchObject({ success: true, recipient: "+14155550123" });
+    expect(sent).toEqual({
+      to: "+14155550123",
+      text: "Hi Avery, looks like we missed each other today. No worries at all. Just reply here or text me to find another time. - Garrett",
+      idempotencyKey: "no-show-recovery:owned-appointment-1:v4:0",
+    });
+    expect(effect).toMatchObject({ provider: "owned-sms", recipient: "+14155550123", channel: "sms" });
+  });
+
+  it("renders only the same-origin owned recovery link in the regular SMS", async () => {
+    let sent;
+    const result = await deliverNoShowStep(env, { template: "reschedule-sms", stepIndex: 0 }, enrollment, services((capture) => {
+      if (capture.message) sent = capture.message;
+    }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
+    expect(result).toMatchObject({ success: true, recipient: "+14155550123" });
+    expect(sent.text).toContain("https://www.amarimethod.com/appointment/manage?action=recovery&token=");
   });
 
   it("sends both emails from the verified Garrett identity with exact metadata", async () => {
     let sent;
-    const result = await deliverNoShowStep(env, { template: "one-day-follow-up" }, enrollment, services((message) => { sent = message; }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
+    const result = await deliverNoShowStep(env, { template: "one-day-follow-up", stepIndex: 1 }, enrollment, services((capture) => {
+      if (capture.message) sent = capture.message;
+    }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW);
     expect(result).toMatchObject({ success: true, recipient: "avery@example.test" });
     expect(sent).toMatchObject({ actor: "Garrett", subject: "About your missed session", preheader: "Here's how to reschedule" });
-    expect(sent.text).toContain("https://example.test/reschedule");
+    expect(sent.text).toContain("https://www.amarimethod.com/appointment/manage?action=recovery&token=");
+    expect(sent.idempotencyKey).toBe("no-show-recovery:owned-appointment-1:v4:1");
   });
 
-  it("fails closed when the source reschedule link or client email is unavailable", async () => {
-    const noLink = { ...services(), read: async (_env, path) => path.includes("appointments") ? { appointment: {} } : contact };
-    expect(await deliverNoShowStep(env, { template: "reschedule-sms" }, enrollment, noLink, NO_SHOW_RECOVERY_RELEASE_WORKFLOW))
-      .toEqual({ success: false, error: "appointment reschedule link is unavailable" });
-    const noEmail = { ...services(), read: async (_env, path) => path.includes("appointments") ? appointment : { contact: { firstName: "Avery" } } };
-    expect(await deliverNoShowStep(env, { template: "two-day-follow-up" }, enrollment, noEmail, NO_SHOW_RECOVERY_RELEASE_WORKFLOW))
-      .toEqual({ success: false, error: "recipient email is unavailable" });
+  it("fails closed on missing recovery, contact policy, or provider-neutral destination", async () => {
+    expect(await deliverNoShowStep(env, { template: "reschedule-sms", stepIndex: 0 }, enrollment,
+      services(null, { recoveryUrl: "https://evil.test/reschedule" }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW))
+      .toEqual({ success: false, error: "owned no-show recovery link is unavailable" });
+    expect(await deliverNoShowStep(env, { template: "two-day-follow-up", stepIndex: 2 }, enrollment,
+      services(null, { context: { clientEmail: "" } }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW))
+      .toEqual({ success: false, error: "recipient email is unavailable", recipient: "" });
+    expect(await deliverNoShowStep(env, { template: "affiliate-soft-sms", stepIndex: 0 }, enrollment,
+      services(null, { context: { dnd: true } }), NO_SHOW_RECOVERY_RELEASE_WORKFLOW))
+      .toEqual({ success: false, error: "do_not_disturb" });
+  });
+
+  it("reads the missed appointment and exact legacy contact alias only from owned CRM", async () => {
+    const calls = [];
+    const rows = [{
+      appointment_id: "owned-appointment-1", contact_id: "owned-contact-1",
+      provider_appointment_id: "appointment-1", provider_calendar_id: enrollment.calendarId,
+      status: "no_show", service_id: "partner-initial", authority: "provider_mirror",
+      provider_sync_state: "synced", revision: 3,
+      first_name: "Avery", display_name: "Avery Example",
+      email_normalized: "avery@example.test", phone_e164: "+14155550123",
+      archived_at: null, dnd_state: "off", email_consent_state: "granted", sms_consent_state: "granted",
+    }];
+    const ownedDb = {
+      prepare(sql) {
+        calls.push(sql);
+        return {
+          bind() { return this; },
+          async all() { return { results: calls.length === 1 ? rows : [{ external_id: "contact-1" }] }; },
+        };
+      },
+    };
+    await expect(readNoShowDeliveryContext(ownedDb, enrollment)).resolves.toEqual(contactContext);
+    expect(calls[0]).toContain("appointment.status = 'no_show'");
+    expect(calls[1]).toContain("provider = 'ghl'");
   });
 });

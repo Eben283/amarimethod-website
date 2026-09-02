@@ -12,12 +12,18 @@ describe("owned appointment identity", () => {
       provider_appointment_id: "ghl-appt", provider_contact_id: "ghl-contact",
       provider: "ghl",
       provider_contact_count: 1,
-      provider_calendar_id: "calendar", authority: "owned", provider_sync_state: "synced",
+      provider_calendar_id: "calendar", service_id: "partner-initial", service_name: "Partner Initial Session",
+      status: "confirmed", starts_at: "2026-09-10T17:00:00.000Z", ends_at: "2026-09-10T18:00:00.000Z",
+      timezone: "America/Los_Angeles", provider_meeting_location: "662 8th Ave", revision: 3,
+      authority: "owned", provider_sync_state: "synced",
     }]), "ghl-appt")).resolves.toEqual({
       ownedAppointmentId: "owned-appt", ownedContactId: "owned-contact",
       providerAppointmentId: "ghl-appt", providerContactId: "ghl-contact",
       provider: "ghl",
-      providerCalendarId: "calendar", authority: "owned", providerSyncState: "synced",
+      providerCalendarId: "calendar", serviceId: "partner-initial", serviceName: "Partner Initial Session",
+      status: "confirmed", startsAt: "2026-09-10T17:00:00.000Z", endsAt: "2026-09-10T18:00:00.000Z",
+      timezone: "America/Los_Angeles", meetingLocation: "662 8th Ave", revision: 3,
+      authority: "owned", providerSyncState: "synced",
     });
   });
 

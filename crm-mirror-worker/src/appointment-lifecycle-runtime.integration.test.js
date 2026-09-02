@@ -4,6 +4,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { build } from "esbuild";
 import { Miniflare, convertV4MiniflareOptions } from "miniflare";
+import { NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY_WORKFLOW } from "../../reminder-engine-worker/src/no-show-recovery-workflow.js";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "../..");
 const AUTH = "synthetic-runtime-proof-secret";
@@ -13,11 +14,21 @@ const PROVIDER_CONTACT_ID = "synthetic-ghl-contact";
 const PROVIDER_APPOINTMENT_ID = "synthetic-ghl-appointment";
 const PARTNER_CALENDAR_ID = "lfsnaiGiLNL2z12pLKDP";
 const PARTNER_FLOW = "partner-initial-in-person";
+const NO_SHOW_FLOW = "no-show-recovery";
 const instances = new Set();
 let scripts;
 let egress = 0;
 
 const BRIDGE = `export default { fetch(request, env) { return env.CRM.fetch(request); } };`;
+const OWNED_SMS = `export default { async fetch(request) {
+  const body = await request.json();
+  if (request.headers.get("Authorization") !== "Bearer ${AUTH}"
+      || !/^\\+[1-9][0-9]{7,14}$/.test(body?.to || "")
+      || !body?.text || !body?.idempotencyKey) {
+    return Response.json({ success: false }, { status: 400 });
+  }
+  return Response.json({ success: true, messageId: "synthetic-owned-sms:" + body.to });
+} };`;
 
 async function bundle(entryPoint) {
   const result = await build({
@@ -124,7 +135,7 @@ async function applySql(db, sql) {
 async function applyCrmSchema(db) {
   const directory = join(ROOT, "crm-mirror-worker/migrations");
   const names = readdirSync(directory).filter((name) => /^\d{4}_.+\.sql$/.test(name)).sort();
-  expect(names.at(-1)).toBe("0024_owned_email_dispatch_control.sql");
+  expect(names.at(-1)).toBe("0031_owned_contact_profile_authority.sql");
   for (const name of names) {
     const sql = readFileSync(join(directory, name), "utf8");
     await applySql(db, sql);
@@ -159,7 +170,7 @@ async function startRuntime() {
           // Deliberately no GHL credential or location binding. Provider edges
           // are checkpointed inputs to this owned runtime, never hidden calls.
           bindings: { WORKER_AUTH_SECRET: AUTH },
-          d1Databases: ["CRM_DB", "AUTOMATION_DB"],
+          d1Databases: { CRM_DB: "crm-db", AUTOMATION_DB: "automation-db" },
           kvNamespaces: ["PORTAL_KV"],
           serviceBindings: { REMINDER: "reminder" },
         },
@@ -170,9 +181,20 @@ async function startRuntime() {
           bindings: {
             WORKER_AUTH_SECRET: AUTH,
             GHL_APPOINTMENT_WEBHOOK_SECRET: WEBHOOK_SECRET,
+            NO_SHOW_BEHAVIOR_RELEASE: "approved",
+            NO_SHOW_DELIVERY_RELEASE: "approved",
+            APPOINTMENT_MANAGE_LINK_SECRET: "appointment-manage-link-secret-at-least-32-characters",
+            AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID: "synthetic-client",
+            AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET: "synthetic-secret",
           },
-          d1Databases: ["REMINDER_DB"],
+          d1Databases: { REMINDER_DB: "reminder-db", CRM_DB: "crm-db" },
           kvNamespaces: ["PORTAL_KV"],
+          serviceBindings: { OWNED_SMS: "owned-sms" },
+        },
+        {
+          ...base,
+          name: "owned-sms",
+          script: OWNED_SMS,
         },
       ],
     }),
@@ -338,7 +360,7 @@ describe("owned Partner Initial lifecycle native runtime", () => {
     ).bind(enrollmentId).first()).toEqual({
       enrollment_id: enrollmentId,
       flow_key: PARTNER_FLOW,
-      definition_version: 1,
+      definition_version: 4,
       appointment_id: PROVIDER_APPOINTMENT_ID,
       contact_id: PROVIDER_CONTACT_ID,
       calendar_id: PARTNER_CALENDAR_ID,
@@ -401,6 +423,289 @@ describe("owned Partner Initial lifecycle native runtime", () => {
       "SELECT state, attempts, last_error FROM appointment_lifecycle_dispatches WHERE command_id = ?",
     ).bind(commandId).first()).toEqual({ state: "dispatched", attempts: 1, last_error: null });
 
+  }, 30_000);
+
+  it("exits a legacy GHL No Show recovery by exact owned identity when the partner rebooks on Google", async () => {
+    const { mf, crmDb, reminderDb } = await startRuntime();
+    const now = Date.now();
+    const recordedAt = new Date(now).toISOString();
+    const startAt = new Date(now + 8 * 86_400_000).toISOString();
+    const googleEventId = "synthetic-google-rebooking";
+    const googleCalendarId = "synthetic-garrett@group.calendar.google.com";
+    await crmDb.batch([
+      crmDb.prepare(
+        `INSERT INTO contacts (id, display_name, created_at, updated_at)
+         VALUES (?, 'Synthetic Partner — Cross-provider Exit', ?, ?)`,
+      ).bind(CONTACT_ID, recordedAt, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO external_records
+           (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+         VALUES ('synthetic-exit-contact-crosswalk', 'ghl', 'contact', ?, ?, 'contact', ?, ?)`,
+      ).bind(PROVIDER_CONTACT_ID, CONTACT_ID, CONTACT_ID, recordedAt),
+    ]);
+    await reminderDb.prepare(
+      `INSERT INTO workflow_versions
+         (workflow_id, version, state, document, created_at, published_at)
+       VALUES (?, ?, 'published', ?, ?, ?)`,
+    ).bind(
+      NO_SHOW_FLOW, NO_SHOW_RECOVERY_WORKFLOW.version,
+      JSON.stringify(NO_SHOW_RECOVERY_WORKFLOW), now, now,
+    ).run();
+
+    const reminder = await mf.getWorker("reminder");
+    const reminderEvent = async (event) => {
+      const response = await reminder.fetch("http://reminder.test/event", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${AUTH}`, "Content-Type": "application/json" },
+        body: JSON.stringify(event),
+      });
+      const body = await response.json();
+      expect(response.status, JSON.stringify(body)).toBe(200);
+      return body;
+    };
+    const missed = (contactId, appointmentId) => ({
+      recognized: true, type: "noshow", status: "no-show", appointmentEventType: "normal",
+      calendarId: PARTNER_CALENDAR_ID, contactId, appointmentId,
+      startAt: new Date(now - 60 * 60_000).toISOString(), modifiedBy: "user",
+      context: { affiliatePartner: "false" },
+    });
+    expect((await reminderEvent(missed(PROVIDER_CONTACT_ID, "legacy-ghl-no-show"))).actions)
+      .toContainEqual({ engine: "reminder", action: "enroll", detail: { flowKey: NO_SHOW_FLOW } });
+    expect((await reminderEvent(missed("unrelated-ghl-contact", "unrelated-no-show"))).actions)
+      .toContainEqual({ engine: "reminder", action: "enroll", detail: { flowKey: NO_SHOW_FLOW } });
+
+    const sweep = await reminder.fetch("http://reminder.test/run", {
+      method: "POST", headers: { Authorization: `Bearer ${AUTH}` },
+    });
+    expect(sweep.status).toBe(200);
+    expect(await reminderDb.prepare(
+      `SELECT status FROM reminder_steps
+        WHERE enrollment_id = ? AND step_index = 0`,
+    ).bind(`${NO_SHOW_FLOW}:legacy-ghl-no-show`).first()).toEqual({ status: "would_send" });
+
+    const capture = await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "schedule", contactId: CONTACT_ID, serviceId: "partner-initial",
+        idempotencyKey: "synthetic-cross-provider-exit-v1",
+        startTime: startAt, timezone: "America/Los_Angeles",
+      },
+    });
+    const commandId = capture.appointment.commandId;
+    const appointmentId = capture.appointment.appointmentId;
+    await request(mf, "/appointments/commands", {
+      method: "POST", body: { action: "claim", commandId },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "provider-link", commandId, provider: "google_calendar",
+        providerRecordId: googleEventId, providerCalendarId: googleCalendarId,
+        providerStatusRaw: "confirmed",
+      },
+    });
+    await request(mf, "/appointments/commands", {
+      method: "POST",
+      body: {
+        action: "complete", commandId,
+        result: {
+          action: "schedule", actor: "Garrett", contactId: CONTACT_ID,
+          appointmentId, providerAppointmentId: googleEventId,
+          newStartTime: startAt, appointmentStatus: "confirmed",
+          reminderVerification: "pending_event_evidence", authority: "owned",
+        },
+      },
+    });
+    const sync = await request(mf, "/sync", {
+      method: "POST", body: { sources: ["owned-appointment-lifecycles"], limit: 10 },
+    });
+    expect(sync.results.ownedAppointmentLifecycles).toMatchObject({
+      status: "succeeded", considered: 1, dispatched: 1, retryable: 0, manualReview: 0,
+    });
+
+    expect(await reminderDb.prepare(
+      "SELECT status FROM reminder_enrollments WHERE enrollment_id = ?",
+    ).bind(`${NO_SHOW_FLOW}:legacy-ghl-no-show`).first()).toEqual({ status: "cancelled" });
+    expect((await reminderDb.prepare(
+      "SELECT step_index, status FROM reminder_steps WHERE enrollment_id = ? ORDER BY step_index",
+    ).bind(`${NO_SHOW_FLOW}:legacy-ghl-no-show`).all()).results).toEqual([
+      { step_index: 0, status: "would_send" },
+      { step_index: 1, status: "cancelled" },
+      { step_index: 2, status: "cancelled" },
+    ]);
+    expect(await reminderDb.prepare(
+      "SELECT status FROM reminder_enrollments WHERE enrollment_id = ?",
+    ).bind(`${NO_SHOW_FLOW}:unrelated-no-show`).first()).toEqual({ status: "active" });
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM reminder_steps WHERE enrollment_id = ? AND status = 'pending'",
+    ).bind(`${NO_SHOW_FLOW}:unrelated-no-show`).first()).toEqual({ count: 2 });
+    const exitEvent = await reminderDb.prepare(
+      `SELECT id, contact_id, action, outcome, detail FROM automation_events
+        WHERE flow_key = ? AND action = 'exited' ORDER BY id DESC LIMIT 1`,
+    ).bind(NO_SHOW_FLOW).first();
+    expect(exitEvent).toMatchObject({ contact_id: CONTACT_ID, action: "exited", outcome: "exited" });
+    expect(JSON.parse(exitEvent.detail)).toEqual({
+      reason: "confirmed_rebooking", identityScope: "owned_contact", aliasesMatched: 2,
+      cancelledSteps: 2, exitedEnrollments: 1,
+    });
+    const partnerEnrollmentEvent = await reminderDb.prepare(
+      `SELECT id FROM automation_events
+        WHERE flow_key = ? AND action = 'enrolled' AND appointment_id = ?`,
+    ).bind(PARTNER_FLOW, googleEventId).first();
+    expect(Number(exitEvent.id)).toBeLessThan(Number(partnerEnrollmentEvent.id));
+
+    const replay = await reminderEvent({
+      recognized: true, type: "confirmed", status: "confirmed",
+      calendarId: googleCalendarId, contactId: CONTACT_ID, appointmentId: googleEventId,
+      startAt, modifiedBy: "user",
+      context: {
+        source: "owned_crm", commandId, ownedAppointmentId: appointmentId,
+        ownedContactId: CONTACT_ID, serviceId: "partner-initial",
+        provider: "google_calendar", providerAppointmentId: googleEventId,
+        providerCalendarId: googleCalendarId, providerContactId: null,
+      },
+    });
+    expect(replay.actions).toContainEqual({
+      engine: "reminder", action: "enroll-noop", detail: { flowKey: PARTNER_FLOW },
+    });
+    expect(replay.actions.some((action) => action.action === "exit")).toBe(false);
+    expect(await reminderDb.prepare(
+      "SELECT COUNT(*) AS count FROM automation_events WHERE flow_key = ? AND action = 'exited'",
+    ).bind(NO_SHOW_FLOW).first()).toEqual({ count: 1 });
+  }, 30_000);
+
+  it("delivers an active affiliate no-show SMS from owned CRM through the provider-neutral edge with durable evidence", async () => {
+    const { mf, crmDb, reminderDb } = await startRuntime();
+    const now = Date.now();
+    const recordedAt = new Date(now).toISOString();
+    const appointmentId = "owned-no-show-appointment";
+    const providerAppointmentId = "legacy-no-show-appointment";
+    const providerContactId = "legacy-no-show-contact";
+    const phone = "+14155550123";
+    await crmDb.batch([
+      crmDb.prepare(
+        `INSERT INTO contacts
+           (id, display_name, first_name, email_normalized, phone_e164, created_at, updated_at)
+         VALUES (?, 'Synthetic Affiliate — Owned SMS', 'Avery', 'avery@example.test', ?, ?, ?)`,
+      ).bind(CONTACT_ID, phone, recordedAt, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO external_records
+           (id, provider, object_type, external_id, contact_id, record_type, record_id, last_seen_at)
+         VALUES ('synthetic-owned-sms-contact-crosswalk', 'ghl', 'contact', ?, ?, 'contact', ?, ?)`,
+      ).bind(providerContactId, CONTACT_ID, CONTACT_ID, recordedAt),
+      crmDb.prepare(
+        `INSERT INTO appointments
+           (id, contact_id, service_id, provider_appointment_id, provider_calendar_id,
+            provider_status_raw, status, starts_at, ends_at, timezone,
+            authority, provider_sync_state, revision, created_at, updated_at)
+         VALUES (?, ?, 'partner-initial', ?, ?, 'noshow', 'no_show', ?, ?,
+                 'America/Los_Angeles', 'provider_mirror', 'synced', 1, ?, ?)`,
+      ).bind(
+        appointmentId, CONTACT_ID, providerAppointmentId, PARTNER_CALENDAR_ID,
+        new Date(now - 60 * 60_000).toISOString(), new Date(now - 10 * 60_000).toISOString(),
+        recordedAt, recordedAt,
+      ),
+    ]);
+    const captureRecovery = () => mf.dispatchFetch("http://runtime.test/appointments/recovery-requests", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${AUTH}`,
+        "Content-Type": "application/json",
+        "X-Staff-Actor": "Client",
+      },
+      body: JSON.stringify({
+        appointmentId,
+        contactId: CONTACT_ID,
+        appointmentRevision: 1,
+      }),
+    });
+    const firstRecovery = await captureRecovery();
+    expect(firstRecovery.status).toBe(201);
+    await expect(firstRecovery.json()).resolves.toMatchObject({
+      request: { appointmentId, contactId: CONTACT_ID, state: "pending_review", deduped: false },
+    });
+    const replayRecovery = await captureRecovery();
+    expect(replayRecovery.status).toBe(200);
+    await expect(replayRecovery.json()).resolves.toMatchObject({
+      request: { appointmentId, state: "pending_review", deduped: true },
+    });
+    const recoveryQueue = await mf.dispatchFetch("http://runtime.test/appointments/recovery-requests?limit=25", {
+      headers: { Authorization: `Bearer ${AUTH}` },
+    });
+    expect(recoveryQueue.status).toBe(200);
+    await expect(recoveryQueue.json()).resolves.toMatchObject({
+      requests: [{ appointmentId, contactId: CONTACT_ID, state: "pending_review" }],
+      truncated: false,
+    });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM appointment_recovery_requests").first())
+      .toEqual({ count: 1 });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM appointment_recovery_request_events").first())
+      .toEqual({ count: 1 });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM appointment_authority_commands").first())
+      .toEqual({ count: 0 });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM appointment_payment_records").first())
+      .toEqual({ count: 0 });
+    expect(await crmDb.prepare("SELECT COUNT(*) AS count FROM owned_communication_commands").first())
+      .toEqual({ count: 0 });
+    await reminderDb.prepare(
+      `INSERT INTO workflow_versions
+         (workflow_id, version, state, document, created_at, published_at)
+       VALUES (?, ?, 'published', ?, ?, ?)`,
+    ).bind(
+      NO_SHOW_FLOW, NO_SHOW_RECOVERY_RELEASE_WORKFLOW.version,
+      JSON.stringify(NO_SHOW_RECOVERY_RELEASE_WORKFLOW), now, now,
+    ).run();
+
+    const reminder = await mf.getWorker("reminder");
+    const eventResponse = await reminder.fetch("http://reminder.test/event", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${AUTH}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
+        recognized: true, type: "noshow", status: "no-show", appointmentEventType: "normal",
+        calendarId: PARTNER_CALENDAR_ID, contactId: providerContactId,
+        appointmentId: providerAppointmentId,
+        startAt: new Date(now - 60 * 60_000).toISOString(), modifiedBy: "user",
+        context: { affiliatePartner: "true" },
+      }),
+    });
+    expect(eventResponse.status).toBe(200);
+    expect((await eventResponse.json()).actions).toContainEqual({
+      engine: "reminder", action: "enroll", detail: { flowKey: NO_SHOW_FLOW },
+    });
+    const runResponse = await reminder.fetch("http://reminder.test/run", {
+      method: "POST", headers: { Authorization: `Bearer ${AUTH}` },
+    });
+    expect(runResponse.status).toBe(200);
+
+    const enrollmentId = `${NO_SHOW_FLOW}:${providerAppointmentId}`;
+    expect(await reminderDb.prepare(
+      "SELECT status FROM reminder_steps WHERE enrollment_id = ? AND step_index = 0",
+    ).bind(enrollmentId).first()).toEqual({ status: "sent" });
+    expect(await reminderDb.prepare(
+      `SELECT flow_key, enrollment_id, step_index, definition_version, channel, provider,
+              state, provider_reference
+         FROM owned_delivery_attempts WHERE enrollment_id = ?`,
+    ).bind(enrollmentId).first()).toEqual({
+      flow_key: NO_SHOW_FLOW,
+      enrollment_id: enrollmentId,
+      step_index: 0,
+      definition_version: 4,
+      channel: "sms",
+      provider: "owned-sms",
+      state: "accepted",
+      provider_reference: `synthetic-owned-sms:${phone}`,
+    });
+    expect(await reminderDb.prepare(
+      `SELECT COUNT(*) AS count FROM owned_delivery_receipts
+        WHERE provider = 'owned-sms' AND provider_reference = ? AND proof_level = 'accepted'`,
+    ).bind(`synthetic-owned-sms:${phone}`).first()).toEqual({ count: 1 });
+    const event = await reminderDb.prepare(
+      `SELECT outcome, channel, message_ref FROM automation_events
+        WHERE flow_key = ? AND action = 'send' ORDER BY id DESC LIMIT 1`,
+    ).bind(NO_SHOW_FLOW).first();
+    expect(event).toEqual({
+      outcome: "sent", channel: "sms", message_ref: `synthetic-owned-sms:${phone}`,
+    });
   }, 30_000);
 
   it.each([

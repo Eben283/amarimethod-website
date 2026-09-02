@@ -8,7 +8,7 @@
     "workflowPath": "reminder-engine-worker/src/follow-up-workflow.js",
     "workflowSha256": "4d4a3aea7ca907fcbcc23eaa93eca38eefed706ebcd2f8206883426b2db483de",
     "definitionPath": "reminder-engine-worker/src/workflow-definition.js",
-    "definitionSha256": "1727731e5ef0aebbe606f4ca03ae4f67ad7e779fedea9287862df59cbbb380e6",
+    "definitionSha256": "ed09be0713eb36a83f2848d1301045ea561d21eef565f9d0e5a74ab478d74a21",
     "liveSender": "Follow up session Confirmation email / reminder flow",
     "liveSenderOwner": "GHL",
     "currentWorkerExecutionMode": "shadow"
@@ -24,13 +24,13 @@
   "d1SchemaHead": {
     "migrationId": "reliability-spine-v1",
     "version": 1,
-    "sourceSha256": "d5e4648f4f8367245ab17cd137a9854cf1a27c66fcbf7e99d69c64b2df548564"
+    "sourceSha256": "73640a2098788520a5279343ae04007927874b87e24d75f423ada9bd8b075db1"
   },
   "artifacts": {
     "compilerArtifactDigest": "721e97360e624eba9be1a597871a6759868e9d053049559e828a260e194aa591",
     "handlerArtifactDigests": {
       "observe-followup-node": "4d4a3aea7ca907fcbcc23eaa93eca38eefed706ebcd2f8206883426b2db483de",
-      "observe-no-show-dependency": "1727731e5ef0aebbe606f4ca03ae4f67ad7e779fedea9287862df59cbbb380e6"
+      "observe-no-show-dependency": "ed09be0713eb36a83f2848d1301045ea561d21eef565f9d0e5a74ab478d74a21"
     },
     "messageArtifacts": {
       "message.booked-internal": { "audience": "internal", "channel": "email", "subject": "{{firstName}} booked a {{calendarName}}", "body": "Hey there big dog, {{contactName}} booked a {{calendarName}} for {{appointmentDate}} at {{appointmentTime}}. How they'll connect: {{meetingLocation}}" },

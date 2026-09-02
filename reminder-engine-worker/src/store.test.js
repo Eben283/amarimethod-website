@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from "vitest";
-import { enrollmentId, saveEnrollment, saveBackfilledEnrollment, retireLegacyEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, loadDeliveryReceiptCandidates, appendDeliveryReceiptEvent } from "./store.js";
+import { enrollmentId, saveEnrollment, saveBackfilledEnrollment, retireLegacyEnrollment, loadDueSteps, markStep, appendEvent, cancelEnrollment, exitEnrollmentsForContact, exitEnrollmentsForContacts, loadDeliveryReceiptCandidates, appendDeliveryReceiptEvent } from "./store.js";
 
 // Stateful fake of the D1 binding — models exactly the queries store.js issues, the way
 // attendance-claim.test.js models its INSERT. prepare().bind().run()/.all().
@@ -45,11 +45,12 @@ function fakeD1() {
           return { meta: { changes } };
         }
         if (/UPDATE reminder_steps SET status = 'cancelled'\s+WHERE status = 'pending' AND enrollment_id IN/.test(sql)) {
-          const [flowKey, contactId] = a;
+          const [flowKey, ...contactIds] = a;
+          const aliases = new Set(/contact_id IN \(/.test(sql) ? contactIds : contactIds.slice(0, 1));
           let changes = 0;
           for (const s of steps) {
             const e = enrollments.get(s.enrollment_id);
-            if (s.status === "pending" && e && e.flow_key === flowKey && e.contact_id === contactId && e.status === "active") { s.status = "cancelled"; changes++; }
+            if (s.status === "pending" && e && e.flow_key === flowKey && aliases.has(e.contact_id) && e.status === "active") { s.status = "cancelled"; changes++; }
           }
           return { meta: { changes } };
         }
@@ -71,11 +72,12 @@ function fakeD1() {
           return { meta: { changes: 1 } };
         }
         if (/UPDATE reminder_enrollments SET status = 'cancelled'/.test(sql)) {
-          if (/flow_key = \? AND contact_id = \?/.test(sql)) {
-            const [flowKey, contactId] = a;
+          if (/flow_key = \? AND contact_id (?:= \?|IN \()/.test(sql)) {
+            const [flowKey, ...contactIds] = a;
+            const aliases = new Set(/contact_id IN \(/.test(sql) ? contactIds : contactIds.slice(0, 1));
             let changes = 0;
             for (const e of enrollments.values()) {
-              if (e.flow_key === flowKey && e.contact_id === contactId && e.status === "active") { e.status = "cancelled"; changes++; }
+              if (e.flow_key === flowKey && aliases.has(e.contact_id) && e.status === "active") { e.status = "cancelled"; changes++; }
             }
             return { meta: { changes } };
           }
@@ -369,6 +371,24 @@ describe("exitEnrollmentsForContact", () => {
     expect(db._enrollments.get("assessment-no-show:missed").status).toBe("cancelled");
     expect(db._enrollments.get("assessment-no-show:other-person").status).toBe("active");
     expect(db._enrollments.get("initial-in-person:other-flow").status).toBe("active");
+  });
+});
+
+describe("exitEnrollmentsForContacts", () => {
+  it("closes both exact identity aliases while preserving sent evidence and other people", async () => {
+    await saveEnrollment(db, enrollment({ flowKey: "no-show-recovery", appointmentId: "legacy", contactId: "ghl-c1" }));
+    await saveEnrollment(db, enrollment({ flowKey: "no-show-recovery", appointmentId: "owned", contactId: "owned-c1" }));
+    await saveEnrollment(db, enrollment({ flowKey: "no-show-recovery", appointmentId: "other", contactId: "owned-c2" }));
+    await markStep(db, "no-show-recovery:legacy", 0, "would_send");
+
+    const out = await exitEnrollmentsForContacts(db, "no-show-recovery", ["owned-c1", "ghl-c1", "owned-c1"]);
+
+    expect(out).toEqual({ cancelledSteps: 3, exitedEnrollments: 2 });
+    expect(db._enrollments.get("no-show-recovery:legacy").status).toBe("cancelled");
+    expect(db._enrollments.get("no-show-recovery:owned").status).toBe("cancelled");
+    expect(db._enrollments.get("no-show-recovery:other").status).toBe("active");
+    expect(db._steps.find((step) => step.enrollment_id === "no-show-recovery:legacy" && step.step_index === 0).status)
+      .toBe("would_send");
   });
 });
 

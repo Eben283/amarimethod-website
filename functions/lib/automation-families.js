@@ -435,10 +435,16 @@ function familyEvidence(family, ownedDefinitions) {
       label: "Owned definitions expose exact template keys, timing, type, and branches; rendered template bodies are not present in the owned engine config yet.",
     });
   }
-  if (ownedDefinitions.some((definition) => definition.messagePreview)) {
+  if (ownedDefinitions.some((definition) => definition.messagePreview?.status === "source_verified_read_only")) {
     gaps.push({
       code: "owned_delivery_templates_not_loaded",
       label: "Source-verified read-only copy is shown for this definition, but no active owned delivery template or sender adapter is loaded.",
+    });
+  }
+  if (ownedDefinitions.some((definition) => definition.messagePreview?.status === "owned_delivery_contract_hard_shadow")) {
+    gaps.push({
+      code: "owned_delivery_contract_hard_shadow",
+      label: "Exact owned copy and a provider-neutral delivery contract are present, but the definition remains hard-shadow until its named cutover blockers close.",
     });
   }
   if (family.kind === "evidence_only") {

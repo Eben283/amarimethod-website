@@ -101,7 +101,7 @@ describe("staff-automations — views", () => {
       health: expect.objectContaining({ truth: "Unknown", reason: "authority_unavailable" }),
       route: expect.objectContaining({
         accepted: expect.arrayContaining([
-          expect.objectContaining({ transition: "accepted", label: "Record expected missed-count increment" }),
+          expect.objectContaining({ transition: "accepted", label: "Reconcile owned missed-status truth" }),
         ]),
       }),
     }));
@@ -281,7 +281,7 @@ describe("staff-automations — views", () => {
     vi.unstubAllGlobals();
   });
 
-  it("partner family view presents the shadow definition and read-only message copy", async () => {
+  it("partner family view presents the provider-neutral hard-shadow delivery contract", async () => {
     const res = await onRequestGet(makeContext("view=family&key=partner-session-lifecycle", {}));
     const body = await res.json();
     expect(res.status).toBe(200);
@@ -291,7 +291,7 @@ describe("staff-automations — views", () => {
         id: "reminder:partner-initial-in-person",
         mode: "shadow",
         messagePreview: expect.objectContaining({
-          status: "source_verified_read_only",
+          status: "owned_delivery_contract_hard_shadow",
           notices: expect.arrayContaining([
             expect.objectContaining({ subject: "Your partner session is confirmed" }),
           ]),
@@ -299,7 +299,10 @@ describe("staff-automations — views", () => {
         cutoverReadiness: expect.objectContaining({
           status: "not_eligible",
           requirements: expect.arrayContaining([
-            expect.objectContaining({ code: "no_show_series_exit_not_owned", status: "blocked" }),
+            expect.objectContaining({ code: "no_show_series_exit_owned", status: "proven" }),
+            expect.objectContaining({ code: "no_show_series_exit_shadow_publish_pending", status: "blocked" }),
+            expect.objectContaining({ code: "owned_delivery_contract_built", status: "proven" }),
+            expect.objectContaining({ code: "owned_client_manage_links_built", status: "proven" }),
           ]),
         }),
       })],

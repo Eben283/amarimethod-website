@@ -237,10 +237,13 @@ export async function upsertOwnedQuizIntake(db, rawInput, now = new Date().toISO
       input.referralSource, now, now),
     db.prepare(`
       UPDATE contacts SET
-        first_name = COALESCE(NULLIF(first_name, ''), ?),
-        last_name = COALESCE(NULLIF(last_name, ''), ?),
-        display_name = CASE WHEN display_name = '' OR display_name = 'Unnamed client' THEN ? ELSE display_name END,
-        phone_e164 = COALESCE(phone_e164, ?),
+        first_name = CASE WHEN name_authority = 'owned' THEN first_name ELSE COALESCE(NULLIF(first_name, ''), ?) END,
+        last_name = CASE WHEN name_authority = 'owned' THEN last_name ELSE COALESCE(NULLIF(last_name, ''), ?) END,
+        display_name = CASE
+          WHEN name_authority = 'owned' THEN display_name
+          WHEN display_name = '' OR display_name = 'Unnamed client' THEN ?
+          ELSE display_name END,
+        phone_e164 = CASE WHEN phone_authority = 'owned' THEN phone_e164 ELSE COALESCE(phone_e164, ?) END,
         referral_source_label = COALESCE(referral_source_label, ?),
         updated_at = ?
       WHERE id = ? AND archived_at IS NULL

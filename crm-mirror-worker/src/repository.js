@@ -146,7 +146,11 @@ export async function upsertGhlContact(db, contact, now) {
   if (contactId) {
     await db.prepare(
       `UPDATE contacts
-       SET first_name = ?, last_name = ?, display_name = ?, email_normalized = ?, phone_e164 = ?,
+       SET first_name = CASE WHEN name_authority = 'owned' THEN first_name ELSE ? END,
+           last_name = CASE WHEN name_authority = 'owned' THEN last_name ELSE ? END,
+           display_name = CASE WHEN name_authority = 'owned' THEN display_name ELSE ? END,
+           email_normalized = CASE WHEN email_authority = 'owned' THEN email_normalized ELSE ? END,
+           phone_e164 = CASE WHEN phone_authority = 'owned' THEN phone_e164 ELSE ? END,
            referral_source_label = ?, updated_at = ?
        WHERE id = ?`,
     ).bind(
@@ -493,11 +497,14 @@ export async function upsertGhlAppointment(db, appointment, contactId, now, proj
     await db.prepare(
       `UPDATE appointments
        SET contact_id = ?, service_id = ?, provider_calendar_id = ?, provider_status_raw = ?, status = ?,
-           starts_at = ?, ends_at = ?, timezone = ?, provider_meeting_location = ?, updated_at = ?
+           starts_at = ?, ends_at = ?, timezone = ?, provider_meeting_location = ?,
+           revision = CASE WHEN status <> ? THEN revision + 1 ELSE revision END,
+           updated_at = ?
        WHERE id = ?`,
     ).bind(
       contactId, service?.id || null, appointment.calendarId, appointment.providerStatusRaw, appointment.status,
-      appointment.startsAt, appointment.endsAt, appointment.timezone, appointment.meetingLocation, now, appointmentId,
+      appointment.startsAt, appointment.endsAt, appointment.timezone, appointment.meetingLocation,
+      appointment.status, now, appointmentId,
     ).run();
   } else {
     await db.prepare(
@@ -1101,10 +1108,10 @@ export async function contactProfile(db, contactId, limit, now) {
        WHERE contact.id = ?`,
     ).bind(contactId),
     db.prepare(
-      "SELECT tag FROM contact_tags WHERE contact_id = ? ORDER BY tag",
+      "SELECT DISTINCT tag FROM contact_tags WHERE contact_id = ? ORDER BY tag",
     ).bind(contactId),
     db.prepare(
-      "SELECT role FROM contact_roles WHERE contact_id = ? ORDER BY role",
+      "SELECT DISTINCT role FROM contact_roles WHERE contact_id = ? ORDER BY role",
     ).bind(contactId),
     db.prepare(
       `SELECT attribute_key, attribute_value, source, updated_at

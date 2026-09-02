@@ -439,3 +439,31 @@ export async function exitEnrollmentsForContact(db, flowKey, contactId) {
     .run();
   return { cancelledSteps: changesOf(stepUpdate), exitedEnrollments: changesOf(enrollmentUpdate) };
 }
+
+/**
+ * Close active enrollments across the exact provider/owned aliases of one
+ * person. D1 executes both updates as one batch so a cross-provider rebooking
+ * cannot cancel the due queue without also closing its enrollment.
+ */
+export async function exitEnrollmentsForContacts(db, flowKey, contactIds) {
+  const aliases = [...new Set((contactIds || []).filter((value) => typeof value === "string" && value))];
+  if (!aliases.length) return { cancelledSteps: 0, exitedEnrollments: 0 };
+  if (aliases.length === 1) return exitEnrollmentsForContact(db, flowKey, aliases[0]);
+  if (aliases.length > 8) throw new Error("too many contact identity aliases");
+  const placeholders = aliases.map(() => "?").join(",");
+  const steps = db.prepare(
+    `UPDATE reminder_steps SET status = 'cancelled'
+      WHERE status = 'pending' AND enrollment_id IN (
+        SELECT enrollment_id FROM reminder_enrollments
+        WHERE flow_key = ? AND contact_id IN (${placeholders}) AND status = 'active'
+      )`,
+  ).bind(flowKey, ...aliases);
+  const enrollments = db.prepare(
+    `UPDATE reminder_enrollments SET status = 'cancelled'
+      WHERE flow_key = ? AND contact_id IN (${placeholders}) AND status = 'active'`,
+  ).bind(flowKey, ...aliases);
+  const results = typeof db.batch === "function"
+    ? await db.batch([steps, enrollments])
+    : [await steps.run(), await enrollments.run()];
+  return { cancelledSteps: changesOf(results[0]), exitedEnrollments: changesOf(results[1]) };
+}

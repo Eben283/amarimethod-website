@@ -162,12 +162,19 @@ export function maskCommunicationDestination(channel, value) {
 export async function loadCommunicationContact(db, contactId) {
   return db.prepare(
     `SELECT contact.id, contact.display_name, contact.email_normalized, contact.phone_e164,
+            contact.email_authority, contact.phone_authority,
             COALESCE((SELECT attribute_value FROM contact_attributes
                       WHERE contact_id = contact.id AND attribute_key = 'system.dnd'
                       ORDER BY datetime(updated_at) DESC LIMIT 1), 'off') AS dnd_state,
-            COALESCE((SELECT state FROM consents WHERE contact_id = contact.id AND channel = 'email' AND state <> 'unknown'
+            COALESCE((SELECT state FROM consents WHERE contact_id = contact.id AND channel = 'email'
+                        AND CASE WHEN contact.email_authority = 'owned'
+                          THEN destination_normalized = contact.email_normalized AND destination_sha256 IS NOT NULL
+                          ELSE state <> 'unknown' AND (destination_normalized IS NULL OR destination_normalized = contact.email_normalized) END
                       ORDER BY datetime(effective_at) DESC, id DESC LIMIT 1), 'unknown') AS email_consent_state,
-            COALESCE((SELECT state FROM consents WHERE contact_id = contact.id AND channel = 'sms' AND state <> 'unknown'
+            COALESCE((SELECT state FROM consents WHERE contact_id = contact.id AND channel = 'sms'
+                        AND CASE WHEN contact.phone_authority = 'owned'
+                          THEN destination_normalized = contact.phone_e164 AND destination_sha256 IS NOT NULL
+                          ELSE state <> 'unknown' AND (destination_normalized IS NULL OR destination_normalized = contact.phone_e164) END
                       ORDER BY datetime(effective_at) DESC, id DESC LIMIT 1), 'unknown') AS sms_consent_state
        FROM contacts contact WHERE contact.id = ?`,
   ).bind(contactId).first();

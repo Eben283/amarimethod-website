@@ -584,6 +584,29 @@ describe("owned appointment authority", () => {
     db.sqlite.close();
   });
 
+  it("journals a client manage command under Client and refuses cross-actor execution", async () => {
+    const db = d1Database();
+    seedContact(db);
+    const source = seedProviderAppointment(db);
+    const nowMs = Date.parse("2026-08-28T00:00:00Z");
+    const captured = await captureOwnedManageCommand(db, {
+      actor: "Client", action: "cancel", contactId: source.contactId,
+      appointmentId: source.id, idempotencyKey: "client-manage:exact-signed-link",
+    }, { nowMs, providerSyncRequired: true });
+    expect(captured.command).toMatchObject({ actor: "Client", action: "cancel", appointmentId: source.id });
+    await expect(claimOwnedAppointmentExecution(db, {
+      commandId: captured.command.commandId,
+      actor: "Garrett",
+    }, { nowMs })).rejects.toMatchObject({ code: "command_not_found", status: 404 });
+    await expect(claimOwnedAppointmentExecution(db, {
+      commandId: captured.command.commandId,
+      actor: "Client",
+    }, { nowMs })).resolves.toMatchObject({ state: "acquired" });
+    expect(db.sqlite.prepare("SELECT actor FROM appointment_authority_commands WHERE id = ?")
+      .get(captured.command.commandId)).toEqual({ actor: "Client" });
+    db.sqlite.close();
+  });
+
   it("adopts a replacement that provider mirroring observed before reschedule completion", async () => {
     const db = d1Database();
     seedContact(db);

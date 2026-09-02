@@ -85,6 +85,130 @@ describe("CRM mirror request validation", () => {
 });
 
 describe("CRM mirror dashboard access handoff", () => {
+  it("keeps missed-appointment truth authenticated, read-only, and explicit about legacy non-authority", async () => {
+    let batches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      CRM_DB: {
+        prepare(sql) {
+          return { sql, bind(...values) { return { sql, values }; } };
+        },
+        async batch() {
+          batches += 1;
+          return [
+            { results: [{ id: "contact-1", display_name: "Avery", legacy_missed_appointments: "3" }] },
+            { results: [{ appointments: 2, missed_appointments: 1, missing_facts: 0, baseline_facts: 2, current_mismatches: 0 }] },
+            { results: [{
+              appointment_id: "appointment-1", appointment_revision: 2, normalized_status: "no_show",
+              authority: "provider_mirror", source_kind: "migration_baseline", history_complete: 0,
+              effective_at: "2026-08-01T18:00:00.000Z", recorded_at: "2026-08-01T18:00:00.000Z",
+              starts_at: "2026-08-01T17:00:00.000Z", ends_at: "2026-08-01T18:00:00.000Z",
+              service_name: "Partner Initial Session",
+            }] },
+          ];
+        },
+      },
+    };
+    const url = "https://crm.test/appointments/missed-truth?contactId=contact-1";
+    expect((await worker.fetch(new Request(url), env)).status).toBe(401);
+    const response = await worker.fetch(new Request(url, {
+      headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toMatchObject({
+      success: true,
+      readOnly: true,
+      mutableCounterWritten: false,
+      authorityPromoted: false,
+      state: "baseline",
+      summary: { missedAppointments: 1 },
+      legacyObservation: { observedValue: 3, matchesDerived: false, authoritative: false },
+    });
+    expect(batches).toBe(1);
+  });
+
+  it("keeps attendance mutation source-pinned shadow despite environment flags", async () => {
+    let storageTouches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      OWNED_ATTENDANCE_SOURCE_MODE: "active",
+      CRM_DB: {
+        prepare() {
+          storageTouches += 1;
+          throw new Error("source-shadow route must not touch storage");
+        },
+      },
+    };
+    const request = (headers = {}, extra = {}) => new Request(
+      "https://crm.test/appointments/attendance-commands",
+      {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...headers },
+        body: JSON.stringify({
+          appointmentId: "appointment-1",
+          contactId: "contact-1",
+          idempotencyKey: "attendance-command-0001",
+          targetStatus: "attended",
+          expectedRevision: 1,
+          ...extra,
+        }),
+      },
+    );
+    expect((await worker.fetch(request(), env)).status).toBe(401);
+    const invalidActor = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Client",
+    }), env);
+    expect(invalidActor.status).toBe(400);
+    await expect(invalidActor.json()).resolves.toEqual({ error: "recognized_staff_actor_required" });
+
+    const unsupported = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Garrett",
+    }, { grantSession: true }), env);
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["grantSession"] });
+
+    const shadow = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Garrett",
+    }), env);
+    expect(shadow.status).toBe(503);
+    await expect(shadow.json()).resolves.toEqual({
+      error: "owned_attendance_shadow_only",
+      detail: "owned attendance commands remain source-level shadow",
+    });
+    expect(storageTouches).toBe(0);
+  });
+
+  it("keeps recovery intake Worker-authenticated, Client-scoped, and unable to accept booking or entitlement fields", async () => {
+    const url = "https://crm.test/appointments/recovery-requests";
+    const payload = {
+      appointmentId: "appointment-1",
+      contactId: "contact-1",
+      appointmentRevision: 3,
+      grantSession: true,
+    };
+    const request = (headers = {}) => new Request(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", ...headers },
+      body: JSON.stringify(payload),
+    });
+    const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {} };
+    expect((await worker.fetch(request(), env)).status).toBe(401);
+    const staff = await worker.fetch(request({
+      Authorization: "Bearer test-secret", "X-Staff-Actor": "Garrett",
+    }), env);
+    expect(staff.status).toBe(403);
+    await expect(staff.json()).resolves.toEqual({ error: "client_recovery_request_required" });
+    const client = await worker.fetch(request({
+      Authorization: "Bearer test-secret", "X-Staff-Actor": "Client",
+    }), env);
+    expect(client.status).toBe(400);
+    await expect(client.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["grantSession"] });
+    expect((await worker.fetch(new Request(url), env)).status).toBe(401);
+  });
+
   it("keeps native appointment capture behind Worker auth and recognized Staff identity", async () => {
     const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {} };
     const request = (headers = {}) => new Request("https://crm.test/appointments/commands", {
@@ -107,6 +231,13 @@ describe("CRM mirror dashboard access handoff", () => {
     }), env);
     expect(invalidActor.status).toBe(400);
     await expect(invalidActor.json()).resolves.toEqual({ error: "recognized_staff_actor_required" });
+
+    const clientSchedule = await worker.fetch(request({
+      Authorization: "Bearer test-secret",
+      "X-Staff-Actor": "Client",
+    }), env);
+    expect(clientSchedule.status).toBe(403);
+    await expect(clientSchedule.json()).resolves.toEqual({ error: "client_schedule_forbidden" });
   });
 
   it("keeps person and family automation evidence behind Worker authentication", async () => {
@@ -286,6 +417,280 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(framePolicy).toContain("https://amarimethod.com");
     expect(framePolicy).toContain("https://www.amarimethod.com");
     expect(framePolicy).toContain("https://amarimethod-website.pages.dev");
+  });
+
+  it("keeps owned note commands named-Staff-only, source-shadow, and unable to accept provider fields", async () => {
+    const values = new Map();
+    let storageTouches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      OWNED_NOTE_SOURCE_MODE: "active",
+      PORTAL_KV: {
+        put: async (key, value) => values.set(key, value),
+        get: async (key) => values.get(key) || null,
+        delete: async (key) => values.delete(key),
+      },
+      CRM_DB: {
+        prepare() {
+          storageTouches += 1;
+          throw new Error("source-shadow route must not touch storage");
+        },
+      },
+    };
+    const payload = {
+      action: "create",
+      contactId: "contact-1",
+      appointmentId: "appointment-1",
+      idempotencyKey: "owned-note-command-0001",
+      body: "Client reported easier shoulder rotation after the session.",
+    };
+    const request = (cookie, extra = {}) => new Request("https://crm.test/notes/commands", {
+      method: "POST",
+      headers: {
+        ...(cookie ? { Cookie: cookie } : {}),
+        Origin: "https://crm.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...payload, ...extra }),
+    });
+
+    expect((await worker.fetch(request(null), env)).status).toBe(401);
+    const genericSession = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const genericCookie = genericSession.headers.get("Set-Cookie");
+    const unnamed = await worker.fetch(request(genericCookie), env);
+    expect(unnamed.status).toBe(403);
+    await expect(unnamed.json()).resolves.toEqual({ error: "named_staff_session_required" });
+
+    const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Garrett" },
+    }), env);
+    const accessBody = await access.json();
+    const handoff = await worker.fetch(new Request(accessBody.url), env);
+    const namedCookie = handoff.headers.get("Set-Cookie");
+
+    const unsupported = await worker.fetch(request(namedCookie, { providerNoteId: "ghl-note-1" }), env);
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerNoteId"] });
+
+    const shadow = await worker.fetch(request(namedCookie), env);
+    expect(shadow.status).toBe(503);
+    await expect(shadow.json()).resolves.toEqual({
+      error: "owned_note_shadow_only",
+      detail: "owned note commands remain source-level shadow",
+    });
+    expect(storageTouches).toBe(0);
+  });
+
+  it("keeps owned task commands named-Staff-only, source-shadow, and unable to accept provider fields", async () => {
+    const values = new Map();
+    let storageTouches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      OWNED_TASK_SOURCE_MODE: "active",
+      PORTAL_KV: {
+        put: async (key, value) => values.set(key, value),
+        get: async (key) => values.get(key) || null,
+        delete: async (key) => values.delete(key),
+      },
+      CRM_DB: {
+        prepare() {
+          storageTouches += 1;
+          throw new Error("source-shadow route must not touch storage");
+        },
+      },
+    };
+    const payload = {
+      action: "create",
+      contactId: "contact-1",
+      appointmentId: "appointment-1",
+      idempotencyKey: "owned-task-command-0001",
+      title: "Confirm the client's next practice plan",
+      dueAt: "2026-09-02T10:00:00-07:00",
+    };
+    const request = (cookie, extra = {}) => new Request("https://crm.test/tasks/commands", {
+      method: "POST",
+      headers: {
+        ...(cookie ? { Cookie: cookie } : {}),
+        Origin: "https://crm.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...payload, ...extra }),
+    });
+
+    expect((await worker.fetch(request(null), env)).status).toBe(401);
+    const genericSession = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const genericCookie = genericSession.headers.get("Set-Cookie");
+    const unnamed = await worker.fetch(request(genericCookie), env);
+    expect(unnamed.status).toBe(403);
+    await expect(unnamed.json()).resolves.toEqual({ error: "named_staff_session_required" });
+
+    const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Eben" },
+    }), env);
+    const accessBody = await access.json();
+    const handoff = await worker.fetch(new Request(accessBody.url), env);
+    const namedCookie = handoff.headers.get("Set-Cookie");
+
+    const unsupported = await worker.fetch(request(namedCookie, { providerTaskId: "ghl-task-1" }), env);
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerTaskId"] });
+
+    const shadow = await worker.fetch(request(namedCookie), env);
+    expect(shadow.status).toBe(503);
+    await expect(shadow.json()).resolves.toEqual({
+      error: "owned_task_shadow_only",
+      detail: "owned task commands remain source-level shadow",
+    });
+    expect(storageTouches).toBe(0);
+  });
+
+  it("keeps owned contact classifications named-Staff-only, source-shadow, and unable to accept provider fields", async () => {
+    const values = new Map();
+    let storageTouches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      OWNED_CLASSIFICATION_SOURCE_MODE: "active",
+      PORTAL_KV: {
+        put: async (key, value) => values.set(key, value),
+        get: async (key) => values.get(key) || null,
+        delete: async (key) => values.delete(key),
+      },
+      CRM_DB: {
+        prepare() {
+          storageTouches += 1;
+          throw new Error("source-shadow route must not touch storage");
+        },
+      },
+    };
+    const payload = {
+      action: "add_tag",
+      contactId: "contact-1",
+      idempotencyKey: "classification-command-0001",
+      value: "follow-up",
+    };
+    const request = (cookie, extra = {}) => new Request("https://crm.test/contacts/classification-commands", {
+      method: "POST",
+      headers: {
+        ...(cookie ? { Cookie: cookie } : {}),
+        Origin: "https://crm.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...payload, ...extra }),
+    });
+
+    expect((await worker.fetch(request(null), env)).status).toBe(401);
+    const genericSession = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const genericCookie = genericSession.headers.get("Set-Cookie");
+    const unnamed = await worker.fetch(request(genericCookie), env);
+    expect(unnamed.status).toBe(403);
+    await expect(unnamed.json()).resolves.toEqual({ error: "named_staff_session_required" });
+
+    const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Garrett" },
+    }), env);
+    const accessBody = await access.json();
+    const handoff = await worker.fetch(new Request(accessBody.url), env);
+    const namedCookie = handoff.headers.get("Set-Cookie");
+
+    const unsupported = await worker.fetch(request(namedCookie, { providerContactId: "ghl-contact-1" }), env);
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerContactId"] });
+
+    const shadow = await worker.fetch(request(namedCookie), env);
+    expect(shadow.status).toBe(503);
+    await expect(shadow.json()).resolves.toEqual({
+      error: "owned_classification_shadow_only",
+      detail: "owned contact classification commands remain source-level shadow",
+    });
+    expect(storageTouches).toBe(0);
+  });
+
+  it("keeps owned contact profiles named-Staff-only, source-shadow, and unable to accept side effects", async () => {
+    const values = new Map();
+    let storageTouches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      OWNED_CONTACT_PROFILE_SOURCE_MODE: "active",
+      PORTAL_KV: {
+        put: async (key, value) => values.set(key, value),
+        get: async (key) => values.get(key) || null,
+        delete: async (key) => values.delete(key),
+      },
+      CRM_DB: {
+        prepare() {
+          storageTouches += 1;
+          throw new Error("source-shadow route must not touch storage");
+        },
+      },
+    };
+    const payload = {
+      action: "set_email",
+      contactId: "contact-1",
+      idempotencyKey: "profile-command-0001",
+      expectedRevision: 0,
+      email: "new@example.test",
+      consentState: "granted",
+      consentEvidenceRef: "signed-intake-42",
+    };
+    const request = (cookie, extra = {}, origin = "https://crm.test") => new Request(
+      "https://crm.test/contacts/profile-commands",
+      {
+        method: "POST",
+        headers: {
+          ...(cookie ? { Cookie: cookie } : {}),
+          Origin: origin,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ ...payload, ...extra }),
+      },
+    );
+
+    expect((await worker.fetch(request(null), env)).status).toBe(401);
+    const genericSession = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const genericCookie = genericSession.headers.get("Set-Cookie");
+    const unnamed = await worker.fetch(request(genericCookie), env);
+    expect(unnamed.status).toBe(403);
+    await expect(unnamed.json()).resolves.toEqual({ error: "named_staff_session_required" });
+
+    const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Garrett" },
+    }), env);
+    const accessBody = await access.json();
+    const handoff = await worker.fetch(new Request(accessBody.url), env);
+    const namedCookie = handoff.headers.get("Set-Cookie");
+
+    const crossOrigin = await worker.fetch(request(namedCookie, {}, "https://evil.example"), env);
+    expect(crossOrigin.status).toBe(403);
+    await expect(crossOrigin.json()).resolves.toEqual({ error: "invalid_request_origin" });
+
+    const unsupported = await worker.fetch(request(namedCookie, {
+      providerContactId: "ghl-contact-1", sendMessage: true, createContact: true,
+    }), env);
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({
+      error: "unsupported_fields",
+      fields: ["providerContactId", "sendMessage", "createContact"],
+    });
+
+    const shadow = await worker.fetch(request(namedCookie), env);
+    expect(shadow.status).toBe(503);
+    await expect(shadow.json()).resolves.toEqual({
+      error: "owned_contact_profile_shadow_only",
+      detail: "owned contact profile commands remain source-level shadow",
+    });
+    expect(storageTouches).toBe(0);
   });
 
   it("keeps sender readiness behind staff authentication", async () => {

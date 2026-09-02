@@ -30,6 +30,127 @@ CREATE TABLE IF NOT EXISTS reminder_steps (
 -- The sweep's "what's due" query rides this index.
 CREATE INDEX IF NOT EXISTS idx_steps_due ON reminder_steps (status, due_at);
 
+-- Provider-neutral delivery effect journal. A send is claimed durably before a
+-- transport is invoked; an identical replay can read the accepted receipt but
+-- can never dispatch the same effect twice. These tables are inert until a
+-- separately released active workflow calls the owned delivery adapter.
+CREATE TABLE IF NOT EXISTS owned_delivery_attempts (
+  effect_id           TEXT PRIMARY KEY,
+  flow_key            TEXT NOT NULL,
+  enrollment_id       TEXT NOT NULL,
+  step_index          INTEGER NOT NULL,
+  definition_version  INTEGER NOT NULL,
+  idempotency_key     TEXT NOT NULL UNIQUE,
+  channel             TEXT NOT NULL CHECK (channel IN ('email', 'sms')),
+  recipient_sha256    TEXT NOT NULL,
+  request_sha256      TEXT NOT NULL,
+  provider            TEXT NOT NULL,
+  state               TEXT NOT NULL CHECK (state IN ('prepared', 'submitted', 'accepted', 'ambiguous', 'failed_terminal')),
+  provider_reference  TEXT,
+  error_code          TEXT,
+  prepared_at         INTEGER NOT NULL,
+  updated_at          INTEGER NOT NULL,
+  retention_until     INTEGER NOT NULL,
+  UNIQUE (enrollment_id, step_index),
+  CHECK (retention_until <= prepared_at + 34560000000),
+  CHECK ((state = 'accepted' AND provider_reference IS NOT NULL AND error_code IS NULL)
+      OR (state = 'ambiguous' AND provider_reference IS NULL AND error_code IS NOT NULL)
+      OR (state IN ('prepared', 'submitted') AND provider_reference IS NULL AND error_code IS NULL)
+      OR state = 'failed_terminal'),
+  FOREIGN KEY (enrollment_id, step_index)
+    REFERENCES reminder_steps(enrollment_id, step_index)
+);
+CREATE INDEX IF NOT EXISTS idx_owned_delivery_state
+ON owned_delivery_attempts (state, updated_at);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_owned_delivery_provider_reference
+ON owned_delivery_attempts (provider, provider_reference)
+WHERE provider_reference IS NOT NULL;
+
+CREATE TRIGGER IF NOT EXISTS owned_delivery_attempt_identity_immutable
+BEFORE UPDATE ON owned_delivery_attempts
+WHEN NEW.effect_id <> OLD.effect_id
+  OR NEW.flow_key <> OLD.flow_key
+  OR NEW.enrollment_id <> OLD.enrollment_id
+  OR NEW.step_index <> OLD.step_index
+  OR NEW.definition_version <> OLD.definition_version
+  OR NEW.idempotency_key <> OLD.idempotency_key
+  OR NEW.channel <> OLD.channel
+  OR NEW.recipient_sha256 <> OLD.recipient_sha256
+  OR NEW.request_sha256 <> OLD.request_sha256
+  OR NEW.provider <> OLD.provider
+  OR NEW.retention_until <> OLD.retention_until
+BEGIN
+  SELECT RAISE(ABORT, 'owned delivery attempt identity is immutable');
+END;
+
+CREATE TRIGGER IF NOT EXISTS owned_delivery_attempt_no_delete
+BEFORE DELETE ON owned_delivery_attempts
+WHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN
+  SELECT RAISE(ABORT, 'owned delivery attempts are retained evidence');
+END;
+
+CREATE TRIGGER IF NOT EXISTS owned_delivery_attempt_transition_guard
+BEFORE UPDATE OF state ON owned_delivery_attempts
+WHEN NEW.state <> OLD.state
+ AND NOT (
+   (OLD.state = 'prepared' AND NEW.state = 'submitted')
+   OR (OLD.state = 'submitted' AND NEW.state IN ('accepted', 'ambiguous', 'failed_terminal'))
+ )
+BEGIN
+  SELECT RAISE(ABORT, 'owned delivery attempt transition is invalid');
+END;
+
+CREATE TABLE IF NOT EXISTS owned_delivery_effect_events (
+  event_id          TEXT PRIMARY KEY,
+  effect_id         TEXT NOT NULL REFERENCES owned_delivery_attempts(effect_id),
+  sequence          INTEGER NOT NULL,
+  transition        TEXT NOT NULL CHECK (transition IN ('prepared', 'submitted', 'accepted', 'ambiguous', 'failed_terminal')),
+  evidence_sha256   TEXT NOT NULL,
+  occurred_at       INTEGER NOT NULL,
+  retention_until   INTEGER NOT NULL,
+  UNIQUE (effect_id, sequence),
+  CHECK (retention_until <= occurred_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_owned_delivery_events
+ON owned_delivery_effect_events (effect_id, sequence);
+
+CREATE TRIGGER IF NOT EXISTS owned_delivery_events_no_update
+BEFORE UPDATE ON owned_delivery_effect_events BEGIN
+  SELECT RAISE(ABORT, 'owned delivery effect events are append-only');
+END;
+
+CREATE TRIGGER IF NOT EXISTS owned_delivery_events_no_delete
+BEFORE DELETE ON owned_delivery_effect_events
+WHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN
+  SELECT RAISE(ABORT, 'owned delivery effect events are append-only');
+END;
+
+CREATE TABLE IF NOT EXISTS owned_delivery_receipts (
+  provider_receipt_id TEXT PRIMARY KEY,
+  effect_id           TEXT NOT NULL REFERENCES owned_delivery_attempts(effect_id),
+  provider            TEXT NOT NULL,
+  provider_reference  TEXT NOT NULL,
+  proof_level         TEXT NOT NULL CHECK (proof_level IN ('accepted', 'delivered', 'failed', 'bounced', 'unknown')),
+  evidence_sha256     TEXT NOT NULL,
+  observed_at         INTEGER NOT NULL,
+  retention_until     INTEGER NOT NULL,
+  UNIQUE (provider, provider_reference, proof_level, evidence_sha256),
+  CHECK (retention_until <= observed_at + 34560000000)
+);
+CREATE INDEX IF NOT EXISTS idx_owned_delivery_receipts
+ON owned_delivery_receipts (effect_id, observed_at);
+
+CREATE TRIGGER IF NOT EXISTS owned_delivery_receipts_no_update
+BEFORE UPDATE ON owned_delivery_receipts BEGIN
+  SELECT RAISE(ABORT, 'owned delivery receipts are append-only');
+END;
+
+CREATE TRIGGER IF NOT EXISTS owned_delivery_receipts_no_delete
+BEFORE DELETE ON owned_delivery_receipts
+WHEN CAST(strftime('%s','now') AS INTEGER) * 1000 < OLD.retention_until BEGIN
+  SELECT RAISE(ABORT, 'owned delivery receipts are append-only');
+END;
+
 -- Append-only execution log — what the dashboard reads. Shared across engines by `engine`.
 CREATE TABLE IF NOT EXISTS automation_events (
   id             INTEGER PRIMARY KEY AUTOINCREMENT,
