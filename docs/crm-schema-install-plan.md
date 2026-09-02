@@ -39,6 +39,13 @@ exact CRM database, an exact Cloudflare Time Travel bookmark, a fresh capture,
 an external custody record, and its owner; the offline verifier still cannot
 authenticate that bookmark or authorize restoration.
 
+The established v22 production digest is `normalized_sql_whitespace_v1`: it
+collapses formatting-only whitespace in each `sqlite_schema.sql` value before
+hashing, exactly matching the preflight that recorded `6c290183…`. Object type,
+name, table ownership, SQL tokens and the complete object set remain pinned.
+Exact before/after transition proof still compares the captured catalog bytes,
+so this normalization cannot conceal an application-schema change.
+
 Post-install proof removes the 117 pinned additions and requires the remaining
 catalog to equal the entire pre-install catalog byte-for-byte. It requires the
 eight ledger rows in order, preserves every pre-existing application-table

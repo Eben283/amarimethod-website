@@ -11,6 +11,7 @@ import {
   createCrmSchemaInstallArtifact,
   crmSchemaReadbackQueries,
   deriveCrmSchemaCatalogDelta,
+  normalizedCrmCatalogDigest,
   planCrmSchemaInstall,
   verifyCrmSchemaTransition,
 } from "../../scripts/crm-schema-install-plan.mjs";
@@ -183,6 +184,19 @@ describe("CRM schema-only v22 to v30 install plan", () => {
     } finally {
       db.close();
     }
+  });
+
+  it("uses the established whitespace-normalized production boundary without masking schema changes", () => {
+    const catalog = [
+      { type: "table", name: "example", tbl_name: "example", sql: "CREATE TABLE example (\n  id INTEGER PRIMARY KEY\n)" },
+      { type: "index", name: "example_idx", tbl_name: "example", sql: "CREATE INDEX example_idx ON example ( id )" },
+    ];
+    const formattingOnly = catalog.map((row) => ({ ...row, sql: row.sql?.replace(/\s+/g, " ").trim() }));
+    const semanticDrift = catalog.map((row) => row.name === "example"
+      ? { ...row, sql: row.sql.replace("INTEGER", "TEXT") }
+      : row);
+    expect(normalizedCrmCatalogDigest(formattingOnly)).toBe(normalizedCrmCatalogDigest(catalog));
+    expect(normalizedCrmCatalogDigest(semanticDrift)).not.toBe(normalizedCrmCatalogDigest(catalog));
   });
 
   it("requires exact, fresh external recovery metadata without treating it as execution authority", () => {
