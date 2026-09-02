@@ -78,6 +78,18 @@ test('owned task authority remains source-level shadow, provider-free, and non-d
   assert.doesNotMatch(router, /OWNED_TASK_SOURCE_MODE\s*:\s*env\./);
 });
 
+test('owned contact classifications remain source-level shadow and provider-free', () => {
+  const source = readFileSync(new URL('../crm-mirror-worker/src/owned-contact-classifications.js', import.meta.url), 'utf8');
+  const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
+  assert.match(source, /export const OWNED_CLASSIFICATION_SOURCE_MODE = ["']shadow["']/);
+  assert.doesNotMatch(source, /export const OWNED_CLASSIFICATION_SOURCE_MODE = ["']active["']/);
+  assert.match(source, /providerFallback:\s*null/);
+  assert.match(source, /providerWrite:\s*false/);
+  assert.match(source, /destructiveEvidenceDelete:\s*false/);
+  assert.match(router, /captureOwnedContactClassification\(\s*env\.CRM_DB/);
+  assert.doesNotMatch(router, /OWNED_CLASSIFICATION_SOURCE_MODE\s*:\s*env\./);
+});
+
 test('owned quiz retention remains aggregate read-only with no destructive execution seam', () => {
   const source = readFileSync(new URL('../crm-mirror-worker/src/owned-quiz-retention.js', import.meta.url), 'utf8');
   const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');

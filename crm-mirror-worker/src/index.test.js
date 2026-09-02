@@ -550,6 +550,70 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(storageTouches).toBe(0);
   });
 
+  it("keeps owned contact classifications named-Staff-only, source-shadow, and unable to accept provider fields", async () => {
+    const values = new Map();
+    let storageTouches = 0;
+    const env = {
+      WORKER_AUTH_SECRET: "test-secret",
+      OWNED_CLASSIFICATION_SOURCE_MODE: "active",
+      PORTAL_KV: {
+        put: async (key, value) => values.set(key, value),
+        get: async (key) => values.get(key) || null,
+        delete: async (key) => values.delete(key),
+      },
+      CRM_DB: {
+        prepare() {
+          storageTouches += 1;
+          throw new Error("source-shadow route must not touch storage");
+        },
+      },
+    };
+    const payload = {
+      action: "add_tag",
+      contactId: "contact-1",
+      idempotencyKey: "classification-command-0001",
+      value: "follow-up",
+    };
+    const request = (cookie, extra = {}) => new Request("https://crm.test/contacts/classification-commands", {
+      method: "POST",
+      headers: {
+        ...(cookie ? { Cookie: cookie } : {}),
+        Origin: "https://crm.test",
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ ...payload, ...extra }),
+    });
+
+    expect((await worker.fetch(request(null), env)).status).toBe(401);
+    const genericSession = await worker.fetch(new Request("https://crm.test/dashboard-session", {
+      method: "POST", headers: { Authorization: "Bearer test-secret" },
+    }), env);
+    const genericCookie = genericSession.headers.get("Set-Cookie");
+    const unnamed = await worker.fetch(request(genericCookie), env);
+    expect(unnamed.status).toBe(403);
+    await expect(unnamed.json()).resolves.toEqual({ error: "named_staff_session_required" });
+
+    const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
+      method: "POST",
+      headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Garrett" },
+    }), env);
+    const accessBody = await access.json();
+    const handoff = await worker.fetch(new Request(accessBody.url), env);
+    const namedCookie = handoff.headers.get("Set-Cookie");
+
+    const unsupported = await worker.fetch(request(namedCookie, { providerContactId: "ghl-contact-1" }), env);
+    expect(unsupported.status).toBe(400);
+    await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerContactId"] });
+
+    const shadow = await worker.fetch(request(namedCookie), env);
+    expect(shadow.status).toBe(503);
+    await expect(shadow.json()).resolves.toEqual({
+      error: "owned_classification_shadow_only",
+      detail: "owned contact classification commands remain source-level shadow",
+    });
+    expect(storageTouches).toBe(0);
+  });
+
   it("keeps sender readiness behind staff authentication", async () => {
     const env = { WORKER_AUTH_SECRET: "test-secret" };
     const denied = await worker.fetch(new Request("https://crm.test/sender/readiness"), env);
