@@ -66,6 +66,10 @@ import {
   listAppointmentRecoveryRequests,
 } from "./appointment-recovery-requests.js";
 import { MissedAppointmentTruthError, readMissedAppointmentTruth } from "./missed-appointment-truth.js";
+import {
+  captureOwnedAppointmentAttendance,
+  OwnedAppointmentAttendanceError,
+} from "./owned-appointment-attendance.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -582,6 +586,41 @@ export default {
           return json(result.deduped ? 200 : 201, { success: true, ...result });
         } catch (error) {
           if (error instanceof OwnedQuizIntakeError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
+          throw error;
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/appointments/attendance-commands") {
+        const actor = requestedStaffActor(request.headers.get("X-Staff-Actor"));
+        if (!new Set(["Eben", "Garrett"]).has(actor)) {
+          return json(400, { error: "recognized_staff_actor_required" });
+        }
+        let payload;
+        try {
+          payload = await actionPayload(request, 2_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          return json(400, { error: "invalid_request", detail: "JSON object required" });
+        }
+        const allowed = new Set([
+          "appointmentId", "contactId", "idempotencyKey", "targetStatus", "expectedRevision",
+        ]);
+        const unsupported = payload && typeof payload === "object" && !Array.isArray(payload)
+          ? Object.keys(payload).filter((key) => !allowed.has(key))
+          : [];
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const command = await captureOwnedAppointmentAttendance(
+            env.CRM_DB,
+            { ...payload, actor },
+            new Date().toISOString(),
+          );
+          return json(command.deduped ? 200 : 201, { success: true, command });
+        } catch (error) {
+          if (error instanceof OwnedAppointmentAttendanceError) {
             return json(error.status, { error: error.code, detail: error.message });
           }
           throw error;

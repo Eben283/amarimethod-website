@@ -57,8 +57,9 @@ describe("owned missed-appointment truth", () => {
     const db = new DatabaseSync(":memory:");
     db.exec("PRAGMA foreign_keys = ON");
     const all = migrations();
-    for (const migration of all.slice(0, -1)) db.exec(migration.sql);
-    expect(all.at(-1).name).toBe("0026_owned_missed_appointment_truth.sql");
+    const truthIndex = all.findIndex(({ name }) => name === "0026_owned_missed_appointment_truth.sql");
+    expect(truthIndex).toBeGreaterThan(0);
+    for (const migration of all.slice(0, truthIndex)) db.exec(migration.sql);
     insertContact(db);
     insertAppointment(db, { id: "missed-1", status: "no_show", startsAt: "2026-08-01T17:00:00.000Z" });
     insertAppointment(db, { id: "attended-1", status: "attended", startsAt: "2026-08-08T17:00:00.000Z" });
@@ -66,7 +67,7 @@ describe("owned missed-appointment truth", () => {
       `INSERT INTO contact_attributes (contact_id, attribute_key, attribute_value, source, updated_at)
        VALUES ('contact-1', 'e9COM3UBr7m8GnCTPPYG', '4', 'ghl', '2026-09-01T00:00:00.000Z')`,
     ).run();
-    db.exec(all.at(-1).sql);
+    db.exec(all[truthIndex].sql);
 
     const truth = await readMissedAppointmentTruth(d1(db), { contactId: "contact-1" });
     expect(truth).toMatchObject({
