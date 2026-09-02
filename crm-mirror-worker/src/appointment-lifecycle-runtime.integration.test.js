@@ -135,7 +135,7 @@ async function applySql(db, sql) {
 async function applyCrmSchema(db) {
   const directory = join(ROOT, "crm-mirror-worker/migrations");
   const names = readdirSync(directory).filter((name) => /^\d{4}_.+\.sql$/.test(name)).sort();
-  expect(names.at(-1)).toBe("0027_owned_appointment_attendance.sql");
+  expect(names.at(-1)).toBe("0028_owned_note_authority.sql");
   for (const name of names) {
     const sql = readFileSync(join(directory, name), "utf8");
     await applySql(db, sql);

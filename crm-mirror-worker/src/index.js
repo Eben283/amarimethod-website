@@ -70,6 +70,7 @@ import {
   captureOwnedAppointmentAttendance,
   OwnedAppointmentAttendanceError,
 } from "./owned-appointment-attendance.js";
+import { captureOwnedNoteVersion, OwnedNoteError, readOwnedNotes } from "./owned-notes.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -284,6 +285,33 @@ async function actionPayload(request, maximum = 4096) {
   }
 }
 
+async function withOwnedNotes(db, profile, limit) {
+  if (!profile?.contact?.id) return profile;
+  const authority = await readOwnedNotes(db, { contactId: profile.contact.id, limit });
+  const owned = authority.notes || [];
+  const notes = [...(profile.notes || []), ...owned]
+    .sort((left, right) => String(right.updated_at || right.created_at || "")
+      .localeCompare(String(left.updated_at || left.created_at || "")))
+    .slice(0, limit);
+  const noteActivity = owned.map((note) => ({
+    activity_type: "note",
+    occurred_at: note.updated_at,
+    direction: null,
+    channel: null,
+    delivery_status: null,
+    subject: null,
+    body: note.body,
+    status: "owned",
+    detail: note.authored_by,
+    amount_cents: null,
+    currency: null,
+  }));
+  const activityTimeline = [...(profile.activityTimeline || []), ...noteActivity]
+    .sort((left, right) => String(right.occurred_at || "").localeCompare(String(left.occurred_at || "")))
+    .slice(0, limit);
+  return { ...profile, notes, activityTimeline, ownedNoteAuthority: authority };
+}
+
 export default {
   async fetch(request, env) {
     env = withGhlProviderInvocation(env);
@@ -444,6 +472,37 @@ export default {
           if (error instanceof CommunicationCommandError) {
             return json(error.status, { error: error.code, detail: error.message });
           }
+          throw error;
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/notes/commands") {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff_session_required" });
+        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(403, { error: "named_staff_session_required" });
+        if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid_request_origin" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 8_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          return json(400, { error: "invalid_request", detail: "JSON object required" });
+        }
+        const allowedByAction = {
+          create: new Set(["action", "contactId", "appointmentId", "idempotencyKey", "body"]),
+          revise: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey", "body"]),
+          archive: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey"]),
+          restore: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey"]),
+        };
+        const allowed = allowedByAction[payload.action] || new Set(["action"]);
+        const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const note = await captureOwnedNoteVersion(env.CRM_DB, { ...payload, actor }, new Date().toISOString());
+          return json(note.deduped ? 200 : 201, { success: true, note });
+        } catch (error) {
+          if (error instanceof OwnedNoteError) return json(error.status, { error: error.code, detail: error.message });
           throw error;
         }
       }
@@ -905,8 +964,9 @@ export default {
       }
       if (request.method === "GET" && clientDeskDetail) {
         const limit = parseClientDeskLimit(url.searchParams.get("limit"));
-        const profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
+        let profile = await contactProfile(env.CRM_DB, decodeURIComponent(clientDeskDetail[1]), limit, new Date().toISOString());
         if (!profile) return json(404, { error: "contact not found" });
+        profile = await withOwnedNotes(env.CRM_DB, profile, limit);
         const automationEvidence = await personAutomationInspection(env.AUTOMATION_DB, profile.contact);
         let missedAppointmentTruth;
         try {
@@ -938,12 +998,13 @@ export default {
       }
       if (request.method === "GET" && contactDetail) {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
-        const profile = await contactProfile(
+        let profile = await contactProfile(
           env.CRM_DB,
           decodeURIComponent(contactDetail[1]),
           limit,
           new Date().toISOString(),
         );
+        if (profile) profile = await withOwnedNotes(env.CRM_DB, profile, limit);
         return profile
           ? json(200, { success: true, worker: "amari-crm-mirror", ...profile })
           : json(404, { error: "contact not found" });
