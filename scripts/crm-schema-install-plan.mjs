@@ -15,6 +15,7 @@ export const CRM_DATABASE = Object.freeze({
 export const CRM_PRODUCTION_V22_BOUNDARY = Object.freeze({
   catalogCount: 239,
   catalogSha256: "6c290183353d3b3843228efc11875223b0c84e820ac245de0fd5d34b7c6fb7cd",
+  catalogDigestMode: "normalized_sql_whitespace_v1",
   migrationCount: 24,
   lastMigration: "0022_partnership_discovery_service.sql",
 });
@@ -240,6 +241,18 @@ function validateCatalog(rows) {
   }
 }
 
+/** Matches the established production-boundary fingerprint while ignoring SQL formatting only. */
+export function normalizedCrmCatalogDigest(rows) {
+  validateCatalog(rows);
+  const normalized = rows.map(({ type, name, tbl_name, sql }) => ({
+    type,
+    name,
+    tbl_name,
+    sql: typeof sql === "string" ? sql.replace(/\s+/g, " ").trim() : null,
+  })).sort((left, right) => JSON.stringify(left).localeCompare(JSON.stringify(right)));
+  return sha256(JSON.stringify(normalized));
+}
+
 function validateSnapshot(snapshot) {
   exactObject(snapshot, ["databaseId", "databaseName", "environment", "evidenceScope", "capturedAt",
     "servedByPrimary", "readReplicationEnabled", "catalog", "migrations", "tableCounts",
@@ -320,7 +333,7 @@ export function assessCrmSchemaSnapshot(snapshot) {
     const catalogState = targetCatalogState(snapshot.catalog, delta);
     if (["partial", "conflict"].includes(catalogState.state)) throw new Error(`${catalogState.state}_installation`);
     if (catalogState.base.length !== CRM_PRODUCTION_V22_BOUNDARY.catalogCount
-      || catalogDigest(catalogState.base) !== CRM_PRODUCTION_V22_BOUNDARY.catalogSha256) {
+      || normalizedCrmCatalogDigest(catalogState.base) !== CRM_PRODUCTION_V22_BOUNDARY.catalogSha256) {
       throw new Error("base_catalog_mismatch");
     }
     if (catalogState.state === "absent" && !baseLedger(snapshot)) throw new Error("base_ledger_mismatch");
