@@ -1104,10 +1104,10 @@ export async function contactProfile(db, contactId, limit, now) {
        WHERE contact.id = ?`,
     ).bind(contactId),
     db.prepare(
-      "SELECT tag FROM contact_tags WHERE contact_id = ? ORDER BY tag",
+      "SELECT DISTINCT tag FROM contact_tags WHERE contact_id = ? ORDER BY tag",
     ).bind(contactId),
     db.prepare(
-      "SELECT role FROM contact_roles WHERE contact_id = ? ORDER BY role",
+      "SELECT DISTINCT role FROM contact_roles WHERE contact_id = ? ORDER BY role",
     ).bind(contactId),
     db.prepare(
       `SELECT attribute_key, attribute_value, source, updated_at

@@ -72,6 +72,10 @@ import {
 } from "./owned-appointment-attendance.js";
 import { captureOwnedNoteVersion, OwnedNoteError, readOwnedNotes } from "./owned-notes.js";
 import { captureOwnedTaskVersion, OwnedTaskError, readOwnedTasks } from "./owned-tasks.js";
+import {
+  captureOwnedContactClassification,
+  OwnedContactClassificationError,
+} from "./owned-contact-classifications.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -572,6 +576,35 @@ export default {
           return json(task.deduped ? 200 : 201, { success: true, task });
         } catch (error) {
           if (error instanceof OwnedTaskError) return json(error.status, { error: error.code, detail: error.message });
+          throw error;
+        }
+      }
+      if (request.method === "POST" && url.pathname === "/contacts/classification-commands") {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff_session_required" });
+        if (!new Set(["Eben", "Garrett"]).has(actor)) return json(403, { error: "named_staff_session_required" });
+        if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid_request_origin" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 2_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+          return json(400, { error: "invalid_request", detail: "JSON object required" });
+        }
+        const allowed = new Set(["action", "contactId", "idempotencyKey", "value"]);
+        const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
+        if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        try {
+          const classification = await captureOwnedContactClassification(
+            env.CRM_DB, { ...payload, actor }, new Date().toISOString(),
+          );
+          return json(classification.deduped ? 200 : 201, { success: true, classification });
+        } catch (error) {
+          if (error instanceof OwnedContactClassificationError) {
+            return json(error.status, { error: error.code, detail: error.message });
+          }
           throw error;
         }
       }
