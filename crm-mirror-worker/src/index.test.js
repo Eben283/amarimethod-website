@@ -35,6 +35,47 @@ function outboxDb() {
   };
 }
 
+function noteCommandDb() {
+  const versions = [];
+  return {
+    versions,
+    prepare(sql) {
+      return {
+        bind(...values) {
+          return {
+            async first() {
+              if (sql.includes("WHERE actor = ? AND idempotency_key = ?")) {
+                return versions.find((row) => row.actor === values[0] && row.idempotency_key === values[1]) || null;
+              }
+              if (sql.includes("WHERE note_id = ? ORDER BY revision DESC")) {
+                return versions.filter((row) => row.note_id === values[0]).sort((left, right) => right.revision - left.revision)[0] || null;
+              }
+              if (sql.includes("FROM contacts WHERE id = ?")) {
+                return values[0] === "contact-1" ? { id: "contact-1", archived_at: null } : null;
+              }
+              if (sql.includes("FROM appointments WHERE id = ?")) {
+                return values[0] === "appointment-1" ? { contact_id: "contact-1" } : null;
+              }
+              return null;
+            },
+            async run() {
+              if (!sql.includes("INSERT OR IGNORE INTO owned_note_versions")) return { meta: { changes: 0 } };
+              const [id, note_id, contact_id, appointment_id, actor, idempotency_key, action,
+                revision, prior_revision, body_clean, body_sha256, command_sha256, state, recorded_at] = values;
+              if (versions.some((row) => row.actor === actor && row.idempotency_key === idempotency_key)) {
+                return { meta: { changes: 0 } };
+              }
+              versions.push({ id, note_id, contact_id, appointment_id, actor, idempotency_key, action,
+                revision, prior_revision, body_clean, body_sha256, command_sha256, state, recorded_at });
+              return { meta: { changes: 1 } };
+            },
+          };
+        },
+      };
+    },
+  };
+}
+
 describe("CRM mirror request validation", () => {
   it("uses bounded, read-only defaults", () => {
     expect(parseSyncRequest({})).toEqual({ sources: ["ghl", "stripe", "stripe-invoices"], limit: 25, pages: 8 });
@@ -419,23 +460,17 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(framePolicy).toContain("https://amarimethod-website.pages.dev");
   });
 
-  it("keeps owned note commands named-Staff-only, source-shadow, and unable to accept provider fields", async () => {
+  it("keeps active owned note commands named-Staff-only and unable to accept provider fields", async () => {
     const values = new Map();
-    let storageTouches = 0;
+    const notes = noteCommandDb();
     const env = {
       WORKER_AUTH_SECRET: "test-secret",
-      OWNED_NOTE_SOURCE_MODE: "active",
       PORTAL_KV: {
         put: async (key, value) => values.set(key, value),
         get: async (key) => values.get(key) || null,
         delete: async (key) => values.delete(key),
       },
-      CRM_DB: {
-        prepare() {
-          storageTouches += 1;
-          throw new Error("source-shadow route must not touch storage");
-        },
-      },
+      CRM_DB: notes,
     };
     const payload = {
       action: "create",
@@ -471,17 +506,64 @@ describe("CRM mirror dashboard access handoff", () => {
     const handoff = await worker.fetch(new Request(accessBody.url), env);
     const namedCookie = handoff.headers.get("Set-Cookie");
 
+    const forgedOrigin = await worker.fetch(new Request("https://crm.test/notes/commands", {
+      method: "POST",
+      headers: { Cookie: namedCookie, Origin: "https://example.test", "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }), env);
+    expect(forgedOrigin.status).toBe(403);
+    await expect(forgedOrigin.json()).resolves.toEqual({ error: "invalid_request_origin" });
+
+    const archive = await worker.fetch(request(namedCookie, {
+      action: "archive", noteId: "owned-note-1", expectedRevision: 1, body: undefined,
+    }), env);
+    expect(archive.status).toBe(400);
+    await expect(archive.json()).resolves.toEqual({ error: "unsupported_note_action" });
+    expect(notes.versions).toHaveLength(0);
+
     const unsupported = await worker.fetch(request(namedCookie, { providerNoteId: "ghl-note-1" }), env);
     expect(unsupported.status).toBe(400);
     await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerNoteId"] });
+    expect(notes.versions).toHaveLength(0);
 
-    const shadow = await worker.fetch(request(namedCookie), env);
-    expect(shadow.status).toBe(503);
-    await expect(shadow.json()).resolves.toEqual({
-      error: "owned_note_shadow_only",
-      detail: "owned note commands remain source-level shadow",
+    const created = await worker.fetch(request(namedCookie), env);
+    expect(created.status).toBe(201);
+    const createdBody = await created.json();
+    expect(createdBody).toMatchObject({
+      success: true,
+      note: { actor: "Garrett", action: "create", contactId: "contact-1", revision: 1, deduped: false },
     });
-    expect(storageTouches).toBe(0);
+    expect(notes.versions).toHaveLength(1);
+
+    const replay = await worker.fetch(request(namedCookie), env);
+    expect(replay.status).toBe(200);
+    await expect(replay.json()).resolves.toMatchObject({ success: true, note: { deduped: true } });
+    expect(notes.versions).toHaveLength(1);
+
+    const revised = await worker.fetch(request(namedCookie, {
+      action: "revise",
+      noteId: createdBody.note.noteId,
+      expectedRevision: 1,
+      idempotencyKey: "owned-note-command-0002",
+      body: "Client reported sustained shoulder rotation after the session.",
+    }), env);
+    expect(revised.status).toBe(201);
+    await expect(revised.json()).resolves.toMatchObject({
+      success: true,
+      note: { actor: "Garrett", action: "revise", revision: 2, priorRevision: 1, deduped: false },
+    });
+    expect(notes.versions).toHaveLength(2);
+
+    const staleRevision = await worker.fetch(request(namedCookie, {
+      action: "revise",
+      noteId: createdBody.note.noteId,
+      expectedRevision: 1,
+      idempotencyKey: "owned-note-command-0003",
+      body: "This stale revision must not be recorded.",
+    }), env);
+    expect(staleRevision.status).toBe(409);
+    await expect(staleRevision.json()).resolves.toMatchObject({ error: "note_revision_conflict" });
+    expect(notes.versions).toHaveLength(2);
   });
 
   it("keeps owned task commands named-Staff-only, source-shadow, and unable to accept provider fields", async () => {

@@ -1,10 +1,11 @@
 // Provider-neutral revisioned Staff notes.
 //
-// The production command route is pinned to source-level shadow. Tests may exercise the
-// separately reviewable active store, which writes only immutable D1 note versions. It has no
-// GHL/provider adapter, message sender, payment, appointment mutation, or authority promotion.
+// The command route is deliberately source-pinned active for the first owned Staff action. It
+// writes only immutable D1 note versions and remains limited to signed, named Staff at the
+// same-origin browser boundary. It has no GHL/provider adapter, message sender, payment,
+// appointment mutation, destructive delete, or authority promotion.
 
-export const OWNED_NOTE_SOURCE_MODE = "shadow";
+export const OWNED_NOTE_SOURCE_MODE = "active";
 export const OWNED_NOTE_CONTRACT_VERSION = "owned-note-authority.v1";
 
 const REFERENCE = /^[A-Za-z0-9_-]{1,160}$/;
