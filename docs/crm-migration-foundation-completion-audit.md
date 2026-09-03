@@ -9,7 +9,7 @@ ready to retire GHL. Those are deliberately separate external gates.
 The foundation succeeds only if Amari-owned identity and evidence survive with
 GHL present or absent, every new mutation is replay-safe and attributable,
 Staff truth degrades instead of guessing, provider delivery stays behind an
-adapter, and no source-only revision can silently activate itself.
+adapter, and no environment-only change can silently activate a source-gated capability.
 
 ## Requirement evidence
 
@@ -21,7 +21,7 @@ adapter, and no source-only revision can silently activate itself.
 | Partner Initial delivery contract | Six immutable rendered steps, signed manage/calendar links, recursive reschedule identity, exact workflow version and durable effect evidence | Complete locally; hard-shadow |
 | No Show recovery and exit | Owned missed-status facts, exact-revision recovery intake, cross-provider rebooking exit, GHL-free CRM reads and provider-neutral SMS/Workspace edges | Complete locally; SMS vendor/cost and activation remain gated |
 | Staff attendance truth | Exact-revision attended/no-show/correction commands, immutable facts/events and provider-free derived counters | Complete locally; hard-shadow |
-| Staff notes and tasks | Append-only revisions, named actor, idempotency, archive/restore semantics, appointment/contact integrity and merged read models | Complete locally; hard-shadow |
+| Staff notes and tasks | Append-only revisions, named actor, idempotency, archive/restore semantics, appointment/contact integrity and merged read models | Notes source-activation candidate; tasks hard-shadow |
 | Contact roles and tags | Replay-safe owned commands alter only `owned:staff` classifications and preserve provider-origin rows | Complete locally; hard-shadow |
 | Contact profile and consent | Name/email/phone have independent authority and revisions; email/SMS consent is bound to the exact normalized destination and digest | Complete locally; hard-shadow |
 | Import coexistence | GHL and quiz imports refresh provider-mirror fields but cannot overwrite a field family once owned | Complete locally |
@@ -33,7 +33,7 @@ adapter, and no source-only revision can silently activate itself.
 | Retention coverage | Cross-store inventory includes original quiz evidence and every known dependent contact copy, including notes, tasks, classifications, profiles, attendance and recovery evidence | Complete as an aggregate dry-run inventory |
 | Destructive privacy handling | No deletion executor is exposed from this source; immutable operational evidence is not silently erased | Correctly stopped at a separate privacy/policy gate |
 | Release provenance | CRM, Reminder and Nurture release guards attest exact Git source closures, preserve durable bindings/secrets and reject stale or mismatched releases | Complete locally |
-| Activation containment | Notes, tasks, attendance, classifications, profile writes, owned email delivery and reviewed workflows are source-pinned shadow rather than environment-activatable | Complete locally |
+| Activation containment | Notes are explicitly source-pinned active as the first owned Staff action; tasks, attendance, classifications, profile writes, owned email delivery and reviewed workflows remain source-pinned shadow rather than environment-activatable | Complete locally; production release remains separate |
 
 ## Verification boundary
 

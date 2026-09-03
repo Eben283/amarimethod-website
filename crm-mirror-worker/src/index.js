@@ -533,13 +533,14 @@ export default {
         if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
           return json(400, { error: "invalid_request", detail: "JSON object required" });
         }
+        if (!new Set(["create", "revise"]).has(payload.action)) {
+          return json(400, { error: "unsupported_note_action" });
+        }
         const allowedByAction = {
           create: new Set(["action", "contactId", "appointmentId", "idempotencyKey", "body"]),
           revise: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey", "body"]),
-          archive: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey"]),
-          restore: new Set(["action", "contactId", "appointmentId", "noteId", "expectedRevision", "idempotencyKey"]),
         };
-        const allowed = allowedByAction[payload.action] || new Set(["action"]);
+        const allowed = allowedByAction[payload.action];
         const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
         if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
         try {
