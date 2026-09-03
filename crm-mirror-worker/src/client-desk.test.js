@@ -99,6 +99,23 @@ describe("Client Desk message rendering", () => {
     expect(html).not.toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
   });
 
+  it("keeps the owned-note controls wired but hidden behind source-level shadow", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("const ownedNoteCommandsEnabled = false");
+    expect(html).toContain('data-note-form="create"');
+    expect(html).toContain('data-note-form="revise"');
+    expect(html).toContain("dashboardFetch('/notes/commands'");
+    expect(html).toContain("action, contactId, appointmentId");
+    expect(html).toContain("form.dataset.noteIdempotencyKey || noteIdempotencyKey(action)");
+    expect(html).toContain("delete form.dataset.noteIdempotencyKey");
+    expect(html).toContain("payload.noteId = form.dataset.noteId");
+    expect(html).toContain("payload.expectedRevision = Number(form.dataset.noteRevision)");
+    expect(html).toContain("Saved to Amari CRM only.");
+    expect(html).toContain("GHL mirror · read only");
+    expect(html).not.toContain("providerNoteId");
+    expect(html).not.toContain("data-note-archive");
+  });
+
   it("orders the timeline oldest-to-newest and opens at the newest message", () => {
     const html = clientDeskHtml();
     expect(html).toContain(".sort((left, right) => String(left.occurred_at || '').localeCompare(String(right.occurred_at || ''))");
@@ -455,6 +472,8 @@ describe("Client Desk message rendering", () => {
       expect(rendered).toContain('id="record-payments"');
       expect(rendered).toContain('id="record-notes"');
       expect(rendered).toContain("Practice note");
+      expect(rendered).not.toContain('data-note-form="create"');
+      expect(rendered).not.toContain('data-note-form="revise"');
     } finally {
       vi.useRealTimers();
     }
