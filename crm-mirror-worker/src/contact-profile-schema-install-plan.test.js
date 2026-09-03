@@ -2,6 +2,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, readdirSync } from "node:fs";
 import { DatabaseSync } from "node:sqlite";
 import { describe, expect, it } from "vitest";
+import { canonicalJson } from "../../functions/lib/automation-truth-phase-b.js";
 import {
   captureLocalCrmSchemaSnapshot,
   crmSchemaReadbackQueries,
@@ -9,6 +10,7 @@ import {
 import {
   assessCrmContactProfileSchemaSnapshot,
   classifyCrmContactProfileSchemaOutcome,
+  createCrmContactProfileSchemaImportTransport,
   createCrmContactProfileSchemaArtifact,
   crmContactProfileSchemaReadbackQueries,
   deriveCrmContactProfileCatalogTransform,
@@ -88,6 +90,42 @@ describe("CRM contact-profile schema-only v30 to v31 install plan", () => {
     }]);
     expect(artifact.sql.match(/INSERT INTO d1_migrations \(name\) VALUES \('[^']+'\);/g)).toHaveLength(1);
     expect(artifact.sql).not.toMatch(/\b(?:DROP|DELETE|UPDATE)\s+(?:DATABASE|d1_migrations)\b/i);
+  });
+
+  it("pins the dedicated SQL-file import state machine without execution or retry authority", () => {
+    const transport = createCrmContactProfileSchemaImportTransport();
+    expect(transport).toMatchObject({
+      kind: "d1_remote_sql_file_import_v1",
+      endpoint: "import",
+      parser: "provider_sql_file_ingestion",
+      logicalImportOperations: 1,
+      artifact: {
+        bytes: 13177,
+        sha256: "b3b8017ffbf9472ed8423edd40cf2aabcf1b0efe2acb12a8a3cebdc228430248",
+        etagMd5: "751480a9353460a2f9025eca0f6153ca",
+        expectedStatementCount: 23,
+      },
+      operationTimeoutMs: 300000,
+      retryAllowed: false,
+      uncertainPhasePolicy: "stop_without_reissuing_init_or_ingest_then_primary_readback",
+      manifestBytes: 1533,
+      sha256: "0a3662ef7cadfc8816f36f9432874961da7dffb1150e75df87fd4cfa4ff15125",
+      executionAuthorized: false,
+      productionWriteAuthorized: false,
+    });
+    expect(transport.protocol.init).toMatchObject({
+      databaseMutation: "provider_state_dependent", mayBeginCachedIngestion: true, maximumRequests: 1,
+    });
+    expect(transport.protocol.upload).toMatchObject({ databaseMutation: false, maximumRequests: 1 });
+    expect(transport.protocol.ingest).toMatchObject({
+      condition: "only_after_verified_upload", databaseMutation: true, maximumRequests: 1,
+    });
+    expect(transport.protocol.poll).toMatchObject({
+      databaseMutation: false, observesBackgroundMutation: true, maximumRequests: 60,
+    });
+    const { manifestBytes, sha256: manifestSha256, ...manifest } = transport;
+    expect(Buffer.byteLength(canonicalJson(manifest))).toBe(manifestBytes);
+    expect(sha256(canonicalJson(manifest))).toBe(manifestSha256);
   });
 
   it("pins two altered core definitions and all sixteen additive objects from SQLite execution", () => {
