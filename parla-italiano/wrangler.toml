@@ -1,0 +1,30 @@
+name = "parla-italiano"
+main = "worker/index.js"
+compatibility_date = "2025-07-01"
+workers_dev = true
+
+# Custom host on personal domain (DNS route added at first deploy if needed)
+# Custom domain: add when token has zone Workers Routes permission
+# [[routes]]
+# pattern = "parla.ebenforrest.com/*"
+# zone_name = "ebenforrest.com"
+
+[assets]
+directory = "./dist"
+binding = "ASSETS"
+not_found_handling = "single-page-application"
+# Ensure /api/* and HTML cache headers go through the Worker, not raw assets.
+run_worker_first = true
+
+# Secrets (set via wrangler secret put):
+#   OPENROUTER_API_KEY
+# Optional:
+#   APP_ACCESS_CODE  — if set, clients must send it once to unlock the app
+
+[vars]
+OPENROUTER_MODEL = "openai/gpt-4o-mini"
+APP_NAME = "Parla"
+
+[observability]
+enabled = true
+head_sampling_rate = 1
