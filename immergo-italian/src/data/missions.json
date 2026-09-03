@@ -1,0 +1,37 @@
+[
+  {
+    "id": 0,
+    "title": "Say Hello",
+    "difficulty": "Easy",
+    "desc": "Introduce yourself and ask how they are.",
+    "target_role": "a friendly neighbor who speaks slowly and kindly"
+  },
+  {
+    "id": 1,
+    "title": "Order Coffee",
+    "difficulty": "Easy",
+    "desc": "Order a simple drink and thank them.",
+    "target_role": "a patient cafe barista"
+  },
+  {
+    "id": 2,
+    "title": "At the Market",
+    "difficulty": "Easy",
+    "desc": "Ask for fruit and the price.",
+    "target_role": "a helpful market seller"
+  },
+  {
+    "id": 3,
+    "title": "Asking Directions",
+    "difficulty": "Easy",
+    "desc": "Ask how to get to the train station.",
+    "target_role": "a kind person on the street"
+  },
+  {
+    "id": 4,
+    "title": "Small Talk",
+    "difficulty": "Easy",
+    "desc": "Chat about the weather and your day.",
+    "target_role": "a warm acquaintance"
+  }
+]
