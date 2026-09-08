@@ -99,9 +99,9 @@ describe("Client Desk message rendering", () => {
     expect(html).not.toContain("/client-desk/contacts/' + encodeURIComponent(contactId) + '/email");
   });
 
-  it("keeps the owned-note controls wired but hidden behind source-level shadow", () => {
+  it("enables the source-pinned owned-note controls without provider or destructive fields", () => {
     const html = clientDeskHtml();
-    expect(html).toContain("const ownedNoteCommandsEnabled = false");
+    expect(html).toContain("const ownedNoteCommandsEnabled = true");
     expect(html).toContain('data-note-form="create"');
     expect(html).toContain('data-note-form="revise"');
     expect(html).toContain("dashboardFetch('/notes/commands'");
@@ -472,7 +472,7 @@ describe("Client Desk message rendering", () => {
       expect(rendered).toContain('id="record-payments"');
       expect(rendered).toContain('id="record-notes"');
       expect(rendered).toContain("Practice note");
-      expect(rendered).not.toContain('data-note-form="create"');
+      expect(rendered).toContain('data-note-form="create"');
       expect(rendered).not.toContain('data-note-form="revise"');
     } finally {
       vi.useRealTimers();
