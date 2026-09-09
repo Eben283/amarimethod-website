@@ -120,6 +120,7 @@ function PrintStandards() {
 
 function Decisions() {
   const decisions = [
+    ['2026-09-09', 'Homepage photography placements', 'The homepage hero uses Eben’s one-ring reach photograph with copy on the quiet left side. The Living Practice panel uses the real at-home laptop session image with the woman in plum leggings.'],
     ['2026-08-09', 'Type floors are locked', 'Screen body is never below 16 px; a public action is never below 14 px; essential print contact copy is never below 8 pt. The 7 pt exception is a secondary location line only.'],
     ['2026-08-09', 'Print scale is surface-specific', 'The business card, 4 × 6 postcard, and Letter flyer have distinct approved size matrices. Never scale one layout down to make another.'],
     ['2026-08-09', 'Black and warm paper are the print palette', 'Do not use Tracksmith navy, blue-green, medical green, gradients, or a new accent system for Amari collateral.'],

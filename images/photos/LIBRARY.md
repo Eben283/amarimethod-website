@@ -77,6 +77,13 @@ These responsive WebP derivatives are from the owner-provided `Photos-1-001 (4).
 | `tennis-court-overhead.webp` | Homepage Method band; Eben-supplied and explicitly approved for this placement. |
 | `running-group-concrete.webp` | Homepage Hips & Knees tile; Eben-supplied and explicitly approved for this placement. |
 
+## KEEP — homepage editorial photography (2026-09-09)
+
+| File | Approved use |
+|---|---|
+| `amari-method-ring-reach-eben.jpg` / `optimized/amari-method-ring-reach-eben-*` | Homepage hero; Eben holding one ring, with the quiet wall on the left reserved for headline copy. Eben explicitly approved this placement. |
+| `optimized/living-practice-video-session-*` | Homepage Living Practice panel; real at-home session with a woman in plum leggings and Garrett visible on the laptop. Eben explicitly approved this placement. |
+
 ## KEEP — refined condition heroes (clean outputs of the refine pass)
 | File | Depicts |
 |---|---|
