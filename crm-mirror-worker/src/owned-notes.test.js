@@ -69,12 +69,12 @@ const create = (overrides = {}) => ({
 });
 
 describe("owned note authority", () => {
-  it("is source-pinned shadow and exposes no provider or destructive fallback", async () => {
-    expect(OWNED_NOTE_SOURCE_MODE).toBe("shadow");
+  it("is source-pinned active while retaining a fail-closed shadow override and no provider or destructive fallback", async () => {
+    expect(OWNED_NOTE_SOURCE_MODE).toBe("active");
     expect(ownedNoteReleaseReadiness()).toEqual({
       version: "owned-note-authority.v1",
-      sourceMode: "shadow",
-      enabled: false,
+      sourceMode: "active",
+      enabled: true,
       providerFallback: null,
       providerWrite: false,
       messageWrite: false,
@@ -85,7 +85,8 @@ describe("owned note authority", () => {
     });
     await expect(captureOwnedNoteVersion({
       prepare: () => { throw new Error("shadow must not touch storage"); },
-    }, create())).rejects.toMatchObject({ code: "owned_note_shadow_only", status: 503 });
+    }, create(), "2026-09-01T17:10:00.000Z", { sourceMode: "shadow" }))
+      .rejects.toMatchObject({ code: "owned_note_shadow_only", status: 503 });
   });
 
   it("creates, revises, archives, restores, and exactly replays immutable versions", async () => {
