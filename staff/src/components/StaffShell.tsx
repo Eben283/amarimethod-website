@@ -347,7 +347,7 @@ export default function StaffShell({ children }: { children: ReactNode }) {
 
   function signOut() {
     setDrawerOpen(false);
-    logout();
+    logout(true);
     navigate('/login', { replace: true });
   }
 
