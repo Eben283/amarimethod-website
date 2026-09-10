@@ -113,7 +113,7 @@ export default function TrainingPage() {
             <a href="/api/staff-media-file?id=4ff6f253-239b-455c-a986-2199dc6b1580" target="_blank" rel="noreferrer">
               <FileText aria-hidden="true" /><span><strong>ACQ Closer Handbook — original</strong><small>Original scanned reference used for the Amari rewrite</small></span><ChevronRight aria-hidden="true" />
             </a>
-            <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf?v=4d3231b8" target="_blank" rel="noreferrer">
+            <a href="/staff/resources/amari-sales-scripts-and-hormozi-closer-handbook-sections.pdf?v=49cdd39a" target="_blank" rel="noreferrer">
               <FileText aria-hidden="true" /><span><strong>Sales scripts</strong><small>Rewritten closer scripts and reference</small></span><ChevronRight aria-hidden="true" />
             </a>
           </div>
