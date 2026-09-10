@@ -1,27 +1,60 @@
-import { describe, expect, it } from 'vitest';
-import { buildNoteUpdatePath, editableExistingNote, validateNoteUpdate } from './staff-note.js';
+import { readFileSync } from 'node:fs';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-describe('staff note editing', () => {
-  it('targets the exact note on the exact contact', () => {
-    expect(buildNoteUpdatePath('contact_1', 'note_2'))
-      .toBe('https://services.leadconnectorhq.com/contacts/contact_1/notes/note_2');
+vi.mock('../lib/endpoint-guards.js', () => ({
+  corsHeaders: vi.fn(() => ({ 'Access-Control-Allow-Origin': 'https://www.amarimethod.com' })),
+  requireStaffAuth: vi.fn(async () => ({ error: null, payload: { user: 'Eben' } })),
+}));
+
+import { requireStaffAuth } from '../lib/endpoint-guards.js';
+import {
+  RETIRED_STAFF_NOTE,
+  onRequestPost,
+  onRequestPut,
+  retiredStaffNoteResponse,
+} from './staff-note.js';
+
+const authenticatedContext = () => ({
+  request: new Request('https://www.amarimethod.com/api/staff-note', {
+    method: 'POST',
+    headers: { Origin: 'https://www.amarimethod.com' },
+  }),
+});
+
+describe('retired legacy Staff note path', () => {
+  beforeEach(() => {
+    vi.mocked(requireStaffAuth).mockReset();
+    vi.mocked(requireStaffAuth).mockResolvedValue({ error: null, payload: { user: 'Eben' } });
   });
 
-  it('requires an existing note ID and a non-empty replacement body', () => {
-    expect(validateNoteUpdate({ contactId: 'contact_1', noteId: '', body: 'Updated' }))
-      .toEqual({ error: 'Note ID required' });
-    expect(validateNoteUpdate({ contactId: 'contact_1', noteId: 'note_2', body: '   ' }))
-      .toEqual({ error: 'Note body required' });
+  it('fails closed and points authenticated callers to the owned Client Desk', async () => {
+    const response = retiredStaffNoteResponse({ 'Content-Type': 'application/json' });
+    expect(response.status).toBe(410);
+    await expect(response.json()).resolves.toEqual(RETIRED_STAFF_NOTE);
+    expect(RETIRED_STAFF_NOTE.destination).toBe('/staff/client-desk');
   });
 
-  it('keeps the existing 5,000-character limit', () => {
-    expect(validateNoteUpdate({ contactId: 'contact_1', noteId: 'note_2', body: 'x'.repeat(5001) }))
-      .toEqual({ error: 'Note too long (max 5000 chars)' });
+  it.each([
+    ['POST', onRequestPost],
+    ['PUT', onRequestPut],
+  ])('returns the retired response after authenticating %s requests', async (_method, handler) => {
+    const response = await handler(authenticatedContext());
+    expect(requireStaffAuth).toHaveBeenCalledOnce();
+    expect(response.status).toBe(410);
+    await expect(response.json()).resolves.toEqual(RETIRED_STAFF_NOTE);
   });
 
-  it('allows only ordinary Staff notes through the edit boundary', () => {
-    expect(editableExistingNote({ note: { body: 'Adjust session two plan.' } })).toBe(true);
-    expect(editableExistingNote({ note: { body: 'Outcome: referral sent' } })).toBe(false);
-    expect(editableExistingNote({ note: { body: 'Signature:<img src="data:image/png;base64,AA==">' } })).toBe(false);
+  it('preserves the Staff authentication boundary', async () => {
+    const unauthorized = new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 });
+    vi.mocked(requireStaffAuth).mockResolvedValueOnce({ error: unauthorized, payload: null });
+    const response = await onRequestPost(authenticatedContext());
+    expect(response).toBe(unauthorized);
+  });
+
+  it('contains no GHL or provider-note write adapter', () => {
+    const source = readFileSync(new URL('./staff-note.js', import.meta.url), 'utf8');
+    expect(source).not.toContain('ghlFetch');
+    expect(source).not.toContain('services.leadconnectorhq.com');
+    expect(source).not.toMatch(/contacts\/.+\/notes/);
   });
 });

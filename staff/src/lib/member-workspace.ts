@@ -31,3 +31,7 @@ export function memberWorkspacePath(
   const path = surface === 'session' ? `${root}/session` : `${root}/record`;
   return appointmentId ? `${path}?appointment=${encodeURIComponent(appointmentId)}` : path;
 }
+
+export function clientDeskContactPath(contactId: string): string {
+  return `/client-desk?contact=${encodeURIComponent(contactId)}`;
+}

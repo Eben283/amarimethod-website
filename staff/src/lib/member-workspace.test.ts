@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   MEMBER_WORKSPACE_SECTIONS,
+  clientDeskContactPath,
   memberWorkspacePath,
   sectionSurface,
 } from './member-workspace';
@@ -36,5 +37,9 @@ describe('member workspace structure', () => {
     expect(memberWorkspacePath('person/123', 'session')).toBe('/client/person%2F123/session');
     expect(memberWorkspacePath('person/123', 'record', 'appt 1')).toBe('/client/person%2F123/record?appointment=appt%201');
     expect(memberWorkspacePath('person/123', 'session', 'appt 1')).toBe('/client/person%2F123/session?appointment=appt%201');
+  });
+
+  it('hands exact-contact note work to the owned Client Desk', () => {
+    expect(clientDeskContactPath('person/123')).toBe('/client-desk?contact=person%2F123');
   });
 });
