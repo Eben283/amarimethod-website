@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   MEMBER_WORKSPACE_SECTIONS,
   clientDeskContactPath,
+  applyClientDeskHandoff,
   memberWorkspacePath,
   sectionSurface,
 } from './member-workspace';
@@ -41,5 +42,29 @@ describe('member workspace structure', () => {
 
   it('hands exact-contact note work to the owned Client Desk', () => {
     expect(clientDeskContactPath('person/123')).toBe('/client-desk?contact=person%2F123');
+  });
+});
+
+describe('Client Desk note handoff', () => {
+  it('encodes exact identity without query injection and opts into notes explicitly', () => {
+    expect(clientDeskContactPath('person/123 &intent=sms', 'note')).toBe('/client-desk?contact=person%2F123%20%26intent%3Dsms&intent=note');
+    expect(clientDeskContactPath('owned_123', 'note')).toBe('/client-desk?contact=owned_123&intent=note');
+  });
+  it.each([null, 'sms', 'NOTE', 'note&send=true'])('preserves ordinary contact navigation for intent %s', (intent) => {
+    const url = new URL('https://desk.example/client-desk?embed=1#dashboard_session=signed');
+    applyClientDeskHandoff(url, 'owned_123-ab', intent);
+    expect(url.searchParams.get('contact')).toBe('owned_123-ab');
+    expect(url.searchParams.has('intent')).toBe(false);
+    expect(url.hash).toBe('#dashboard_session=signed');
+  });
+  it('forwards only validated note intent and contact', () => {
+    const url = new URL('https://desk.example/client-desk?embed=1');
+    applyClientDeskHandoff(url, 'owned_123-ab', 'note');
+    expect(url.search).toBe('?embed=1&contact=owned_123-ab&intent=note');
+  });
+  it.each([null, '', 'a&send=true', 'person/123', 'a'.repeat(81)])('drops invalid contact and its note intent: %s', (contact) => {
+    const url = new URL('https://desk.example/client-desk?contact=stale&intent=note');
+    applyClientDeskHandoff(url, contact, 'note');
+    expect(url.search).toBe('');
   });
 });

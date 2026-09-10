@@ -999,7 +999,7 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
               <span className="lbl">Close the loop</span>
               <h2>What did you find, change, and want to carry forward?</h2>
               <p>A note saved in Amari CRM becomes part of the Member Record. The complete note history stays out of the live-session workspace.</p>
-              <Link className="sa-note-add" to={clientDeskContactPath(client.id)}><Plus size={14} />Add this session’s note in CRM</Link>
+              <Link className="sa-note-add" to={clientDeskContactPath(client.id, 'note')}><Plus size={14} />Add this session’s note in CRM</Link>
             </div>
             <div className="sa-session-note-recent">
               <span className="lbl">Most recent context</span>
@@ -1051,7 +1051,7 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
 
         {/* notes */}
         <section className="sa-card">
-          <div className="sa-card-h"><span className="t">Notes</span><Link className="sa-note-add" to={clientDeskContactPath(client.id)}><Plus size={14} />Add Staff note</Link></div>
+          <div className="sa-card-h"><span className="t">Notes</span><Link className="sa-note-add" to={clientDeskContactPath(client.id, 'note')}><Plus size={14} />Add Staff note</Link></div>
           <p className="sa-empty">Provider notes are read-only here. New and revised Staff notes are saved in Amari CRM.</p>
           {(() => {
             const visible = client.notes.filter((n) => !isSystemNote(n.body));

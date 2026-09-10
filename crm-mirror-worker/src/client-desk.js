@@ -113,6 +113,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
   const ownedNoteCommandsEnabled = __OWNED_NOTE_COMMANDS_ENABLED__;
   const workspace = document.getElementById('workspace'), list = document.getElementById('thread-list'), conversation = document.getElementById('conversation'), record = document.getElementById('record'), query = document.getElementById('query'), count = document.getElementById('count'), unread = document.getElementById('unread'), mirrorHealth = document.getElementById('mirror-health');
   const requestedExternalContact = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('contact');
+  const requestedNoteIntent = typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('intent') === 'note';
+  let requestedNoteFocused = false;
   const dashboardSession = typeof window === 'undefined' ? null : new URLSearchParams(window.location.hash.slice(1)).get('dashboard_session');
   if (dashboardSession && typeof history !== 'undefined') history.replaceState(null, '', window.location.pathname + window.location.search);
   const staffParentOrigin = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('parent_origin');
@@ -297,6 +299,22 @@ const CLIENT_DESK_HTML = `<!doctype html>
       if (paymentMenu) paymentMenu.hidden = expanded;
     });
     bindStaffHandoffs(record);
+  }
+  function focusRequestedNote(contact, contactId) {
+    if (!requestedNoteIntent || requestedNoteFocused || !requestedExternalContact) return;
+    if (contact.id !== contactId || selected !== contactId) return;
+    if (contact.id !== requestedExternalContact && contact.ghl_contact_id !== requestedExternalContact) return;
+    const section = record.querySelector('#record-notes');
+    const composer = section?.querySelector('#new-note');
+    if (!section || !composer) return;
+    const requestId = detailRequest;
+    // Wait for the newly rendered mobile record and its nested scrollers to lay out.
+    window.requestAnimationFrame(() => window.requestAnimationFrame(() => {
+      if (requestedNoteFocused || requestId !== detailRequest || selected !== contactId || !section.isConnected || !composer.isConnected) return;
+      requestedNoteFocused = true;
+      section.scrollIntoView({ behavior: 'auto', block: 'start' });
+      composer.focus({ preventScroll: true });
+    }));
   }
   function noteIdempotencyKey(action) {
     const value = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2);
@@ -499,6 +517,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
         if (scroll) scroll.scrollTop = scroll.scrollHeight;
       };
       scrollNewestIntoView();
+      focusRequestedNote(c, contactId);
       conversation.querySelectorAll('[data-timeline-filter]').forEach((button) => button.addEventListener('click', () => {
         activeTimelineFilter = button.dataset.timelineFilter;
         conversation.querySelector('.timeline').innerHTML = timelineMarkup(timeline, activeTimelineFilter);

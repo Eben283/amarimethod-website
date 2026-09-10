@@ -1,3 +1,4 @@
+import { clientDeskContactPath } from '../lib/member-workspace';
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
@@ -1148,7 +1149,7 @@ function ActRow({ item, expanded, activity, busy, onToggle, onOutcome, onDismiss
           {/* Provider notes are read-only here. Staff-authored notes belong to the owned CRM. */}
           <div>
             <Link
-              to={communicationUrl(contactId)}
+              to={clientDeskContactPath(contactId, 'note')}
               className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand"
             >
               <StickyNote className="h-3.5 w-3.5" /> Add Staff note in Amari CRM

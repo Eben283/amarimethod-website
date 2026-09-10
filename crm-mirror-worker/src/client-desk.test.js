@@ -559,3 +559,81 @@ describe("Client Desk message rendering", () => {
     expect(helpers.timelineItem({ activity_type: "message", channel: "sms", direction: "unknown", body: "Hello", occurred_at: "2026-08-08T14:00:00.000Z" })).toContain("Unclassified message · sms");
   });
 });
+
+describe("Client Desk note intent", () => {
+  function harness(search) {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const composer = { focus: vi.fn(), isConnected: true };
+    const section = { scrollIntoView: vi.fn(), querySelector: vi.fn(() => composer), isConnected: true };
+    const record = { querySelector: vi.fn(() => section) };
+    const element = { value: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: (id) => id === 'record' ? record : element };
+    const frames = [];
+    const window = { ...testWindow, requestAnimationFrame: (callback) => frames.push(callback), location: { ...testWindow.location, search } };
+    window.parent = window;
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { focusRequestedNote, select: (id) => { selected = id; }, nextRequest: () => { detailRequest += 1; } }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "window", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, window, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    helpers.select('owned_123');
+    return { ...helpers, composer, section, record, flushFrames: () => { while (frames.length) frames.shift()(); } };
+  }
+  it.each(['owned_123', 'ghl123'])('targets the exact loaded contact %s once, never the SMS composer', (contact) => {
+    const h = harness('?contact=' + encodeURIComponent(contact) + '&intent=note');
+    h.focusRequestedNote({ id: 'owned_123', ghl_contact_id: 'ghl123' }, 'owned_123');
+    h.focusRequestedNote({ id: 'owned_123', ghl_contact_id: 'ghl123' }, 'owned_123');
+    expect(h.composer.focus).not.toHaveBeenCalled();
+    h.flushFrames();
+    expect(h.record.querySelector).toHaveBeenCalledWith('#record-notes');
+    expect(h.section.querySelector).toHaveBeenCalledWith('#new-note');
+    expect(h.section.scrollIntoView).toHaveBeenCalledExactlyOnceWith({ behavior: 'auto', block: 'start' });
+    expect(h.composer.focus).toHaveBeenCalledExactlyOnceWith({ preventScroll: true });
+  });
+  it.each(['', '?contact=owned_123', '?contact=owned_123&intent=sms', '?contact=owned_123&intent=NOTE', '?intent=note', '?contact=other&intent=note'])('leaves normal navigation untouched: %s', (search) => {
+    const h = harness(search);
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    expect(h.composer.focus).not.toHaveBeenCalled();
+    expect(h.section.scrollIntoView).not.toHaveBeenCalled();
+  });
+  it('does not consume the intent on failed, stale, mismatched, or composer-less loads', () => {
+    const h = harness('?contact=owned_123&intent=note');
+    h.focusRequestedNote({}, 'owned_123');
+    h.focusRequestedNote({ id: 'other' }, 'owned_123');
+    h.select('other');
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    h.select('owned_123');
+    h.record.querySelector.mockReturnValueOnce(null);
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    h.section.querySelector.mockReturnValueOnce(null);
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    expect(h.composer.focus).not.toHaveBeenCalled();
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    h.flushFrames();
+    expect(h.composer.focus).toHaveBeenCalledTimes(1);
+  });
+  it('does not focus a stale record while awaiting layout', () => {
+    const h = harness('?contact=owned_123&intent=note');
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    h.select('other');
+    h.flushFrames();
+    expect(h.composer.focus).not.toHaveBeenCalled();
+    h.select('owned_123');
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    h.section.isConnected = false;
+    h.flushFrames();
+    expect(h.composer.focus).not.toHaveBeenCalled();
+    h.section.isConnected = true;
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    h.nextRequest();
+    h.flushFrames();
+    expect(h.composer.focus).not.toHaveBeenCalled();
+    h.focusRequestedNote({ id: 'owned_123' }, 'owned_123');
+    h.flushFrames();
+    expect(h.composer.focus).toHaveBeenCalledTimes(1);
+  });
+  it('targets the owned composer only after successful current detail rendering', () => {
+    const html = clientDeskHtml();
+    expect(html.indexOf('if (requestId !== detailRequest || selected !== contactId) return')).toBeLessThan(html.indexOf('focusRequestedNote(c, contactId)'));
+    expect(html.indexOf('record.innerHTML = profileMarkup(profileData)')).toBeLessThan(html.indexOf('focusRequestedNote(c, contactId)'));
+    expect(html).toContain('id="sms-composer"');
+  });
+});
