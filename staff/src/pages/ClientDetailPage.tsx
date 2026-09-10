@@ -2,18 +2,17 @@ import { useState, useEffect, useRef, type CSSProperties } from 'react';
 import { Link, useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft, ArrowUpRight, Loader2, RefreshCw, MessageSquareText, CheckCircle2, Send,
-  ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus, Pencil,
+  ClipboardCheck, Check, ChevronRight, DollarSign, User, Plus,
   CalendarDays, CircleDollarSign, Dumbbell, BookOpenText, Focus,
   NotebookPen, Workflow,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { getContactAutomationEvidence, getContactDetail, markAttended, sendToolkit, saveProgress, sendPayLink, sendFollowupText, getOwedStatus, ApiError, type PayLinkProduct, type PaymentCapture, type OwedStatus } from '../lib/api';
 import { automationDrilldownPath } from '../lib/automation-navigation';
-import { memberWorkspacePath, type MemberWorkspaceSurface } from '../lib/member-workspace';
+import { clientDeskContactPath, memberWorkspacePath, type MemberWorkspaceSurface } from '../lib/member-workspace';
 import { buildGoogleReviewRequest } from '../lib/review-request';
 import { canMarkCurrentVisit, selectCurrentVisit } from '../lib/current-visit';
-import type { ContactAutomationEvidence, ContactDetail, ContactAppointment, ContactNote, PaymentStatus } from '../types/staff';
-import AddNoteModal from '../components/AddNoteModal';
+import type { ContactAutomationEvidence, ContactDetail, ContactAppointment, PaymentStatus } from '../types/staff';
 import BodyMapCanvas from '../components/BodyMapCanvas';
 import { buildSessionBrief, visitLabel } from '../components/SessionBrief';
 import LedgerWarning from '../components/LedgerWarning';
@@ -21,7 +20,7 @@ import ManageAppointmentSheet, { type ManageableAppointment } from '../component
 import {
   MODULES, toggleModule, setYogaBlockSize, defaultData, type ClientModuleData,
 } from '../data/moduleStorage';
-import { isEditableStaffNote, isSystemNote } from '../../../shared/staff-note-policy.js';
+import { isSystemNote } from '../../../shared/staff-note-policy.js';
 import '../styles/session-a.css';
 
 // Clear, obviously-tappable button style for the payment chooser (was styled like plain text).
@@ -94,8 +93,6 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
   const [client, setClient] = useState<ContactDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showAddNote, setShowAddNote] = useState(false);
-  const [editingNote, setEditingNote] = useState<ContactNote | null>(null);
   const [markingAttended, setMarkingAttended] = useState<string | null>(null);
   const [attendedError, setAttendedError] = useState('');
   const [manageAppointment, setManageAppointment] = useState<ManageableAppointment | null>(null);
@@ -1001,8 +998,8 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
             <div className="sa-session-note-prompt">
               <span className="lbl">Close the loop</span>
               <h2>What did you find, change, and want to carry forward?</h2>
-              <p>A note saved here becomes part of the Member Record. The complete note history stays out of the live-session workspace.</p>
-              <button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add this session’s note</button>
+              <p>A note saved in Amari CRM becomes part of the Member Record. The complete note history stays out of the live-session workspace.</p>
+              <Link className="sa-note-add" to={clientDeskContactPath(client.id)}><Plus size={14} />Add this session’s note in CRM</Link>
             </div>
             <div className="sa-session-note-recent">
               <span className="lbl">Most recent context</span>
@@ -1054,7 +1051,8 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
 
         {/* notes */}
         <section className="sa-card">
-          <div className="sa-card-h"><span className="t">Notes</span><button className="sa-note-add" onClick={() => setShowAddNote(true)}><Plus size={14} />Add note</button></div>
+          <div className="sa-card-h"><span className="t">Notes</span><Link className="sa-note-add" to={clientDeskContactPath(client.id)}><Plus size={14} />Add Staff note</Link></div>
+          <p className="sa-empty">Provider notes are read-only here. New and revised Staff notes are saved in Amari CRM.</p>
           {(() => {
             const visible = client.notes.filter((n) => !isSystemNote(n.body));
             return visible.length === 0 ? (
@@ -1065,7 +1063,7 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
                   const nb = splitNoteBody(n.body);
                   return (
                     <div key={n.id} className="sa-note">
-                      <div className="sa-note-meta"><span className="sa-note-date">{fmtDate(n.dateAdded)}</span>{isEditableStaffNote(n.body) && <button type="button" className="sa-note-edit" onClick={() => setEditingNote(n)} aria-label="Edit note"><Pencil size={13} /> Edit</button>}</div>
+                      <div className="sa-note-meta"><span className="sa-note-date">{fmtDate(n.dateAdded)}</span><span>GHL mirror · read only</span></div>
                       {nb.text && <p style={{ whiteSpace: 'pre-wrap' }}>{nb.text}</p>}
                       {nb.signature && (
                         <img src={nb.signature} alt="Signature" style={{ maxWidth: 220, maxHeight: 80, marginTop: 6, border: '1px solid #e2e8f0', borderRadius: 6, background: '#fff', padding: 4 }} />
@@ -1090,21 +1088,6 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
         <footer className="sa-foot">amarimethod · {isSession ? 'in session' : 'member record'}</footer>
       </main>
 
-      {showAddNote && (
-        <AddNoteModal
-          contactId={client.id}
-          onClose={() => setShowAddNote(false)}
-          onSaved={() => { setShowAddNote(false); loadClient(); }}
-        />
-      )}
-      {editingNote && (
-        <AddNoteModal
-          contactId={client.id}
-          note={editingNote}
-          onClose={() => setEditingNote(null)}
-          onSaved={() => { setEditingNote(null); loadClient(); }}
-        />
-      )}
       {manageAppointment && (
         <ManageAppointmentSheet
           appointment={manageAppointment}

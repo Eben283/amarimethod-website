@@ -209,6 +209,22 @@ describe('Staff legibility contract', () => {
     expect(record).not.toContain('Specialist study record');
   });
 
+  it('keeps provider notes read-only and hands Staff note work to the owned Client Desk', () => {
+    const record = css('pages/ClientDetailPage.tsx');
+    const api = css('lib/api.ts');
+    expect(record).toContain('clientDeskContactPath(client.id)');
+    expect(record).toContain('Provider notes are read-only here.');
+    expect(record).toContain('GHL mirror · read only');
+    expect(record).toContain('A note saved in Amari CRM becomes part of the Member Record.');
+    expect(record).not.toContain('AddNoteModal');
+    expect(record).not.toContain('setEditingNote');
+    expect(api).not.toContain("fetchApi('/staff-note'");
+    expect(css('styles/session-a.css')).not.toContain('staff-note-modal');
+    const outreach = css('pages/FollowUpPage.tsx');
+    expect(outreach).toContain('Add Staff note in Amari CRM');
+    expect(outreach).not.toContain('onSaveNote');
+  });
+
   it('does not expose legacy founding-member payment links from a member record', () => {
     const record = css('pages/ClientDetailPage.tsx');
     for (const retired of ['8-session-series', '4-session-series', 'upgrade-initial-to-4', 'upgrade-initial-to-8', 'upgrade-4-to-8']) {

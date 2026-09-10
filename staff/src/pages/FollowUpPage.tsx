@@ -9,7 +9,7 @@ import {
 import { useAuth } from '../contexts/AuthContext';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
-  recordPartnerOutcome, addNote, updateContactField, getCallCoach, triggerCoachOne,
+  recordPartnerOutcome, updateContactField, getCallCoach, triggerCoachOne,
   getOutreachCoach, verifyDecisionMaker, ApiError,
   type EditableFieldKey, type CallCoach, type OutreachCoach,
 } from '../lib/api';
@@ -307,7 +307,6 @@ export default function FollowUpPage() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [activity, setActivity] = useState<Record<string, PartnerActivityEvent[] | 'loading' | 'error'>>({});
-  const [noteDraft, setNoteDraft] = useState('');
   // Session-only "I just handled this person" — a send or an outcome action drops
   // them from Act Now immediately, so you don't see ghosts of people you've worked
   // until the cadence snapshot catches up (≤3h). Cleared on reload.
@@ -442,7 +441,6 @@ export default function FollowUpPage() {
 
   const toggleExpand = useCallback((contactId: string) => {
     setExpandedId((cur) => (cur === contactId ? null : contactId));
-    setNoteDraft('');
     if (!activity[contactId]) {
       setActivity((a) => ({ ...a, [contactId]: 'loading' }));
       getPartnerActivity(contactId)
@@ -483,22 +481,6 @@ export default function FollowUpPage() {
       setBusyId(null);
     }
   }, [logout, markHandled]);
-
-  const onSaveNote = useCallback(async (contactId: string) => {
-    const text = noteDraft.trim();
-    if (!text) return;
-    setBusyId(contactId);
-    try {
-      await addNote(contactId, text);
-      setNoteDraft('');
-      setActivity((a) => { const next = { ...a }; delete next[contactId]; return next; });
-    } catch (err) {
-      if (err instanceof ApiError && err.status === 401) { logout(); return; }
-      setError(err instanceof Error ? err.message : 'Failed to save note');
-    } finally {
-      setBusyId(null);
-    }
-  }, [noteDraft, logout]);
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-5">
@@ -647,11 +629,8 @@ export default function FollowUpPage() {
                   expanded={expandedId === item.p.contactId}
                   activity={activity[item.p.contactId]}
                   busy={busyId === item.p.contactId}
-                  noteDraft={expandedId === item.p.contactId ? noteDraft : ''}
                   onToggle={() => toggleExpand(item.p.contactId)}
                   onOutcome={(sig, opts) => onOutcome(item.p.contactId, sig, opts)}
-                  onNoteChange={setNoteDraft}
-                  onSaveNote={() => onSaveNote(item.p.contactId)}
                   onDismiss={() => undefined}
                   onHandled={() => markHandled(item.p.contactId)}
                 />
@@ -701,11 +680,8 @@ export default function FollowUpPage() {
                       expanded={expandedId === contactId}
                       activity={activity[contactId]}
                       busy={busyId === contactId}
-                      noteDraft={expandedId === contactId ? noteDraft : ''}
                       onToggle={() => toggleExpand(contactId)}
                       onOutcome={(sig, opts) => onOutcome(contactId, sig, opts)}
-                      onNoteChange={setNoteDraft}
-                      onSaveNote={() => onSaveNote(contactId)}
                       onDismiss={() => undefined}
                       onHandled={() => markHandled(contactId)}
                     />
@@ -856,16 +832,13 @@ interface ActRowProps {
   expanded: boolean;
   activity: PartnerActivityEvent[] | 'loading' | 'error' | undefined;
   busy: boolean;
-  noteDraft: string;
   onToggle: () => void;
   onOutcome: (signal: PartnerLastSignal, opts?: { days?: number; note?: string }) => void;
-  onNoteChange: (v: string) => void;
-  onSaveNote: () => void;
   onDismiss: () => void;
   onHandled: () => void;
 }
 
-function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome, onNoteChange, onSaveNote, onDismiss, onHandled }: ActRowProps) {
+function ActRow({ item, expanded, activity, busy, onToggle, onOutcome, onDismiss, onHandled }: ActRowProps) {
   const isReply = item.kind === 'reply';
   const contactId = isReply ? item.conv.contactId : item.p.contactId;
   const name = displayName(isReply ? item.conv.contactName : item.p.fullName) || 'Unknown';
@@ -1172,21 +1145,14 @@ function ActRow({ item, expanded, activity, busy, noteDraft, onToggle, onOutcome
             )}
           </div>
 
-          {/* note (second-stage) */}
+          {/* Provider notes are read-only here. Staff-authored notes belong to the owned CRM. */}
           <div>
-            <textarea
-              value={noteDraft}
-              onChange={(e) => onNoteChange(e.target.value)}
-              placeholder="Add a note…"
-              rows={2}
-              className="w-full resize-none rounded-lg border border-amari-border p-2 text-sm text-amari-charcoal placeholder:text-amari-text-muted focus:outline-none focus:ring-1 focus:ring-amari-accent-warm"
-            />
-            <button
-              type="button" onClick={onSaveNote} disabled={busy || !noteDraft.trim()}
-              className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand disabled:opacity-40"
+            <Link
+              to={communicationUrl(contactId)}
+              className="mt-1.5 inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand"
             >
-              <Send className="h-3.5 w-3.5" /> Save note
-            </button>
+              <StickyNote className="h-3.5 w-3.5" /> Add Staff note in Amari CRM
+            </Link>
           </div>
 
           {/* What we don't know — a quiet footnote so a thin card never looks as

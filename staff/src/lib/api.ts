@@ -573,20 +573,6 @@ export async function publishAutomationWorkflow(workflowId: string, version: num
   return fetchApi('/staff-automations?view=workflow-publish', { method: 'POST', body: JSON.stringify({ workflowId, version, expectedPublishedVersion }) });
 }
 
-export async function addNote(contactId: string, body: string): Promise<{ success: boolean }> {
-  return fetchApi('/staff-note', {
-    method: 'POST',
-    body: JSON.stringify({ contactId, body }),
-  });
-}
-
-export async function updateNote(contactId: string, noteId: string, body: string): Promise<{ success: boolean }> {
-  return fetchApi('/staff-note', {
-    method: 'PUT',
-    body: JSON.stringify({ contactId, noteId, body }),
-  });
-}
-
 export interface MarkAttendedResult {
   success: boolean;
   alreadyAttended: boolean;
