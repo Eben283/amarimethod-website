@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { selectAcquisitionProspects, withoutNeedsReply } from './outreach-scope';
+import { isPinnedUntouchedProspect, selectAcquisitionProspects, withoutNeedsReply } from './outreach-scope';
 import type { PartnerProspect } from '../types/staff';
 
 describe('Outreach scope', () => {
@@ -60,5 +60,25 @@ describe('Outreach scope', () => {
     ];
 
     expect(selectAcquisitionProspects(rows, 3, new Set(['needs-reply'])).map((row) => row.contactId)).toEqual(['higher', 'lower']);
+  });
+
+  it('pins a priority batch until its first outreach touch', () => {
+    const base = {
+      contactId: 'prospect', firstName: 'New', lastName: 'Prospect', fullName: 'New Prospect',
+      category: 'unknown', tags: ['partner-prospect'], phone: null, email: null, website: null,
+      companyName: null, address1: null, city: null, state: null, postalCode: null,
+      socialProfile: null, linkedinUrl: null, instagram: null, otherUrls: null, rundown: null,
+      lastActivityAt: null, isActivePartner: false, partnerStage: null, partnerSource: null,
+      partnerLastSignal: null, partnerLastSignalAt: null, partnerFollowupAt: null,
+      partnerFacility: null, partnerFacilityType: null, partnerFacilityRole: null,
+      hasPtOnStaff: null, outreachVerified: false, touchCount: 0, sheetStatus: null,
+      sheetNotes: null, inGarrettSheet: false,
+    } satisfies PartnerProspect;
+    const priority = { ...base, contactId: 'priority', tags: [...base.tags, 'outreach-priority'], derived: { kind: 'act' as const, urgency: 40, why: 'New lead', action: 'call' as const } };
+    const due = { ...base, contactId: 'due', derived: { kind: 'act' as const, urgency: 90, why: 'Due', action: 'call' as const } };
+
+    expect(isPinnedUntouchedProspect(priority)).toBe(true);
+    expect(selectAcquisitionProspects([due, priority], 2).map((row) => row.contactId)).toEqual(['priority', 'due']);
+    expect(isPinnedUntouchedProspect({ ...priority, touchCount: 1 })).toBe(false);
   });
 });
