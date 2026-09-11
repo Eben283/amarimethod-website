@@ -59,5 +59,23 @@ await act(async()=>{waits.B.reject(new Error('Synthetic B unavailable'));await f
 assert(text(t).includes('Synthetic B unavailable'),'Selected member load error must be visible');assert(!text(t).includes('SyntheticA'));
 results.push({case:'selected_member_failure_does_not_retain_previous',passed:true});await act(async()=>t.unmount());
 
+const focusListeners=new Set();window.addEventListener=(type,fn)=>{if(type==='focus')focusListeners.add(fn)};window.removeEventListener=(type,fn)=>{if(type==='focus')focusListeners.delete(fn)};
+H.params={id:'A'};await act(async()=>{t=create(React.createElement(Detail,{surface:'session'}));await flush()});await act(async()=>{waits.A.resolve(person('A'));await flush()});
+await act(async()=>{for(const fn of focusListeners)fn();await flush()});const olderReload=waits.A;
+await act(async()=>{for(const fn of focusListeners)fn();await flush()});const newerReload=waits.A;assert.notStrictEqual(olderReload,newerReload);
+await act(async()=>{newerReload.resolve({...person('A'),firstName:'FreshMemberRead'});await flush()});assert(text(t).includes('FreshMemberRead'));
+await act(async()=>{olderReload.resolve({...person('A'),firstName:'StaleMemberRead'});await flush()});assert(text(t).includes('FreshMemberRead'),'Old same-member refresh must not replace latest data');assert(!text(t).includes('StaleMemberRead'));
+results.push({case:'same_member_reload_response_order',passed:true});await act(async()=>t.unmount());
+const realSetTimeout=global.setTimeout,realClearTimeout=global.clearTimeout;const saveTimers=new Map();let saveTimerId=0;const memberSaves=[];
+global.setTimeout=(fn,ms)=>{const key=++saveTimerId;saveTimers.set(key,{fn,ms});return key};global.clearTimeout=key=>saveTimers.delete(key);
+H.api.saveProgress=async(id,value)=>{memberSaves.push({id,value});return {success:true}};
+H.params={id:'A'};await act(async()=>{t=create(React.createElement(Detail,{surface:'session'}));await flush()});await act(async()=>{waits.A.resolve(person('A'));await flush()});
+const moduleButton=t.root.findAllByType('button').find(b=>typeof b.props.className==='string'&&/^sa-mod(?: |$)/.test(b.props.className));assert(moduleButton,'Protocol control rendered');
+await act(async()=>moduleButton.props.onClick());assert([...saveTimers.values()].some(x=>x.ms===800));
+H.params={id:'B'};await act(async()=>{t.update(React.createElement(Detail,{surface:'session'}));await flush()});
+await act(async()=>{for(const [key,x]of [...saveTimers]){if(x.ms===800){saveTimers.delete(key);x.fn()}}await flush()});
+assert.equal(memberSaves.length,1,'Navigation must not cancel accepted member progress edit');assert.equal(memberSaves[0].id,'A','Pending progress remains owned by originating member');assert.equal(memberSaves[0].value.modules['suspension-squat'],true);
+results.push({case:'pending_progress_survives_member_switch',savedFor:'A'});await act(async()=>t.unmount());global.setTimeout=realSetTimeout;global.clearTimeout=realClearTimeout;
+
 console.log(JSON.stringify(results,null,2));
 })().catch(e=>{console.error(e);process.exitCode=1});
