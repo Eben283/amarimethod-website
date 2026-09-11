@@ -10,8 +10,8 @@ const context = () => ({ request: new Request('https://www.amarimethod.com/api/s
 beforeEach(() => {
   failure = null; records = {};
   vi.mocked(ghlFetch).mockImplementation(async (_ctx, url) => {
-    if (url.endsWith('/appointments')) return json({ appointments: [{ id: 'fixture_appt', calendarId: [...SERIES_CALENDAR_IDS][0], appointmentStatus: 'completed', startTime: '2026-01-01T12:00:00' }] }, failure === 'appointments' ? 500 : 200);
-    if (url.endsWith('/contacts/fixture')) return json({ contact: { id: 'fixture', firstName: 'Fixture', email: 'fixture@example.invalid' } }, failure === 'contact' ? 500 : 200);
+    if (url.endsWith('/appointments')) return json(failure === 'appointments-shape' ? {} : { appointments: failure === 'appointments-empty' ? [] : failure === 'appointment-row' ? [{}] : [{ id: 'fixture_appt', calendarId: [...SERIES_CALENDAR_IDS][0], appointmentStatus: 'completed', startTime: failure === 'appointment-date' ? 'not-a-date' : '2026-01-01T12:00:00' }] }, failure === 'appointments' ? 500 : 200);
+    if (url.endsWith('/contacts/fixture')) return json(failure === 'contact-shape' ? {} : { contact: { id: failure === 'contact-id' ? 'different' : 'fixture', firstName: 'Fixture', email: 'fixture@example.invalid' } }, failure === 'contact' ? 500 : 200);
     throw new Error('Unexpected provider call');
   });
   vi.stubGlobal('fetch', vi.fn(async (url) => {
@@ -66,4 +66,19 @@ it('leaves owed status unavailable after failed manual-payment evidence reads', 
 it('leaves owed status unavailable without manual-payment storage', async () => {
   const ctx = context(); delete ctx.env.PURCHASE_KV;
   expect((await (await onRequestGet(ctx)).json()).status).toBe('unavailable');
+});
+
+it.each(['contact-shape', 'contact-id', 'appointments-shape', 'appointment-row', 'appointment-date'])('does not interpret malformed HTTP200 %s as empty evidence', async (source) => {
+  failure = source;
+  const result = await onRequestGet(context());
+  const body = await result.json();
+  expect(result.status).toBe(200);
+  expect(body.status).toBe('unavailable');
+  expect(body.shortBy).toBeUndefined();
+  expect(body.confidence).toBeUndefined();
+  expect(fetch).not.toHaveBeenCalled();
+});
+it('accepts a verified empty attendance list', async () => {
+  failure = 'appointments-empty';
+  expect((await (await onRequestGet(context())).json()).status).toBe('square');
 });
