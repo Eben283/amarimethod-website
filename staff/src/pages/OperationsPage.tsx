@@ -35,7 +35,7 @@ const TABS: { id: OpsTab; label: string; detail: string; Icon: typeof Activity }
   { id: 'automation', label: 'Automation Watch', detail: 'Technical cutover diagnostics', Icon: Workflow },
 ];
 
-const SYSTEMS_SRC = 'https://www.amarimethod.com/ops?embed=1';
+const SYSTEMS_SRC = '/ops?embed=1';
 
 type Workspace = {
   label: string;

@@ -9,6 +9,7 @@
 // onto the already-heavy staff-contact request. The client page lazy-loads this.
 
 import { ghlFetch } from "../lib/ghl.js";
+import { parsePacificWallClock } from "../lib/datetime.js";
 import { resolveContactCharges, summarizeCharges, classifyCharge, authoritativeCustomerId, makeStripeClient } from "../lib/stripe-charges.js";
 import { countBillableSessionsAttended, computeOwedStatus } from "../lib/session-owed.js";
 import { isSettled, settledReason } from "../lib/owed-settled.js";
@@ -47,10 +48,21 @@ export async function onRequestGet(context) {
       ghlFetch(context, `${GHL_API_BASE}/contacts/${contactId}/appointments`),
     ]);
 
+    // A failed required read is not an empty payment or attendance history.
+    if (!contactRes.ok || !apptRes.ok) {
+      return new Response(JSON.stringify({
+        status: "unavailable",
+        reason: "Contact and attendance evidence could not be verified. Try again.",
+      }), { status: 200, headers: { ...headers, "Cache-Control": "no-store" } });
+    }
+
     let email = null;
     let name = null;
     if (contactRes.ok) {
       const c = await contactRes.json();
+      if (!c?.contact || typeof c.contact !== "object" || Array.isArray(c.contact) || c.contact.id !== contactId) {
+        throw new Error("Contact evidence could not be verified");
+      }
       email = c.contact?.email || null;
       const fn = (c.contact?.firstName || "").trim();
       const ln = (c.contact?.lastName || "").trim();
@@ -59,7 +71,19 @@ export async function onRequestGet(context) {
     let appointments = [];
     if (apptRes.ok) {
       const a = await apptRes.json();
-      appointments = a.appointments || a.events || [];
+      const rows = a?.appointments ?? a?.events;
+      if (!Array.isArray(rows) || rows.some((row) => {
+        if (!row || typeof row !== "object" || Array.isArray(row)) return true;
+        const status = row.appointmentStatus || row.status;
+        const startsAt = row.startTime || row.start_time;
+        return typeof row.id !== "string" || !row.id.trim()
+          || typeof row.calendarId !== "string" || !row.calendarId.trim()
+          || typeof status !== "string" || !status.trim()
+          || typeof startsAt !== "string" || !Number.isFinite(parsePacificWallClock(startsAt));
+      })) {
+        throw new Error("Attendance evidence could not be verified");
+      }
+      appointments = rows;
     }
 
     // The stored Stripe customer id (our contact↔customer key) — lets the
@@ -67,7 +91,7 @@ export async function onRequestGet(context) {
     const KV = context.env.PURCHASE_KV;
     const CUST_KEY = `stripe-cust:${contactId}`;
     let storedCustomerId = null;
-    if (KV) { try { storedCustomerId = await KV.get(CUST_KEY); } catch { /* fail-soft */ } }
+    if (KV) storedCustomerId = await KV.get(CUST_KEY);
 
     const stripe = makeStripeClient(stripeKey);
     const charges = await resolveContactCharges(stripe, { contactId, email, customerId: storedCustomerId || undefined });
@@ -96,15 +120,15 @@ export async function onRequestGet(context) {
         label: classifyCharge(c).label || c.description || "Payment",
       }))
       .sort((a, b) => String(b.date).localeCompare(String(a.date)));
-    // Exclude explicitly-comped sessions from the billable count — see
-    // countBillableSessionsAttended. Fail-soft: {} when KV is unbound/errors.
-    const payRecords = await listPaymentRecordsForContact(context.env.PURCHASE_KV, contactId);
-    const compedIds = new Set(
+    // Comps and explicit non-Stripe payments cover only their own appointment.
+    // Require complete records; Stripe coverage is counted through charges only.
+    const payRecords = await listPaymentRecordsForContact(context.env.PURCHASE_KV, contactId, { strict: true });
+    const coveredAppointmentIds = new Set(
       Object.entries(payRecords)
-        .filter(([, r]) => r && r.status === "comped")
+        .filter(([, r]) => r && (r.status === "comped" || (r.status === "paid" && ["cash", "venmo", "check", "other"].includes(r.method))))
         .map(([apptId]) => apptId),
     );
-    const attendedBillable = countBillableSessionsAttended(appointments, Date.now(), compedIds);
+    const attendedBillable = countBillableSessionsAttended(appointments, Date.now(), coveredAppointmentIds);
     // Comps and off-platform payments leave no Stripe trace, so the owed math
     // can't see them and would false-flag these hand-verified clients. A pinned
     // settled override forces 'square' — see lib/owed-settled.js.
@@ -116,6 +140,19 @@ export async function onRequestGet(context) {
           unknownMax: summary.unknownMax,
           attendedBillable,
         });
+
+    const conflictingPaidEvidence = owed.status === "owed" && appointments.some((appointment) => {
+      const record = payRecords[appointment.id];
+      return record?.status === "paid"
+        && !["cash", "venmo", "check", "other"].includes(record.method)
+        && countBillableSessionsAttended([appointment], Date.now()) > 0;
+    });
+    if (conflictingPaidEvidence) {
+      return new Response(JSON.stringify({
+        status: "unavailable",
+        reason: "A session is recorded as paid, but its payment coverage could not be reconciled. Review the payment evidence.",
+      }), { status: 200, headers: { ...headers, "Cache-Control": "no-store" } });
+    }
 
     return new Response(JSON.stringify({
       ...owed,
@@ -129,6 +166,6 @@ export async function onRequestGet(context) {
     }), { status: 200, headers });
   } catch (err) {
     console.error("[staff-owed] error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers });
+    return new Response(JSON.stringify({ status: "unavailable", reason: "Payment and attendance evidence could not be verified. Try again." }), { status: 200, headers: { ...headers, "Cache-Control": "no-store" } });
   }
 }
