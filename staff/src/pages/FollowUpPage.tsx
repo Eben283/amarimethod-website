@@ -18,7 +18,7 @@ import { suggestedTexts, suggestedEmail, hasUsableEmail } from '../lib/followupC
 import type {
   PartnerProspect, PartnerLastSignal, PartnerOutcomeSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
-import { withoutNeedsReply } from '../lib/outreach-scope';
+import { isPinnedUntouchedProspect, withoutNeedsReply } from '../lib/outreach-scope';
 import { resolveDataReadState } from '../lib/data-read-state';
 
 // ── OUTREACH SURFACE ──────────────────────────────────────────────────────────
@@ -408,6 +408,8 @@ export default function FollowUpPage() {
         return { kind: 'prospect' as const, p: r.p, d: r.d, weight, hint: dayHint(weight, todayDow) };
       })
       .sort((a, b) => {
+        const priority = Number(isPinnedUntouchedProspect(b.p)) - Number(isPinnedUntouchedProspect(a.p));
+        if (priority !== 0) return priority;
         const d = score(b.d, b.weight ?? 0) - score(a.d, a.weight ?? 0);
         return d !== 0 ? d : a.p.contactId.localeCompare(b.p.contactId);
       })
