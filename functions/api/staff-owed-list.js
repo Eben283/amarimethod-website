@@ -48,9 +48,10 @@ export async function onRequestGet(context) {
         endTime: String(now),
       });
       const res = await ghlFetch(context, `${GHL_API_BASE}/calendars/events?${params}`);
-      if (!res.ok) continue;
+      if (!res.ok) throw new Error("Calendar attendance could not be verified");
       const data = await res.json();
-      const events = data.events || data.appointments || [];
+      const events = data?.events ?? data?.appointments;
+      if (!Array.isArray(events)) throw new Error("Calendar attendance evidence is invalid");
       for (const e of events) {
         const cid = e.contactId;
         if (!cid) continue;

@@ -91,7 +91,7 @@ export async function onRequestGet(context) {
     const KV = context.env.PURCHASE_KV;
     const CUST_KEY = `stripe-cust:${contactId}`;
     let storedCustomerId = null;
-    if (KV) { try { storedCustomerId = await KV.get(CUST_KEY); } catch { /* fail-soft */ } }
+    if (KV) storedCustomerId = await KV.get(CUST_KEY);
 
     const stripe = makeStripeClient(stripeKey);
     const charges = await resolveContactCharges(stripe, { contactId, email, customerId: storedCustomerId || undefined });
