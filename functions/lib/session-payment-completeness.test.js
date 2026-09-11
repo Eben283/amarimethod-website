@@ -20,3 +20,16 @@ describe('strict financial payment-record reads', () => {
     await expect(listPaymentRecordsForContact(kv, 'fixture')).resolves.toEqual({});
   });
 });
+it.each([undefined, null, '', 'invented'])('rejects invalid payment status %s in strict reads', async (status) => {
+  const kv = { list: async () => ({ keys: [{ name: 'payment:fixture:a1' }], list_complete: true }), get: async () => ({ appointmentId: 'a1', status, method: null }) };
+  await expect(listPaymentRecordsForContact(kv, 'fixture', { strict: true })).rejects.toThrow();
+});
+it('rejects an unknown payment method in strict reads', async () => {
+  const kv = { list: async () => ({ keys: [{ name: 'payment:fixture:a1' }], list_complete: true }), get: async () => ({ appointmentId: 'a1', status: 'paid', method: 'invented' }) };
+  await expect(listPaymentRecordsForContact(kv, 'fixture', { strict: true })).rejects.toThrow();
+});
+it.each([null, undefined])('preserves canonical unknown status with optional method %s', async (method) => {
+  const record = { appointmentId: 'a1', status: 'unknown', method };
+  const kv = { list: async () => ({ keys: [{ name: 'payment:fixture:a1' }], list_complete: true }), get: async () => record };
+  await expect(listPaymentRecordsForContact(kv, 'fixture', { strict: true })).resolves.toEqual({ a1: record });
+});

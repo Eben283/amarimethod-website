@@ -26,3 +26,11 @@ describe('Stripe financial read completeness', () => {
     await expect(resolveContactCharges(stripe, { contactId: 'fixture', email: 'fixture@example.invalid' })).resolves.toEqual([]);
   });
 });
+it.each([undefined, null, 0, 'false'])('rejects nonboolean pagination completion flag %s', async (hasMore) => {
+  const stripe = makeStripeClient('fixture-only', async () => response({ data: [], has_more: hasMore }));
+  await expect(resolveContactCharges(stripe, { contactId: 'fixture' })).rejects.toThrow();
+});
+it('preserves an explicit complete empty page', async () => {
+  const stripe = makeStripeClient('fixture-only', async () => response({ data: [], has_more: false }));
+  await expect(resolveContactCharges(stripe, { contactId: 'fixture' })).resolves.toEqual([]);
+});
