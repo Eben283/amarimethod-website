@@ -13,5 +13,5 @@ jobs:
           node-version-file: '.node-version'
           cache: npm
       - run: npm ci
-      - run: npm install --no-save --package-lock=false --ignore-scripts --no-audit --no-fund jsdom@26.1.0
-      - run: node scripts/test-staff-money-ui.mjs
+      - run: npm install --prefix "$RUNNER_TEMP/staff-money-runtime" --no-package-lock --ignore-scripts --no-audit --no-fund jsdom@26.1.0
+      - run: STAFF_TEST_RUNTIME="$RUNNER_TEMP/staff-money-runtime" node scripts/test-staff-money-ui.mjs

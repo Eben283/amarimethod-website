@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { build } from 'esbuild';
-import { JSDOM } from 'jsdom';
+const { JSDOM } = createRequire(path.join(process.env.STAFF_TEST_RUNTIME, 'package.json'))('jsdom');
 const require = createRequire(path.resolve('package.json'));
 const temp = await mkdtemp(path.join(tmpdir(), 'staff-money-ui-'));
 const dom = new JSDOM('<!doctype html><div id="root"></div>', { url: 'https://www.amarimethod.com/staff/' });
