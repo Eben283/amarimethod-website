@@ -16,7 +16,7 @@ import {
 } from '../lib/api';
 import { suggestedTexts, suggestedEmail, hasUsableEmail } from '../lib/followupCopy';
 import type {
-  PartnerProspect, PartnerLastSignal, PartnerActivityEvent, ConversationSummary,
+  PartnerProspect, PartnerLastSignal, PartnerOutcomeSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
 import { withoutNeedsReply } from '../lib/outreach-scope';
 import { resolveDataReadState } from '../lib/data-read-state';
@@ -61,7 +61,7 @@ const SETASIDE_OPTIONS = [
 ];
 // Maps a set-aside reason → the outcome it records. Every reason keeps the
 // contact (never deletes); the note preserves WHY for the audit/Set-Aside view.
-const SETASIDE_OPTS: Record<string, { signal: PartnerLastSignal; note?: string; days?: number }> = {
+const SETASIDE_OPTS: Record<string, { signal: PartnerOutcomeSignal; note?: string; days?: number }> = {
   'not-a-fit':        { signal: 'skip', note: 'Not a fit' },
   'not-interested':   { signal: 'not-interested' },
   'talked-in-person': { signal: 'skip', note: 'Talked in person — not pursuing' },
@@ -452,7 +452,7 @@ export default function FollowUpPage() {
 
   const onOutcome = useCallback(async (
     contactId: string,
-    signal: PartnerLastSignal,
+    signal: PartnerOutcomeSignal,
     opts?: { days?: number; note?: string },
   ) => {
     setBusyId(contactId);
@@ -834,7 +834,7 @@ interface ActRowProps {
   activity: PartnerActivityEvent[] | 'loading' | 'error' | undefined;
   busy: boolean;
   onToggle: () => void;
-  onOutcome: (signal: PartnerLastSignal, opts?: { days?: number; note?: string }) => void;
+  onOutcome: (signal: PartnerOutcomeSignal, opts?: { days?: number; note?: string }) => void;
   onDismiss: () => void;
   onHandled: () => void;
 }
@@ -1016,7 +1016,7 @@ function ActRow({ item, expanded, activity, busy, onToggle, onOutcome, onDismiss
             onPick={(v) => onOutcome('link-sent', { note: `Sent ${LINK_SENT_LABEL[v] ?? v}` })} />
           {/* off-platform touches GHL can't see — one dropdown, record so the timeline + timer reflect them */}
           <ActionSelect icon={Users} label="Other channel…" busy={busy} options={OTHER_CHANNEL_OPTIONS}
-            onPick={(v) => onOutcome(v as PartnerLastSignal)} />
+            onPick={(v) => onOutcome(v as PartnerOutcomeSignal)} />
           <ActionSelect icon={MoonStar} label="Snooze…" busy={busy} options={SNOOZE_OPTIONS}
             onPick={(v) => onOutcome('deferred', { days: Number(v) })} />
           <ActionSelect icon={Ban} label="Set aside…" busy={busy} options={SETASIDE_OPTIONS}
