@@ -5,10 +5,10 @@ import { ghlFetch } from '../lib/ghl.js';
 import { onRequestGet } from './staff-owed.js';
 import { SERIES_CALENDAR_IDS } from '../lib/session-ledger.js';
 const json = (value, status = 200) => new Response(JSON.stringify(value), { status });
-let failure;
-const context = () => ({ request: new Request('https://www.amarimethod.com/api/staff-owed?contactId=fixture', { headers: { Authorization: 'Bearer fixture' } }), env: { JWT_SECRET: 'fixture-only', STRIPE_SECRET_KEY: 'fixture-only', PURCHASE_KV: { get: async () => null, put: async () => {}, list: async () => ({ keys: [], list_complete: true }) } } });
+let failure, records;
+const context = () => ({ request: new Request('https://www.amarimethod.com/api/staff-owed?contactId=fixture', { headers: { Authorization: 'Bearer fixture' } }), env: { JWT_SECRET: 'fixture-only', STRIPE_SECRET_KEY: 'fixture-only', PURCHASE_KV: { get: async (key) => key.startsWith('payment:') ? records[key.split(':').at(-1)] || null : null, put: async () => {}, list: async () => ({ keys: Object.keys(records).map(id => ({ name: 'payment:fixture:' + id })), list_complete: true }) } } });
 beforeEach(() => {
-  failure = null;
+  failure = null; records = {};
   vi.mocked(ghlFetch).mockImplementation(async (_ctx, url) => {
     if (url.endsWith('/appointments')) return json({ appointments: [{ id: 'fixture_appt', calendarId: [...SERIES_CALENDAR_IDS][0], appointmentStatus: 'completed', startTime: '2026-01-01T12:00:00' }] }, failure === 'appointments' ? 500 : 200);
     if (url.endsWith('/contacts/fixture')) return json({ contact: { id: 'fixture', firstName: 'Fixture', email: 'fixture@example.invalid' } }, failure === 'contact' ? 500 : 200);
@@ -36,4 +36,34 @@ describe('Staff owed requires contact and attendance evidence', () => {
     const result = await onRequestGet(context());
     expect(await result.json()).toMatchObject({ status: 'owed', shortBy: 1 });
   });
+});
+it.each(['cash', 'venmo', 'check', 'other'])('honors recorded %s payment for the attended appointment', async (method) => {
+  records.fixture_appt = { appointmentId: 'fixture_appt', contactId: 'fixture', status: 'paid', method };
+  expect((await (await onRequestGet(context())).json()).status).toBe('square');
+});
+it('does not excuse attendance with payment for a different appointment', async () => {
+  records.other = { appointmentId: 'other', status: 'paid', method: 'cash' };
+  expect(await (await onRequestGet(context())).json()).toMatchObject({ status: 'owed', shortBy: 1 });
+});
+it.each(['stripe', null])('does not call a session unpaid when paid evidence with method %s is unresolved', async (method) => {
+  records.fixture_appt = { appointmentId: 'fixture_appt', status: 'paid', method };
+  const body = await (await onRequestGet(context())).json();
+  expect(body.status).toBe('unavailable');
+  expect(body.shortBy).toBeUndefined();
+});
+it('does not double-credit recorded Stripe payment when actual Stripe coverage is complete', async () => {
+  records.fixture_appt = { appointmentId: 'fixture_appt', status: 'paid', method: 'stripe' };
+  vi.stubGlobal('fetch', vi.fn(async (url) => {
+    if (new URL(url).pathname === '/v1/charges/search') return json({ data: [{ id: 'ch_fixture', amount: 19000, paid: true, status: 'succeeded', metadata: { contactId: 'fixture' } }], has_more: false });
+    throw new Error('Unexpected network call');
+  }));
+  expect(await (await onRequestGet(context())).json()).toMatchObject({ status: 'square', sessionsPurchased: 1 });
+});
+it('leaves owed status unavailable after failed manual-payment evidence reads', async () => {
+  const ctx = context(); ctx.env.PURCHASE_KV.list = async () => { throw new Error('Fixture read failed'); };
+  expect((await (await onRequestGet(ctx)).json()).status).toBe('unavailable');
+});
+it('leaves owed status unavailable without manual-payment storage', async () => {
+  const ctx = context(); delete ctx.env.PURCHASE_KV;
+  expect((await (await onRequestGet(ctx)).json()).status).toBe('unavailable');
 });
