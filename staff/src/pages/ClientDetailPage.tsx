@@ -83,6 +83,12 @@ function splitNoteBody(body: string): { text: string; signature: string | null }
 
 export default function ClientDetailPage({ surface = 'session' }: { surface?: MemberWorkspaceSurface }) {
   const { id } = useParams<{ id: string }>();
+  // A route owns every draft, action state and in-flight read in this workspace.
+  return <ClientDetailWorkspace key={id} surface={surface} />;
+}
+
+function ClientDetailWorkspace({ surface = 'session' }: { surface?: MemberWorkspaceSurface }) {
+  const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const appointmentId = searchParams.get('appointment');
   const debugMode = searchParams.get('debug') === '1';
@@ -119,11 +125,8 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
 
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  useEffect(() => {
-    return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
-    };
-  }, []);
+  // A pending save captures this member's ID and must finish after navigation.
+  // The keyed next workspace owns a separate timer and cannot cancel this one.
 
   function handleProgressUpdate(next: ClientModuleData) {
     setProgress(next);
@@ -269,30 +272,36 @@ export default function ClientDetailPage({ surface = 'session' }: { surface?: Me
     );
   }
 
+  const clientRequestRef = useRef(0);
+
   async function loadClient() {
     if (!id) return;
+    const requestId = ++clientRequestRef.current;
     setIsLoading(true);
     setError('');
     try {
       const data = await getContactDetail(id, debugMode);
+      if (requestId !== clientRequestRef.current) return;
       setClient(data);
       setProgress(data.clientProgress ? { ...defaultData(), ...data.clientProgress } : defaultData());
     } catch (err) {
+      if (requestId !== clientRequestRef.current) return;
       if (err instanceof ApiError && err.status === 401) {
         logout();
         return;
       }
       setError(err instanceof Error ? err.message : 'Failed to load practice member');
     } finally {
-      setIsLoading(false);
+      if (requestId === clientRequestRef.current) setIsLoading(false);
     }
   }
 
   useEffect(() => {
     loadClient();
+    return () => { clientRequestRef.current += 1; };
   }, [id]);
 
-  // A route change can reuse this component. Never carry an unsent review
+  // Never carry an unsent review
   // message or sent state from one practice member into another's session.
   useEffect(() => {
     setReviewOpen(false);

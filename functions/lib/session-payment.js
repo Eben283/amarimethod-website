@@ -131,17 +131,40 @@ export async function writePaymentRecord(kv, record) {
   return key;
 }
 
-export async function listPaymentRecordsForContact(kv, contactId) {
-  if (!kv) return {};
+export async function listPaymentRecordsForContact(kv, contactId, { strict = false } = {}) {
+  if (!kv) {
+    if (strict) throw new Error('Payment records are unavailable');
+    return {};
+  }
   const out = {};
   try {
-    const list = await kv.list({ prefix: contactPrefix(contactId) });
-    for (const k of (list.keys || [])) {
-      const rec = await kv.get(k.name, 'json');
-      if (rec && rec.appointmentId) out[rec.appointmentId] = rec;
+    const prefix = contactPrefix(contactId);
+    const seen = new Set();
+    let cursor;
+    for (let page = 0; page < 20; page++) {
+      const list = await kv.list({ prefix, ...(cursor ? { cursor } : {}) });
+      if (!list || !Array.isArray(list.keys)) throw new Error('Payment records are incomplete');
+      for (const k of list.keys) {
+        if (typeof k?.name !== 'string' || !k.name.startsWith(prefix)) throw new Error('Invalid payment-record reference');
+        const rec = await kv.get(k.name, 'json');
+        if (!rec || !rec.appointmentId || k.name !== paymentKey(contactId, rec.appointmentId) || (rec.contactId && rec.contactId !== contactId)) {
+          if (strict) throw new Error('Payment record could not be verified');
+          continue;
+        }
+        if (strict && (!PAYMENT_STATUSES.includes(rec.status)
+          || (rec.method != null && !PAYMENT_METHODS.includes(rec.method)))) {
+          throw new Error('Payment record status or method could not be verified');
+        }
+        out[rec.appointmentId] = rec;
+      }
+      if (list.list_complete === true || (!strict && list.list_complete === undefined)) return out;
+      if (!list.cursor || seen.has(list.cursor)) throw new Error('Payment records are incomplete');
+      seen.add(list.cursor);
+      cursor = list.cursor;
     }
-  } catch {
-    // Non-fatal — caller renders "unknown" on a read failure.
+    throw new Error('Payment record page limit reached');
+  } catch (error) {
+    if (strict) throw error;
+    return out;
   }
-  return out;
 }

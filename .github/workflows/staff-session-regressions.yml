@@ -1,0 +1,19 @@
+name: Staff session regressions
+on:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  session-record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - run: npm ci
+      - name: Install isolated mounted-test runtime
+        run: npm install --prefix "$RUNNER_TEMP/staff-record-runtime" --no-package-lock --ignore-scripts --no-audit --no-fund react@18.3.1 react-test-renderer@18.3.1
+      - name: Mounted session durability regression
+        run: STAFF_TEST_RUNTIME="$RUNNER_TEMP/staff-record-runtime/node_modules" node scripts/staff-session-regression.cjs

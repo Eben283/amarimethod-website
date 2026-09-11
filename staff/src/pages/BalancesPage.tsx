@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { RefreshCw, Loader2, ChevronRight, AlertTriangle, Search } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
@@ -76,8 +76,35 @@ export default function BalancesPage() {
   const [owedLoading, setOwedLoading] = useState(true);
   const [owedError, setOwedError] = useState(false);
 
+  const owedRequest = useRef(0);
+  const loadOwed = useCallback(async () => {
+    const request = ++owedRequest.current;
+    setOwedLoading(true);
+    setOwedError(false);
+    try {
+      const { roster } = await getOwedList();
+      if (!Array.isArray(roster)) throw new Error('Payment roster could not be verified.');
+      const resolved = await Promise.all(roster.map(async (row) => {
+        try {
+          const result = await getOwedStatus(row.contactId);
+          return { ...row, ...result, name: result.name || row.name } as OwedRow;
+        } catch {
+          return { ...row, status: 'unavailable' } as OwedRow;
+        }
+      }));
+      if (request === owedRequest.current) setOwedRows(resolved);
+    } catch {
+      if (request === owedRequest.current) setOwedError(true);
+    } finally {
+      if (request === owedRequest.current) setOwedLoading(false);
+    }
+  }, []);
+  useEffect(() => () => { owedRequest.current += 1; }, []);
+
+
   const load = useCallback(
     async (refresh = false) => {
+      void loadOwed();
       setIsLoading(true);
       setError('');
       try {
@@ -96,7 +123,7 @@ export default function BalancesPage() {
         setIsLoading(false);
       }
     },
-    [logout],
+    [logout, loadOwed],
   );
 
   useEffect(() => {
@@ -126,37 +153,8 @@ export default function BalancesPage() {
     return () => clearInterval(t);
   }, []);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const { roster } = await getOwedList();
-        // Resolve each client's owed status via the accurate (email-grounded)
-        // per-client endpoint — each is its own request, so no single request
-        // blows the subrequest budget.
-        const resolved = await Promise.all(
-          (roster || []).map(async (r) => {
-            try {
-              const o = await getOwedStatus(r.contactId);
-              // Prefer the contact's real GHL name from the resolve over the
-              // roster's title-parsed name (which can fall back to a contactId).
-              return { ...r, ...o, name: o.name || r.name } as OwedRow;
-            } catch {
-              return { ...r, status: 'unavailable' } as OwedRow;
-            }
-          }),
-        );
-        if (!cancelled) setOwedRows(resolved);
-      } catch {
-        if (!cancelled) setOwedError(true);
-      } finally {
-        if (!cancelled) setOwedLoading(false);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
   const owing = useMemo(() => owedRows.filter((r) => r.status === 'owed'), [owedRows]);
+  const unverifiedOwedCount = owedRows.filter((row) => !['owed', 'square', 'paid-legacy'].includes(row.status)).length;
   const visibleOwing = useMemo(() => {
     const normalized = query.trim().toLowerCase();
     if (!normalized) return owing;
@@ -236,6 +234,12 @@ export default function BalancesPage() {
             <span className="text-[11px] text-amari-text-muted">{visibleOwing.length} of {owedRows.length} practice members</span>
           ) : null}
         </div>
+        {!owedLoading && !owedError && unverifiedOwedCount > 0 && (
+          <p className="text-xs text-amber-700 mb-2" role="status">
+            Payment status could not be verified for {unverifiedOwedCount} practice {unverifiedOwedCount === 1 ? 'member' : 'members'}. Refresh to check again.
+          </p>
+        )}
+
         {owedLoading ? (
           <p className="text-xs text-amari-text-muted">Checking payments…</p>
         ) : owedError ? (
@@ -243,7 +247,7 @@ export default function BalancesPage() {
         ) : owedRows.length === 0 ? (
           <p className="text-xs text-amari-text-muted">No recent practice members to check.</p>
         ) : visibleOwing.length === 0 ? (
-          <p className="text-xs text-amari-text-muted">{query ? 'No unpaid matches for this search.' : `All ${owedRows.length} recent practice members are paid up.`}</p>
+          <p className="text-xs text-amari-text-muted">{query ? 'No verified unpaid matches for this search.' : unverifiedOwedCount > 0 ? 'No unpaid sessions confirmed among the available checks.' : `All ${owedRows.length} recent practice members are paid up.`}</p>
         ) : (
           <div className="space-y-1">
             {visibleOwing.map((r) => (
@@ -263,7 +267,7 @@ export default function BalancesPage() {
             ))}
           </div>
         )}
-        <p className="text-[10px] text-amari-text-muted mt-2">From Stripe · “?” = paid for some, double-check · tap a name for the breakdown</p>
+        <p className="text-[10px] text-amari-text-muted mt-2">From Stripe and recorded session payments · “?” = paid for some, double-check · tap a name for the breakdown</p>
       </div>
 
       {ledgerSource === 'custom-field-fallback' && lowConfidenceCount > 0 && (
