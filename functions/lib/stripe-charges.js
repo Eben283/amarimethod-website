@@ -88,6 +88,12 @@ function keepCharge(c) {
 export async function resolveContactCharges(stripe, { contactId, email, customerId } = {}) {
   const byId = new Map();
   const customerIds = new Set();
+  const checkedData = (result) => {
+    if (!result || result.error || result.incomplete || !Array.isArray(result.data)) {
+      throw new Error('Payment history could not be verified');
+    }
+    return result.data;
+  };
   // Seed with a known Stripe customer id (stored from a prior resolve) — the
   // cheap, exact path that also catches POS-only clients with no contactId charge.
   if (customerId) customerIds.add(customerId);
@@ -102,7 +108,7 @@ export async function resolveContactCharges(stripe, { contactId, email, customer
   // 1. Direct: charges stamped with this contactId.
   if (contactId) {
     const r = await stripe.searchCharges(`metadata["contactId"]:"${contactId}"`);
-    if (r && !r.error) add(r.data);
+    add(checkedData(r));
   }
 
   // A shared Stripe customer (spouse, same card) can carry charges tagged with a
@@ -115,15 +121,15 @@ export async function resolveContactCharges(stripe, { contactId, email, customer
   //    charges that lack contactId metadata but share the customer.
   for (const cust of [...customerIds]) {
     const r = await stripe.listChargesByCustomer(cust);
-    if (r && !r.error) add((r.data || []).filter(notForeign));
+    add(checkedData(r).filter(notForeign));
   }
 
   // 3. Email fallback — only when nothing was found via the contactId path.
   if (email && byId.size === 0) {
     const cu = await stripe.listCustomersByEmail(email);
-    for (const c of (cu?.data || [])) {
+    for (const c of checkedData(cu)) {
       const r = await stripe.listChargesByCustomer(c.id);
-      if (r && !r.error) add((r.data || []).filter(notForeign));
+      add(checkedData(r).filter(notForeign));
     }
   }
 
@@ -172,62 +178,50 @@ export function makeStripeClient(secretKey, fetchImpl = fetch) {
   const base = 'https://api.stripe.com/v1';
   const get = async (path) => {
     const res = await fetchImpl(`${base}${path}`, { headers: { Authorization: `Bearer ${secretKey}` } });
-    return res.json();
+    const body = await res.json();
+    if (res.ok === false && !body?.error) return { error: { message: 'Payment provider read failed' } };
+    return body;
   };
-
-  // Cursor-paginate a Stripe list endpoint. `buildPath(cursor)` returns the path
-  // for the next page (cursor is the last seen id, or null for the first page).
-  // On a first-page error, returns the raw error object so callers skip it (same
-  // as before). On a later-page error, returns what was collected so far.
-  const getList = async (label, buildPath) => {
+  const invalidPage = (page) => !page || page.error || !Array.isArray(page.data);
+  const incomplete = (data) => ({ data, incomplete: true });
+  const firstPageError = (page) => page?.error ? page : { error: { message: 'Payment provider returned an invalid page' } };
+  const getList = async (_label, buildPath) => {
     const all = [];
+    const seen = new Set();
     let cursor = null;
     for (let page = 0; page < STRIPE_MAX_PAGES; page++) {
       const r = await get(buildPath(cursor));
-      if (!r || r.error) {
-        if (all.length === 0) return r;
-        break;
-      }
-      const data = r.data || [];
-      all.push(...data);
-      if (!r.has_more || data.length === 0) break;
-      cursor = data[data.length - 1].id;
-      if (page === STRIPE_MAX_PAGES - 1 && r.has_more) {
-        console.warn(`[stripe-charges] ${label}: hit ${STRIPE_MAX_PAGES}-page cap with has_more=true — charge list may be truncated`);
-      }
+      if (invalidPage(r)) return all.length ? incomplete(all) : firstPageError(r);
+      all.push(...r.data);
+      if (!r.has_more) return { data: all };
+      const next = r.data.at(-1)?.id;
+      if (!next || seen.has(next)) return incomplete(all);
+      seen.add(next);
+      cursor = next;
     }
-    return { data: all };
+    return incomplete(all);
   };
-
   const searchCharges = async (query) => {
     const all = [];
+    const seen = new Set();
     let pageToken = null;
     for (let page = 0; page < STRIPE_MAX_PAGES; page++) {
       const pageParam = pageToken ? `&page=${encodeURIComponent(pageToken)}` : '';
       const r = await get(`/charges/search?query=${encodeURIComponent(query)}&limit=100${pageParam}`);
-      if (!r || r.error) {
-        if (all.length === 0) return r;
-        break;
-      }
-      all.push(...(r.data || []));
-      if (!r.has_more || !r.next_page) break;
+      if (invalidPage(r)) return all.length ? incomplete(all) : firstPageError(r);
+      all.push(...r.data);
+      if (!r.has_more) return { data: all };
+      if (!r.next_page || seen.has(r.next_page)) return incomplete(all);
+      seen.add(r.next_page);
       pageToken = r.next_page;
-      if (page === STRIPE_MAX_PAGES - 1 && r.has_more) {
-        console.warn(`[stripe-charges] searchCharges: hit ${STRIPE_MAX_PAGES}-page cap with has_more=true — search results may be truncated`);
-      }
     }
-    return { data: all };
+    return incomplete(all);
   };
-
   return {
     searchCharges,
-    listChargesByCustomer: (customerId) =>
-      getList(
-        `listChargesByCustomer(${customerId})`,
-        (cursor) =>
-          `/charges?customer=${encodeURIComponent(customerId)}&limit=100` +
-          (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : '')
-      ),
-    listCustomersByEmail: (email) => get(`/customers?email=${encodeURIComponent(email)}&limit=10`),
+    listChargesByCustomer: (customerId) => getList('charges', (cursor) =>
+      `/charges?customer=${encodeURIComponent(customerId)}&limit=100` + (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : '')),
+    listCustomersByEmail: (email) => getList('customers', (cursor) =>
+      `/customers?email=${encodeURIComponent(email)}&limit=100` + (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : '')),
   };
 }
