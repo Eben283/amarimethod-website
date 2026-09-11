@@ -1,3 +1,4 @@
+import { applyClientDeskHandoff } from '../lib/member-workspace';
 import { Loader2 } from 'lucide-react';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
@@ -10,6 +11,7 @@ export default function ClientDeskPage() {
   const { logout } = useAuth();
   const [searchParams] = useSearchParams();
   const requestedContact = searchParams.get('contact');
+  const requestedIntent = searchParams.get('intent') === 'note' ? 'note' : null;
   const frameRef = useRef<HTMLIFrameElement>(null);
   const [src, setSrc] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -22,9 +24,7 @@ export default function ClientDeskPage() {
       const deskUrl = new URL(url);
       deskUrl.searchParams.set('embed', '1');
       deskUrl.searchParams.set('parent_origin', window.location.origin);
-      if (requestedContact && /^[A-Za-z0-9_-]{1,80}$/.test(requestedContact)) {
-        deskUrl.searchParams.set('contact', requestedContact);
-      }
+      applyClientDeskHandoff(deskUrl, requestedContact, requestedIntent);
       setSrc(deskUrl.toString());
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
@@ -33,7 +33,7 @@ export default function ClientDeskPage() {
       }
       setError(err instanceof Error ? err.message : 'Could not open Practice Member Desk');
     }
-  }, [logout, requestedContact]);
+  }, [logout, requestedContact, requestedIntent]);
 
   useEffect(() => {
     void openDesk();

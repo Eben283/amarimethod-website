@@ -381,6 +381,7 @@ export default {
       const requestedContact = url.searchParams.get("contact");
       if (valid.view === "client-desk" && /^[A-Za-z0-9_-]{1,80}$/.test(requestedContact || "")) {
         destinationParams.set("contact", requestedContact);
+        if (url.searchParams.get("intent") === "note") destinationParams.set("intent", "note");
       }
       const destinationQuery = destinationParams.size ? `?${destinationParams}` : "";
       const destination = valid.view === "client-desk" ? "/client-desk" : "/";
@@ -405,7 +406,12 @@ export default {
       return html(dashboardHtml(status));
     }
     if (request.method === "GET" && url.pathname === "/client-desk") {
-      const denied = await requireDashboardReadAuth(request, env);
+      // Safari may block the iframe cookie; its fragment session is available only
+      // to Desk JS after this data-free shell loads. Embed metadata grants no API
+      // authority: every record read and command still verifies the signed session.
+      const trustedEmbed = url.searchParams.get("embed") === "1"
+        && TRUSTED_STAFF_PARENT_ORIGINS.has(url.searchParams.get("parent_origin"));
+      const denied = trustedEmbed ? null : await requireDashboardReadAuth(request, env);
       return denied || html(clientDeskHtml());
     }
 

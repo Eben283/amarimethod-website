@@ -32,6 +32,15 @@ export function memberWorkspacePath(
   return appointmentId ? `${path}?appointment=${encodeURIComponent(appointmentId)}` : path;
 }
 
-export function clientDeskContactPath(contactId: string): string {
-  return `/client-desk?contact=${encodeURIComponent(contactId)}`;
+export function clientDeskContactPath(contactId: string, intent?: 'note'): string {
+  return `/client-desk?contact=${encodeURIComponent(contactId)}${intent === 'note' ? '&intent=note' : ''}`;
+}
+
+/** Forward only the supported contact handoff, never arbitrary Staff query data. */
+export function applyClientDeskHandoff(deskUrl: URL, contact: string | null, intent: string | null): void {
+  deskUrl.searchParams.delete('contact');
+  deskUrl.searchParams.delete('intent');
+  if (!contact || !/^[A-Za-z0-9_-]{1,80}$/.test(contact)) return;
+  deskUrl.searchParams.set('contact', contact);
+  if (intent === 'note') deskUrl.searchParams.set('intent', 'note');
 }
