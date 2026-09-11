@@ -4,15 +4,8 @@
 
 import { requireStaffAuth, corsHeaders } from "../lib/endpoint-guards.js";
 
-export const RETIRED_STAFF_NOTE = Object.freeze({
-  error: "Staff note writes moved to Amari CRM",
-  code: "staff_note_path_retired",
-  destination: "/staff/client-desk",
-});
-
-export function retiredStaffNoteResponse(headers = {}) {
-  return new Response(JSON.stringify(RETIRED_STAFF_NOTE), { status: 410, headers });
-}
+import { retiredStaffNoteResponse } from "../lib/staff-note-retirement.js";
+export { RETIRED_STAFF_NOTE, retiredStaffNoteResponse } from "../lib/staff-note-retirement.js";
 
 export async function onRequestOptions(context) {
   return new Response(null, {

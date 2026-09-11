@@ -639,9 +639,8 @@ export type PartnerLastSignal =
   // we never actually contacted them. Only used as the input to the outcome
   // endpoint; never persisted as a partner_last_signal value.
   | 'skip'
-  // Note-only save — the user typed a note but recorded no outcome. Writes a
-  // GHL "Note: …" entry and nothing else (no stage/signal/touch change).
-  // Like 'skip', only an outcome-endpoint input; never persisted as a value.
+  // Legacy standalone-note value retained for historical reads. New notes use
+  // the owned composer; this value is excluded from outcome mutation inputs.
   | 'note';
 
 // Matches the existing GHL "Facility Type" field options.
@@ -788,10 +787,13 @@ export interface PartnerActivityEvent {
   callStatus?: string;
 }
 
+// Historical read values retain 'note'; new mutations must use the owned note composer.
+export type PartnerOutcomeSignal = Exclude<PartnerLastSignal, 'note'>;
+
 // Outcome capture payload (POST to staff-partner-outcome)
 export interface PartnerOutcomeRequest {
   contactId: string;
-  signal: PartnerLastSignal;
+  signal: PartnerOutcomeSignal;
   note?: string;
   followupAt?: string;  // for `deferred` only — when to revisit
 }
