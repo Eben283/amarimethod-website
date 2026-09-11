@@ -151,6 +151,10 @@ export async function listPaymentRecordsForContact(kv, contactId, { strict = fal
           if (strict) throw new Error('Payment record could not be verified');
           continue;
         }
+        if (strict && (!PAYMENT_STATUSES.includes(rec.status)
+          || (rec.method != null && !PAYMENT_METHODS.includes(rec.method)))) {
+          throw new Error('Payment record status or method could not be verified');
+        }
         out[rec.appointmentId] = rec;
       }
       if (list.list_complete === true || (!strict && list.list_complete === undefined)) return out;

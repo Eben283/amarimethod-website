@@ -182,7 +182,7 @@ export function makeStripeClient(secretKey, fetchImpl = fetch) {
     if (res.ok === false && !body?.error) return { error: { message: 'Payment provider read failed' } };
     return body;
   };
-  const invalidPage = (page) => !page || page.error || !Array.isArray(page.data);
+  const invalidPage = (page) => !page || page.error || !Array.isArray(page.data) || typeof page.has_more !== 'boolean';
   const incomplete = (data) => ({ data, incomplete: true });
   const firstPageError = (page) => page?.error ? page : { error: { message: 'Payment provider returned an invalid page' } };
   const getList = async (_label, buildPath) => {
