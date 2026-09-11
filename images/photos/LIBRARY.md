@@ -144,3 +144,7 @@ mockup de-dup and the shots-todo worklist.
 - `journal-base/jh-vertical-drop.jpg`, `jh-spring-step.jpg` replaced with Firefly keeps
 - `detail-crops/hand-reaching-open.jpg` cropped from hand-reaching generate
 - Suspension hang full frame NOT wired (crop-only asset saved at `detail-crops/suspension-hang-arms-crop.jpg` unused)
+
+## KEEP — Eben and Garrett homepage hero (2026-09-11)
+
+`optimized/amari-method-eben-garrett-rings-768.webp` and `-1448.webp` derive from Eben-provided `Desktop/Potential header images/IMG_3638.JPG` (4032×3024). Eben authorized selecting and publishing a real photograph featuring both Eben and Garrett with the rings. This frame preserves both faces and the ring; the homepage puts copy beside the photograph on desktop and below it on mobile. Derivatives only apply orientation, proportional resizing and WebP encoding; no generative edits, retouching or subject removal. Supersedes the one-person ring-reach hero placement above; its existing files remain available.
