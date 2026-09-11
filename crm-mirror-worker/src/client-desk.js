@@ -1,3 +1,4 @@
+import { ownedTaskReleaseReadiness } from "./owned-tasks.js";
 import { ownedNoteReleaseReadiness } from "./owned-notes.js";
 
 // The Desk is the complete staff communication surface: every mirrored contact
@@ -110,6 +111,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
 <section class="workspace" id="workspace" aria-label="Complete communication workspace"><aside class="pane inbox"><header class="pane-head"><h2 class="pane-title">All contacts</h2><span class="unread" id="unread" aria-live="polite">—</span></header><ul class="thread-list" id="thread-list"></ul></aside><section class="pane conversation" id="conversation" aria-live="polite"><div class="conversation-empty"><div><strong>Select a contact</strong>Read the complete mirrored chronology without leaving the record.</div></div></section><aside class="pane record" id="record" aria-live="polite"><div class="conversation-empty"><div><strong>Contact record</strong>Contact details, appointments, notes, tasks, and payments appear here.</div></div></aside></section>
 </main><script>
 (() => {
+  const ownedTaskCommandsEnabled = __OWNED_TASK_COMMANDS_ENABLED__;
   const ownedNoteCommandsEnabled = __OWNED_NOTE_COMMANDS_ENABLED__;
   const workspace = document.getElementById('workspace'), list = document.getElementById('thread-list'), conversation = document.getElementById('conversation'), record = document.getElementById('record'), query = document.getElementById('query'), count = document.getElementById('count'), unread = document.getElementById('unread'), mirrorHealth = document.getElementById('mirror-health');
   const requestedExternalContact = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('contact');
@@ -118,7 +120,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
   const dashboardSession = typeof window === 'undefined' ? null : new URLSearchParams(window.location.hash.slice(1)).get('dashboard_session');
   if (dashboardSession && typeof history !== 'undefined') history.replaceState(null, '', window.location.pathname + window.location.search);
   const staffParentOrigin = typeof window === 'undefined' ? null : new URLSearchParams(window.location.search).get('parent_origin');
-  function deskSessionExpired() { if (window.parent !== window && ['https://amarimethod.com', 'https://www.amarimethod.com'].includes(staffParentOrigin || '')) window.parent.postMessage({ type: 'amari:staff-desk-session-expired' }, staffParentOrigin); }
+  let deskRenewalRequested = false;
+  function deskSessionExpired() { if (!deskRenewalRequested && window.parent !== window && ['https://amarimethod.com', 'https://www.amarimethod.com'].includes(staffParentOrigin || '')) { deskRenewalRequested = true; window.parent.postMessage({ type: 'amari:staff-desk-session-expired' }, staffParentOrigin); } }
   async function dashboardFetch(resource, options = {}) { const headers = new Headers(options.headers || {}); if (dashboardSession) headers.set('X-Amari-Dashboard-Session', dashboardSession); const response = await fetch(resource, { ...options, headers, credentials: 'same-origin' }); if (response.status === 401) deskSessionExpired(); return response; }
   let requestedContactOpened = false, selected = null, current = [], mirrorFreshness = null, timer, inboxRequest = 0, detailRequest = 0, detailController = null;
   const esc = (value) => String(value == null ? '' : value).replace(/[&<>"']/g, (char) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[char]);
@@ -270,7 +273,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       '<section class="record-section" id="record-payments" tabindex="-1">' + paymentWorkspaceMarkup(paymentRows, c) + '</section>' +
       '<section class="record-section"><h3>Invoices</h3><div class="compact-list">' + (compactCards(invoices, 'invoice') || empty('invoices', 'Invoices are mirrored from Stripe when their source customer relationship is unambiguous.')) + '</div></section>' +
       '<section class="record-section" id="record-notes" tabindex="-1"><div class="record-section-heading"><h3>Notes</h3><span class="record-section-count">' + notes.length + ' total</span></div>' + noteWorkspaceMarkup(notes, c.id) + '</section>' +
-      '<section class="record-section"><h3>Tasks</h3><div class="compact-list">' + (compactCards(data.tasks || [], 'task') || empty('tasks', 'New GHL tasks will appear as their webhook events arrive.')) + '</div></section>' +
+      '<section class="record-section" id="owned-tasks">' + tasksMarkup(data) + '</section>' +
       '<section class="record-section"><h3>Contact fields</h3><div class="field-grid" id="field-grid">' + (visibleFields.slice(0, 9).map((field) => '<div class="field-row"><span class="field-key">' + esc(labelKey(field.attribute_key)) + '</span><span class="field-value">' + esc(field.attribute_value) + '</span></div>').join('') || '<p class="empty-small">No additional fields mirrored.</p>') + '</div>' + (visibleFields.length > 9 ? '<button class="show-all" type="button" id="show-fields">Show all ' + visibleFields.length + ' fields</button>' : '') + '</section></div>';
   }
   function bindRecordNavigation() {
@@ -319,6 +322,113 @@ const CLIENT_DESK_HTML = `<!doctype html>
   function noteIdempotencyKey(action) {
     const value = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2);
     return 'client-desk-note-' + action + '-' + value;
+  }
+  // Drafts and unresolved commands survive the Staff shell replacing this iframe.
+  // Actor segment chooses a retry namespace only; the server verifies the signature.
+  let taskActor = '';
+  try { const actor = atob((dashboardSession || '').split('.')[1] || ''); if (['Eben', 'Garrett'].includes(actor)) taskActor = actor; } catch {}
+  const taskStorageKey = 'amari-client-task-drafts.v1.' + taskActor;
+  let taskDrafts = Object.create(null), taskStorageAvailable = false;
+  try {
+    if (!taskActor) throw new Error('Named session required');
+    const saved = JSON.parse(window.sessionStorage.getItem(taskStorageKey) || '{}');
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) taskDrafts = Object.assign(Object.create(null), saved);
+    window.sessionStorage.setItem(taskStorageKey, JSON.stringify(taskDrafts));
+    taskStorageAvailable = true;
+  } catch {}
+  const taskRunning = new Set(), taskProfiles = new Map();
+  if (!taskActor && typeof window !== 'undefined') deskSessionExpired();
+  function persistTaskDrafts() {
+    if (!taskActor) return false;
+    try { window.sessionStorage.setItem(taskStorageKey, JSON.stringify(taskDrafts)); taskStorageAvailable = true; return true; }
+    catch { taskStorageAvailable = false; return false; }
+  }
+  function taskDraft(contactId) {
+    if (!Object.hasOwn(taskDrafts, contactId)) taskDrafts[contactId] = { title: '', command: null, message: '' };
+    return taskDrafts[contactId];
+  }
+  function taskTime(value) {
+    return value ? new Date(value).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : 'No due time';
+  }
+  function tasksMarkup(data) {
+    const contactId = data.contact?.id;
+    const draft = taskDraft(contactId);
+    const ready = data.ownedTaskAuthority?.state === 'ready';
+    const enabled = ownedTaskCommandsEnabled && ready && taskStorageAvailable && !draft.needsRefresh;
+    const busy = taskRunning.has(contactId);
+    const cards = (data.tasks || []).map((row) => {
+      const owned = row.authority === 'owned';
+      const completed = row.state === 'completed' || Boolean(row.completed_at);
+      const control = enabled && owned && !draft.command ? '<button type="button" class="show-all" data-task-id="' + esc(row.task_id) + '" data-task-action="' + (completed ? 'reopen' : 'complete') + '"' + (busy ? ' disabled' : '') + '>' + (completed ? 'Reopen' : 'Complete') + '</button>' : '';
+      return '<div class="compact-card ' + (completed ? '' : 'task-open') + '"><b>' + esc(row.title) + '</b><div>' + (owned ? 'Amari CRM' : 'GHL history · read-only') + ' · ' + (completed ? 'Completed' : esc(row.status || 'Open')) + '</div><div>' + esc(taskTime(row.due_at)) + '</div>' + (owned ? '<div>Created by ' + esc(row.defined_by || 'Staff') + '</div>' : '') + control + '</div>';
+    }).join('');
+    const composer = (ownedTaskCommandsEnabled && ready ? '<form id="task-form" class="note-composer"><label for="task-title">Add a client task</label><textarea id="task-title" maxlength="300"' + (!draft.command ? ' required' : '') + (draft.command || busy ? ' readonly' : '') + '>' + esc(draft.title) + '</textarea><p class="source-note">Saved to Amari CRM only. No due time or reminder is set.</p><p class="note-status" role="status">' + esc(!taskStorageAvailable ? 'Task saving needs a named Staff session and session storage. Reopen Inbox after allowing session storage.' : draft.message || (draft.command ? 'An earlier save needs confirmation. Retry it safely.' : '')) + '</p><button class="note-submit" type="submit"' + (!enabled || busy ? ' disabled' : '') + '>' + (busy ? 'Saving…' : draft.command ? 'Retry save' : 'Add task') + '</button></form>' : '');
+    return '<h3>Tasks</h3>' + composer + '<div class="compact-list">' + (cards || '<p class="empty-small">No tasks recorded.</p>') + '</div>' + (!ready ? '<p role="status">Amari tasks are unavailable. Imported history remains read-only.</p>' : '');
+  }
+  function renderTasks(data) {
+    if (selected !== data.contact?.id) return;
+    const section = record.querySelector('#owned-tasks');
+    if (!section) return;
+    section.innerHTML = tasksMarkup(data);
+    bindOwnedTasks(data);
+  }
+  function bindOwnedTasks(data) {
+    const contactId = data.contact?.id;
+    taskProfiles.set(contactId, data);
+    const section = record.querySelector('#owned-tasks');
+    const form = section?.querySelector('#task-form');
+    const draft = taskDraft(contactId);
+    form?.querySelector('textarea')?.addEventListener('input', (event) => {
+      draft.title = event.target.value;
+      if (!persistTaskDrafts()) renderTasks(data);
+    });
+    const save = async (command) => {
+      if (taskRunning.has(contactId)) return;
+      draft.command = command;
+      draft.message = 'Saving…';
+      // Never issue a command without first preserving its exact payload and key.
+      if (!persistTaskDrafts()) { renderTasks(data); return; }
+      taskRunning.add(contactId);
+      renderTasks(data);
+      let latest = data;
+      let readbackConfirmed = false;
+      try {
+        const response = await dashboardFetch('/tasks/commands', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(command) });
+        const result = await response.json();
+        if (result.error === 'task_revision_conflict') { draft.command = null; draft.needsRefresh = true; persistTaskDrafts(); }
+        if (!response.ok) throw new Error(result.error === 'task_revision_conflict' ? 'This task changed. Reload the record to review it; this command has not been applied.' : result.detail || result.error || 'Task save could not be confirmed.');
+        if (!result.task || result.task.contactId !== contactId) throw new Error('Task save identity could not be confirmed. Retry safely.');
+        if (command.action === 'create') draft.title = '';
+        draft.command = null;
+        draft.message = 'Saved to Amari CRM.';
+        persistTaskDrafts();
+        const refreshed = await dashboardFetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '?limit=1000');
+        if (!refreshed.ok) throw new Error('Saved, but tasks could not refresh. Reload the record.');
+        latest = await refreshed.json();
+        if (latest.contact?.id !== contactId) throw new Error('Saved, but the record could not be verified.');
+        readbackConfirmed = true;
+      } catch (error) {
+        draft.message = String(error.message || 'Task save could not be confirmed. Retry safely.');
+        persistTaskDrafts();
+      } finally {
+        taskRunning.delete(contactId);
+        // Update just this section; leave note/SMS drafts and current selection intact.
+        if (selected === contactId) renderTasks(readbackConfirmed ? latest : taskProfiles.get(contactId) || data);
+      }
+    };
+    form?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (!taskStorageAvailable || draft.needsRefresh) return;
+      if (draft.command) { save(draft.command); return; }
+      const title = draft.title.trim();
+      if (!title) return;
+      save({ action: 'create', contactId, appointmentId: null, title, dueAt: null, idempotencyKey: noteIdempotencyKey('task-create') });
+    });
+    section?.querySelectorAll('[data-task-action]').forEach((button) => button.addEventListener('click', () => {
+      const row = (data.tasks || []).find((task) => task.authority === 'owned' && task.task_id === button.dataset.taskId);
+      if (!row || draft.command || !taskStorageAvailable || draft.needsRefresh) return;
+      save({ action: button.dataset.taskAction, contactId, appointmentId: row.appointment_id || null, taskId: row.task_id, expectedRevision: row.revision, idempotencyKey: noteIdempotencyKey('task-state') });
+    }));
   }
   function bindOwnedNotes(contactId) {
     if (!ownedNoteCommandsEnabled) return;
@@ -507,9 +617,12 @@ const CLIENT_DESK_HTML = `<!doctype html>
         ...data,
         appointments: (data.appointments || []).filter((appointment) => appointment.status === 'booked' || appointment.status === 'confirmed' || !appointment.starts_at || new Date(appointment.starts_at).getTime() < Date.now()),
       };
+      taskDraft(c.id).needsRefresh = false;
       record.innerHTML = profileMarkup(profileData);
       bindRecordNavigation();
       bindOwnedNotes(c.id);
+      persistTaskDrafts();
+      bindOwnedTasks(profileData);
       bindStaffHandoffs(conversation);
       bindMobileBack();
       const scrollNewestIntoView = () => {
@@ -580,5 +693,5 @@ const CLIENT_DESK_HTML = `<!doctype html>
 </script></body></html>`;
 
 export function clientDeskHtml() {
-  return CLIENT_DESK_HTML.replace("__OWNED_NOTE_COMMANDS_ENABLED__", JSON.stringify(ownedNoteReleaseReadiness().enabled));
+  return CLIENT_DESK_HTML.replace("__OWNED_NOTE_COMMANDS_ENABLED__", JSON.stringify(ownedNoteReleaseReadiness().enabled)).replace("__OWNED_TASK_COMMANDS_ENABLED__", JSON.stringify(ownedTaskReleaseReadiness().enabled));
 }

@@ -1,11 +1,11 @@
 // Provider-neutral revisioned Staff tasks.
 //
-// The production command route is pinned to source-level shadow. Tests may exercise the
-// separately reviewable active store, which writes only immutable D1 task versions. It has no
+// The production command route permits only create, complete and reopen.
+// The active store writes only immutable D1 task versions. It has no
 // GHL/provider adapter, customer message sender, payment, appointment mutation, or authority
 // promotion.
 
-export const OWNED_TASK_SOURCE_MODE = "shadow";
+export const OWNED_TASK_SOURCE_MODE = "active";
 export const OWNED_TASK_CONTRACT_VERSION = "owned-task-authority.v1";
 
 const REFERENCE = /^[A-Za-z0-9_-]{1,160}$/;
@@ -262,6 +262,13 @@ export async function captureOwnedTaskVersion(db, input, now = new Date().toISOS
       titleSha256, dueAt, state, archivedFromState, completedAt, digest, recordedAt,
     ).run();
   } catch (error) {
+    // A concurrent identical command may commit after our replay precheck.
+    // Reconcile the immutable key before reporting a trigger/revision conflict.
+    const replay = await versionByKey(db, command.actor, command.idempotencyKey);
+    if (replay) {
+      if (replay.command_sha256 !== digest) fail("idempotency key was already used for another task command", "idempotency_conflict");
+      return publicVersion(replay, true);
+    }
     throw mapStorageError(error);
   }
 
