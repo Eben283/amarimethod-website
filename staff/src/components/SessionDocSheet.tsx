@@ -17,13 +17,20 @@ interface Props {
   onClose: () => void;
 }
 
-export default function SessionDocSheet({ contactId, clientName, onClose }: Props) {
+export default function SessionDocSheet(props: Props) {
+  return <SessionDocWorkspace key={props.contactId} {...props} />;
+}
+
+function SessionDocWorkspace({ contactId, clientName, onClose }: Props) {
   const [progress, setProgress] = useState<ClientModuleData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle');
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const saveTimer = useRef<ReturnType<typeof setTimeout>>();
-  const savedTimer = useRef<ReturnType<typeof setTimeout>>();
+  const [saveError, setSaveError] = useState('');
+  const pendingProgress = useRef<ClientModuleData | null>(null);
+  const inFlight = useRef<Promise<boolean> | null>(null);
+  const closing = useRef(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,28 +54,61 @@ export default function SessionDocSheet({ contactId, clientName, onClose }: Prop
     return () => { cancelled = true; };
   }, [contactId]);
 
+  const flushSave = useCallback((): Promise<boolean> => {
+    clearTimeout(saveTimer.current);
+    if (inFlight.current) return inFlight.current;
+    if (!pendingProgress.current) return Promise.resolve(true);
+    setSaveStatus('saving');
+    setSaveError('');
+    // Serialize complete snapshots so a slower earlier write cannot erase a newer edit.
+    const task = Promise.resolve().then(async () => {
+      while (pendingProgress.current) {
+        const next = pendingProgress.current;
+        pendingProgress.current = null;
+        try {
+          await saveProgress(contactId, next);
+        } catch {
+          pendingProgress.current ??= next;
+          setSaveStatus('error');
+          setSaveError('Changes have not been saved. Please retry before closing.');
+          return false;
+        }
+      }
+      setSaveStatus('saved');
+      return true;
+    });
+    inFlight.current = task;
+    void task.then(() => { if (inFlight.current === task) inFlight.current = null; });
+    return task;
+  }, [contactId]);
+
   useEffect(() => () => {
     clearTimeout(saveTimer.current);
-    clearTimeout(savedTimer.current);
-  }, []);
+    // Navigation must dispatch accepted edits for this member, not discard the debounce.
+    void flushSave();
+  }, [flushSave]);
 
   const handleUpdate = useCallback((next: ClientModuleData) => {
     setProgress(next);
+    pendingProgress.current = next;
     setSaveStatus('saving');
+    setSaveError('');
     clearTimeout(saveTimer.current);
-    saveTimer.current = setTimeout(() => {
-      saveProgress(contactId, next)
-        .then(() => {
-          setSaveStatus('saved');
-          clearTimeout(savedTimer.current);
-          savedTimer.current = setTimeout(() => setSaveStatus('idle'), 2000);
-        })
-        .catch(() => setSaveStatus('idle'));
-    }, 800);
-  }, [contactId]);
+    saveTimer.current = setTimeout(() => { void flushSave(); }, 800);
+  }, [flushSave]);
+
+  async function requestClose() {
+    if (closing.current) return;
+    closing.current = true;
+    try {
+      if (await flushSave()) onClose();
+    } finally {
+      closing.current = false;
+    }
+  }
 
   const content = (
-    <div className="fixed inset-0 z-50 flex flex-col justify-end" onClick={onClose}>
+    <div className="fixed inset-0 z-50 flex flex-col justify-end" onClick={() => { void requestClose(); }}>
       <div className="absolute inset-0 bg-black/40" />
       <div
         className="relative bg-white rounded-t-2xl max-h-[85vh] flex flex-col"
@@ -87,8 +127,9 @@ export default function SessionDocSheet({ contactId, clientName, onClose }: Prop
             {saveStatus === 'saved' && (
               <span className="text-xs text-green-600">Saved</span>
             )}
+            {saveStatus === 'error' && <span className="text-xs text-red-700">Not saved</span>}
             <button
-              onClick={onClose}
+              onClick={() => { void requestClose(); }}
               className="p-2 rounded-lg hover:bg-amari-light-sand"
               aria-label="Close"
             >
@@ -97,6 +138,12 @@ export default function SessionDocSheet({ contactId, clientName, onClose }: Prop
           </div>
         </div>
 
+        {saveError && (
+          <div className="px-5 py-3 text-sm text-red-700" role="alert">
+            <p>{saveError}</p>
+            <button type="button" className="underline mt-2" onClick={() => { void flushSave(); }}>Retry saving</button>
+          </div>
+        )}
         {/* Scrollable content */}
         <div className="overflow-y-auto flex-1 px-5 py-4 space-y-6">
           {isLoading ? (
