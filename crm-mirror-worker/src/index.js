@@ -573,13 +573,11 @@ export default {
         }
         const allowedByAction = {
           create: new Set(["action", "contactId", "appointmentId", "idempotencyKey", "title", "dueAt"]),
-          revise: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey", "title", "dueAt"]),
           complete: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
           reopen: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
-          archive: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
-          restore: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
         };
-        const allowed = allowedByAction[payload.action] || new Set(["action"]);
+        if (typeof payload.action !== "string" || !Object.hasOwn(allowedByAction, payload.action)) return json(400, { error: "unsupported_task_action" });
+        const allowed = allowedByAction[payload.action];
         const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
         if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
         try {

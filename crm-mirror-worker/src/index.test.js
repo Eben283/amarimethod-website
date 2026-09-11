@@ -566,7 +566,7 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(notes.versions).toHaveLength(2);
   });
 
-  it("keeps owned task commands named-Staff-only, source-shadow, and unable to accept provider fields", async () => {
+  it("keeps owned task commands named-Staff-only and denies excluded actions and provider fields", async () => {
     const values = new Map();
     let storageTouches = 0;
     const env = {
@@ -623,12 +623,14 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(unsupported.status).toBe(400);
     await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerTaskId"] });
 
-    const shadow = await worker.fetch(request(namedCookie), env);
-    expect(shadow.status).toBe(503);
-    await expect(shadow.json()).resolves.toEqual({
-      error: "owned_task_shadow_only",
-      detail: "owned task commands remain source-level shadow",
-    });
+    for (const action of ["revise", "archive", "restore", "unknown", "toString", "__proto__", ["create"], null]) {
+      const denied = await worker.fetch(request(namedCookie, { action }), env);
+      expect(denied.status).toBe(400);
+      await expect(denied.json()).resolves.toEqual({ error: "unsupported_task_action" });
+    }
+    const crossOrigin = request(namedCookie);
+    crossOrigin.headers.set("Origin", "https://evil.test");
+    expect((await worker.fetch(crossOrigin, env)).status).toBe(403);
     expect(storageTouches).toBe(0);
   });
 

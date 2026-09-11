@@ -83,12 +83,12 @@ function transition(action, taskId, expectedRevision, idempotencyKey, overrides 
 }
 
 describe("owned task authority", () => {
-  it("is source-pinned shadow and exposes no provider or destructive fallback", async () => {
-    expect(OWNED_TASK_SOURCE_MODE).toBe("shadow");
+  it("is source-pinned active and exposes no provider or destructive fallback", async () => {
+    expect(OWNED_TASK_SOURCE_MODE).toBe("active");
     expect(ownedTaskReleaseReadiness()).toEqual({
       version: "owned-task-authority.v1",
-      sourceMode: "shadow",
-      enabled: false,
+      sourceMode: "active",
+      enabled: true,
       providerFallback: null,
       providerWrite: false,
       messageWrite: false,
@@ -99,7 +99,7 @@ describe("owned task authority", () => {
     });
     await expect(captureOwnedTaskVersion({
       prepare: () => { throw new Error("shadow must not touch storage"); },
-    }, create())).rejects.toMatchObject({ code: "owned_task_shadow_only", status: 503 });
+    }, create(), undefined, { sourceMode: "shadow" })).rejects.toMatchObject({ code: "owned_task_shadow_only", status: 503 });
   });
 
   it("creates, revises, completes, archives, restores, reopens, and exactly replays immutable versions", async () => {
@@ -210,6 +210,55 @@ describe("owned task authority", () => {
     expect(() => sqlite.exec("UPDATE owned_task_versions SET title_clean = 'changed'"))
       .toThrow(/append-only/i);
     expect(() => sqlite.exec("DELETE FROM owned_task_versions")).toThrow(/append-only/i);
+    sqlite.close();
+  });
+
+  it("reconciles overlapping identical creates and transitions without duplicate versions", async () => {
+    const sqlite = database();
+    insertContact(sqlite);
+    insertAppointment(sqlite);
+    const db = d1(sqlite);
+    const created = await Promise.all([captureOwnedTaskVersion(db, create()), captureOwnedTaskVersion(db, create())]);
+    expect(created[0].taskId).toBe(created[1].taskId);
+    expect(created.filter((row) => row.deduped)).toHaveLength(1);
+    const command = transition("complete", created[0].taskId, 1, "concurrent-complete-0001");
+    const completed = await Promise.all([captureOwnedTaskVersion(db, command), captureOwnedTaskVersion(db, command)]);
+    expect(completed.every((row) => row.revision === 2)).toBe(true);
+    expect(completed.filter((row) => row.deduped)).toHaveLength(1);
+    expect(sqlite.prepare("SELECT COUNT(*) AS n FROM owned_task_versions").get().n).toBe(2);
+    sqlite.close();
+  });
+
+  it("accepts only the three reviewed HTTP commands with authenticated actor and exact replay", async () => {
+    const sqlite = database();
+    insertContact(sqlite);
+    const values = new Map();
+    const env = { CRM_DB: d1(sqlite), WORKER_AUTH_SECRET: "test-secret", PORTAL_KV: {
+      get: async (key) => values.get(key) || null,
+      put: async (key, value) => values.set(key, value),
+      delete: async (key) => values.delete(key),
+    } };
+    const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", {
+      method: "POST", headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Eben" },
+    }), env);
+    const handoff = await worker.fetch(new Request((await access.json()).url), env);
+    const cookie = handoff.headers.get("Set-Cookie");
+    const send = (body) => worker.fetch(new Request("https://crm.test/tasks/commands", {
+      method: "POST", headers: { Cookie: cookie, Origin: "https://crm.test", "Content-Type": "application/json" }, body: JSON.stringify(body),
+    }), env);
+    const command = { action: "create", contactId: "contact-1", title: "Review assessment", dueAt: null, idempotencyKey: "route-create-00001" };
+    const response = await send(command);
+    expect(response.status).toBe(201);
+    const task = (await response.json()).task;
+    expect(task).toMatchObject({ actor: "Eben", contactId: "contact-1", revision: 1, dueAt: null });
+    expect((await send(command)).status).toBe(200);
+    for (const [action, revision] of [["complete", 1], ["reopen", 2]]) {
+      const changed = await send({ action, contactId: "contact-1", taskId: task.taskId, expectedRevision: revision, idempotencyKey: "route-" + action + "-00001" });
+      expect(changed.status).toBe(201);
+      expect((await changed.json()).task.revision).toBe(revision + 1);
+    }
+    for (const action of ["revise", "archive", "restore"]) expect((await send({ ...command, action })).status).toBe(400);
+    expect(sqlite.prepare("SELECT COUNT(*) AS n FROM owned_task_versions").get().n).toBe(3);
     sqlite.close();
   });
 
