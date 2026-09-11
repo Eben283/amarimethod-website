@@ -82,3 +82,15 @@ it('accepts a verified empty attendance list', async () => {
   failure = 'appointments-empty';
   expect((await (await onRequestGet(context())).json()).status).toBe('square');
 });
+it('does not claim debt when the authoritative Stripe-customer mapping cannot be read', async () => {
+  const ctx = context();
+  const originalGet = ctx.env.PURCHASE_KV.get;
+  ctx.env.PURCHASE_KV.get = async (key, ...args) => {
+    if (key === 'stripe-cust:fixture') throw new Error('Synthetic mapping read failure');
+    return originalGet(key, ...args);
+  };
+  const body = await (await onRequestGet(ctx)).json();
+  expect(body.status).toBe('unavailable');
+  expect(body.shortBy).toBeUndefined();
+  expect(fetch).not.toHaveBeenCalled();
+});
