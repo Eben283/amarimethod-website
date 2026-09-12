@@ -11,37 +11,45 @@ import PayLinkSheet from '../components/PayLinkSheet';
 import MoneyMoments from '../components/MoneyMoments';
 import CalendarRegistry from '../components/CalendarRegistry';
 import ManageAppointmentSheet, { type ManageableAppointment } from '../components/ManageAppointmentSheet';
+import {
+  addCalendarDays,
+  addCalendarMonths,
+  calendarDateDay,
+  calendarDateKey,
+  calendarDateLabel,
+  calendarDateMonth,
+  calendarMonthDates,
+  calendarWeekDates,
+  isCalendarDatePast,
+  isPacificToday,
+  pacificMinutesOfDay,
+  pacificToday,
+} from '../lib/pacific-calendar-date';
 
 type ViewMode = 'day' | 'week' | 'month';
 
 function toDateStr(d: Date): string {
-  return d.toLocaleDateString('en-CA', { timeZone: 'America/Los_Angeles' });
+  return calendarDateKey(d);
 }
 
 function addDays(d: Date, n: number): Date {
-  const r = new Date(d);
-  r.setDate(r.getDate() + n);
-  return r;
+  return addCalendarDays(d, n);
 }
 
 function getWeekDates(d: Date): Date[] {
-  const day = d.getDay(); // 0=Sun
-  const mon = addDays(d, -((day + 6) % 7)); // Monday
-  return Array.from({ length: 7 }, (_, i) => addDays(mon, i));
+  return calendarWeekDates(d);
 }
 
 function getMonthDates(d: Date): Date[] {
-  const first = new Date(d.getFullYear(), d.getMonth(), 1);
-  const start = addDays(first, -((first.getDay() + 6) % 7));
-  return Array.from({ length: 42 }, (_, i) => addDays(start, i));
+  return calendarMonthDates(d);
 }
 
 function addMonths(d: Date, n: number): Date {
-  return new Date(d.getFullYear(), d.getMonth() + n, 1);
+  return addCalendarMonths(d, n);
 }
 
 function isToday(d: Date): boolean {
-  return toDateStr(d) === toDateStr(new Date());
+  return isPacificToday(d);
 }
 
 const SHORT_DAY = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -50,7 +58,7 @@ export default function TodayPage() {
   const { logout } = useAuth();
   const navigate = useNavigate();
 
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [selectedDate, setSelectedDate] = useState(pacificToday);
   const [section, setSection] = useState<'schedule' | 'services'>('schedule');
   const [view, setView] = useState<ViewMode>('week');
   const [dayAppointments, setDayAppointments] = useState<TodayAppointment[]>([]);
@@ -156,21 +164,21 @@ export default function TodayPage() {
   }
 
   function goToToday() {
-    setSelectedDate(new Date());
+    setSelectedDate(pacificToday());
   }
 
   const dateLabel = view === 'day'
-    ? selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+    ? calendarDateLabel(selectedDate, { weekday: 'long', month: 'long', day: 'numeric' })
     : view === 'month'
-      ? selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })
+      ? calendarDateLabel(selectedDate, { month: 'long', year: 'numeric' })
       : (() => {
         const week = getWeekDates(selectedDate);
         const first = week[0];
         const last = week[6];
-        if (first.getMonth() === last.getMonth()) {
-          return `${first.toLocaleDateString('en-US', { month: 'long' })} ${first.getDate()}–${last.getDate()}`;
+        if (calendarDateMonth(first) === calendarDateMonth(last)) {
+          return `${calendarDateLabel(first, { month: 'long' })} ${calendarDateDay(first)}–${calendarDateDay(last)}`;
         }
-        return `${first.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} – ${last.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
+        return `${calendarDateLabel(first, { month: 'short', day: 'numeric' })} – ${calendarDateLabel(last, { month: 'short', day: 'numeric' })}`;
       })();
 
   const visibleSchedule = view === 'day'
@@ -425,10 +433,10 @@ function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLin
 
   // Build timeline — show the day's shape
   const sorted = [...appointments].sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime());
-  const firstStart = new Date(sorted[0].startTime);
-  const lastEnd = new Date(sorted[sorted.length - 1].endTime);
-  const dayStartHour = Math.max(7, firstStart.getHours() - 1);
-  const dayEndHour = Math.min(21, lastEnd.getHours() + 2);
+  const firstStartMinutes = pacificMinutesOfDay(new Date(sorted[0].startTime));
+  const lastEndMinutes = pacificMinutesOfDay(new Date(sorted[sorted.length - 1].endTime));
+  const dayStartHour = Math.max(7, Math.floor(firstStartMinutes / 60) - 1);
+  const dayEndHour = Math.min(21, Math.floor(lastEndMinutes / 60) + 2);
 
   const hours = [];
   for (let h = dayStartHour; h <= dayEndHour; h++) {
@@ -438,8 +446,7 @@ function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLin
   const totalMinutes = (dayEndHour - dayStartHour) * 60;
 
   function getTop(timeStr: string): number {
-    const t = new Date(timeStr);
-    const mins = (t.getHours() - dayStartHour) * 60 + t.getMinutes();
+    const mins = pacificMinutesOfDay(new Date(timeStr)) - dayStartHour * 60;
     return (mins / totalMinutes) * 100;
   }
 
@@ -474,7 +481,7 @@ function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLin
             return appointments.map((appt) => {
               const top = getTop(appt.startTime);
               const height = getHeight(appt.startTime, appt.endTime);
-              const startTime = new Date(appt.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+              const startTime = new Date(appt.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' });
               const layout = layouts.get(appt.id) || { col: 0, totalCols: 1 };
               const gapPx = layout.totalCols > 1 ? 2 : 0;
               // Available horizontal space is calc(100% - 64px): 56px left
@@ -500,11 +507,12 @@ function DayView({ appointments, date, onTapAppointment, onDocSession, onSellLin
           })()}
 
           {/* Now line */}
-          {isToday(new Date(appointments[0].startTime)) && (() => {
+          {isToday(date) && (() => {
             const now = new Date();
-            const nowHour = now.getHours();
+            const nowMinutes = pacificMinutesOfDay(now);
+            const nowHour = Math.floor(nowMinutes / 60);
             if (nowHour >= dayStartHour && nowHour <= dayEndHour) {
-              const nowMins = (nowHour - dayStartHour) * 60 + now.getMinutes();
+              const nowMins = nowMinutes - dayStartHour * 60;
               const nowTop = (nowMins / totalMinutes) * 100;
               return (
                 <div className="absolute left-12 right-0 flex items-center z-10" style={{ top: `${nowTop}%` }}>
@@ -552,7 +560,7 @@ function WeekView({ weekData, selectedDate, onSelectDay }: {
         const key = toDateStr(d);
         const appts = weekData[key] || [];
         const today = isToday(d);
-        const isPast = d < new Date() && !today;
+        const isPast = isCalendarDatePast(d) && !today;
 
         return (
           <button
@@ -568,13 +576,13 @@ function WeekView({ weekData, selectedDate, onSelectDay }: {
           >
             <span className="text-[10px] text-amari-text-muted">{SHORT_DAY[i]}</span>
             <span className={`text-sm font-medium ${today ? 'text-amari-accent-warm' : 'text-amari-charcoal'}`}>
-              {d.getDate()}
+              {calendarDateDay(d)}
             </span>
 
             {/* Appointment dots/blocks */}
             <div className="flex-1 flex flex-col gap-0.5 mt-1">
               {appts.slice(0, 4).map((appt) => {
-                const time = new Date(appt.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+                const time = new Date(appt.startTime).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles' });
                 return (
                   <div
                     key={appt.id}
@@ -607,7 +615,7 @@ function MonthView({ monthData, selectedDate, onSelectDay }: {
   onSelectDay: (d: Date) => void;
 }) {
   const monthDates = getMonthDates(selectedDate);
-  const selectedMonth = selectedDate.getMonth();
+  const selectedMonth = calendarDateMonth(selectedDate);
 
   return (
     <div className="overflow-hidden rounded-xl border border-amari-light-sand bg-amari-light-sand">
@@ -618,12 +626,12 @@ function MonthView({ monthData, selectedDate, onSelectDay }: {
           </div>
         ))}
       </div>
-      <div className="grid grid-cols-7 gap-px" role="grid" aria-label={selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}>
+      <div className="grid grid-cols-7 gap-px" role="grid" aria-label={calendarDateLabel(selectedDate, { month: 'long', year: 'numeric' })}>
         {monthDates.map((day) => {
           const key = toDateStr(day);
           const appts = monthData[key] || [];
           const today = isToday(day);
-          const inMonth = day.getMonth() === selectedMonth;
+          const inMonth = calendarDateMonth(day) === selectedMonth;
 
           return (
             <button
@@ -631,7 +639,7 @@ function MonthView({ monthData, selectedDate, onSelectDay }: {
               type="button"
               role="gridcell"
               onClick={() => onSelectDay(day)}
-              aria-label={`${day.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}, ${appts.length} appointment${appts.length === 1 ? '' : 's'}`}
+              aria-label={`${calendarDateLabel(day, { weekday: 'long', month: 'long', day: 'numeric' })}, ${appts.length} appointment${appts.length === 1 ? '' : 's'}`}
               className={`group min-h-[74px] bg-white p-1 text-left align-top transition-colors focus-visible:z-10 focus-visible:outline focus-visible:outline-2 focus-visible:outline-amari-accent-warm sm:min-h-[118px] sm:p-2 ${
                 inMonth ? 'hover:bg-amari-light-sand/40' : 'bg-white/60 text-amari-text-muted opacity-55 hover:opacity-80'
               }`}
@@ -639,7 +647,7 @@ function MonthView({ monthData, selectedDate, onSelectDay }: {
               <span className={`inline-flex h-6 min-w-6 items-center justify-center rounded-full px-1 text-xs font-semibold sm:text-sm ${
                 today ? 'bg-amari-accent-warm text-white' : inMonth ? 'text-amari-charcoal' : 'text-amari-text-muted'
               }`}>
-                {day.getDate()}
+                {calendarDateDay(day)}
               </span>
 
               <div className="mt-1 flex flex-wrap gap-0.5 sm:hidden" aria-hidden="true">
