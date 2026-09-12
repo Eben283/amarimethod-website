@@ -1,4 +1,5 @@
 import type { ContactDetail, ChecklistTemplate, ChecklistItem, QuizResults } from '../types/staff';
+import { isSystemNote, plainTextNoteBody } from '../../../shared/staff-note-policy.js';
 
 interface SessionContext {
   firstName: string;
@@ -50,7 +51,11 @@ export function generateChecklist(client: ContactDetail): ChecklistTemplate | nu
     daysUntilNext,
     firstSession,
     quiz: client.quizResults,
-    lastNote: client.notes[0] || null,
+    lastNote: (() => {
+      const note = client.notes.find((candidate) => !isSystemNote(candidate.body));
+      const body = note ? plainTextNoteBody(note.body) : '';
+      return body ? { body } : null;
+    })(),
     totalDaysSpan,
     seriesType: client.seriesType,
     sessionsRemaining: client.sessionsRemaining,
