@@ -1,3 +1,4 @@
+import { ownedContactClassificationReleaseReadiness } from "./owned-contact-classifications.js";
 import { ownedTaskReleaseReadiness } from "./owned-tasks.js";
 import { ownedNoteReleaseReadiness } from "./owned-notes.js";
 
@@ -29,6 +30,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
   .payment-head-actions { position: relative; } .payment-actions-toggle { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid #9db4af; border-radius: 7px; padding: 6px 8px; background: #fff; color: #31564f; cursor: pointer; font-size: 10px; font-weight: 800; } .payment-actions-toggle:hover, .payment-actions-toggle[aria-expanded="true"] { border-color: #5f887f; background: #edf6f3; } .payment-actions-toggle:focus-visible, .payment-action:focus-visible { outline: 2px solid #2d78f5; outline-offset: 2px; } .payment-actions-menu { position: absolute; z-index: 5; top: calc(100% + 5px); right: 0; width: 174px; overflow: hidden; border: 1px solid #b8cbc7; border-radius: 9px; background: #fff; box-shadow: 0 12px 30px rgba(34, 66, 73, .18); } .payment-action { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 10px 11px; border: 0; border-bottom: 1px solid #e5ecea; background: #fff; color: #31564f; cursor: pointer; font-size: 11px; font-weight: 800; text-align: left; text-decoration: none; } .payment-action:last-child { border-bottom: 0; } .payment-action:hover { background: #f0f7f5; } .payment-action span { color: #80918f; font-size: 9px; font-weight: 700; } .payment-summary { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 10px 11px; border: 1px solid #e1d5af; border-radius: 9px; background: #fbf8ec; color: #6b644d; font-size: 10px; } .payment-summary strong { color: #443f31; font-size: 17px; } .payment-ledger { overflow: hidden; border: 1px solid #d7e2df; border-radius: 9px; background: #fff; } .payment-row { display: grid; grid-template-columns: minmax(72px, 1fr) minmax(72px, .8fr) minmax(72px, .9fr); gap: 7px; align-items: center; padding: 9px 10px; border-bottom: 1px solid #e8efed; color: #506870; font-size: 10px; } .payment-row:last-child { border-bottom: 0; } .payment-row.heading { background: #f4f7f6; color: #77898d; font-size: 9px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; } .payment-amount { color: #2f4f58; font-weight: 800; } .payment-state { justify-self: start; padding: 3px 5px; border: 1px solid #9bc9b6; border-radius: 5px; background: #eff9f4; color: #2f7459; font-weight: 800; } .payment-state.refunded { border-color: #d7baa9; background: #fbf2ed; color: #9b5c41; } .payment-state.review { border-color: #d8bd73; background: #fff8df; color: #755d20; }
   .workflow-ledger { display: grid; gap: 7px; } .workflow-row { position: relative; display: block; padding: 10px 30px 10px 11px; border: 1.5px solid #aac3bd; border-radius: 9px; background: #fff; color: #31564f; text-decoration: none; } .workflow-row:hover { border-color: #5f887f; background: #f0f7f5; } .workflow-row:focus-visible { outline: 2px solid #2d78f5; outline-offset: 2px; } .workflow-row strong { display: block; color: #294f48; font-size: 12px; } .workflow-row span { display: block; margin-top: 4px; color: #687e84; font-size: 10px; line-height: 1.42; } .workflow-row em { position: absolute; top: 10px; right: 10px; color: #3c6a62; font-size: 13px; font-style: normal; font-weight: 800; } .workflow-run-list { display: grid; gap: 6px; margin-top: 12px; } .workflow-run { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px; padding: 7px 0; border-top: 1px solid #e4ece9; color: #687e84; font-size: 10px; line-height: 1.42; } .workflow-run a { color: #31564f; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; } .workflow-evidence-note { margin: 9px 0 0; color: #7b8d91; font-size: 10px; line-height: 1.45; }
   .show-all { width: 100%; margin-top: 2px; padding: 7px; border: 1px solid #d6e3e0; border-radius: 8px; background: #fff; color: #52717a; cursor: pointer; font-size: 11px; font-weight: 800; } .show-all:hover { background: #f2f7f5; } .composer { display: grid; flex: 0 0 auto; gap: 8px; margin: 0; padding: 13px 16px 15px; border: 0; border-top: 1px solid #d8e6e2; background: #f7fbfa; box-shadow: 0 -8px 20px rgba(28, 61, 70, .04); } .composer label { display: grid; gap: 4px; color: #637980; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; } .composer input, .composer textarea, .composer select { width: 100%; border: 1px solid #d5e2df; border-radius: 7px; padding: 8px; background: #fff; color: #294650; font: inherit; font-size: 13px; } .composer textarea { min-height: 74px; max-height: 160px; resize: vertical; } .composer-actions { display:flex; align-items:center; gap:10px; justify-content:space-between; } .composer button { border:0; border-radius:8px; padding:9px 13px; background:#2d78f5; color:#fff; cursor:pointer; font-size:12px; font-weight:800; } .composer button:disabled { cursor:wait; opacity:.65; } .composer-status { color:#687e84; font-size:11px; }
+  #owned-classifications input, #owned-classifications select { width:100%; min-width:0; border:1px solid #aebfbb; border-radius:7px; padding:9px; background:#fffefa; color:#243f49; font-size:12px; }
   .note-composer { display:grid; gap:8px; margin:0 0 12px; padding:11px; border:1px solid #c5d7d2; border-radius:9px; background:#fff; } .note-composer label { color:#526b72; font-size:11px; font-weight:800; } .note-composer textarea { width:100%; min-height:82px; max-height:220px; resize:vertical; border:1px solid #aebfbb; border-radius:7px; padding:9px; background:#fffefa; color:#243f49; font:inherit; font-size:12px; line-height:1.5; } .note-composer-actions { display:flex; align-items:center; justify-content:space-between; gap:9px; } .note-submit,.note-edit { border:1px solid #7da29a; border-radius:7px; padding:7px 10px; background:#e8f3f0; color:#24574f; cursor:pointer; font-size:11px; font-weight:800; } .note-submit { border-color:#0d6268; background:#0d6268; color:#fff; } .note-submit:disabled,.note-edit:disabled { cursor:wait; opacity:.6; } .note-status { min-height:1.4em; color:#657b82; font-size:10px; line-height:1.4; } .note-status.error { color:#91382f; } .note-origin { display:block; margin-top:5px; color:#7f8e91; font-size:9px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; } .note-edit { margin-top:8px; } .note-revision { margin-top:8px; } .note-revision[hidden] { display:none; }
   @media (max-width: 1080px) { .workspace { height: auto; max-height: none; overflow: visible; grid-template-columns: minmax(245px, .72fr) minmax(380px, 1.28fr); } .inbox, .conversation { height: min(66vh, 640px); } .record { max-height: min(70vh, 720px); grid-column: 1 / -1; border-top: 1px solid #e4eceb; } .record-scroll { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; max-height: none; } }
   @media (max-width: 720px) { main { width: min(100% - 20px, 580px); padding-top: 20px; } .page-head { display: block; } .page-note { margin-top: 10px; text-align: left; } .count { display: none; } .workspace { height: auto; grid-template-columns: 1fr; border-radius: 14px; } .inbox, .conversation { border-right: 0; border-bottom: 1px solid #e4eceb; } .conversation { min-height: 560px; } .record-scroll { display: block; } .timeline { padding: 15px; } .conversation-empty { min-height: 210px; } .payment-row { grid-template-columns: minmax(70px, 1fr) minmax(70px, .85fr) minmax(68px, .9fr); } }
@@ -111,6 +113,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
 <section class="workspace" id="workspace" aria-label="Complete communication workspace"><aside class="pane inbox"><header class="pane-head"><h2 class="pane-title">All contacts</h2><span class="unread" id="unread" aria-live="polite">—</span></header><ul class="thread-list" id="thread-list"></ul></aside><section class="pane conversation" id="conversation" aria-live="polite"><div class="conversation-empty"><div><strong>Select a contact</strong>Read the complete mirrored chronology without leaving the record.</div></div></section><aside class="pane record" id="record" aria-live="polite"><div class="conversation-empty"><div><strong>Contact record</strong>Contact details, appointments, notes, tasks, and payments appear here.</div></div></aside></section>
 </main><script>
 (() => {
+  const ownedClassificationCommandsEnabled = __OWNED_CLASSIFICATION_COMMANDS_ENABLED__;
   const ownedTaskCommandsEnabled = __OWNED_TASK_COMMANDS_ENABLED__;
   const ownedNoteCommandsEnabled = __OWNED_NOTE_COMMANDS_ENABLED__;
   const workspace = document.getElementById('workspace'), list = document.getElementById('thread-list'), conversation = document.getElementById('conversation'), record = document.getElementById('record'), query = document.getElementById('query'), count = document.getElementById('count'), unread = document.getElementById('unread'), mirrorHealth = document.getElementById('mirror-health');
@@ -261,7 +264,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     return '<div class="record-head"><h2 class="record-name">' + esc(c.display_name || 'Unnamed client') + '</h2><p class="record-subtitle">Current client record · read-only mirror</p></div>' +
       '<section class="record-status"><h3>Open record</h3>' + statusCards + '</section>' +
       '<div class="record-scroll"><section class="record-section"><h3>Contact</h3><div class="identity-grid">' + identities + '</div><p class="source-note">DND is shown as on or off. This mirror does not send messages.</p></section>' +
-      '<section class="record-section"><h3>Tags</h3><div class="tag-list">' + ((data.tags || []).map((tag) => '<span class="tag">' + esc(tag) + '</span>').join('') || '<span class="empty-small">No tags mirrored.</span>') + '</div></section>' +
+      '<section class="record-section" id="owned-classifications">' + classificationMarkup(data) + '</section>' +
       '<section class="record-section"><h3>Payment &amp; access</h3><div class="identity-grid ' + accessStatus + '">' + accessSummary + '</div><p class="source-note">' + esc(paymentAccess.detail || 'Stripe payment evidence and GHL access are mirrored separately. This view never changes either system.') + '</p></section>' +
       (state ? '<section class="record-section"><h3>Current plan</h3><div class="identity-grid">' + state + '</div></section>' : '') +
       '<section class="record-section" id="record-workflows" tabindex="-1"><div class="record-section-heading"><h3>Workflows</h3><span class="record-section-count">' + (automationEvidence.enrollments || []).length + ' enrollment' + ((automationEvidence.enrollments || []).length === 1 ? '' : 's') + '</span></div>' + workflowWorkspaceMarkup(automationEvidence, c.id) + '</section>' +
@@ -428,6 +431,119 @@ const CLIENT_DESK_HTML = `<!doctype html>
       const row = (data.tasks || []).find((task) => task.authority === 'owned' && task.task_id === button.dataset.taskId);
       if (!row || draft.command || !taskStorageAvailable || draft.needsRefresh) return;
       save({ action: button.dataset.taskAction, contactId, appointmentId: row.appointment_id || null, taskId: row.task_id, expectedRevision: row.revision, idempotencyKey: noteIdempotencyKey('task-state') });
+    }));
+  }
+  const classificationStorageKey = 'amari-client-classification-drafts.v1.' + taskActor;
+  let classificationDrafts = Object.create(null), classificationStorageAvailable = false;
+  try {
+    if (!taskActor) throw new Error('Named session required');
+    const saved = JSON.parse(window.sessionStorage.getItem(classificationStorageKey) || '{}');
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) classificationDrafts = Object.assign(Object.create(null), saved);
+    window.sessionStorage.setItem(classificationStorageKey, JSON.stringify(classificationDrafts));
+    classificationStorageAvailable = true;
+  } catch {}
+  const classificationRunning = new Set(), classificationProfiles = new Map();
+  function classificationDraft(contactId) {
+    if (!Object.hasOwn(classificationDrafts, contactId)) classificationDrafts[contactId] = { tag: '', role: 'lead', command: null, message: '' };
+    return classificationDrafts[contactId];
+  }
+  function persistClassificationDrafts() {
+    if (!taskActor) return false;
+    try { window.sessionStorage.setItem(classificationStorageKey, JSON.stringify(classificationDrafts)); classificationStorageAvailable = true; return true; }
+    catch { classificationStorageAvailable = false; return false; }
+  }
+  function normalizedClassificationTag(value) { return String(value || '').trim().toLowerCase().replace(/\\s+/g, '-'); }
+  function validClassificationTag(value) { return /^[a-z0-9][a-z0-9:_-]{0,79}$/.test(value); }
+  const roleLabels = { lead: 'Lead', client: 'Client', affiliate_partner: 'Affiliate partner', referral_source: 'Referral source' };
+  function classificationMarkup(data) {
+    const contactId = data.contact?.id, draft = classificationDraft(contactId);
+    const authority = data.ownedClassificationAuthority || { state: 'unavailable' };
+    const ready = authority.state === 'ready' && !data.contact?.archived_at;
+    const busy = classificationRunning.has(contactId);
+    const enabled = ownedClassificationCommandsEnabled && ready && classificationStorageAvailable && !busy && !draft.command;
+    const rows = (kind) => {
+      const entries = (ready || authority[kind]?.length) ? (authority[kind] || []) : (data[kind] || []).map((value) => ({ value, source: 'unavailable' }));
+      return entries.map((entry) => {
+        const owned = entry.source === 'owned:staff';
+        const duplicate = owned && entries.some((other) => other.value === entry.value && other.source !== 'owned:staff');
+        const sourceLabel = owned ? 'Amari CRM' : entry.source === 'ghl' ? 'GHL history · read-only' : entry.source === 'owned:quiz' ? 'Quiz record · read-only' : 'Source: ' + entry.source + ' · read-only';
+        const action = kind === 'tags' ? 'remove_tag' : 'revoke_role';
+        return '<div class="compact-card"><b>' + esc(kind === 'roles' ? roleLabels[entry.value] || entry.value : entry.value) + '</b><span>' + esc(sourceLabel) + '</span>' + (duplicate ? '<p class="source-note">Removing the Amari label leaves the imported label visible.</p>' : '') + (owned && enabled ? '<button class="note-edit" type="button" data-classification-action="' + action + '" data-classification-value="' + esc(entry.value) + '">' + (kind === 'tags' ? 'Remove Amari tag' : 'Revoke Amari role') + '</button>' : '') + '</div>';
+      }).join('') || '<p class="empty-small">No ' + kind + ' recorded.</p>';
+    };
+    const status = !ready ? 'Amari roles and tags are unavailable. Existing labels remain read-only.' : !classificationStorageAvailable ? 'Saving needs a named Staff session and session storage. Reopen Inbox after allowing session storage.' : draft.message || (draft.command ? 'An earlier change needs confirmation. Retry it safely.' : 'Changes stay in Amari CRM. They do not update GHL or start a workflow.');
+    const forms = ownedClassificationCommandsEnabled && ready ? '<form class="note-composer" id="classification-tag-form"><label for="classification-tag">Add an Amari tag</label><input id="classification-tag" maxlength="80" value="' + esc(draft.tag) + '"' + (enabled ? '' : ' disabled') + ' required><span class="source-note">Letters, numbers, hyphens, underscores or colons. Tags use lowercase; spaces become hyphens.</span><span id="classification-tag-preview" class="source-note" role="status">' + esc(draft.tag ? 'Will save as: ' + normalizedClassificationTag(draft.tag) : '') + '</span><button class="note-submit" type="submit"' + (enabled ? '' : ' disabled') + '>Add tag</button></form><form class="note-composer" id="classification-role-form"><label for="classification-role">Grant an Amari role</label><select id="classification-role"' + (enabled ? '' : ' disabled') + '>' + Object.entries(roleLabels).map(([value, label]) => '<option value="' + value + '"' + (draft.role === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select><button class="note-submit" type="submit"' + (enabled ? '' : ' disabled') + '>Grant role</button></form>' : '';
+    return '<h3>Roles and tags</h3><p class="note-status" role="status">' + esc(status) + '</p>' + (ready && draft.command ? '<button type="button" class="note-submit" id="classification-retry"' + (busy || !classificationStorageAvailable ? ' disabled' : '') + '>' + (busy ? 'Saving…' : 'Retry change') + '</button>' : '') + forms + '<h4>Tags</h4><div class="compact-list">' + rows('tags') + '</div><h4>Roles</h4><div class="compact-list">' + rows('roles') + '</div>';
+  }
+  function renderClassifications(data) {
+    if (selected !== data.contact?.id) return;
+    const section = record.querySelector('#owned-classifications');
+    if (!section) return;
+    section.innerHTML = classificationMarkup(data);
+    bindClassifications(data);
+  }
+  function bindClassifications(data) {
+    const contactId = data.contact?.id, draft = classificationDraft(contactId);
+    classificationProfiles.set(contactId, data);
+    const section = record.querySelector('#owned-classifications');
+    for (const [id, field, eventName] of [['classification-tag', 'tag', 'input'], ['classification-role', 'role', 'change']]) {
+      section?.querySelector('#' + id)?.addEventListener(eventName, (event) => {
+        draft[field] = event.target.value;
+        if (field === 'tag') {
+          const value = normalizedClassificationTag(draft.tag);
+          event.target.setCustomValidity(value && !validClassificationTag(value) ? 'Use letters, numbers, hyphens, underscores or colons; start with a letter or number.' : '');
+          const preview = section.querySelector('#classification-tag-preview');
+          if (preview) preview.textContent = value ? 'Will save as: ' + value : '';
+        }
+        if (!persistClassificationDrafts()) renderClassifications(data);
+      });
+    }
+    const save = async (command) => {
+      if (classificationRunning.has(contactId) || !classificationStorageAvailable || data.ownedClassificationAuthority?.state !== 'ready') return;
+      draft.command = command;
+      draft.message = 'Saving…';
+      if (!persistClassificationDrafts()) { renderClassifications(data); return; }
+      classificationRunning.add(contactId);
+      renderClassifications(data);
+      let latest = null;
+      try {
+        const response = await dashboardFetch('/contacts/classification-commands', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(command) });
+        const result = await response.json();
+        if (!response.ok) {
+          // Validation failures are definitive; keep the editable draft, not an invalid retry.
+          if (response.status === 400) draft.command = null;
+          throw new Error(result.detail || result.error || 'Change could not be confirmed.');
+        }
+        const confirmed = result.classification;
+        if (!confirmed || confirmed.contactId !== contactId || confirmed.action !== command.action) throw new Error('Change identity could not be confirmed. Retry safely.');
+        draft.command = null;
+        if (command.action === 'add_tag') draft.tag = '';
+        draft.message = 'Saved to Amari CRM. Imported labels remain unchanged.';
+        persistClassificationDrafts();
+        const refreshed = await dashboardFetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '?limit=1000');
+        if (!refreshed.ok) throw new Error('Saved, but labels could not refresh. Reopen the record.');
+        const profile = await refreshed.json();
+        if (profile.contact?.id !== contactId) throw new Error('Saved, but the selected record could not be verified.');
+        latest = profile;
+      } catch (error) {
+        draft.message = String(error.message || 'Change could not be confirmed. Retry safely.');
+        persistClassificationDrafts();
+      } finally {
+        classificationRunning.delete(contactId);
+        if (selected === contactId) renderClassifications(latest || classificationProfiles.get(contactId) || data);
+      }
+    };
+    const submit = (action, value) => {
+      if (draft.command) return;
+      save({ action, value, contactId, idempotencyKey: noteIdempotencyKey('classification') });
+    };
+    section?.querySelector('#classification-tag-form')?.addEventListener('submit', (event) => { event.preventDefault(); const value = normalizedClassificationTag(draft.tag); if (validClassificationTag(value)) submit('add_tag', value); });
+    section?.querySelector('#classification-role-form')?.addEventListener('submit', (event) => { event.preventDefault(); submit('grant_role', draft.role); });
+    section?.querySelector('#classification-retry')?.addEventListener('click', () => { if (draft.command) save(draft.command); });
+    section?.querySelectorAll('[data-classification-action]').forEach((button) => button.addEventListener('click', () => {
+      const action = button.dataset.classificationAction, value = button.dataset.classificationValue;
+      const kind = action === 'remove_tag' ? 'tags' : 'roles';
+      if (data.ownedClassificationAuthority?.[kind]?.some((entry) => entry.source === 'owned:staff' && entry.value === value)) submit(action, value);
     }));
   }
   function bindOwnedNotes(contactId) {
@@ -623,6 +739,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       bindOwnedNotes(c.id);
       persistTaskDrafts();
       bindOwnedTasks(profileData);
+      bindClassifications(profileData);
       bindStaffHandoffs(conversation);
       bindMobileBack();
       const scrollNewestIntoView = () => {
@@ -693,5 +810,5 @@ const CLIENT_DESK_HTML = `<!doctype html>
 </script></body></html>`;
 
 export function clientDeskHtml() {
-  return CLIENT_DESK_HTML.replace("__OWNED_NOTE_COMMANDS_ENABLED__", JSON.stringify(ownedNoteReleaseReadiness().enabled)).replace("__OWNED_TASK_COMMANDS_ENABLED__", JSON.stringify(ownedTaskReleaseReadiness().enabled));
+  return CLIENT_DESK_HTML.replace("__OWNED_NOTE_COMMANDS_ENABLED__", JSON.stringify(ownedNoteReleaseReadiness().enabled)).replace("__OWNED_TASK_COMMANDS_ENABLED__", JSON.stringify(ownedTaskReleaseReadiness().enabled)).replace("__OWNED_CLASSIFICATION_COMMANDS_ENABLED__", JSON.stringify(ownedContactClassificationReleaseReadiness().enabled));
 }

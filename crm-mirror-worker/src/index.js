@@ -74,6 +74,7 @@ import { captureOwnedNoteVersion, OwnedNoteError, readOwnedNotes } from "./owned
 import { captureOwnedTaskVersion, OwnedTaskError, readOwnedTasks } from "./owned-tasks.js";
 import {
   captureOwnedContactClassification,
+  readOwnedContactClassifications,
   OwnedContactClassificationError,
 } from "./owned-contact-classifications.js";
 import {
@@ -602,6 +603,8 @@ export default {
         if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
           return json(400, { error: "invalid_request", detail: "JSON object required" });
         }
+        if (!new Set(["add_tag", "remove_tag", "grant_role", "revoke_role"]).has(payload.action)) return json(400, { error: "invalid_classification_action" });
+        if (["contactId", "idempotencyKey", "value"].some((key) => typeof payload[key] !== "string")) return json(400, { error: "invalid_classification_input" });
         const allowed = new Set(["action", "contactId", "idempotencyKey", "value"]);
         const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
         if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
@@ -1113,6 +1116,7 @@ export default {
         if (!profile) return json(404, { error: "contact not found" });
         profile = await withOwnedNotes(env.CRM_DB, profile, limit);
         profile = await withOwnedTasks(env.CRM_DB, profile, limit);
+        profile.ownedClassificationAuthority = await readOwnedContactClassifications(env.CRM_DB, profile.contact.id);
         const automationEvidence = await personAutomationInspection(env.AUTOMATION_DB, profile.contact);
         let missedAppointmentTruth;
         try {
@@ -1153,6 +1157,7 @@ export default {
         if (profile) {
           profile = await withOwnedNotes(env.CRM_DB, profile, limit);
           profile = await withOwnedTasks(env.CRM_DB, profile, limit);
+          profile.ownedClassificationAuthority = await readOwnedContactClassifications(env.CRM_DB, profile.contact.id);
         }
         return profile
           ? json(200, { success: true, worker: "amari-crm-mirror", ...profile })

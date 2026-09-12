@@ -7,6 +7,7 @@ import {
   captureOwnedContactClassification,
   OWNED_CLASSIFICATION_SOURCE_MODE,
   ownedContactClassificationReleaseReadiness,
+  readOwnedContactClassifications,
 } from "./owned-contact-classifications.js";
 
 function migrations() {
@@ -55,12 +56,12 @@ const command = (action, value, key, overrides = {}) => ({
 });
 
 describe("owned contact classifications", () => {
-  it("is source-pinned shadow and exposes no provider or destructive evidence fallback", async () => {
-    expect(OWNED_CLASSIFICATION_SOURCE_MODE).toBe("shadow");
+  it("is source-pinned active and exposes no provider or destructive evidence fallback", async () => {
+    expect(OWNED_CLASSIFICATION_SOURCE_MODE).toBe("active");
     expect(ownedContactClassificationReleaseReadiness()).toEqual({
       version: "owned-contact-classifications.v1",
-      sourceMode: "shadow",
-      enabled: false,
+      sourceMode: "active",
+      enabled: true,
       providerFallback: null,
       providerWrite: false,
       messageWrite: false,
@@ -71,7 +72,7 @@ describe("owned contact classifications", () => {
     });
     await expect(captureOwnedContactClassification({
       prepare: () => { throw new Error("shadow must not touch storage"); },
-    }, command("add_tag", "follow-up", "classification-command-0001")))
+    }, command("add_tag", "follow-up", "classification-command-0001"), undefined, { sourceMode: "shadow" }))
       .rejects.toMatchObject({ code: "owned_classification_shadow_only", status: 503 });
   });
 
@@ -198,6 +199,55 @@ describe("owned contact classifications", () => {
     const isolatedBody = await isolated.json();
     expect(isolatedBody.tags).toEqual(["focus", "follow-up"]);
     expect(isolatedBody.roles).toEqual(["client", "lead"]);
+    sqlite.close();
+  });
+
+  it("provides additive provenance, protects missing schema, and preserves legacy deduped labels", async () => {
+    const sqlite = database();
+    insertContact(sqlite);
+    const db = d1(sqlite);
+    sqlite.exec("INSERT INTO contact_tags VALUES ('contact-1', 'focus', 'ghl', '2026-09-01T00:00:00Z')");
+    await captureOwnedContactClassification(db, command("add_tag", "focus", "provenance-owned-001"));
+    const read = await readOwnedContactClassifications(db, "contact-1");
+    expect(read).toMatchObject({ state: "ready", tags: [{ value: "focus", source: "ghl" }, { value: "focus", source: "owned:staff" }] });
+    sqlite.exec("DROP TRIGGER owned_contact_classification_apply");
+    expect((await readOwnedContactClassifications(db, "contact-1")).state).toBe("unavailable");
+    await expect(captureOwnedContactClassification(db, command("add_tag", "unsafe", "missing-schema-001"))).rejects.toMatchObject({ code: "classification_schema_unavailable", status: 503 });
+    expect(sqlite.prepare("SELECT COUNT(*) AS n FROM owned_contact_classification_commands").get().n).toBe(1);
+    sqlite.close();
+  });
+
+  it("serializes concurrent identical commands and never reapplies an old replay", async () => {
+    const sqlite = database(); insertContact(sqlite); const db = d1(sqlite);
+    const add = command("add_tag", "focus", "concurrent-add-001");
+    const results = await Promise.all([captureOwnedContactClassification(db, add), captureOwnedContactClassification(db, add)]);
+    expect(results.filter((row) => row.deduped)).toHaveLength(1);
+    expect(results[0].commandId).toBe(results[1].commandId);
+    await captureOwnedContactClassification(db, command("remove_tag", "focus", "concurrent-remove-001"));
+    await captureOwnedContactClassification(db, add);
+    expect(sqlite.prepare("SELECT COUNT(*) AS n FROM contact_tags WHERE source='owned:staff'").get().n).toBe(0);
+    expect(sqlite.prepare("SELECT COUNT(*) AS n FROM owned_contact_classification_commands").get().n).toBe(2);
+    sqlite.close();
+  });
+
+  it("executes all four authenticated HTTP actions and exposes their source-aware readback", async () => {
+    const sqlite = database(); insertContact(sqlite); const values = new Map();
+    const env = { CRM_DB: d1(sqlite), WORKER_AUTH_SECRET: "test-secret", PORTAL_KV: {
+      get: async key => values.get(key) || null, put: async (key,value) => values.set(key,value), delete: async key => values.delete(key),
+    } };
+    const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", { method: "POST", headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Eben" } }), env);
+    const handoff = await worker.fetch(new Request((await access.json()).url), env);
+    const cookie = handoff.headers.get("Set-Cookie");
+    const send = body => worker.fetch(new Request("https://crm.test/contacts/classification-commands", { method: "POST", headers: { Cookie: cookie, Origin: "https://crm.test", "Content-Type": "application/json" }, body: JSON.stringify(body) }), env);
+    for (const [action,value] of [["add_tag","focus"],["grant_role","client"],["remove_tag","focus"],["revoke_role","client"]]) {
+      const body = {action,value,contactId:"contact-1",idempotencyKey:"http-"+action+"-001"};
+      const result=await send(body); expect(result.status).toBe(201);
+      expect((await result.json()).classification).toMatchObject({actor:"Eben",contactId:"contact-1",action,value,source:"owned:staff"});
+      expect((await send(body)).status).toBe(200);
+      const read=await worker.fetch(new Request("https://crm.test/contacts/contact-1",{headers:{Authorization:"Bearer test-secret"}}),env);
+      expect((await read.json()).ownedClassificationAuthority.state).toBe("ready");
+    }
+    expect(sqlite.prepare("SELECT COUNT(*) AS n FROM owned_contact_classification_commands").get().n).toBe(4);
     sqlite.close();
   });
 
