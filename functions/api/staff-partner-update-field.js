@@ -93,22 +93,25 @@ export async function onRequestPost(context) {
 
     // Read current value for the audit note (so we can record what changed)
     let previousValue = "";
+    let currentContact;
     try {
       const getRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, { headers: ghlHeaders(ghlToken) });
-      if (getRes.ok) {
-        const cdata = await getRes.json();
-        const contact = cdata.contact || cdata;
-        const spec = EDITABLE_FIELDS[field];
-        if (spec.kind === "standard") {
-          previousValue = contact[field] || "";
-        } else {
-          const cf = (contact.customFields || []).find((f) => f.id === spec.id);
-          previousValue = (cf?.value ?? cf?.field_value ?? "") + "";
-        }
+      if (!getRes.ok) {
+        return new Response(JSON.stringify({ error: "Current field value could not be verified. Nothing was changed." }), { status: 422, headers });
       }
+      const cdata = await getRes.json();
+      currentContact = cdata?.contact ?? (cdata?.id ? cdata : null);
+      if (!currentContact || typeof currentContact !== "object") throw new Error("contact response was invalid");
     } catch (err) {
-      // Non-fatal — note will just say "set to <new>" without "from <old>"
       console.error("[update-field] read prev failed:", err instanceof Error ? err.message : String(err));
+      return new Response(JSON.stringify({ error: "Current field value could not be verified. Nothing was changed." }), { status: 422, headers });
+    }
+    const spec = EDITABLE_FIELDS[field];
+    if (spec.kind === "standard") {
+      previousValue = currentContact[field] || "";
+    } else {
+      const cf = (currentContact.customFields || []).find((f) => f.id === spec.id);
+      previousValue = (cf?.value ?? cf?.field_value ?? "") + "";
     }
 
     // Idempotent: if value didn't change, no-op
@@ -117,7 +120,6 @@ export async function onRequestPost(context) {
     }
 
     // Build PUT body for the single field
-    const spec = EDITABLE_FIELDS[field];
     const body = {};
     if (spec.kind === "standard") {
       body[field] = value || null;

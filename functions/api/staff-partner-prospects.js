@@ -309,6 +309,24 @@ const FORCED_CALL_LINES = new Set(["landline", "toll_free", "voip"]);
 // Why verb: MUST match the final channel. buildCard wrote "Text/Call [name]..." for
 // card.channel; when we preserve a different channel, rewrite the opening verb.
 export function overlayCard(base, card) {
+  if (card.hold) {
+    return {
+      ...base,
+      kind: "aside",
+      urgency: 0,
+      why: "",
+      action: null,
+      channel: null,
+      state: card.state,
+      play: card.play,
+      hold: card.hold,
+      asideReason: card.hold === "declined"
+        ? "Declined — do not contact"
+        : "Already answered — wait for them",
+      phoneProvenance: card.facts?.phoneProvenance || "on-file",
+      phoneNote: card.facts?.phoneNote || null,
+    };
+  }
   const lineType = card.facts?.lineType || null;
   const isDiscovery = card.play === "discovery";
   const lineForced = FORCED_CALL_LINES.has(lineType);

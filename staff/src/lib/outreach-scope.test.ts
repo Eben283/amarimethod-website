@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { isPinnedUntouchedProspect, selectAcquisitionProspects, withoutNeedsReply } from './outreach-scope';
+import { applyVerifiedOutcome, isPinnedUntouchedProspect, selectAcquisitionProspects, withoutNeedsReply } from './outreach-scope';
 import type { PartnerProspect } from '../types/staff';
 
 describe('Outreach scope', () => {
@@ -80,5 +80,29 @@ describe('Outreach scope', () => {
     expect(isPinnedUntouchedProspect(priority)).toBe(true);
     expect(selectAcquisitionProspects([due, priority], 2).map((row) => row.contactId)).toEqual(['priority', 'due']);
     expect(isPinnedUntouchedProspect({ ...priority, touchCount: 1 })).toBe(false);
+  });
+
+  it('moves a verified set-aside outcome out of every actionable/search presentation immediately', () => {
+    const prospect = {
+      contactId: 'prospect', firstName: 'New', lastName: 'Prospect', fullName: 'New Prospect',
+      category: 'trainer', tags: ['partner-prospect'], phone: null, email: null, website: null,
+      companyName: null, address1: null, city: null, state: null, postalCode: null,
+      socialProfile: null, linkedinUrl: null, instagram: null, otherUrls: null, rundown: null,
+      lastActivityAt: null, isActivePartner: false, partnerStage: 'working', partnerSource: null,
+      partnerLastSignal: 'voicemail', partnerLastSignalAt: '2026-09-01T00:00:00Z', partnerFollowupAt: null,
+      partnerFacility: null, partnerFacilityType: null, partnerFacilityRole: null, hasPtOnStaff: null,
+      outreachVerified: false, touchCount: 2, sheetStatus: null, sheetNotes: null, inGarrettSheet: false,
+      derived: { kind: 'act', urgency: 70, why: 'Text again', action: 'text' },
+    } satisfies PartnerProspect;
+
+    const updated = applyVerifiedOutcome(prospect, {
+      signal: 'not-interested', newStage: 'dropped', signalAt: '2026-09-12T10:00:00Z', followupAt: null,
+    }, true);
+
+    expect(updated.partnerStage).toBe('dropped');
+    expect(updated.partnerLastSignal).toBe('not-interested');
+    expect(updated.derived).toMatchObject({ kind: 'aside', urgency: 0, action: null });
+    expect(updated.derived?.why).toBe('');
+    expect(selectAcquisitionProspects([updated], 3)).toEqual([]);
   });
 });

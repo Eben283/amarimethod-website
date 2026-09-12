@@ -1,4 +1,5 @@
 import type { PartnerProspect } from '../types/staff';
+import type { PartnerLastSignal, PartnerStage } from '../types/staff';
 
 export const OUTREACH_PRIORITY_TAG = 'outreach-priority';
 
@@ -43,4 +44,56 @@ export function withoutNeedsReply<T>(
   contactId: (row: T) => string = (row) => (row as { contactId: string }).contactId,
 ) {
   return rows.filter((row) => !needsReplyIds.has(contactId(row)));
+}
+
+type VerifiedOutcome = {
+  signal: PartnerLastSignal;
+  newStage: PartnerStage | null;
+  signalAt: string | null;
+  followupAt: string | null;
+};
+
+/**
+ * Keep the just-saved row consistent while GHL's search index catches up.
+ * Closing outcomes must stop being actionable in search and collapsed cards
+ * immediately after the authoritative endpoint confirms them.
+ */
+export function applyVerifiedOutcome(
+  prospect: PartnerProspect,
+  outcome: VerifiedOutcome,
+  touched: boolean,
+): PartnerProspect {
+  const stage = outcome.newStage ?? prospect.partnerStage;
+  let derived = prospect.derived;
+  if (stage === 'dropped' || stage === 'future-potential') {
+    const { channel: _channel, ...prior } = derived ?? { kind: 'aside' as const, urgency: 0, why: '', action: null };
+    derived = {
+      ...prior,
+      kind: 'aside',
+      urgency: 0,
+      why: '',
+      action: null,
+      asideReason: stage === 'dropped' ? 'Set aside' : 'Saved for later',
+    };
+  } else if (stage === 'session-booked' || stage === 'partner') {
+    const { channel: _channel, ...prior } = derived ?? { kind: 'converted' as const, urgency: 0, why: '', action: null };
+    derived = {
+      ...prior,
+      kind: 'converted',
+      urgency: 0,
+      why: '',
+      action: null,
+      asideReason: stage === 'session-booked' ? 'Session booked' : 'Active partner',
+    };
+  }
+  return {
+    ...prospect,
+    partnerStage: stage,
+    partnerFollowupAt: outcome.followupAt ?? prospect.partnerFollowupAt,
+    ...(touched ? {
+      partnerLastSignal: outcome.signal,
+      partnerLastSignalAt: outcome.signalAt,
+    } : {}),
+    derived,
+  };
 }
