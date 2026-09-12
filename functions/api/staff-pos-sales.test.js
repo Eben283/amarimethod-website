@@ -4,6 +4,30 @@ vi.mock("../lib/auth.js", () => ({
   verifySessionToken: vi.fn(async () => ({ role: "staff", user: "Eben" })),
 }));
 
+const stripeMocks = vi.hoisted(() => ({
+  chargeCustomerCard: vi.fn(),
+}));
+
+vi.mock("../lib/stripe-api.js", () => ({
+  chargeCustomerCard: stripeMocks.chargeCustomerCard,
+  createPosCheckoutSession: vi.fn(),
+  findOrCreateStripeCustomer: vi.fn(),
+  resolveProvenStripeCustomer: vi.fn(async () => ({ id: "cus_fixture" })),
+  retrievePaymentMethod: vi.fn(async () => ({
+    id: "pm_fixture",
+    customer: "cus_fixture",
+    type: "card",
+    card: { brand: "visa", last4: "4242" },
+  })),
+}));
+
+vi.mock("../lib/staff-pos-fulfill.js", () => ({
+  fulfillPaidPosSale: vi.fn(async (_context, sale) => ({
+    sale: { ...sale, fulfillmentStatus: "fulfilled" },
+    result: { status: "fulfilled" },
+  })),
+}));
+
 import { buildPosSale, posSaleKey } from "../lib/staff-pos.js";
 import { onRequestPost, posPaymentActionAvailable } from "./staff-pos-sales.js";
 
@@ -20,6 +44,62 @@ function makeKv(seed) {
 }
 
 describe("Staff POS activation boundary", () => {
+  it("requires a durable sale before charging and reuses it after a lost response", async () => {
+    stripeMocks.chargeCustomerCard.mockReset();
+    stripeMocks.chargeCustomerCard.mockResolvedValue({ id: "pi_fixture", status: "succeeded" });
+    const kv = makeKv({ "stripe-cust:contact_fixture": "cus_fixture" });
+    const env = {
+      JWT_SECRET: "jwt",
+      PORTAL_KV: kv,
+      PURCHASE_KV: kv,
+      STRIPE_SECRET_KEY: "synthetic",
+      STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED: "true",
+    };
+    const draft = {
+      client: { id: "contact_fixture", name: "Synthetic Fixture", email: "fixture@example.invalid" },
+      cart: [{ productKey: "4-session-series" }],
+      paymentLegs: [{ method: "saved-card", amountCents: 72000 }],
+    };
+    const request = (body) => onRequestPost({
+      request: new Request("https://www.amarimethod.com/api/staff-pos-sales", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: "Bearer valid" },
+        body: JSON.stringify(body),
+      }),
+      env,
+    });
+
+    const unsafe = await request({
+      action: "charge-saved-card",
+      ...draft,
+      paymentMethodId: "pm_fixture",
+      confirmed: true,
+    });
+    expect(unsafe.status).toBe(400);
+    expect(stripeMocks.chargeCustomerCard).not.toHaveBeenCalled();
+
+    const createdResponse = await request({ action: "create", ...draft });
+    const created = (await createdResponse.json()).sale;
+    const charge = {
+      action: "charge-saved-card",
+      id: created.id,
+      version: created.version,
+      paymentLegId: created.paymentLegs[0].id,
+      paymentMethodId: "pm_fixture",
+      confirmed: true,
+    };
+    const firstResponse = await request(charge);
+    const first = await firstResponse.json();
+    expect(firstResponse.status).toBe(200);
+    expect(first.sale).toMatchObject({ id: created.id, status: "paid", fulfillmentStatus: "fulfilled" });
+
+    const retryResponse = await request(charge);
+    const retry = await retryResponse.json();
+    expect(retryResponse.status).toBe(200);
+    expect(retry).toMatchObject({ recovered: true, sale: { id: created.id, status: "paid" } });
+    expect(stripeMocks.chargeCustomerCard).toHaveBeenCalledTimes(1);
+  });
+
   it("blocks every money-taking action while the invoice bridge is disabled", () => {
     for (const action of ["start-checkout", "charge-saved-card", "record-cash", "fulfill"]) {
       expect(posPaymentActionAvailable({}, action)).toBe(false);

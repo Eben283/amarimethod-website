@@ -318,8 +318,27 @@ export async function onRequestPost(context) {
     }
 
     if (action === "charge-saved-card") {
+      if (typeof body.id !== "string" || !body.id) {
+        return json({ error: "Save the cart before charging a card on file." }, 400, headers);
+      }
+      const existing = await readPosSale(context.env.PORTAL_KV, body.id);
+      if (!existing) return json({ error: "Saved cart not found" }, 404, headers);
+      if (!posPaymentActionAvailable(context.env, action, existing)) return unavailablePaymentResponse(headers);
+      if (typeof body.paymentLegId === "string" && !existing.paymentLegs.some((leg) => leg.id === body.paymentLegId)) {
+        return json({ error: "Saved-card payment portion not found" }, 400, headers);
+      }
+      const requestedLeg =
+        (typeof body.paymentLegId === "string" && existing.paymentLegs.find((leg) => leg.id === body.paymentLegId)) ||
+        existing.paymentLegs.find((leg) => leg.method === "saved-card");
+      if (requestedLeg?.status === "paid") {
+        if (existing.status === "paid" && existing.fulfillmentStatus !== "fulfilled") {
+          const { sale: fulfilled, result } = await fulfillPaidPosSale(context, existing, { actor: reviewer });
+          await writePosSale(context.env.PORTAL_KV, fulfilled);
+          return json({ sale: fulfilled, fulfillment: result, recovered: true }, 200, headers);
+        }
+        return json({ sale: existing, recovered: true }, 200, headers);
+      }
       const sale = await ensureSale(context, body, reviewer, catalog);
-      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers);
       if (!sale.paymentLegs?.length) return json({ error: "Add a payment method before charging" }, 400, headers);
       const result = await chargeSavedCardLeg(context, sale, reviewer, {
         paymentMethodId: body.paymentMethodId,
