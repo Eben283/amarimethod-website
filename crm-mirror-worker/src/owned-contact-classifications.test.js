@@ -8,6 +8,7 @@ import {
   OWNED_CLASSIFICATION_SOURCE_MODE,
   ownedContactClassificationReleaseReadiness,
   readOwnedContactClassifications,
+  readContactTagCatalog,
 } from "./owned-contact-classifications.js";
 
 function migrations() {
@@ -202,6 +203,26 @@ describe("owned contact classifications", () => {
     sqlite.close();
   });
 
+  it("catalogs current observed tags with exact source/canonical values and bounded search", async () => {
+    const sqlite = database(); insertContact(sqlite); const db = d1(sqlite);
+    sqlite.exec("INSERT INTO contact_tags VALUES ('contact-1','Focus Tag','ghl','2026-09-01T00:00:00Z'),('contact-1','focus-tag','owned:staff','2026-09-01T00:00:00Z'),('contact-1','$legacy','ghl','2026-09-01T00:00:00Z')");
+    const read = await readContactTagCatalog(db, 'focus-tag');
+    expect(read.state).toBe('ready'); expect(read.truncated).toBe(false);
+    expect(read.entries).toEqual([{value:'Focus Tag',source:'ghl',canonicalValue:'focus-tag',reusable:true},{value:'focus-tag',source:'owned:staff',canonicalValue:'focus-tag',reusable:true}]);
+    expect((await readContactTagCatalog(db, '', 1)).truncated).toBe(true);
+    expect((await readContactTagCatalog(db, '$legacy')).entries[0].reusable).toBe(false);
+    expect((await readContactTagCatalog(db, '%')).entries).toEqual([]);
+    await captureOwnedContactClassification(db, command('add_tag','removed','catalog-remove-001'));
+    await captureOwnedContactClassification(db, command('remove_tag','removed','catalog-remove-002'));
+    expect((await readContactTagCatalog(db,'removed')).entries).toEqual([]);
+    const response = await worker.fetch(new Request('https://crm.test/client-desk/tag-catalog?query=focus',{headers:{Authorization:'Bearer test-secret'}}),{CRM_DB:db,WORKER_AUTH_SECRET:'test-secret'});
+    expect(response.status).toBe(200);expect((await response.json()).entries).toHaveLength(2);
+    expect((await worker.fetch(new Request('https://crm.test/client-desk/tag-catalog'),{CRM_DB:db,WORKER_AUTH_SECRET:'test-secret'})).status).toBe(401);
+    sqlite.exec('DROP TRIGGER owned_contact_classification_apply');
+    expect((await readContactTagCatalog(db)).state).toBe('unavailable');
+    sqlite.close();
+  });
+
   it("provides additive provenance, protects missing schema, and preserves legacy deduped labels", async () => {
     const sqlite = database();
     insertContact(sqlite);
@@ -238,6 +259,8 @@ describe("owned contact classifications", () => {
     const access = await worker.fetch(new Request("https://crm.test/dashboard-access-link?view=client-desk", { method: "POST", headers: { Authorization: "Bearer test-secret", "X-Staff-Actor": "Eben" } }), env);
     const handoff = await worker.fetch(new Request((await access.json()).url), env);
     const cookie = handoff.headers.get("Set-Cookie");
+    expect((await worker.fetch(new Request("https://crm.test/client-desk/tag-catalog", {headers:{Cookie:cookie}}),env)).status).toBe(200);
+    expect((await worker.fetch(new Request("https://crm.test/client-desk/tag-catalog?query="+"x".repeat(81), {headers:{Cookie:cookie}}),env)).status).toBe(400);
     const send = body => worker.fetch(new Request("https://crm.test/contacts/classification-commands", { method: "POST", headers: { Cookie: cookie, Origin: "https://crm.test", "Content-Type": "application/json" }, body: JSON.stringify(body) }), env);
     for (const [action,value] of [["add_tag","focus"],["grant_role","client"],["remove_tag","focus"],["revoke_role","client"]]) {
       const body = {action,value,contactId:"contact-1",idempotencyKey:"http-"+action+"-001"};

@@ -14,7 +14,7 @@ function desk(actor = 'Eben', storage = new Map(), denied = false) {
   window.parent = window;
   const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)[1];
   const end = script.lastIndexOf('})();');
-  const instrumented = script.slice(0, end) + 'return { classificationMarkup, classificationDraft, persistClassificationDrafts, normalizedClassificationTag, validClassificationTag }; })();';
+  const instrumented = script.slice(0, end) + 'return { classificationMarkup, classificationDraft, persistClassificationDrafts, normalizedClassificationTag, validClassificationTag, tagCatalogMarkup, tagChoiceAllowed, tagCatalogs }; })();';
   return new Function('window', 'history', 'document', 'fetch', 'return ' + instrumented.trim())(
     window, { replaceState() {} }, { getElementById: () => element },
     async () => ({ ok: true, json: async () => ({ threads: [] }) }),
@@ -22,12 +22,28 @@ function desk(actor = 'Eben', storage = new Map(), denied = false) {
 }
 const data = {contact:{id:'contact-a'},tags:['focus'],roles:['client'],ownedClassificationAuthority:{state:'ready',tags:[{value:'focus',source:'ghl'},{value:'focus',source:'owned:staff'}],roles:[{value:'client',source:'owned:quiz'}]}};
 describe('Client Desk classification provenance and retry state',()=>{
-  it('previews the exact normalized tag before submitting and rejects invalid tags',()=>{
-    const helper=desk();helper.classificationDraft('contact-a').tag=' Focus Tag ';
-    expect(helper.normalizedClassificationTag(' Focus Tag ')).toBe('focus-tag');
-    expect(helper.classificationMarkup(data)).toContain('Will save as: focus-tag');
-    expect(helper.validClassificationTag('focus-tag')).toBe(true);
-    expect(helper.validClassificationTag('$invalid')).toBe(false);
+  it('requires a deliberate reusable catalog choice or create-new selection',()=>{
+    const helper=desk(), draft=helper.classificationDraft('contact-a'); draft.tag='Focus Tag';
+    helper.tagCatalogs.set('contact-a',{state:'ready',query:draft.tag,entries:[{value:'Focus Tag',source:'ghl',canonicalValue:'focus-tag',reusable:true}],truncated:false});
+    expect(helper.tagChoiceAllowed(data,draft)).toBe(false);
+    draft.tagChoice={canonicalValue:'focus-tag',create:false};expect(helper.tagChoiceAllowed(data,draft)).toBe(true);
+    expect(helper.tagCatalogMarkup(data)).toContain('Adds Amari tag: focus-tag');
+    draft.tag='new';draft.tagChoice={canonicalValue:'new',create:true};
+    helper.tagCatalogs.set('contact-a',{state:'ready',query:'new',entries:[],truncated:true});
+    expect(helper.tagChoiceAllowed(data,draft)).toBe(false);
+    expect(helper.tagCatalogMarkup(data)).toContain('Refine the search');
+    helper.tagCatalogs.set('contact-a',{state:'ready',query:'new',entries:[],truncated:false});
+    expect(helper.tagCatalogMarkup(data)).toContain('Create new Amari tag: new');
+    expect(helper.tagChoiceAllowed(data,draft)).toBe(true);
+  });
+  it('disables current owned labels and never presents unavailable data as empty results',()=>{
+    const helper=desk(),draft=helper.classificationDraft('contact-a');
+    helper.tagCatalogs.set('contact-a',{state:'ready',query:'',entries:[{value:'focus',source:'ghl',canonicalValue:'focus',reusable:true}]});
+    expect(helper.tagCatalogMarkup(data)).toContain('Already added in Amari CRM');
+    draft.tagChoice={canonicalValue:'focus',create:false};expect(helper.tagChoiceAllowed(data,draft)).toBe(false);
+    helper.tagCatalogs.set('contact-a',{state:'unavailable',query:''});
+    expect(helper.tagCatalogMarkup(data)).toContain('Tag catalog unavailable');
+    expect(helper.tagCatalogMarkup(data)).not.toContain('No matching tags');
   });
   it('offers removal only for owned:staff and explains persistent imported duplicates',()=>{
     const html=desk().classificationMarkup(data);
