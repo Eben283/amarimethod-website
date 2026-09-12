@@ -6,6 +6,7 @@ import {
   getPosSale,
   getStaffProducts,
   getStripeSavedCards,
+  createPosSale,
   recordPosCash,
   fulfillPosSale,
   chargePosSavedCard,
@@ -661,12 +662,19 @@ export default function PosPage() {
     setBusy(true);
     setNotice("");
     try {
+      let chargeSale = sale;
+      if (!chargeSale) {
+        const created = await createPosSale({ client, cart, paymentLegs });
+        chargeSale = created.sale;
+        applySale(chargeSale);
+      }
+      const paymentLeg = chargeSale.paymentLegs.find((leg) => leg.method === "saved-card" && leg.status !== "paid")
+        || chargeSale.paymentLegs.find((leg) => leg.method === "saved-card");
+      if (!paymentLeg) throw new Error("Saved-card payment portion is missing. Reopen checkout and try again.");
       const result = await chargePosSavedCard({
-        id: sale?.id,
-        version: sale?.version,
-        client,
-        cart,
-        paymentLegs,
+        id: chargeSale.id,
+        version: chargeSale.version,
+        paymentLegId: paymentLeg.id,
         paymentMethodId: pendingChargeCard.id,
         confirmed: true,
       });

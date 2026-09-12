@@ -993,15 +993,12 @@ export async function startPosCheckout(input: {
 }
 
 export async function chargePosSavedCard(input: {
-  id?: string;
+  id: string;
   version?: number;
-  client: PosClient;
-  cart: PosDraftLineInput[];
-  paymentLegs: PosPaymentLegInput[];
   paymentMethodId: string;
-  paymentLegId?: string;
+  paymentLegId: string;
   confirmed: true;
-}): Promise<{ sale: PosSale; fulfillment?: Record<string, unknown>; card?: { brand: string; last4: string } }> {
+}): Promise<{ sale: PosSale; fulfillment?: Record<string, unknown>; card?: { brand: string; last4: string }; recovered?: boolean }> {
   return fetchApi('/staff-pos-sales', { method: 'POST', body: JSON.stringify({ action: 'charge-saved-card', ...input }) });
 }
 
