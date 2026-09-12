@@ -1,10 +1,10 @@
 // Provider-neutral Staff-owned contact roles and tags.
 //
-// The production route is source-pinned shadow. The separately tested active implementation
+// The production route permits the four reviewed classification commands. The implementation
 // appends immutable commands and changes only the `owned:staff` materialized classification rows;
 // it has no provider adapter, delivery, payment, appointment, or authority-promotion effect.
 
-export const OWNED_CLASSIFICATION_SOURCE_MODE = "shadow";
+export const OWNED_CLASSIFICATION_SOURCE_MODE = "active";
 export const OWNED_CLASSIFICATION_CONTRACT_VERSION = "owned-contact-classifications.v1";
 
 const REFERENCE = /^[A-Za-z0-9_-]{1,160}$/;
@@ -104,6 +104,9 @@ function publicCommand(row, deduped) {
 
 function mapStorageError(error) {
   const message = String(error?.message || error || "");
+  if (/no such (?:table|view): owned_contact_classification_/i.test(message)) {
+    return new OwnedContactClassificationError("owned classifications are unavailable", "classification_schema_unavailable", 503);
+  }
   if (/owned contact classification idempotency conflict/i.test(message)) {
     return new OwnedContactClassificationError(message, "idempotency_conflict", 409);
   }
@@ -140,6 +143,7 @@ export async function captureOwnedContactClassification(db, input, now = new Dat
   if (!Number.isFinite(recordedMs)) fail("valid command time required", "invalid_command_time", 400);
   const recordedAt = new Date(recordedMs).toISOString();
   const command = normalize(input);
+  if (!await classificationSchemaReady(db)) fail("owned classifications are unavailable", "classification_schema_unavailable", 503);
   const digest = await commandDigest(command);
 
   const replay = await commandByKey(db, command.actor, command.idempotencyKey);
@@ -169,4 +173,30 @@ export async function captureOwnedContactClassification(db, input, now = new Dat
   if (!captured) fail("owned contact classification command was not recorded", "classification_storage_conflict", 500);
   if (captured.command_sha256 !== digest) fail("idempotency key was already used for another classification command", "idempotency_conflict");
   return publicCommand(captured, captured.capture_nonce !== nonce);
+}
+
+
+async function classificationSchemaReady(db) {
+  const schema = await db.prepare(`SELECT name FROM sqlite_schema WHERE name IN (
+      'owned_contact_classification_commands', 'owned_contact_classification_intake',
+      'owned_contact_classification_commands_no_update', 'owned_contact_classification_commands_no_delete',
+      'owned_contact_classification_rejects_archived_contact', 'owned_contact_classification_result_guard',
+      'owned_contact_classification_apply', 'owned_contact_classification_intake_insert'
+    )`).all();
+  return schema.results?.length === 8;
+}
+
+// Additive provenance; legacy profile tags/roles remain the deduplicated union.
+export async function readOwnedContactClassifications(db, contactId) {
+  if (!REFERENCE.test(String(contactId || ""))) fail("exact contact id required", "invalid_contact_id", 400);
+  const unavailable = { version: OWNED_CLASSIFICATION_CONTRACT_VERSION, state: "unavailable", tags: [], roles: [] };
+  try {
+    const ready = await classificationSchemaReady(db);
+    const tags = await db.prepare("SELECT tag AS value, source FROM contact_tags WHERE contact_id = ? ORDER BY tag, source").bind(contactId).all();
+    const roles = await db.prepare("SELECT role AS value, source FROM contact_roles WHERE contact_id = ? ORDER BY role, source").bind(contactId).all();
+    return { ...unavailable, state: ready ? "ready" : "unavailable", tags: tags.results || [], roles: roles.results || [] };
+  } catch {
+    // Unknown provenance never grants browser mutation controls.
+    return unavailable;
+  }
 }

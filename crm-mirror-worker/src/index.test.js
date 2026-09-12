@@ -1,3 +1,4 @@
+import { dashboardSessionCookie } from "./dashboard-session.js";
 import { describe, expect, it } from "vitest";
 import worker, { parseClientDeskLimit, parseContactSearch, parseQueueLimit, parseSyncRequest } from "./index.js";
 
@@ -634,7 +635,7 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(storageTouches).toBe(0);
   });
 
-  it("keeps owned contact classifications named-Staff-only, source-shadow, and unable to accept provider fields", async () => {
+  it("keeps owned contact classifications named-Staff-only, strictly allowlisted, and unable to accept provider fields", async () => {
     const values = new Map();
     let storageTouches = 0;
     const env = {
@@ -669,6 +670,9 @@ describe("CRM mirror dashboard access handoff", () => {
     });
 
     expect((await worker.fetch(request(null), env)).status).toBe(401);
+    expect((await worker.fetch(request("amari_crm_dashboard=forged"), env)).status).toBe(401);
+    const expiredCookie = await dashboardSessionCookie(env, "Eben", 1);
+    expect((await worker.fetch(request(expiredCookie), env)).status).toBe(401);
     const genericSession = await worker.fetch(new Request("https://crm.test/dashboard-session", {
       method: "POST", headers: { Authorization: "Bearer test-secret" },
     }), env);
@@ -689,12 +693,15 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(unsupported.status).toBe(400);
     await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerContactId"] });
 
-    const shadow = await worker.fetch(request(namedCookie), env);
-    expect(shadow.status).toBe(503);
-    await expect(shadow.json()).resolves.toEqual({
-      error: "owned_classification_shadow_only",
-      detail: "owned contact classification commands remain source-level shadow",
-    });
+    for (const action of ["revise_name", "delete", ["add_tag"], null]) {
+      expect((await worker.fetch(request(namedCookie, { action }), env)).status).toBe(400);
+    }
+    for (const value of [["client"], 1, null, {}]) {
+      expect((await worker.fetch(request(namedCookie, { value }), env)).status).toBe(400);
+    }
+    const crossOrigin = request(namedCookie);
+    crossOrigin.headers.set("Origin", "https://evil.test");
+    expect((await worker.fetch(crossOrigin, env)).status).toBe(403);
     expect(storageTouches).toBe(0);
   });
 
