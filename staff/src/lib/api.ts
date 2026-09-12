@@ -9,14 +9,14 @@ class ApiError extends Error {
   }
 }
 
-async function fetchApi<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
+async function fetchApi<T>(endpoint: string, options: RequestInit = {}, timeoutMs = 15000): Promise<T> {
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     ...((options.headers as Record<string, string>) || {}),
   };
 
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 15000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   try {
     const response = await fetch(`${API_BASE}${endpoint}`, {
@@ -1580,11 +1580,11 @@ export interface PipelineCohortMetrics {
 
 export interface PipelineData {
   columns: PipelineColumns;
-  cohortMetrics: PipelineCohortMetrics;
+  cohortMetrics: PipelineCohortMetrics | null;
 }
 
 export async function getPipeline(): Promise<PipelineData> {
-  return fetchApi<PipelineData>('/staff-pipeline');
+  return fetchApi<PipelineData>('/staff-pipeline', {}, 20000);
 }
 
 // ── Study capture — intake + before/after pain (elbow / jaw / foot / hand)
