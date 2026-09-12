@@ -18,7 +18,7 @@ import { suggestedTexts, suggestedEmail, hasUsableEmail } from '../lib/followupC
 import type {
   PartnerProspect, PartnerLastSignal, PartnerOutcomeSignal, PartnerActivityEvent, ConversationSummary,
 } from '../types/staff';
-import { isPinnedUntouchedProspect, withoutNeedsReply } from '../lib/outreach-scope';
+import { applyVerifiedOutcome, isPinnedUntouchedProspect, withoutNeedsReply } from '../lib/outreach-scope';
 import { resolveDataReadState } from '../lib/data-read-state';
 
 // ── OUTREACH SURFACE ──────────────────────────────────────────────────────────
@@ -323,6 +323,8 @@ export default function FollowUpPage() {
     setLoading(true);
     setError(null);
     setConversationError(null);
+    setActivity({});
+    setExpandedId(null);
     try {
       const [prospectsRes, convoRes] = await Promise.all([
         getPartnerProspects(),
@@ -467,15 +469,9 @@ export default function FollowUpPage() {
       // here: GHL's /contacts/search index lags a write by a few seconds, so a
       // reload would briefly drop the just-changed contact (the "disappeared"
       // bug). The row recomputes its bucket instantly from this update instead.
-      setProspects((ps) => ps.map((p) => {
-        if (p.contactId !== contactId) return p;
-        return {
-          ...p,
-          partnerStage: res.newStage ?? p.partnerStage,
-          partnerFollowupAt: res.followupAt ?? p.partnerFollowupAt,
-          ...(TOUCH_LIKE.has(signal) ? { partnerLastSignal: res.signal, partnerLastSignalAt: res.signalAt } : {}),
-        };
-      }));
+      setProspects((ps) => ps.map((p) => p.contactId === contactId
+        ? applyVerifiedOutcome(p, res, TOUCH_LIKE.has(signal))
+        : p));
       markHandled(contactId); // you acted → drop the card now, don't wait for the cadence refresh
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) { logout(); return; }
@@ -1613,35 +1609,42 @@ function EditableField({ contactId, field, label, value, multiline }: {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(value || '');
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
 
   const save = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       await updateContactField(contactId, field, draft.trim());
       setVal(draft.trim());
       setEditing(false);
-    } catch { /* leave the editor open so the text isn't lost */ } finally { setSaving(false); }
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Could not save this field. Try again.');
+    } finally { setSaving(false); }
   };
 
   if (editing) {
     return (
-      <div className="flex items-start gap-1">
-        {multiline
-          ? <textarea autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} rows={3}
-              className="w-full resize-none rounded-lg border border-amari-border p-2 text-sm text-amari-charcoal focus:outline-none focus:ring-1 focus:ring-amari-accent-warm" />
-          : <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)}
-              className="flex-1 rounded-lg border border-amari-border px-2 py-1 text-sm text-amari-charcoal focus:outline-none focus:ring-1 focus:ring-amari-accent-warm" />}
-        <button type="button" onClick={save} disabled={saving}
-          className="shrink-0 rounded-lg border border-amari-border p-1.5 text-emerald-600 disabled:opacity-40"><Check className="h-3.5 w-3.5" /></button>
-        <button type="button" onClick={() => { setDraft(val); setEditing(false); }}
-          className="shrink-0 rounded-lg border border-amari-border p-1.5 text-amari-text-muted"><X className="h-3.5 w-3.5" /></button>
+      <div>
+        <div className="flex items-start gap-1">
+          {multiline
+            ? <textarea autoFocus value={draft} onChange={(e) => setDraft(e.target.value)} rows={3}
+                className="w-full resize-none rounded-lg border border-amari-border p-2 text-sm text-amari-charcoal focus:outline-none focus:ring-1 focus:ring-amari-accent-warm" />
+            : <input autoFocus value={draft} onChange={(e) => setDraft(e.target.value)}
+                className="flex-1 rounded-lg border border-amari-border px-2 py-1 text-sm text-amari-charcoal focus:outline-none focus:ring-1 focus:ring-amari-accent-warm" />}
+          <button type="button" onClick={save} disabled={saving}
+            className="shrink-0 rounded-lg border border-amari-border p-1.5 text-emerald-600 disabled:opacity-40"><Check className="h-3.5 w-3.5" /></button>
+          <button type="button" onClick={() => { setDraft(val); setSaveError(null); setEditing(false); }}
+            className="shrink-0 rounded-lg border border-amari-border p-1.5 text-amari-text-muted"><X className="h-3.5 w-3.5" /></button>
+        </div>
+        {saveError && <p role="alert" className="mt-1 text-[11px] text-red-600">{saveError}</p>}
       </div>
     );
   }
   return (
     <div className="group flex items-start gap-1.5">
       <span className={val ? 'text-amari-charcoal' : ' text-amari-text-muted'}>{val || `No ${label} yet`}</span>
-      <button type="button" onClick={() => { setDraft(val); setEditing(true); }}
+      <button type="button" onClick={() => { setDraft(val); setSaveError(null); setEditing(true); }}
         className="mt-0.5 shrink-0 text-amari-text-muted opacity-60 hover:opacity-100" aria-label={`Edit ${label}`}>
         <Pencil className="h-3 w-3" />
       </button>

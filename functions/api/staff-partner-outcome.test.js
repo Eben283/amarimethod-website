@@ -80,3 +80,41 @@ describe('retired Outreach standalone note action', () => {
     expect(JSON.parse(fetchMock.mock.calls[2][1].body)).toEqual({ body: `${prefix} — Context` });
   });
 });
+
+describe('Outreach outcome prerequisite reads', () => {
+  it.each([
+    ['provider rejection', () => new Response('{"error":"rate limited"}', { status: 429 })],
+    ['network failure', () => Promise.reject(new Error('connect timeout'))],
+    ['malformed success response', () => new Response('{}')],
+  ])('fails closed on %s before updating fields or adding a note', async (_label, currentRead) => {
+    fetchMock.mockImplementationOnce(currentRead);
+    const ctx = context({ contactId: 'synthetic-contact', signal: 'voicemail' });
+
+    const response = await onRequestPost(ctx);
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toMatchObject({
+      error: expect.stringMatching(/current outreach state could not be verified/i),
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(ctx.env.PORTAL_KV.delete).not.toHaveBeenCalled();
+  });
+
+  it('preserves the existing touch count and stage after a verified read', async () => {
+    fetchMock
+      .mockResolvedValueOnce(new Response(JSON.stringify({ contact: { customFields: [
+        { id: 'qKtPT2XZP61emgUDK7fd', value: 12 },
+        { id: 'KfPow1mYDxJqiOCS6mDZ', value: 'future-potential' },
+      ] } })))
+      .mockResolvedValueOnce(new Response('{}'))
+      .mockResolvedValueOnce(new Response('{}'));
+    const ctx = context({ contactId: 'synthetic-contact', signal: 'voicemail' });
+
+    const response = await onRequestPost(ctx);
+
+    expect(response.status).toBe(200);
+    const update = JSON.parse(fetchMock.mock.calls[1][1].body);
+    expect(update.customFields).toContainEqual({ id: 'qKtPT2XZP61emgUDK7fd', value: 13 });
+    expect(update.customFields).not.toContainEqual(expect.objectContaining({ id: 'KfPow1mYDxJqiOCS6mDZ' }));
+  });
+});

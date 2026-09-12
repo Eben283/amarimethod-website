@@ -166,28 +166,29 @@ export async function onRequestPost(context) {
     // promote-on-first-contact behavior described in the header comment).
     let currentTouchCount = 0;
     let currentStage = null;
+    let currentContact;
     try {
       const getRes = await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
         headers: ghlHeaders(ghlToken),
       });
-      if (getRes.ok) {
-        const cdata = await getRes.json();
-        const contact = cdata.contact || cdata;
-        const fields = Array.isArray(contact.customFields) ? contact.customFields : [];
-        const tf = fields.find((f) => f.id === FIELD_IDS.partner_touch_count);
-        const raw = tf?.value ?? tf?.field_value;
-        const n = Number(raw);
-        if (Number.isFinite(n) && n >= 0) currentTouchCount = Math.floor(n);
-        const sf = fields.find((f) => f.id === FIELD_IDS.partner_stage);
-        const rawStage = sf?.value ?? sf?.field_value;
-        if (typeof rawStage === "string" && rawStage.length > 0) currentStage = rawStage;
+      if (!getRes.ok) {
+        return new Response(JSON.stringify({ error: "Current outreach state could not be verified. Nothing was changed." }), { status: 422, headers });
       }
+      const cdata = await getRes.json();
+      currentContact = cdata?.contact ?? (cdata?.id ? cdata : null);
+      if (!currentContact || typeof currentContact !== "object") throw new Error("contact response was invalid");
     } catch (err) {
-      // Don't fail the outcome record over a contact read error — log and
-      // proceed with defaults (touch under-count by 1, stage stays as-is on
-      // server side; both fixable by re-backfill).
       console.error("[staff-partner-outcome] contact read failed:", err instanceof Error ? err.message : String(err));
+      return new Response(JSON.stringify({ error: "Current outreach state could not be verified. Nothing was changed." }), { status: 422, headers });
     }
+    const fields = Array.isArray(currentContact.customFields) ? currentContact.customFields : [];
+    const tf = fields.find((f) => f.id === FIELD_IDS.partner_touch_count);
+    const raw = tf?.value ?? tf?.field_value;
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 0) currentTouchCount = Math.floor(n);
+    const sf = fields.find((f) => f.id === FIELD_IDS.partner_stage);
+    const rawStage = sf?.value ?? sf?.field_value;
+    if (typeof rawStage === "string" && rawStage.length > 0) currentStage = rawStage;
 
     // Build customFields update array
     const nowIso = new Date().toISOString();

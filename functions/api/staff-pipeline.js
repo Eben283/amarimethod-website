@@ -10,6 +10,9 @@ import { classifyCharge } from "../lib/stripe-charges.js";
 
 const GHL_API_BASE = "https://services.leadconnectorhq.com";
 const GHL_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+const PIPELINE_READ_TIMEOUT_MS = 12_000;
+const CONTACT_PAGE_LIMIT = 100;
+const CONTACT_PAGE_CAP = 10;
 
 // Internal contacts excluded from the pipeline view
 const EXCLUDED_EMAILS = new Set(["eben@ebenforrest.com"]);
@@ -119,28 +122,14 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap, purchas
   return null; // never contacted — not on the board yet
 }
 
-async function fetchByTag(ghlToken, tag) {
-  const all = [];
-  let page = 1;
-  while (page <= 20) {
-    const res = await fetch(`${GHL_API_BASE}/contacts/search`, {
-      method: "POST",
-      headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
-      body: JSON.stringify({
-        locationId: GHL_LOCATION_ID,
-        pageLimit: 100,
-        page,
-        filters: [{ field: "tags", operator: "contains", value: tag }],
-      }),
-    });
-    if (!res.ok) break;
-    const data = await res.json();
-    const contacts = data.contacts || [];
-    all.push(...contacts);
-    if (contacts.length < 100) break;
-    page += 1;
+async function readProviderJson(url, options, source, signal) {
+  const response = await fetch(url, { ...options, signal });
+  if (!response.ok) throw new Error(`${source} returned ${response.status}`);
+  const payload = await response.json();
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error(`${source} returned an invalid response`);
   }
-  return all;
+  return payload;
 }
 
 // Paginated fetch of all contacts — needed to find clients who have no outreach tags.
@@ -166,19 +155,21 @@ const PACKAGE_CALENDAR_IDS = new Set([
   "oVn77FcecFY16iS2pHyP", // Follow-up Session — Virtual
 ]);
 
-async function fetchSessionAttendance(ghlToken) {
+async function fetchSessionAttendance(ghlToken, signal) {
   const start = new Date("2024-01-01").getTime();
   const end = new Date("2028-01-01").getTime();
   // contactId → { showed: number, noShow: boolean, hasPackage: boolean }
   const map = {};
   await Promise.all(SESSION_CALENDARS.map(async (calId) => {
-    const res = await fetch(
+    const data = await readProviderJson(
       `${GHL_API_BASE}/calendars/events?locationId=${GHL_LOCATION_ID}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
-      { headers: ghlHeaders(ghlToken) }
+      { headers: ghlHeaders(ghlToken) },
+      "Session calendar",
+      signal,
     );
-    if (!res.ok) return;
-    const data = await res.json();
-    for (const appt of (data.appointments || data.events || [])) {
+    const appointments = data.appointments || data.events;
+    if (!Array.isArray(appointments)) throw new Error("Session calendar returned an invalid response");
+    for (const appt of appointments) {
       const cId = appt.contactId;
       if (!cId) continue;
       if (!map[cId]) map[cId] = { showed: 0, noShow: false, hasPackage: false };
@@ -193,7 +184,7 @@ async function fetchSessionAttendance(ghlToken) {
   return map;
 }
 
-async function fetchDiscoveryStatus(ghlToken) {
+async function fetchDiscoveryStatus(ghlToken, signal) {
   const start = new Date("2024-01-01").getTime();
   const end = new Date("2028-01-01").getTime();
   const calIds = [
@@ -204,13 +195,15 @@ async function fetchDiscoveryStatus(ghlToken) {
   const statusMap = {};
   const events = [];
   await Promise.all(calIds.map(async (calId) => {
-    const res = await fetch(
+    const data = await readProviderJson(
       `${GHL_API_BASE}/calendars/events?locationId=${GHL_LOCATION_ID}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
-      { headers: ghlHeaders(ghlToken) }
+      { headers: ghlHeaders(ghlToken) },
+      "Discovery calendar",
+      signal,
     );
-    if (!res.ok) return;
-    const data = await res.json();
-    for (const appt of (data.appointments || data.events || [])) {
+    const appointments = data.appointments || data.events;
+    if (!Array.isArray(appointments)) throw new Error("Discovery calendar returned an invalid response");
+    for (const appt of appointments) {
       const cId = appt.contactId;
       if (!cId) continue;
       events.push({
@@ -227,32 +220,40 @@ async function fetchDiscoveryStatus(ghlToken) {
   return { statusMap, events };
 }
 
-async function fetchAllContacts(ghlToken) {
-  const all = [];
-  let page = 1;
-  while (page <= 10) {
-    const res = await fetch(`${GHL_API_BASE}/contacts/search`, {
+async function fetchContactPage(ghlToken, page, signal) {
+  const data = await readProviderJson(`${GHL_API_BASE}/contacts/search`, {
       method: "POST",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
       body: JSON.stringify({
         locationId: GHL_LOCATION_ID,
-        pageLimit: 100,
+        pageLimit: CONTACT_PAGE_LIMIT,
         page,
       }),
-    });
-    if (!res.ok) break;
-    const data = await res.json();
-    const contacts = data.contacts || [];
-    all.push(...contacts);
-    if (contacts.length < 100) break;
-    page += 1;
-  }
-  return all;
+    }, "Contact search", signal);
+  if (!Array.isArray(data.contacts)) throw new Error("Contact search returned an invalid response");
+  return data.contacts;
 }
 
-async function fetchStripePurchaseHistory(stripeKey, contacts = []) {
+async function fetchAllContacts(ghlToken, signal) {
+  const firstPage = await fetchContactPage(ghlToken, 1, signal);
+  if (firstPage.length < CONTACT_PAGE_LIMIT) return firstPage;
+
+  // Pages after the first are independent. Reading them together removes the
+  // old serial pagination delay while preserving the existing 1,000-contact cap.
+  const remainingPages = await Promise.all(
+    Array.from({ length: CONTACT_PAGE_CAP - 1 }, (_, index) => fetchContactPage(ghlToken, index + 2, signal)),
+  );
+  const all = [...firstPage];
+  for (const contacts of remainingPages) {
+    all.push(...contacts);
+    if (contacts.length < CONTACT_PAGE_LIMIT) return all;
+  }
+  throw new Error("Contact search exceeded the complete-read limit");
+}
+
+async function fetchStripePurchaseHistory(stripeKey, contacts = [], signal) {
   const purchases = new Map();
-  if (!stripeKey) return purchases;
+  if (!stripeKey) throw new Error("Stripe is not configured");
 
   const charges = [];
   let cursor = null;
@@ -261,12 +262,11 @@ async function fetchStripePurchaseHistory(stripeKey, contacts = []) {
   for (let page = 0; page < 10; page += 1) {
     const params = new URLSearchParams({ limit: "100" });
     if (cursor) params.set("starting_after", cursor);
-    const res = await fetch(`https://api.stripe.com/v1/charges?${params}`, {
+    const payload = await readProviderJson(`https://api.stripe.com/v1/charges?${params}`, {
       headers: { Authorization: `Bearer ${stripeKey}` },
-    });
-    if (!res.ok) break;
-    const payload = await res.json();
-    const batch = payload.data || [];
+    }, "Stripe charges", signal);
+    if (!Array.isArray(payload.data)) throw new Error("Stripe charges returned an invalid response");
+    const batch = payload.data;
     charges.push(...batch);
     if (!payload.has_more || batch.length === 0) break;
     cursor = batch[batch.length - 1].id;
@@ -309,8 +309,7 @@ async function fetchStripePurchaseHistory(stripeKey, contacts = []) {
 }
 
 function buildCohortMetrics(snapshot, discoveryEvents, purchasesByContact) {
-  const blank = { reachedOut: 0, discoveryAttended: 0, initialResolved: 0, initialAttended: 0, initialNoShows: 0, firstPurchasers: 0, repeatPurchasers: 0 };
-  if (!snapshot) return blank;
+  if (!snapshot) return null;
   const windowStart = snapshot.generatedAt
     ? new Date(new Date(snapshot.generatedAt).getTime() - (snapshot.windowDays || 180) * 86_400_000).toISOString().slice(0, 10)
     : "";
@@ -358,42 +357,50 @@ export async function onRequestGet(context) {
   if (error) return error;
 
 
-  const ghlToken = await getGhlToken(context);
-  if (!ghlToken) {
-    return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PIPELINE_READ_TIMEOUT_MS);
+  let allContacts;
+  let discoveryData;
+  let sessionAttendanceMap;
+  let funnelSnapshot;
+  let purchasesByContact;
+  try {
+    const ghlToken = await getGhlToken(context);
+    if (!ghlToken) throw new Error("GHL is not configured");
+    [allContacts, discoveryData, sessionAttendanceMap, funnelSnapshot] = await Promise.all([
+      fetchAllContacts(ghlToken, controller.signal),
+      fetchDiscoveryStatus(ghlToken, controller.signal),
+      fetchSessionAttendance(ghlToken, controller.signal),
+      context.env.PORTAL_KV?.get("funnel:latest", "json").catch(() => null),
+    ]);
+    purchasesByContact = await fetchStripePurchaseHistory(
+      context.env.STRIPE_SECRET_KEY,
+      allContacts,
+      controller.signal,
+    );
+  } catch (cause) {
+    const timedOut = cause?.name === "AbortError";
+    console.error("[staff-pipeline] required read failed", cause);
+    return new Response(JSON.stringify({
+      error: timedOut
+        ? "Pipeline sources timed out. Nothing incomplete was shown. Try again."
+        : "Pipeline sources are unavailable. Nothing incomplete was shown. Try again.",
+    }), { status: 422, headers });
+  } finally {
+    clearTimeout(timeoutId);
   }
-
-  // Five fetches in parallel:
-  // 1. Outreach-tagged contacts (for touch/discovery columns)
-  // 2. All contacts — to catch clients with no outreach tags
-  // 3. Discovery calendar appointment statuses (showed/noshow/cancelled)
-  // 4. Session attendance from all session calendars
-  // 5. Successful Stripe charges — source of truth for purchase count
-  const [tagResults, allContacts, discoveryData, sessionAttendanceMap, funnelSnapshot] = await Promise.all([
-    Promise.all(OUTREACH_TAGS.map((tag) => fetchByTag(ghlToken, tag).catch(() => []))),
-    fetchAllContacts(ghlToken).catch(() => []),
-    fetchDiscoveryStatus(ghlToken).catch(() => ({ statusMap: {}, events: [] })),
-    fetchSessionAttendance(ghlToken).catch(() => ({})),
-    context.env.PORTAL_KV?.get("funnel:latest", "json").catch(() => null),
-  ]);
-  const purchasesByContact = await fetchStripePurchaseHistory(context.env.STRIPE_SECRET_KEY, allContacts).catch(() => new Map());
   const discoveryStatusMap = discoveryData.statusMap;
   const cohortMetrics = buildCohortMetrics(funnelSnapshot, discoveryData.events, purchasesByContact);
 
-  // Merge: outreach contacts first, then anyone with sessions who wasn't already included
+  // One complete contact read already includes tags. Filter it locally instead
+  // of issuing a separate paginated search for every outreach tag.
   const byId = new Map();
-  for (const list of tagResults) {
-    for (const c of list) {
-      if (EXCLUDED_EMAILS.has(c.email)) continue;
-      if (!byId.has(c.id)) byId.set(c.id, c);
-    }
-  }
   for (const c of allContacts) {
     if (EXCLUDED_EMAILS.has(c.email)) continue;
-    if (byId.has(c.id)) continue;
-    // Include anyone with a completed or no-show session, regardless of outreach tags.
+    const tags = getTags(c);
     const attendance = sessionAttendanceMap[c.id];
-    if (attendance?.showed > 0 || attendance?.noShow) byId.set(c.id, c);
+    const isOutreachContact = tags.some((tag) => OUTREACH_TAGS.includes(tag));
+    if (isOutreachContact || attendance?.showed > 0 || attendance?.noShow) byId.set(c.id, c);
   }
 
   // Bucket into columns

@@ -245,7 +245,7 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     expect(d.why).not.toMatch(/^Text /);           // reply-by-email headline, never "Text ..." the number
   });
 
-  it('overlayCard carries buildCard hold (declined/answered) onto derived for the UI', () => {
+  it('overlayCard makes a declined hold non-actionable everywhere in the UI', () => {
     const declinedCard = buildCard({
       firstName: 'Mark', lastName: "O'Keefe", role: 'Trainer', lineType: 'mobile',
       thread: [
@@ -257,6 +257,11 @@ describe('overlayCard + finalizePlay — unverified import phones never become c
     const base = { kind: 'act', urgency: 40, warmth: 2, action: 'text', channel: 'text', why: 'x' };
     const d = overlayCard(base, declinedCard);
     expect(d.hold).toBe('declined');
+    expect(d.kind).toBe('aside');
+    expect(d.action).toBeNull();
+    expect(d.channel).toBeNull();
+    expect(d.asideReason).toMatch(/declined/i);
+    expect(d.why).not.toMatch(/text|call|pitch/i);
   });
 
   it('overlayCard stamps phone provenance onto derived so the honesty footnote can show it', () => {
