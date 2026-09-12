@@ -75,6 +75,7 @@ import { captureOwnedTaskVersion, OwnedTaskError, readOwnedTasks } from "./owned
 import {
   captureOwnedContactClassification,
   readOwnedContactClassifications,
+  readContactTagCatalog,
   OwnedContactClassificationError,
 } from "./owned-contact-classifications.js";
 import {
@@ -658,7 +659,7 @@ export default {
       const clientDeskDetail = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)$/);
       const automationPersonDetail = url.pathname.match(/^\/automations\/people\/([^/]+)$/);
       const automationFamilyDetail = url.pathname.match(/^\/automations\/families\/([^/]+)$/);
-      if (request.method === "GET" && (["/status", "/readiness", "/appointments", "/appointments/readiness", "/appointments/missed-truth", "/appointments/recovery-requests", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
+      if (request.method === "GET" && (["/client-desk/tag-catalog", "/status", "/readiness", "/appointments", "/appointments/readiness", "/appointments/missed-truth", "/appointments/recovery-requests", "/operations", "/contacts", "/client-desk/contacts", "/communications/inbox", "/communications/outbox/readiness", "/consent-review", "/ledger-cutover", "/reconciliation", "/reconciliation/queue", "/reconciliation/review", "/sender/readiness", "/quiz-intake/readiness", "/quiz-intake/retention-readiness"].includes(url.pathname) || contactDetail || clientDeskDetail || automationPersonDetail || automationFamilyDetail)) {
         const denied = await requireDashboardReadAuth(request, env);
         if (denied) return denied;
       } else {
@@ -1109,6 +1110,11 @@ export default {
       if (request.method === "GET" && url.pathname === "/consent-review") {
         const limit = parseQueueLimit(url.searchParams.get("limit"));
         return json(200, { success: true, worker: "amari-crm-mirror", ...(await consentReviewQueue(env.CRM_DB, limit)) });
+      }
+      if (request.method === "GET" && url.pathname === "/client-desk/tag-catalog") {
+        const query = url.searchParams.get("query") || "";
+        if (query.length > 80) return json(400, { error: "invalid_tag_search" });
+        return json(200, await readContactTagCatalog(env.CRM_DB, query), { "Cache-Control": "no-store" });
       }
       if (request.method === "GET" && clientDeskDetail) {
         const limit = parseClientDeskLimit(url.searchParams.get("limit"));

@@ -30,6 +30,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
   .payment-head-actions { position: relative; } .payment-actions-toggle { display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid #9db4af; border-radius: 7px; padding: 6px 8px; background: #fff; color: #31564f; cursor: pointer; font-size: 10px; font-weight: 800; } .payment-actions-toggle:hover, .payment-actions-toggle[aria-expanded="true"] { border-color: #5f887f; background: #edf6f3; } .payment-actions-toggle:focus-visible, .payment-action:focus-visible { outline: 2px solid #2d78f5; outline-offset: 2px; } .payment-actions-menu { position: absolute; z-index: 5; top: calc(100% + 5px); right: 0; width: 174px; overflow: hidden; border: 1px solid #b8cbc7; border-radius: 9px; background: #fff; box-shadow: 0 12px 30px rgba(34, 66, 73, .18); } .payment-action { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; padding: 10px 11px; border: 0; border-bottom: 1px solid #e5ecea; background: #fff; color: #31564f; cursor: pointer; font-size: 11px; font-weight: 800; text-align: left; text-decoration: none; } .payment-action:last-child { border-bottom: 0; } .payment-action:hover { background: #f0f7f5; } .payment-action span { color: #80918f; font-size: 9px; font-weight: 700; } .payment-summary { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 10px; padding: 10px 11px; border: 1px solid #e1d5af; border-radius: 9px; background: #fbf8ec; color: #6b644d; font-size: 10px; } .payment-summary strong { color: #443f31; font-size: 17px; } .payment-ledger { overflow: hidden; border: 1px solid #d7e2df; border-radius: 9px; background: #fff; } .payment-row { display: grid; grid-template-columns: minmax(72px, 1fr) minmax(72px, .8fr) minmax(72px, .9fr); gap: 7px; align-items: center; padding: 9px 10px; border-bottom: 1px solid #e8efed; color: #506870; font-size: 10px; } .payment-row:last-child { border-bottom: 0; } .payment-row.heading { background: #f4f7f6; color: #77898d; font-size: 9px; font-weight: 800; letter-spacing: .04em; text-transform: uppercase; } .payment-amount { color: #2f4f58; font-weight: 800; } .payment-state { justify-self: start; padding: 3px 5px; border: 1px solid #9bc9b6; border-radius: 5px; background: #eff9f4; color: #2f7459; font-weight: 800; } .payment-state.refunded { border-color: #d7baa9; background: #fbf2ed; color: #9b5c41; } .payment-state.review { border-color: #d8bd73; background: #fff8df; color: #755d20; }
   .workflow-ledger { display: grid; gap: 7px; } .workflow-row { position: relative; display: block; padding: 10px 30px 10px 11px; border: 1.5px solid #aac3bd; border-radius: 9px; background: #fff; color: #31564f; text-decoration: none; } .workflow-row:hover { border-color: #5f887f; background: #f0f7f5; } .workflow-row:focus-visible { outline: 2px solid #2d78f5; outline-offset: 2px; } .workflow-row strong { display: block; color: #294f48; font-size: 12px; } .workflow-row span { display: block; margin-top: 4px; color: #687e84; font-size: 10px; line-height: 1.42; } .workflow-row em { position: absolute; top: 10px; right: 10px; color: #3c6a62; font-size: 13px; font-style: normal; font-weight: 800; } .workflow-run-list { display: grid; gap: 6px; margin-top: 12px; } .workflow-run { display: grid; grid-template-columns: 74px minmax(0, 1fr); gap: 8px; padding: 7px 0; border-top: 1px solid #e4ece9; color: #687e84; font-size: 10px; line-height: 1.42; } .workflow-run a { color: #31564f; font-weight: 800; text-decoration: underline; text-underline-offset: 2px; } .workflow-evidence-note { margin: 9px 0 0; color: #7b8d91; font-size: 10px; line-height: 1.45; }
   .show-all { width: 100%; margin-top: 2px; padding: 7px; border: 1px solid #d6e3e0; border-radius: 8px; background: #fff; color: #52717a; cursor: pointer; font-size: 11px; font-weight: 800; } .show-all:hover { background: #f2f7f5; } .composer { display: grid; flex: 0 0 auto; gap: 8px; margin: 0; padding: 13px 16px 15px; border: 0; border-top: 1px solid #d8e6e2; background: #f7fbfa; box-shadow: 0 -8px 20px rgba(28, 61, 70, .04); } .composer label { display: grid; gap: 4px; color: #637980; font-size: 10px; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; } .composer input, .composer textarea, .composer select { width: 100%; border: 1px solid #d5e2df; border-radius: 7px; padding: 8px; background: #fff; color: #294650; font: inherit; font-size: 13px; } .composer textarea { min-height: 74px; max-height: 160px; resize: vertical; } .composer-actions { display:flex; align-items:center; gap:10px; justify-content:space-between; } .composer button { border:0; border-radius:8px; padding:9px 13px; background:#2d78f5; color:#fff; cursor:pointer; font-size:12px; font-weight:800; } .composer button:disabled { cursor:wait; opacity:.65; } .composer-status { color:#687e84; font-size:11px; }
+  .tag-catalog-results { display:grid; gap:6px; max-height:240px; overflow:auto; } .tag-catalog-choice { display:grid; gap:4px; padding:9px; border:1px solid #aebfbb; border-radius:7px; background:#fff; text-align:left; overflow-wrap:anywhere; cursor:pointer; } .tag-catalog-choice span { font-size:11px; } .tag-catalog-choice:disabled { opacity:.65; cursor:default; }
   #owned-classifications input, #owned-classifications select { width:100%; min-width:0; border:1px solid #aebfbb; border-radius:7px; padding:9px; background:#fffefa; color:#243f49; font-size:12px; }
   .note-composer { display:grid; gap:8px; margin:0 0 12px; padding:11px; border:1px solid #c5d7d2; border-radius:9px; background:#fff; } .note-composer label { color:#526b72; font-size:11px; font-weight:800; } .note-composer textarea { width:100%; min-height:82px; max-height:220px; resize:vertical; border:1px solid #aebfbb; border-radius:7px; padding:9px; background:#fffefa; color:#243f49; font:inherit; font-size:12px; line-height:1.5; } .note-composer-actions { display:flex; align-items:center; justify-content:space-between; gap:9px; } .note-submit,.note-edit { border:1px solid #7da29a; border-radius:7px; padding:7px 10px; background:#e8f3f0; color:#24574f; cursor:pointer; font-size:11px; font-weight:800; } .note-submit { border-color:#0d6268; background:#0d6268; color:#fff; } .note-submit:disabled,.note-edit:disabled { cursor:wait; opacity:.6; } .note-status { min-height:1.4em; color:#657b82; font-size:10px; line-height:1.4; } .note-status.error { color:#91382f; } .note-origin { display:block; margin-top:5px; color:#7f8e91; font-size:9px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; } .note-edit { margin-top:8px; } .note-revision { margin-top:8px; } .note-revision[hidden] { display:none; }
   @media (max-width: 1080px) { .workspace { height: auto; max-height: none; overflow: visible; grid-template-columns: minmax(245px, .72fr) minmax(380px, 1.28fr); } .inbox, .conversation { height: min(66vh, 640px); } .record { max-height: min(70vh, 720px); grid-column: 1 / -1; border-top: 1px solid #e4eceb; } .record-scroll { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; max-height: none; } }
@@ -455,6 +456,60 @@ const CLIENT_DESK_HTML = `<!doctype html>
   function normalizedClassificationTag(value) { return String(value || '').trim().toLowerCase().replace(/\\s+/g, '-'); }
   function validClassificationTag(value) { return /^[a-z0-9][a-z0-9:_-]{0,79}$/.test(value); }
   const roleLabels = { lead: 'Lead', client: 'Client', affiliate_partner: 'Affiliate partner', referral_source: 'Referral source' };
+  const tagCatalogs = new Map(), tagCatalogRequests = new Map();
+  function tagAlreadyOwned(data, value) { return (data.ownedClassificationAuthority?.tags || []).some(entry => entry.source === 'owned:staff' && entry.value === value); }
+  function tagChoiceAllowed(data, draft) {
+    const catalog = tagCatalogs.get(data.contact?.id);
+    const choice = draft.tagChoice;
+    if (!choice || !validClassificationTag(choice.canonicalValue) || tagAlreadyOwned(data, choice.canonicalValue) || catalog?.state !== 'ready' || catalog.query !== draft.tag) return false;
+    return choice.create ? !catalog.truncated && !catalog.entries.some(entry => entry.canonicalValue === choice.canonicalValue) : catalog.entries.some(entry => entry.reusable && entry.canonicalValue === choice.canonicalValue);
+  }
+  function tagCatalogMarkup(data) {
+    const draft = classificationDraft(data.contact?.id), catalog = tagCatalogs.get(data.contact?.id);
+    if (!catalog || catalog.query !== draft.tag || catalog.state === 'loading') return '<p class="source-note" role="status">Loading tags used in CRM…</p>';
+    if (catalog.state !== 'ready') return '<p class="source-note" role="status">Tag catalog unavailable. Retry the catalog before adding a tag.</p><button type="button" class="note-edit" data-tag-refresh>Retry catalog</button>';
+    const matches = catalog.entries || [];
+    const rows = matches.map((entry, index) => {
+      const added = tagAlreadyOwned(data, entry.canonicalValue);
+      const importedHere = (data.ownedClassificationAuthority?.tags || []).some(row => row.source !== 'owned:staff' && normalizedClassificationTag(row.value) === entry.canonicalValue);
+      const origin = entry.source === 'owned:staff' ? 'Amari CRM' : entry.source === 'ghl' ? 'GHL history' : entry.source === 'owned:quiz' ? 'Quiz record' : entry.source;
+      return '<button class="tag-catalog-choice" type="button" data-tag-choice="' + index + '"' + (added || !entry.reusable ? ' disabled' : '') + '><b>' + esc(entry.value) + '</b><span>' + esc(origin) + ' · ' + (added ? 'Already added in Amari CRM' : !entry.reusable ? 'Imported label cannot be reused as an Amari tag' : 'Adds Amari tag: ' + esc(entry.canonicalValue)) + '</span>' + (importedHere && !added && entry.reusable ? '<span>Imported on this person; adds a separate Amari tag.</span>' : '') + '</button>';
+    }).join('');
+    const canonical = normalizedClassificationTag(draft.tag);
+    const canCreate = validClassificationTag(canonical) && !catalog.truncated && !matches.some(entry => entry.canonicalValue === canonical) && !tagAlreadyOwned(data, canonical);
+    return (rows || '<p class="source-note">No matching tags currently used in CRM.</p>') + (catalog.truncated ? '<p class="source-note" role="status">More tags match. Refine the search; creating a new tag is unavailable until the results are complete.</p>' : '') + (canCreate ? '<button type="button" class="note-edit" data-tag-create>Create new Amari tag: ' + esc(canonical) + '</button>' : '');
+  }
+  function updateTagSelector(data) {
+    if (selected !== data.contact?.id) return;
+    const section = record.querySelector('#owned-classifications');
+    if (!section) return;
+    const results = section.querySelector('#classification-tag-results');
+    if (results) results.innerHTML = tagCatalogMarkup(data);
+    const draft = classificationDraft(data.contact.id), allowed = tagChoiceAllowed(data, draft);
+    const preview = section.querySelector('#classification-tag-preview');
+    if (preview) preview.textContent = allowed ? (draft.tagChoice.create ? 'New Amari tag: ' : 'Selected Amari tag: ') + draft.tagChoice.canonicalValue : 'Choose an existing tag or deliberately create a new one.';
+    const button = section.querySelector('#classification-tag-submit');
+    if (button) { button.disabled = !allowed || Boolean(draft.command) || classificationRunning.has(data.contact.id) || !classificationStorageAvailable || data.ownedClassificationAuthority?.state !== 'ready' || Boolean(data.contact.archived_at); button.textContent = draft.tagChoice?.create ? 'Create and add Amari tag' : 'Add selected Amari tag'; }
+  }
+  async function loadTagCatalog(data) {
+    const contactId = data.contact.id, draft = classificationDraft(contactId), query = draft.tag;
+    const requestId = (tagCatalogRequests.get(contactId) || 0) + 1;
+    tagCatalogRequests.set(contactId, requestId);
+    tagCatalogs.set(contactId, { state: 'loading', query });
+    updateTagSelector(data);
+    try {
+      const response = await dashboardFetch('/client-desk/tag-catalog?' + new URLSearchParams({ query }));
+      if (!response.ok) throw new Error('Tag catalog unavailable');
+      const catalog = await response.json();
+      if (catalog.state === 'ready' && (!Array.isArray(catalog.entries) || typeof catalog.truncated !== 'boolean')) throw new Error('Invalid tag catalog');
+      if (tagCatalogRequests.get(contactId) !== requestId || draft.tag !== query) return;
+      tagCatalogs.set(contactId, { ...catalog, query });
+    } catch {
+      if (tagCatalogRequests.get(contactId) !== requestId || draft.tag !== query) return;
+      tagCatalogs.set(contactId, { state: 'unavailable', query });
+    }
+    if (selected === contactId) updateTagSelector(classificationProfiles.get(contactId) || data);
+  }
   function classificationMarkup(data) {
     const contactId = data.contact?.id, draft = classificationDraft(contactId);
     const authority = data.ownedClassificationAuthority || { state: 'unavailable' };
@@ -472,7 +527,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       }).join('') || '<p class="empty-small">No ' + kind + ' recorded.</p>';
     };
     const status = !ready ? 'Amari roles and tags are unavailable. Existing labels remain read-only.' : !classificationStorageAvailable ? 'Saving needs a named Staff session and session storage. Reopen Inbox after allowing session storage.' : draft.message || (draft.command ? 'An earlier change needs confirmation. Retry it safely.' : 'Changes stay in Amari CRM. They do not update GHL or start a workflow.');
-    const forms = ownedClassificationCommandsEnabled && ready ? '<form class="note-composer" id="classification-tag-form"><label for="classification-tag">Add an Amari tag</label><input id="classification-tag" maxlength="80" value="' + esc(draft.tag) + '"' + (enabled ? '' : ' disabled') + ' required><span class="source-note">Letters, numbers, hyphens, underscores or colons. Tags use lowercase; spaces become hyphens.</span><span id="classification-tag-preview" class="source-note" role="status">' + esc(draft.tag ? 'Will save as: ' + normalizedClassificationTag(draft.tag) : '') + '</span><button class="note-submit" type="submit"' + (enabled ? '' : ' disabled') + '>Add tag</button></form><form class="note-composer" id="classification-role-form"><label for="classification-role">Grant an Amari role</label><select id="classification-role"' + (enabled ? '' : ' disabled') + '>' + Object.entries(roleLabels).map(([value, label]) => '<option value="' + value + '"' + (draft.role === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select><button class="note-submit" type="submit"' + (enabled ? '' : ' disabled') + '>Grant role</button></form>' : '';
+    const forms = ownedClassificationCommandsEnabled && ready ?  '<form class="note-composer" id="classification-tag-form"><label for="classification-tag">Search tags used in CRM</label><input type="search" id="classification-tag" maxlength="80" autocomplete="off" value="' + esc(draft.tag) + '"' + (enabled ? '' : ' disabled') + '><div id="classification-tag-results" class="tag-catalog-results">' + tagCatalogMarkup(data) + '</div><span id="classification-tag-preview" class="source-note" role="status">Choose an existing tag or deliberately create a new one.</span><button id="classification-tag-submit" class="note-submit" type="submit" disabled>Add selected Amari tag</button></form><form class="note-composer" id="classification-role-form"><label for="classification-role">Grant an Amari role</label><select id="classification-role"' + (enabled ? '' : ' disabled') + '>' + Object.entries(roleLabels).map(([value, label]) => '<option value="' + value + '"' + (draft.role === value ? ' selected' : '') + '>' + label + '</option>').join('') + '</select><button class="note-submit" type="submit"' + (enabled ? '' : ' disabled') + '>Grant role</button></form>' : '';
     return '<h3>Roles and tags</h3><p class="note-status" role="status">' + esc(status) + '</p>' + (ready && draft.command ? '<button type="button" class="note-submit" id="classification-retry"' + (busy || !classificationStorageAvailable ? ' disabled' : '') + '>' + (busy ? 'Saving…' : 'Retry change') + '</button>' : '') + forms + '<h4>Tags</h4><div class="compact-list">' + rows('tags') + '</div><h4>Roles</h4><div class="compact-list">' + rows('roles') + '</div>';
   }
   function renderClassifications(data) {
@@ -490,10 +545,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
       section?.querySelector('#' + id)?.addEventListener(eventName, (event) => {
         draft[field] = event.target.value;
         if (field === 'tag') {
-          const value = normalizedClassificationTag(draft.tag);
-          event.target.setCustomValidity(value && !validClassificationTag(value) ? 'Use letters, numbers, hyphens, underscores or colons; start with a letter or number.' : '');
-          const preview = section.querySelector('#classification-tag-preview');
-          if (preview) preview.textContent = value ? 'Will save as: ' + value : '';
+          draft.tagChoice = null;
+          loadTagCatalog(data);
         }
         if (!persistClassificationDrafts()) renderClassifications(data);
       });
@@ -517,8 +570,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
         const confirmed = result.classification;
         if (!confirmed || confirmed.contactId !== contactId || confirmed.action !== command.action) throw new Error('Change identity could not be confirmed. Retry safely.');
         draft.command = null;
-        if (command.action === 'add_tag') draft.tag = '';
-        draft.message = 'Saved to Amari CRM. Imported labels remain unchanged.';
+        if (command.action === 'add_tag') { draft.tag = ''; draft.tagChoice = null; }
+        draft.message = confirmed.resultState === 'already_effective' ? 'Already present in Amari CRM. No duplicate label was created.' : confirmed.resultState === 'already_absent' ? 'Already absent from Amari CRM. Imported labels remain unchanged.' : 'Saved to Amari CRM. Imported labels remain unchanged.';
         persistClassificationDrafts();
         const refreshed = await dashboardFetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '?limit=1000');
         if (!refreshed.ok) throw new Error('Saved, but labels could not refresh. Reopen the record.');
@@ -537,7 +590,26 @@ const CLIENT_DESK_HTML = `<!doctype html>
       if (draft.command) return;
       save({ action, value, contactId, idempotencyKey: noteIdempotencyKey('classification') });
     };
-    section?.querySelector('#classification-tag-form')?.addEventListener('submit', (event) => { event.preventDefault(); const value = normalizedClassificationTag(draft.tag); if (validClassificationTag(value)) submit('add_tag', value); });
+    section?.querySelector('#classification-tag-form')?.addEventListener('submit', (event) => { event.preventDefault(); if (tagChoiceAllowed(data, draft)) submit('add_tag', draft.tagChoice.canonicalValue); });
+    section?.querySelector('#classification-tag-results')?.addEventListener('click', (event) => {
+      const button = event.target.closest('button');
+      if (!button || button.disabled || draft.command) return;
+      const catalog = tagCatalogs.get(contactId);
+      if (button.hasAttribute('data-tag-refresh')) { loadTagCatalog(data); return; }
+      if (catalog?.state !== 'ready' || catalog.query !== draft.tag) return;
+      if (button.hasAttribute('data-tag-create')) draft.tagChoice = { canonicalValue: normalizedClassificationTag(draft.tag), create: true };
+      else {
+        const entry = catalog.entries[Number(button.dataset.tagChoice)];
+        if (!entry?.reusable || tagAlreadyOwned(data, entry.canonicalValue)) return;
+        draft.tagChoice = { canonicalValue: entry.canonicalValue, create: false };
+      }
+      const choosingWithFocus = document.activeElement === button;
+      persistClassificationDrafts();
+      updateTagSelector(data);
+      if (choosingWithFocus) section.querySelector("#classification-tag-submit")?.focus({ preventScroll: true });
+    });
+    updateTagSelector(data);
+    loadTagCatalog(data);
     section?.querySelector('#classification-role-form')?.addEventListener('submit', (event) => { event.preventDefault(); submit('grant_role', draft.role); });
     section?.querySelector('#classification-retry')?.addEventListener('click', () => { if (draft.command) save(draft.command); });
     section?.querySelectorAll('[data-classification-action]').forEach((button) => button.addEventListener('click', () => {

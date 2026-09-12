@@ -200,3 +200,26 @@ export async function readOwnedContactClassifications(db, contactId) {
     return unavailable;
   }
 }
+
+// An observed catalog, not an approved taxonomy. Removed historical command values
+// are intentionally absent; only labels currently present in CRM projections appear.
+export async function readContactTagCatalog(db, query = '', limit = 100) {
+  if (typeof query !== 'string' || query.length > 80) fail('search must be at most 80 characters', 'invalid_tag_search', 400);
+  const bounded = Number.isInteger(limit) ? Math.min(Math.max(limit, 1), 100) : 100;
+  const unavailable = { version: 'observed-contact-tag-catalog.v1', state: 'unavailable', entries: [], truncated: false };
+  try {
+    if (!await classificationSchemaReady(db)) return unavailable;
+    const terms = query.trim().toLowerCase().split(/[\s:_-]+/).filter(Boolean);
+    const where = terms.length ? 'WHERE ' + terms.map(() => 'instr(lower(tag), ?) > 0').join(' AND ') : '';
+    const result = await db.prepare(`SELECT tag AS value, source FROM contact_tags ${where}
+      GROUP BY tag, source ORDER BY tag COLLATE NOCASE, tag, source LIMIT ?`).bind(...terms, bounded + 1).all();
+    const rows = result.results || [];
+    return {
+      ...unavailable, state: 'ready', truncated: rows.length > bounded,
+      entries: rows.slice(0, bounded).map(row => {
+        const canonicalValue = String(row.value).trim().toLowerCase().replace(/\s+/g, '-');
+        return { value: row.value, source: row.source, canonicalValue, reusable: TAG.test(canonicalValue) };
+      }),
+    };
+  } catch { return unavailable; }
+}
