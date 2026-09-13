@@ -5,6 +5,7 @@ import {
   automationFamily,
   automationInventorySummary,
   familyForDefinition,
+  familyForRuntimeFlow,
 } from "./automation-families.js";
 
 describe("provider-neutral automation families", () => {
@@ -140,6 +141,14 @@ describe("provider-neutral automation families", () => {
     expect(familyForDefinition("reminder", "assessment-no-show")).toEqual(expect.objectContaining({ key: "no-show-recovery" }));
     expect(familyForDefinition("reminder", "no-show-recovery")).toEqual(expect.objectContaining({ key: "no-show-recovery" }));
     expect(familyForDefinition("purchase", "missing")).toBeNull();
+  });
+
+  it("maps a unique reminder runtime flow even when its current definition lives in D1", () => {
+    expect(familyForRuntimeFlow("reminder", "follow-up-session-reminders")).toEqual(expect.objectContaining({
+      key: "follow-up-session-reminders",
+    }));
+    expect(familyForRuntimeFlow("nurture", "follow-up-session-reminders")).toBeNull();
+    expect(familyForRuntimeFlow("reminder", "missing")).toBeNull();
   });
 
   it("registers the Partner Initial provider-neutral delivery contract as hard-shadow", () => {
