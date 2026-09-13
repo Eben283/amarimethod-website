@@ -1,3 +1,5 @@
+import { normalizeGhlTimestamp } from "./datetime.js";
+
 const WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
 const TIMEOUT_MS = 10_000;
 
@@ -34,8 +36,8 @@ export function staffScheduleDetails(schedule) {
     calendarId: appointment.providerCalendarId || "",
     contactId: appointment.contactId,
     contactName: appointment.contactName,
-    startTime: appointment.startTime,
-    endTime: appointment.endTime,
+    startTime: normalizeGhlTimestamp(appointment.startTime),
+    endTime: normalizeGhlTimestamp(appointment.endTime),
     title: appointment.serviceName || "Session",
     calendarName: appointment.serviceName || "Session",
     appointmentStatus: appointment.status,
@@ -63,8 +65,8 @@ export function staffScheduleSummaries(schedule) {
     calendarId: appointment.providerCalendarId || "",
     contactId: appointment.contactId,
     contactName: appointment.contactName,
-    startTime: appointment.startTime,
-    endTime: appointment.endTime,
+    startTime: normalizeGhlTimestamp(appointment.startTime),
+    endTime: normalizeGhlTimestamp(appointment.endTime),
     title: appointment.serviceName || "Session",
     calendarName: appointment.serviceName || "Session",
     appointmentStatus: appointment.status,
