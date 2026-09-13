@@ -14,7 +14,7 @@ function desk(actor = 'Eben', storage = new Map(), denied = false) {
   window.parent = window;
   const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].at(-1)[1];
   const end = script.lastIndexOf('})();');
-  const instrumented = script.slice(0, end) + 'return { tasksMarkup, taskDraft, taskTime, taskLocalValue, taskDueIso, persistTaskDrafts }; })();';
+  const instrumented = script.slice(0, end) + 'return { tasksMarkup, taskDraft, taskTime, taskLocalValue, taskDueIso, taskDraftDueAt, taskLocalZone, persistTaskDrafts }; })();';
   return new Function('window', 'history', 'document', 'fetch', 'return ' + instrumented.trim())(
     window, { replaceState() {} }, { getElementById: () => element },
     async () => ({ ok: true, json: async () => ({ threads: [] }) }),
@@ -76,5 +76,26 @@ describe('Client Desk owned task rendering and retry persistence', () => {
     expect(helper.taskTime('2026-09-12T17:30:00Z')).toBe(value);
     expect(helper.taskDueIso('2026-09-12T10:30')).toBe(new Date('2026-09-12T10:30').toISOString());
     expect(helper.taskLocalValue('2026-09-12T17:30:00Z')).toMatch(/^2026-09-12T/);
+  });
+  it('rejects daylight-saving gaps and folds instead of silently shifting a local due time', () => {
+    const previous = process.env.TZ;
+    process.env.TZ = 'America/Los_Angeles';
+    try {
+      const helper = desk();
+      expect(helper.taskDueIso('2026-03-08T02:30')).toBeNull();
+      expect(helper.taskDueIso('2026-11-01T01:30')).toBeNull();
+      expect(helper.taskDueIso('2026-11-01T03:30')).toBe(new Date('2026-11-01T03:30').toISOString());
+      expect(helper.taskLocalZone()).toBe('America/Los_Angeles');
+    } finally {
+      process.env.TZ = previous;
+    }
+  });
+  it('preserves an untouched exact due timestamp while allowing an intentional minute-level change', () => {
+    const helper = desk();
+    const draft = helper.taskDraft('contact-a');
+    draft.edit = { taskId: 'owned-1', revision: 2, title: 'Review', dueLocal: helper.taskLocalValue('2026-09-12T17:30:45.000Z'), originalDueAt: '2026-09-12T17:30:45.000Z', dueDirty: false, assignedTo: 'Eben' };
+    expect(helper.taskDraftDueAt(draft)).toBe('2026-09-12T17:30:45.000Z');
+    draft.edit.dueDirty = true;
+    expect(helper.taskDraftDueAt(draft)).toBe(new Date(draft.edit.dueLocal).toISOString());
   });
 });

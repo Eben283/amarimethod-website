@@ -620,10 +620,21 @@ const CLIENT_DESK_HTML = `<!doctype html>
     const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
     return local.toISOString().slice(0, 16);
   }
+  function taskLocalZone() {
+    try { return Intl.DateTimeFormat().resolvedOptions().timeZone || 'local time'; } catch { return 'local time'; }
+  }
   function taskDueIso(value) {
     if (!value) return null;
     const due = new Date(value);
-    return Number.isFinite(due.getTime()) ? due.toISOString() : null;
+    if (!Number.isFinite(due.getTime()) || taskLocalValue(due.toISOString()) !== value.slice(0, 16)) return null;
+    // During a fall-back fold, two instants can share the same local clock value.
+    // Refuse that ambiguity instead of silently choosing the earlier/later offset.
+    if ([-3600000, 3600000].some((shift) => taskLocalValue(new Date(due.getTime() + shift).toISOString()) === value.slice(0, 16))) return null;
+    return due.toISOString();
+  }
+  function taskDraftDueAt(draft) {
+    const source = draft.edit || draft;
+    return draft.edit && !draft.edit.dueDirty ? draft.edit.originalDueAt || null : taskDueIso(source.dueLocal);
   }
   function tasksMarkup(data) {
     const contactId = data.contact?.id;
@@ -643,7 +654,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     const dueLocal = editing ? editing.dueLocal : draft.dueLocal;
     const assignedTo = editing ? editing.assignedTo : draft.assignedTo;
     const locked = draft.command || busy;
-    const composer = (ownedTaskCommandsEnabled && ready ? '<form id="task-form" class="note-composer"><label for="task-title">' + (editing ? 'Edit client task' : 'Add a client task') + '</label><textarea id="task-title" maxlength="300"' + (!draft.command ? ' required' : '') + (locked ? ' readonly' : '') + '>' + esc(title) + '</textarea><div class="task-fields"><label for="task-due">Due date and time (optional)<input id="task-due" type="datetime-local" value="' + esc(dueLocal) + '"' + (locked ? ' disabled' : '') + '></label><label for="task-assignee">Assigned to<select id="task-assignee"' + (locked ? ' disabled' : '') + '><option value="Eben"' + (assignedTo === 'Eben' ? ' selected' : '') + '>Eben</option><option value="Garrett"' + (assignedTo === 'Garrett' ? ' selected' : '') + '>Garrett</option></select></label></div><p class="source-note">Saved to Amari CRM only. Due and overdue status appears here; no SMS or email reminder is sent.</p><p class="note-status" role="status">' + esc(!taskStorageAvailable ? 'Task saving needs a named Staff session and session storage. Reopen Inbox after allowing session storage.' : draft.message || (draft.command ? 'An earlier save needs confirmation. Retry it safely.' : '')) + '</p><div class="task-actions"><button class="note-submit" type="submit"' + (!enabled || busy ? ' disabled' : '') + '>' + (busy ? 'Saving…' : draft.command ? 'Retry save' : editing ? 'Save task' : 'Add task') + '</button>' + (editing && !locked ? '<button class="note-edit" type="button" data-task-edit-cancel>Cancel edit</button>' : '') + '</div></form>' : '');
+    const composer = (ownedTaskCommandsEnabled && ready ? '<form id="task-form" class="note-composer"><label for="task-title">' + (editing ? 'Edit client task' : 'Add a client task') + '</label><textarea id="task-title" maxlength="300"' + (!draft.command ? ' required' : '') + (locked ? ' readonly' : '') + '>' + esc(title) + '</textarea><div class="task-fields"><label for="task-due">Due date and time (optional) · ' + esc(taskLocalZone()) + '<input id="task-due" type="datetime-local" value="' + esc(dueLocal) + '"' + (locked ? ' disabled' : '') + '></label><label for="task-assignee">Assigned to<select id="task-assignee"' + (locked ? ' disabled' : '') + '><option value="Eben"' + (assignedTo === 'Eben' ? ' selected' : '') + '>Eben</option><option value="Garrett"' + (assignedTo === 'Garrett' ? ' selected' : '') + '>Garrett</option></select></label></div><p class="source-note">Saved to Amari CRM only. Due and overdue status appears here; no SMS or email reminder is sent.</p><p class="note-status" role="status">' + esc(!taskStorageAvailable ? 'Task saving needs a named Staff session and session storage. Reopen Inbox after allowing session storage.' : draft.message || (draft.command ? 'An earlier save needs confirmation. Retry it safely.' : '')) + '</p><div class="task-actions"><button class="note-submit" type="submit"' + (!enabled || busy ? ' disabled' : '') + '>' + (busy ? 'Saving…' : draft.command ? 'Retry save' : editing ? 'Save task' : 'Add task') + '</button>' + (editing && !locked ? '<button class="note-edit" type="button" data-task-edit-cancel>Cancel edit</button>' : '') + '</div></form>' : '');
     return '<h3>Tasks</h3>' + composer + '<div class="compact-list">' + (cards || '<p class="empty-small">No tasks recorded.</p>') + '</div>' + (!ready ? '<p role="status">Amari tasks are unavailable. Imported history remains read-only.</p>' : '');
   }
   function renderTasks(data) {
@@ -664,7 +675,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
       if (!persistTaskDrafts()) renderTasks(data);
     });
     form?.querySelector('#task-due')?.addEventListener('input', (event) => {
-      if (draft.edit) draft.edit.dueLocal = event.target.value; else draft.dueLocal = event.target.value;
+      if (draft.edit) { draft.edit.dueLocal = event.target.value; draft.edit.dueDirty = true; } else draft.dueLocal = event.target.value;
+      draft.message = '';
       if (!persistTaskDrafts()) renderTasks(data);
     });
     form?.querySelector('#task-assignee')?.addEventListener('change', (event) => {
@@ -716,14 +728,20 @@ const CLIENT_DESK_HTML = `<!doctype html>
       if (draft.command) { save(draft.command); return; }
       const source = draft.edit || draft;
       const title = source.title.trim();
-      const dueAt = taskDueIso(source.dueLocal);
-      if (!title || (source.dueLocal && !dueAt) || !['Eben', 'Garrett'].includes(source.assignedTo)) return;
+      const dueAt = taskDraftDueAt(draft);
+      if (source.dueLocal && !dueAt) {
+        draft.message = 'That local time is unavailable or occurs twice because the clock changes. Choose another time.';
+        persistTaskDrafts();
+        renderTasks(data);
+        return;
+      }
+      if (!title || !['Eben', 'Garrett'].includes(source.assignedTo)) return;
       save(draft.edit ? { action: 'revise', contactId, appointmentId: draft.edit.appointmentId || null, taskId: draft.edit.taskId, expectedRevision: draft.edit.revision, title, dueAt, assignedTo: source.assignedTo, idempotencyKey: noteIdempotencyKey('task-revise') } : { action: 'create', contactId, appointmentId: null, title, dueAt, assignedTo: source.assignedTo, idempotencyKey: noteIdempotencyKey('task-create') });
     });
     section?.querySelectorAll('[data-task-edit]').forEach((button) => button.addEventListener('click', () => {
       const row = (data.tasks || []).find((task) => task.authority === 'owned' && task.task_id === button.dataset.taskEdit && task.state === 'open');
       if (!row || draft.command || !taskStorageAvailable || draft.needsRefresh) return;
-      draft.edit = { taskId: row.task_id, revision: Number(row.revision), appointmentId: row.appointment_id || null, title: row.title || '', dueLocal: taskLocalValue(row.due_at), assignedTo: row.assigned_to || taskActor };
+      draft.edit = { taskId: row.task_id, revision: Number(row.revision), appointmentId: row.appointment_id || null, title: row.title || '', dueLocal: taskLocalValue(row.due_at), originalDueAt: row.due_at || null, dueDirty: false, assignedTo: row.assigned_to || taskActor };
       draft.message = '';
       persistTaskDrafts();
       renderTasks(data);
