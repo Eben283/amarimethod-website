@@ -1208,6 +1208,67 @@ export async function getConversations(
   return fetchApi(`/staff-conversations?filter=${encodeURIComponent(filter)}${debug ? '&debug=1' : ''}`);
 }
 
+export interface CrmPilotThread {
+  thread_id: string | null;
+  channel: string | null;
+  last_event_at: string | null;
+  last_preview: string | null;
+  last_direction: 'inbound' | 'outbound' | null;
+  unread_inbound_count: number;
+  contact_id: string;
+  display_name: string | null;
+  email_normalized: string | null;
+  phone_e164: string | null;
+  external_contact_id: string | null;
+}
+
+export interface CrmPilotInboxResponse {
+  success: true;
+  freshness?: { state?: string; latestRecentSyncAt?: string | null; message?: string | null };
+  threads: CrmPilotThread[];
+}
+
+export interface CrmPilotCommunication {
+  id: string;
+  message_ref: string | null;
+  event_kind: string | null;
+  direction: 'inbound' | 'outbound' | null;
+  delivery_status: string | null;
+  subject: string | null;
+  body_clean: string | null;
+  occurred_at: string | null;
+  sender_label: string | null;
+  thread_channel: string | null;
+}
+
+export interface CrmPilotContactResponse {
+  contact: {
+    id: string;
+    display_name: string | null;
+    email_normalized: string | null;
+    phone_e164: string | null;
+    referral_source_label: string | null;
+    created_at: string | null;
+    ghl_contact_id: string | null;
+  };
+  importedCurrentState?: {
+    sessions_remaining?: string | number | null;
+    sessions_completed?: string | number | null;
+    series_type?: string | null;
+  };
+  nextAppointment?: { starts_at: string; status: string | null; service_name: string | null } | null;
+  appointments?: Array<{ starts_at: string; ends_at: string | null; status: string | null; service_name: string | null }>;
+  communicationTimeline?: CrmPilotCommunication[];
+}
+
+export async function getCrmPilotInbox(): Promise<CrmPilotInboxResponse> {
+  return fetchApi('/staff-crm-pilot?view=inbox&limit=1000');
+}
+
+export async function getCrmPilotContact(contactId: string): Promise<CrmPilotContactResponse> {
+  return fetchApi(`/staff-crm-pilot?view=contact&id=${encodeURIComponent(contactId)}&limit=250`);
+}
+
 export async function getBalances(
   refresh = false,
 ): Promise<import('../types/staff').BalancesResponse> {
