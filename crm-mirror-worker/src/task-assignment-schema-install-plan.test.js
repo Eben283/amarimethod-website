@@ -81,6 +81,18 @@ describe("task assignment schema install plan", () => {
   it("refuses partial, wrong-target, or history-changing evidence", () => {
     const db = base();
     const before = snapshot(db);
+    expect(assessCrmTaskAssignmentSchemaSnapshot({
+      ...before,
+      taskColumns: [...before.taskColumns, { cid: 99, name: "assigned_to", type: "INTEGER", notnull: 0, dflt_value: null, pk: 0 }],
+    }).status).toBe("refused");
+    expect(assessCrmTaskAssignmentSchemaSnapshot({
+      ...before,
+      assignmentTrigger: { type: "trigger", name: "owned_task_version_state_change_preserves_assignment", tbl_name: "owned_task_versions", sql: "CREATE TRIGGER owned_task_version_state_change_preserves_assignment AFTER INSERT ON owned_task_versions BEGIN SELECT 1; END" },
+    }).status).toBe("refused");
+    expect(assessCrmTaskAssignmentSchemaSnapshot({
+      ...before,
+      assignmentIndex: { type: "index", name: "idx_owned_task_versions_assignment", tbl_name: "owned_task_versions", sql: "CREATE INDEX idx_owned_task_versions_assignment ON owned_task_versions(task_id)" },
+    }).status).toBe("refused");
     db.exec(createCrmTaskAssignmentSchemaArtifact().sql);
     const after = snapshot(db);
     expect(assessCrmTaskAssignmentSchemaSnapshot({ ...after, servedByPrimary: false }).status).toBe("refused");

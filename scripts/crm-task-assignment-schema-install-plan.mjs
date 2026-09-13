@@ -91,6 +91,9 @@ export function assessCrmTaskAssignmentSchemaSnapshot(snapshot) {
     const ledger = Array.isArray(snapshot.migrations) ? snapshot.migrations : [];
     const columns = Array.isArray(snapshot.taskColumns) ? snapshot.taskColumns : [];
     const assignment = columns.find((row) => row.name === "assigned_to");
+    const assignmentPresent = Boolean(assignment);
+    const assignmentIndexPresent = Boolean(snapshot.assignmentIndex);
+    const assignmentTriggerPresent = Boolean(snapshot.assignmentTrigger);
     const hasAssignment = assignment && String(assignment.type).toUpperCase() === "TEXT"
       && Number(assignment.notnull) === 0 && assignment.dflt_value == null && Number(assignment.pk) === 0;
     const tableSql = compactSql(snapshot.taskTable?.sql);
@@ -105,7 +108,8 @@ export function assessCrmTaskAssignmentSchemaSnapshot(snapshot) {
       && snapshot.assignmentTrigger?.name === "owned_task_version_state_change_preserves_assignment"
       && snapshot.assignmentTrigger?.tbl_name === "owned_task_versions"
       && compactSql(snapshot.assignmentTrigger?.sql) === EXPECTED_TRIGGER_SQL;
-    if (ledger.at(-1)?.name === "0031_owned_contact_profile_authority.sql" && !hasAssignment && !hasConstraint && !hasIndex && !hasTrigger) {
+    if (ledger.at(-1)?.name === "0031_owned_contact_profile_authority.sql"
+      && !assignmentPresent && !assignmentIndexPresent && !assignmentTriggerPresent && !hasConstraint) {
       return result("proven", { classification: "exact_v31_base", migrationCount: ledger.length });
     }
     if (ledger.at(-1)?.name === MIGRATION_NAME && hasAssignment && hasConstraint && hasIndex && hasTrigger) {
