@@ -135,7 +135,7 @@ function reasonFor(state: ConversationWorkState, preview: string) {
 function toConversation(thread: CrmPilotThread): PilotConversation {
   const name = thread.display_name || thread.email_normalized || thread.phone_e164 || 'Unnamed contact';
   const preview = thread.last_preview || 'No communication mirrored yet.';
-  const state = conversationWorkState(thread.last_direction, preview);
+  const state = conversationWorkState(thread.last_direction, preview, thread.last_event_at);
   return {
     ...thread,
     id: thread.thread_id || thread.contact_id,
