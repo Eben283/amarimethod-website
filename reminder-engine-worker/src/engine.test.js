@@ -8,6 +8,7 @@ import { handleEvent, mergeExecutionFlows, runSweep } from "./engine.js";
 import { loadDueSteps } from "./store.js";
 import { sendConversationMessage } from "../../functions/lib/ghl-send.js";
 import { INITIAL_VIRTUAL_WORKFLOW } from "./initial-virtual-workflow.js";
+import { FOLLOW_UP_WORKFLOW } from "./follow-up-workflow.js";
 import { NO_SHOW_RECOVERY_WORKFLOW } from "./no-show-recovery-workflow.js";
 
 // Minimal stateful fake D1 (same shape as store.test.js's).
@@ -368,6 +369,30 @@ describe("runSweep — shadow (default)", () => {
     // those steps are now out of the due-queue
     expect(await loadDueSteps(env.REMINDER_DB, NOW)).toHaveLength(0);
     expect(env.REMINDER_DB._events.filter((e) => e.outcome === "would_send")).toHaveLength(2);
+  });
+});
+
+describe("runSweep — Follow-Up release pause", () => {
+  it("preserves every due active step when the delivery release is absent", async () => {
+    const active = JSON.parse(JSON.stringify(FOLLOW_UP_WORKFLOW));
+    active.version = 3;
+    active.executionMode = "active";
+    env.REMINDER_DB._workflowDocuments.set(FOLLOW_UP_WORKFLOW.id, active);
+
+    await handleEvent(env, event({
+      calendarId: "ZO1jlGfy01rsxVqicoSB",
+      contactId: "follow-up-contact",
+      appointmentId: "follow-up-appointment",
+      appointmentEventType: "normal",
+      context: { reminderPreference: "full" },
+    }), NOW);
+
+    const counts = await runSweep(env, NOW);
+
+    expect(counts).toMatchObject({ failed: 0, sent: 0, executed: 0, skip: 3 });
+    expect(env.REMINDER_DB._steps.filter((step) => step.status === "pending")).toHaveLength(7);
+    expect(env.REMINDER_DB._events.filter((record) => record.engine === "reminder" && record.action !== "enrolled")).toHaveLength(0);
+    expect(sendConversationMessage).not.toHaveBeenCalled();
   });
 });
 

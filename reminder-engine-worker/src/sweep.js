@@ -23,6 +23,9 @@ export function channelForType(type) {
 export async function processStep({ enrollment, step, flow }, deps, nowMs) {
   if (step.status !== "pending") return { outcome: "skip", reason: step.status };
 
+  const pausedReason = deps.deliveryPause?.(flow, step, enrollment);
+  if (pausedReason) return { outcome: "skip", reason: pausedReason };
+
   const base = {
     ts: nowMs,
     engine: "reminder",
