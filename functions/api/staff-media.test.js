@@ -12,9 +12,18 @@ const { listStaffMedia, createMediaFolder, updateMediaAsset, registerMediaAsset,
   getMediaAssetRecord: vi.fn(),
 }));
 
+const { organizeMediaByWebsiteUsage } = vi.hoisted(() => ({
+  organizeMediaByWebsiteUsage: vi.fn(),
+}));
+
 vi.mock("../lib/staff-media.js", async (importOriginal) => {
   const original = await importOriginal();
   return { ...original, listStaffMedia, createMediaFolder, updateMediaAsset, registerMediaAsset, getMediaAssetRecord };
+});
+
+vi.mock("../lib/staff-site-media.js", async (importOriginal) => {
+  const original = await importOriginal();
+  return { ...original, organizeMediaByWebsiteUsage };
 });
 
 import * as mediaApi from "./staff-media.js";
@@ -45,6 +54,19 @@ describe("Staff Media APIs", () => {
     const response = await mediaApi.onRequestGet(context(request("https://www.amarimethod.com/api/staff-media")));
     expect(response.status).toBe(200);
     expect(await response.json()).toMatchObject({ folders: [], assets: [], uploadReady: false, storage: "owned-d1-r2" });
+  });
+
+  it("does not reorganize media records while listing the library", async () => {
+    listStaffMedia.mockResolvedValue({
+      folders: [],
+      assets: [{ id: "asset-1", status: "active", kind: "image", name: "photo.jpg" }],
+    });
+
+    const response = await mediaApi.onRequestGet(context(request("https://www.amarimethod.com/api/staff-media")));
+
+    expect(response.status).toBe(200);
+    expect(listStaffMedia).toHaveBeenCalledOnce();
+    expect(organizeMediaByWebsiteUsage).not.toHaveBeenCalled();
   });
 
   it("keeps the fixed public-site import staff-authenticated", async () => {
