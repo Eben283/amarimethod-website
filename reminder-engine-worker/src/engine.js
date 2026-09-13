@@ -250,6 +250,14 @@ export async function runSweep(env, nowMs, limit = 100) {
       if (!target || !contactId) return null;
       return removeFromGhlWorkflow(env, target, contactId);
     },
+    // A published active document is not permission to consume work. Preserve
+    // every Follow-Up step, including its leading GHL exit node, until all of
+    // the exact delivery prerequisites are present in the executing Worker.
+    deliveryPause: (flow, step, enrollment) => {
+      if (flow.flowKey !== FOLLOW_UP_WORKFLOW.id || flow.mode !== "active") return null;
+      const gate = followUpDeliveryEligibility(env, flow, step, enrollment);
+      return gate.eligible ? null : gate.reason;
+    },
     // active-mode only; copy templates are a later brick, so an active flow without templates
     // fails loudly rather than sending a blank message. Shadow flows never reach this.
     renderMessage: async () => { throw new Error("active-mode templates not built yet"); },
