@@ -175,6 +175,43 @@ describe("contactAutomationView — the per-contact timeline (DASHBOARD-PLAN v1)
     expect(v.events[0].evidence.gaps.map((gap) => gap.code)).toContain("message_reference_missing");
   });
 
+  it("links Follow-Up runtime evidence to its inspectable family", async () => {
+    const data = seed();
+    data.reminderEnrollments.push({
+      enrollment_id: "follow-up-session-reminders:appt_2",
+      flow_key: "follow-up-session-reminders",
+      definition_version: 3,
+      appointment_id: "appt_2",
+      contact_id: "cont_1",
+      calendar_id: "follow-up",
+      start_at: "2026-07-22T15:00:00-07:00",
+      start_ms: NOW + 10 * DAY,
+      enrolled_at: NOW + 1,
+      status: "active",
+    });
+    data.events.push({
+      id: 4,
+      ts: NOW + 1,
+      engine: "reminder",
+      flow_key: "follow-up-session-reminders",
+      definition_version: 3,
+      contact_id: "cont_1",
+      appointment_id: "appt_2",
+      step_index: 1,
+      action: "send",
+      outcome: "failed",
+      channel: "email",
+      message_ref: null,
+      detail: '{"error":"active-mode templates not built yet"}',
+    });
+
+    const view = await contactAutomationView(fakeD1(data), "cont_1");
+    const enrollment = view.enrollments.find((item) => item.key === "follow-up-session-reminders");
+    const event = view.events.find((item) => item.flowKey === "follow-up-session-reminders");
+    expect(enrollment.family).toEqual({ key: "follow-up-session-reminders", name: "Follow-up session reminders" });
+    expect(event.family).toEqual({ key: "follow-up-session-reminders", name: "Follow-up session reminders" });
+  });
+
   it("joins an exact SMS receipt back to its send without leaving a false delivery gap", async () => {
     const data = seed();
     data.events.push(

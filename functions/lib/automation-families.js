@@ -510,6 +510,15 @@ export function familyForDefinition(engine, key) {
   return family ? clone(family) : null;
 }
 
+export function familyForRuntimeFlow(engine, key) {
+  const definitionFamily = familyForDefinition(engine, key);
+  if (definitionFamily) return definitionFamily;
+  if (engine !== "reminder") return null;
+
+  const matches = FAMILIES.filter((item) => item.runtimeFlowKeys.includes(key));
+  return matches.length === 1 ? clone(matches[0]) : null;
+}
+
 export function automationInventorySummary() {
   const records = FAMILIES.flatMap((family) => family.sourceRecords);
   return {

@@ -5,10 +5,10 @@
 // Scale note (from the plan): a few hundred rows total — plain per-table queries, no rollups.
 
 import { eventEvidence, findAutomationDefinition } from "./automation-registry.js";
-import { familyForDefinition } from "./automation-families.js";
+import { familyForRuntimeFlow } from "./automation-families.js";
 
 function familyReference(engine, key) {
-  const family = familyForDefinition(engine, key);
+  const family = familyForRuntimeFlow(engine, key);
   return family ? { key: family.key, name: family.name } : null;
 }
 
