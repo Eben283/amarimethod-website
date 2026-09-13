@@ -13,6 +13,26 @@ export const ARTIFACT_BYTES = 1350;
 
 const MIGRATION_URL = new URL(`../crm-mirror-worker/migrations/${MIGRATION_NAME}`, import.meta.url);
 const sha256 = (value) => createHash("sha256").update(value).digest("hex");
+const compactSql = (value) => String(value || "").replace(/\s+/g, " ").trim().replace(/;$/, "");
+const EXPECTED_INDEX_SQL = compactSql("CREATE INDEX idx_owned_task_versions_assignment ON owned_task_versions(assigned_to, state, due_at, recorded_at DESC, task_id, revision DESC)");
+const EXPECTED_TRIGGER_SQL = compactSql(`CREATE TRIGGER owned_task_version_state_change_preserves_assignment
+BEFORE INSERT ON owned_task_versions
+WHEN NEW.action IN ('complete', 'reopen', 'archive', 'restore')
+ AND EXISTS (
+  SELECT 1 FROM owned_task_versions current
+   WHERE current.task_id = NEW.task_id
+     AND current.revision = NEW.prior_revision
+     AND current.revision = (
+       SELECT MAX(latest.revision) FROM owned_task_versions latest WHERE latest.task_id = NEW.task_id
+     )
+ )
+ AND NOT EXISTS (
+  SELECT 1 FROM owned_task_versions current
+   WHERE current.task_id = NEW.task_id
+     AND current.revision = NEW.prior_revision
+     AND current.assigned_to IS NEW.assigned_to
+ )
+BEGIN SELECT RAISE(ABORT, 'owned task assignment conflict'); END`);
 const frozen = (value) => Object.freeze(value);
 const flags = frozen({
   sourceOnly: true,
@@ -52,6 +72,7 @@ export function crmTaskAssignmentSchemaReadbackQueries() {
   return frozen([
     frozen({ key: "ledger", sql: "SELECT id, name, applied_at FROM d1_migrations ORDER BY id" }),
     frozen({ key: "taskColumns", sql: "PRAGMA table_info('owned_task_versions')" }),
+    frozen({ key: "taskTable", sql: "SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name = 'owned_task_versions'" }),
     frozen({ key: "assignmentIndex", sql: "SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name = 'idx_owned_task_versions_assignment'" }),
     frozen({ key: "assignmentTrigger", sql: "SELECT type, name, tbl_name, sql FROM sqlite_schema WHERE name = 'owned_task_version_state_change_preserves_assignment'" }),
     frozen({ key: "taskCounts", sql: "SELECT COUNT(*) AS version_count, COUNT(DISTINCT task_id) AS task_count, SUM(CASE WHEN assigned_to IS NOT NULL THEN 1 ELSE 0 END) AS assigned_version_count FROM owned_task_versions" }),
@@ -69,13 +90,25 @@ export function assessCrmTaskAssignmentSchemaSnapshot(snapshot) {
     if (snapshot.integrity !== "ok" || Number(snapshot.foreignKeyViolationCount) !== 0) throw new Error("integrity_unproven");
     const ledger = Array.isArray(snapshot.migrations) ? snapshot.migrations : [];
     const columns = Array.isArray(snapshot.taskColumns) ? snapshot.taskColumns : [];
-    const hasAssignment = columns.some((row) => row.name === "assigned_to" && String(row.type).toUpperCase() === "TEXT");
-    const hasIndex = snapshot.assignmentIndex?.name === "idx_owned_task_versions_assignment";
-    const hasTrigger = snapshot.assignmentTrigger?.name === "owned_task_version_state_change_preserves_assignment";
-    if (ledger.at(-1)?.name === "0031_owned_contact_profile_authority.sql" && !hasAssignment && !hasIndex && !hasTrigger) {
+    const assignment = columns.find((row) => row.name === "assigned_to");
+    const hasAssignment = assignment && String(assignment.type).toUpperCase() === "TEXT"
+      && Number(assignment.notnull) === 0 && assignment.dflt_value == null && Number(assignment.pk) === 0;
+    const tableSql = compactSql(snapshot.taskTable?.sql);
+    const hasConstraint = snapshot.taskTable?.type === "table" && snapshot.taskTable?.name === "owned_task_versions"
+      && snapshot.taskTable?.tbl_name === "owned_task_versions"
+      && tableSql.includes("assigned_to TEXT CHECK (assigned_to IS NULL OR assigned_to IN ('Eben', 'Garrett'))");
+    const hasIndex = snapshot.assignmentIndex?.type === "index"
+      && snapshot.assignmentIndex?.name === "idx_owned_task_versions_assignment"
+      && snapshot.assignmentIndex?.tbl_name === "owned_task_versions"
+      && compactSql(snapshot.assignmentIndex?.sql) === EXPECTED_INDEX_SQL;
+    const hasTrigger = snapshot.assignmentTrigger?.type === "trigger"
+      && snapshot.assignmentTrigger?.name === "owned_task_version_state_change_preserves_assignment"
+      && snapshot.assignmentTrigger?.tbl_name === "owned_task_versions"
+      && compactSql(snapshot.assignmentTrigger?.sql) === EXPECTED_TRIGGER_SQL;
+    if (ledger.at(-1)?.name === "0031_owned_contact_profile_authority.sql" && !hasAssignment && !hasConstraint && !hasIndex && !hasTrigger) {
       return result("proven", { classification: "exact_v31_base", migrationCount: ledger.length });
     }
-    if (ledger.at(-1)?.name === MIGRATION_NAME && hasAssignment && hasIndex && hasTrigger) {
+    if (ledger.at(-1)?.name === MIGRATION_NAME && hasAssignment && hasConstraint && hasIndex && hasTrigger) {
       return result("proven", { classification: "exact_v32_task_assignment", migrationCount: ledger.length });
     }
     throw new Error("schema_or_ledger_mismatch");

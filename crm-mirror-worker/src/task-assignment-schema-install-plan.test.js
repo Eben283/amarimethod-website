@@ -44,6 +44,7 @@ function snapshot(db) {
     foreignKeyViolationCount: db.prepare("PRAGMA foreign_key_check").all().length,
     migrations: db.prepare("SELECT id, name, applied_at FROM d1_migrations ORDER BY id").all(),
     taskColumns,
+    taskTable: schema("owned_task_versions"),
     assignmentIndex: schema("idx_owned_task_versions_assignment"),
     assignmentTrigger: schema("owned_task_version_state_change_preserves_assignment"),
     taskCounts: {
@@ -58,7 +59,7 @@ describe("task assignment schema install plan", () => {
   it("pins one exact source-only artifact and bounded readback", () => {
     const artifact = createCrmTaskAssignmentSchemaArtifact();
     expect(artifact).toMatchObject({ bytes: ARTIFACT_BYTES, sha256: ARTIFACT_SHA256, migrationCount: 1, executionAuthorized: false });
-    expect(crmTaskAssignmentSchemaReadbackQueries()).toHaveLength(7);
+    expect(crmTaskAssignmentSchemaReadbackQueries()).toHaveLength(8);
     expect(crmTaskAssignmentSchemaReadbackQueries().every((query) => /^(SELECT|PRAGMA)/.test(query.sql))).toBe(true);
   });
 
@@ -83,6 +84,9 @@ describe("task assignment schema install plan", () => {
     db.exec(createCrmTaskAssignmentSchemaArtifact().sql);
     const after = snapshot(db);
     expect(assessCrmTaskAssignmentSchemaSnapshot({ ...after, servedByPrimary: false }).status).toBe("refused");
+    expect(assessCrmTaskAssignmentSchemaSnapshot({ ...after, assignmentTrigger: { ...after.assignmentTrigger, sql: "CREATE TRIGGER owned_task_version_state_change_preserves_assignment AFTER INSERT ON owned_task_versions BEGIN SELECT 1; END" } }).status).toBe("refused");
+    expect(assessCrmTaskAssignmentSchemaSnapshot({ ...after, assignmentIndex: { ...after.assignmentIndex, tbl_name: "contacts" } }).status).toBe("refused");
+    expect(assessCrmTaskAssignmentSchemaSnapshot({ ...after, taskTable: { ...after.taskTable, sql: after.taskTable.sql.replace("CHECK (assigned_to IS NULL OR assigned_to IN ('Eben', 'Garrett'))", "") } }).status).toBe("refused");
     expect(verifyCrmTaskAssignmentSchemaTransition(before, { ...after, taskCounts: { ...after.taskCounts, versionCount: 2 } }).status).toBe("refused");
     expect(verifyCrmTaskAssignmentSchemaTransition(before, { ...after, databaseId: "wrong" }).status).toBe("refused");
     db.close();
