@@ -1,4 +1,5 @@
 import { ownedContactClassificationReleaseReadiness } from "./owned-contact-classifications.js";
+import { ownedContactProfileReleaseReadiness } from "./owned-contact-profiles.js";
 import { ownedTaskReleaseReadiness } from "./owned-tasks.js";
 import { ownedNoteReleaseReadiness } from "./owned-notes.js";
 
@@ -84,6 +85,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
   .payment-summary { border-color:#c59d4f; border-radius:6px; background:var(--desk-attention-soft); color:var(--desk-attention); }
   .payment-state { border-radius:4px; }
   .thread-row:focus-visible,.show-all:focus-visible,.timeline-filter:focus-visible,.status-card:focus-visible,.record-tab:focus-visible,.payment-actions-toggle:focus-visible,.payment-action:focus-visible,.workflow-row:focus-visible,.composer :focus-visible { outline:3px solid var(--desk-active); outline-offset:2px; }
+  .record-name-row { display:flex; align-items:baseline; justify-content:space-between; gap:10px; } .profile-name-action { flex:0 0 auto; } .owned-profile-editor { display:grid; gap:9px; margin-top:10px; padding:10px; border:1px solid #c5d7d2; border-radius:9px; background:#fff; } .owned-profile-fields { display:grid; grid-template-columns:1fr 1fr; gap:8px; } .owned-profile-editor label { display:grid; gap:4px; color:#526b72; font-size:10px; font-weight:800; letter-spacing:.04em; text-transform:uppercase; } .owned-profile-editor input { width:100%; min-width:0; border:1px solid #aebfbb; border-radius:7px; padding:8px; background:#fffefa; color:#243f49; font:inherit; font-size:12px; } .owned-profile-preview { margin:0; color:#395861; font-size:12px; line-height:1.45; } .owned-profile-actions { display:flex; align-items:center; gap:8px; flex-wrap:wrap; } .owned-profile-conflict { margin:0; padding:8px; border-left:3px solid #c88b6c; background:#fdf6f1; color:#6a493f; font-size:11px; line-height:1.45; } .name-source-label { margin:5px 0 0; color:#778a8f; font-size:10px; font-weight:800; }
   @media (max-width:1080px) {
     .workspace { height:auto; max-height:none; overflow:visible; grid-template-columns:minmax(245px,.72fr) minmax(380px,1.28fr); }
     .inbox,.conversation { height:min(66vh,640px); }
@@ -106,7 +108,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     .workspace:not(.has-selection) .conversation,.workspace:not(.has-selection) .record { display:none; }
     .workspace.has-selection .conversation,.workspace.has-selection .record { display:flex; }
     .workspace.has-selection .record { display:block; }
-    .mobile-back { display:inline-flex; }
+    .mobile-back { display:inline-flex; } .owned-profile-fields { grid-template-columns:1fr; }
   }
 </style></head><body><main>
 <div class="mirror-health degraded" id="mirror-health" role="status">Checking mirror…</div>
@@ -115,6 +117,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
 </main><script>
 (() => {
   const ownedClassificationCommandsEnabled = __OWNED_CLASSIFICATION_COMMANDS_ENABLED__;
+  const ownedContactProfileCommandsEnabled = __OWNED_CONTACT_PROFILE_COMMANDS_ENABLED__;
   const ownedTaskCommandsEnabled = __OWNED_TASK_COMMANDS_ENABLED__;
   const ownedNoteCommandsEnabled = __OWNED_NOTE_COMMANDS_ENABLED__;
   const workspace = document.getElementById('workspace'), list = document.getElementById('thread-list'), conversation = document.getElementById('conversation'), record = document.getElementById('record'), query = document.getElementById('query'), count = document.getElementById('count'), unread = document.getElementById('unread'), mirrorHealth = document.getElementById('mirror-health');
@@ -262,7 +265,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
     const state = [['Series', clientState.series_type], ['Sessions left', clientState.sessions_remaining], ['Sessions done', clientState.sessions_completed], ['Portal access', clientState.portal_access], ['Living Practice', clientState.living_practice_access]].filter((pair) => pair[1] != null && pair[1] !== '').map((pair) => '<div class="identity-value"><span class="identity-label">' + esc(pair[0]) + '</span><span>' + esc(pair[1]) + '</span></div>').join('');
     const accessStatus = paymentAccess.status === 'aligned' ? 'access-aligned' : paymentAccess.status === 'review_access_state' ? 'access-review' : 'access-neutral';
     const accessSummary = paymentAccess.payment ? [['Stripe payment', paymentAccess.payment.classification || 'Package payment'], ['Current access', paymentAccess.label || 'Not mirrored']].map((pair) => '<div class="identity-value"><span class="identity-label">' + esc(pair[0]) + '</span><span>' + esc(pair[1]) + '</span></div>').join('') : '<p class="empty-small">No linked package payment.</p>';
-    return '<div class="record-head"><h2 class="record-name">' + esc(c.display_name || 'Unnamed client') + '</h2><p class="record-subtitle">Current client record · read-only mirror</p></div>' +
+    return '<div class="record-head" id="owned-contact-profile">' + contactProfileMarkup(data) + '</div>' +
       '<section class="record-status"><h3>Open record</h3>' + statusCards + '</section>' +
       '<div class="record-scroll"><section class="record-section"><h3>Contact</h3><div class="identity-grid">' + identities + '</div><p class="source-note">DND is shown as on or off. This mirror does not send messages.</p></section>' +
       '<section class="record-section" id="owned-classifications">' + classificationMarkup(data) + '</section>' +
@@ -350,6 +353,252 @@ const CLIENT_DESK_HTML = `<!doctype html>
   function taskDraft(contactId) {
     if (!Object.hasOwn(taskDrafts, contactId)) taskDrafts[contactId] = { title: '', command: null, message: '' };
     return taskDrafts[contactId];
+  }
+  // Names use their own actor-scoped durable draft. An unresolved payload is
+  // deliberately retained verbatim so an iframe/session renewal never creates
+  // a second command with a new key.
+  const profileStorageKey = 'amari-client-profile-drafts.v1.' + taskActor;
+  let profileDrafts = Object.create(null), profileStorageAvailable = false;
+  try {
+    if (!taskActor) throw new Error('Named session required');
+    const saved = JSON.parse(window.sessionStorage.getItem(profileStorageKey) || '{}');
+    if (saved && typeof saved === 'object' && !Array.isArray(saved)) profileDrafts = Object.assign(Object.create(null), saved);
+    window.sessionStorage.setItem(profileStorageKey, JSON.stringify(profileDrafts));
+    profileStorageAvailable = true;
+  } catch {}
+  const profileRunning = new Set(), profileProfiles = new Map(), profileOperations = new Map();
+  function persistProfileDrafts() {
+    if (!taskActor) return false;
+    try { window.sessionStorage.setItem(profileStorageKey, JSON.stringify(profileDrafts)); profileStorageAvailable = true; return true; }
+    catch { profileStorageAvailable = false; return false; }
+  }
+  function profileDraftMatchesAuthority(draft, name) {
+    return String(draft.firstName || '') === String(name?.firstName || '') && String(draft.lastName || '') === String(name?.lastName || '');
+  }
+  function resetProfileDraft(draft, authority) {
+    const name = authority?.name;
+    if (!name) return;
+    draft.initialized = true;
+    draft.firstName = name.firstName || '';
+    draft.lastName = name.lastName || '';
+    draft.baseFirstName = draft.firstName;
+    draft.baseLastName = draft.lastName;
+    draft.baseRevision = Number(name.revision);
+    draft.dirty = false;
+  }
+  function profileDraftIsDirty(draft) {
+    return String(draft.firstName || '') !== String(draft.baseFirstName || '') || String(draft.lastName || '') !== String(draft.baseLastName || '');
+  }
+  function profileDraft(contactId, authority) {
+    if (!Object.hasOwn(profileDrafts, contactId)) profileDrafts[contactId] = { initialized: false, editing: false, firstName: '', lastName: '', baseFirstName: '', baseLastName: '', baseRevision: null, dirty: false, command: null, conflict: null, message: '' };
+    const draft = profileDrafts[contactId];
+    if (!draft.initialized && authority?.name) {
+      resetProfileDraft(draft, authority);
+    } else if (authority?.name && !Number.isSafeInteger(Number(draft.baseRevision))) {
+      // Old stored drafts did not retain their source revision. Never turn a
+      // differing legacy edit into a write against a newly-read revision.
+      if (draft.editing && !profileDraftMatchesAuthority(draft, authority.name)) {
+        draft.baseFirstName = draft.firstName;
+        draft.baseLastName = draft.lastName;
+        draft.baseRevision = null;
+        draft.dirty = true;
+        draft.conflict = draft.conflict || { current: authority.name, proposed: { firstName: draft.firstName, lastName: draft.lastName } };
+        draft.message = draft.message || 'This saved name draft needs a fresh review before it can use the current revision.';
+      } else {
+        resetProfileDraft(draft, authority);
+      }
+    } else if (authority?.name && !draft.command && !draft.conflict && !draft.dirty) {
+      // A pristine editor always tracks authoritative readback. A dirty draft
+      // retains its original revision so a later save becomes a conflict.
+      resetProfileDraft(draft, authority);
+    }
+    if (draft.command && draft.command.actor !== taskActor) {
+      draft.command = null;
+      draft.message = 'This pending name change belongs to a different Staff session.';
+    }
+    return draft;
+  }
+  function profileAuthority(data) {
+    const authority = data.ownedContactProfileAuthority;
+    if (!authority || authority.state !== 'ready' || !authority.name || !Array.isArray(authority.allowedActions)
+      || !authority.allowedActions.includes('revise_name') || typeof authority.name.displayName !== 'string'
+      || !Number.isSafeInteger(Number(authority.name.revision)) || Number(authority.name.revision) < 0) return null;
+    return authority;
+  }
+  function profileDisplayName(firstName, lastName) { return [String(firstName || '').trim(), String(lastName || '').trim()].filter(Boolean).join(' ') || 'Unnamed client'; }
+  function profilePendingCommand(draft, contactId) {
+    const pending = draft?.command, command = pending?.payload;
+    return Boolean(pending && pending.actor === taskActor && command && command.action === 'revise_name'
+      && command.contactId === contactId && typeof command.expectedRevision === 'number'
+      && Number.isSafeInteger(command.expectedRevision) && command.expectedRevision >= 0
+      && typeof command.firstName === 'string' && typeof command.lastName === 'string'
+      && Boolean(command.firstName.trim() || command.lastName.trim())
+      && command.firstName.length <= 100 && command.lastName.length <= 100
+      && typeof command.idempotencyKey === 'string' && /^[A-Za-z0-9._:-]{8,160}$/.test(command.idempotencyKey));
+  }
+  function profileIdempotencyKey() {
+    const value = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function' ? crypto.randomUUID() : Date.now() + '-' + Math.random().toString(36).slice(2);
+    return 'client-desk-profile-revise-name-' + value;
+  }
+  function contactProfileMarkup(data) {
+    const contact = data.contact || {}, authority = profileAuthority(data);
+    const draft = profileDraft(contact.id || '', authority);
+    const ready = Boolean(ownedContactProfileCommandsEnabled && authority && profileStorageAvailable);
+    const busy = profileRunning.has(contact.id);
+    const showEditor = draft.editing || Boolean(draft.command) || Boolean(draft.conflict);
+    const currentName = authority?.name?.displayName || contact.display_name || 'Unnamed client';
+    const source = authority?.name?.authority === 'owned' ? 'Amari CRM name · revision ' + authority.name.revision : 'Imported name · revision ' + (authority?.name?.revision ?? '—');
+    const preview = profileDisplayName(draft.firstName, draft.lastName);
+    const proposed = draft.conflict?.proposed || { firstName: draft.firstName, lastName: draft.lastName };
+    const conflictCurrent = draft.conflict?.current || authority?.name;
+    const canRetry = ready && !busy && profilePendingCommand(draft, contact.id);
+    const canSave = ready && !busy && !draft.command && Number.isSafeInteger(Number(draft.baseRevision)) && Boolean(String(draft.firstName || '').trim() || String(draft.lastName || '').trim());
+    const editor = showEditor ? '<form class="owned-profile-editor" id="owned-contact-profile-form"><div class="owned-profile-fields"><label for="contact-profile-first-name">First name<input id="contact-profile-first-name" maxlength="100" autocomplete="given-name" value="' + esc(draft.firstName) + '"' + (draft.command || busy ? ' readonly' : '') + '></label><label for="contact-profile-last-name">Last name<input id="contact-profile-last-name" maxlength="100" autocomplete="family-name" value="' + esc(draft.lastName) + '"' + (draft.command || busy ? ' readonly' : '') + '></label></div><p class="owned-profile-preview" id="contact-profile-preview">Preview: ' + esc(preview) + '</p><p class="source-note">This changes the Amari CRM name only. It does not update GHL.</p>' + (draft.conflict ? '<p class="owned-profile-conflict">Current: ' + esc(profileDisplayName(conflictCurrent?.firstName, conflictCurrent?.lastName)) + ' · revision ' + esc(conflictCurrent?.revision) + '<br>Proposed: ' + esc(profileDisplayName(proposed.firstName, proposed.lastName)) + '</p>' : '') + '<p class="note-status' + (draft.conflict ? ' error' : '') + '" role="status">' + esc(!ready ? 'Name saving needs a named Staff session, profile authority, and session storage.' : draft.message || (draft.command ? 'An earlier name change needs confirmation. Retry it safely.' : '')) + '</p><div class="owned-profile-actions">' + (draft.conflict ? '<button class="note-submit" type="button" id="contact-profile-conflict-retry"' + (ready && !busy ? '' : ' disabled') + '>Retry with current revision</button>' : '<button class="note-submit" type="submit" id="contact-profile-save"' + (canSave || canRetry ? '' : ' disabled') + '>' + (busy ? 'Saving…' : draft.command ? 'Retry save' : 'Save name') + '</button>') + '<button class="note-edit" type="button" id="contact-profile-cancel"' + (draft.command || busy ? ' disabled' : '') + '>Cancel</button></div></form>' : '';
+    return '<div class="record-name-row"><h2 class="record-name">' + esc(currentName) + '</h2>' + (ready && !showEditor ? '<button class="note-edit profile-name-action" type="button" id="contact-profile-edit">Edit name</button>' : '') + '</div><p class="record-subtitle">Current client record</p><p class="name-source-label">' + esc(source) + '</p>' + (!authority ? '<p class="source-note">Name editing is unavailable until the Amari CRM profile authority is ready.</p>' : '') + editor + (!showEditor && draft.message ? '<p class="note-status" role="status">' + esc(draft.message) + '</p>' : '');
+  }
+  function updateProfileNames(data) {
+    const contact = data.contact || {}, authority = profileAuthority(data);
+    const name = authority?.name?.displayName || contact.display_name || 'Unnamed client';
+    conversation.querySelector('.client-name')?.replaceChildren(document.createTextNode(name));
+    conversation.querySelector('.avatar')?.replaceChildren(document.createTextNode(initials(name)));
+    current = current.map((row) => row.contact_id === contact.id ? { ...row, display_name: name } : row);
+    renderThreads();
+  }
+  function renderOwnedContactProfile(data) {
+    if (selected !== data.contact?.id) return;
+    const section = record.querySelector('#owned-contact-profile');
+    if (!section) return;
+    const activeId = ['contact-profile-first-name', 'contact-profile-last-name', 'contact-profile-edit', 'contact-profile-save', 'contact-profile-conflict-retry'].includes(document.activeElement?.id) ? document.activeElement.id : null;
+    const recordScrollTop = record.scrollTop;
+    section.innerHTML = contactProfileMarkup(data);
+    bindOwnedContactProfile(data);
+    record.scrollTop = recordScrollTop;
+    (activeId ? section.querySelector('#' + activeId) : null)?.focus({ preventScroll: true });
+    if (activeId && !section.querySelector('#' + activeId)) section.querySelector('#contact-profile-edit')?.focus({ preventScroll: true });
+  }
+  function profileFocusStillActive() {
+    const active = document.activeElement;
+    return !active || active === document.body || active === document.documentElement || Boolean(active.closest?.('#owned-contact-profile'));
+  }
+  function authoritativeProfileReadback(data) {
+    if (!data?.contact?.id || !profileAuthority(data)) throw new Error('Saved, but the name authority could not be verified.');
+    profileProfiles.set(data.contact.id, data);
+    updateProfileNames(data);
+    renderOwnedContactProfile(data);
+  }
+  function bindOwnedContactProfile(data) {
+    const contactId = data.contact?.id, authority = profileAuthority(data), draft = profileDraft(contactId, authority);
+    profileProfiles.set(contactId, data);
+    const section = record.querySelector('#owned-contact-profile');
+    const syncPreview = () => {
+      const preview = section?.querySelector('#contact-profile-preview');
+      if (preview) preview.textContent = 'Preview: ' + profileDisplayName(draft.firstName, draft.lastName);
+    };
+    section?.querySelector('#contact-profile-edit')?.addEventListener('click', () => {
+      if (!authority || !profileStorageAvailable) return;
+      draft.editing = true; draft.message = ''; persistProfileDrafts(); renderOwnedContactProfile(data);
+      record.querySelector('#contact-profile-first-name')?.focus({ preventScroll: true });
+    });
+    for (const [id, field] of [['contact-profile-first-name', 'firstName'], ['contact-profile-last-name', 'lastName']]) {
+      section?.querySelector('#' + id)?.addEventListener('input', (event) => {
+        draft[field] = event.target.value;
+        draft.dirty = profileDraftIsDirty(draft);
+        draft.conflict = null;
+        persistProfileDrafts();
+        syncPreview();
+      });
+    }
+    const save = async (pending) => {
+      const command = pending?.payload;
+      if (!authority || !profilePendingCommand({ command: pending }, contactId) || profileRunning.has(contactId) || !profileStorageAvailable) return;
+      const operation = (profileOperations.get(contactId) || 0) + 1;
+      profileOperations.set(contactId, operation);
+      draft.command = pending;
+      draft.editing = true;
+      draft.restoreFocusAfterSave = true;
+      draft.message = 'Saving…';
+      if (!persistProfileDrafts()) { renderOwnedContactProfile(data); return; }
+      profileRunning.add(contactId);
+      renderOwnedContactProfile(data);
+      let latest = null;
+      try {
+        const response = await dashboardFetch('/contacts/profile-commands', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(command) });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) {
+          if (result.error === 'stale_profile_revision') {
+            const refreshed = await dashboardFetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '?limit=1000');
+            if (refreshed.ok) {
+              latest = await refreshed.json();
+              const currentAuthority = profileAuthority(latest);
+              if (latest.contact?.id === contactId && currentAuthority) {
+                draft.command = null;
+                draft.conflict = { current: currentAuthority.name, proposed: { firstName: command.firstName, lastName: command.lastName } };
+                draft.message = 'This name changed before your save. Review the current and proposed names, then explicitly retry.';
+                persistProfileDrafts();
+              }
+            }
+          }
+          throw new Error(result.detail || result.error || 'Name change could not be confirmed.');
+        }
+        const confirmed = result.profile;
+        if (!confirmed || confirmed.contactId !== contactId || confirmed.action !== 'revise_name'
+          || Number(confirmed.expectedRevision) !== Number(command.expectedRevision)
+          || !Number.isSafeInteger(Number(confirmed.resultRevision))
+          || Number(confirmed.resultRevision) < command.expectedRevision
+          || confirmed.displayName !== profileDisplayName(command.firstName, command.lastName)) {
+          throw new Error('Name change identity could not be confirmed. Retry safely.');
+        }
+        // A successful command confirms the immutable evidence independently
+        // of a later operator's authoritative name revision.
+        draft.command = null;
+        draft.conflict = null;
+        draft.editing = false;
+        draft.message = confirmed.deduped ? 'Already saved to Amari CRM.' : 'Saved to Amari CRM.';
+        persistProfileDrafts();
+        const refreshed = await dashboardFetch('/client-desk/contacts/' + encodeURIComponent(contactId) + '?limit=1000');
+        if (!refreshed.ok) throw new Error('Saved, but the name could not refresh. Reopen the record.');
+        latest = await refreshed.json();
+        const currentAuthority = profileAuthority(latest);
+        if (latest.contact?.id !== contactId || !currentAuthority) throw new Error('Saved, but the current name authority could not be verified.');
+        resetProfileDraft(draft, currentAuthority);
+        draft.message = confirmed.deduped ? 'Already saved to Amari CRM.' : 'Saved to Amari CRM.';
+        persistProfileDrafts();
+      } catch (error) {
+        if (!draft.conflict) draft.message = String(error.message || 'Name change could not be confirmed. Retry safely.');
+        persistProfileDrafts();
+      } finally {
+        profileRunning.delete(contactId);
+        const restoreProfileFocus = draft.restoreFocusAfterSave && profileFocusStillActive();
+        if (profileOperations.get(contactId) === operation && selected === contactId) {
+          if (latest && latest.contact?.id === contactId) authoritativeProfileReadback(latest);
+          else renderOwnedContactProfile(profileProfiles.get(contactId) || data);
+          if (restoreProfileFocus) {
+            const focusId = draft.conflict ? 'contact-profile-conflict-retry' : draft.command ? 'contact-profile-save' : 'contact-profile-edit';
+            record.querySelector('#' + focusId)?.focus({ preventScroll: true });
+          }
+        }
+        draft.restoreFocusAfterSave = false;
+      }
+    };
+    section?.querySelector('#owned-contact-profile-form')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      if (draft.command) { if (profilePendingCommand(draft, contactId)) save(draft.command); return; }
+      if (!authority || !profileStorageAvailable || !Number.isSafeInteger(Number(draft.baseRevision)) || !(String(draft.firstName || '').trim() || String(draft.lastName || '').trim())) return;
+      save({ actor: taskActor, payload: { action: 'revise_name', contactId, expectedRevision: Number(draft.baseRevision), firstName: draft.firstName.trim(), lastName: draft.lastName.trim(), idempotencyKey: profileIdempotencyKey() } });
+    });
+    section?.querySelector('#contact-profile-conflict-retry')?.addEventListener('click', () => {
+      if (!authority || !draft.conflict || !profileStorageAvailable) return;
+      save({ actor: taskActor, payload: { action: 'revise_name', contactId, expectedRevision: authority.name.revision, firstName: draft.firstName.trim(), lastName: draft.lastName.trim(), idempotencyKey: profileIdempotencyKey() } });
+    });
+    section?.querySelector('#contact-profile-cancel')?.addEventListener('click', () => {
+      if (draft.command || profileRunning.has(contactId)) return;
+      draft.editing = false;
+      draft.conflict = null;
+      draft.message = '';
+      resetProfileDraft(draft, authority);
+      persistProfileDrafts();
+      renderOwnedContactProfile(data);
+    });
   }
   function taskTime(value) {
     return value ? new Date(value).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : 'No due time';
@@ -808,6 +1057,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       taskDraft(c.id).needsRefresh = false;
       record.innerHTML = profileMarkup(profileData);
       bindRecordNavigation();
+      bindOwnedContactProfile(profileData);
       bindOwnedNotes(c.id);
       persistTaskDrafts();
       bindOwnedTasks(profileData);
@@ -882,5 +1132,5 @@ const CLIENT_DESK_HTML = `<!doctype html>
 </script></body></html>`;
 
 export function clientDeskHtml() {
-  return CLIENT_DESK_HTML.replace("__OWNED_NOTE_COMMANDS_ENABLED__", JSON.stringify(ownedNoteReleaseReadiness().enabled)).replace("__OWNED_TASK_COMMANDS_ENABLED__", JSON.stringify(ownedTaskReleaseReadiness().enabled)).replace("__OWNED_CLASSIFICATION_COMMANDS_ENABLED__", JSON.stringify(ownedContactClassificationReleaseReadiness().enabled));
+  return CLIENT_DESK_HTML.replace("__OWNED_NOTE_COMMANDS_ENABLED__", JSON.stringify(ownedNoteReleaseReadiness().enabled)).replace("__OWNED_TASK_COMMANDS_ENABLED__", JSON.stringify(ownedTaskReleaseReadiness().enabled)).replace("__OWNED_CLASSIFICATION_COMMANDS_ENABLED__", JSON.stringify(ownedContactClassificationReleaseReadiness().enabled)).replace("__OWNED_CONTACT_PROFILE_COMMANDS_ENABLED__", JSON.stringify(ownedContactProfileReleaseReadiness().allowedActions.includes("revise_name")));
 }

@@ -705,32 +705,33 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(storageTouches).toBe(0);
   });
 
-  it("keeps owned contact profiles named-Staff-only, source-shadow, and unable to accept side effects", async () => {
+  it("keeps owned contact profiles named-Staff-only and rejects destinations before storage", async () => {
     const values = new Map();
     let storageTouches = 0;
     const env = {
       WORKER_AUTH_SECRET: "test-secret",
-      OWNED_CONTACT_PROFILE_SOURCE_MODE: "active",
       PORTAL_KV: {
         put: async (key, value) => values.set(key, value),
         get: async (key) => values.get(key) || null,
         delete: async (key) => values.delete(key),
       },
       CRM_DB: {
-        prepare() {
+        prepare(sql) {
           storageTouches += 1;
-          throw new Error("source-shadow route must not touch storage");
+          if (sql.includes("sqlite_master")) {
+            return { bind() { return { all: async () => ({ results: [] }) }; } };
+          }
+          throw new Error("unreleased destination route must not touch storage");
         },
       },
     };
     const payload = {
-      action: "set_email",
+      action: "revise_name",
       contactId: "contact-1",
       idempotencyKey: "profile-command-0001",
       expectedRevision: 0,
-      email: "new@example.test",
-      consentState: "granted",
-      consentEvidenceRef: "signed-intake-42",
+      firstName: "Avery",
+      lastName: "Updated",
     };
     const request = (cookie, extra = {}, origin = "https://crm.test") => new Request(
       "https://crm.test/contacts/profile-commands",
@@ -775,13 +776,43 @@ describe("CRM mirror dashboard access handoff", () => {
       fields: ["providerContactId", "sendMessage", "createContact"],
     });
 
-    const shadow = await worker.fetch(request(namedCookie), env);
-    expect(shadow.status).toBe(503);
-    await expect(shadow.json()).resolves.toEqual({
-      error: "owned_contact_profile_shadow_only",
-      detail: "owned contact profile commands remain source-level shadow",
+    const invalidAction = await worker.fetch(request(namedCookie, { action: ["revise_name"] }), env);
+    expect(invalidAction.status).toBe(400);
+    await expect(invalidAction.json()).resolves.toEqual({ error: "invalid_profile_action" });
+    const invalidScalars = await worker.fetch(request(namedCookie, { firstName: ["Avery"], expectedRevision: "0" }), env);
+    expect(invalidScalars.status).toBe(400);
+    await expect(invalidScalars.json()).resolves.toEqual({
+      error: "invalid_profile_fields", fields: ["expectedRevision", "firstName"],
     });
+    const destinationSmuggle = await worker.fetch(request(namedCookie, {
+      action: "set_email", firstName: undefined, lastName: undefined,
+      email: "new@example.test", consentState: "granted", consentEvidenceRef: "signed-intake-42", sendMessage: true,
+    }), env);
+    expect(destinationSmuggle.status).toBe(400);
+    await expect(destinationSmuggle.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["sendMessage"] });
+
+    const rejectedEmail = await worker.fetch(request(namedCookie, {
+      action: "set_email", firstName: undefined, lastName: undefined,
+      email: "new@example.test", consentState: "granted", consentEvidenceRef: "signed-intake-42",
+    }), env);
+    expect(rejectedEmail.status).toBe(409);
+    await expect(rejectedEmail.json()).resolves.toEqual({
+      error: "owned_contact_profile_action_unavailable",
+      detail: "Only Amari CRM name changes are currently available",
+    });
+    const rejectedPhone = await worker.fetch(request(namedCookie, {
+      action: "set_phone", firstName: undefined, lastName: undefined, phone: "+14155550199", consentState: "unknown",
+    }), env);
+    expect(rejectedPhone.status).toBe(409);
     expect(storageTouches).toBe(0);
+
+    const schemaUnavailable = await worker.fetch(request(namedCookie), env);
+    expect(schemaUnavailable.status).toBe(503);
+    await expect(schemaUnavailable.json()).resolves.toMatchObject({
+      error: "owned_contact_profile_schema_unavailable",
+      detail: "owned contact profile write schema is unavailable",
+    });
+    expect(storageTouches).toBe(1);
   });
 
   it("keeps sender readiness behind staff authentication", async () => {
