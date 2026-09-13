@@ -1,18 +1,20 @@
 // Provider-neutral revisioned Staff tasks.
 //
-// The production command route permits only create, complete and reopen.
+// The production command route permits create, revise, complete and reopen.
 // The active store writes only immutable D1 task versions. It has no
 // GHL/provider adapter, customer message sender, payment, appointment mutation, or authority
 // promotion.
 
 export const OWNED_TASK_SOURCE_MODE = "active";
-export const OWNED_TASK_CONTRACT_VERSION = "owned-task-authority.v1";
+export const OWNED_TASK_CONTRACT_VERSION = "owned-task-authority.v2";
+const LEGACY_TASK_CONTRACT_VERSION = "owned-task-authority.v1";
 
 const REFERENCE = /^[A-Za-z0-9_-]{1,160}$/;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const EXPLICIT_TIMESTAMP = /^\d{4}-\d{2}-\d{2}T.+(?:Z|[+-]\d{2}:?\d{2})$/i;
 const ACTIONS = new Set(["create", "revise", "complete", "reopen", "archive", "restore"]);
 const ACTORS = new Set(["Eben", "Garrett"]);
+const ASSIGNEES = new Set(["Eben", "Garrett"]);
 const MAX_TITLE_LENGTH = 300;
 
 export class OwnedTaskError extends Error {
@@ -49,6 +51,13 @@ function normalizedDueAt(value) {
   return new Date(dueMs).toISOString();
 }
 
+function normalizedAssignedTo(value) {
+  if (value === null || value === "" || value === undefined) return null;
+  const assignedTo = clean(value);
+  if (!ASSIGNEES.has(assignedTo)) fail("recognized Staff assignee required", "invalid_task_assignee", 400);
+  return assignedTo;
+}
+
 function changes(result) {
   return Number(result?.meta?.changes ?? result?.changes ?? 0);
 }
@@ -82,12 +91,13 @@ function normalize(input) {
   }
   const title = definesContent ? normalizedTitle(input?.title) : null;
   const dueAt = definesContent ? normalizedDueAt(input?.dueAt) : null;
-  return { action, contactId, appointmentId, actor, idempotencyKey, taskId, expectedRevision, title, dueAt };
+  const assignedTo = definesContent ? normalizedAssignedTo(input?.assignedTo) : null;
+  return { action, contactId, appointmentId, actor, idempotencyKey, taskId, expectedRevision, title, dueAt, assignedTo };
 }
 
-async function commandDigest(command) {
+async function commandDigest(command, version = OWNED_TASK_CONTRACT_VERSION) {
   return sha256([
-    OWNED_TASK_CONTRACT_VERSION,
+    version,
     command.actor,
     command.idempotencyKey,
     command.action,
@@ -97,7 +107,14 @@ async function commandDigest(command) {
     String(command.expectedRevision),
     command.title || "",
     command.dueAt || "",
+    ...(version === LEGACY_TASK_CONTRACT_VERSION ? [] : [command.assignedTo || ""]),
   ].join("\n"));
+}
+
+async function replayMatches(row, command, digest) {
+  if (row.command_sha256 === digest) return true;
+  if ((row.assigned_to ?? null) !== null || command.assignedTo !== null) return false;
+  return row.command_sha256 === await commandDigest(command, LEGACY_TASK_CONTRACT_VERSION);
 }
 
 async function versionByKey(db, actor, idempotencyKey) {
@@ -126,6 +143,7 @@ function publicVersion(row, deduped) {
     priorRevision: Number(row.prior_revision),
     title: row.title_clean,
     dueAt: row.due_at || null,
+    assignedTo: row.assigned_to || null,
     state: row.state,
     archivedFromState: row.archived_from_state || null,
     completedAt: row.completed_at || null,
@@ -143,10 +161,12 @@ function publicVersion(row, deduped) {
 function mapStorageError(error) {
   const message = String(error?.message || error || "");
   const mappings = [
+    [/no column named assigned_to|no such column: assigned_to/i, "owned_task_schema_unavailable", 503],
     [/owned task contact unavailable/i, "contact_unavailable", 409],
     [/owned task appointment mismatch/i, "appointment_contact_mismatch", 409],
     [/owned task identity already exists/i, "task_identity_conflict", 409],
     [/owned task revision conflict/i, "task_revision_conflict", 409],
+    [/owned task assignment conflict/i, "task_assignment_conflict", 409],
     [/owned task is not open/i, "task_not_open", 409],
     [/owned task completion conflict/i, "task_completion_conflict", 409],
     [/owned task reopen conflict/i, "task_reopen_conflict", 409],
@@ -187,7 +207,7 @@ export async function captureOwnedTaskVersion(db, input, now = new Date().toISOS
 
   const replay = await versionByKey(db, command.actor, command.idempotencyKey);
   if (replay) {
-    if (replay.command_sha256 !== digest) fail("idempotency key was already used for another task command", "idempotency_conflict");
+    if (!await replayMatches(replay, command, digest)) fail("idempotency key was already used for another task command", "idempotency_conflict");
     return publicVersion(replay, true);
   }
 
@@ -209,6 +229,7 @@ export async function captureOwnedTaskVersion(db, input, now = new Date().toISOS
   let priorRevision = 0;
   let title = command.title;
   let dueAt = command.dueAt;
+  let assignedTo = command.assignedTo;
   let state = "open";
   let archivedFromState = null;
   let completedAt = null;
@@ -228,6 +249,7 @@ export async function captureOwnedTaskVersion(db, input, now = new Date().toISOS
     } else {
       title = prior.title_clean;
       dueAt = prior.due_at || null;
+      assignedTo = prior.assigned_to || null;
       if (command.action === "complete") {
         if (prior.state !== "open") fail("only an open task can be completed", "task_not_open");
         state = "completed";
@@ -254,19 +276,19 @@ export async function captureOwnedTaskVersion(db, input, now = new Date().toISOS
       `INSERT OR IGNORE INTO owned_task_versions (
          id, task_id, contact_id, appointment_id, actor, idempotency_key, action,
          revision, prior_revision, title_clean, title_sha256, due_at, state,
-         archived_from_state, completed_at, command_sha256, recorded_at
-       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+         archived_from_state, completed_at, command_sha256, recorded_at, assigned_to
+       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     ).bind(
       versionId, taskId, command.contactId, command.appointmentId, command.actor,
       command.idempotencyKey, command.action, revision, priorRevision, title,
-      titleSha256, dueAt, state, archivedFromState, completedAt, digest, recordedAt,
+      titleSha256, dueAt, state, archivedFromState, completedAt, digest, recordedAt, assignedTo,
     ).run();
   } catch (error) {
     // A concurrent identical command may commit after our replay precheck.
     // Reconcile the immutable key before reporting a trigger/revision conflict.
     const replay = await versionByKey(db, command.actor, command.idempotencyKey);
     if (replay) {
-      if (replay.command_sha256 !== digest) fail("idempotency key was already used for another task command", "idempotency_conflict");
+      if (!await replayMatches(replay, command, digest)) fail("idempotency key was already used for another task command", "idempotency_conflict");
       return publicVersion(replay, true);
     }
     throw mapStorageError(error);
@@ -274,7 +296,7 @@ export async function captureOwnedTaskVersion(db, input, now = new Date().toISOS
 
   const captured = await versionByKey(db, command.actor, command.idempotencyKey);
   if (!captured) fail("owned task command was not recorded", "task_storage_conflict", 500);
-  if (captured.command_sha256 !== digest) fail("idempotency key was already used for another task command", "idempotency_conflict");
+  if (!await replayMatches(captured, command, digest)) fail("idempotency key was already used for another task command", "idempotency_conflict");
   return publicVersion(captured, changes(inserted) === 0);
 }
 
@@ -301,7 +323,7 @@ export async function readOwnedTasks(db, { contactId, limit = 50 } = {}) {
                  ORDER BY content.revision DESC
                  LIMIT 1
               ) AS defined_by,
-              actor AS recorded_by, revision, title_clean AS title, due_at,
+              actor AS recorded_by, revision, title_clean AS title, due_at, assigned_to,
               completed_at, state AS status, state, created_at,
               recorded_at AS updated_at, 'owned' AS authority
          FROM ranked
@@ -318,7 +340,7 @@ export async function readOwnedTasks(db, { contactId, limit = 50 } = {}) {
       tasks: (result?.results || []).map((row) => Object.freeze({ ...row, revision: Number(row.revision) })),
     });
   } catch (error) {
-    if (/no such table: owned_task_versions/i.test(String(error?.message || error))) {
+    if (/no such (?:table: owned_task_versions|column: assigned_to)/i.test(String(error?.message || error))) {
       return Object.freeze({
         version: OWNED_TASK_CONTRACT_VERSION,
         state: "unavailable",

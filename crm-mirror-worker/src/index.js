@@ -575,7 +575,8 @@ export default {
           return json(400, { error: "invalid_request", detail: "JSON object required" });
         }
         const allowedByAction = {
-          create: new Set(["action", "contactId", "appointmentId", "idempotencyKey", "title", "dueAt"]),
+          create: new Set(["action", "contactId", "appointmentId", "idempotencyKey", "title", "dueAt", "assignedTo"]),
+          revise: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey", "title", "dueAt", "assignedTo"]),
           complete: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
           reopen: new Set(["action", "contactId", "appointmentId", "taskId", "expectedRevision", "idempotencyKey"]),
         };
