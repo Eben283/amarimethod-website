@@ -38,6 +38,7 @@ const CommunicationPreferencesPage = lazy(() => import('./pages/CommunicationPre
 const AutomationRegistryPage = lazy(() => import('./pages/AutomationRegistryPage'));
 const PartnerRewardsPage = lazy(() => import('./pages/PartnerRewardsPage'));
 const ProjectNovakPage = lazy(() => import('./pages/ProjectNovakPage'));
+const StaffCrmPilotPage = lazy(() => import('./pages/StaffCrmPilotPage'));
 
 function SurfaceLoader() {
   return (
@@ -141,6 +142,18 @@ function AppRoutes() {
         <Route path="follow-up" element={<Navigate to="/outreach" replace />} />
         <Route path="partners" element={<Navigate to="/outreach" replace />} />
       </Route>
+      <Route
+        path="/design-pilot"
+        element={
+          import.meta.env.DEV ? (
+            <Suspense fallback={<SurfaceLoader />}><StaffCrmPilotPage /></Suspense>
+          ) : (
+            <ProtectedRoute>
+              <Suspense fallback={<SurfaceLoader />}><StaffCrmPilotPage /></Suspense>
+            </ProtectedRoute>
+          )
+        }
+      />
       <Route
         path="/check-in/:id"
         element={
