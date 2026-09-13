@@ -91,7 +91,7 @@ async function performTokenRefresh(context, refreshToken, options = {}) {
     }
   }
   try {
-    const response2 = await fetch(GHL_TOKEN_URL, {
+    const response3 = await fetch(GHL_TOKEN_URL, {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: new URLSearchParams({
@@ -101,12 +101,12 @@ async function performTokenRefresh(context, refreshToken, options = {}) {
         refresh_token: currentRefreshToken
       }).toString()
     });
-    if (!response2.ok) {
-      const errText = await response2.text();
-      console.error(`[ghl] Token refresh failed: ${response2.status} ${errText}`);
+    if (!response3.ok) {
+      const errText = await response3.text();
+      console.error(`[ghl] Token refresh failed: ${response3.status} ${errText}`);
       return null;
     }
-    const data = await response2.json();
+    const data = await response3.json();
     const newAccessToken = data.access_token;
     const newRefreshToken = data.refresh_token;
     const expiresIn = data.expires_in || 86399;
@@ -132,8 +132,8 @@ async function performTokenRefresh(context, refreshToken, options = {}) {
 async function ghlFetch(context, url, options = {}) {
   const token = await getGhlToken(context);
   const headers5 = { ...ghlHeaders(token), ...options.headers };
-  let response2 = await fetch(url, { ...options, headers: headers5 });
-  if (response2.status === 401) {
+  let response3 = await fetch(url, { ...options, headers: headers5 });
+  if (response3.status === 401) {
     console.warn("[ghl] Got 401, attempting token refresh and retry");
     const kv = context.env.PORTAL_KV;
     if (kv) {
@@ -146,26 +146,26 @@ async function ghlFetch(context, url, options = {}) {
         }
       }
     }
-    return response2;
+    return response3;
   }
   const method = (options.method || "GET").toUpperCase();
   const IDEMPOTENT_METHODS = /* @__PURE__ */ new Set(["GET", "HEAD", "OPTIONS", "PUT", "DELETE"]);
   const canRetry5xx = IDEMPOTENT_METHODS.has(method);
   const MAX_RETRIES = 3;
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
-    const retryable = response2.status === 429 || response2.status >= 500 && canRetry5xx;
+    const retryable = response3.status === 429 || response3.status >= 500 && canRetry5xx;
     if (!retryable) break;
-    const retryAfter = response2.headers.get("Retry-After");
+    const retryAfter = response3.headers.get("Retry-After");
     const backoffMs = retryAfter ? parseInt(retryAfter, 10) * 1e3 : Math.min(1e3 * Math.pow(2, attempt), 1e4);
     console.warn(
-      `[ghl] ${response2.status} on ${url.split("?")[0]} \u2014 retry ${attempt}/${MAX_RETRIES} after ${backoffMs}ms`
+      `[ghl] ${response3.status} on ${url.split("?")[0]} \u2014 retry ${attempt}/${MAX_RETRIES} after ${backoffMs}ms`
     );
     await new Promise((resolve) => setTimeout(resolve, backoffMs));
     const currentToken = await getGhlToken(context);
     const retryHeaders = { ...ghlHeaders(currentToken), ...options.headers };
-    response2 = await fetch(url, { ...options, headers: retryHeaders });
+    response3 = await fetch(url, { ...options, headers: retryHeaders });
   }
-  return response2;
+  return response3;
 }
 async function applyTagDelta(context, contactId, { add = [], remove = [] } = {}) {
   const added = [...new Set(add)].filter(Boolean);
@@ -197,7 +197,7 @@ async function applyTagDelta(context, contactId, { add = [], remove = [] } = {})
 var GHL_API_BASE, GHL_TOKEN_URL, REFRESH_BUFFER_MS, KV_ACCESS_TOKEN, KV_REFRESH_TOKEN, KV_TOKEN_EXPIRY, refreshInFlight;
 var init_ghl = __esm({
   "lib/ghl.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     GHL_API_BASE = "https://services.leadconnectorhq.com";
     GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
     REFRESH_BUFFER_MS = 5 * 60 * 1e3;
@@ -278,7 +278,7 @@ function appointmentEndTime(startTime, durationMinutes) {
 var PACIFIC_TZ, OFFSET_OR_Z, NAIVE_DATETIME;
 var init_datetime = __esm({
   "lib/datetime.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(formatIsoAtOffset, "formatIsoAtOffset");
     PACIFIC_TZ = "America/Los_Angeles";
     OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
@@ -295,7 +295,7 @@ var init_datetime = __esm({
 var FIELD_IDS;
 var init_ghl_fields = __esm({
   "lib/ghl-fields.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     FIELD_IDS = {
       // Session balance — the most contended value in the stack. Raw GHL field,
       // reconciled hourly against the derived ledger (session-ledger.js).
@@ -383,7 +383,7 @@ function safeParse(raw) {
 var OPS_ERR_PREFIX, OPS_ERR_TTL_SECONDS;
 var init_ops_alert = __esm({
   "lib/ops-alert.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     OPS_ERR_PREFIX = "ops:err:";
     OPS_ERR_TTL_SECONDS = 60 * 60 * 24 * 30;
     __name(opsKv, "opsKv");
@@ -402,7 +402,7 @@ function registryPath(pathId) {
 var OPS_SEVERITY, PATH_ASSESSMENT_PAID_BOOK, OPS_ERR_PATH_SOURCES, OPS_REGISTRY, EXTERNAL_MONITOR_PATH_IDS;
 var init_ops_registry = __esm({
   "lib/ops-registry.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     OPS_SEVERITY = Object.freeze({
       MONEY: "money",
       BOOKING: "booking",
@@ -919,7 +919,7 @@ async function sendConversationMessage(context, params) {
 var GHL_MESSAGE_ENDPOINT, SEND_LIMITS, BAD_CHARS, CONTACT_ID;
 var init_ghl_send = __esm({
   "lib/ghl-send.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     GHL_MESSAGE_ENDPOINT = "https://services.leadconnectorhq.com/conversations/messages";
     SEND_LIMITS = Object.freeze({
@@ -1017,7 +1017,7 @@ async function notifyOpsFlip(context, incident) {
 var DEFAULT_OPS_ALERT_CONTACT_ID, SEVERITY_CHANNELS;
 var init_ops_notify = __esm({
   "lib/ops-notify.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl_send();
     DEFAULT_OPS_ALERT_CONTACT_ID = "3jsTC9Cb7hkDpC3FLuFd";
     SEVERITY_CHANNELS = Object.freeze({
@@ -1189,7 +1189,7 @@ async function touchMeta(kv, reason) {
 var EVENTS_PREFIX, INCIDENTS_KEY, META_KEY, MAX_EVENTS, MAX_INCIDENTS, TTL_SECONDS;
 var init_ops_trail_kv = __esm({
   "lib/ops-trail-kv.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     EVENTS_PREFIX = "ops:trail:events:";
     INCIDENTS_KEY = "ops:trail:incidents";
     META_KEY = "ops:trail:meta";
@@ -1628,7 +1628,7 @@ function safeJsonArray(raw) {
 var OUTCOMES;
 var init_ops_events = __esm({
   "lib/ops-events.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_registry();
     init_ops_notify();
     init_ops_trail_kv();
@@ -1699,7 +1699,7 @@ async function recordAssessmentBookPath(context, {
   if (pay.id) eventIds.push(pay.id);
   const apptId = appointment?.id || appointment?.appointment?.id || (typeof appointment === "string" ? appointment : null);
   if (bookError) {
-    const fail2 = await recordOpsEvent(env, {
+    const fail4 = await recordOpsEvent(env, {
       pathId: PATH_ASSESSMENT_PAID_BOOK,
       hopId: "create_appointment",
       outcome: "fail",
@@ -1715,7 +1715,7 @@ async function recordAssessmentBookPath(context, {
       money: money2,
       source: SOURCE
     });
-    if (fail2.id) eventIds.push(fail2.id);
+    if (fail4.id) eventIds.push(fail4.id);
     await openOpsIncident(
       env,
       {
@@ -1735,7 +1735,7 @@ async function recordAssessmentBookPath(context, {
       contactId,
       product: productName,
       error: String(bookError.message || bookError).slice(0, 300),
-      opsEventId: fail2.id || null,
+      opsEventId: fail4.id || null,
       correlationId
     });
     return { eventIds, outcome: "fail" };
@@ -1839,7 +1839,7 @@ async function recordAssessmentCheckout(env, {
 var SOURCE;
 var init_ops_assessment = __esm({
   "lib/ops-assessment.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -1919,7 +1919,7 @@ function assessmentBookingFromWorkflow(document) {
 var ASSESSMENT_PAID_BOOKING_WORKFLOW_ID, ASSESSMENT_PRODUCT_ID, ASSESSMENT_PAID_BOOKING_WORKFLOW;
 var init_assessment_paid_booking_workflow = __esm({
   "lib/assessment-paid-booking-workflow.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     ASSESSMENT_PAID_BOOKING_WORKFLOW_ID = "assessment-paid-booking";
     ASSESSMENT_PRODUCT_ID = "6a66cf0103821ea09ea13f1b";
     __name(deepFreeze, "deepFreeze");
@@ -1974,17 +1974,17 @@ async function currentAssessmentPaidBookingWorkflow(context) {
   if (context?.assessmentWorkflow) return defineAssessmentPaidBookingWorkflow(context.assessmentWorkflow);
   const secret = context?.env?.WORKER_AUTH_SECRET;
   if (!secret) return ASSESSMENT_PAID_BOOKING_WORKFLOW;
-  const response2 = await fetch(`${REMINDER_ENGINE_URL}/runtime-status?flow=${encodeURIComponent(ASSESSMENT_PAID_BOOKING_WORKFLOW_ID)}`, {
+  const response3 = await fetch(`${REMINDER_ENGINE_URL}/runtime-status?flow=${encodeURIComponent(ASSESSMENT_PAID_BOOKING_WORKFLOW_ID)}`, {
     headers: { Authorization: `Bearer ${secret}` }
   });
-  if (!response2.ok) throw new Error(`Assessment workflow runtime is unavailable (${response2.status})`);
-  const body = await response2.json();
+  if (!response3.ok) throw new Error(`Assessment workflow runtime is unavailable (${response3.status})`);
+  const body = await response3.json();
   return defineAssessmentPaidBookingWorkflow(body?.runtime?.definition);
 }
 var REMINDER_ENGINE_URL;
 var init_assessment_paid_booking_runtime = __esm({
   "lib/assessment-paid-booking-runtime.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_assessment_paid_booking_workflow();
     REMINDER_ENGINE_URL = "https://reminder-engine.eben-fa2.workers.dev";
     __name(currentAssessmentPaidBookingWorkflow, "currentAssessmentPaidBookingWorkflow");
@@ -2031,7 +2031,7 @@ async function recordPaidBookPath(context, {
   if (pay.id) eventIds.push(pay.id);
   const apptId = appointment?.id || appointment?.appointment?.id || (typeof appointment === "string" ? appointment : null);
   if (bookError) {
-    const fail2 = await recordOpsEvent(env, {
+    const fail4 = await recordOpsEvent(env, {
       pathId,
       hopId: "create_appointment",
       outcome: "fail",
@@ -2047,7 +2047,7 @@ async function recordPaidBookPath(context, {
       money: moneyPayload,
       source
     });
-    if (fail2.id) eventIds.push(fail2.id);
+    if (fail4.id) eventIds.push(fail4.id);
     await openOpsIncident(
       env,
       {
@@ -2068,7 +2068,7 @@ async function recordPaidBookPath(context, {
       product: productName,
       pathId,
       error: String(bookError.message || bookError).slice(0, 300),
-      opsEventId: fail2.id || null,
+      opsEventId: fail4.id || null,
       correlationId
     });
     return { eventIds, outcome: "fail" };
@@ -2182,7 +2182,7 @@ function paidBookPathForProduct(productId, pkg) {
 }
 var init_ops_path_emit = __esm({
   "lib/ops-path-emit.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_events();
     init_ops_alert();
     init_ops_assessment();
@@ -2282,7 +2282,7 @@ function applyHourPackPreference(slots2, opts) {
 var STUDIO_INTERVAL_MINUTES, WORK_HOURS, SLOT_POLICIES;
 var init_booking_slot_policy = __esm({
   "lib/booking-slot-policy.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     STUDIO_INTERVAL_MINUTES = 60;
     WORK_HOURS = Object.freeze({
       scheduleId: "WIPAUCHQ5WW18vLJ49Gk",
@@ -2539,9 +2539,9 @@ async function fetchGarrettScheduleEvents(context, startTime, endTime) {
   if (!Number.isFinite(start) || !Number.isFinite(end) || end <= start) {
     throw new Error("Invalid buffer event range");
   }
-  const response2 = await ghlFetch(context, practitionerEventUrl(start, end));
-  if (!response2.ok) throw new Error(`Buffer event lookup failed (${response2.status})`);
-  const data = await response2.json();
+  const response3 = await ghlFetch(context, practitionerEventUrl(start, end));
+  if (!response3.ok) throw new Error(`Buffer event lookup failed (${response3.status})`);
+  const data = await response3.json();
   const events = data.events || data.appointments || [];
   const seen = /* @__PURE__ */ new Set();
   return events.filter((event2) => {
@@ -2572,7 +2572,7 @@ async function assertSlotRespectsAppBuffer(context, startTime, calendarId) {
 var GHL_API_BASE2, GHL_LOCATION_ID, GHL_GARRETT_USER_ID, INACTIVE_STATUSES, APP_BUFFER_CALENDAR_IDS;
 var init_app_owned_buffer = __esm({
   "lib/app-owned-buffer.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_datetime();
     init_booking_slot_policy();
@@ -2600,9 +2600,9 @@ var init_app_owned_buffer = __esm({
 });
 
 // lib/ghl-appointment-handoff.js
-async function responseText(response2) {
+async function responseText(response3) {
   try {
-    return await response2.text();
+    return await response3.text();
   } catch {
     return "response body unavailable";
   }
@@ -2674,7 +2674,7 @@ async function createConfirmedAppointment({ request: request2, endpoint, payload
 var AppointmentHandoffError;
 var init_ghl_appointment_handoff = __esm({
   "lib/ghl-appointment-handoff.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     AppointmentHandoffError = class extends Error {
       static {
         __name(this, "AppointmentHandoffError");
@@ -2808,7 +2808,7 @@ async function completePaidBookingIntent(db, intentId, appointmentId, options = 
 }
 var init_paid_booking_intents = __esm({
   "lib/paid-booking-intents.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(changesOf2, "changesOf");
     __name(normalize, "normalize");
     __name(sameIntent, "sameIntent");
@@ -2844,7 +2844,7 @@ async function recordPartnerReferralAttribution(db, { partner, contactId, referr
 var PARTNERS;
 var init_partner_referrals = __esm({
   "lib/partner-referrals.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     PARTNERS = Object.freeze({ "vital-ice": Object.freeze({ entityId: "vital-ice", businessName: "Vital Ice", publicCode: "VI-001", entryPath: "/r/vital-ice" }), "zach-taylor": Object.freeze({ entityId: "zach-taylor", businessName: "Zach Taylor Fitness", publicCode: "ZT-001", entryPath: "/r/zach-taylor" }), "teddys-total-body": Object.freeze({ entityId: "teddys-total-body", businessName: "Teddy's Total Body", publicCode: "TTB-001", entryPath: "/r/teddys-total-body" }) });
     __name(resolvePartnerReferral, "resolvePartnerReferral");
     __name(recordPartnerReferralAttribution, "recordPartnerReferralAttribution");
@@ -2874,8 +2874,8 @@ function looksLikeDuplicateContactError(status, errText) {
 function contactIdFromLookup(data) {
   return data?.contact?.id || Array.isArray(data?.contacts) && data.contacts[0]?.id || null;
 }
-async function findContactIdByEmail(context, locationId, email) {
-  const lookupUrl = `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${locationId}&email=${encodeURIComponent(email)}`;
+async function findContactIdByEmail(context, locationId, email2) {
+  const lookupUrl = `https://services.leadconnectorhq.com/contacts/search/duplicate?locationId=${locationId}&email=${encodeURIComponent(email2)}`;
   try {
     const lookupRes = await ghlFetch(context, lookupUrl);
     if (lookupRes.ok) {
@@ -2899,7 +2899,7 @@ async function findContactIdByEmail(context, locationId, email) {
         body: JSON.stringify({
           locationId,
           pageLimit: 1,
-          filters: [{ field: "email", operator: "eq", value: email }]
+          filters: [{ field: "email", operator: "eq", value: email2 }]
         })
       }
     );
@@ -3341,7 +3341,7 @@ async function onRequestPost(context) {
 var ALLOWED_ORIGINS, DEFAULT_LOCATION_ID, ALLOWED_BOOKINGS;
 var init_create_checkout = __esm({
   "api/book/create-checkout.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_datetime();
     init_ghl_fields();
@@ -3613,7 +3613,7 @@ function applyLookBusy(slots2, opts) {
 var MAX_SLOTS_PER_DAY, MIN_SLOTS_PER_DAY, PINNED_SLOT_TIMES;
 var init_look_busy = __esm({
   "lib/look-busy.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     MAX_SLOTS_PER_DAY = 12;
     MIN_SLOTS_PER_DAY = 2;
     __name(targetFullPercent, "targetFullPercent");
@@ -3656,7 +3656,7 @@ async function writeOpsLastRun(env, key, payload, ttlSeconds = 14 * 86400) {
 var OPS_LAST_RUN_KEYS, OPS_READY_KEYS;
 var init_ops_last_run = __esm({
   "lib/ops-last-run.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(writeOpsLastRun, "writeOpsLastRun");
     OPS_LAST_RUN_KEYS = Object.freeze({
       reminder: "ops:reminder-engine:lastRun",
@@ -3830,7 +3830,7 @@ async function onRequestGet(context) {
 var ALLOWED_ORIGIN, ALLOWED_CALENDARS;
 var init_public_slots = __esm({
   "api/book/public-slots.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_look_busy();
     init_booking_slot_policy();
@@ -3896,7 +3896,7 @@ function verifyWebhookSecret(request2, expectedSecret) {
 }
 var init_auth = __esm({
   "lib/auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(verifySessionToken, "verifySessionToken");
     __name(verifyWebhookSecret, "verifyWebhookSecret");
   }
@@ -3915,7 +3915,7 @@ function timingSafeEqual(a, b) {
 }
 var init_safe_equal = __esm({
   "lib/safe-equal.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(timingSafeEqual, "timingSafeEqual");
   }
 });
@@ -3947,7 +3947,7 @@ function requireOpsReadKey(request2, env, responseHeaders10 = {}) {
 }
 var init_ops_auth = __esm({
   "lib/ops-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_safe_equal();
     __name(requireOpsReadKey, "requireOpsReadKey");
   }
@@ -4033,7 +4033,7 @@ async function requireStaffOrOpsAuth(context, headers5) {
 var ALLOWED_ORIGINS2, STAFF_SESSION_COOKIE;
 var init_endpoint_guards = __esm({
   "lib/endpoint-guards.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     init_ops_auth();
     ALLOWED_ORIGINS2 = [
@@ -4085,7 +4085,7 @@ function requireWorkerAuth(request2, env) {
 }
 var init_worker_auth = __esm({
   "lib/worker-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(timingSafeEqual2, "timingSafeEqual");
     __name(requireWorkerAuth, "requireWorkerAuth");
   }
@@ -4109,7 +4109,7 @@ function isAttentionState(state) {
 var OPS_BOARD_ROLE, OPS_BOARD_META, OPS_ROW_STATE;
 var init_ops_board_meta = __esm({
   "lib/ops-board-meta.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     OPS_BOARD_ROLE = Object.freeze({
       HOT: "hot",
       // pay→book→confirm early warning
@@ -4651,7 +4651,7 @@ async function runOpsFixSweep(env, { buildSystemsBoard: buildSystemsBoard2 } = {
 var HOUR, JOB_TTL_S, REQUEST_TTL_S, OPS_FIX_COOLDOWN_MS, OPS_FIX_MODES;
 var init_ops_fix = __esm({
   "lib/ops-fix.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_board_meta();
     init_ops_board_meta();
     init_ops_registry();
@@ -6062,7 +6062,7 @@ function judgeCallCoachReadiness(ready, last, { maxAgeH = 36 } = {}) {
 var HOUR2, ERR_LOOKBACK_H, HOT_HEALTHY_MAX_AGE_H, EXTERNAL_MONITOR_MAX_AGE_H, EXTERNAL_MONITOR_HEARTBEAT_PATHS, STUCK_REASON_CODES;
 var init_ops_board = __esm({
   "lib/ops-board.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -6207,7 +6207,7 @@ async function onRequestPost2(context) {
 }
 var init_fix = __esm({
   "api/ops/fix.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_worker_auth();
     init_ops_board();
@@ -6260,7 +6260,7 @@ async function onRequestGet3(context) {
 }
 var init_incidents = __esm({
   "api/ops/incidents.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_ops_auth();
     init_ops_events();
@@ -6814,7 +6814,7 @@ async function ingestOperationsLedgerRelease(env, input, provenance) {
 var ACTOR_KINDS, TASK_STATUSES, RELEASE_STATUSES, ACTOR_SET, TASK_STATUS_SET, RELEASE_STATUS_SET, PRIORITIES, SENSITIVE_WORDS, EMAIL, PHONE, REF, FIELD, SAFE_FIELD_EXCEPTIONS, OpsLedgerError;
 var init_ops_ledger = __esm({
   "lib/ops-ledger.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     ACTOR_KINDS = Object.freeze(["human", "codex", "worker", "github", "cloudflare"]);
     TASK_STATUSES = Object.freeze(["todo", "open", "in_progress", "blocked", "done", "completed", "cancelled"]);
     RELEASE_STATUSES = Object.freeze(["planned", "pending", "queued", "building", "active", "succeeded", "failed", "rolled_back", "cancelled"]);
@@ -7078,7 +7078,7 @@ async function onRequestPost3(context) {
 var METHODS, MAX_LIMIT, DEFAULT_LIMIT, RESOURCES, INGEST_RESOURCES, SAFE_FIELDS, SAFE_INPUT_FIELDS, INGESTORS;
 var init_staff_operations_ledger = __esm({
   "api/staff-operations-ledger.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_safe_equal();
     init_ops_ledger();
@@ -7183,7 +7183,7 @@ var init_staff_operations_ledger = __esm({
 // api/ops/ledger.js
 var init_ledger = __esm({
   "api/ops/ledger.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_staff_operations_ledger();
   }
 });
@@ -7284,7 +7284,7 @@ async function onRequestPost4(context) {
 var HEADERS, STATES, MAX_NOTE_LENGTH, MAX_FUTURE_SKEW_MS, EXTERNAL_MONITOR_PATHS;
 var init_monitor_event = __esm({
   "api/ops/monitor-event.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_auth();
     init_ops_events();
     init_ops_registry();
@@ -7429,7 +7429,7 @@ async function finishRepairCommand(env, id3, { status, result } = {}) {
 var PREFIX, TTL_S, LEASE_S, COMMAND, APPROVAL_COMMANDS, REPAIR_MODE, AUTO_REPAIR_PATHS, APPROVAL_PATHS, CONFIRM_PATHS, REPAIR_POLICIES;
 var init_ops_repair_command = __esm({
   "lib/ops-repair-command.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_registry();
     init_ops_board_meta();
     PREFIX = "ops:repair:command:";
@@ -7534,7 +7534,7 @@ async function onRequestPost5(context) {
 var HEADERS2, json4;
 var init_repair_command = __esm({
   "api/ops/repair-command.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_auth();
     init_ops_repair_command();
     HEADERS2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -7599,7 +7599,7 @@ async function onRequestGet6(context) {
 }
 var init_systems = __esm({
   "api/ops/systems.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_ops_board();
     __name(onRequestOptions6, "onRequestOptions");
@@ -7610,7 +7610,7 @@ var init_systems = __esm({
 // api/staff-operations-ledger/[resource].js
 var init_resource = __esm({
   "api/staff-operations-ledger/[resource].js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_staff_operations_ledger();
   }
 });
@@ -7631,7 +7631,7 @@ async function isContactRevoked(kv, contactId) {
 var REVOKE_PREFIX;
 var init_session_guard = __esm({
   "lib/session-guard.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     REVOKE_PREFIX = "auth-revoked:";
     __name(revokeKey, "revokeKey");
     __name(isContactRevoked, "isContactRevoked");
@@ -7641,23 +7641,23 @@ var init_session_guard = __esm({
 // lib/owned-access.js
 async function requireOwner(context, headers5, { audience, messages = {} } = {}) {
   const msg = { ...DEFAULT_MESSAGES, ...messages };
-  const fail2 = /* @__PURE__ */ __name((status, message) => ({
+  const fail4 = /* @__PURE__ */ __name((status, message) => ({
     error: new Response(JSON.stringify({ error: message }), { status, headers: headers5 })
   }), "fail");
   const secret = context.env.JWT_SECRET;
-  if (!secret) return fail2(500, msg.misconfigured);
+  if (!secret) return fail4(500, msg.misconfigured);
   const auth = context.request.headers.get("Authorization");
-  if (!auth || !auth.startsWith("Bearer ")) return fail2(401, msg.notAuthenticated);
+  if (!auth || !auth.startsWith("Bearer ")) return fail4(401, msg.notAuthenticated);
   let tokenPayload;
   try {
     tokenPayload = await verifySessionToken(auth.slice(7), secret);
   } catch {
-    return fail2(401, msg.invalidToken);
+    return fail4(401, msg.invalidToken);
   }
-  if (audience && tokenPayload.type !== audience) return fail2(403, msg.wrongAudience);
+  if (audience && tokenPayload.type !== audience) return fail4(403, msg.wrongAudience);
   const contactId = tokenPayload.contactId;
-  if (!contactId) return fail2(401, msg.missingContactId);
-  if (await isContactRevoked(context.env.PORTAL_KV, contactId)) return fail2(401, msg.revoked);
+  if (!contactId) return fail4(401, msg.missingContactId);
+  if (await isContactRevoked(context.env.PORTAL_KV, contactId)) return fail4(401, msg.revoked);
   return { tokenPayload, contactId };
 }
 async function loadOwnedContact(context, headers5, { audience, requireTag, messages = {} } = {}) {
@@ -7693,7 +7693,7 @@ async function loadOwnedContact(context, headers5, { audience, requireTag, messa
 var GHL_API_BASE3, DEFAULT_MESSAGES;
 var init_owned_access = __esm({
   "lib/owned-access.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     init_session_guard();
     init_ghl();
@@ -7831,7 +7831,7 @@ async function onRequestPost6(context) {
 var GHL_API_BASE4, GHL_LOCATION_ID2, REFERRAL_SOURCE_FIELD_ID, PARTNER_CONTACT_ID_FIELD_ID, REFERRAL_TYPE_FIELD_ID, REFERRAL_FEE_STATUS_FIELD_ID, ALLOWED_ORIGINS3;
 var init_affiliate_refer = __esm({
   "api/affiliate-refer.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     GHL_API_BASE4 = "https://services.leadconnectorhq.com";
@@ -7847,6 +7847,2336 @@ var init_affiliate_refer = __esm({
     __name(corsHeaders4, "corsHeaders");
     __name(onRequestOptions7, "onRequestOptions");
     __name(onRequestPost6, "onRequestPost");
+  }
+});
+
+// lib/appointment-calendar.js
+function escapeIcs(value) {
+  return String(value || "").replace(/\\/g, "\\\\").replace(/\r?\n/g, "\\n").replace(/,/g, "\\,").replace(/;/g, "\\;");
+}
+function utcTimestamp(value) {
+  const date2 = new Date(value);
+  if (!Number.isFinite(date2.getTime())) throw new TypeError("valid appointment calendar time required");
+  return date2.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}Z$/, "Z");
+}
+function fold(line) {
+  const bytes = new TextEncoder().encode(line);
+  if (bytes.length <= 75) return line;
+  const parts = [];
+  let current = "";
+  for (const character of line) {
+    const candidate = `${current}${character}`;
+    if (new TextEncoder().encode(candidate).length > (parts.length ? 74 : 75)) {
+      parts.push(current);
+      current = ` ${character}`;
+    } else {
+      current = candidate;
+    }
+  }
+  if (current) parts.push(current);
+  return parts.join("\r\n");
+}
+function renderOwnedAppointmentCalendar(identity2, generatedAt = Date.now()) {
+  if (!identity2?.ownedAppointmentId || !identity2?.startsAt || !identity2?.endsAt) {
+    throw new TypeError("complete owned appointment calendar identity required");
+  }
+  const lines = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//Amari Method//Owned Appointment//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${escapeIcs(identity2.ownedAppointmentId)}@amarimethod.com`,
+    `DTSTAMP:${utcTimestamp(generatedAt)}`,
+    `DTSTART:${utcTimestamp(identity2.startsAt)}`,
+    `DTEND:${utcTimestamp(identity2.endsAt)}`,
+    `SEQUENCE:${Number(identity2.revision || 1)}`,
+    "STATUS:CONFIRMED",
+    `SUMMARY:${escapeIcs(identity2.serviceName || "Amari Method Session")}`,
+    `LOCATION:${escapeIcs(identity2.meetingLocation || "662 8th Ave, San Francisco, CA 94118")}`,
+    "DESCRIPTION:Your Amari partner session with Garrett.",
+    "END:VEVENT",
+    "END:VCALENDAR"
+  ];
+  return `${lines.map(fold).join("\r\n")}\r
+`;
+}
+var init_appointment_calendar = __esm({
+  "lib/appointment-calendar.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    __name(escapeIcs, "escapeIcs");
+    __name(utcTimestamp, "utcTimestamp");
+    __name(fold, "fold");
+    __name(renderOwnedAppointmentCalendar, "renderOwnedAppointmentCalendar");
+  }
+});
+
+// lib/appointment-manage-token.js
+function base64Url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+}
+function fromBase64Url(value) {
+  if (!/^[A-Za-z0-9_-]+$/.test(value)) throw new Error("appointment manage token encoding is invalid");
+  const padded = value.replace(/-/g, "+").replace(/_/g, "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  const binary = atob(padded);
+  return Uint8Array.from(binary, (character) => character.charCodeAt(0));
+}
+async function hmacKey(secret, usages) {
+  const value = clean(secret);
+  if (value.length < 32) throw new Error("appointment manage link secret is unavailable");
+  return crypto.subtle.importKey(
+    "raw",
+    new TextEncoder().encode(value),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    usages
+  );
+}
+function canonicalClaims(input, nowMs) {
+  const capabilities = [...new Set(Array.isArray(input?.capabilities) ? input.capabilities.map(clean) : [])].sort();
+  const claims = {
+    appointmentId: clean(input?.appointmentId),
+    capabilities,
+    contactId: clean(input?.contactId),
+    exp: Number(input?.exp),
+    iat: Number(input?.iat ?? nowMs),
+    revision: Number(input?.revision),
+    v: Number(input?.v ?? TOKEN_VERSION)
+  };
+  if (claims.v !== TOKEN_VERSION || !ID.test(claims.appointmentId) || !ID.test(claims.contactId)) {
+    throw new Error("appointment manage token identity is invalid");
+  }
+  if (!Number.isInteger(claims.revision) || claims.revision < 1) {
+    throw new Error("appointment manage token revision is invalid");
+  }
+  if (!capabilities.length || capabilities.some((capability) => !CAPABILITIES.has(capability))) {
+    throw new Error("appointment manage token capability is invalid");
+  }
+  if (!Number.isInteger(claims.iat) || !Number.isInteger(claims.exp) || claims.iat > nowMs + FUTURE_IAT_SKEW_MS || claims.exp <= nowMs || claims.exp <= claims.iat || claims.exp - claims.iat > MAX_TTL_MS) {
+    throw new Error("appointment manage token lifetime is invalid");
+  }
+  return claims;
+}
+async function verifyAppointmentManageToken(secret, token, options = {}) {
+  const raw = clean(token);
+  const [encoded, signature, extra] = raw.split(".");
+  if (!encoded || !signature || extra) throw new Error("appointment manage token is invalid");
+  const verified = await crypto.subtle.verify(
+    "HMAC",
+    await hmacKey(secret, ["verify"]),
+    fromBase64Url(signature),
+    new TextEncoder().encode(encoded)
+  );
+  if (!verified) throw new Error("appointment manage token signature is invalid");
+  let parsed;
+  try {
+    parsed = JSON.parse(new TextDecoder().decode(fromBase64Url(encoded)));
+  } catch {
+    throw new Error("appointment manage token payload is invalid");
+  }
+  if (!parsed || Array.isArray(parsed) || typeof parsed !== "object" || Object.keys(parsed).sort().join("|") !== [...EXPECTED_KEYS].sort().join("|")) {
+    throw new Error("appointment manage token claims are invalid");
+  }
+  const nowMs = Number(options.nowMs ?? Date.now());
+  const claims = canonicalClaims(parsed, nowMs);
+  const required = clean(options.capability);
+  if (required && !claims.capabilities.includes(required)) throw new Error("appointment manage capability is not granted");
+  return Object.freeze(claims);
+}
+async function appointmentManageIdempotencyKey(token, action, startTime = "") {
+  const digest2 = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${clean(token)}
+${clean(action)}
+${clean(startTime)}`)
+  );
+  return `client-manage:${base64Url(new Uint8Array(digest2))}`;
+}
+var TOKEN_VERSION, MAX_TTL_MS, FUTURE_IAT_SKEW_MS, ID, CAPABILITIES, EXPECTED_KEYS, clean;
+var init_appointment_manage_token = __esm({
+  "lib/appointment-manage-token.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    TOKEN_VERSION = 1;
+    MAX_TTL_MS = 35 * 24 * 60 * 60 * 1e3;
+    FUTURE_IAT_SKEW_MS = 5 * 60 * 1e3;
+    ID = /^[A-Za-z0-9_-]{1,160}$/;
+    CAPABILITIES = /* @__PURE__ */ new Set(["cancel", "reschedule", "calendar", "recovery"]);
+    EXPECTED_KEYS = Object.freeze([
+      "appointmentId",
+      "capabilities",
+      "contactId",
+      "exp",
+      "iat",
+      "revision",
+      "v"
+    ]);
+    clean = /* @__PURE__ */ __name((value) => String(value || "").trim(), "clean");
+    __name(base64Url, "base64Url");
+    __name(fromBase64Url, "fromBase64Url");
+    __name(hmacKey, "hmacKey");
+    __name(canonicalClaims, "canonicalClaims");
+    __name(verifyAppointmentManageToken, "verifyAppointmentManageToken");
+    __name(appointmentManageIdempotencyKey, "appointmentManageIdempotencyKey");
+  }
+});
+
+// lib/staff-appointment-manage.js
+function dateEpoch(date2) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date2 || ""))) return NaN;
+  return Date.parse(`${date2}T00:00:00Z`);
+}
+function minutes(value) {
+  const match2 = /^(\d{2}):(\d{2})$/.exec(String(value || ""));
+  return match2 ? Number(match2[1]) * 60 + Number(match2[2]) : NaN;
+}
+function dateString(ms) {
+  return new Date(ms).toISOString().slice(0, 10);
+}
+function weekday(date2) {
+  return new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" }).format(/* @__PURE__ */ new Date(`${date2}T12:00:00Z`)).toLowerCase();
+}
+function wallClock(date2, minuteOfDay) {
+  const hour = String(Math.floor(minuteOfDay / 60)).padStart(2, "0");
+  const minute = String(minuteOfDay % 60).padStart(2, "0");
+  return normalizeGhlTimestamp(`${date2}T${hour}:${minute}:00`);
+}
+function internalAvailability({
+  calendarId,
+  startDate,
+  endDate,
+  events = [],
+  excludeAppointmentId = null,
+  now = Date.now(),
+  intervalMinutes = INTERNAL_START_INTERVAL_MINUTES
+}) {
+  const policy = policyForCalendarId(calendarId);
+  const start = dateEpoch(startDate);
+  const end = dateEpoch(endDate);
+  const interval = Number(intervalMinutes);
+  if (!policy || !Number.isFinite(start) || !Number.isFinite(end) || end < start || end - start > 32 * DAY_MS) {
+    throw new TypeError("valid governed calendar and date range required");
+  }
+  if (!Number.isInteger(interval) || interval < INTERNAL_START_INTERVAL_MINUTES || interval > 120) {
+    throw new TypeError("valid appointment start interval required");
+  }
+  const open = minutes(WORK_HOURS.firstSessionStart);
+  const last = minutes(WORK_HOURS.lastSessionStart);
+  const blocking = (events || []).filter((event2) => String(event2?.id || "") !== String(excludeAppointmentId || ""));
+  const slots2 = [];
+  for (let cursor = start; cursor <= end; cursor += DAY_MS) {
+    const date2 = dateString(cursor);
+    if (!WORK_HOURS.weekdays.includes(weekday(date2))) continue;
+    for (let at = open; at <= last; at += interval) {
+      const datetime = wallClock(date2, at);
+      if (Date.parse(datetime) <= Number(now)) continue;
+      if (!slotRespectsAppBuffer(datetime, calendarId, blocking)) continue;
+      slots2.push({
+        date: date2,
+        hour: Math.floor(at / 60),
+        minute: at % 60,
+        datetime,
+        source: "garrett_internal_schedule"
+      });
+    }
+  }
+  return slots2;
+}
+function clean2(value, max = 200) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+function normalizeStatus(appointment) {
+  return String(appointment?.appointmentStatus || appointment?.status || "").toLowerCase();
+}
+function appointmentStart(appointment) {
+  return Date.parse(appointment?.startTime || appointment?.start_time || "");
+}
+function assertCommandInput(input) {
+  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett", "Client"])).has(input.actor)) throw new TypeError("recognized appointment actor required");
+  if (!(/* @__PURE__ */ new Set(["cancel", "reschedule"])).has(input.action)) throw new TypeError("valid appointment action required");
+  if (!clean2(input.contactId, 100) || !clean2(input.appointmentId, 100) || !clean2(input.idempotencyKey, 160)) {
+    throw new TypeError("complete appointment command identity required");
+  }
+}
+async function loadOriginal(provider, contactId, appointmentId, fallback = null) {
+  if (typeof provider.getAppointment === "function") {
+    return provider.getAppointment(appointmentId, contactId, fallback || {});
+  }
+  const appointments = await provider.listContactAppointments(contactId);
+  return (appointments || []).find((appointment) => String(appointment?.id || "") === appointmentId) || null;
+}
+async function manageAppointmentCommand(input) {
+  assertCommandInput(input);
+  const { actor, action, contactId, appointmentId, idempotencyKey, store, provider } = input;
+  const providerAppointmentId = clean2(input.providerAppointmentId, 160) || appointmentId;
+  if (!store || !provider) throw new TypeError("appointment command dependencies required");
+  const now = Number(input.now ?? Date.now());
+  const claim = await store.claim({
+    actor,
+    action,
+    contactId,
+    appointmentId,
+    idempotencyKey,
+    requestedStartTime: clean2(input.startTime, 100) || null
+  });
+  if (claim.state === "completed") return claim.command.result;
+  if (claim.state !== "acquired") {
+    const error = new Error(claim.state === "conflict" ? "That action key belongs to another request." : "That appointment change is already processing.");
+    error.code = claim.state;
+    throw error;
+  }
+  const commandId = claim.command.id;
+  try {
+    const original = await loadOriginal(provider, contactId, providerAppointmentId);
+    if (!original) throw Object.assign(new Error("Appointment not found for this person."), { code: "appointment_not_found" });
+    const status = normalizeStatus(original);
+    if (status === "cancelled" && action === "cancel") {
+      const result2 = {
+        status: "completed",
+        action,
+        actor,
+        appointmentId,
+        contactId,
+        previousStartTime: original.startTime || original.start_time,
+        appointmentStatus: "cancelled",
+        reminderVerification: "pending_event_evidence"
+      };
+      const completion2 = await store.complete(commandId, result2);
+      return store.canonicalResult?.(result2, completion2) || result2;
+    }
+    if (status === "cancelled" && action === "reschedule" && claim.command.replacementAppointmentId) {
+      const replacement2 = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === claim.command.replacementAppointmentId) || null;
+      if (!replacement2 || !MANAGEABLE_STATUSES.has(normalizeStatus(replacement2))) {
+        throw Object.assign(new Error("The replacement appointment needs manual review."), {
+          code: "replacement_unavailable",
+          manualReview: true
+        });
+      }
+      const result2 = {
+        status: "completed",
+        action,
+        actor,
+        appointmentId,
+        replacementAppointmentId: String(replacement2.id),
+        contactId,
+        previousStartTime: original.startTime || original.start_time,
+        newStartTime: replacement2.startTime || replacement2.start_time,
+        appointmentStatus: normalizeStatus(replacement2),
+        reminderVerification: "pending_event_evidence"
+      };
+      const completion2 = await store.complete(commandId, result2);
+      return store.canonicalResult?.(result2, completion2) || result2;
+    }
+    if (!MANAGEABLE_STATUSES.has(status)) {
+      throw Object.assign(new Error(`This appointment is already ${status || "not manageable"}.`), { code: "appointment_not_manageable" });
+    }
+    const startsAt = appointmentStart(original);
+    if (!Number.isFinite(startsAt) || startsAt <= now) {
+      throw Object.assign(new Error("Only future appointments can be changed here."), { code: "appointment_not_future" });
+    }
+    if (action === "cancel") {
+      await provider.cancelAppointment(original);
+      const readback = await loadOriginal(provider, contactId, providerAppointmentId, original);
+      if (!readback || normalizeStatus(readback) !== "cancelled") {
+        throw Object.assign(new Error("Cancellation was not confirmed by the calendar."), { code: "cancel_not_confirmed", manualReview: true });
+      }
+      const result2 = {
+        status: "completed",
+        action,
+        actor,
+        appointmentId,
+        contactId,
+        previousStartTime: original.startTime || original.start_time,
+        appointmentStatus: "cancelled",
+        reminderVerification: "pending_event_evidence"
+      };
+      const completion2 = await store.complete(commandId, result2);
+      return store.canonicalResult?.(result2, completion2) || result2;
+    }
+    const newStartTime = clean2(input.startTime, 100);
+    const newStartMs = Date.parse(newStartTime);
+    const timezone = clean2(input.timezone, 100) || WORK_HOURS.timezone;
+    const calendarId = clean2(original.calendarId || original.calendar_id, 100);
+    const dateMatch = /^(\d{4}-\d{2}-\d{2})T/.exec(newStartTime);
+    if (!calendarId || !policyForCalendarId(calendarId) || !dateMatch || !Number.isFinite(newStartMs) || newStartMs <= now || newStartMs > now + 33 * DAY_MS) {
+      throw Object.assign(new Error("Choose a valid internal time for this appointment."), { code: "invalid_reschedule_time" });
+    }
+    const schedule = await provider.listSchedule(
+      Date.parse(`${dateMatch[1]}T00:00:00-08:00`) - 12 * 60 * 60 * 1e3,
+      Date.parse(`${dateMatch[1]}T23:59:59-07:00`) + 12 * 60 * 60 * 1e3
+    );
+    const available = internalAvailability({
+      calendarId,
+      startDate: dateMatch[1],
+      endDate: dateMatch[1],
+      events: schedule,
+      excludeAppointmentId: providerAppointmentId,
+      now,
+      intervalMinutes: actor === "Client" ? policyForCalendarId(calendarId).intervalMinutes : INTERNAL_START_INTERVAL_MINUTES
+    });
+    if (!available.some((slot) => slot.datetime === newStartTime)) {
+      throw Object.assign(new Error("That time is no longer open on Garrett\u2019s schedule."), { code: "slot_unavailable" });
+    }
+    let replacement = null;
+    if (claim.command.replacementAppointmentId) {
+      replacement = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === claim.command.replacementAppointmentId) || null;
+      if (!replacement || !MANAGEABLE_STATUSES.has(normalizeStatus(replacement))) {
+        throw Object.assign(new Error("The replacement appointment needs manual review."), { code: "replacement_unavailable", manualReview: true });
+      }
+    } else {
+      let checkpointedReplacementId = null;
+      try {
+        replacement = await provider.createReplacement({
+          original,
+          startTime: newStartTime,
+          timezone,
+          onCreated: /* @__PURE__ */ __name(async (replacementId, providerLink) => {
+            await store.checkpointReplacement(commandId, replacementId, providerLink);
+            checkpointedReplacementId = String(replacementId);
+          }, "onCreated")
+        });
+      } catch (createError) {
+        const cleanupSucceeded = Number(createError?.cleanupStatus) >= 200 && Number(createError?.cleanupStatus) < 300;
+        if (checkpointedReplacementId && cleanupSucceeded) {
+          await store.clearReplacement?.(commandId, checkpointedReplacementId);
+        } else if (createError?.phase === "create" && !createError?.appointmentId || createError?.appointmentId && !cleanupSucceeded) {
+          createError.manualReview = true;
+          createError.code = createError.code || "replacement_create_unverified";
+        }
+        throw createError;
+      }
+    }
+    if (!replacement?.id) {
+      throw Object.assign(new Error("The calendar did not return a replacement appointment."), { code: "replacement_missing", manualReview: true });
+    }
+    try {
+      await provider.cancelAppointment(original);
+    } catch (cancelError) {
+      const afterFailure = await loadOriginal(provider, contactId, providerAppointmentId, original);
+      if (!afterFailure || normalizeStatus(afterFailure) !== "cancelled") {
+        try {
+          await provider.cancelAppointment(replacement);
+          await store.clearReplacement?.(commandId, String(replacement.id));
+        } catch (compensationError) {
+          throw Object.assign(new Error("The calendar change needs manual review; both appointments may still be active."), {
+            code: "reschedule_compensation_failed",
+            manualReview: true,
+            cause: compensationError
+          });
+        }
+        throw Object.assign(new Error("The new appointment was removed and the original appointment stayed unchanged. Try again."), {
+          code: "source_cancel_failed",
+          cause: cancelError
+        });
+      }
+    }
+    const [oldReadback, newReadback] = await Promise.all([
+      loadOriginal(provider, contactId, providerAppointmentId, original),
+      loadOriginal(provider, contactId, String(replacement.id), replacement)
+    ]);
+    if (!oldReadback || normalizeStatus(oldReadback) !== "cancelled" || !newReadback || !MANAGEABLE_STATUSES.has(normalizeStatus(newReadback))) {
+      throw Object.assign(new Error("The reschedule could not be fully verified."), { code: "reschedule_not_confirmed", manualReview: true });
+    }
+    const result = {
+      status: "completed",
+      action,
+      actor,
+      appointmentId,
+      replacementAppointmentId: String(replacement.id),
+      contactId,
+      previousStartTime: original.startTime || original.start_time,
+      newStartTime,
+      appointmentStatus: "confirmed",
+      reminderVerification: "pending_event_evidence"
+    };
+    const completion = await store.complete(commandId, result);
+    return store.canonicalResult?.(result, completion) || result;
+  } catch (error) {
+    await store.fail(commandId, error, { manualReview: !!error?.manualReview });
+    throw error;
+  }
+}
+async function scheduleAppointmentCommand(input) {
+  const actor = clean2(input?.actor, 40);
+  const contactId = clean2(input?.contactId, 100);
+  const sessionType = clean2(input?.sessionType, 64);
+  const idempotencyKey = clean2(input?.idempotencyKey, 160);
+  const startTime = clean2(input?.startTime, 100);
+  const timezone = clean2(input?.timezone, 100) || WORK_HOURS.timezone;
+  const booking = input?.booking || null;
+  const store = input?.store;
+  const provider = input?.provider;
+  const now = Number(input?.now ?? Date.now());
+  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor)) throw new TypeError("recognized Staff actor required");
+  if (!contactId || !sessionType || !idempotencyKey) throw new TypeError("complete schedule command identity required");
+  if (!booking || !policyForCalendarId(booking.calendarId) || !clean2(booking.title, 240)) {
+    throw new TypeError("server-owned booking definition required");
+  }
+  if (!store || !provider) throw new TypeError("schedule command dependencies required");
+  const claim = await store.claim({ actor, contactId, sessionType, startTime, idempotencyKey, booking });
+  if (claim.state === "completed") return claim.operation.result;
+  if (claim.state !== "acquired") {
+    const error = new Error(claim.state === "conflict" ? "That action key belongs to another request." : "That appointment is already being scheduled.");
+    error.code = claim.state;
+    throw error;
+  }
+  try {
+    const dateMatch = /^(\d{4}-\d{2}-\d{2})T/.exec(startTime);
+    const startsAt = Date.parse(startTime);
+    if (!dateMatch || !Number.isFinite(startsAt) || startsAt <= now || startsAt > now + 33 * DAY_MS) {
+      throw Object.assign(new Error("Choose a valid internal time for this appointment."), { code: "invalid_schedule_time" });
+    }
+    if (claim.operation.appointmentId) {
+      const existing = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === String(claim.operation.appointmentId)) || null;
+      if (!existing || !MANAGEABLE_STATUSES.has(normalizeStatus(existing))) {
+        throw Object.assign(new Error("The created appointment needs manual review."), {
+          code: "scheduled_appointment_unavailable",
+          manualReview: true
+        });
+      }
+      const result2 = {
+        status: "completed",
+        action: "schedule",
+        actor,
+        contactId,
+        appointmentId: String(existing.id),
+        newStartTime: existing.startTime || existing.start_time,
+        appointmentStatus: normalizeStatus(existing),
+        reminderVerification: "pending_event_evidence"
+      };
+      const canonicalResult2 = store.canonicalResult?.(result2) || result2;
+      await store.complete(canonicalResult2);
+      return canonicalResult2;
+    }
+    const schedule = await provider.listSchedule(
+      Date.parse(`${dateMatch[1]}T00:00:00-08:00`) - 12 * 60 * 60 * 1e3,
+      Date.parse(`${dateMatch[1]}T23:59:59-07:00`) + 12 * 60 * 60 * 1e3
+    );
+    const available = internalAvailability({
+      calendarId: booking.calendarId,
+      startDate: dateMatch[1],
+      endDate: dateMatch[1],
+      events: schedule,
+      now
+    });
+    if (!available.some((slot) => slot.datetime === startTime)) {
+      throw Object.assign(new Error("That time is no longer open on Garrett\u2019s schedule."), { code: "slot_unavailable" });
+    }
+    let created;
+    let checkpointedAppointmentId = null;
+    try {
+      created = await provider.createAppointment({
+        contactId,
+        booking,
+        startTime,
+        timezone,
+        onCreated: /* @__PURE__ */ __name(async (appointmentId, providerLink) => {
+          await store.checkpointAppointment(String(appointmentId), providerLink);
+          checkpointedAppointmentId = String(appointmentId);
+        }, "onCreated")
+      });
+    } catch (createError) {
+      const cleanupSucceeded = Number(createError?.cleanupStatus) >= 200 && Number(createError?.cleanupStatus) < 300;
+      if (checkpointedAppointmentId && cleanupSucceeded) {
+        await store.clearAppointment?.(checkpointedAppointmentId);
+      } else if (createError?.phase === "create" && !createError?.appointmentId || createError?.appointmentId && !cleanupSucceeded) {
+        createError.manualReview = true;
+        createError.code = createError.code || "schedule_create_unverified";
+      }
+      throw createError;
+    }
+    if (!created?.id) {
+      throw Object.assign(new Error("The calendar did not return the new appointment."), { code: "schedule_missing", manualReview: true });
+    }
+    const readback = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === String(created.id)) || null;
+    if (!readback || !MANAGEABLE_STATUSES.has(normalizeStatus(readback))) {
+      throw Object.assign(new Error("The new appointment was not confirmed by the calendar."), { code: "schedule_not_confirmed", manualReview: true });
+    }
+    const result = {
+      status: "completed",
+      action: "schedule",
+      actor,
+      contactId,
+      appointmentId: String(created.id),
+      newStartTime: startTime,
+      appointmentStatus: normalizeStatus(readback),
+      reminderVerification: "pending_event_evidence"
+    };
+    const canonicalResult = store.canonicalResult?.(result) || result;
+    await store.complete(canonicalResult);
+    return canonicalResult;
+  } catch (error) {
+    await store.fail(error, { manualReview: !!error?.manualReview });
+    throw error;
+  }
+}
+var INTERNAL_START_INTERVAL_MINUTES, DAY_MS, MANAGEABLE_STATUSES;
+var init_staff_appointment_manage = __esm({
+  "lib/staff-appointment-manage.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_datetime();
+    init_app_owned_buffer();
+    init_booking_slot_policy();
+    INTERNAL_START_INTERVAL_MINUTES = 15;
+    DAY_MS = 864e5;
+    __name(dateEpoch, "dateEpoch");
+    __name(minutes, "minutes");
+    __name(dateString, "dateString");
+    __name(weekday, "weekday");
+    __name(wallClock, "wallClock");
+    __name(internalAvailability, "internalAvailability");
+    MANAGEABLE_STATUSES = /* @__PURE__ */ new Set(["new", "confirmed"]);
+    __name(clean2, "clean");
+    __name(normalizeStatus, "normalizeStatus");
+    __name(appointmentStart, "appointmentStart");
+    __name(assertCommandInput, "assertCommandInput");
+    __name(loadOriginal, "loadOriginal");
+    __name(manageAppointmentCommand, "manageAppointmentCommand");
+    __name(scheduleAppointmentCommand, "scheduleAppointmentCommand");
+  }
+});
+
+// lib/staff-calendar-provider-ghl.js
+function clean3(value, max = 240) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+async function listAppointments(context, contactId) {
+  const response3 = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}/appointments`);
+  if (!response3.ok) throw Object.assign(new Error("Could not load this person\u2019s appointments."), { status: response3.status });
+  const data = await response3.json();
+  return data.appointments || data.events || [];
+}
+async function cancelAppointment(context, appointment) {
+  const title = clean3(appointment?.title) || "Session";
+  const response3 = await ghlFetch(context, `${BASE}/calendars/events/appointments/${encodeURIComponent(appointment.id)}`, {
+    method: "PUT",
+    body: JSON.stringify({ title, appointmentStatus: "cancelled" })
+  });
+  if (!response3.ok) {
+    const detail = await response3.text();
+    throw Object.assign(new Error(`Calendar cancellation failed (${response3.status}).`), { status: response3.status, detail });
+  }
+}
+async function contactFor(context, contactId, action) {
+  const response3 = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
+  if (!response3.ok) throw new Error(`Could not load the person for this ${action}.`);
+  const data = await response3.json();
+  return data.contact || data;
+}
+function appointmentPayload({ contact, contactId, calendarId, startTime, durationMinutes, timezone, title, toNotify }) {
+  return {
+    calendarId,
+    locationId: LOCATION_ID,
+    contactId,
+    startTime,
+    endTime: appointmentEndTime(startTime, durationMinutes),
+    selectedTimezone: timezone || WORK_HOURS.timezone,
+    title,
+    toNotify,
+    ignoreDateRange: false,
+    firstName: contact.firstName || contact.first_name || "",
+    lastName: contact.lastName || contact.last_name || "",
+    email: contact.email || "",
+    phone: contact.phone || ""
+  };
+}
+function createGhlStaffCalendarProvider(context, providerContactId) {
+  const authoritativeContactId = clean3(providerContactId, 120);
+  if (!authoritativeContactId) throw new TypeError("GHL calendar adapter requires provider contact identity");
+  return Object.freeze({
+    provider: "ghl",
+    providerCalendarIdFor: /* @__PURE__ */ __name((booking) => clean3(booking?.calendarId, 120), "providerCalendarIdFor"),
+    // Intentionally ignore command-supplied contact IDs. The owned CRM
+    // crosswalk selected this exact provider identity before adapter creation.
+    listContactAppointments: /* @__PURE__ */ __name(() => listAppointments(context, authoritativeContactId), "listContactAppointments"),
+    listSchedule: /* @__PURE__ */ __name((start, end) => fetchGarrettScheduleEvents(context, start, end), "listSchedule"),
+    cancelAppointment: /* @__PURE__ */ __name((appointment) => cancelAppointment(context, appointment), "cancelAppointment"),
+    async createAppointment({ booking, startTime, timezone, onCreated }) {
+      if (!booking || !policyForCalendarId(booking.calendarId)) {
+        throw new Error("The appointment is missing governed calendar identity.");
+      }
+      const contact = await contactFor(context, authoritativeContactId, "appointment");
+      return createConfirmedAppointment({
+        endpoint: `${BASE}/calendars/events/appointments`,
+        request: /* @__PURE__ */ __name((url, options) => ghlFetch(context, url, options), "request"),
+        onCreated,
+        payload: appointmentPayload({
+          contact,
+          contactId: authoritativeContactId,
+          calendarId: booking.calendarId,
+          startTime,
+          durationMinutes: booking.durationMinutes,
+          timezone,
+          title: booking.title,
+          toNotify: true
+        })
+      });
+    },
+    async createReplacement({ original, startTime, timezone, onCreated }) {
+      const calendarId = clean3(original?.calendarId || original?.calendar_id, 120);
+      const policy = policyForCalendarId(calendarId);
+      if (!policy) throw new Error("The original appointment is missing governed calendar identity.");
+      const contact = await contactFor(context, authoritativeContactId, "reschedule");
+      return createConfirmedAppointment({
+        endpoint: `${BASE}/calendars/events/appointments`,
+        request: /* @__PURE__ */ __name((url, options) => ghlFetch(context, url, options), "request"),
+        onCreated,
+        payload: appointmentPayload({
+          contact,
+          contactId: authoritativeContactId,
+          calendarId,
+          startTime,
+          durationMinutes: policy.durationMinutes,
+          timezone,
+          title: clean3(original?.title) || policy.label,
+          toNotify: false
+        })
+      });
+    }
+  });
+}
+var BASE, LOCATION_ID;
+var init_staff_calendar_provider_ghl = __esm({
+  "lib/staff-calendar-provider-ghl.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_ghl();
+    init_datetime();
+    init_app_owned_buffer();
+    init_booking_slot_policy();
+    init_ghl_appointment_handoff();
+    BASE = "https://services.leadconnectorhq.com";
+    LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+    __name(clean3, "clean");
+    __name(listAppointments, "listAppointments");
+    __name(cancelAppointment, "cancelAppointment");
+    __name(contactFor, "contactFor");
+    __name(appointmentPayload, "appointmentPayload");
+    __name(createGhlStaffCalendarProvider, "createGhlStaffCalendarProvider");
+  }
+});
+
+// lib/google-api.js
+function getPacificOffset() {
+  const now = /* @__PURE__ */ new Date();
+  const utcStr = now.toLocaleString("en-US", { timeZone: "UTC" });
+  const pacStr = now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
+  const utcDate = new Date(utcStr);
+  const pacDate = new Date(pacStr);
+  const diffHours = Math.round((pacDate - utcDate) / (60 * 60 * 1e3));
+  const sign = diffHours >= 0 ? "+" : "-";
+  return `${sign}${String(Math.abs(diffHours)).padStart(2, "0")}:00`;
+}
+function kvKeys(user) {
+  const u = String(user || "").toLowerCase().trim() || "eben";
+  return {
+    access: `google:${u}:access_token`,
+    refresh: `google:${u}:refresh_token`,
+    expiry: `google:${u}:token_expiry`
+  };
+}
+async function getGoogleToken(context, user) {
+  const kv = context.env.PORTAL_KV;
+  if (!kv) throw new Error("KV not available");
+  const keys = kvKeys(user);
+  const isLegacyUser = String(user || "").trim() === LEGACY_USER;
+  const [accessToken, expiryStr] = await Promise.all([
+    kv.get(keys.access),
+    kv.get(keys.expiry)
+  ]);
+  let activeAccess = accessToken;
+  let activeExpiry = expiryStr ? parseInt(expiryStr, 10) : 0;
+  if (!activeAccess && isLegacyUser) {
+    const [legacyAccess, legacyExpiryStr] = await Promise.all([
+      kv.get(LEGACY_KV_ACCESS_TOKEN),
+      kv.get(LEGACY_KV_TOKEN_EXPIRY)
+    ]);
+    if (legacyAccess) {
+      activeAccess = legacyAccess;
+      activeExpiry = legacyExpiryStr ? parseInt(legacyExpiryStr, 10) : 0;
+    }
+  }
+  const now = Date.now();
+  if (activeAccess && activeExpiry > now + REFRESH_BUFFER_MS2) {
+    return activeAccess;
+  }
+  let refreshToken = await kv.get(keys.refresh);
+  if (!refreshToken && isLegacyUser) {
+    refreshToken = await kv.get(LEGACY_KV_REFRESH_TOKEN);
+  }
+  if (!refreshToken) {
+    throw new Error(`No Google refresh token in KV for user "${user}" \u2014 run setup first`);
+  }
+  return refreshGoogleToken(context, user, refreshToken);
+}
+async function refreshGoogleToken(context, user, refreshToken) {
+  const usesAmariInternalClient = String(user || "").trim() === "Garrett";
+  const clientId = usesAmariInternalClient ? context.env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID : context.env.GOOGLE_OAUTH_CLIENT_ID;
+  const clientSecret = usesAmariInternalClient ? context.env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET : context.env.GOOGLE_OAUTH_CLIENT_SECRET;
+  if (!clientId || !clientSecret) {
+    throw new Error("Missing OAuth client for the governed Google identity");
+  }
+  const response3 = await fetch(GOOGLE_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: refreshToken
+    }).toString()
+  });
+  if (!response3.ok) {
+    const errText = await response3.text();
+    console.error(`[google] Token refresh failed: ${response3.status} ${errText}`);
+    throw new Error("Google token refresh failed");
+  }
+  const data = await response3.json();
+  const newAccessToken = data.access_token;
+  const expiresIn = data.expires_in || 3600;
+  if (!newAccessToken) {
+    throw new Error("No access_token in Google refresh response");
+  }
+  const kv = context.env.PORTAL_KV;
+  const newExpiry = Date.now() + expiresIn * 1e3;
+  const keys = kvKeys(user);
+  const writes = [
+    kv.put(keys.access, newAccessToken),
+    kv.put(keys.expiry, String(newExpiry)),
+    kv.put(keys.refresh, data.refresh_token || refreshToken)
+  ];
+  await Promise.all(writes);
+  return newAccessToken;
+}
+async function createCalendarEventAt(context, user, title, startsAt, reminderMinutes = 30, description = "") {
+  try {
+    const token = await getGoogleToken(context, user);
+    const start = normalizeGhlTimestamp(startsAt);
+    if (!Number.isFinite(parsePacificWallClock(start))) throw new Error("Invalid Calendar event time");
+    const end = appointmentEndTime(start, 15);
+    const event2 = {
+      summary: title,
+      description,
+      start: {
+        dateTime: start,
+        timeZone: "America/Los_Angeles"
+      },
+      end: {
+        dateTime: end,
+        timeZone: "America/Los_Angeles"
+      },
+      reminders: {
+        useDefault: false,
+        overrides: [
+          { method: "popup", minutes: reminderMinutes }
+        ]
+      }
+    };
+    const response3 = await fetch(
+      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(event2)
+      }
+    );
+    if (!response3.ok) {
+      console.error("[google] Calendar event create failed:", response3.status);
+      return { error: `Google Calendar rejected the reminder (HTTP ${response3.status})`, status: response3.status };
+    }
+    const data = await response3.json();
+    return {
+      id: data.id,
+      title: data.summary,
+      start: data.start?.dateTime,
+      link: data.htmlLink
+    };
+  } catch (err) {
+    console.error("[google] Calendar reminder error:", err.message);
+    return { error: "Google Calendar is not connected. Reconnect it, then try again.", status: 0 };
+  }
+}
+async function createCalendarReminder(context, user, title, minutesFromNow, reminderMinutes = 30, description = "") {
+  const start = new Date(Date.now() + minutesFromNow * 60 * 1e3);
+  return createCalendarEventAt(context, user, title, start.toISOString(), reminderMinutes, description);
+}
+async function deleteCalendarEvent(context, user, eventId, calendarId = "primary") {
+  try {
+    const token = await getGoogleToken(context, user);
+    const response3 = await fetch(
+      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
+      {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` }
+      }
+    );
+    if (response3.ok || response3.status === 404 || response3.status === 410) {
+      return { ok: true, status: response3.status };
+    }
+    const errBody = await response3.text().catch(() => "");
+    console.error("[google] Calendar event delete failed:", response3.status, errBody.slice(0, 200));
+    return { ok: false, status: response3.status, error: errBody.slice(0, 200) };
+  } catch (err) {
+    console.error("[google] Calendar delete error:", err.message);
+    return { ok: false, status: 0, error: err.message };
+  }
+}
+async function listCalendarEventsRaw(context, user, timeMinISO, timeMaxISO, maxResults = 50) {
+  try {
+    const token = await getGoogleToken(context, user);
+    const calListResp = await fetch(
+      "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    let calendars = [{ id: "primary", summary: "primary" }];
+    if (calListResp.ok) {
+      const calListData = await calListResp.json();
+      const items = (calListData.items || []).filter((c) => !c.deleted && c.selected !== false);
+      if (items.length > 0) {
+        calendars = items.map((c) => ({ id: c.id, summary: c.summary || c.id }));
+      }
+    }
+    const params = new URLSearchParams({
+      timeMin: timeMinISO,
+      timeMax: timeMaxISO,
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: String(maxResults)
+    });
+    const perCalendar = await Promise.all(
+      calendars.map(async (cal) => {
+        const resp = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${params}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!resp.ok) return [];
+        const data = await resp.json();
+        return (data.items || []).map((ev) => ({ ev, cal }));
+      })
+    );
+    const seen = /* @__PURE__ */ new Set();
+    return perCalendar.flat().filter(({ ev }) => {
+      if (seen.has(ev.id)) return false;
+      seen.add(ev.id);
+      return true;
+    }).map(({ ev, cal }) => ({
+      event_id: ev.id,
+      calendar_id: cal.id,
+      calendar_name: cal.summary,
+      title: ev.summary || "(untitled)",
+      start: ev.start?.dateTime || ev.start?.date || null,
+      end: ev.end?.dateTime || ev.end?.date || null,
+      location: ev.location || null,
+      organizer: ev.organizer?.email || null,
+      status: ev.status || null,
+      html_link: ev.htmlLink || null
+    })).sort((a, b) => (a.start || "").localeCompare(b.start || ""));
+  } catch (err) {
+    console.error("[google] Calendar list error:", err.message);
+    return null;
+  }
+}
+async function getTodayCalendar(context, user) {
+  try {
+    const token = await getGoogleToken(context, user);
+    const now = /* @__PURE__ */ new Date();
+    const pacificStr = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+    const offset = getPacificOffset();
+    const timeMin = `${pacificStr}T00:00:00${offset}`;
+    const timeMax = `${pacificStr}T23:59:59${offset}`;
+    const calListResp = await fetch(
+      "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader",
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    let calendarIds = ["primary"];
+    if (calListResp.ok) {
+      const calListData = await calListResp.json();
+      calendarIds = (calListData.items || []).filter((cal) => !cal.deleted && cal.selected !== false).map((cal) => cal.id);
+    }
+    const params = new URLSearchParams({
+      timeMin,
+      timeMax,
+      singleEvents: "true",
+      orderBy: "startTime",
+      maxResults: "20"
+    });
+    const allEvents = await Promise.all(
+      calendarIds.map(async (calId) => {
+        const response3 = await fetch(
+          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${params}`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!response3.ok) return [];
+        const data = await response3.json();
+        return data.items || [];
+      })
+    );
+    const seen = /* @__PURE__ */ new Set();
+    const events = allEvents.flat().filter((event2) => {
+      if (seen.has(event2.id)) return false;
+      seen.add(event2.id);
+      return true;
+    }).sort((a, b) => {
+      const aTime = a.start?.dateTime || a.start?.date || "";
+      const bTime = b.start?.dateTime || b.start?.date || "";
+      return aTime.localeCompare(bTime);
+    });
+    if (events.length === 0) {
+      return "No events scheduled today.";
+    }
+    const dayName = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Los_Angeles" });
+    const lines = events.map((event2) => {
+      const start = event2.start?.dateTime ? new Date(event2.start.dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "All day";
+      const end = event2.end?.dateTime ? new Date(event2.end.dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "";
+      const location = event2.location ? ` (${event2.location})` : "";
+      return end ? `- ${start} \u2013 ${end}: ${event2.summary}${location}` : `- ${start}: ${event2.summary}${location}`;
+    });
+    return `Today is ${dayName}:
+${lines.join("\n")}`;
+  } catch (err) {
+    console.error("[google] Calendar error:", err.message);
+    return null;
+  }
+}
+async function getRecentEmails(context, user) {
+  try {
+    const token = await getGoogleToken(context, user);
+    const oneDayAgo = Math.floor((Date.now() - 24 * 60 * 60 * 1e3) / 1e3);
+    const params = new URLSearchParams({
+      q: `after:${oneDayAgo} -category:promotions -category:social`,
+      maxResults: "10"
+    });
+    const response3 = await fetch(
+      `https://www.googleapis.com/gmail/v1/users/me/messages?${params}`,
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+    if (!response3.ok) {
+      console.error("[google] Gmail list failed:", response3.status);
+      return null;
+    }
+    const data = await response3.json();
+    const messageIds = (data.messages || []).slice(0, 10);
+    if (messageIds.length === 0) {
+      return "No new emails in the last 24 hours.";
+    }
+    const messages = await Promise.all(
+      messageIds.map(async ({ id: id3 }) => {
+        const msgResp = await fetch(
+          `https://www.googleapis.com/gmail/v1/users/me/messages/${id3}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+        if (!msgResp.ok) return null;
+        const msg = await msgResp.json();
+        const headers5 = msg.payload?.headers || [];
+        const subject2 = headers5.find((h) => h.name === "Subject")?.value || "(no subject)";
+        const from = headers5.find((h) => h.name === "From")?.value || "Unknown";
+        const fromName = from.includes("<") ? from.split("<")[0].trim().replace(/"/g, "") : from;
+        return `- ${fromName}: ${subject2}`;
+      })
+    );
+    return `Recent emails (last 24h):
+${messages.filter(Boolean).join("\n")}`;
+  } catch (err) {
+    console.error("[google] Gmail error:", err.message);
+    return null;
+  }
+}
+var GOOGLE_TOKEN_URL, REFRESH_BUFFER_MS2, LEGACY_KV_ACCESS_TOKEN, LEGACY_KV_REFRESH_TOKEN, LEGACY_KV_TOKEN_EXPIRY, LEGACY_USER;
+var init_google_api = __esm({
+  "lib/google-api.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_datetime();
+    GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
+    REFRESH_BUFFER_MS2 = 5 * 60 * 1e3;
+    __name(getPacificOffset, "getPacificOffset");
+    LEGACY_KV_ACCESS_TOKEN = "google_access_token";
+    LEGACY_KV_REFRESH_TOKEN = "google_refresh_token";
+    LEGACY_KV_TOKEN_EXPIRY = "google_token_expiry";
+    LEGACY_USER = "Eben";
+    __name(kvKeys, "kvKeys");
+    __name(getGoogleToken, "getGoogleToken");
+    __name(refreshGoogleToken, "refreshGoogleToken");
+    __name(createCalendarEventAt, "createCalendarEventAt");
+    __name(createCalendarReminder, "createCalendarReminder");
+    __name(deleteCalendarEvent, "deleteCalendarEvent");
+    __name(listCalendarEventsRaw, "listCalendarEventsRaw");
+    __name(getTodayCalendar, "getTodayCalendar");
+    __name(getRecentEmails, "getRecentEmails");
+  }
+});
+
+// lib/staff-calendar-oauth.js
+function resolveStaffCalendarActor(actor) {
+  const identity2 = ACTORS[String(actor || "").trim()];
+  if (!identity2) throw new Error("staff actor does not have governed calendar identity");
+  return { ...identity2 };
+}
+function staffCalendarKey(actor, name) {
+  const identity2 = resolveStaffCalendarActor(actor);
+  if (!/^[a-z_]{3,40}$/.test(String(name || ""))) throw new Error("invalid Staff calendar key");
+  return `google:${identity2.key}:${name}`;
+}
+function staffCalendarOAuthClient(env, actor) {
+  const identity2 = resolveStaffCalendarActor(actor);
+  if (identity2.actor === "Garrett") {
+    return {
+      clientId: env?.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID,
+      clientSecret: env?.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET,
+      callbackUrl: AMARI_CALENDAR_CALLBACK_URL,
+      credentialFamily: "amari_internal"
+    };
+  }
+  return {
+    clientId: env?.GOOGLE_OAUTH_CLIENT_ID,
+    clientSecret: env?.GOOGLE_OAUTH_CLIENT_SECRET,
+    callbackUrl: PERSONAL_CALENDAR_CALLBACK_URL,
+    credentialFamily: "personal_workspace"
+  };
+}
+function staffCalendarOAuthConfigured(env, actor) {
+  if (!env?.PORTAL_KV || !env?.JWT_SECRET) return false;
+  const client = staffCalendarOAuthClient(env, actor);
+  return Boolean(client.clientId && client.clientSecret);
+}
+function stateValue() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return base64url(bytes);
+}
+function base64url(bytes) {
+  let binary = "";
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+function fromBase64url(value) {
+  const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
+  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
+  return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
+}
+async function stateKey(secret, usage) {
+  return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [usage]);
+}
+async function signState(payload, secret) {
+  const signature = await crypto.subtle.sign(
+    "HMAC",
+    await stateKey(secret, "sign"),
+    encoder.encode(`${STAFF_CALENDAR_STATE_VERSION}.${payload}`)
+  );
+  return base64url(new Uint8Array(signature));
+}
+function stateFailure(code, stage = "state") {
+  const error = new Error("Staff calendar authorization state was not accepted");
+  error.code = code;
+  error.stage = stage;
+  return error;
+}
+function exchangeFailure(message, code, stage, httpStatus = null) {
+  const error = new Error(message);
+  error.code = code;
+  error.stage = stage;
+  if (httpStatus) error.httpStatus = httpStatus;
+  return error;
+}
+function isStaffCalendarOAuthState(state) {
+  return String(state || "").startsWith(`${STAFF_CALENDAR_STATE_PREFIX}.`);
+}
+async function createStaffCalendarOAuthState(env, actor, now = Date.now()) {
+  const identity2 = resolveStaffCalendarActor(actor);
+  const nonce = stateValue();
+  const payload = base64url(encoder.encode(JSON.stringify({
+    flow: "staff_appointment_calendar",
+    actor: identity2.actor,
+    requiredPrimaryCalendarId: identity2.primaryCalendarId,
+    nonce,
+    createdAt: now
+  })));
+  const state = `${STAFF_CALENDAR_STATE_PREFIX}.${payload}.${await signState(payload, env.JWT_SECRET)}`;
+  await env.PORTAL_KV.put(
+    `staff-calendar:oauth-state:${nonce}`,
+    JSON.stringify({
+      flow: "staff_appointment_calendar",
+      actor: identity2.actor,
+      requiredPrimaryCalendarId: identity2.primaryCalendarId,
+      nonce,
+      createdAt: now
+    }),
+    { expirationTtl: STAFF_CALENDAR_STATE_TTL_SECONDS }
+  );
+  return state;
+}
+async function consumeStaffCalendarOAuthState(env, state, now = Date.now()) {
+  if (!isStaffCalendarOAuthState(state)) return null;
+  const [prefix, encoded, suppliedSignature, ...extra] = String(state).split(".");
+  if (prefix !== STAFF_CALENDAR_STATE_PREFIX || extra.length || !/^[A-Za-z0-9_-]{40,900}$/.test(encoded || "") || !/^[A-Za-z0-9_-]{43}$/.test(suppliedSignature || "")) {
+    throw stateFailure("state_invalid");
+  }
+  let verified = false;
+  try {
+    verified = await crypto.subtle.verify(
+      "HMAC",
+      await stateKey(env.JWT_SECRET, "verify"),
+      fromBase64url(suppliedSignature),
+      encoder.encode(`${STAFF_CALENDAR_STATE_VERSION}.${encoded}`)
+    );
+  } catch (error) {
+    if (error?.code) throw error;
+    throw stateFailure("state_invalid");
+  }
+  if (!verified) throw stateFailure("state_invalid");
+  let grant;
+  try {
+    grant = JSON.parse(new TextDecoder().decode(fromBase64url(encoded)));
+    const identity2 = resolveStaffCalendarActor(grant.actor);
+    const createdAt = Number(grant.createdAt);
+    if (grant.flow !== "staff_appointment_calendar" || grant.requiredPrimaryCalendarId !== identity2.primaryCalendarId || !/^[A-Za-z0-9_-]{43}$/.test(String(grant.nonce || "")) || !Number.isFinite(createdAt) || createdAt > now + 6e4 || now - createdAt > STAFF_CALENDAR_STATE_TTL_SECONDS * 1e3) {
+      throw stateFailure("state_expired");
+    }
+  } catch (error) {
+    if (error?.code) throw error;
+    throw stateFailure("state_invalid");
+  }
+  const key = `staff-calendar:oauth-state:${grant.nonce}`;
+  const saved = await env.PORTAL_KV.get(key);
+  await env.PORTAL_KV.delete(key);
+  if (saved) {
+    try {
+      const stored = JSON.parse(saved);
+      if (stored.actor !== grant.actor || stored.requiredPrimaryCalendarId !== grant.requiredPrimaryCalendarId || stored.nonce !== grant.nonce) {
+        throw stateFailure("state_mismatch");
+      }
+    } catch (error) {
+      if (error?.code) throw error;
+      throw stateFailure("state_invalid");
+    }
+  }
+  return { ...grant, stateEvidence: saved ? "signature_and_kv" : "signature_only" };
+}
+async function recordStaffCalendarOAuthResult(env, actor, result, now = Date.now()) {
+  const identity2 = resolveStaffCalendarActor(actor);
+  const status = result?.status === "connected" ? "connected" : "failed";
+  const stage = /^[a-z_]{3,40}$/.test(String(result?.stage || "")) ? String(result.stage) : "unknown";
+  const code = /^[a-z0-9_]{3,64}$/.test(String(result?.code || "")) ? String(result.code) : "authorization_failed";
+  await env.PORTAL_KV.put(staffCalendarKey(identity2.actor, "last_oauth_result"), JSON.stringify({
+    actor: identity2.actor,
+    status,
+    stage,
+    code,
+    at: new Date(now).toISOString(),
+    bookingActivationEnabled: false
+  }), { expirationTtl: STAFF_CALENDAR_RESULT_TTL_SECONDS });
+}
+async function listWritableGoogleCalendars(accessToken) {
+  const response3 = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer&maxResults=250&showHidden=true", {
+    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
+  });
+  if (!response3.ok) throw new Error(`Google Calendar ${response3.status} readiness probe failed`);
+  const body = await response3.json();
+  if (body?.nextPageToken) throw new Error("Google Calendar writer list exceeded the exact bounded page");
+  return (body?.items || []).filter((item) => !item.deleted && WRITABLE_CALENDAR_ROLES.has(item.accessRole)).map((item) => ({
+    id: String(item.id || ""),
+    summary: String(item.summary || item.id || ""),
+    accessRole: item.accessRole,
+    primary: Boolean(item.primary),
+    selected: item.selected !== false,
+    hidden: Boolean(item.hidden),
+    timeZone: item.timeZone || null
+  }));
+}
+async function readPrimaryWritableGoogleCalendar(accessToken) {
+  let response3;
+  try {
+    response3 = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList/primary", {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
+    });
+  } catch {
+    throw exchangeFailure("Google primary calendar readback was unavailable", "calendar_readback_unavailable", "calendar_readback");
+  }
+  if (!response3.ok) {
+    const status = Number(response3.status);
+    const code = Number.isInteger(status) && status >= 400 && status <= 599 ? `calendar_readback_http_${status}` : "calendar_readback_http_error";
+    throw exchangeFailure("Google primary calendar readback failed", code, "calendar_readback", status || null);
+  }
+  let item;
+  try {
+    item = await response3.json();
+  } catch {
+    throw exchangeFailure("Google primary calendar response was invalid", "calendar_readback_invalid_json", "calendar_readback");
+  }
+  const id3 = String(item?.id || "").trim();
+  const accessRole = String(item?.accessRole || "").trim();
+  if (!id3 || item?.deleted === true || item?.primary !== true) {
+    throw exchangeFailure("Google primary calendar identity was incomplete", "calendar_readback_invalid_response", "calendar_readback");
+  }
+  if (!WRITABLE_CALENDAR_ROLES.has(accessRole)) {
+    throw exchangeFailure("Google primary calendar is not writable", "primary_calendar_not_writable", "authority_readback");
+  }
+  return {
+    id: id3,
+    summary: String(item.summary || id3),
+    accessRole,
+    primary: true,
+    selected: item.selected !== false,
+    hidden: Boolean(item.hidden),
+    timeZone: item.timeZone || null
+  };
+}
+async function exchangeAndStoreStaffCalendarGrant(context, grant, code) {
+  const identity2 = resolveStaffCalendarActor(grant?.actor);
+  if (grant?.requiredPrimaryCalendarId !== identity2.primaryCalendarId || !code) {
+    throw exchangeFailure("invalid Staff calendar grant request", "grant_request_invalid", "request");
+  }
+  const client = staffCalendarOAuthClient(context.env, identity2.actor);
+  if (!client.clientId || !client.clientSecret) {
+    throw exchangeFailure("Staff calendar OAuth client is not configured", "client_unconfigured", "configuration");
+  }
+  let tokenResponse;
+  try {
+    tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: client.clientId,
+        client_secret: client.clientSecret,
+        redirect_uri: client.callbackUrl,
+        grant_type: "authorization_code"
+      }).toString()
+    });
+  } catch {
+    throw exchangeFailure("Google token exchange was unavailable", "token_exchange_unavailable", "token_exchange");
+  }
+  if (!tokenResponse.ok) {
+    throw exchangeFailure("Google token exchange failed", "token_exchange_failed", "token_exchange", tokenResponse.status);
+  }
+  const token = await tokenResponse.json();
+  if (!token.access_token || !token.refresh_token) {
+    throw exchangeFailure("Google did not return a durable calendar grant", "durable_grant_missing", "token_exchange");
+  }
+  const scopes = String(token.scope || "").split(/\s+/).filter(Boolean);
+  if (!scopes.includes(STAFF_CALENDAR_SCOPE)) {
+    throw exchangeFailure("Google calendar scope was not granted", "calendar_scope_missing", "scope_readback");
+  }
+  let primary;
+  try {
+    primary = await readPrimaryWritableGoogleCalendar(token.access_token);
+  } catch (error) {
+    if (error?.code && error?.stage) throw error;
+    throw exchangeFailure("Google Calendar writer readback failed", "calendar_readback_failed", "calendar_readback");
+  }
+  if (primary?.id.toLowerCase() !== identity2.primaryCalendarId.toLowerCase()) {
+    throw exchangeFailure("Google primary calendar does not match the governed Staff identity", "primary_calendar_mismatch", "identity_readback");
+  }
+  const calendars = [primary];
+  const expiry = Date.now() + Number(token.expires_in || 3600) * 1e3;
+  const tokenKeys = ["access_token", "refresh_token", "token_expiry"].map((name) => staffCalendarKey(identity2.actor, name));
+  const statusKey = staffCalendarKey(identity2.actor, "grant_status");
+  await context.env.PORTAL_KV.delete(statusKey);
+  try {
+    await Promise.all([
+      context.env.PORTAL_KV.put(tokenKeys[0], token.access_token),
+      context.env.PORTAL_KV.put(tokenKeys[1], token.refresh_token),
+      context.env.PORTAL_KV.put(tokenKeys[2], String(expiry))
+    ]);
+    await context.env.PORTAL_KV.put(statusKey, JSON.stringify({
+      actor: identity2.actor,
+      primaryCalendarId: primary.id,
+      scopes,
+      writableCalendarIds: calendars.map((calendar) => calendar.id),
+      verifiedAt: (/* @__PURE__ */ new Date()).toISOString(),
+      bookingActivationEnabled: false,
+      oauthCredentialFamily: client.credentialFamily
+    }));
+  } catch (error) {
+    await Promise.allSettled([...tokenKeys, statusKey].map((key) => context.env.PORTAL_KV.delete(key)));
+    throw exchangeFailure("Calendar grant storage failed", "grant_storage_failed", "storage");
+  }
+  try {
+    const today = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+    await context.env.PORTAL_KV.delete(`cos:cache:${identity2.key}:${today}`);
+  } catch (error) {
+    console.error("[staff-calendar-oauth] failed to invalidate Calendar context cache", error);
+  }
+  return { identity: identity2, calendars };
+}
+async function assertStaffCalendarAuthority(env, actor, calendarId) {
+  const identity2 = resolveStaffCalendarActor(actor);
+  const raw = await env?.PORTAL_KV?.get(staffCalendarKey(identity2.actor, "grant_status"));
+  let marker;
+  try {
+    marker = JSON.parse(raw);
+  } catch {
+    marker = null;
+  }
+  const writable = Array.isArray(marker?.writableCalendarIds) ? marker.writableCalendarIds : [];
+  if (marker?.actor !== identity2.actor || String(marker?.primaryCalendarId || "").toLowerCase() !== identity2.primaryCalendarId.toLowerCase() || !Array.isArray(marker?.scopes) || !marker.scopes.includes(STAFF_CALENDAR_SCOPE) || !writable.includes(calendarId) || marker?.bookingActivationEnabled !== false) {
+    const error = new Error("Google appointment calendar grant has not passed governed identity readback.");
+    error.code = "calendar_provider_unavailable";
+    throw error;
+  }
+  return marker;
+}
+async function staffCalendarGrantReadiness(context, actor) {
+  const identity2 = resolveStaffCalendarActor(actor);
+  const oauthConfigured = staffCalendarOAuthConfigured(context.env, identity2.actor);
+  const provider = String(context.env.STAFF_APPOINTMENT_CALENDAR_PROVIDER || "ghl").trim();
+  const configuredActor = String(context.env.STAFF_APPOINTMENT_GOOGLE_USER || "").trim();
+  const configuredCalendarId = String(context.env.STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID || "").trim();
+  const activation = provider === "google_calendar" && configuredActor === identity2.actor && Boolean(configuredCalendarId);
+  if (!oauthConfigured) return {
+    actor: identity2.actor,
+    requiredPrimaryCalendarId: identity2.primaryCalendarId,
+    oauthConfigured: false,
+    connectionStatus: "unconfigured",
+    grantPresent: false,
+    grantVerified: false,
+    calendars: [],
+    bookingActivationEnabled: activation,
+    blockers: ["Google Calendar authorization is not configured", "Staff booking remains on its current provider"]
+  };
+  const [access, refresh, marker, lastResultRaw] = await Promise.all([
+    context.env.PORTAL_KV.get(staffCalendarKey(identity2.actor, "access_token")),
+    context.env.PORTAL_KV.get(staffCalendarKey(identity2.actor, "refresh_token")),
+    context.env.PORTAL_KV.get(staffCalendarKey(identity2.actor, "grant_status")),
+    context.env.PORTAL_KV.get(staffCalendarKey(identity2.actor, "last_oauth_result"))
+  ]);
+  let lastOAuthResult = null;
+  try {
+    const parsed = JSON.parse(lastResultRaw);
+    if (parsed?.actor === identity2.actor && (/* @__PURE__ */ new Set(["connected", "failed"])).has(parsed?.status)) lastOAuthResult = parsed;
+  } catch {
+    lastOAuthResult = null;
+  }
+  const grantPresent = Boolean(access || refresh || marker);
+  if (!grantPresent) return {
+    actor: identity2.actor,
+    requiredPrimaryCalendarId: identity2.primaryCalendarId,
+    oauthConfigured: true,
+    connectionStatus: "absent",
+    grantPresent: false,
+    grantVerified: false,
+    lastOAuthResult,
+    calendars: [],
+    bookingActivationEnabled: activation,
+    blockers: [`No verified Google Calendar grant is connected for ${identity2.actor}`, "Staff booking remains on its current provider"]
+  };
+  try {
+    const token = await getGoogleToken(context, identity2.actor);
+    const primary = await readPrimaryWritableGoogleCalendar(token);
+    const calendars = [primary];
+    const grantVerified = primary?.id.toLowerCase() === identity2.primaryCalendarId.toLowerCase();
+    let markerRecord = null;
+    try {
+      markerRecord = JSON.parse(marker);
+    } catch {
+      markerRecord = null;
+    }
+    const markerVerified = markerRecord?.actor === identity2.actor && String(markerRecord?.primaryCalendarId || "").toLowerCase() === identity2.primaryCalendarId.toLowerCase() && Array.isArray(markerRecord?.scopes) && markerRecord.scopes.includes(STAFF_CALENDAR_SCOPE) && Array.isArray(markerRecord?.writableCalendarIds);
+    const configuredCalendarWritable = configuredCalendarId ? calendars.some((calendar) => calendar.id === configuredCalendarId) : false;
+    return {
+      actor: identity2.actor,
+      requiredPrimaryCalendarId: identity2.primaryCalendarId,
+      oauthConfigured: true,
+      connectionStatus: grantVerified ? "verified" : "invalid",
+      grantPresent: true,
+      grantVerified,
+      lastOAuthResult,
+      authorityMarkerVerified: markerVerified,
+      calendars,
+      bookingActivationEnabled: activation && configuredCalendarWritable && markerVerified,
+      blockers: [
+        ...!grantVerified ? [`The connected primary calendar is not ${identity2.primaryCalendarId}`] : [],
+        ...grantVerified && !markerVerified ? ["Reconnect once to establish the governed calendar identity marker"] : [],
+        ...!activation ? ["Staff booking remains on its current provider"] : [],
+        ...activation && (!configuredCalendarWritable || !markerVerified) ? ["The configured appointment calendar has not passed governed writable readback"] : []
+      ]
+    };
+  } catch {
+    return {
+      actor: identity2.actor,
+      requiredPrimaryCalendarId: identity2.primaryCalendarId,
+      oauthConfigured: true,
+      connectionStatus: "invalid",
+      grantPresent: true,
+      grantVerified: false,
+      lastOAuthResult,
+      calendars: [],
+      bookingActivationEnabled: false,
+      blockers: ["The stored Google Calendar grant could not be verified", "Staff booking remains on its current provider"]
+    };
+  }
+}
+var PERSONAL_CALENDAR_CALLBACK_URL, AMARI_CALENDAR_CALLBACK_URL, STAFF_CALENDAR_SCOPE, STAFF_CALENDAR_STATE_TTL_SECONDS, STAFF_CALENDAR_STATE_VERSION, STAFF_CALENDAR_STATE_PREFIX, STAFF_CALENDAR_RESULT_TTL_SECONDS, WRITABLE_CALENDAR_ROLES, encoder, ACTORS;
+var init_staff_calendar_oauth = __esm({
+  "lib/staff-calendar-oauth.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_google_api();
+    PERSONAL_CALENDAR_CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
+    AMARI_CALENDAR_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
+    STAFF_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
+    STAFF_CALENDAR_STATE_TTL_SECONDS = 10 * 60;
+    STAFF_CALENDAR_STATE_VERSION = "staff-calendar-oauth.v2";
+    STAFF_CALENDAR_STATE_PREFIX = "sc2";
+    STAFF_CALENDAR_RESULT_TTL_SECONDS = 7 * 24 * 60 * 60;
+    WRITABLE_CALENDAR_ROLES = /* @__PURE__ */ new Set(["owner", "writer", "writerWithoutPrivateAccess"]);
+    encoder = new TextEncoder();
+    ACTORS = Object.freeze({
+      Eben: Object.freeze({ actor: "Eben", key: "eben", primaryCalendarId: "eben@ebenforrest.com" }),
+      Garrett: Object.freeze({ actor: "Garrett", key: "garrett", primaryCalendarId: "garrett@amarimethod.com" })
+    });
+    __name(resolveStaffCalendarActor, "resolveStaffCalendarActor");
+    __name(staffCalendarKey, "staffCalendarKey");
+    __name(staffCalendarOAuthClient, "staffCalendarOAuthClient");
+    __name(staffCalendarOAuthConfigured, "staffCalendarOAuthConfigured");
+    __name(stateValue, "stateValue");
+    __name(base64url, "base64url");
+    __name(fromBase64url, "fromBase64url");
+    __name(stateKey, "stateKey");
+    __name(signState, "signState");
+    __name(stateFailure, "stateFailure");
+    __name(exchangeFailure, "exchangeFailure");
+    __name(isStaffCalendarOAuthState, "isStaffCalendarOAuthState");
+    __name(createStaffCalendarOAuthState, "createStaffCalendarOAuthState");
+    __name(consumeStaffCalendarOAuthState, "consumeStaffCalendarOAuthState");
+    __name(recordStaffCalendarOAuthResult, "recordStaffCalendarOAuthResult");
+    __name(listWritableGoogleCalendars, "listWritableGoogleCalendars");
+    __name(readPrimaryWritableGoogleCalendar, "readPrimaryWritableGoogleCalendar");
+    __name(exchangeAndStoreStaffCalendarGrant, "exchangeAndStoreStaffCalendarGrant");
+    __name(assertStaffCalendarAuthority, "assertStaffCalendarAuthority");
+    __name(staffCalendarGrantReadiness, "staffCalendarGrantReadiness");
+  }
+});
+
+// lib/staff-calendar-provider-google.js
+function clean4(value, max = 240) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+function configured(context) {
+  const calendarId = clean4(context?.env?.STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID, 240);
+  const user = clean4(context?.env?.STAFF_APPOINTMENT_GOOGLE_USER, 80);
+  if (!calendarId || !user) {
+    const error = new Error("Google appointment calendar authority is not configured.");
+    error.code = "calendar_provider_unavailable";
+    throw error;
+  }
+  return { calendarId, user };
+}
+async function request(context, user, path, options = {}) {
+  const calendarId = clean4(context?.env?.STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID, 240);
+  await assertStaffCalendarAuthority(context.env, user, calendarId);
+  const token = await getGoogleToken(context, user);
+  return fetch(`${API}${path}`, {
+    ...options,
+    headers: {
+      Authorization: `Bearer ${token}`,
+      ...options.body ? { "Content-Type": "application/json" } : {},
+      ...options.headers || {}
+    }
+  });
+}
+function privateFields(event2) {
+  return event2?.extendedProperties?.private || {};
+}
+function normalizeEvent(event2, providerCalendarId, fallback = {}) {
+  const owned = privateFields(event2);
+  const rawStatus = clean4(event2?.status, 40).toLowerCase();
+  const status = rawStatus === "confirmed" || rawStatus === "cancelled" ? rawStatus : rawStatus || "unknown";
+  return {
+    id: clean4(event2?.id || fallback.id, 240),
+    contactId: clean4(owned.amariOwnedContactId || fallback.contactId, 160),
+    calendarId: clean4(owned.amariServiceCalendarId || fallback.calendarId, 160),
+    providerCalendarId,
+    serviceId: clean4(owned.amariServiceId || fallback.serviceId, 160),
+    title: clean4(event2?.summary || fallback.title) || "Session",
+    appointmentStatus: status,
+    status,
+    startTime: event2?.start?.dateTime || fallback.startTime || null,
+    endTime: event2?.end?.dateTime || fallback.endTime || null,
+    timezone: event2?.start?.timeZone || fallback.timezone || WORK_HOURS.timezone,
+    location: event2?.location || fallback.location || null,
+    htmlLink: event2?.htmlLink || null
+  };
+}
+async function responseJson(response3, message) {
+  if (!response3.ok) {
+    const detail = await response3.text().catch(() => "");
+    const error = new Error(`${message} (${response3.status}).`);
+    error.status = response3.status;
+    error.detail = detail.slice(0, 500);
+    throw error;
+  }
+  return response3.json();
+}
+function eventsPath(calendarId, params) {
+  return `/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
+}
+function createGoogleStaffCalendarProvider(context, ownedContactId) {
+  const authoritativeContactId = clean4(ownedContactId, 160);
+  if (!authoritativeContactId) throw new TypeError("Google calendar adapter requires owned contact identity");
+  const { calendarId: providerCalendarId, user } = configured(context);
+  async function listContactAppointments2() {
+    const params = new URLSearchParams({
+      privateExtendedProperty: `amariOwnedContactId=${authoritativeContactId}`,
+      singleEvents: "true",
+      showDeleted: "true",
+      maxResults: "2500"
+    });
+    const response3 = await request(context, user, eventsPath(providerCalendarId, params));
+    const data = await responseJson(response3, "Could not load this person\u2019s Google Calendar appointments");
+    if (data.nextPageToken) throw new Error("Google Calendar contact read exceeded the exact bounded page.");
+    return (data.items || []).map((event2) => normalizeEvent(event2, providerCalendarId));
+  }
+  __name(listContactAppointments2, "listContactAppointments");
+  async function getAppointment(appointmentId, _contactId, fallback = {}) {
+    const id3 = clean4(appointmentId, 240);
+    const response3 = await request(
+      context,
+      user,
+      `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(id3)}`
+    );
+    if (response3.status === 404 || response3.status === 410) {
+      return normalizeEvent({ id: id3, status: "cancelled" }, providerCalendarId, fallback);
+    }
+    return normalizeEvent(
+      await responseJson(response3, "Could not read back the Google Calendar appointment"),
+      providerCalendarId,
+      fallback
+    );
+  }
+  __name(getAppointment, "getAppointment");
+  async function listSchedule(start, end) {
+    const params = new URLSearchParams({
+      timeMin: new Date(start).toISOString(),
+      timeMax: new Date(end).toISOString(),
+      singleEvents: "true",
+      showDeleted: "false",
+      orderBy: "startTime",
+      maxResults: "2500"
+    });
+    const response3 = await request(context, user, eventsPath(providerCalendarId, params));
+    const data = await responseJson(response3, "Could not load Garrett\u2019s Google Calendar schedule");
+    if (data.nextPageToken) throw new Error("Google Calendar schedule read exceeded the exact bounded page.");
+    return (data.items || []).map((event2) => normalizeEvent(event2, providerCalendarId));
+  }
+  __name(listSchedule, "listSchedule");
+  async function cancelAppointment2(appointment) {
+    const id3 = clean4(appointment?.id, 240);
+    if (!id3) throw new TypeError("Google Calendar appointment identity required");
+    const response3 = await request(
+      context,
+      user,
+      `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(id3)}?sendUpdates=none`,
+      { method: "DELETE" }
+    );
+    if (!response3.ok && response3.status !== 404 && response3.status !== 410) {
+      await responseJson(response3, "Google Calendar cancellation failed");
+    }
+  }
+  __name(cancelAppointment2, "cancelAppointment");
+  async function create({ booking, startTime, timezone, onCreated, title }) {
+    if (!booking?.serviceId || !policyForCalendarId(booking.calendarId)) {
+      throw new Error("The appointment is missing governed owned service identity.");
+    }
+    const body = {
+      summary: clean4(title || booking.title) || "Amari Method Session",
+      start: { dateTime: startTime, timeZone: timezone || WORK_HOURS.timezone },
+      end: {
+        dateTime: appointmentEndTime(startTime, booking.durationMinutes),
+        timeZone: timezone || WORK_HOURS.timezone
+      },
+      transparency: "opaque",
+      visibility: "private",
+      guestsCanInviteOthers: false,
+      guestsCanModify: false,
+      guestsCanSeeOtherGuests: false,
+      reminders: { useDefault: false, overrides: [] },
+      extendedProperties: {
+        private: {
+          amariAuthorityVersion: "1",
+          amariOwnedContactId: authoritativeContactId,
+          amariServiceId: clean4(booking.serviceId, 160),
+          amariServiceCalendarId: clean4(booking.calendarId, 160)
+        }
+      }
+    };
+    let createdId = null;
+    try {
+      const response3 = await request(
+        context,
+        user,
+        eventsPath(providerCalendarId, new URLSearchParams({ sendUpdates: "none", conferenceDataVersion: "0" })),
+        { method: "POST", body: JSON.stringify(body) }
+      );
+      const created = await responseJson(response3, "Google Calendar appointment creation failed");
+      createdId = clean4(created?.id, 240);
+      if (!createdId) throw new Error("Google Calendar did not return an appointment identity.");
+      await onCreated?.(createdId, { provider: PROVIDER, providerCalendarId });
+      const readback = await getAppointment(createdId, authoritativeContactId);
+      if (readback.contactId !== authoritativeContactId || readback.serviceId !== booking.serviceId || readback.calendarId !== booking.calendarId || Date.parse(readback.startTime || "") !== Date.parse(startTime) || readback.status !== "confirmed") {
+        const error = new Error("Google Calendar appointment readback did not match owned intent.");
+        error.code = "provider_readback_mismatch";
+        throw error;
+      }
+      return readback;
+    } catch (error) {
+      error.phase = createdId ? "readback" : "create";
+      error.appointmentId = createdId;
+      if (createdId) {
+        const cleanup = await request(
+          context,
+          user,
+          `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(createdId)}?sendUpdates=none`,
+          { method: "DELETE" }
+        ).catch(() => null);
+        error.cleanupStatus = cleanup?.status || 0;
+      }
+      throw error;
+    }
+  }
+  __name(create, "create");
+  return Object.freeze({
+    provider: PROVIDER,
+    providerCalendarIdFor: /* @__PURE__ */ __name(() => providerCalendarId, "providerCalendarIdFor"),
+    listContactAppointments: listContactAppointments2,
+    getAppointment,
+    listSchedule,
+    cancelAppointment: cancelAppointment2,
+    createAppointment: /* @__PURE__ */ __name((input) => create(input), "createAppointment"),
+    createReplacement: /* @__PURE__ */ __name(({ original, ...input }) => {
+      const serviceCalendarId = clean4(original?.calendarId || original?.calendar_id, 160);
+      const policy = policyForCalendarId(serviceCalendarId);
+      const serviceId = clean4(original?.serviceId, 160);
+      if (!policy || !serviceId) throw new Error("The original appointment is missing governed owned service identity.");
+      return create({
+        ...input,
+        title: clean4(original?.title) || policy.label,
+        booking: {
+          serviceId,
+          calendarId: serviceCalendarId,
+          durationMinutes: policy.durationMinutes,
+          title: clean4(original?.title) || policy.label
+        }
+      });
+    }, "createReplacement")
+  });
+}
+var API, PROVIDER;
+var init_staff_calendar_provider_google = __esm({
+  "lib/staff-calendar-provider-google.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_datetime();
+    init_google_api();
+    init_booking_slot_policy();
+    init_staff_calendar_oauth();
+    API = "https://www.googleapis.com/calendar/v3";
+    PROVIDER = "google_calendar";
+    __name(clean4, "clean");
+    __name(configured, "configured");
+    __name(request, "request");
+    __name(privateFields, "privateFields");
+    __name(normalizeEvent, "normalizeEvent");
+    __name(responseJson, "responseJson");
+    __name(eventsPath, "eventsPath");
+    __name(createGoogleStaffCalendarProvider, "createGoogleStaffCalendarProvider");
+  }
+});
+
+// lib/staff-owned-contact-identity.js
+function clean5(value, max = 120) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+function identityError(message, code, status) {
+  return Object.assign(new Error(message), { code, status });
+}
+async function resolveOwnedContactIdentity(context, contactReference) {
+  const reference = clean5(contactReference);
+  if (!reference) throw identityError("Choose a person.", "contact_reference_required", 400);
+  if (!context?.env?.WORKER_AUTH_SECRET) {
+    throw identityError("Owned CRM identity is not configured.", "owned_identity_unavailable", 503);
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  try {
+    const response3 = await fetch(`${WORKER_URL}?limit=20&query=${encodeURIComponent(reference)}`, {
+      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
+      signal: controller.signal
+    });
+    if (!response3.ok) {
+      throw identityError("Owned CRM identity is unavailable.", "owned_identity_unavailable", 503);
+    }
+    const body = await response3.json().catch(() => ({}));
+    const exact = (Array.isArray(body.contacts) ? body.contacts : []).filter(
+      (contact2) => clean5(contact2?.id) === reference || clean5(contact2?.provider_contact_id) === reference
+    );
+    const ownedIds = new Set(exact.map((contact2) => clean5(contact2?.id)).filter(Boolean));
+    if (ownedIds.size > 1) {
+      throw identityError("This person reference is ambiguous in the owned CRM.", "owned_identity_ambiguous", 409);
+    }
+    const contact = exact[0];
+    const ownedContactId = clean5(contact?.id);
+    if (!ownedContactId) {
+      throw identityError("This person was not found in the owned CRM.", "owned_contact_not_found", 404);
+    }
+    return Object.freeze({
+      ownedContactId,
+      providerContactId: clean5(contact?.provider_contact_id) || null
+    });
+  } catch (error) {
+    if (error?.code) throw error;
+    if (error instanceof Error && error.name === "AbortError") {
+      throw identityError("Owned CRM identity lookup timed out.", "owned_identity_unavailable", 503);
+    }
+    throw identityError("Owned CRM identity is unavailable.", "owned_identity_unavailable", 503);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function requireProviderContactIdentity(identity2) {
+  if (!clean5(identity2?.ownedContactId)) {
+    throw identityError("This person was not found in the owned CRM.", "owned_contact_not_found", 404);
+  }
+  const providerContactId = clean5(identity2?.providerContactId);
+  if (!providerContactId) {
+    throw identityError(
+      "This owned person is not connected to the current calendar provider.",
+      "provider_identity_missing",
+      409
+    );
+  }
+  return providerContactId;
+}
+var WORKER_URL, TIMEOUT_MS;
+var init_staff_owned_contact_identity = __esm({
+  "lib/staff-owned-contact-identity.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
+    TIMEOUT_MS = 1e4;
+    __name(clean5, "clean");
+    __name(identityError, "identityError");
+    __name(resolveOwnedContactIdentity, "resolveOwnedContactIdentity");
+    __name(requireProviderContactIdentity, "requireProviderContactIdentity");
+  }
+});
+
+// lib/staff-calendar-provider.js
+function configuredStaffCalendarProvider(env) {
+  const provider = String(env?.STAFF_APPOINTMENT_CALENDAR_PROVIDER || "ghl").trim();
+  if (!SUPPORTED.has(provider)) {
+    const error = new Error("Configured Staff appointment calendar provider is unsupported.");
+    error.code = "calendar_provider_unsupported";
+    throw error;
+  }
+  return provider;
+}
+function configuredStaffCalendarProviderForBooking(env, booking) {
+  return booking?.serviceId === "partner-initial" ? configuredStaffCalendarProvider(env) : "ghl";
+}
+function createStaffCalendarProvider(context, identity2, requestedProvider = null) {
+  const provider = requestedProvider || configuredStaffCalendarProvider(context?.env);
+  if (provider === "google_calendar") {
+    return createGoogleStaffCalendarProvider(context, identity2?.ownedContactId);
+  }
+  return createGhlStaffCalendarProvider(context, requireProviderContactIdentity(identity2));
+}
+var SUPPORTED;
+var init_staff_calendar_provider = __esm({
+  "lib/staff-calendar-provider.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_staff_calendar_provider_ghl();
+    init_staff_calendar_provider_google();
+    init_staff_owned_contact_identity();
+    SUPPORTED = /* @__PURE__ */ new Set(["ghl", "google_calendar"]);
+    __name(configuredStaffCalendarProvider, "configuredStaffCalendarProvider");
+    __name(configuredStaffCalendarProviderForBooking, "configuredStaffCalendarProviderForBooking");
+    __name(createStaffCalendarProvider, "createStaffCalendarProvider");
+  }
+});
+
+// lib/staff-owned-appointment-identity.js
+function identityError2(body, status) {
+  const error = new Error(body?.detail || body?.error || "Owned appointment identity is unavailable.");
+  error.code = body?.error || "owned_appointment_identity_unavailable";
+  error.status = status;
+  return error;
+}
+async function resolveStaffOwnedAppointmentIdentity(context, reference) {
+  if (!context?.env?.WORKER_AUTH_SECRET) throw identityError2({}, 503);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS2);
+  try {
+    const response3 = await fetch(`${WORKER_URL2}/${encodeURIComponent(reference)}/identity`, {
+      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
+      signal: controller.signal
+    });
+    const body = await response3.json().catch(() => ({}));
+    if (!response3.ok) throw identityError2(body, response3.status);
+    const identity2 = body?.identity;
+    if (!identity2?.ownedAppointmentId || !identity2?.ownedContactId) throw identityError2({}, 503);
+    return Object.freeze(identity2);
+  } catch (error) {
+    if (error?.code) throw error;
+    throw identityError2({}, 503);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+function requireProviderAppointmentIdentity(identity2) {
+  const provider = String(identity2?.provider || (identity2?.providerContactId ? "ghl" : ""));
+  if (!identity2?.providerAppointmentId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider) || provider === "ghl" && !identity2?.providerContactId) {
+    throw identityError2({
+      error: "provider_appointment_identity_missing",
+      detail: "This owned appointment has no verified temporary provider link."
+    }, 409);
+  }
+  return {
+    provider,
+    appointmentId: identity2.providerAppointmentId,
+    contactId: identity2.providerContactId || null
+  };
+}
+var WORKER_URL2, TIMEOUT_MS2;
+var init_staff_owned_appointment_identity = __esm({
+  "lib/staff-owned-appointment-identity.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    WORKER_URL2 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
+    TIMEOUT_MS2 = 1e4;
+    __name(identityError2, "identityError");
+    __name(resolveStaffOwnedAppointmentIdentity, "resolveStaffOwnedAppointmentIdentity");
+    __name(requireProviderAppointmentIdentity, "requireProviderAppointmentIdentity");
+  }
+});
+
+// lib/staff-owned-appointment-store.js
+function commandError(body, status) {
+  const error = new Error(body?.detail || body?.error || "Owned appointment command failed.");
+  error.code = body?.error || "owned_appointment_unavailable";
+  error.status = status;
+  if (error.code === "manual_review") error.manualReview = true;
+  return error;
+}
+async function post(context, actor, payload, pathname = COMMAND_PATH) {
+  if (!context?.env?.WORKER_AUTH_SECRET) throw commandError({ error: "owned_appointment_unavailable" }, 503);
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS3);
+  try {
+    const response3 = await fetch(`${WORKER_ORIGIN}${pathname}`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`,
+        "Content-Type": "application/json",
+        "X-Staff-Actor": actor
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
+    const body = await response3.json().catch(() => ({}));
+    if (!response3.ok) throw commandError(body, response3.status);
+    return body;
+  } catch (error) {
+    if (error?.code) throw error;
+    throw commandError({ error: "owned_appointment_unavailable", detail: "Owned appointment command is unavailable." }, 503);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+async function captureOwnedAppointmentRecoveryRequest(context, input) {
+  const appointmentId = String(input?.appointmentId || "").trim();
+  const contactId = String(input?.contactId || "").trim();
+  const appointmentRevision = Number(input?.appointmentRevision);
+  if (!appointmentId || !contactId || !Number.isInteger(appointmentRevision) || appointmentRevision < 1) {
+    throw new TypeError("owned appointment recovery identity required");
+  }
+  const response3 = await post(context, "Client", {
+    appointmentId,
+    contactId,
+    appointmentRevision
+  }, RECOVERY_PATH);
+  if (!response3?.request?.requestId) {
+    throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
+  }
+  return response3.request;
+}
+function createOwnedAppointmentScheduleStore(context, input) {
+  const actor = String(input?.actor || "");
+  const serviceId = String(input?.booking?.serviceId || "");
+  const serviceCalendarId = String(input?.booking?.calendarId || "");
+  const provider = String(input?.provider || "ghl");
+  const providerCalendarId = String(input?.providerCalendarId || serviceCalendarId);
+  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor) || !serviceId || !serviceCalendarId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider) || !providerCalendarId) {
+    throw new TypeError("owned appointment store identity required");
+  }
+  let commandId = null;
+  let ownedAppointmentId = null;
+  return Object.freeze({
+    async claim() {
+      const captured = await post(context, actor, {
+        action: "schedule",
+        contactId: input.contactId,
+        serviceId,
+        idempotencyKey: input.idempotencyKey,
+        startTime: input.startTime,
+        timezone: input.timezone
+      });
+      commandId = captured.appointment?.commandId;
+      ownedAppointmentId = captured.appointment?.appointmentId;
+      if (!commandId || !ownedAppointmentId) throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
+      const claimed = await post(context, actor, { action: "claim", commandId });
+      const execution = claimed.execution || {};
+      if (claimed.state === "completed") return { state: "completed", operation: { result: execution.result } };
+      if (claimed.state === "rejected") {
+        throw commandError({ error: "appointment_rejected", detail: execution.lastError || "Appointment request was rejected." }, 409);
+      }
+      if (claimed.state === "manual_review") {
+        throw commandError({
+          error: "manual_review",
+          detail: execution.lastError || "This appointment change needs manual review before another attempt."
+        }, 409);
+      }
+      if (claimed.state !== "acquired") return { state: claimed.state || "in_progress", operation: execution };
+      return {
+        state: "acquired",
+        operation: {
+          ...execution,
+          appointmentId: execution.providerRecordId || null,
+          ownedAppointmentId
+        }
+      };
+    },
+    checkpointAppointment(providerRecordId, link = {}) {
+      return post(context, actor, {
+        action: "provider-link",
+        commandId,
+        provider: link.provider || provider,
+        providerRecordId,
+        providerCalendarId: link.providerCalendarId || providerCalendarId,
+        providerStatusRaw: "new"
+      });
+    },
+    clearAppointment(providerRecordId) {
+      return post(context, actor, { action: "provider-unlink", commandId, providerRecordId });
+    },
+    canonicalResult(result) {
+      return {
+        ...result,
+        appointmentId: ownedAppointmentId,
+        providerAppointmentId: result.appointmentId,
+        authority: "owned"
+      };
+    },
+    async complete(result) {
+      const response3 = await post(context, actor, { action: "complete", commandId, result });
+      return response3.execution;
+    },
+    async fail(error, options = {}) {
+      const response3 = await post(context, actor, {
+        action: "fail",
+        commandId,
+        error: String(error?.message || error || "appointment execution failed").slice(0, 1e3),
+        manualReview: options.manualReview === true,
+        terminal: error?.code === "slot_unavailable" || error?.code === "invalid_schedule_time"
+      });
+      return response3.execution;
+    }
+  });
+}
+function createOwnedAppointmentManageStore(context, input) {
+  const actor = String(input?.actor || "");
+  const action = String(input?.action || "");
+  const contactId = String(input?.contactId || "");
+  const appointmentId = String(input?.appointmentId || "");
+  const providerCalendarId = String(input?.providerCalendarId || "");
+  const provider = String(input?.provider || "ghl");
+  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett", "Client"])).has(actor) || !(/* @__PURE__ */ new Set(["cancel", "reschedule"])).has(action) || !contactId || !appointmentId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider)) {
+    throw new TypeError("owned appointment manage identity required");
+  }
+  let commandId = null;
+  return Object.freeze({
+    async claim(command) {
+      const captured = await post(context, actor, {
+        action: "manage",
+        manageAction: action,
+        contactId,
+        appointmentId,
+        idempotencyKey: command.idempotencyKey,
+        ...action === "reschedule" ? {
+          startTime: command.requestedStartTime,
+          timezone: input.timezone
+        } : {}
+      });
+      commandId = captured.command?.commandId;
+      if (!commandId) throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
+      const claimed = await post(context, actor, { action: "claim", commandId });
+      const execution = claimed.execution || {};
+      if (claimed.state === "completed") {
+        return { state: "completed", command: { id: commandId, result: execution.result } };
+      }
+      if (claimed.state === "rejected") {
+        throw commandError({ error: "appointment_rejected", detail: execution.lastError || "Appointment request was rejected." }, 409);
+      }
+      return {
+        state: claimed.state,
+        command: {
+          id: commandId,
+          result: execution.result || null,
+          replacementAppointmentId: action === "reschedule" ? execution.providerRecordId || null : null
+        }
+      };
+    },
+    checkpointReplacement(_ignoredCommandId, providerRecordId, link = {}) {
+      return post(context, actor, {
+        action: "provider-link",
+        commandId,
+        provider: link.provider || provider,
+        providerRecordId,
+        providerCalendarId: link.providerCalendarId || providerCalendarId,
+        providerStatusRaw: "new"
+      });
+    },
+    clearReplacement(_ignoredCommandId, providerRecordId) {
+      return post(context, actor, { action: "provider-unlink", commandId, providerRecordId });
+    },
+    async complete(_ignoredCommandId, result) {
+      const response3 = await post(context, actor, { action: "complete", commandId, result });
+      return response3.execution;
+    },
+    canonicalResult(result, execution) {
+      return execution?.result || result;
+    },
+    async fail(_ignoredCommandId, error, options = {}) {
+      const response3 = await post(context, actor, {
+        action: "fail",
+        commandId,
+        error: String(error?.message || error || "appointment execution failed").slice(0, 1e3),
+        manualReview: options.manualReview === true,
+        terminal: false
+      });
+      return response3.execution;
+    }
+  });
+}
+var WORKER_ORIGIN, COMMAND_PATH, RECOVERY_PATH, TIMEOUT_MS3;
+var init_staff_owned_appointment_store = __esm({
+  "lib/staff-owned-appointment-store.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    WORKER_ORIGIN = "https://amari-crm-mirror.eben-fa2.workers.dev";
+    COMMAND_PATH = "/appointments/commands";
+    RECOVERY_PATH = "/appointments/recovery-requests";
+    TIMEOUT_MS3 = 1e4;
+    __name(commandError, "commandError");
+    __name(post, "post");
+    __name(captureOwnedAppointmentRecoveryRequest, "captureOwnedAppointmentRecoveryRequest");
+    __name(createOwnedAppointmentScheduleStore, "createOwnedAppointmentScheduleStore");
+    __name(createOwnedAppointmentManageStore, "createOwnedAppointmentManageStore");
+  }
+});
+
+// lib/client-appointment-manage.js
+function fail2(message, code, status = 409) {
+  throw Object.assign(new Error(message), { code, status });
+}
+function clean6(value, max = 240) {
+  return typeof value === "string" ? value.trim().slice(0, max) : "";
+}
+function providerStatus(appointment) {
+  return clean6(appointment?.appointmentStatus || appointment?.status, 40).toLowerCase();
+}
+function dateKey(ms, timezone = WORK_HOURS.timezone) {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date(ms));
+  const value = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+  return `${value.year}-${value.month}-${value.day}`;
+}
+async function exactProviderAppointment(provider, identity2) {
+  if (typeof provider.getAppointment === "function") {
+    return provider.getAppointment(identity2.providerAppointmentId, identity2.ownedContactId, {
+      id: identity2.providerAppointmentId,
+      contactId: identity2.ownedContactId,
+      calendarId: identity2.providerCalendarId,
+      serviceId: identity2.serviceId,
+      title: identity2.serviceName,
+      startTime: identity2.startsAt,
+      endTime: identity2.endsAt,
+      timezone: identity2.timezone,
+      location: identity2.meetingLocation
+    });
+  }
+  const appointments = await provider.listContactAppointments(identity2.providerContactId);
+  return (appointments || []).find(
+    (appointment) => clean6(appointment?.id) === identity2.providerAppointmentId
+  ) || null;
+}
+async function resolveClientAppointmentManageContext(context, token, capability, nowMs = Date.now()) {
+  const secret = context?.env?.APPOINTMENT_MANAGE_LINK_SECRET;
+  if (clean6(secret).length < 32) {
+    fail2("Appointment management is temporarily unavailable.", "appointment_manage_secret_unavailable", 503);
+  }
+  let claims;
+  try {
+    claims = await verifyAppointmentManageToken(secret, token, { capability, nowMs });
+  } catch {
+    fail2("This appointment link is invalid or has expired.", "appointment_manage_link_invalid", 401);
+  }
+  const identity2 = await resolveStaffOwnedAppointmentIdentity(context, claims.appointmentId);
+  if (identity2.ownedAppointmentId !== claims.appointmentId || identity2.ownedContactId !== claims.contactId) {
+    fail2("This appointment link does not match the owned appointment.", "appointment_manage_identity_mismatch");
+  }
+  if (Number(identity2.revision) !== claims.revision) {
+    fail2("This appointment has changed since this link was issued.", "appointment_manage_link_stale");
+  }
+  if (identity2.serviceId !== "partner-initial") {
+    fail2("This appointment cannot be changed from this link.", "appointment_manage_service_forbidden", 403);
+  }
+  if (identity2.authority !== "owned" || !(/* @__PURE__ */ new Set(["synced", "not_required"])).has(identity2.providerSyncState)) {
+    fail2("This appointment is not ready for client changes.", "appointment_manage_authority_unavailable");
+  }
+  if (!CHANGEABLE.has(clean6(identity2.status, 40).toLowerCase()) || Date.parse(identity2.startsAt || "") <= nowMs) {
+    fail2("This appointment is no longer changeable.", "appointment_not_manageable");
+  }
+  const providerIdentity = requireProviderAppointmentIdentity(identity2);
+  const provider = createStaffCalendarProvider(context, identity2, providerIdentity.provider);
+  const appointment = await exactProviderAppointment(provider, identity2);
+  if (!appointment || !PROVIDER_CHANGEABLE.has(providerStatus(appointment))) {
+    fail2("The calendar could not confirm a changeable appointment.", "provider_appointment_not_manageable");
+  }
+  if (clean6(appointment.id) !== identity2.providerAppointmentId) {
+    fail2("The calendar appointment identity did not match.", "provider_appointment_identity_mismatch");
+  }
+  const providerStart = Date.parse(appointment.startTime || appointment.start_time || "");
+  const ownedStart = Date.parse(identity2.startsAt || "");
+  if (!Number.isFinite(providerStart) || !Number.isFinite(ownedStart) || providerStart !== ownedStart) {
+    fail2("The calendar time has changed outside the owned appointment.", "provider_appointment_time_drift");
+  }
+  const appointmentService = clean6(appointment.serviceId, 160);
+  if (appointmentService && appointmentService !== identity2.serviceId) {
+    fail2("The calendar service did not match the owned appointment.", "provider_appointment_service_mismatch");
+  }
+  if (identity2.provider === "ghl" && clean6(appointment.calendarId || appointment.calendar_id, 160) !== identity2.providerCalendarId) {
+    fail2("The calendar identity did not match the owned appointment.", "provider_appointment_calendar_mismatch");
+  }
+  return Object.freeze({ claims, identity: Object.freeze({ ...identity2, ...providerIdentity }), provider, appointment });
+}
+async function clientAppointmentAvailability(resolved, nowMs = Date.now(), horizonDays = 21) {
+  const { identity: identity2, provider, appointment } = resolved;
+  const calendarId = clean6(appointment.calendarId || appointment.calendar_id || identity2.providerCalendarId, 160);
+  const policy = policyForCalendarId(calendarId);
+  if (!policy) fail2("This appointment calendar is not governed for rescheduling.", "appointment_calendar_ungoverned");
+  const timezone = clean6(identity2.timezone, 100) || WORK_HOURS.timezone;
+  const startDate = dateKey(nowMs, timezone);
+  const endDate = dateKey(nowMs + Math.min(Math.max(Number(horizonDays), 1), 32) * DAY_MS2, timezone);
+  const events = await provider.listSchedule(
+    Date.parse(`${startDate}T00:00:00-08:00`) - 12 * 60 * 60 * 1e3,
+    Date.parse(`${endDate}T23:59:59-07:00`) + 12 * 60 * 60 * 1e3
+  );
+  const slots2 = internalAvailability({
+    calendarId,
+    startDate,
+    endDate,
+    events,
+    excludeAppointmentId: identity2.providerAppointmentId,
+    now: nowMs,
+    intervalMinutes: policy.intervalMinutes
+  });
+  return Object.freeze({
+    calendarId,
+    timezone,
+    slots: applyLookBusy(applyGarrettSchedulePreference(slots2, events), { calendarId, asOfDate: startDate })
+  });
+}
+async function executeClientAppointmentManage(context, token, action, startTime = "", nowMs = Date.now()) {
+  if (!(/* @__PURE__ */ new Set(["cancel", "reschedule"])).has(action)) {
+    fail2("Choose cancel or reschedule.", "appointment_manage_action_invalid", 400);
+  }
+  const resolved = await resolveClientAppointmentManageContext(context, token, action, nowMs);
+  const idempotencyKey = await appointmentManageIdempotencyKey(token, action, startTime);
+  const { identity: identity2, provider } = resolved;
+  const store = createOwnedAppointmentManageStore(context, {
+    actor: "Client",
+    action,
+    contactId: identity2.ownedContactId,
+    appointmentId: identity2.ownedAppointmentId,
+    provider: identity2.provider,
+    providerCalendarId: identity2.providerCalendarId,
+    timezone: identity2.timezone
+  });
+  return manageAppointmentCommand({
+    actor: "Client",
+    action,
+    contactId: identity2.ownedContactId,
+    appointmentId: identity2.ownedAppointmentId,
+    providerAppointmentId: identity2.providerAppointmentId,
+    idempotencyKey,
+    startTime,
+    timezone: identity2.timezone,
+    store,
+    provider,
+    now: nowMs
+  });
+}
+var CHANGEABLE, PROVIDER_CHANGEABLE, DAY_MS2;
+var init_client_appointment_manage = __esm({
+  "lib/client-appointment-manage.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_appointment_manage_token();
+    init_app_owned_buffer();
+    init_booking_slot_policy();
+    init_look_busy();
+    init_staff_appointment_manage();
+    init_staff_calendar_provider();
+    init_staff_owned_appointment_identity();
+    init_staff_owned_appointment_store();
+    CHANGEABLE = /* @__PURE__ */ new Set(["booked", "confirmed"]);
+    PROVIDER_CHANGEABLE = /* @__PURE__ */ new Set(["new", "confirmed"]);
+    DAY_MS2 = 864e5;
+    __name(fail2, "fail");
+    __name(clean6, "clean");
+    __name(providerStatus, "providerStatus");
+    __name(dateKey, "dateKey");
+    __name(exactProviderAppointment, "exactProviderAppointment");
+    __name(resolveClientAppointmentManageContext, "resolveClientAppointmentManageContext");
+    __name(clientAppointmentAvailability, "clientAppointmentAvailability");
+    __name(executeClientAppointmentManage, "executeClientAppointmentManage");
+  }
+});
+
+// api/appointment-calendar.js
+async function onRequestGet7(context) {
+  const token = new URL(context.request.url).searchParams.get("token") || "";
+  try {
+    const resolved = await resolveClientAppointmentManageContext(context, token, "calendar");
+    return new Response(renderOwnedAppointmentCalendar(resolved.identity), {
+      status: 200,
+      headers: {
+        ...BASE_HEADERS,
+        "Content-Type": "text/calendar; charset=utf-8",
+        "Content-Disposition": 'attachment; filename="amari-appointment.ics"'
+      }
+    });
+  } catch (error) {
+    const status = [401, 403, 404, 409, 503].includes(Number(error?.status)) ? Number(error.status) : 503;
+    return new Response("This appointment calendar link is unavailable.", {
+      status,
+      headers: { ...BASE_HEADERS, "Content-Type": "text/plain; charset=utf-8" }
+    });
+  }
+}
+var BASE_HEADERS;
+var init_appointment_calendar2 = __esm({
+  "api/appointment-calendar.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_appointment_calendar();
+    init_client_appointment_manage();
+    BASE_HEADERS = Object.freeze({
+      "Cache-Control": "private, no-store, max-age=0",
+      "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff"
+    });
+    __name(onRequestGet7, "onRequestGet");
   }
 });
 
@@ -7916,7 +10246,7 @@ function normalizeAppointmentEvent(payload) {
 var APPOINTMENT_EVENT_TYPES, STATUS_TO_TYPE, APPOINTMENT_ID_KEYS, CALENDAR_ID_KEYS, CONTACT_ID_KEYS, START_AT_KEYS, STATUS_KEYS, MODIFIED_BY_KEYS, APPOINTMENT_EVENT_KIND_KEYS, APPOINTMENT_RECURRING_KEYS;
 var init_appointment_event = __esm({
   "lib/appointment-event.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_datetime();
     APPOINTMENT_EVENT_TYPES = Object.freeze({
       BOOKED: "booked",
@@ -7994,7 +10324,7 @@ async function releaseProcessedEvent(db, eventId) {
 }
 var init_processed_events = __esm({
   "lib/processed-events.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(changesOf3, "changesOf");
     __name(claimProcessedEvent, "claimProcessedEvent");
     __name(releaseProcessedEvent, "releaseProcessedEvent");
@@ -8029,7 +10359,7 @@ function emitNurtureEvent(context, event2) {
 }
 var init_engine_forward = __esm({
   "lib/engine-forward.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(forwardEventToEngine, "forwardEventToEngine");
     __name(emitNurtureEvent, "emitNurtureEvent");
   }
@@ -8060,7 +10390,7 @@ async function dispatchAppointmentEvent(context, event2) {
 var CONSUMERS;
 var init_appointment_dispatch = __esm({
   "lib/appointment-dispatch.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_engine_forward();
     CONSUMERS = [
       { name: "reminder", urlVar: "REMINDER_ENGINE_URL" },
@@ -8177,7 +10507,7 @@ async function onRequestPost7(context) {
 var JSON_HEADERS, KEY_TTL_SECONDS;
 var init_appointment_webhook = __esm({
   "api/appointment-webhook.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_appointment_event();
     init_safe_equal();
     init_processed_events();
@@ -8212,7 +10542,7 @@ async function onRequestOptions8(context) {
     headers: corsHeaders5(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet7(context) {
+async function onRequestGet8(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders5(origin), "Content-Type": "application/json" };
   try {
@@ -8269,7 +10599,7 @@ async function onRequestGet7(context) {
 var PT, KV_CALL_PREFIX, KV_DAILY_PREFIX, KV_LATEST_PREFIX, ALLOWED_ORIGINS4;
 var init_call_coach = __esm({
   "api/call-coach.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     PT = "America/Los_Angeles";
     KV_CALL_PREFIX = "call-coach:";
@@ -8282,7 +10612,7 @@ var init_call_coach = __esm({
     __name(corsHeaders5, "corsHeaders");
     __name(yesterdayPacific, "yesterdayPacific");
     __name(onRequestOptions8, "onRequestOptions");
-    __name(onRequestGet7, "onRequestGet");
+    __name(onRequestGet8, "onRequestGet");
   }
 });
 
@@ -8424,7 +10754,7 @@ async function onRequestPost8(context) {
 var GHL_API_BASE5, GHL_LOCATION_ID3, BOOKING_URL, ALLOWED_ORIGINS5;
 var init_client_refer = __esm({
   "api/client-refer.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     GHL_API_BASE5 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID3 = "7pIO7FHVAyBT1jKGhfQM";
@@ -8441,7 +10771,7 @@ var init_client_refer = __esm({
 });
 
 // api/comms-summary.js
-async function onRequestGet8(context) {
+async function onRequestGet9(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers5 = { "Content-Type": "application/json" };
@@ -8464,10 +10794,10 @@ async function onRequestGet8(context) {
 var KV_SUMMARY;
 var init_comms_summary = __esm({
   "api/comms-summary.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_auth();
     KV_SUMMARY = "comms:flags:summary";
-    __name(onRequestGet8, "onRequestGet");
+    __name(onRequestGet9, "onRequestGet");
   }
 });
 
@@ -8491,19 +10821,19 @@ function corsHeaders7(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-function isValidEmail(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""));
+function isValidEmail(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2 || ""));
 }
 function validateContactMessage(body) {
   const name = String(body?.name || "").trim();
-  const email = String(body?.email || "").trim();
+  const email2 = String(body?.email || "").trim();
   const phone = String(body?.phone || "").trim();
   const message = String(body?.message || "").trim();
   if (!name || name.length > MAX_NAME) return { error: "Name required" };
-  if (!isValidEmail(email)) return { error: "Valid email required" };
+  if (!isValidEmail(email2)) return { error: "Valid email required" };
   if (phone.length > MAX_PHONE) return { error: "Phone number looks too long" };
   if (!message || message.length > MAX_MESSAGE) return { error: "Message required (4000 characters max)" };
-  return { name, email: email.slice(0, 200), phone, message };
+  return { name, email: email2.slice(0, 200), phone, message };
 }
 async function onRequestOptions10(context) {
   return new Response(null, {
@@ -8582,7 +10912,7 @@ ${validated.message}`
 var GHL_API_BASE6, GHL_LOCATION_ID4, ALLOWED_ORIGINS6, MAX_NAME, MAX_PHONE, MAX_MESSAGE;
 var init_contact_message = __esm({
   "api/contact-message.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     GHL_API_BASE6 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID4 = "7pIO7FHVAyBT1jKGhfQM";
@@ -8652,7 +10982,7 @@ async function onRequestOptions11(context) {
     headers: corsHeaders8(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet9(context) {
+async function onRequestGet10(context) {
   const origin = context.request.headers.get("Origin") || "";
   const auth = await authenticate(context);
   if (!auth) return jsonResponse({ error: "Unauthorized" }, 401, origin);
@@ -8701,7 +11031,7 @@ async function onRequestPost10(context) {
 var ALLOWED_ORIGINS7, COS_QUEUE_USERS;
 var init_cos_actions = __esm({
   "api/cos-actions.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     init_safe_equal();
     ALLOWED_ORIGINS7 = [
@@ -8714,21 +11044,21 @@ var init_cos_actions = __esm({
     __name(authenticate, "authenticate");
     __name(queueUser, "queueUser");
     __name(onRequestOptions11, "onRequestOptions");
-    __name(onRequestGet9, "onRequestGet");
+    __name(onRequestGet10, "onRequestGet");
     __name(onRequestPost10, "onRequestPost");
   }
 });
 
 // lib/rate-limit.js
-async function reserveAuthSlot(kv, { ip, email, scope, dateKey }) {
+async function reserveAuthSlot(kv, { ip, email: email2, scope, dateKey: dateKey2 }) {
   if (!kv) {
     console.error(`[rate-limit] ${scope}: PORTAL_KV unavailable \u2014 proceeding without app-level limit`);
     return { ok: true, degraded: true };
   }
   const cleanIp = (ip || "unknown").slice(0, 64);
-  const emailKey = `cooldown:${scope}:${email}`;
+  const emailKey = `cooldown:${scope}:${email2}`;
   const ipKey = `rl:ip:${scope}:${cleanIp}`;
-  const globalKey = `rl:global:${scope}:${dateKey}`;
+  const globalKey = `rl:global:${scope}:${dateKey2}`;
   try {
     const [emailHit, ipRaw, globalRaw] = await Promise.all([
       kv.get(emailKey),
@@ -8797,7 +11127,7 @@ async function clearPinAttempts(kv, { ip, scope }) {
 var RATE_LIMITS, PIN_RATE_LIMITS, pinAttemptKey;
 var init_rate_limit = __esm({
   "lib/rate-limit.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     RATE_LIMITS = Object.freeze({
       EMAIL_COOLDOWN_SEC: 5 * 60,
       // one login email per address per 5 min (was 60s)
@@ -8937,7 +11267,7 @@ async function onRequestPost11(context) {
 var ALLOWED_ORIGINS8;
 var init_cos_auth = __esm({
   "api/cos-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_rate_limit();
     init_ops_last_run();
     ALLOWED_ORIGINS8 = [
@@ -8948,358 +11278,6 @@ var init_cos_auth = __esm({
     __name(createToken, "createToken");
     __name(onRequestOptions12, "onRequestOptions");
     __name(onRequestPost11, "onRequestPost");
-  }
-});
-
-// lib/google-api.js
-function getPacificOffset() {
-  const now = /* @__PURE__ */ new Date();
-  const utcStr = now.toLocaleString("en-US", { timeZone: "UTC" });
-  const pacStr = now.toLocaleString("en-US", { timeZone: "America/Los_Angeles" });
-  const utcDate = new Date(utcStr);
-  const pacDate = new Date(pacStr);
-  const diffHours = Math.round((pacDate - utcDate) / (60 * 60 * 1e3));
-  const sign = diffHours >= 0 ? "+" : "-";
-  return `${sign}${String(Math.abs(diffHours)).padStart(2, "0")}:00`;
-}
-function kvKeys(user) {
-  const u = String(user || "").toLowerCase().trim() || "eben";
-  return {
-    access: `google:${u}:access_token`,
-    refresh: `google:${u}:refresh_token`,
-    expiry: `google:${u}:token_expiry`
-  };
-}
-async function getGoogleToken(context, user) {
-  const kv = context.env.PORTAL_KV;
-  if (!kv) throw new Error("KV not available");
-  const keys = kvKeys(user);
-  const isLegacyUser = String(user || "").trim() === LEGACY_USER;
-  const [accessToken, expiryStr] = await Promise.all([
-    kv.get(keys.access),
-    kv.get(keys.expiry)
-  ]);
-  let activeAccess = accessToken;
-  let activeExpiry = expiryStr ? parseInt(expiryStr, 10) : 0;
-  if (!activeAccess && isLegacyUser) {
-    const [legacyAccess, legacyExpiryStr] = await Promise.all([
-      kv.get(LEGACY_KV_ACCESS_TOKEN),
-      kv.get(LEGACY_KV_TOKEN_EXPIRY)
-    ]);
-    if (legacyAccess) {
-      activeAccess = legacyAccess;
-      activeExpiry = legacyExpiryStr ? parseInt(legacyExpiryStr, 10) : 0;
-    }
-  }
-  const now = Date.now();
-  if (activeAccess && activeExpiry > now + REFRESH_BUFFER_MS2) {
-    return activeAccess;
-  }
-  let refreshToken = await kv.get(keys.refresh);
-  if (!refreshToken && isLegacyUser) {
-    refreshToken = await kv.get(LEGACY_KV_REFRESH_TOKEN);
-  }
-  if (!refreshToken) {
-    throw new Error(`No Google refresh token in KV for user "${user}" \u2014 run setup first`);
-  }
-  return refreshGoogleToken(context, user, refreshToken);
-}
-async function refreshGoogleToken(context, user, refreshToken) {
-  const usesAmariInternalClient = String(user || "").trim() === "Garrett";
-  const clientId = usesAmariInternalClient ? context.env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID : context.env.GOOGLE_OAUTH_CLIENT_ID;
-  const clientSecret = usesAmariInternalClient ? context.env.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET : context.env.GOOGLE_OAUTH_CLIENT_SECRET;
-  if (!clientId || !clientSecret) {
-    throw new Error("Missing OAuth client for the governed Google identity");
-  }
-  const response2 = await fetch(GOOGLE_TOKEN_URL, {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({
-      grant_type: "refresh_token",
-      client_id: clientId,
-      client_secret: clientSecret,
-      refresh_token: refreshToken
-    }).toString()
-  });
-  if (!response2.ok) {
-    const errText = await response2.text();
-    console.error(`[google] Token refresh failed: ${response2.status} ${errText}`);
-    throw new Error("Google token refresh failed");
-  }
-  const data = await response2.json();
-  const newAccessToken = data.access_token;
-  const expiresIn = data.expires_in || 3600;
-  if (!newAccessToken) {
-    throw new Error("No access_token in Google refresh response");
-  }
-  const kv = context.env.PORTAL_KV;
-  const newExpiry = Date.now() + expiresIn * 1e3;
-  const keys = kvKeys(user);
-  const writes = [
-    kv.put(keys.access, newAccessToken),
-    kv.put(keys.expiry, String(newExpiry)),
-    kv.put(keys.refresh, data.refresh_token || refreshToken)
-  ];
-  await Promise.all(writes);
-  return newAccessToken;
-}
-async function createCalendarEventAt(context, user, title, startsAt, reminderMinutes = 30, description = "") {
-  try {
-    const token = await getGoogleToken(context, user);
-    const start = normalizeGhlTimestamp(startsAt);
-    if (!Number.isFinite(parsePacificWallClock(start))) throw new Error("Invalid Calendar event time");
-    const end = appointmentEndTime(start, 15);
-    const event2 = {
-      summary: title,
-      description,
-      start: {
-        dateTime: start,
-        timeZone: "America/Los_Angeles"
-      },
-      end: {
-        dateTime: end,
-        timeZone: "America/Los_Angeles"
-      },
-      reminders: {
-        useDefault: false,
-        overrides: [
-          { method: "popup", minutes: reminderMinutes }
-        ]
-      }
-    };
-    const response2 = await fetch(
-      "https://www.googleapis.com/calendar/v3/calendars/primary/events",
-      {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify(event2)
-      }
-    );
-    if (!response2.ok) {
-      console.error("[google] Calendar event create failed:", response2.status);
-      return { error: `Google Calendar rejected the reminder (HTTP ${response2.status})`, status: response2.status };
-    }
-    const data = await response2.json();
-    return {
-      id: data.id,
-      title: data.summary,
-      start: data.start?.dateTime,
-      link: data.htmlLink
-    };
-  } catch (err) {
-    console.error("[google] Calendar reminder error:", err.message);
-    return { error: "Google Calendar is not connected. Reconnect it, then try again.", status: 0 };
-  }
-}
-async function createCalendarReminder(context, user, title, minutesFromNow, reminderMinutes = 30, description = "") {
-  const start = new Date(Date.now() + minutesFromNow * 60 * 1e3);
-  return createCalendarEventAt(context, user, title, start.toISOString(), reminderMinutes, description);
-}
-async function deleteCalendarEvent(context, user, eventId, calendarId = "primary") {
-  try {
-    const token = await getGoogleToken(context, user);
-    const response2 = await fetch(
-      `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendarId)}/events/${encodeURIComponent(eventId)}`,
-      {
-        method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` }
-      }
-    );
-    if (response2.ok || response2.status === 404 || response2.status === 410) {
-      return { ok: true, status: response2.status };
-    }
-    const errBody = await response2.text().catch(() => "");
-    console.error("[google] Calendar event delete failed:", response2.status, errBody.slice(0, 200));
-    return { ok: false, status: response2.status, error: errBody.slice(0, 200) };
-  } catch (err) {
-    console.error("[google] Calendar delete error:", err.message);
-    return { ok: false, status: 0, error: err.message };
-  }
-}
-async function listCalendarEventsRaw(context, user, timeMinISO, timeMaxISO, maxResults = 50) {
-  try {
-    const token = await getGoogleToken(context, user);
-    const calListResp = await fetch(
-      "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer",
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    let calendars = [{ id: "primary", summary: "primary" }];
-    if (calListResp.ok) {
-      const calListData = await calListResp.json();
-      const items = (calListData.items || []).filter((c) => !c.deleted && c.selected !== false);
-      if (items.length > 0) {
-        calendars = items.map((c) => ({ id: c.id, summary: c.summary || c.id }));
-      }
-    }
-    const params = new URLSearchParams({
-      timeMin: timeMinISO,
-      timeMax: timeMaxISO,
-      singleEvents: "true",
-      orderBy: "startTime",
-      maxResults: String(maxResults)
-    });
-    const perCalendar = await Promise.all(
-      calendars.map(async (cal) => {
-        const resp = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(cal.id)}/events?${params}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!resp.ok) return [];
-        const data = await resp.json();
-        return (data.items || []).map((ev) => ({ ev, cal }));
-      })
-    );
-    const seen = /* @__PURE__ */ new Set();
-    return perCalendar.flat().filter(({ ev }) => {
-      if (seen.has(ev.id)) return false;
-      seen.add(ev.id);
-      return true;
-    }).map(({ ev, cal }) => ({
-      event_id: ev.id,
-      calendar_id: cal.id,
-      calendar_name: cal.summary,
-      title: ev.summary || "(untitled)",
-      start: ev.start?.dateTime || ev.start?.date || null,
-      end: ev.end?.dateTime || ev.end?.date || null,
-      location: ev.location || null,
-      organizer: ev.organizer?.email || null,
-      status: ev.status || null,
-      html_link: ev.htmlLink || null
-    })).sort((a, b) => (a.start || "").localeCompare(b.start || ""));
-  } catch (err) {
-    console.error("[google] Calendar list error:", err.message);
-    return null;
-  }
-}
-async function getTodayCalendar(context, user) {
-  try {
-    const token = await getGoogleToken(context, user);
-    const now = /* @__PURE__ */ new Date();
-    const pacificStr = now.toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
-    const offset = getPacificOffset();
-    const timeMin = `${pacificStr}T00:00:00${offset}`;
-    const timeMax = `${pacificStr}T23:59:59${offset}`;
-    const calListResp = await fetch(
-      "https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=reader",
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    let calendarIds = ["primary"];
-    if (calListResp.ok) {
-      const calListData = await calListResp.json();
-      calendarIds = (calListData.items || []).filter((cal) => !cal.deleted && cal.selected !== false).map((cal) => cal.id);
-    }
-    const params = new URLSearchParams({
-      timeMin,
-      timeMax,
-      singleEvents: "true",
-      orderBy: "startTime",
-      maxResults: "20"
-    });
-    const allEvents = await Promise.all(
-      calendarIds.map(async (calId) => {
-        const response2 = await fetch(
-          `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calId)}/events?${params}`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!response2.ok) return [];
-        const data = await response2.json();
-        return data.items || [];
-      })
-    );
-    const seen = /* @__PURE__ */ new Set();
-    const events = allEvents.flat().filter((event2) => {
-      if (seen.has(event2.id)) return false;
-      seen.add(event2.id);
-      return true;
-    }).sort((a, b) => {
-      const aTime = a.start?.dateTime || a.start?.date || "";
-      const bTime = b.start?.dateTime || b.start?.date || "";
-      return aTime.localeCompare(bTime);
-    });
-    if (events.length === 0) {
-      return "No events scheduled today.";
-    }
-    const dayName = now.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric", timeZone: "America/Los_Angeles" });
-    const lines = events.map((event2) => {
-      const start = event2.start?.dateTime ? new Date(event2.start.dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "All day";
-      const end = event2.end?.dateTime ? new Date(event2.end.dateTime).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", timeZone: "America/Los_Angeles" }) : "";
-      const location = event2.location ? ` (${event2.location})` : "";
-      return end ? `- ${start} \u2013 ${end}: ${event2.summary}${location}` : `- ${start}: ${event2.summary}${location}`;
-    });
-    return `Today is ${dayName}:
-${lines.join("\n")}`;
-  } catch (err) {
-    console.error("[google] Calendar error:", err.message);
-    return null;
-  }
-}
-async function getRecentEmails(context, user) {
-  try {
-    const token = await getGoogleToken(context, user);
-    const oneDayAgo = Math.floor((Date.now() - 24 * 60 * 60 * 1e3) / 1e3);
-    const params = new URLSearchParams({
-      q: `after:${oneDayAgo} -category:promotions -category:social`,
-      maxResults: "10"
-    });
-    const response2 = await fetch(
-      `https://www.googleapis.com/gmail/v1/users/me/messages?${params}`,
-      { headers: { Authorization: `Bearer ${token}` } }
-    );
-    if (!response2.ok) {
-      console.error("[google] Gmail list failed:", response2.status);
-      return null;
-    }
-    const data = await response2.json();
-    const messageIds = (data.messages || []).slice(0, 10);
-    if (messageIds.length === 0) {
-      return "No new emails in the last 24 hours.";
-    }
-    const messages = await Promise.all(
-      messageIds.map(async ({ id: id3 }) => {
-        const msgResp = await fetch(
-          `https://www.googleapis.com/gmail/v1/users/me/messages/${id3}?format=metadata&metadataHeaders=Subject&metadataHeaders=From&metadataHeaders=Date`,
-          { headers: { Authorization: `Bearer ${token}` } }
-        );
-        if (!msgResp.ok) return null;
-        const msg = await msgResp.json();
-        const headers5 = msg.payload?.headers || [];
-        const subject2 = headers5.find((h) => h.name === "Subject")?.value || "(no subject)";
-        const from = headers5.find((h) => h.name === "From")?.value || "Unknown";
-        const fromName = from.includes("<") ? from.split("<")[0].trim().replace(/"/g, "") : from;
-        return `- ${fromName}: ${subject2}`;
-      })
-    );
-    return `Recent emails (last 24h):
-${messages.filter(Boolean).join("\n")}`;
-  } catch (err) {
-    console.error("[google] Gmail error:", err.message);
-    return null;
-  }
-}
-var GOOGLE_TOKEN_URL, REFRESH_BUFFER_MS2, LEGACY_KV_ACCESS_TOKEN, LEGACY_KV_REFRESH_TOKEN, LEGACY_KV_TOKEN_EXPIRY, LEGACY_USER;
-var init_google_api = __esm({
-  "lib/google-api.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    init_datetime();
-    GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
-    REFRESH_BUFFER_MS2 = 5 * 60 * 1e3;
-    __name(getPacificOffset, "getPacificOffset");
-    LEGACY_KV_ACCESS_TOKEN = "google_access_token";
-    LEGACY_KV_REFRESH_TOKEN = "google_refresh_token";
-    LEGACY_KV_TOKEN_EXPIRY = "google_token_expiry";
-    LEGACY_USER = "Eben";
-    __name(kvKeys, "kvKeys");
-    __name(getGoogleToken, "getGoogleToken");
-    __name(refreshGoogleToken, "refreshGoogleToken");
-    __name(createCalendarEventAt, "createCalendarEventAt");
-    __name(createCalendarReminder, "createCalendarReminder");
-    __name(deleteCalendarEvent, "deleteCalendarEvent");
-    __name(listCalendarEventsRaw, "listCalendarEventsRaw");
-    __name(getTodayCalendar, "getTodayCalendar");
-    __name(getRecentEmails, "getRecentEmails");
   }
 });
 
@@ -9327,7 +11305,7 @@ function hasFoundersCircleTag(tags = []) {
 var FOUNDERS_CIRCLE_TAG;
 var init_portal_helpers = __esm({
   "lib/portal-helpers.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(getCustomField, "getCustomField");
     __name(isChecked, "isChecked");
     __name(computeHasLivingPractice, "computeHasLivingPractice");
@@ -9348,7 +11326,7 @@ function creditsOnPurchase(productId, p2) {
 var PACKAGE_TYPES, CANONICAL_SERIES_BY_GHL_VALUE, SESSION_COUNT_BY_SERIES_TYPE, GHL_PRODUCTS, LEDGER_PRODUCT_MAP, WEBHOOK_PURCHASE_MAP, PRICE_IDS, DRAW_DOWN_PRODUCT_IDS, ID_TO_PRODUCT_ID, productIdForAnyId, PURCHASE_CREDIT_MAP, PACKAGE_MAP, AUDIT_INCREMENT_MAP;
 var init_ghl_products = __esm({
   "lib/ghl-products.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     PACKAGE_TYPES = /* @__PURE__ */ new Set(["4-series", "8-series", "6-week", "12-week", "4-upgrade", "8-upgrade", "4-to-8-upgrade"]);
     CANONICAL_SERIES_BY_GHL_VALUE = Object.freeze({
       "4-session": "4-session",
@@ -9715,7 +11693,7 @@ async function hydrateOrders(fetchOrderDetail2, ordersList, options = {}) {
 var DEFAULT_CONCURRENCY;
 var init_ghl_orders = __esm({
   "lib/ghl-orders.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     DEFAULT_CONCURRENCY = 3;
     __name(hydrateOrders, "hydrateOrders");
   }
@@ -10052,7 +12030,7 @@ async function computeSessionLedger(context, contactId, options = {}) {
 var GHL_API_BASE7, GHL_LOCATION_ID5, ACTIVE_PRODUCTS, SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS, ATTENDED_STATUSES;
 var init_session_ledger = __esm({
   "lib/session-ledger.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_portal_helpers();
     init_ghl_products();
@@ -10319,7 +12297,7 @@ async function geocode(location) {
 var SF_LAT, SF_LON, WEATHER_CODES;
 var init_cos_lookups = __esm({
   "lib/cos-lookups.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_google_api();
     init_ghl();
     SF_LAT = 37.78;
@@ -10381,7 +12359,7 @@ async function refreshSpotifyToken(context, refreshToken) {
   if (!clientId || !clientSecret) {
     throw new Error("Missing SPOTIFY_CLIENT_ID or SPOTIFY_CLIENT_SECRET");
   }
-  const response2 = await fetch(SPOTIFY_TOKEN_URL, {
+  const response3 = await fetch(SPOTIFY_TOKEN_URL, {
     method: "POST",
     headers: {
       "Content-Type": "application/x-www-form-urlencoded",
@@ -10392,12 +12370,12 @@ async function refreshSpotifyToken(context, refreshToken) {
       refresh_token: refreshToken
     }).toString()
   });
-  if (!response2.ok) {
-    const errText = await response2.text();
-    console.error(`[spotify] Token refresh failed: ${response2.status} ${errText}`);
+  if (!response3.ok) {
+    const errText = await response3.text();
+    console.error(`[spotify] Token refresh failed: ${response3.status} ${errText}`);
     throw new Error("Spotify token refresh failed");
   }
-  const data = await response2.json();
+  const data = await response3.json();
   const newAccessToken = data.access_token;
   const expiresIn = data.expires_in || 3600;
   if (!newAccessToken) {
@@ -10725,7 +12703,7 @@ async function handleQueue(context, action) {
 var SPOTIFY_TOKEN_URL, SPOTIFY_API_BASE, REFRESH_BUFFER_MS3, KV_ACCESS_TOKEN2, KV_REFRESH_TOKEN2, KV_TOKEN_EXPIRY2;
 var init_spotify = __esm({
   "lib/spotify.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
     SPOTIFY_API_BASE = "https://api.spotify.com/v1";
     REFRESH_BUFFER_MS3 = 5 * 60 * 1e3;
@@ -10789,7 +12767,7 @@ ${sections.join("\n\n---\n\n")}`;
 var ALWAYS_DOCS, ON_DEMAND_DOCS;
 var init_cos_vault = __esm({
   "lib/cos-vault.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     ALWAYS_DOCS = ["positioning", "garrett-voice", "lifecycles", "technical-reference"];
     ON_DEMAND_DOCS = [
       { name: "messaging-templates", trigger: /email|message|template|copy|write|draft|send/i },
@@ -11047,8 +13025,8 @@ async function fetchCityRows(dataset, params) {
   const url = new URL(`https://data.sfgov.org/resource/${dataset}.json`);
   for (const [key, value] of Object.entries(params)) url.searchParams.set(key, value);
   try {
-    const response2 = await fetch(url, { headers: { Accept: "application/json" } });
-    return response2.ok ? response2.json() : null;
+    const response3 = await fetch(url, { headers: { Accept: "application/json" } });
+    return response3.ok ? response3.json() : null;
   } catch {
     return null;
   }
@@ -11294,7 +13272,7 @@ ${schedules}`;
 var HISTORY_CAP, RULES_CAP, HISTORY_KEY, RULES_KEY, SF_SWEEP_KEY, SF_ADDRESS_DATASET, SF_STREET_SEGMENTS_DATASET, STREET_TYPE_ALIASES, CITY_STREET_TYPES, SWEEP_WEEKDAYS;
 var init_cos_parking = __esm({
   "lib/cos-parking.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     HISTORY_CAP = 100;
     RULES_CAP = 300;
     HISTORY_KEY = /* @__PURE__ */ __name((user) => `cos:parking-history:${user}`, "HISTORY_KEY");
@@ -11445,7 +13423,7 @@ async function replaceParkingCalendarReminder({ kv, createEvent, deleteEvent }, 
 var activeReminderKey;
 var init_cos_parking_calendar = __esm({
   "lib/cos-parking-calendar.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_cos_parking();
     activeReminderKey = /* @__PURE__ */ __name((user) => `cos:active-parking-reminder:${user}`, "activeReminderKey");
     __name(retireTrackedEvents, "retireTrackedEvents");
@@ -11614,7 +13592,7 @@ async function listFieldPartners(kv, user, { limit = 25, stage } = {}) {
 var INDEX_KEY, PARTNER_KEY, VISIT_KEY, IMAGE_KEY, MAX_INDEX_ENTRIES, MAX_IMAGES, STAGES, STAGE_RANK;
 var init_cos_field_visits = __esm({
   "lib/cos-field-visits.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     INDEX_KEY = /* @__PURE__ */ __name((user) => `cos:field-partners:${user}:index`, "INDEX_KEY");
     PARTNER_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-partner:${user}:${id3}`, "PARTNER_KEY");
     VISIT_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-visit:${user}:${id3}`, "VISIT_KEY");
@@ -11693,7 +13671,7 @@ async function executeTool(context, toolName, input, user = "Eben", fieldVisitIm
         filters.push({ field: "tags", operator: "contains", value: input.tag });
       }
       const body = {
-        locationId: LOCATION_ID,
+        locationId: LOCATION_ID2,
         pageLimit: limit,
         ...input.name ? { query: input.name } : {},
         ...filters.length > 0 ? { filters } : {}
@@ -11826,7 +13804,7 @@ async function executeTool(context, toolName, input, user = "Eben", fieldVisitIm
     }
     if (toolName === "search_opportunities") {
       const limit = Math.min(Number(input.limit) || 100, 100);
-      const url = `https://services.leadconnectorhq.com/opportunities/search?location_id=${LOCATION_ID}&limit=${limit}`;
+      const url = `https://services.leadconnectorhq.com/opportunities/search?location_id=${LOCATION_ID2}&limit=${limit}`;
       const resp = await ghlFetch(context, url);
       if (!resp.ok) {
         const errBody = await resp.text().catch(() => "");
@@ -11883,7 +13861,7 @@ async function executeTool(context, toolName, input, user = "Eben", fieldVisitIm
       const endOffset = pacificOffsetForDate(input.end_date);
       const startMs = (/* @__PURE__ */ new Date(`${input.start_date}T00:00:00${startOffset}`)).getTime();
       const endMs = (/* @__PURE__ */ new Date(`${input.end_date}T23:59:59${endOffset}`)).getTime();
-      const eventsUrl = /* @__PURE__ */ __name((calId) => `https://services.leadconnectorhq.com/calendars/events?locationId=${LOCATION_ID}&calendarId=${calId}&startTime=${startMs}&endTime=${endMs}`, "eventsUrl");
+      const eventsUrl = /* @__PURE__ */ __name((calId) => `https://services.leadconnectorhq.com/calendars/events?locationId=${LOCATION_ID2}&calendarId=${calId}&startTime=${startMs}&endTime=${endMs}`, "eventsUrl");
       const calResps = await Promise.all(
         CALENDAR_IDS.map((id3) => ghlFetch(context, eventsUrl(id3)).catch(() => null))
       );
@@ -12161,10 +14139,10 @@ async function streamWithTools({ apiKey, requestBody, onTextDelta, executeToolFn
   }
   return { text: allText, usage, tool_calls: allToolCalls };
 }
-var OPENROUTER_MESSAGES_API, OPENROUTER_MODEL, LOCATION_ID, MAX_TOOL_ROUNDS, FIELD_SESSIONS_REMAINING, FIELD_SESSIONS_COMPLETED, FIELD_SERIES_TYPE, TOOLS;
+var OPENROUTER_MESSAGES_API, OPENROUTER_MODEL, LOCATION_ID2, MAX_TOOL_ROUNDS, FIELD_SESSIONS_REMAINING, FIELD_SESSIONS_COMPLETED, FIELD_SERIES_TYPE, TOOLS;
 var init_cos_anthropic = __esm({
   "lib/cos-anthropic.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_session_ledger();
     init_ghl_fields();
@@ -12174,7 +14152,7 @@ var init_cos_anthropic = __esm({
     init_cos_field_visits();
     OPENROUTER_MESSAGES_API = "https://openrouter.ai/api/v1/messages";
     OPENROUTER_MODEL = "anthropic/claude-sonnet-4.6";
-    LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
+    LOCATION_ID2 = "7pIO7FHVAyBT1jKGhfQM";
     MAX_TOOL_ROUNDS = 5;
     FIELD_SESSIONS_REMAINING = FIELD_IDS.sessions_remaining;
     FIELD_SESSIONS_COMPLETED = FIELD_IDS.sessions_completed;
@@ -12354,7 +14332,7 @@ var init_cos_anthropic = __esm({
 var VOICE_STANDARD;
 var init_voice_standard = __esm({
   "lib/voice-standard.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     VOICE_STANDARD = `# The Amari voice standard
 
 You write copy that a real person would send. Not AI. Not slick. Not clipped.
@@ -12460,7 +14438,7 @@ function mechanicalTells(text6) {
 var HARD_TELLS;
 var init_slop_lint = __esm({
   "lib/slop-lint.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     HARD_TELLS = [
       // Mechanical
       { id: "em-dash", label: "em/en dash \u2014 rewrite as two sentences or a comma", re: /—|–/ },
@@ -12613,7 +14591,7 @@ async function generateOnBrand({ apiKey, userName = "Garrett", messages, maxRoun
 var CHANNELS, DEFAULT_MAX_ROUNDS;
 var init_voice_engine = __esm({
   "lib/voice-engine.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_voice_standard();
     init_cos_anthropic();
     init_slop_lint();
@@ -12645,7 +14623,7 @@ function routeAskAmariRequest({ message, previousMode } = {}) {
 var REWRITE_REQUEST, DRAFT_REQUEST, COPY_TARGET, REQUESTS_COPY, OPERATION_TARGET, SOFT_REWRITE, FACTUAL_OR_OPERATIONS_REQUEST;
 var init_ask_amari_router = __esm({
   "lib/ask-amari-router.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     REWRITE_REQUEST = /\b(?:rewrite|reword|de-?slop|polish|proofread|shorten|lengthen)\b/i;
     DRAFT_REQUEST = /\b(?:draft|write|edit)\b/i;
     COPY_TARGET = /\b(?:text|sms|email|message|subject(?: line)?|caption|ad(?: copy)?|website copy|headline|follow-?up|copy|letter|note)\b/i;
@@ -12755,7 +14733,7 @@ function streamHeaders(headers5) {
     "Connection": "keep-alive"
   };
 }
-function writerStream(context, { apiKey, userName, messages, conversation, kv, dateKey, headers: headers5 }) {
+function writerStream(context, { apiKey, userName, messages, conversation, kv, dateKey: dateKey2, headers: headers5 }) {
   const { readable, writable } = new TransformStream();
   const writer = writable.getWriter();
   const encoder3 = new TextEncoder();
@@ -12765,7 +14743,7 @@ function writerStream(context, { apiKey, userName, messages, conversation, kv, d
       conversation.messages.push({ role: "assistant", content: draft.copy, mode: "write", timestamp: Date.now() });
       conversation.updated = Date.now();
       if (kv) {
-        await kv.put(`cos:conv:${userName}:${dateKey}`, JSON.stringify(conversation), { expirationTtl: 30 * 24 * 60 * 60 });
+        await kv.put(`cos:conv:${userName}:${dateKey2}`, JSON.stringify(conversation), { expirationTtl: 30 * 24 * 60 * 60 });
       }
       await writer.write(encoder3.encode(`data: ${JSON.stringify({ type: "chunk", text: draft.copy })}
 
@@ -13397,9 +15375,9 @@ async function onRequestPost12(context) {
     return jsonResponse2({ error: "Chat not configured (missing OpenRouter key)" }, 500, origin);
   }
   const kv = context.env.PORTAL_KV;
-  const dateKey = todayKey();
+  const dateKey2 = todayKey();
   const [convRaw, contextRaw, actionsRaw, briefingRaw, vaultData] = await Promise.all([
-    kv ? kv.get(`cos:conv:${cosUser}:${dateKey}`) : null,
+    kv ? kv.get(`cos:conv:${cosUser}:${dateKey2}`) : null,
     kv ? kv.get(`cos:context:${cosUser}`) : null,
     kv ? kv.get(`cos:actions:${cosUser}:pending`) : null,
     kv ? kv.get("cos:daily-briefing:latest") : null,
@@ -13418,7 +15396,7 @@ async function onRequestPost12(context) {
       messages: writerHistory(conversation.messages),
       conversation,
       kv,
-      dateKey,
+      dateKey: dateKey2,
       headers: headers5
     });
   }
@@ -13432,7 +15410,7 @@ async function onRequestPost12(context) {
   const needsParking = mentionsParking(userMessage);
   const needsMusic = /music|song|play|playing|playlist|spotify|skip|pause|volume|shuffle|track|album|artist|listen|queue|what.s playing|next song|previous song/i.test(msg);
   const needsWorkflow = /workflow|trigger|automat|no.show|attendance|nurture|sequence|funnel|what (email|sms|message).*(send|get|receive)|what happens when|how does .* work|tag.*(add|remov)|condition|branch|purchase system|sessions?.remaining|series.completion|known issue|pending fix|ghl.*(audit|fix|issue|bug)|calendar.*coverage|tier [1-4]/i.test(msg);
-  const cacheKey = `cos:cache:${cosUser}:${dateKey}`;
+  const cacheKey = `cos:cache:${cosUser}:${dateKey2}`;
   const cachedRaw = kv ? await kv.get(cacheKey) : null;
   const cached = cachedRaw ? JSON.parse(cachedRaw) : null;
   const cacheAge = cached ? Date.now() - cached.timestamp : Infinity;
@@ -13652,7 +15630,7 @@ ${actionSummary}`;
       conversation.updated = Date.now();
       if (kv) {
         const kvWrites = [
-          kv.put(`cos:conv:${cosUser}:${dateKey}`, JSON.stringify(conversation), { expirationTtl: 30 * 24 * 60 * 60 })
+          kv.put(`cos:conv:${cosUser}:${dateKey2}`, JSON.stringify(conversation), { expirationTtl: 30 * 24 * 60 * 60 })
         ];
         if (actions.length > 0) {
           const allActions = [...pendingActions, ...actions];
@@ -13757,7 +15735,7 @@ ${actionSummary}`;
 var LEDGER_FIELD_DEFS, ALLOWED_ORIGINS9, SKIP_WORDS;
 var init_cos_chat = __esm({
   "api/cos-chat.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     init_endpoint_guards();
     init_google_api();
@@ -14031,7 +16009,7 @@ async function onRequestPost13(context) {
 var ALLOWED_ORIGINS10;
 var init_cos_daily_sync = __esm({
   "api/cos-daily-sync.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     ALLOWED_ORIGINS10 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -14099,7 +16077,7 @@ async function onRequestPost14(context) {
 var ALLOWED_ORIGINS11;
 var init_cos_ghl_sync = __esm({
   "api/cos-ghl-sync.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     ALLOWED_ORIGINS11 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -14122,7 +16100,7 @@ function cors(origin) {
   if (ALLOWED_ORIGINS12.has(origin)) headers5["Access-Control-Allow-Origin"] = origin;
   return headers5;
 }
-function stateValue() {
+function stateValue2() {
   const bytes = crypto.getRandomValues(new Uint8Array(32));
   return Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
 }
@@ -14151,7 +16129,7 @@ async function onRequestPost15(context) {
   if (!context.env.GOOGLE_OAUTH_CLIENT_ID || !context.env.GOOGLE_OAUTH_CLIENT_SECRET) {
     return response({ error: "Google Calendar is not configured." }, 500, origin);
   }
-  const state = stateValue();
+  const state = stateValue2();
   await context.env.PORTAL_KV.put(
     `cos:google-oauth:${state}`,
     JSON.stringify({ user: "Eben", createdAt: Date.now() }),
@@ -14172,7 +16150,7 @@ async function onRequestPost15(context) {
 var AUTH_URL, CALLBACK_URL, GOOGLE_WORKSPACE_SCOPES, STATE_TTL_SECONDS, ALLOWED_ORIGINS12;
 var init_cos_google_auth = __esm({
   "api/cos-google-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
@@ -14184,450 +16162,10 @@ var init_cos_google_auth = __esm({
     STATE_TTL_SECONDS = 10 * 60;
     ALLOWED_ORIGINS12 = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(cors, "cors");
-    __name(stateValue, "stateValue");
+    __name(stateValue2, "stateValue");
     __name(response, "response");
     __name(onRequestOptions16, "onRequestOptions");
     __name(onRequestPost15, "onRequestPost");
-  }
-});
-
-// lib/staff-calendar-oauth.js
-function resolveStaffCalendarActor(actor) {
-  const identity2 = ACTORS[String(actor || "").trim()];
-  if (!identity2) throw new Error("staff actor does not have governed calendar identity");
-  return { ...identity2 };
-}
-function staffCalendarKey(actor, name) {
-  const identity2 = resolveStaffCalendarActor(actor);
-  if (!/^[a-z_]{3,40}$/.test(String(name || ""))) throw new Error("invalid Staff calendar key");
-  return `google:${identity2.key}:${name}`;
-}
-function staffCalendarOAuthClient(env, actor) {
-  const identity2 = resolveStaffCalendarActor(actor);
-  if (identity2.actor === "Garrett") {
-    return {
-      clientId: env?.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_ID,
-      clientSecret: env?.AMARI_MAIL_GOOGLE_OAUTH_CLIENT_SECRET,
-      callbackUrl: AMARI_CALENDAR_CALLBACK_URL,
-      credentialFamily: "amari_internal"
-    };
-  }
-  return {
-    clientId: env?.GOOGLE_OAUTH_CLIENT_ID,
-    clientSecret: env?.GOOGLE_OAUTH_CLIENT_SECRET,
-    callbackUrl: PERSONAL_CALENDAR_CALLBACK_URL,
-    credentialFamily: "personal_workspace"
-  };
-}
-function staffCalendarOAuthConfigured(env, actor) {
-  if (!env?.PORTAL_KV || !env?.JWT_SECRET) return false;
-  const client = staffCalendarOAuthClient(env, actor);
-  return Boolean(client.clientId && client.clientSecret);
-}
-function stateValue2() {
-  const bytes = crypto.getRandomValues(new Uint8Array(32));
-  return base64url(bytes);
-}
-function base64url(bytes) {
-  let binary = "";
-  for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-}
-function fromBase64url(value) {
-  const normalized = value.replaceAll("-", "+").replaceAll("_", "/");
-  const padded = normalized.padEnd(Math.ceil(normalized.length / 4) * 4, "=");
-  return Uint8Array.from(atob(padded), (character) => character.charCodeAt(0));
-}
-async function stateKey(secret, usage) {
-  return crypto.subtle.importKey("raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, [usage]);
-}
-async function signState(payload, secret) {
-  const signature = await crypto.subtle.sign(
-    "HMAC",
-    await stateKey(secret, "sign"),
-    encoder.encode(`${STAFF_CALENDAR_STATE_VERSION}.${payload}`)
-  );
-  return base64url(new Uint8Array(signature));
-}
-function stateFailure(code, stage = "state") {
-  const error = new Error("Staff calendar authorization state was not accepted");
-  error.code = code;
-  error.stage = stage;
-  return error;
-}
-function exchangeFailure(message, code, stage, httpStatus = null) {
-  const error = new Error(message);
-  error.code = code;
-  error.stage = stage;
-  if (httpStatus) error.httpStatus = httpStatus;
-  return error;
-}
-function isStaffCalendarOAuthState(state) {
-  return String(state || "").startsWith(`${STAFF_CALENDAR_STATE_PREFIX}.`);
-}
-async function createStaffCalendarOAuthState(env, actor, now = Date.now()) {
-  const identity2 = resolveStaffCalendarActor(actor);
-  const nonce = stateValue2();
-  const payload = base64url(encoder.encode(JSON.stringify({
-    flow: "staff_appointment_calendar",
-    actor: identity2.actor,
-    requiredPrimaryCalendarId: identity2.primaryCalendarId,
-    nonce,
-    createdAt: now
-  })));
-  const state = `${STAFF_CALENDAR_STATE_PREFIX}.${payload}.${await signState(payload, env.JWT_SECRET)}`;
-  await env.PORTAL_KV.put(
-    `staff-calendar:oauth-state:${nonce}`,
-    JSON.stringify({
-      flow: "staff_appointment_calendar",
-      actor: identity2.actor,
-      requiredPrimaryCalendarId: identity2.primaryCalendarId,
-      nonce,
-      createdAt: now
-    }),
-    { expirationTtl: STAFF_CALENDAR_STATE_TTL_SECONDS }
-  );
-  return state;
-}
-async function consumeStaffCalendarOAuthState(env, state, now = Date.now()) {
-  if (!isStaffCalendarOAuthState(state)) return null;
-  const [prefix, encoded, suppliedSignature, ...extra] = String(state).split(".");
-  if (prefix !== STAFF_CALENDAR_STATE_PREFIX || extra.length || !/^[A-Za-z0-9_-]{40,900}$/.test(encoded || "") || !/^[A-Za-z0-9_-]{43}$/.test(suppliedSignature || "")) {
-    throw stateFailure("state_invalid");
-  }
-  let verified = false;
-  try {
-    verified = await crypto.subtle.verify(
-      "HMAC",
-      await stateKey(env.JWT_SECRET, "verify"),
-      fromBase64url(suppliedSignature),
-      encoder.encode(`${STAFF_CALENDAR_STATE_VERSION}.${encoded}`)
-    );
-  } catch (error) {
-    if (error?.code) throw error;
-    throw stateFailure("state_invalid");
-  }
-  if (!verified) throw stateFailure("state_invalid");
-  let grant;
-  try {
-    grant = JSON.parse(new TextDecoder().decode(fromBase64url(encoded)));
-    const identity2 = resolveStaffCalendarActor(grant.actor);
-    const createdAt = Number(grant.createdAt);
-    if (grant.flow !== "staff_appointment_calendar" || grant.requiredPrimaryCalendarId !== identity2.primaryCalendarId || !/^[A-Za-z0-9_-]{43}$/.test(String(grant.nonce || "")) || !Number.isFinite(createdAt) || createdAt > now + 6e4 || now - createdAt > STAFF_CALENDAR_STATE_TTL_SECONDS * 1e3) {
-      throw stateFailure("state_expired");
-    }
-  } catch (error) {
-    if (error?.code) throw error;
-    throw stateFailure("state_invalid");
-  }
-  const key = `staff-calendar:oauth-state:${grant.nonce}`;
-  const saved = await env.PORTAL_KV.get(key);
-  await env.PORTAL_KV.delete(key);
-  if (saved) {
-    try {
-      const stored = JSON.parse(saved);
-      if (stored.actor !== grant.actor || stored.requiredPrimaryCalendarId !== grant.requiredPrimaryCalendarId || stored.nonce !== grant.nonce) {
-        throw stateFailure("state_mismatch");
-      }
-    } catch (error) {
-      if (error?.code) throw error;
-      throw stateFailure("state_invalid");
-    }
-  }
-  return { ...grant, stateEvidence: saved ? "signature_and_kv" : "signature_only" };
-}
-async function recordStaffCalendarOAuthResult(env, actor, result, now = Date.now()) {
-  const identity2 = resolveStaffCalendarActor(actor);
-  const status = result?.status === "connected" ? "connected" : "failed";
-  const stage = /^[a-z_]{3,40}$/.test(String(result?.stage || "")) ? String(result.stage) : "unknown";
-  const code = /^[a-z0-9_]{3,64}$/.test(String(result?.code || "")) ? String(result.code) : "authorization_failed";
-  await env.PORTAL_KV.put(staffCalendarKey(identity2.actor, "last_oauth_result"), JSON.stringify({
-    actor: identity2.actor,
-    status,
-    stage,
-    code,
-    at: new Date(now).toISOString(),
-    bookingActivationEnabled: false
-  }), { expirationTtl: STAFF_CALENDAR_RESULT_TTL_SECONDS });
-}
-async function listWritableGoogleCalendars(accessToken) {
-  const response2 = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer&maxResults=250&showHidden=true", {
-    headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
-  });
-  if (!response2.ok) throw new Error(`Google Calendar ${response2.status} readiness probe failed`);
-  const body = await response2.json();
-  if (body?.nextPageToken) throw new Error("Google Calendar writer list exceeded the exact bounded page");
-  return (body?.items || []).filter((item) => !item.deleted && WRITABLE_CALENDAR_ROLES.has(item.accessRole)).map((item) => ({
-    id: String(item.id || ""),
-    summary: String(item.summary || item.id || ""),
-    accessRole: item.accessRole,
-    primary: Boolean(item.primary),
-    selected: item.selected !== false,
-    hidden: Boolean(item.hidden),
-    timeZone: item.timeZone || null
-  }));
-}
-async function readPrimaryWritableGoogleCalendar(accessToken) {
-  let response2;
-  try {
-    response2 = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList/primary", {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/json" }
-    });
-  } catch {
-    throw exchangeFailure("Google primary calendar readback was unavailable", "calendar_readback_unavailable", "calendar_readback");
-  }
-  if (!response2.ok) {
-    const status = Number(response2.status);
-    const code = Number.isInteger(status) && status >= 400 && status <= 599 ? `calendar_readback_http_${status}` : "calendar_readback_http_error";
-    throw exchangeFailure("Google primary calendar readback failed", code, "calendar_readback", status || null);
-  }
-  let item;
-  try {
-    item = await response2.json();
-  } catch {
-    throw exchangeFailure("Google primary calendar response was invalid", "calendar_readback_invalid_json", "calendar_readback");
-  }
-  const id3 = String(item?.id || "").trim();
-  const accessRole = String(item?.accessRole || "").trim();
-  if (!id3 || item?.deleted === true || item?.primary !== true) {
-    throw exchangeFailure("Google primary calendar identity was incomplete", "calendar_readback_invalid_response", "calendar_readback");
-  }
-  if (!WRITABLE_CALENDAR_ROLES.has(accessRole)) {
-    throw exchangeFailure("Google primary calendar is not writable", "primary_calendar_not_writable", "authority_readback");
-  }
-  return {
-    id: id3,
-    summary: String(item.summary || id3),
-    accessRole,
-    primary: true,
-    selected: item.selected !== false,
-    hidden: Boolean(item.hidden),
-    timeZone: item.timeZone || null
-  };
-}
-async function exchangeAndStoreStaffCalendarGrant(context, grant, code) {
-  const identity2 = resolveStaffCalendarActor(grant?.actor);
-  if (grant?.requiredPrimaryCalendarId !== identity2.primaryCalendarId || !code) {
-    throw exchangeFailure("invalid Staff calendar grant request", "grant_request_invalid", "request");
-  }
-  const client = staffCalendarOAuthClient(context.env, identity2.actor);
-  if (!client.clientId || !client.clientSecret) {
-    throw exchangeFailure("Staff calendar OAuth client is not configured", "client_unconfigured", "configuration");
-  }
-  let tokenResponse;
-  try {
-    tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
-      method: "POST",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        code,
-        client_id: client.clientId,
-        client_secret: client.clientSecret,
-        redirect_uri: client.callbackUrl,
-        grant_type: "authorization_code"
-      }).toString()
-    });
-  } catch {
-    throw exchangeFailure("Google token exchange was unavailable", "token_exchange_unavailable", "token_exchange");
-  }
-  if (!tokenResponse.ok) {
-    throw exchangeFailure("Google token exchange failed", "token_exchange_failed", "token_exchange", tokenResponse.status);
-  }
-  const token = await tokenResponse.json();
-  if (!token.access_token || !token.refresh_token) {
-    throw exchangeFailure("Google did not return a durable calendar grant", "durable_grant_missing", "token_exchange");
-  }
-  const scopes = String(token.scope || "").split(/\s+/).filter(Boolean);
-  if (!scopes.includes(STAFF_CALENDAR_SCOPE)) {
-    throw exchangeFailure("Google calendar scope was not granted", "calendar_scope_missing", "scope_readback");
-  }
-  let primary;
-  try {
-    primary = await readPrimaryWritableGoogleCalendar(token.access_token);
-  } catch (error) {
-    if (error?.code && error?.stage) throw error;
-    throw exchangeFailure("Google Calendar writer readback failed", "calendar_readback_failed", "calendar_readback");
-  }
-  if (primary?.id.toLowerCase() !== identity2.primaryCalendarId.toLowerCase()) {
-    throw exchangeFailure("Google primary calendar does not match the governed Staff identity", "primary_calendar_mismatch", "identity_readback");
-  }
-  const calendars = [primary];
-  const expiry = Date.now() + Number(token.expires_in || 3600) * 1e3;
-  const tokenKeys = ["access_token", "refresh_token", "token_expiry"].map((name) => staffCalendarKey(identity2.actor, name));
-  const statusKey = staffCalendarKey(identity2.actor, "grant_status");
-  await context.env.PORTAL_KV.delete(statusKey);
-  try {
-    await Promise.all([
-      context.env.PORTAL_KV.put(tokenKeys[0], token.access_token),
-      context.env.PORTAL_KV.put(tokenKeys[1], token.refresh_token),
-      context.env.PORTAL_KV.put(tokenKeys[2], String(expiry))
-    ]);
-    await context.env.PORTAL_KV.put(statusKey, JSON.stringify({
-      actor: identity2.actor,
-      primaryCalendarId: primary.id,
-      scopes,
-      writableCalendarIds: calendars.map((calendar) => calendar.id),
-      verifiedAt: (/* @__PURE__ */ new Date()).toISOString(),
-      bookingActivationEnabled: false,
-      oauthCredentialFamily: client.credentialFamily
-    }));
-  } catch (error) {
-    await Promise.allSettled([...tokenKeys, statusKey].map((key) => context.env.PORTAL_KV.delete(key)));
-    throw exchangeFailure("Calendar grant storage failed", "grant_storage_failed", "storage");
-  }
-  try {
-    const today = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
-    await context.env.PORTAL_KV.delete(`cos:cache:${identity2.key}:${today}`);
-  } catch (error) {
-    console.error("[staff-calendar-oauth] failed to invalidate Calendar context cache", error);
-  }
-  return { identity: identity2, calendars };
-}
-async function assertStaffCalendarAuthority(env, actor, calendarId) {
-  const identity2 = resolveStaffCalendarActor(actor);
-  const raw = await env?.PORTAL_KV?.get(staffCalendarKey(identity2.actor, "grant_status"));
-  let marker;
-  try {
-    marker = JSON.parse(raw);
-  } catch {
-    marker = null;
-  }
-  const writable = Array.isArray(marker?.writableCalendarIds) ? marker.writableCalendarIds : [];
-  if (marker?.actor !== identity2.actor || String(marker?.primaryCalendarId || "").toLowerCase() !== identity2.primaryCalendarId.toLowerCase() || !Array.isArray(marker?.scopes) || !marker.scopes.includes(STAFF_CALENDAR_SCOPE) || !writable.includes(calendarId) || marker?.bookingActivationEnabled !== false) {
-    const error = new Error("Google appointment calendar grant has not passed governed identity readback.");
-    error.code = "calendar_provider_unavailable";
-    throw error;
-  }
-  return marker;
-}
-async function staffCalendarGrantReadiness(context, actor) {
-  const identity2 = resolveStaffCalendarActor(actor);
-  const oauthConfigured = staffCalendarOAuthConfigured(context.env, identity2.actor);
-  const provider = String(context.env.STAFF_APPOINTMENT_CALENDAR_PROVIDER || "ghl").trim();
-  const configuredActor = String(context.env.STAFF_APPOINTMENT_GOOGLE_USER || "").trim();
-  const configuredCalendarId = String(context.env.STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID || "").trim();
-  const activation = provider === "google_calendar" && configuredActor === identity2.actor && Boolean(configuredCalendarId);
-  if (!oauthConfigured) return {
-    actor: identity2.actor,
-    requiredPrimaryCalendarId: identity2.primaryCalendarId,
-    oauthConfigured: false,
-    connectionStatus: "unconfigured",
-    grantPresent: false,
-    grantVerified: false,
-    calendars: [],
-    bookingActivationEnabled: activation,
-    blockers: ["Google Calendar authorization is not configured", "Staff booking remains on its current provider"]
-  };
-  const [access, refresh, marker, lastResultRaw] = await Promise.all([
-    context.env.PORTAL_KV.get(staffCalendarKey(identity2.actor, "access_token")),
-    context.env.PORTAL_KV.get(staffCalendarKey(identity2.actor, "refresh_token")),
-    context.env.PORTAL_KV.get(staffCalendarKey(identity2.actor, "grant_status")),
-    context.env.PORTAL_KV.get(staffCalendarKey(identity2.actor, "last_oauth_result"))
-  ]);
-  let lastOAuthResult = null;
-  try {
-    const parsed = JSON.parse(lastResultRaw);
-    if (parsed?.actor === identity2.actor && (/* @__PURE__ */ new Set(["connected", "failed"])).has(parsed?.status)) lastOAuthResult = parsed;
-  } catch {
-    lastOAuthResult = null;
-  }
-  const grantPresent = Boolean(access || refresh || marker);
-  if (!grantPresent) return {
-    actor: identity2.actor,
-    requiredPrimaryCalendarId: identity2.primaryCalendarId,
-    oauthConfigured: true,
-    connectionStatus: "absent",
-    grantPresent: false,
-    grantVerified: false,
-    lastOAuthResult,
-    calendars: [],
-    bookingActivationEnabled: activation,
-    blockers: [`No verified Google Calendar grant is connected for ${identity2.actor}`, "Staff booking remains on its current provider"]
-  };
-  try {
-    const token = await getGoogleToken(context, identity2.actor);
-    const primary = await readPrimaryWritableGoogleCalendar(token);
-    const calendars = [primary];
-    const grantVerified = primary?.id.toLowerCase() === identity2.primaryCalendarId.toLowerCase();
-    let markerRecord = null;
-    try {
-      markerRecord = JSON.parse(marker);
-    } catch {
-      markerRecord = null;
-    }
-    const markerVerified = markerRecord?.actor === identity2.actor && String(markerRecord?.primaryCalendarId || "").toLowerCase() === identity2.primaryCalendarId.toLowerCase() && Array.isArray(markerRecord?.scopes) && markerRecord.scopes.includes(STAFF_CALENDAR_SCOPE) && Array.isArray(markerRecord?.writableCalendarIds);
-    const configuredCalendarWritable = configuredCalendarId ? calendars.some((calendar) => calendar.id === configuredCalendarId) : false;
-    return {
-      actor: identity2.actor,
-      requiredPrimaryCalendarId: identity2.primaryCalendarId,
-      oauthConfigured: true,
-      connectionStatus: grantVerified ? "verified" : "invalid",
-      grantPresent: true,
-      grantVerified,
-      lastOAuthResult,
-      authorityMarkerVerified: markerVerified,
-      calendars,
-      bookingActivationEnabled: activation && configuredCalendarWritable && markerVerified,
-      blockers: [
-        ...!grantVerified ? [`The connected primary calendar is not ${identity2.primaryCalendarId}`] : [],
-        ...grantVerified && !markerVerified ? ["Reconnect once to establish the governed calendar identity marker"] : [],
-        ...!activation ? ["Staff booking remains on its current provider"] : [],
-        ...activation && (!configuredCalendarWritable || !markerVerified) ? ["The configured appointment calendar has not passed governed writable readback"] : []
-      ]
-    };
-  } catch {
-    return {
-      actor: identity2.actor,
-      requiredPrimaryCalendarId: identity2.primaryCalendarId,
-      oauthConfigured: true,
-      connectionStatus: "invalid",
-      grantPresent: true,
-      grantVerified: false,
-      lastOAuthResult,
-      calendars: [],
-      bookingActivationEnabled: false,
-      blockers: ["The stored Google Calendar grant could not be verified", "Staff booking remains on its current provider"]
-    };
-  }
-}
-var PERSONAL_CALENDAR_CALLBACK_URL, AMARI_CALENDAR_CALLBACK_URL, STAFF_CALENDAR_SCOPE, STAFF_CALENDAR_STATE_TTL_SECONDS, STAFF_CALENDAR_STATE_VERSION, STAFF_CALENDAR_STATE_PREFIX, STAFF_CALENDAR_RESULT_TTL_SECONDS, WRITABLE_CALENDAR_ROLES, encoder, ACTORS;
-var init_staff_calendar_oauth = __esm({
-  "lib/staff-calendar-oauth.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    init_google_api();
-    PERSONAL_CALENDAR_CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
-    AMARI_CALENDAR_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
-    STAFF_CALENDAR_SCOPE = "https://www.googleapis.com/auth/calendar";
-    STAFF_CALENDAR_STATE_TTL_SECONDS = 10 * 60;
-    STAFF_CALENDAR_STATE_VERSION = "staff-calendar-oauth.v2";
-    STAFF_CALENDAR_STATE_PREFIX = "sc2";
-    STAFF_CALENDAR_RESULT_TTL_SECONDS = 7 * 24 * 60 * 60;
-    WRITABLE_CALENDAR_ROLES = /* @__PURE__ */ new Set(["owner", "writer", "writerWithoutPrivateAccess"]);
-    encoder = new TextEncoder();
-    ACTORS = Object.freeze({
-      Eben: Object.freeze({ actor: "Eben", key: "eben", primaryCalendarId: "eben@ebenforrest.com" }),
-      Garrett: Object.freeze({ actor: "Garrett", key: "garrett", primaryCalendarId: "garrett@amarimethod.com" })
-    });
-    __name(resolveStaffCalendarActor, "resolveStaffCalendarActor");
-    __name(staffCalendarKey, "staffCalendarKey");
-    __name(staffCalendarOAuthClient, "staffCalendarOAuthClient");
-    __name(staffCalendarOAuthConfigured, "staffCalendarOAuthConfigured");
-    __name(stateValue2, "stateValue");
-    __name(base64url, "base64url");
-    __name(fromBase64url, "fromBase64url");
-    __name(stateKey, "stateKey");
-    __name(signState, "signState");
-    __name(stateFailure, "stateFailure");
-    __name(exchangeFailure, "exchangeFailure");
-    __name(isStaffCalendarOAuthState, "isStaffCalendarOAuthState");
-    __name(createStaffCalendarOAuthState, "createStaffCalendarOAuthState");
-    __name(consumeStaffCalendarOAuthState, "consumeStaffCalendarOAuthState");
-    __name(recordStaffCalendarOAuthResult, "recordStaffCalendarOAuthResult");
-    __name(listWritableGoogleCalendars, "listWritableGoogleCalendars");
-    __name(readPrimaryWritableGoogleCalendar, "readPrimaryWritableGoogleCalendar");
-    __name(exchangeAndStoreStaffCalendarGrant, "exchangeAndStoreStaffCalendarGrant");
-    __name(assertStaffCalendarAuthority, "assertStaffCalendarAuthority");
-    __name(staffCalendarGrantReadiness, "staffCalendarGrantReadiness");
   }
 });
 
@@ -14641,7 +16179,7 @@ function redirect(url) {
     headers: { Location: url, "Cache-Control": "no-store" }
   });
 }
-async function onRequestGet10(context) {
+async function onRequestGet11(context) {
   const url = new URL(context.request.url);
   const state = url.searchParams.get("state") || "";
   const code = url.searchParams.get("code") || "";
@@ -14762,7 +16300,7 @@ async function onRequestGet10(context) {
 var TOKEN_URL, SUCCESS_URL, FAILURE_URL, STAFF_SUCCESS_URL, STAFF_FAILURE_URL;
 var init_cos_google_callback = __esm({
   "api/cos-google-callback.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_staff_calendar_oauth();
     TOKEN_URL = "https://oauth2.googleapis.com/token";
     SUCCESS_URL = "https://www.amarimethod.com/cos/?google=connected";
@@ -14771,7 +16309,7 @@ var init_cos_google_callback = __esm({
     STAFF_FAILURE_URL = "https://www.amarimethod.com/staff/operations?staffCalendar=failed";
     __name(todayKey2, "todayKey");
     __name(redirect, "redirect");
-    __name(onRequestGet10, "onRequestGet");
+    __name(onRequestGet11, "onRequestGet");
   }
 });
 
@@ -14781,12 +16319,12 @@ async function record(env, payload) {
 }
 async function probeGoogleCalendar(context) {
   const token = await getGoogleToken(context, "Eben");
-  const response2 = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer", {
+  const response3 = await fetch("https://www.googleapis.com/calendar/v3/users/me/calendarList?minAccessRole=writer", {
     headers: { Authorization: `Bearer ${token}` }
   });
-  if (!response2.ok) throw new Error(`Google Calendar ${response2.status} readiness probe failed`);
+  if (!response3.ok) throw new Error(`Google Calendar ${response3.status} readiness probe failed`);
 }
-async function onRequestGet11(context) {
+async function onRequestGet12(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const checkedAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -14832,7 +16370,7 @@ async function onRequestGet11(context) {
 var HEADERS3;
 var init_cos_health = __esm({
   "api/cos-health.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_auth();
     init_cos_anthropic();
     init_google_api();
@@ -14840,7 +16378,7 @@ var init_cos_health = __esm({
     HEADERS3 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
     __name(record, "record");
     __name(probeGoogleCalendar, "probeGoogleCalendar");
-    __name(onRequestGet11, "onRequestGet");
+    __name(onRequestGet12, "onRequestGet");
   }
 });
 
@@ -14881,7 +16419,7 @@ function onRequestOptions17(context) {
     headers: corsHeaders13(context.request.headers.get("Origin") || "")
   });
 }
-async function onRequestGet12(context) {
+async function onRequestGet13(context) {
   const origin = context.request.headers.get("Origin") || "";
   const auth = await authenticate2(context.request, context.env);
   if (!auth) return jsonResponse5({ error: "Unauthorized" }, 401, origin);
@@ -14897,7 +16435,7 @@ async function onRequestGet12(context) {
 var ALLOWED_ORIGINS13;
 var init_cos_parking_current = __esm({
   "api/cos-parking-current.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     init_cos_parking();
     ALLOWED_ORIGINS13 = ["https://www.amarimethod.com", "https://amarimethod.com"];
@@ -14905,7 +16443,7 @@ var init_cos_parking_current = __esm({
     __name(jsonResponse5, "jsonResponse");
     __name(authenticate2, "authenticate");
     __name(onRequestOptions17, "onRequestOptions");
-    __name(onRequestGet12, "onRequestGet");
+    __name(onRequestGet13, "onRequestGet");
   }
 });
 
@@ -14956,7 +16494,7 @@ async function onRequestPost16(context) {
     headers: JSON_HEADERS2
   });
 }
-async function onRequestGet13(context) {
+async function onRequestGet14(context) {
   const { request: request2, env } = context;
   const provided = request2.headers.get("X-Service-Key") || "";
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
@@ -14977,7 +16515,7 @@ function onRequestOptions18() {
 var DATASF_URL, PAGE_SIZE, MAX_PAGES, CORS_HEADERS, JSON_HEADERS2;
 var init_cos_parking_seed = __esm({
   "api/cos-parking-seed.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_cos_parking();
     DATASF_URL = "https://data.sfgov.org/resource/yhqp-riqs.json";
     PAGE_SIZE = 5e3;
@@ -14989,13 +16527,13 @@ var init_cos_parking_seed = __esm({
     };
     JSON_HEADERS2 = { "content-type": "application/json", ...CORS_HEADERS };
     __name(onRequestPost16, "onRequestPost");
-    __name(onRequestGet13, "onRequestGet");
+    __name(onRequestGet14, "onRequestGet");
     __name(onRequestOptions18, "onRequestOptions");
   }
 });
 
 // api/cos-spotify-auth.js
-async function onRequestGet14(context) {
+async function onRequestGet15(context) {
   const clientId = context.env.SPOTIFY_CLIENT_ID;
   if (!clientId) {
     return new Response("SPOTIFY_CLIENT_ID not configured", { status: 500 });
@@ -15013,7 +16551,7 @@ async function onRequestGet14(context) {
 var SPOTIFY_AUTH_URL, SCOPES;
 var init_cos_spotify_auth = __esm({
   "api/cos-spotify-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
     SCOPES = [
       "user-read-playback-state",
@@ -15024,12 +16562,12 @@ var init_cos_spotify_auth = __esm({
       "playlist-modify-private",
       "user-library-read"
     ].join(" ");
-    __name(onRequestGet14, "onRequestGet");
+    __name(onRequestGet15, "onRequestGet");
   }
 });
 
 // api/cos-spotify-callback.js
-async function onRequestGet15(context) {
+async function onRequestGet16(context) {
   const url = new URL(context.request.url);
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
@@ -15139,9 +16677,9 @@ function errorPage(message) {
 var SPOTIFY_TOKEN_URL2;
 var init_cos_spotify_callback = __esm({
   "api/cos-spotify-callback.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     SPOTIFY_TOKEN_URL2 = "https://accounts.spotify.com/api/token";
-    __name(onRequestGet15, "onRequestGet");
+    __name(onRequestGet16, "onRequestGet");
     __name(successPage, "successPage");
     __name(errorPage, "errorPage");
   }
@@ -15202,7 +16740,7 @@ async function onRequestPost17(context) {
 var ALLOWED_ORIGINS14;
 var init_cos_vault_sync = __esm({
   "api/cos-vault-sync.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     ALLOWED_ORIGINS14 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -15218,7 +16756,7 @@ var init_cos_vault_sync = __esm({
 function todayPacific() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: PT2 }).format(/* @__PURE__ */ new Date());
 }
-async function onRequestGet16(context) {
+async function onRequestGet17(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers5 = {
@@ -15245,12 +16783,12 @@ async function onRequestGet16(context) {
 var PT2, AUDIT_KV_PREFIX;
 var init_daily_audit = __esm({
   "api/daily-audit.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_auth();
     PT2 = "America/Los_Angeles";
     AUDIT_KV_PREFIX = "ops:daily-audit:";
     __name(todayPacific, "todayPacific");
-    __name(onRequestGet16, "onRequestGet");
+    __name(onRequestGet17, "onRequestGet");
   }
 });
 
@@ -15258,7 +16796,7 @@ var init_daily_audit = __esm({
 function todayPacific2() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: PT3 }).format(/* @__PURE__ */ new Date());
 }
-async function onRequestGet17(context) {
+async function onRequestGet18(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers5 = {
@@ -15285,12 +16823,12 @@ async function onRequestGet17(context) {
 var PT3, SCAN_KV_PREFIX;
 var init_ecosystem_scan = __esm({
   "api/ecosystem-scan.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_auth();
     PT3 = "America/Los_Angeles";
     SCAN_KV_PREFIX = "ops:ecosystem-scan:";
     __name(todayPacific2, "todayPacific");
-    __name(onRequestGet17, "onRequestGet");
+    __name(onRequestGet18, "onRequestGet");
   }
 });
 
@@ -15304,8 +16842,8 @@ function corsHeaders15(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-function isValidEmail2(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""));
+function isValidEmail2(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2 || ""));
 }
 async function onRequestOptions20(context) {
   return new Response(null, {
@@ -15332,15 +16870,15 @@ async function onRequestPost18(context) {
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
     const body = await context.request.json();
-    const { email } = body;
-    if (!isValidEmail2(email)) {
+    const { email: email2 } = body;
+    if (!isValidEmail2(email2)) {
       return new Response(
         JSON.stringify({ error: "Valid email required" }),
         { status: 400, headers: headers5 }
       );
     }
     const upsertPayload = {
-      email: String(email).trim().slice(0, 200),
+      email: String(email2).trim().slice(0, 200),
       locationId: GHL_LOCATION_ID6,
       tags: ["elbow-study-interested"],
       source: "Tennis Elbow Study (interest)"
@@ -15371,7 +16909,7 @@ async function onRequestPost18(context) {
 var GHL_API_BASE8, GHL_LOCATION_ID6, ALLOWED_ORIGINS15;
 var init_elbow_study_interest = __esm({
   "api/elbow-study-interest.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     GHL_API_BASE8 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
@@ -15390,7 +16928,7 @@ var init_elbow_study_interest = __esm({
 var STUDIES, STUDY_CALENDAR_ID, STUDY_TAGS;
 var init_studies = __esm({
   "lib/studies.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     STUDIES = {
       "tennis-elbow": {
         slug: "tennis-elbow",
@@ -15505,7 +17043,7 @@ function wantsPublishOptIn(publishOptIn) {
 var STUDY_PUBLISH_OPT_IN_TAG;
 var init_study_consent = __esm({
   "lib/study-consent.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     STUDY_PUBLISH_OPT_IN_TAG = "study-publish-opt-in";
     __name(wantsPublishOptIn, "wantsPublishOptIn");
   }
@@ -15533,7 +17071,7 @@ function legacyStudySignupDisabledResponse(headers5, studySlug) {
 var LIVE_STUDY_SLUGS;
 var init_legacy_study_signup = __esm({
   "lib/legacy-study-signup.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     LIVE_STUDY_SLUGS = /* @__PURE__ */ new Set([
       "tennis-elbow",
       "tmj",
@@ -15565,8 +17103,8 @@ function isValidPhone(phone) {
   const cleaned = String(phone).replace(/[^\d+]/g, "");
   return cleaned.length >= 10;
 }
-function isValidEmail3(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+function isValidEmail3(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2).trim());
 }
 async function onRequestOptions21(context) {
   return new Response(null, {
@@ -15594,8 +17132,8 @@ async function onRequestPost19(context) {
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
     const body = await context.request.json();
-    const { name, phone, email, arm, publishOptIn } = body;
-    if (!name || !phone || !email) {
+    const { name, phone, email: email2, arm, publishOptIn } = body;
+    if (!name || !phone || !email2) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
         { status: 400, headers: headers5 }
@@ -15608,13 +17146,13 @@ async function onRequestPost19(context) {
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
-    if (!isValidEmail3(email)) {
+    if (!isValidEmail3(email2)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
         { status: 400, headers: headers5 }
       );
     }
-    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanEmail = String(email2).trim().toLowerCase();
     const { firstName, lastName } = splitName(name);
     const tags = ["elbow-study-participant"];
     const normalizedArm = arm ? String(arm).trim().toLowerCase() : "";
@@ -15660,7 +17198,7 @@ async function onRequestPost19(context) {
 var GHL_API_BASE9, GHL_LOCATION_ID7, STUDY, STUDY_NAME_FIELD_ID, ALLOWED_ORIGINS16;
 var init_elbow_study_signup = __esm({
   "api/elbow-study-signup.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -15702,8 +17240,8 @@ function isValidPhone2(phone) {
   const cleaned = String(phone).replace(/[^\d+]/g, "");
   return cleaned.length >= 10;
 }
-function isValidEmail4(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+function isValidEmail4(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2).trim());
 }
 async function onRequestOptions22(context) {
   return new Response(null, {
@@ -15731,8 +17269,8 @@ async function onRequestPost20(context) {
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
     const body = await context.request.json();
-    const { name, phone, email, bodyPart, publishOptIn } = body;
-    if (!name || !phone || !email) {
+    const { name, phone, email: email2, bodyPart, publishOptIn } = body;
+    if (!name || !phone || !email2) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
         { status: 400, headers: headers5 }
@@ -15745,13 +17283,13 @@ async function onRequestPost20(context) {
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
-    if (!isValidEmail4(email)) {
+    if (!isValidEmail4(email2)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
         { status: 400, headers: headers5 }
       );
     }
-    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanEmail = String(email2).trim().toLowerCase();
     const { firstName, lastName } = splitName2(name);
     const tags = [STUDY2.tag];
     const normalizedPart = bodyPart ? String(bodyPart).trim().toLowerCase() : "";
@@ -15797,7 +17335,7 @@ async function onRequestPost20(context) {
 var GHL_API_BASE10, GHL_LOCATION_ID8, STUDY2, STUDY_NAME_FIELD_ID2, ALLOWED_ORIGINS17;
 var init_foot_study_signup = __esm({
   "api/foot-study-signup.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -15830,7 +17368,7 @@ function timingSafeEqual3(a, b) {
   }
   return mismatch === 0;
 }
-async function onRequestGet18(context) {
+async function onRequestGet19(context) {
   if (context.env.GHL_TOKEN_EXPORT_ENABLED !== "true") {
     return new Response("Not found", { status: 404 });
   }
@@ -15856,20 +17394,20 @@ async function onRequestGet18(context) {
     access_token: accessToken,
     refresh_token: refreshToken,
     expires_at: Number(tokenExpiry) || 0,
-    location_id: LOCATION_ID2
+    location_id: LOCATION_ID3
   };
   return new Response(JSON.stringify(tokens), {
     status: 200,
     headers: { "Content-Type": "application/json" }
   });
 }
-var LOCATION_ID2;
+var LOCATION_ID3;
 var init_ghl_export_tokens = __esm({
   "api/ghl-export-tokens.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    LOCATION_ID2 = "7pIO7FHVAyBT1jKGhfQM";
+    init_functionsRoutes_0_18121058202988283();
+    LOCATION_ID3 = "7pIO7FHVAyBT1jKGhfQM";
     __name(timingSafeEqual3, "timingSafeEqual");
-    __name(onRequestGet18, "onRequestGet");
+    __name(onRequestGet19, "onRequestGet");
   }
 });
 
@@ -15917,7 +17455,7 @@ async function appendAutomationEvent(db, r) {
 var UPGRADE_OFFER_DELAY_MS, GUARD_TAGS;
 var init_upgrade_offer = __esm({
   "lib/upgrade-offer.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     UPGRADE_OFFER_DELAY_MS = 3 * 864e5;
     GUARD_TAGS = ["ambassador-prospect", "affiliate-partner"];
     __name(changesOf4, "changesOf");
@@ -15999,7 +17537,7 @@ async function recordSeriesPurchase(context, { contactId, seriesType, classifica
 var MODE, FROM, FOUNDER_FULFILLMENT_CONFIRMATION;
 var init_purchase_confirmations = __esm({
   "lib/purchase-confirmations.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_upgrade_offer();
     init_ghl_send();
     MODE = "shadow";
@@ -16157,7 +17695,7 @@ function buildPosInvoiceRequest(sale, { issueDate } = {}) {
     return aPackage - bPackage || a.index - b.index;
   }).map(({ line }) => line);
   return {
-    altId: LOCATION_ID3,
+    altId: LOCATION_ID4,
     altType: "location",
     name: `Staff POS ${sale.id}`,
     title: "Amari Method Staff POS purchase",
@@ -16184,15 +17722,15 @@ function invoiceHasSaleMarker(invoice, saleId2) {
   const searchable = [invoice?.name, invoice?.title, invoice?.termsNotes].filter((value) => typeof value === "string").join(" ");
   return searchable.includes(saleId2);
 }
-async function responseJson(response2, operation) {
+async function responseJson2(response3, operation) {
   let body = null;
   try {
-    body = await response2.json();
+    body = await response3.json();
   } catch {
   }
-  if (!response2.ok) {
+  if (!response3.ok) {
     const detail = body?.message || body?.error || "GHL request failed";
-    throw new Error(`${operation} failed (${response2.status}): ${String(detail).slice(0, 200)}`);
+    throw new Error(`${operation} failed (${response3.status}): ${String(detail).slice(0, 200)}`);
   }
   return body || {};
 }
@@ -16205,7 +17743,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
     throw error;
   }
   const query = new URLSearchParams({
-    altId: LOCATION_ID3,
+    altId: LOCATION_ID4,
     altType: "location",
     contactId: sale.client.id,
     limit: "100",
@@ -16216,7 +17754,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
     `${GHL_API_BASE11}/invoices/?${query.toString()}`,
     { method: "GET", headers: { Version: "v3" } }
   );
-  const listBody = await responseJson(listResponse, "Invoice recovery lookup");
+  const listBody = await responseJson2(listResponse, "Invoice recovery lookup");
   const knownInvoiceId = sale.fulfillment?.invoice?.id || sale.fulfillment?.invoiceId || null;
   let invoice = (listBody.invoices || []).find((candidate) => knownInvoiceId && invoiceIdOf(candidate) === knownInvoiceId || invoiceHasSaleMarker(candidate, sale.id));
   let stage = "invoice_found";
@@ -16226,7 +17764,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
       headers: { Version: "v3" },
       body: JSON.stringify(buildPosInvoiceRequest(sale, { issueDate }))
     });
-    const createBody = await responseJson(createResponse, "Invoice creation");
+    const createBody = await responseJson2(createResponse, "Invoice creation");
     invoice = createBody.invoice || createBody;
     stage = "invoice_created";
   }
@@ -16257,7 +17795,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
       method: "POST",
       headers: { Version: "v3" },
       body: JSON.stringify({
-        altId: LOCATION_ID3,
+        altId: LOCATION_ID4,
         altType: "location",
         mode: "other",
         notes: `Verified external payment for Staff POS sale ${sale.id}. Do not send.`,
@@ -16266,7 +17804,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
       })
     }
   );
-  const paymentBody = await responseJson(paymentResponse, "Invoice payment recording");
+  const paymentBody = await responseJson2(paymentResponse, "Invoice payment recording");
   const paidInvoice = paymentBody.invoice || {};
   if (paymentBody.success === false || String(paidInvoice.status || "").toLowerCase() !== "paid") {
     throw new Error("GHL did not confirm the Staff POS invoice as paid");
@@ -16281,14 +17819,14 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
     recovered: stage === "invoice_found"
   };
 }
-var GHL_API_BASE11, LOCATION_ID3, CURRENCY;
+var GHL_API_BASE11, LOCATION_ID4, CURRENCY;
 var init_staff_pos_invoice_bridge = __esm({
   "lib/staff-pos-invoice-bridge.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_ghl_products();
     GHL_API_BASE11 = "https://services.leadconnectorhq.com";
-    LOCATION_ID3 = "7pIO7FHVAyBT1jKGhfQM";
+    LOCATION_ID4 = "7pIO7FHVAyBT1jKGhfQM";
     CURRENCY = "USD";
     __name(dollars, "dollars");
     __name(invoiceItem, "invoiceItem");
@@ -16296,7 +17834,7 @@ var init_staff_pos_invoice_bridge = __esm({
     __name(buildPosInvoiceRequest, "buildPosInvoiceRequest");
     __name(invoiceIdOf, "invoiceIdOf");
     __name(invoiceHasSaleMarker, "invoiceHasSaleMarker");
-    __name(responseJson, "responseJson");
+    __name(responseJson2, "responseJson");
     __name(mirrorPaidPosSaleToGhlInvoice, "mirrorPaidPosSaleToGhlInvoice");
   }
 });
@@ -16369,12 +17907,12 @@ function normalizeClient(raw) {
   const id3 = cleanText(raw.id, 100);
   const name = cleanText(raw.name, 160);
   const phone = cleanText(raw.phone, 40);
-  const email = cleanText(raw.email, 160).toLowerCase();
+  const email2 = cleanText(raw.email, 160).toLowerCase();
   if (!/^[A-Za-z0-9_-]{8,100}$/.test(id3)) throw new Error("Invalid client");
   if (!name) throw new Error("Client name is required");
-  if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error("Client email is invalid");
-  if (!phone && !email) throw new Error("Add a phone number or email address");
-  return Object.freeze({ id: id3, name, phone: phone || null, email: email || null });
+  if (email2 && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email2)) throw new Error("Client email is invalid");
+  if (!phone && !email2) throw new Error("Add a phone number or email address");
+  return Object.freeze({ id: id3, name, phone: phone || null, email: email2 || null });
 }
 function normalizePaymentLegs(rawLegs, totalCents) {
   if (!Array.isArray(rawLegs)) throw new Error("Payment allocations are required");
@@ -16594,7 +18132,7 @@ async function writePosSale(kv, sale) {
 var MAX_CART_LINES, MAX_AMOUNT_CENTS, MAX_CUSTOM_LABEL, MAX_LEGS, POS_CATALOG, POS_PAYMENT_METHODS, STRIPE_CHECKOUT_METHODS, POS_SALE_STATUSES, POS_LEG_STATUSES;
 var init_staff_pos = __esm({
   "lib/staff-pos.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     MAX_CART_LINES = 24;
     MAX_AMOUNT_CENTS = 2e6;
     MAX_CUSTOM_LABEL = 120;
@@ -16734,7 +18272,7 @@ async function issueOwnedReceipt(db, sale, { actor = "Staff POS", now, id: id3 }
 }
 var init_staff_pos_receipts = __esm({
   "lib/staff-pos-receipts.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(ownedNoEffectLine, "ownedNoEffectLine");
     __name(ownedNoEffectCart, "ownedNoEffectCart");
     __name(mapReceipt, "mapReceipt");
@@ -17121,7 +18659,7 @@ async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) {
 var KV_TTL_SECONDS;
 var init_staff_pos_fulfill = __esm({
   "lib/staff-pos-fulfill.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_processed_events();
     init_ops_alert();
     init_ops_path_emit();
@@ -17265,7 +18803,7 @@ async function onRequestPost21(context) {
       );
     }
     const sanitizedContactId = contactId.trim().slice(0, 50);
-    const invoicesUrl = `${GHL_API_BASE12}/invoices/?altId=${LOCATION_ID4}&altType=location&contactId=${sanitizedContactId}&limit=100&offset=0`;
+    const invoicesUrl = `${GHL_API_BASE12}/invoices/?altId=${LOCATION_ID5}&altType=location&contactId=${sanitizedContactId}&limit=100&offset=0`;
     const invoicesRes = await ghlFetch(context, invoicesUrl);
     if (!invoicesRes.ok) {
       const errText = await invoicesRes.text();
@@ -17657,10 +19195,10 @@ async function onRequestPost21(context) {
     );
   }
 }
-var GHL_API_BASE12, LOCATION_ID4, KV_TTL_SECONDS2, INVOICE_PURCHASE_PRODUCTS, STAFF_POS_INVOICE_EFFECTS, FIELD_IDS2, TAGS_TO_REMOVE, DOWNSTREAM_TRIGGER_TAG;
+var GHL_API_BASE12, LOCATION_ID5, KV_TTL_SECONDS2, INVOICE_PURCHASE_PRODUCTS, STAFF_POS_INVOICE_EFFECTS, FIELD_IDS2, TAGS_TO_REMOVE, DOWNSTREAM_TRIGGER_TAG;
 var init_ghl_invoice_webhook = __esm({
   "api/ghl-invoice-webhook.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_purchase_confirmations();
     init_ghl_products();
@@ -17673,7 +19211,7 @@ var init_ghl_invoice_webhook = __esm({
     init_staff_pos_fulfill();
     init_staff_pos();
     GHL_API_BASE12 = "https://services.leadconnectorhq.com";
-    LOCATION_ID4 = "7pIO7FHVAyBT1jKGhfQM";
+    LOCATION_ID5 = "7pIO7FHVAyBT1jKGhfQM";
     KV_TTL_SECONDS2 = 90 * 86400;
     INVOICE_PURCHASE_PRODUCTS = WEBHOOK_PURCHASE_MAP;
     STAFF_POS_INVOICE_EFFECTS = Object.freeze({
@@ -17714,7 +19252,7 @@ var init_ghl_invoice_webhook = __esm({
 function isForeignLocationToken(data, expectedLocationId = EXPECTED_LOCATION_ID) {
   return Boolean(data && data.locationId && data.locationId !== expectedLocationId);
 }
-async function onRequestGet19(context) {
+async function onRequestGet20(context) {
   try {
     const url = new URL(context.request.url);
     const code = url.searchParams.get("code");
@@ -17798,11 +19336,11 @@ async function onRequestGet19(context) {
 var GHL_TOKEN_URL2, EXPECTED_LOCATION_ID;
 var init_ghl_oauth_callback = __esm({
   "api/ghl-oauth-callback.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     GHL_TOKEN_URL2 = "https://services.leadconnectorhq.com/oauth/token";
     EXPECTED_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
     __name(isForeignLocationToken, "isForeignLocationToken");
-    __name(onRequestGet19, "onRequestGet");
+    __name(onRequestGet20, "onRequestGet");
   }
 });
 
@@ -17820,7 +19358,7 @@ function verifyGhlWebhookSecret(env, provided, dedicatedKey) {
 }
 var init_ghl_webhook_auth = __esm({
   "lib/ghl-webhook-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_safe_equal();
     __name(verifyGhlWebhookSecret, "verifyGhlWebhookSecret");
   }
@@ -17858,7 +19396,7 @@ function checkPackageBalance({ remaining, packageSize, attended = null }) {
 }
 var init_session_consistency = __esm({
   "lib/session-consistency.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(checkPackageBalance, "checkPackageBalance");
   }
 });
@@ -18063,7 +19601,7 @@ async function failBookingOperation(db, opKey, error, options = {}) {
 }
 var init_booking_operations = __esm({
   "lib/booking-operations.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(changesOf6, "changesOf");
     __name(normalizeRow, "normalizeRow");
     __name(sameRequest, "sameRequest");
@@ -18275,7 +19813,7 @@ async function bookPaidBookingAppointment(context, contact, booking, token, dura
   await assertSlotRespectsAppBuffer(context, slot, calendarId);
   const payload = {
     calendarId,
-    locationId: LOCATION_ID5,
+    locationId: LOCATION_ID6,
     contactId: contact.id,
     startTime: slot,
     endTime,
@@ -18344,7 +19882,7 @@ function getCustomFieldValue2(contact, fieldId) {
 }
 async function fetchRecentOrder(context, contactId) {
   try {
-    const url = `${GHL_API_BASE13}/payments/orders?altId=${LOCATION_ID5}&altType=location&contactId=${contactId}&limit=5`;
+    const url = `${GHL_API_BASE13}/payments/orders?altId=${LOCATION_ID6}&altType=location&contactId=${contactId}&limit=5`;
     const res = await ghlFetch(context, url);
     if (!res.ok) {
       const errText = await res.text();
@@ -18387,12 +19925,12 @@ async function fetchRecentOrder(context, contactId) {
 async function fetchOrderDetail(context, orderId) {
   if (!orderId) return null;
   try {
-    const response2 = await ghlFetch(
+    const response3 = await ghlFetch(
       context,
-      `${GHL_API_BASE13}/payments/orders/${encodeURIComponent(orderId)}?altId=${LOCATION_ID5}&altType=location`
+      `${GHL_API_BASE13}/payments/orders/${encodeURIComponent(orderId)}?altId=${LOCATION_ID6}&altType=location`
     );
-    if (!response2.ok) return null;
-    const data = await response2.json();
+    if (!response3.ok) return null;
+    const data = await response3.json();
     return data.order || data.data || data;
   } catch (err) {
     console.error(`[ghl-purchase-webhook] order detail failed: ${err.message}`);
@@ -19110,10 +20648,10 @@ async function onRequestPost22(context) {
     );
   }
 }
-var GHL_API_BASE13, LOCATION_ID5, PAID_BOOKING_MAP, LEGACY_CREDITS, PRODUCT_MAP, REQUESTED_SLOT_FIELD_IDS, SLOT_ISO_RE, CHECKOUT_NOTE_SLOT_RE, FIELD_IDS3, KV_TTL_SECONDS3;
+var GHL_API_BASE13, LOCATION_ID6, PAID_BOOKING_MAP, LEGACY_CREDITS, PRODUCT_MAP, REQUESTED_SLOT_FIELD_IDS, SLOT_ISO_RE, CHECKOUT_NOTE_SLOT_RE, FIELD_IDS3, KV_TTL_SECONDS3;
 var init_ghl_purchase_webhook = __esm({
   "api/ghl-purchase-webhook.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_ghl_products();
     init_ghl_fields();
@@ -19133,7 +20671,7 @@ var init_ghl_purchase_webhook = __esm({
     init_assessment_paid_booking_workflow();
     init_ops_path_emit();
     GHL_API_BASE13 = "https://services.leadconnectorhq.com";
-    LOCATION_ID5 = "7pIO7FHVAyBT1jKGhfQM";
+    LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
     PAID_BOOKING_MAP = {
       "688a1cd770362828afbf08a2": {
         isNativePaidBooking: true,
@@ -19243,8 +20781,8 @@ function isValidPhone3(phone) {
   const cleaned = String(phone).replace(/[^\d+]/g, "");
   return cleaned.length >= 10;
 }
-function isValidEmail5(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+function isValidEmail5(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2).trim());
 }
 async function onRequestOptions23(context) {
   return new Response(null, {
@@ -19272,8 +20810,8 @@ async function onRequestPost23(context) {
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
     const body = await context.request.json();
-    const { name, phone, email, bodyPart, publishOptIn } = body;
-    if (!name || !phone || !email) {
+    const { name, phone, email: email2, bodyPart, publishOptIn } = body;
+    if (!name || !phone || !email2) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
         { status: 400, headers: headers5 }
@@ -19286,13 +20824,13 @@ async function onRequestPost23(context) {
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
-    if (!isValidEmail5(email)) {
+    if (!isValidEmail5(email2)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
         { status: 400, headers: headers5 }
       );
     }
-    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanEmail = String(email2).trim().toLowerCase();
     const { firstName, lastName } = splitName3(name);
     const tags = [STUDY3.tag];
     const normalizedPart = bodyPart ? String(bodyPart).trim().toLowerCase() : "";
@@ -19338,7 +20876,7 @@ async function onRequestPost23(context) {
 var GHL_API_BASE14, GHL_LOCATION_ID9, STUDY3, STUDY_NAME_FIELD_ID3, ALLOWED_ORIGINS18;
 var init_hand_study_signup = __esm({
   "api/hand-study-signup.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -19433,7 +20971,7 @@ async function readAndJudgeBeats(kv) {
 var BEAT_PREFIX, HOUR3, HEARTBEAT_JOBS, JOBS_BY_NAME;
 var init_heartbeat = __esm({
   "lib/heartbeat.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     BEAT_PREFIX = "ops:beat:";
     HOUR3 = 3600 * 1e3;
     __name(beatKey, "beatKey");
@@ -19470,7 +21008,7 @@ var init_heartbeat = __esm({
 });
 
 // api/heartbeats.js
-async function onRequestGet20(context) {
+async function onRequestGet21(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const kv = context.env.PORTAL_KV;
@@ -19515,11 +21053,11 @@ async function onRequestPost24(context) {
 var JSON_HEADERS3;
 var init_heartbeats = __esm({
   "api/heartbeats.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_auth();
     init_heartbeat();
     JSON_HEADERS3 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
-    __name(onRequestGet20, "onRequestGet");
+    __name(onRequestGet21, "onRequestGet");
     __name(onRequestPost24, "onRequestPost");
   }
 });
@@ -19544,8 +21082,8 @@ function isValidPhone4(phone) {
   const cleaned = String(phone).replace(/[^\d+]/g, "");
   return cleaned.length >= 10;
 }
-function isValidEmail6(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+function isValidEmail6(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2).trim());
 }
 async function onRequestOptions24(context) {
   return new Response(null, {
@@ -19573,8 +21111,8 @@ async function onRequestPost25(context) {
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
     const body = await context.request.json();
-    const { name, phone, email, bodyPart, publishOptIn } = body;
-    if (!name || !phone || !email) {
+    const { name, phone, email: email2, bodyPart, publishOptIn } = body;
+    if (!name || !phone || !email2) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
         { status: 400, headers: headers5 }
@@ -19587,13 +21125,13 @@ async function onRequestPost25(context) {
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
-    if (!isValidEmail6(email)) {
+    if (!isValidEmail6(email2)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
         { status: 400, headers: headers5 }
       );
     }
-    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanEmail = String(email2).trim().toLowerCase();
     const { firstName, lastName } = splitName4(name);
     const tags = [STUDY4.tag];
     const normalizedPart = bodyPart ? String(bodyPart).trim().toLowerCase() : "";
@@ -19639,7 +21177,7 @@ async function onRequestPost25(context) {
 var GHL_API_BASE15, GHL_LOCATION_ID10, STUDY4, STUDY_NAME_FIELD_ID4, ALLOWED_ORIGINS19;
 var init_jaw_study_signup = __esm({
   "api/jaw-study-signup.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -19681,8 +21219,8 @@ function corsHeaders20(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-function isValidEmail7(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ""));
+function isValidEmail7(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2 || ""));
 }
 async function onRequestOptions25(context) {
   return new Response(null, {
@@ -19709,15 +21247,15 @@ async function onRequestPost26(context) {
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
     const body = await context.request.json();
-    const { email } = body;
-    if (!isValidEmail7(email)) {
+    const { email: email2 } = body;
+    if (!isValidEmail7(email2)) {
       return new Response(
         JSON.stringify({ error: "Valid email required" }),
         { status: 400, headers: headers5 }
       );
     }
     const upsertPayload = {
-      email: String(email).trim().slice(0, 200),
+      email: String(email2).trim().slice(0, 200),
       locationId: GHL_LOCATION_ID11,
       tags: ["newsletter-subscriber"],
       source: "Website footer newsletter"
@@ -19748,7 +21286,7 @@ async function onRequestPost26(context) {
 var GHL_API_BASE16, GHL_LOCATION_ID11, ALLOWED_ORIGINS20;
 var init_newsletter_signup = __esm({
   "api/newsletter-signup.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     GHL_API_BASE16 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID11 = "7pIO7FHVAyBT1jKGhfQM";
@@ -19784,7 +21322,7 @@ async function onRequestOptions26(context) {
     headers: corsHeaders21(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet21(context) {
+async function onRequestGet22(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders21(origin), "Content-Type": "application/json" };
   try {
@@ -19833,7 +21371,7 @@ async function onRequestGet21(context) {
 var KV_COACH_PREFIX, ALLOWED_ORIGINS21;
 var init_outreach_coach = __esm({
   "api/outreach-coach.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     KV_COACH_PREFIX = "coach:";
     ALLOWED_ORIGINS21 = [
@@ -19842,7 +21380,7 @@ var init_outreach_coach = __esm({
     ];
     __name(corsHeaders21, "corsHeaders");
     __name(onRequestOptions26, "onRequestOptions");
-    __name(onRequestGet21, "onRequestGet");
+    __name(onRequestGet22, "onRequestGet");
   }
 });
 
@@ -19874,9 +21412,9 @@ async function createToken2(payload, secret) {
   const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
   return `${data}.${sig}`;
 }
-async function findContactByEmail(email, apiKey) {
+async function findContactByEmail(email2, apiKey) {
   try {
-    const dupeUrl = `${GHL_API_BASE17}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID12}&email=${encodeURIComponent(email)}`;
+    const dupeUrl = `${GHL_API_BASE17}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID12}&email=${encodeURIComponent(email2)}`;
     const dupeResponse = await fetch(dupeUrl, {
       method: "GET",
       headers: ghlHeaders(apiKey)
@@ -19890,7 +21428,7 @@ async function findContactByEmail(email, apiKey) {
     console.error(`[partner-auth] Duplicate search error: ${err.message}`);
   }
   try {
-    const listUrl = `${GHL_API_BASE17}/contacts/?locationId=${GHL_LOCATION_ID12}&query=${encodeURIComponent(email)}&limit=1`;
+    const listUrl = `${GHL_API_BASE17}/contacts/?locationId=${GHL_LOCATION_ID12}&query=${encodeURIComponent(email2)}&limit=1`;
     const listResponse = await fetch(listUrl, {
       method: "GET",
       headers: ghlHeaders(apiKey)
@@ -19899,7 +21437,7 @@ async function findContactByEmail(email, apiKey) {
       const listData = await listResponse.json();
       const contacts = listData.contacts || [];
       const match2 = contacts.find(
-        (c) => (c.email || "").toLowerCase() === email.toLowerCase()
+        (c) => (c.email || "").toLowerCase() === email2.toLowerCase()
       );
       if (match2) return match2;
     }
@@ -19912,7 +21450,7 @@ async function findContactByEmail(email, apiKey) {
       headers: ghlHeaders(apiKey),
       body: JSON.stringify({
         locationId: GHL_LOCATION_ID12,
-        filters: [{ field: "email", operator: "eq", value: email }]
+        filters: [{ field: "email", operator: "eq", value: email2 }]
       })
     });
     if (searchResponse.ok) {
@@ -19944,16 +21482,16 @@ async function onRequestPost27(context) {
       );
     }
     const body = await context.request.json();
-    const email = (body.email || "").trim().toLowerCase();
-    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const email2 = (body.email || "").trim().toLowerCase();
+    if (!email2 || email2.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email2)) {
       return new Response(
         JSON.stringify({ error: "Please enter a valid email address." }),
         { status: 400, headers: headers5 }
       );
     }
     const ip = context.request.headers.get("CF-Connecting-IP") || "";
-    const dateKey = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
-    const slot = await reserveAuthSlot(context.env.PORTAL_KV, { ip, email, scope: "partner", dateKey });
+    const dateKey2 = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+    const slot = await reserveAuthSlot(context.env.PORTAL_KV, { ip, email: email2, scope: "partner", dateKey: dateKey2 });
     if (!slot.ok) {
       return new Response(JSON.stringify({ error: slot.error }), { status: slot.status, headers: headers5 });
     }
@@ -19966,7 +21504,7 @@ async function onRequestPost27(context) {
         { status: 500, headers: headers5 }
       );
     }
-    const contact = await findContactByEmail(email, GHL_API_KEY);
+    const contact = await findContactByEmail(email2, GHL_API_KEY);
     if (!contact || !contact.id) {
       return new Response(
         JSON.stringify({
@@ -19988,7 +21526,7 @@ async function onRequestPost27(context) {
     const token = await createToken2(
       {
         contactId: contact.id,
-        email,
+        email: email2,
         type: "partner",
         nonce,
         exp: Date.now() + 24 * 60 * 60 * 1e3
@@ -20049,7 +21587,7 @@ async function onRequestPost27(context) {
 var GHL_API_BASE17, GHL_LOCATION_ID12, ALLOWED_ORIGINS22;
 var init_partner_auth = __esm({
   "api/partner-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_rate_limit();
     GHL_API_BASE17 = "https://services.leadconnectorhq.com";
@@ -20084,7 +21622,7 @@ async function onRequestOptions28(context) {
     headers: corsHeaders23(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet22(context) {
+async function onRequestGet23(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders23(origin);
   headers5["Content-Type"] = "application/json";
@@ -20285,7 +21823,7 @@ async function onRequestGet22(context) {
 var GHL_API_BASE18, GHL_LOCATION_ID13, REFERRAL_SOURCE_FIELD_ID2, PARTNER_CONTACT_ID_FIELD_ID2, REFERRAL_TYPE_FIELD_ID2, REFERRAL_FEE_STATUS_FIELD_ID2, ALLOWED_ORIGINS23;
 var init_partner_data = __esm({
   "api/partner-data.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     GHL_API_BASE18 = "https://services.leadconnectorhq.com";
@@ -20300,7 +21838,7 @@ var init_partner_data = __esm({
     ];
     __name(corsHeaders23, "corsHeaders");
     __name(onRequestOptions28, "onRequestOptions");
-    __name(onRequestGet22, "onRequestGet");
+    __name(onRequestGet23, "onRequestGet");
   }
 });
 
@@ -20332,7 +21870,7 @@ async function onRequestOptions29(context) {
     headers: corsHeaders24(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet23(context) {
+async function onRequestGet24(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders24(origin);
   headers5["Content-Type"] = "application/json";
@@ -20486,7 +22024,7 @@ async function onRequestGet23(context) {
 var GHL_API_BASE19, GHL_LOCATION_ID14, REFERRAL_SOURCE_FIELD_ID3, PARTNER_CONTACT_ID_FIELD_ID3, ALLOWED_ORIGINS24;
 var init_partner_stats = __esm({
   "api/partner-stats.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     GHL_API_BASE19 = "https://services.leadconnectorhq.com";
@@ -20500,7 +22038,7 @@ var init_partner_stats = __esm({
     ];
     __name(corsHeaders24, "corsHeaders");
     __name(onRequestOptions29, "onRequestOptions");
-    __name(onRequestGet23, "onRequestGet");
+    __name(onRequestGet24, "onRequestGet");
   }
 });
 
@@ -20557,7 +22095,7 @@ async function onRequestOptions30(context) {
     headers: corsHeaders25(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet24(context) {
+async function onRequestGet25(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders25(origin);
   headers5["Content-Type"] = "application/json";
@@ -20640,7 +22178,7 @@ async function onRequestGet24(context) {
 var ALLOWED_ORIGINS25;
 var init_partner_verify = __esm({
   "api/partner-verify.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     ALLOWED_ORIGINS25 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -20649,7 +22187,7 @@ var init_partner_verify = __esm({
     __name(verifyToken, "verifyToken");
     __name(createSessionToken, "createSessionToken");
     __name(onRequestOptions30, "onRequestOptions");
-    __name(onRequestGet24, "onRequestGet");
+    __name(onRequestGet25, "onRequestGet");
   }
 });
 
@@ -20681,9 +22219,9 @@ async function createToken3(payload, secret) {
   const sig = btoa(String.fromCharCode(...new Uint8Array(signature)));
   return `${data}.${sig}`;
 }
-async function findContactByEmail2(email, apiKey) {
+async function findContactByEmail2(email2, apiKey) {
   try {
-    const dupeUrl = `${GHL_API_BASE20}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID15}&email=${encodeURIComponent(email)}`;
+    const dupeUrl = `${GHL_API_BASE20}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID15}&email=${encodeURIComponent(email2)}`;
     const dupeResponse = await fetch(dupeUrl, {
       method: "GET",
       headers: ghlHeaders(apiKey)
@@ -20701,7 +22239,7 @@ async function findContactByEmail2(email, apiKey) {
     console.error(`[portal-auth] Duplicate search error: ${err.message}`);
   }
   try {
-    const listUrl = `${GHL_API_BASE20}/contacts/?locationId=${GHL_LOCATION_ID15}&query=${encodeURIComponent(email)}&limit=1`;
+    const listUrl = `${GHL_API_BASE20}/contacts/?locationId=${GHL_LOCATION_ID15}&query=${encodeURIComponent(email2)}&limit=1`;
     const listResponse = await fetch(listUrl, {
       method: "GET",
       headers: ghlHeaders(apiKey)
@@ -20710,7 +22248,7 @@ async function findContactByEmail2(email, apiKey) {
       const listData = await listResponse.json();
       const contacts = listData.contacts || [];
       const match2 = contacts.find(
-        (c) => (c.email || "").toLowerCase() === email.toLowerCase()
+        (c) => (c.email || "").toLowerCase() === email2.toLowerCase()
       );
       if (match2) {
         return match2;
@@ -20727,7 +22265,7 @@ async function findContactByEmail2(email, apiKey) {
         {
           field: "email",
           operator: "eq",
-          value: email
+          value: email2
         }
       ]
     };
@@ -20770,16 +22308,16 @@ async function onRequestPost28(context) {
       );
     }
     const body = await context.request.json();
-    const email = (body.email || "").trim().toLowerCase();
-    if (!email || email.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    const email2 = (body.email || "").trim().toLowerCase();
+    if (!email2 || email2.length > 254 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email2)) {
       return new Response(
         JSON.stringify({ error: "Please enter a valid email address." }),
         { status: 400, headers: headers5 }
       );
     }
     const ip = context.request.headers.get("CF-Connecting-IP") || "";
-    const dateKey = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
-    const slot = await reserveAuthSlot(context.env.PORTAL_KV, { ip, email, scope: "portal", dateKey });
+    const dateKey2 = (/* @__PURE__ */ new Date()).toLocaleDateString("en-CA", { timeZone: "America/Los_Angeles" });
+    const slot = await reserveAuthSlot(context.env.PORTAL_KV, { ip, email: email2, scope: "portal", dateKey: dateKey2 });
     if (!slot.ok) {
       return new Response(JSON.stringify({ error: slot.error }), { status: slot.status, headers: headers5 });
     }
@@ -20795,7 +22333,7 @@ async function onRequestPost28(context) {
         { status: 500, headers: headers5 }
       );
     }
-    const contact = await findContactByEmail2(email, GHL_API_KEY);
+    const contact = await findContactByEmail2(email2, GHL_API_KEY);
     if (!contact || !contact.id) {
       return new Response(
         JSON.stringify({
@@ -20808,7 +22346,7 @@ async function onRequestPost28(context) {
     const token = await createToken3(
       {
         contactId: contact.id,
-        email,
+        email: email2,
         nonce,
         exp: Date.now() + 24 * 60 * 60 * 1e3
         // 24 hours
@@ -20878,7 +22416,7 @@ async function onRequestPost28(context) {
 var GHL_API_BASE20, GHL_LOCATION_ID15, ALLOWED_ORIGINS26;
 var init_portal_auth = __esm({
   "api/portal-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_rate_limit();
     init_ops_last_run();
@@ -20949,18 +22487,18 @@ function matchingPortalAppointments(appointments, { appointmentId, calendarId, s
   });
 }
 async function listContactAppointments(contactId, token) {
-  const response2 = await fetch(
+  const response3 = await fetch(
     `https://services.leadconnectorhq.com/contacts/${encodeURIComponent(contactId)}/appointments`,
     { headers: ghlHeaders(token) }
   );
-  if (!response2.ok) throw new Error(`GHL appointment reconciliation failed: ${response2.status}`);
-  const data = await response2.json();
+  if (!response3.ok) throw new Error(`GHL appointment reconciliation failed: ${response3.status}`);
+  const data = await response3.json();
   return data.events || data.appointments || [];
 }
 async function confirmAppointment(appointment, token) {
   const status = String(appointment.appointmentStatus || "").toLowerCase();
   if (status === "confirmed") return appointment;
-  const response2 = await fetch(
+  const response3 = await fetch(
     `https://services.leadconnectorhq.com/calendars/events/appointments/${encodeURIComponent(appointment.id)}`,
     {
       method: "PUT",
@@ -20968,9 +22506,9 @@ async function confirmAppointment(appointment, token) {
       body: JSON.stringify({ appointmentStatus: "confirmed" })
     }
   );
-  if (!response2.ok) {
-    const detail = await response2.text().catch(() => "response body unavailable");
-    throw new Error(`GHL appointment confirmation failed (${response2.status}): ${detail.slice(0, 300)}`);
+  if (!response3.ok) {
+    const detail = await response3.text().catch(() => "response body unavailable");
+    throw new Error(`GHL appointment confirmation failed (${response3.status}): ${detail.slice(0, 300)}`);
   }
   return { ...appointment, appointmentStatus: "confirmed" };
 }
@@ -20988,7 +22526,7 @@ async function onRequestPost29(context) {
   });
   if (gate.error) return gate.error;
   const { tokenPayload, contactId } = gate;
-  const email = tokenPayload.email;
+  const email2 = tokenPayload.email;
   let body;
   try {
     body = await request2.json();
@@ -21101,7 +22639,7 @@ async function onRequestPost29(context) {
     // Pre-fill contact details
     firstName: contact?.firstName || "",
     lastName: contact?.lastName || "",
-    email: contact?.email || email,
+    email: contact?.email || email2,
     phone: contact?.phone || ""
   };
   try {
@@ -21202,7 +22740,7 @@ async function onRequestPost29(context) {
 var allowedOrigin, PORTAL_FOLLOWUP_CALENDARS, SESSIONS_REMAINING_FIELD_ID;
 var init_portal_book = __esm({
   "api/portal-book.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -21347,7 +22885,7 @@ async function onRequestPost30(context) {
 var GHL_API_BASE21, ALLOWED_ORIGINS27;
 var init_portal_cancel = __esm({
   "api/portal-cancel.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     GHL_API_BASE21 = "https://services.leadconnectorhq.com";
@@ -21368,7 +22906,7 @@ function countsTowardLifetime(titleAndCalendar) {
 var NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN;
 var init_journey_classification = __esm({
   "lib/journey-classification.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     NON_JOURNEY_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
     NON_PACKAGE_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
     __name(countsTowardLifetime, "countsTowardLifetime");
@@ -21403,7 +22941,7 @@ async function onRequestOptions34(context) {
     headers: corsHeaders28(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet25(context) {
+async function onRequestGet26(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders28(origin);
   headers5["Content-Type"] = "application/json";
@@ -21597,7 +23135,7 @@ async function onRequestGet25(context) {
 var GHL_API_BASE22, GHL_LOCATION_ID16, ALLOWED_ORIGINS28;
 var init_portal_data = __esm({
   "api/portal-data.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -21614,7 +23152,7 @@ var init_portal_data = __esm({
     __name(corsHeaders28, "corsHeaders");
     __name(countLifetimeCompleted, "countLifetimeCompleted");
     __name(onRequestOptions34, "onRequestOptions");
-    __name(onRequestGet25, "onRequestGet");
+    __name(onRequestGet26, "onRequestGet");
   }
 });
 
@@ -21730,7 +23268,7 @@ async function onRequestPost31(context) {
 var allowedOrigin2, PAYMENT_LINK_URL, PAID_FOLLOWUP_CALENDARS;
 var init_portal_pay_followup = __esm({
   "api/portal-pay-followup.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     init_ghl_fields();
@@ -21777,7 +23315,7 @@ async function onRequestOptions36(context) {
     headers: corsHeaders29(context.request.headers.get("Origin") || "")
   });
 }
-async function onRequestGet26(context) {
+async function onRequestGet27(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders29(origin), "Content-Type": "application/json" };
   const { error, payload } = await requirePortalAuth(context, headers5);
@@ -21811,7 +23349,7 @@ async function onRequestPost32(context) {
 var ALLOWED_ORIGINS29;
 var init_portal_progress = __esm({
   "api/portal-progress.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_owned_access();
     ALLOWED_ORIGINS29 = [
       "https://www.amarimethod.com",
@@ -21821,7 +23359,7 @@ var init_portal_progress = __esm({
     __name(kvKey, "kvKey");
     __name(requirePortalAuth, "requirePortalAuth");
     __name(onRequestOptions36, "onRequestOptions");
-    __name(onRequestGet26, "onRequestGet");
+    __name(onRequestGet27, "onRequestGet");
     __name(onRequestPost32, "onRequestPost");
   }
 });
@@ -22047,7 +23585,7 @@ function renderInvoice(inv, patientName, patientPhone) {
 var PRACTICE;
 var init_reimbursement_template = __esm({
   "lib/reimbursement-template.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     PRACTICE = {
       name: "Amari Method",
       phone: "(628) 877-7673",
@@ -22090,7 +23628,7 @@ async function onRequestOptions37(context) {
     headers: corsHeaders30(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet27(context) {
+async function onRequestGet28(context) {
   const origin = context.request.headers.get("Origin") || "";
   const baseHeaders2 = corsHeaders30(origin);
   const jsonError = /* @__PURE__ */ __name((status, message) => new Response(JSON.stringify({ error: message }), {
@@ -22163,7 +23701,7 @@ async function onRequestGet27(context) {
 var GHL_API_BASE23, GHL_LOCATION_ID17, ALLOWED_ORIGINS30;
 var init_portal_reimbursement_packet = __esm({
   "api/portal-reimbursement-packet.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     init_reimbursement_template();
@@ -22176,7 +23714,7 @@ var init_portal_reimbursement_packet = __esm({
     __name(corsHeaders30, "corsHeaders");
     __name(isPaid, "isPaid");
     __name(onRequestOptions37, "onRequestOptions");
-    __name(onRequestGet27, "onRequestGet");
+    __name(onRequestGet28, "onRequestGet");
   }
 });
 
@@ -22199,7 +23737,7 @@ async function onRequestOptions38({ request: request2 }) {
   const origin = request2.headers.get("Origin") || "";
   return new Response(null, { status: 204, headers: cors4(origin) });
 }
-async function onRequestGet28(context) {
+async function onRequestGet29(context) {
   const { request: request2, env } = context;
   const origin = request2.headers.get("Origin") || "";
   const GHL_API_KEY = await getGhlToken(context);
@@ -22293,7 +23831,7 @@ async function onRequestGet28(context) {
 var allowedOrigin3;
 var init_portal_slots = __esm({
   "api/portal-slots.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_auth();
     init_look_busy();
@@ -22303,7 +23841,7 @@ var init_portal_slots = __esm({
     __name(cors4, "cors");
     __name(json8, "json");
     __name(onRequestOptions38, "onRequestOptions");
-    __name(onRequestGet28, "onRequestGet");
+    __name(onRequestGet29, "onRequestGet");
   }
 });
 
@@ -22364,7 +23902,7 @@ async function onRequestPost33(context) {
 var GHL_API_BASE24, REMINDER_PREFERENCE_FIELD_ID, VALID, ALLOWED_ORIGINS31;
 var init_portal_update_preference = __esm({
   "api/portal-update-preference.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_owned_access();
     GHL_API_BASE24 = "https://services.leadconnectorhq.com";
@@ -22443,7 +23981,7 @@ async function onRequestOptions40(context) {
     headers: corsHeaders32(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet29(context) {
+async function onRequestGet30(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders32(origin);
   headers5["Content-Type"] = "application/json";
@@ -22523,7 +24061,7 @@ async function onRequestGet29(context) {
 var ALLOWED_ORIGINS32;
 var init_portal_verify = __esm({
   "api/portal-verify.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_last_run();
     ALLOWED_ORIGINS32 = [
       "https://www.amarimethod.com",
@@ -22534,7 +24072,7 @@ var init_portal_verify = __esm({
     __name(verifyToken2, "verifyToken");
     __name(createSessionToken2, "createSessionToken");
     __name(onRequestOptions40, "onRequestOptions");
-    __name(onRequestGet29, "onRequestGet");
+    __name(onRequestGet30, "onRequestGet");
   }
 });
 
@@ -22776,7 +24314,7 @@ async function onRequestPost34(context) {
 var GHL_API_BASE25, GHL_LOCATION_ID18, REFERRAL_MILESTONE;
 var init_referral_complete = __esm({
   "api/referral-complete.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_auth();
     GHL_API_BASE25 = "https://services.leadconnectorhq.com";
@@ -22818,13 +24356,13 @@ async function verifyTurnstile(token, secret, remoteIp) {
   if (!token || !secret) return false;
   const form = new URLSearchParams({ secret, response: token });
   if (remoteIp && remoteIp !== "unknown") form.set("remoteip", remoteIp);
-  const response2 = await fetch(TURNSTILE_VERIFY_URL, {
+  const response3 = await fetch(TURNSTILE_VERIFY_URL, {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: form
   });
-  if (!response2.ok) return false;
-  return (await response2.json()).success === true;
+  if (!response3.ok) return false;
+  return (await response3.json()).success === true;
 }
 async function submissionKey(body) {
   const bytes = new TextEncoder().encode(JSON.stringify(body));
@@ -22937,7 +24475,7 @@ async function onRequestPost35(context) {
     const rawBody = await context.request.json();
     const body = normalizeQuizSubmission(rawBody);
     if (!body) return json9(headers5, { error: "Invalid quiz submission." }, 400);
-    const { firstName, lastName, email } = body;
+    const { firstName, lastName, email: email2 } = body;
     const clientIP = context.request.headers.get("CF-Connecting-IP") || "unknown";
     try {
       const verified = await verifyTurnstile(rawBody.turnstileToken, context.env.TURNSTILE_SECRET_KEY, clientIP);
@@ -23008,7 +24546,7 @@ async function onRequestPost35(context) {
     const upsertPayload = {
       firstName,
       lastName,
-      email,
+      email: email2,
       phone: body.phone || void 0,
       locationId: GHL_LOCATION_ID19,
       tags,
@@ -23084,7 +24622,7 @@ async function onRequestPost35(context) {
 var GHL_API_BASE26, GHL_LOCATION_ID19, FIELD_IDS4, ALLOWED_ORIGINS33, TEXT_LIMITS, REFERRAL_SOURCE_RE, TURNSTILE_VERIFY_URL, RATE_LIMIT, RATE_LIMIT_TTL_SECONDS, IDEMPOTENCY_TTL_SECONDS;
 var init_send_to_ghl = __esm({
   "api/send-to-ghl.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_engine_forward();
     GHL_API_BASE26 = "https://services.leadconnectorhq.com";
@@ -23169,8 +24707,8 @@ function isValidPhone5(phone) {
   const cleaned = String(phone).replace(/[^\d+]/g, "");
   return cleaned.length >= 10;
 }
-function isValidEmail8(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+function isValidEmail8(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2).trim());
 }
 async function onRequestOptions42(context) {
   return new Response(null, {
@@ -23198,8 +24736,8 @@ async function onRequestPost36(context) {
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: 3600 });
     }
     const body = await context.request.json();
-    const { name, phone, email, bodyPart, publishOptIn } = body;
-    if (!name || !phone || !email) {
+    const { name, phone, email: email2, bodyPart, publishOptIn } = body;
+    if (!name || !phone || !email2) {
       return new Response(
         JSON.stringify({ error: "Missing required fields: name, phone, email" }),
         { status: 400, headers: headers5 }
@@ -23212,13 +24750,13 @@ async function onRequestPost36(context) {
       );
     }
     const cleanPhone = String(phone).replace(/[^\d+]/g, "");
-    if (!isValidEmail8(email)) {
+    if (!isValidEmail8(email2)) {
       return new Response(
         JSON.stringify({ error: "Invalid email address" }),
         { status: 400, headers: headers5 }
       );
     }
-    const cleanEmail = String(email).trim().toLowerCase();
+    const cleanEmail = String(email2).trim().toLowerCase();
     const { firstName, lastName } = splitName5(name);
     const tags = [STUDY5.tag];
     const normalizedPart = bodyPart ? String(bodyPart).trim().toLowerCase() : "";
@@ -23264,7 +24802,7 @@ async function onRequestPost36(context) {
 var GHL_API_BASE27, GHL_LOCATION_ID20, STUDY5, STUDY_NAME_FIELD_ID5, ALLOWED_ORIGINS34;
 var init_shoulder_study_signup = __esm({
   "api/shoulder-study-signup.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -23290,7 +24828,7 @@ var init_shoulder_study_signup = __esm({
 function headers(request2) {
   return { ...corsHeaders3(request2.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
 }
-function clean(value) {
+function clean7(value) {
   return typeof value === "string" ? value.trim().slice(0, MAX_TEXT) : "";
 }
 async function read(env) {
@@ -23299,7 +24837,7 @@ async function read(env) {
 async function onRequestOptions43(context) {
   return new Response(null, { status: 204, headers: headers(context.request) });
 }
-async function onRequestGet30(context) {
+async function onRequestGet31(context) {
   const out = headers(context.request);
   const auth = await requireStaffAuth(context, out);
   if (auth.error) return auth.error;
@@ -23315,20 +24853,20 @@ async function onRequestPost37(context) {
   } catch {
     return new Response(JSON.stringify({ error: "Invalid JSON" }), { status: 400, headers: out });
   }
-  const cardId = clean(body.cardId);
+  const cardId = clean7(body.cardId);
   if (!cardId || cardId.length > 80) return new Response(JSON.stringify({ error: "A card is required" }), { status: 400, headers: out });
   const state = await read(context.env);
   const now = (/* @__PURE__ */ new Date()).toISOString();
   if (body.action === "save") {
-    const answer = clean(body.answer);
-    const note = clean(body.note);
+    const answer = clean7(body.answer);
+    const note = clean7(body.note);
     if (!answer) return new Response(JSON.stringify({ error: "An answer is required" }), { status: 400, headers: out });
     state.overrides[cardId] = { answer, note, updatedAt: now, updatedBy: auth.payload.user || "staff" };
     state.feedback.unshift({ type: "edit", cardId, answer, note, at: now, by: auth.payload.user || "staff" });
   } else if (body.action === "feedback") {
     const sentiment = body.sentiment === "keep" || body.sentiment === "rewrite" ? body.sentiment : null;
     if (!sentiment) return new Response(JSON.stringify({ error: "Choose keep or rewrite" }), { status: 400, headers: out });
-    state.feedback.unshift({ type: sentiment, cardId, note: clean(body.note), at: now, by: auth.payload.user || "staff" });
+    state.feedback.unshift({ type: sentiment, cardId, note: clean7(body.note), at: now, by: auth.payload.user || "staff" });
   } else return new Response(JSON.stringify({ error: "Unknown action" }), { status: 400, headers: out });
   state.feedback = state.feedback.slice(0, MAX_EVENTS2);
   await context.env.PORTAL_KV.put(KEY, JSON.stringify(state));
@@ -23337,16 +24875,16 @@ async function onRequestPost37(context) {
 var KEY, MAX_TEXT, MAX_EVENTS2;
 var init_staff_amari_description_lab = __esm({
   "api/staff-amari-description-lab.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     KEY = "staff:amari-description-lab:v1";
     MAX_TEXT = 1600;
     MAX_EVENTS2 = 300;
     __name(headers, "headers");
-    __name(clean, "clean");
+    __name(clean7, "clean");
     __name(read, "read");
     __name(onRequestOptions43, "onRequestOptions");
-    __name(onRequestGet30, "onRequestGet");
+    __name(onRequestGet31, "onRequestGet");
     __name(onRequestPost37, "onRequestPost");
   }
 });
@@ -23483,7 +25021,7 @@ async function amariMailGrantReadiness(env, actor) {
 var encoder2, AMARI_MAIL_CALLBACK_URL, AMARI_MAIL_SCOPES, AMARI_MAIL_STATE_TTL_SECONDS, STAFF_MAILBOXES;
 var init_amari_mail_oauth = __esm({
   "lib/amari-mail-oauth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     encoder2 = new TextEncoder();
     AMARI_MAIL_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
     AMARI_MAIL_SCOPES = Object.freeze([
@@ -23516,7 +25054,7 @@ function json10(data, status, headers5) {
 async function onRequestOptions44(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet31(context) {
+async function onRequestGet32(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error, payload } = await requireStaffAuth(context, headers5);
@@ -23572,14 +25110,14 @@ async function onRequestPost38(context) {
 var AUTH_URL2, ALLOWED_ORIGINS35;
 var init_staff_amari_mail_auth = __esm({
   "api/staff-amari-mail-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_amari_mail_oauth();
     AUTH_URL2 = "https://accounts.google.com/o/oauth2/v2/auth";
     ALLOWED_ORIGINS35 = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(json10, "json");
     __name(onRequestOptions44, "onRequestOptions");
-    __name(onRequestGet31, "onRequestGet");
+    __name(onRequestGet32, "onRequestGet");
     __name(onRequestPost38, "onRequestPost");
   }
 });
@@ -23588,15 +25126,15 @@ var init_staff_amari_mail_auth = __esm({
 function redirect2(url) {
   return new Response(null, { status: 302, headers: { Location: url, "Cache-Control": "no-store" } });
 }
-async function json11(response2) {
-  if (!response2.ok) throw new Error("Google verification failed");
-  return response2.json();
+async function json11(response3) {
+  if (!response3.ok) throw new Error("Google verification failed");
+  return response3.json();
 }
 function hasVerifiedSendAs(payload, requiredSender) {
   const accepted = new Set((payload?.sendAs || []).filter((identity2) => identity2?.isPrimary || String(identity2?.verificationStatus || "").toLowerCase() === "accepted").map((identity2) => String(identity2.sendAsEmail || "").trim().toLowerCase()));
   return accepted.has(requiredSender);
 }
-async function onRequestGet32(context) {
+async function onRequestGet33(context) {
   const url = new URL(context.request.url);
   const state = url.searchParams.get("state") || "";
   if (isStaffCalendarOAuthState(state)) {
@@ -23694,7 +25232,7 @@ async function onRequestGet32(context) {
 var TOKEN_URL2, PROFILE_URL, SEND_AS_URL, SUCCESS_URL2, FAILURE_URL2;
 var init_staff_amari_mail_callback = __esm({
   "api/staff-amari-mail-callback.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_amari_mail_oauth();
     init_staff_calendar_oauth();
     TOKEN_URL2 = "https://oauth2.googleapis.com/token";
@@ -23705,7 +25243,7 @@ var init_staff_amari_mail_callback = __esm({
     __name(redirect2, "redirect");
     __name(json11, "json");
     __name(hasVerifiedSendAs, "hasVerifiedSendAs");
-    __name(onRequestGet32, "onRequestGet");
+    __name(onRequestGet33, "onRequestGet");
   }
 });
 
@@ -23716,7 +25254,7 @@ async function onRequestOptions45(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS2)
   });
 }
-async function onRequestGet33(context) {
+async function onRequestGet34(context) {
   const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS2),
     "Content-Type": "application/json",
@@ -23727,15 +25265,15 @@ async function onRequestGet33(context) {
   const secret = context.env.WORKER_AUTH_SECRET;
   if (!secret) return new Response(JSON.stringify({ error: "Appointment shadow is not configured." }), { status: 422, headers: headers5 });
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS4);
   try {
-    const response2 = await fetch(WORKER_URL, {
+    const response3 = await fetch(WORKER_URL3, {
       headers: { Authorization: `Bearer ${secret}` },
       signal: controller.signal
     });
-    const body = await response2.json().catch(() => ({}));
-    if (!response2.ok) {
-      return new Response(JSON.stringify({ error: "Appointment shadow could not be read.", upstreamStatus: response2.status }), { status: 422, headers: headers5 });
+    const body = await response3.json().catch(() => ({}));
+    if (!response3.ok) {
+      return new Response(JSON.stringify({ error: "Appointment shadow could not be read.", upstreamStatus: response3.status }), { status: 422, headers: headers5 });
     }
     return new Response(JSON.stringify(body), { status: 200, headers: headers5 });
   } catch (cause) {
@@ -23745,16 +25283,16 @@ async function onRequestGet33(context) {
     clearTimeout(timer);
   }
 }
-var WORKER_URL, TIMEOUT_MS, METHODS2;
+var WORKER_URL3, TIMEOUT_MS4, METHODS2;
 var init_staff_appointment_readiness = __esm({
   "api/staff-appointment-readiness.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/readiness";
-    TIMEOUT_MS = 1e4;
+    WORKER_URL3 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/readiness";
+    TIMEOUT_MS4 = 1e4;
     METHODS2 = "GET, OPTIONS";
     __name(onRequestOptions45, "onRequestOptions");
-    __name(onRequestGet33, "onRequestGet");
+    __name(onRequestGet34, "onRequestGet");
   }
 });
 
@@ -23788,7 +25326,7 @@ function flattenSlots(data) {
 var STAFF_BOOK_TYPES;
 var init_staff_book_calendars = __esm({
   "lib/staff-book-calendars.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     STAFF_BOOK_TYPES = {
       assessment: {
         calendarId: "EM6vB2mq7EAdGCbUb3j1",
@@ -23876,1135 +25414,11 @@ var init_staff_book_calendars = __esm({
   }
 });
 
-// lib/staff-appointment-manage.js
-function dateEpoch(date2) {
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date2 || ""))) return NaN;
-  return Date.parse(`${date2}T00:00:00Z`);
-}
-function minutes(value) {
-  const match2 = /^(\d{2}):(\d{2})$/.exec(String(value || ""));
-  return match2 ? Number(match2[1]) * 60 + Number(match2[2]) : NaN;
-}
-function dateString(ms) {
-  return new Date(ms).toISOString().slice(0, 10);
-}
-function weekday(date2) {
-  return new Intl.DateTimeFormat("en-US", { weekday: "long", timeZone: "UTC" }).format(/* @__PURE__ */ new Date(`${date2}T12:00:00Z`)).toLowerCase();
-}
-function wallClock(date2, minuteOfDay) {
-  const hour = String(Math.floor(minuteOfDay / 60)).padStart(2, "0");
-  const minute = String(minuteOfDay % 60).padStart(2, "0");
-  return normalizeGhlTimestamp(`${date2}T${hour}:${minute}:00`);
-}
-function internalAvailability({ calendarId, startDate, endDate, events = [], excludeAppointmentId = null, now = Date.now() }) {
-  const policy = policyForCalendarId(calendarId);
-  const start = dateEpoch(startDate);
-  const end = dateEpoch(endDate);
-  if (!policy || !Number.isFinite(start) || !Number.isFinite(end) || end < start || end - start > 32 * DAY_MS) {
-    throw new TypeError("valid governed calendar and date range required");
-  }
-  const open = minutes(WORK_HOURS.firstSessionStart);
-  const last = minutes(WORK_HOURS.lastSessionStart);
-  const blocking = (events || []).filter((event2) => String(event2?.id || "") !== String(excludeAppointmentId || ""));
-  const slots2 = [];
-  for (let cursor = start; cursor <= end; cursor += DAY_MS) {
-    const date2 = dateString(cursor);
-    if (!WORK_HOURS.weekdays.includes(weekday(date2))) continue;
-    for (let at = open; at <= last; at += INTERNAL_START_INTERVAL_MINUTES) {
-      const datetime = wallClock(date2, at);
-      if (Date.parse(datetime) <= Number(now)) continue;
-      if (!slotRespectsAppBuffer(datetime, calendarId, blocking)) continue;
-      slots2.push({
-        date: date2,
-        hour: Math.floor(at / 60),
-        minute: at % 60,
-        datetime,
-        source: "garrett_internal_schedule"
-      });
-    }
-  }
-  return slots2;
-}
-function clean2(value, max = 200) {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-function normalizeStatus(appointment) {
-  return String(appointment?.appointmentStatus || appointment?.status || "").toLowerCase();
-}
-function appointmentStart(appointment) {
-  return Date.parse(appointment?.startTime || appointment?.start_time || "");
-}
-function assertCommandInput(input) {
-  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(input.actor)) throw new TypeError("recognized Staff actor required");
-  if (!(/* @__PURE__ */ new Set(["cancel", "reschedule"])).has(input.action)) throw new TypeError("valid appointment action required");
-  if (!clean2(input.contactId, 100) || !clean2(input.appointmentId, 100) || !clean2(input.idempotencyKey, 160)) {
-    throw new TypeError("complete appointment command identity required");
-  }
-}
-async function loadOriginal(provider, contactId, appointmentId, fallback = null) {
-  if (typeof provider.getAppointment === "function") {
-    return provider.getAppointment(appointmentId, contactId, fallback || {});
-  }
-  const appointments = await provider.listContactAppointments(contactId);
-  return (appointments || []).find((appointment) => String(appointment?.id || "") === appointmentId) || null;
-}
-async function manageAppointmentCommand(input) {
-  assertCommandInput(input);
-  const { actor, action, contactId, appointmentId, idempotencyKey, store, provider } = input;
-  const providerAppointmentId = clean2(input.providerAppointmentId, 160) || appointmentId;
-  if (!store || !provider) throw new TypeError("appointment command dependencies required");
-  const now = Number(input.now ?? Date.now());
-  const claim = await store.claim({
-    actor,
-    action,
-    contactId,
-    appointmentId,
-    idempotencyKey,
-    requestedStartTime: clean2(input.startTime, 100) || null
-  });
-  if (claim.state === "completed") return claim.command.result;
-  if (claim.state !== "acquired") {
-    const error = new Error(claim.state === "conflict" ? "That action key belongs to another request." : "That appointment change is already processing.");
-    error.code = claim.state;
-    throw error;
-  }
-  const commandId = claim.command.id;
-  try {
-    const original = await loadOriginal(provider, contactId, providerAppointmentId);
-    if (!original) throw Object.assign(new Error("Appointment not found for this person."), { code: "appointment_not_found" });
-    const status = normalizeStatus(original);
-    if (status === "cancelled" && action === "cancel") {
-      const result2 = {
-        status: "completed",
-        action,
-        actor,
-        appointmentId,
-        contactId,
-        previousStartTime: original.startTime || original.start_time,
-        appointmentStatus: "cancelled",
-        reminderVerification: "pending_event_evidence"
-      };
-      const completion2 = await store.complete(commandId, result2);
-      return store.canonicalResult?.(result2, completion2) || result2;
-    }
-    if (status === "cancelled" && action === "reschedule" && claim.command.replacementAppointmentId) {
-      const replacement2 = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === claim.command.replacementAppointmentId) || null;
-      if (!replacement2 || !MANAGEABLE_STATUSES.has(normalizeStatus(replacement2))) {
-        throw Object.assign(new Error("The replacement appointment needs manual review."), {
-          code: "replacement_unavailable",
-          manualReview: true
-        });
-      }
-      const result2 = {
-        status: "completed",
-        action,
-        actor,
-        appointmentId,
-        replacementAppointmentId: String(replacement2.id),
-        contactId,
-        previousStartTime: original.startTime || original.start_time,
-        newStartTime: replacement2.startTime || replacement2.start_time,
-        appointmentStatus: normalizeStatus(replacement2),
-        reminderVerification: "pending_event_evidence"
-      };
-      const completion2 = await store.complete(commandId, result2);
-      return store.canonicalResult?.(result2, completion2) || result2;
-    }
-    if (!MANAGEABLE_STATUSES.has(status)) {
-      throw Object.assign(new Error(`This appointment is already ${status || "not manageable"}.`), { code: "appointment_not_manageable" });
-    }
-    const startsAt = appointmentStart(original);
-    if (!Number.isFinite(startsAt) || startsAt <= now) {
-      throw Object.assign(new Error("Only future appointments can be changed here."), { code: "appointment_not_future" });
-    }
-    if (action === "cancel") {
-      await provider.cancelAppointment(original);
-      const readback = await loadOriginal(provider, contactId, providerAppointmentId, original);
-      if (!readback || normalizeStatus(readback) !== "cancelled") {
-        throw Object.assign(new Error("Cancellation was not confirmed by the calendar."), { code: "cancel_not_confirmed", manualReview: true });
-      }
-      const result2 = {
-        status: "completed",
-        action,
-        actor,
-        appointmentId,
-        contactId,
-        previousStartTime: original.startTime || original.start_time,
-        appointmentStatus: "cancelled",
-        reminderVerification: "pending_event_evidence"
-      };
-      const completion2 = await store.complete(commandId, result2);
-      return store.canonicalResult?.(result2, completion2) || result2;
-    }
-    const newStartTime = clean2(input.startTime, 100);
-    const newStartMs = Date.parse(newStartTime);
-    const timezone = clean2(input.timezone, 100) || WORK_HOURS.timezone;
-    const calendarId = clean2(original.calendarId || original.calendar_id, 100);
-    const dateMatch = /^(\d{4}-\d{2}-\d{2})T/.exec(newStartTime);
-    if (!calendarId || !policyForCalendarId(calendarId) || !dateMatch || !Number.isFinite(newStartMs) || newStartMs <= now || newStartMs > now + 33 * DAY_MS) {
-      throw Object.assign(new Error("Choose a valid internal time for this appointment."), { code: "invalid_reschedule_time" });
-    }
-    const schedule = await provider.listSchedule(
-      Date.parse(`${dateMatch[1]}T00:00:00-08:00`) - 12 * 60 * 60 * 1e3,
-      Date.parse(`${dateMatch[1]}T23:59:59-07:00`) + 12 * 60 * 60 * 1e3
-    );
-    const available = internalAvailability({
-      calendarId,
-      startDate: dateMatch[1],
-      endDate: dateMatch[1],
-      events: schedule,
-      excludeAppointmentId: providerAppointmentId,
-      now
-    });
-    if (!available.some((slot) => slot.datetime === newStartTime)) {
-      throw Object.assign(new Error("That time is no longer open on Garrett\u2019s schedule."), { code: "slot_unavailable" });
-    }
-    let replacement = null;
-    if (claim.command.replacementAppointmentId) {
-      replacement = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === claim.command.replacementAppointmentId) || null;
-      if (!replacement || !MANAGEABLE_STATUSES.has(normalizeStatus(replacement))) {
-        throw Object.assign(new Error("The replacement appointment needs manual review."), { code: "replacement_unavailable", manualReview: true });
-      }
-    } else {
-      let checkpointedReplacementId = null;
-      try {
-        replacement = await provider.createReplacement({
-          original,
-          startTime: newStartTime,
-          timezone,
-          onCreated: /* @__PURE__ */ __name(async (replacementId, providerLink) => {
-            await store.checkpointReplacement(commandId, replacementId, providerLink);
-            checkpointedReplacementId = String(replacementId);
-          }, "onCreated")
-        });
-      } catch (createError) {
-        const cleanupSucceeded = Number(createError?.cleanupStatus) >= 200 && Number(createError?.cleanupStatus) < 300;
-        if (checkpointedReplacementId && cleanupSucceeded) {
-          await store.clearReplacement?.(commandId, checkpointedReplacementId);
-        } else if (createError?.phase === "create" && !createError?.appointmentId || createError?.appointmentId && !cleanupSucceeded) {
-          createError.manualReview = true;
-          createError.code = createError.code || "replacement_create_unverified";
-        }
-        throw createError;
-      }
-    }
-    if (!replacement?.id) {
-      throw Object.assign(new Error("The calendar did not return a replacement appointment."), { code: "replacement_missing", manualReview: true });
-    }
-    try {
-      await provider.cancelAppointment(original);
-    } catch (cancelError) {
-      const afterFailure = await loadOriginal(provider, contactId, providerAppointmentId, original);
-      if (!afterFailure || normalizeStatus(afterFailure) !== "cancelled") {
-        try {
-          await provider.cancelAppointment(replacement);
-          await store.clearReplacement?.(commandId, String(replacement.id));
-        } catch (compensationError) {
-          throw Object.assign(new Error("The calendar change needs manual review; both appointments may still be active."), {
-            code: "reschedule_compensation_failed",
-            manualReview: true,
-            cause: compensationError
-          });
-        }
-        throw Object.assign(new Error("The new appointment was removed and the original appointment stayed unchanged. Try again."), {
-          code: "source_cancel_failed",
-          cause: cancelError
-        });
-      }
-    }
-    const [oldReadback, newReadback] = await Promise.all([
-      loadOriginal(provider, contactId, providerAppointmentId, original),
-      loadOriginal(provider, contactId, String(replacement.id), replacement)
-    ]);
-    if (!oldReadback || normalizeStatus(oldReadback) !== "cancelled" || !newReadback || !MANAGEABLE_STATUSES.has(normalizeStatus(newReadback))) {
-      throw Object.assign(new Error("The reschedule could not be fully verified."), { code: "reschedule_not_confirmed", manualReview: true });
-    }
-    const result = {
-      status: "completed",
-      action,
-      actor,
-      appointmentId,
-      replacementAppointmentId: String(replacement.id),
-      contactId,
-      previousStartTime: original.startTime || original.start_time,
-      newStartTime,
-      appointmentStatus: "confirmed",
-      reminderVerification: "pending_event_evidence"
-    };
-    const completion = await store.complete(commandId, result);
-    return store.canonicalResult?.(result, completion) || result;
-  } catch (error) {
-    await store.fail(commandId, error, { manualReview: !!error?.manualReview });
-    throw error;
-  }
-}
-async function scheduleAppointmentCommand(input) {
-  const actor = clean2(input?.actor, 40);
-  const contactId = clean2(input?.contactId, 100);
-  const sessionType = clean2(input?.sessionType, 64);
-  const idempotencyKey = clean2(input?.idempotencyKey, 160);
-  const startTime = clean2(input?.startTime, 100);
-  const timezone = clean2(input?.timezone, 100) || WORK_HOURS.timezone;
-  const booking = input?.booking || null;
-  const store = input?.store;
-  const provider = input?.provider;
-  const now = Number(input?.now ?? Date.now());
-  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor)) throw new TypeError("recognized Staff actor required");
-  if (!contactId || !sessionType || !idempotencyKey) throw new TypeError("complete schedule command identity required");
-  if (!booking || !policyForCalendarId(booking.calendarId) || !clean2(booking.title, 240)) {
-    throw new TypeError("server-owned booking definition required");
-  }
-  if (!store || !provider) throw new TypeError("schedule command dependencies required");
-  const claim = await store.claim({ actor, contactId, sessionType, startTime, idempotencyKey, booking });
-  if (claim.state === "completed") return claim.operation.result;
-  if (claim.state !== "acquired") {
-    const error = new Error(claim.state === "conflict" ? "That action key belongs to another request." : "That appointment is already being scheduled.");
-    error.code = claim.state;
-    throw error;
-  }
-  try {
-    const dateMatch = /^(\d{4}-\d{2}-\d{2})T/.exec(startTime);
-    const startsAt = Date.parse(startTime);
-    if (!dateMatch || !Number.isFinite(startsAt) || startsAt <= now || startsAt > now + 33 * DAY_MS) {
-      throw Object.assign(new Error("Choose a valid internal time for this appointment."), { code: "invalid_schedule_time" });
-    }
-    if (claim.operation.appointmentId) {
-      const existing = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === String(claim.operation.appointmentId)) || null;
-      if (!existing || !MANAGEABLE_STATUSES.has(normalizeStatus(existing))) {
-        throw Object.assign(new Error("The created appointment needs manual review."), {
-          code: "scheduled_appointment_unavailable",
-          manualReview: true
-        });
-      }
-      const result2 = {
-        status: "completed",
-        action: "schedule",
-        actor,
-        contactId,
-        appointmentId: String(existing.id),
-        newStartTime: existing.startTime || existing.start_time,
-        appointmentStatus: normalizeStatus(existing),
-        reminderVerification: "pending_event_evidence"
-      };
-      const canonicalResult2 = store.canonicalResult?.(result2) || result2;
-      await store.complete(canonicalResult2);
-      return canonicalResult2;
-    }
-    const schedule = await provider.listSchedule(
-      Date.parse(`${dateMatch[1]}T00:00:00-08:00`) - 12 * 60 * 60 * 1e3,
-      Date.parse(`${dateMatch[1]}T23:59:59-07:00`) + 12 * 60 * 60 * 1e3
-    );
-    const available = internalAvailability({
-      calendarId: booking.calendarId,
-      startDate: dateMatch[1],
-      endDate: dateMatch[1],
-      events: schedule,
-      now
-    });
-    if (!available.some((slot) => slot.datetime === startTime)) {
-      throw Object.assign(new Error("That time is no longer open on Garrett\u2019s schedule."), { code: "slot_unavailable" });
-    }
-    let created;
-    let checkpointedAppointmentId = null;
-    try {
-      created = await provider.createAppointment({
-        contactId,
-        booking,
-        startTime,
-        timezone,
-        onCreated: /* @__PURE__ */ __name(async (appointmentId, providerLink) => {
-          await store.checkpointAppointment(String(appointmentId), providerLink);
-          checkpointedAppointmentId = String(appointmentId);
-        }, "onCreated")
-      });
-    } catch (createError) {
-      const cleanupSucceeded = Number(createError?.cleanupStatus) >= 200 && Number(createError?.cleanupStatus) < 300;
-      if (checkpointedAppointmentId && cleanupSucceeded) {
-        await store.clearAppointment?.(checkpointedAppointmentId);
-      } else if (createError?.phase === "create" && !createError?.appointmentId || createError?.appointmentId && !cleanupSucceeded) {
-        createError.manualReview = true;
-        createError.code = createError.code || "schedule_create_unverified";
-      }
-      throw createError;
-    }
-    if (!created?.id) {
-      throw Object.assign(new Error("The calendar did not return the new appointment."), { code: "schedule_missing", manualReview: true });
-    }
-    const readback = (await provider.listContactAppointments(contactId)).find((appointment) => String(appointment?.id || "") === String(created.id)) || null;
-    if (!readback || !MANAGEABLE_STATUSES.has(normalizeStatus(readback))) {
-      throw Object.assign(new Error("The new appointment was not confirmed by the calendar."), { code: "schedule_not_confirmed", manualReview: true });
-    }
-    const result = {
-      status: "completed",
-      action: "schedule",
-      actor,
-      contactId,
-      appointmentId: String(created.id),
-      newStartTime: startTime,
-      appointmentStatus: normalizeStatus(readback),
-      reminderVerification: "pending_event_evidence"
-    };
-    const canonicalResult = store.canonicalResult?.(result) || result;
-    await store.complete(canonicalResult);
-    return canonicalResult;
-  } catch (error) {
-    await store.fail(error, { manualReview: !!error?.manualReview });
-    throw error;
-  }
-}
-var INTERNAL_START_INTERVAL_MINUTES, DAY_MS, MANAGEABLE_STATUSES;
-var init_staff_appointment_manage = __esm({
-  "lib/staff-appointment-manage.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    init_datetime();
-    init_app_owned_buffer();
-    init_booking_slot_policy();
-    INTERNAL_START_INTERVAL_MINUTES = 15;
-    DAY_MS = 864e5;
-    __name(dateEpoch, "dateEpoch");
-    __name(minutes, "minutes");
-    __name(dateString, "dateString");
-    __name(weekday, "weekday");
-    __name(wallClock, "wallClock");
-    __name(internalAvailability, "internalAvailability");
-    MANAGEABLE_STATUSES = /* @__PURE__ */ new Set(["new", "confirmed"]);
-    __name(clean2, "clean");
-    __name(normalizeStatus, "normalizeStatus");
-    __name(appointmentStart, "appointmentStart");
-    __name(assertCommandInput, "assertCommandInput");
-    __name(loadOriginal, "loadOriginal");
-    __name(manageAppointmentCommand, "manageAppointmentCommand");
-    __name(scheduleAppointmentCommand, "scheduleAppointmentCommand");
-  }
-});
-
-// lib/staff-owned-contact-identity.js
-function clean3(value, max = 120) {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-function identityError(message, code, status) {
-  return Object.assign(new Error(message), { code, status });
-}
-async function resolveOwnedContactIdentity(context, contactReference) {
-  const reference = clean3(contactReference);
-  if (!reference) throw identityError("Choose a person.", "contact_reference_required", 400);
-  if (!context?.env?.WORKER_AUTH_SECRET) {
-    throw identityError("Owned CRM identity is not configured.", "owned_identity_unavailable", 503);
-  }
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS2);
-  try {
-    const response2 = await fetch(`${WORKER_URL2}?limit=20&query=${encodeURIComponent(reference)}`, {
-      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
-      signal: controller.signal
-    });
-    if (!response2.ok) {
-      throw identityError("Owned CRM identity is unavailable.", "owned_identity_unavailable", 503);
-    }
-    const body = await response2.json().catch(() => ({}));
-    const exact = (Array.isArray(body.contacts) ? body.contacts : []).filter(
-      (contact2) => clean3(contact2?.id) === reference || clean3(contact2?.provider_contact_id) === reference
-    );
-    const ownedIds = new Set(exact.map((contact2) => clean3(contact2?.id)).filter(Boolean));
-    if (ownedIds.size > 1) {
-      throw identityError("This person reference is ambiguous in the owned CRM.", "owned_identity_ambiguous", 409);
-    }
-    const contact = exact[0];
-    const ownedContactId = clean3(contact?.id);
-    if (!ownedContactId) {
-      throw identityError("This person was not found in the owned CRM.", "owned_contact_not_found", 404);
-    }
-    return Object.freeze({
-      ownedContactId,
-      providerContactId: clean3(contact?.provider_contact_id) || null
-    });
-  } catch (error) {
-    if (error?.code) throw error;
-    if (error instanceof Error && error.name === "AbortError") {
-      throw identityError("Owned CRM identity lookup timed out.", "owned_identity_unavailable", 503);
-    }
-    throw identityError("Owned CRM identity is unavailable.", "owned_identity_unavailable", 503);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-function requireProviderContactIdentity(identity2) {
-  if (!clean3(identity2?.ownedContactId)) {
-    throw identityError("This person was not found in the owned CRM.", "owned_contact_not_found", 404);
-  }
-  const providerContactId = clean3(identity2?.providerContactId);
-  if (!providerContactId) {
-    throw identityError(
-      "This owned person is not connected to the current calendar provider.",
-      "provider_identity_missing",
-      409
-    );
-  }
-  return providerContactId;
-}
-var WORKER_URL2, TIMEOUT_MS2;
-var init_staff_owned_contact_identity = __esm({
-  "lib/staff-owned-contact-identity.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    WORKER_URL2 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
-    TIMEOUT_MS2 = 1e4;
-    __name(clean3, "clean");
-    __name(identityError, "identityError");
-    __name(resolveOwnedContactIdentity, "resolveOwnedContactIdentity");
-    __name(requireProviderContactIdentity, "requireProviderContactIdentity");
-  }
-});
-
-// lib/staff-calendar-provider-ghl.js
-function clean4(value, max = 240) {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-async function listAppointments(context, contactId) {
-  const response2 = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}/appointments`);
-  if (!response2.ok) throw Object.assign(new Error("Could not load this person\u2019s appointments."), { status: response2.status });
-  const data = await response2.json();
-  return data.appointments || data.events || [];
-}
-async function cancelAppointment(context, appointment) {
-  const title = clean4(appointment?.title) || "Session";
-  const response2 = await ghlFetch(context, `${BASE}/calendars/events/appointments/${encodeURIComponent(appointment.id)}`, {
-    method: "PUT",
-    body: JSON.stringify({ title, appointmentStatus: "cancelled" })
-  });
-  if (!response2.ok) {
-    const detail = await response2.text();
-    throw Object.assign(new Error(`Calendar cancellation failed (${response2.status}).`), { status: response2.status, detail });
-  }
-}
-async function contactFor(context, contactId, action) {
-  const response2 = await ghlFetch(context, `${BASE}/contacts/${encodeURIComponent(contactId)}`);
-  if (!response2.ok) throw new Error(`Could not load the person for this ${action}.`);
-  const data = await response2.json();
-  return data.contact || data;
-}
-function appointmentPayload({ contact, contactId, calendarId, startTime, durationMinutes, timezone, title, toNotify }) {
-  return {
-    calendarId,
-    locationId: LOCATION_ID6,
-    contactId,
-    startTime,
-    endTime: appointmentEndTime(startTime, durationMinutes),
-    selectedTimezone: timezone || WORK_HOURS.timezone,
-    title,
-    toNotify,
-    ignoreDateRange: false,
-    firstName: contact.firstName || contact.first_name || "",
-    lastName: contact.lastName || contact.last_name || "",
-    email: contact.email || "",
-    phone: contact.phone || ""
-  };
-}
-function createGhlStaffCalendarProvider(context, providerContactId) {
-  const authoritativeContactId = clean4(providerContactId, 120);
-  if (!authoritativeContactId) throw new TypeError("GHL calendar adapter requires provider contact identity");
-  return Object.freeze({
-    provider: "ghl",
-    providerCalendarIdFor: /* @__PURE__ */ __name((booking) => clean4(booking?.calendarId, 120), "providerCalendarIdFor"),
-    // Intentionally ignore command-supplied contact IDs. The owned CRM
-    // crosswalk selected this exact provider identity before adapter creation.
-    listContactAppointments: /* @__PURE__ */ __name(() => listAppointments(context, authoritativeContactId), "listContactAppointments"),
-    listSchedule: /* @__PURE__ */ __name((start, end) => fetchGarrettScheduleEvents(context, start, end), "listSchedule"),
-    cancelAppointment: /* @__PURE__ */ __name((appointment) => cancelAppointment(context, appointment), "cancelAppointment"),
-    async createAppointment({ booking, startTime, timezone, onCreated }) {
-      if (!booking || !policyForCalendarId(booking.calendarId)) {
-        throw new Error("The appointment is missing governed calendar identity.");
-      }
-      const contact = await contactFor(context, authoritativeContactId, "appointment");
-      return createConfirmedAppointment({
-        endpoint: `${BASE}/calendars/events/appointments`,
-        request: /* @__PURE__ */ __name((url, options) => ghlFetch(context, url, options), "request"),
-        onCreated,
-        payload: appointmentPayload({
-          contact,
-          contactId: authoritativeContactId,
-          calendarId: booking.calendarId,
-          startTime,
-          durationMinutes: booking.durationMinutes,
-          timezone,
-          title: booking.title,
-          toNotify: true
-        })
-      });
-    },
-    async createReplacement({ original, startTime, timezone, onCreated }) {
-      const calendarId = clean4(original?.calendarId || original?.calendar_id, 120);
-      const policy = policyForCalendarId(calendarId);
-      if (!policy) throw new Error("The original appointment is missing governed calendar identity.");
-      const contact = await contactFor(context, authoritativeContactId, "reschedule");
-      return createConfirmedAppointment({
-        endpoint: `${BASE}/calendars/events/appointments`,
-        request: /* @__PURE__ */ __name((url, options) => ghlFetch(context, url, options), "request"),
-        onCreated,
-        payload: appointmentPayload({
-          contact,
-          contactId: authoritativeContactId,
-          calendarId,
-          startTime,
-          durationMinutes: policy.durationMinutes,
-          timezone,
-          title: clean4(original?.title) || policy.label,
-          toNotify: false
-        })
-      });
-    }
-  });
-}
-var BASE, LOCATION_ID6;
-var init_staff_calendar_provider_ghl = __esm({
-  "lib/staff-calendar-provider-ghl.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    init_ghl();
-    init_datetime();
-    init_app_owned_buffer();
-    init_booking_slot_policy();
-    init_ghl_appointment_handoff();
-    BASE = "https://services.leadconnectorhq.com";
-    LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(clean4, "clean");
-    __name(listAppointments, "listAppointments");
-    __name(cancelAppointment, "cancelAppointment");
-    __name(contactFor, "contactFor");
-    __name(appointmentPayload, "appointmentPayload");
-    __name(createGhlStaffCalendarProvider, "createGhlStaffCalendarProvider");
-  }
-});
-
-// lib/staff-calendar-provider-google.js
-function clean5(value, max = 240) {
-  return typeof value === "string" ? value.trim().slice(0, max) : "";
-}
-function configured(context) {
-  const calendarId = clean5(context?.env?.STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID, 240);
-  const user = clean5(context?.env?.STAFF_APPOINTMENT_GOOGLE_USER, 80);
-  if (!calendarId || !user) {
-    const error = new Error("Google appointment calendar authority is not configured.");
-    error.code = "calendar_provider_unavailable";
-    throw error;
-  }
-  return { calendarId, user };
-}
-async function request(context, user, path, options = {}) {
-  const calendarId = clean5(context?.env?.STAFF_APPOINTMENT_GOOGLE_CALENDAR_ID, 240);
-  await assertStaffCalendarAuthority(context.env, user, calendarId);
-  const token = await getGoogleToken(context, user);
-  return fetch(`${API}${path}`, {
-    ...options,
-    headers: {
-      Authorization: `Bearer ${token}`,
-      ...options.body ? { "Content-Type": "application/json" } : {},
-      ...options.headers || {}
-    }
-  });
-}
-function privateFields(event2) {
-  return event2?.extendedProperties?.private || {};
-}
-function normalizeEvent(event2, providerCalendarId, fallback = {}) {
-  const owned = privateFields(event2);
-  const rawStatus = clean5(event2?.status, 40).toLowerCase();
-  const status = rawStatus === "confirmed" || rawStatus === "cancelled" ? rawStatus : rawStatus || "unknown";
-  return {
-    id: clean5(event2?.id || fallback.id, 240),
-    contactId: clean5(owned.amariOwnedContactId || fallback.contactId, 160),
-    calendarId: clean5(owned.amariServiceCalendarId || fallback.calendarId, 160),
-    providerCalendarId,
-    serviceId: clean5(owned.amariServiceId || fallback.serviceId, 160),
-    title: clean5(event2?.summary || fallback.title) || "Session",
-    appointmentStatus: status,
-    status,
-    startTime: event2?.start?.dateTime || fallback.startTime || null,
-    endTime: event2?.end?.dateTime || fallback.endTime || null,
-    timezone: event2?.start?.timeZone || fallback.timezone || WORK_HOURS.timezone,
-    location: event2?.location || fallback.location || null,
-    htmlLink: event2?.htmlLink || null
-  };
-}
-async function responseJson2(response2, message) {
-  if (!response2.ok) {
-    const detail = await response2.text().catch(() => "");
-    const error = new Error(`${message} (${response2.status}).`);
-    error.status = response2.status;
-    error.detail = detail.slice(0, 500);
-    throw error;
-  }
-  return response2.json();
-}
-function eventsPath(calendarId, params) {
-  return `/calendars/${encodeURIComponent(calendarId)}/events?${params}`;
-}
-function createGoogleStaffCalendarProvider(context, ownedContactId) {
-  const authoritativeContactId = clean5(ownedContactId, 160);
-  if (!authoritativeContactId) throw new TypeError("Google calendar adapter requires owned contact identity");
-  const { calendarId: providerCalendarId, user } = configured(context);
-  async function listContactAppointments2() {
-    const params = new URLSearchParams({
-      privateExtendedProperty: `amariOwnedContactId=${authoritativeContactId}`,
-      singleEvents: "true",
-      showDeleted: "true",
-      maxResults: "2500"
-    });
-    const response2 = await request(context, user, eventsPath(providerCalendarId, params));
-    const data = await responseJson2(response2, "Could not load this person\u2019s Google Calendar appointments");
-    if (data.nextPageToken) throw new Error("Google Calendar contact read exceeded the exact bounded page.");
-    return (data.items || []).map((event2) => normalizeEvent(event2, providerCalendarId));
-  }
-  __name(listContactAppointments2, "listContactAppointments");
-  async function getAppointment(appointmentId, _contactId, fallback = {}) {
-    const id3 = clean5(appointmentId, 240);
-    const response2 = await request(
-      context,
-      user,
-      `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(id3)}`
-    );
-    if (response2.status === 404 || response2.status === 410) {
-      return normalizeEvent({ id: id3, status: "cancelled" }, providerCalendarId, fallback);
-    }
-    return normalizeEvent(
-      await responseJson2(response2, "Could not read back the Google Calendar appointment"),
-      providerCalendarId,
-      fallback
-    );
-  }
-  __name(getAppointment, "getAppointment");
-  async function listSchedule(start, end) {
-    const params = new URLSearchParams({
-      timeMin: new Date(start).toISOString(),
-      timeMax: new Date(end).toISOString(),
-      singleEvents: "true",
-      showDeleted: "false",
-      orderBy: "startTime",
-      maxResults: "2500"
-    });
-    const response2 = await request(context, user, eventsPath(providerCalendarId, params));
-    const data = await responseJson2(response2, "Could not load Garrett\u2019s Google Calendar schedule");
-    if (data.nextPageToken) throw new Error("Google Calendar schedule read exceeded the exact bounded page.");
-    return (data.items || []).map((event2) => normalizeEvent(event2, providerCalendarId));
-  }
-  __name(listSchedule, "listSchedule");
-  async function cancelAppointment2(appointment) {
-    const id3 = clean5(appointment?.id, 240);
-    if (!id3) throw new TypeError("Google Calendar appointment identity required");
-    const response2 = await request(
-      context,
-      user,
-      `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(id3)}?sendUpdates=none`,
-      { method: "DELETE" }
-    );
-    if (!response2.ok && response2.status !== 404 && response2.status !== 410) {
-      await responseJson2(response2, "Google Calendar cancellation failed");
-    }
-  }
-  __name(cancelAppointment2, "cancelAppointment");
-  async function create({ booking, startTime, timezone, onCreated, title }) {
-    if (!booking?.serviceId || !policyForCalendarId(booking.calendarId)) {
-      throw new Error("The appointment is missing governed owned service identity.");
-    }
-    const body = {
-      summary: clean5(title || booking.title) || "Amari Method Session",
-      start: { dateTime: startTime, timeZone: timezone || WORK_HOURS.timezone },
-      end: {
-        dateTime: appointmentEndTime(startTime, booking.durationMinutes),
-        timeZone: timezone || WORK_HOURS.timezone
-      },
-      transparency: "opaque",
-      visibility: "private",
-      guestsCanInviteOthers: false,
-      guestsCanModify: false,
-      guestsCanSeeOtherGuests: false,
-      reminders: { useDefault: false, overrides: [] },
-      extendedProperties: {
-        private: {
-          amariAuthorityVersion: "1",
-          amariOwnedContactId: authoritativeContactId,
-          amariServiceId: clean5(booking.serviceId, 160),
-          amariServiceCalendarId: clean5(booking.calendarId, 160)
-        }
-      }
-    };
-    let createdId = null;
-    try {
-      const response2 = await request(
-        context,
-        user,
-        eventsPath(providerCalendarId, new URLSearchParams({ sendUpdates: "none", conferenceDataVersion: "0" })),
-        { method: "POST", body: JSON.stringify(body) }
-      );
-      const created = await responseJson2(response2, "Google Calendar appointment creation failed");
-      createdId = clean5(created?.id, 240);
-      if (!createdId) throw new Error("Google Calendar did not return an appointment identity.");
-      await onCreated?.(createdId, { provider: PROVIDER, providerCalendarId });
-      const readback = await getAppointment(createdId, authoritativeContactId);
-      if (readback.contactId !== authoritativeContactId || readback.serviceId !== booking.serviceId || readback.calendarId !== booking.calendarId || Date.parse(readback.startTime || "") !== Date.parse(startTime) || readback.status !== "confirmed") {
-        const error = new Error("Google Calendar appointment readback did not match owned intent.");
-        error.code = "provider_readback_mismatch";
-        throw error;
-      }
-      return readback;
-    } catch (error) {
-      error.phase = createdId ? "readback" : "create";
-      error.appointmentId = createdId;
-      if (createdId) {
-        const cleanup = await request(
-          context,
-          user,
-          `/calendars/${encodeURIComponent(providerCalendarId)}/events/${encodeURIComponent(createdId)}?sendUpdates=none`,
-          { method: "DELETE" }
-        ).catch(() => null);
-        error.cleanupStatus = cleanup?.status || 0;
-      }
-      throw error;
-    }
-  }
-  __name(create, "create");
-  return Object.freeze({
-    provider: PROVIDER,
-    providerCalendarIdFor: /* @__PURE__ */ __name(() => providerCalendarId, "providerCalendarIdFor"),
-    listContactAppointments: listContactAppointments2,
-    getAppointment,
-    listSchedule,
-    cancelAppointment: cancelAppointment2,
-    createAppointment: /* @__PURE__ */ __name((input) => create(input), "createAppointment"),
-    createReplacement: /* @__PURE__ */ __name(({ original, ...input }) => {
-      const serviceCalendarId = clean5(original?.calendarId || original?.calendar_id, 160);
-      const policy = policyForCalendarId(serviceCalendarId);
-      const serviceId = clean5(original?.serviceId, 160);
-      if (!policy || !serviceId) throw new Error("The original appointment is missing governed owned service identity.");
-      return create({
-        ...input,
-        title: clean5(original?.title) || policy.label,
-        booking: {
-          serviceId,
-          calendarId: serviceCalendarId,
-          durationMinutes: policy.durationMinutes,
-          title: clean5(original?.title) || policy.label
-        }
-      });
-    }, "createReplacement")
-  });
-}
-var API, PROVIDER;
-var init_staff_calendar_provider_google = __esm({
-  "lib/staff-calendar-provider-google.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    init_datetime();
-    init_google_api();
-    init_booking_slot_policy();
-    init_staff_calendar_oauth();
-    API = "https://www.googleapis.com/calendar/v3";
-    PROVIDER = "google_calendar";
-    __name(clean5, "clean");
-    __name(configured, "configured");
-    __name(request, "request");
-    __name(privateFields, "privateFields");
-    __name(normalizeEvent, "normalizeEvent");
-    __name(responseJson2, "responseJson");
-    __name(eventsPath, "eventsPath");
-    __name(createGoogleStaffCalendarProvider, "createGoogleStaffCalendarProvider");
-  }
-});
-
-// lib/staff-calendar-provider.js
-function configuredStaffCalendarProvider(env) {
-  const provider = String(env?.STAFF_APPOINTMENT_CALENDAR_PROVIDER || "ghl").trim();
-  if (!SUPPORTED.has(provider)) {
-    const error = new Error("Configured Staff appointment calendar provider is unsupported.");
-    error.code = "calendar_provider_unsupported";
-    throw error;
-  }
-  return provider;
-}
-function configuredStaffCalendarProviderForBooking(env, booking) {
-  return booking?.serviceId === "partner-initial" ? configuredStaffCalendarProvider(env) : "ghl";
-}
-function createStaffCalendarProvider(context, identity2, requestedProvider = null) {
-  const provider = requestedProvider || configuredStaffCalendarProvider(context?.env);
-  if (provider === "google_calendar") {
-    return createGoogleStaffCalendarProvider(context, identity2?.ownedContactId);
-  }
-  return createGhlStaffCalendarProvider(context, requireProviderContactIdentity(identity2));
-}
-var SUPPORTED;
-var init_staff_calendar_provider = __esm({
-  "lib/staff-calendar-provider.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    init_staff_calendar_provider_ghl();
-    init_staff_calendar_provider_google();
-    init_staff_owned_contact_identity();
-    SUPPORTED = /* @__PURE__ */ new Set(["ghl", "google_calendar"]);
-    __name(configuredStaffCalendarProvider, "configuredStaffCalendarProvider");
-    __name(configuredStaffCalendarProviderForBooking, "configuredStaffCalendarProviderForBooking");
-    __name(createStaffCalendarProvider, "createStaffCalendarProvider");
-  }
-});
-
-// lib/staff-owned-appointment-store.js
-function commandError(body, status) {
-  const error = new Error(body?.detail || body?.error || "Owned appointment command failed.");
-  error.code = body?.error || "owned_appointment_unavailable";
-  error.status = status;
-  if (error.code === "manual_review") error.manualReview = true;
-  return error;
-}
-async function post(context, actor, payload) {
-  if (!context?.env?.WORKER_AUTH_SECRET) throw commandError({ error: "owned_appointment_unavailable" }, 503);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS3);
-  try {
-    const response2 = await fetch(WORKER_URL3, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`,
-        "Content-Type": "application/json",
-        "X-Staff-Actor": actor
-      },
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-    const body = await response2.json().catch(() => ({}));
-    if (!response2.ok) throw commandError(body, response2.status);
-    return body;
-  } catch (error) {
-    if (error?.code) throw error;
-    throw commandError({ error: "owned_appointment_unavailable", detail: "Owned appointment command is unavailable." }, 503);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-function createOwnedAppointmentScheduleStore(context, input) {
-  const actor = String(input?.actor || "");
-  const serviceId = String(input?.booking?.serviceId || "");
-  const serviceCalendarId = String(input?.booking?.calendarId || "");
-  const provider = String(input?.provider || "ghl");
-  const providerCalendarId = String(input?.providerCalendarId || serviceCalendarId);
-  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor) || !serviceId || !serviceCalendarId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider) || !providerCalendarId) {
-    throw new TypeError("owned appointment store identity required");
-  }
-  let commandId = null;
-  let ownedAppointmentId = null;
-  return Object.freeze({
-    async claim() {
-      const captured = await post(context, actor, {
-        action: "schedule",
-        contactId: input.contactId,
-        serviceId,
-        idempotencyKey: input.idempotencyKey,
-        startTime: input.startTime,
-        timezone: input.timezone
-      });
-      commandId = captured.appointment?.commandId;
-      ownedAppointmentId = captured.appointment?.appointmentId;
-      if (!commandId || !ownedAppointmentId) throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
-      const claimed = await post(context, actor, { action: "claim", commandId });
-      const execution = claimed.execution || {};
-      if (claimed.state === "completed") return { state: "completed", operation: { result: execution.result } };
-      if (claimed.state === "rejected") {
-        throw commandError({ error: "appointment_rejected", detail: execution.lastError || "Appointment request was rejected." }, 409);
-      }
-      if (claimed.state === "manual_review") {
-        throw commandError({
-          error: "manual_review",
-          detail: execution.lastError || "This appointment change needs manual review before another attempt."
-        }, 409);
-      }
-      if (claimed.state !== "acquired") return { state: claimed.state || "in_progress", operation: execution };
-      return {
-        state: "acquired",
-        operation: {
-          ...execution,
-          appointmentId: execution.providerRecordId || null,
-          ownedAppointmentId
-        }
-      };
-    },
-    checkpointAppointment(providerRecordId, link = {}) {
-      return post(context, actor, {
-        action: "provider-link",
-        commandId,
-        provider: link.provider || provider,
-        providerRecordId,
-        providerCalendarId: link.providerCalendarId || providerCalendarId,
-        providerStatusRaw: "new"
-      });
-    },
-    clearAppointment(providerRecordId) {
-      return post(context, actor, { action: "provider-unlink", commandId, providerRecordId });
-    },
-    canonicalResult(result) {
-      return {
-        ...result,
-        appointmentId: ownedAppointmentId,
-        providerAppointmentId: result.appointmentId,
-        authority: "owned"
-      };
-    },
-    async complete(result) {
-      const response2 = await post(context, actor, { action: "complete", commandId, result });
-      return response2.execution;
-    },
-    async fail(error, options = {}) {
-      const response2 = await post(context, actor, {
-        action: "fail",
-        commandId,
-        error: String(error?.message || error || "appointment execution failed").slice(0, 1e3),
-        manualReview: options.manualReview === true,
-        terminal: error?.code === "slot_unavailable" || error?.code === "invalid_schedule_time"
-      });
-      return response2.execution;
-    }
-  });
-}
-function createOwnedAppointmentManageStore(context, input) {
-  const actor = String(input?.actor || "");
-  const action = String(input?.action || "");
-  const contactId = String(input?.contactId || "");
-  const appointmentId = String(input?.appointmentId || "");
-  const providerCalendarId = String(input?.providerCalendarId || "");
-  const provider = String(input?.provider || "ghl");
-  if (!(/* @__PURE__ */ new Set(["Eben", "Garrett"])).has(actor) || !(/* @__PURE__ */ new Set(["cancel", "reschedule"])).has(action) || !contactId || !appointmentId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider)) {
-    throw new TypeError("owned appointment manage identity required");
-  }
-  let commandId = null;
-  return Object.freeze({
-    async claim(command) {
-      const captured = await post(context, actor, {
-        action: "manage",
-        manageAction: action,
-        contactId,
-        appointmentId,
-        idempotencyKey: command.idempotencyKey,
-        ...action === "reschedule" ? {
-          startTime: command.requestedStartTime,
-          timezone: input.timezone
-        } : {}
-      });
-      commandId = captured.command?.commandId;
-      if (!commandId) throw commandError({ error: "owned_appointment_invalid_readback" }, 503);
-      const claimed = await post(context, actor, { action: "claim", commandId });
-      const execution = claimed.execution || {};
-      if (claimed.state === "completed") {
-        return { state: "completed", command: { id: commandId, result: execution.result } };
-      }
-      if (claimed.state === "rejected") {
-        throw commandError({ error: "appointment_rejected", detail: execution.lastError || "Appointment request was rejected." }, 409);
-      }
-      return {
-        state: claimed.state,
-        command: {
-          id: commandId,
-          result: execution.result || null,
-          replacementAppointmentId: action === "reschedule" ? execution.providerRecordId || null : null
-        }
-      };
-    },
-    checkpointReplacement(_ignoredCommandId, providerRecordId, link = {}) {
-      return post(context, actor, {
-        action: "provider-link",
-        commandId,
-        provider: link.provider || provider,
-        providerRecordId,
-        providerCalendarId: link.providerCalendarId || providerCalendarId,
-        providerStatusRaw: "new"
-      });
-    },
-    clearReplacement(_ignoredCommandId, providerRecordId) {
-      return post(context, actor, { action: "provider-unlink", commandId, providerRecordId });
-    },
-    async complete(_ignoredCommandId, result) {
-      const response2 = await post(context, actor, { action: "complete", commandId, result });
-      return response2.execution;
-    },
-    canonicalResult(result, execution) {
-      return execution?.result || result;
-    },
-    async fail(_ignoredCommandId, error, options = {}) {
-      const response2 = await post(context, actor, {
-        action: "fail",
-        commandId,
-        error: String(error?.message || error || "appointment execution failed").slice(0, 1e3),
-        manualReview: options.manualReview === true,
-        terminal: false
-      });
-      return response2.execution;
-    }
-  });
-}
-var WORKER_URL3, TIMEOUT_MS3;
-var init_staff_owned_appointment_store = __esm({
-  "lib/staff-owned-appointment-store.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    WORKER_URL3 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/commands";
-    TIMEOUT_MS3 = 1e4;
-    __name(commandError, "commandError");
-    __name(post, "post");
-    __name(createOwnedAppointmentScheduleStore, "createOwnedAppointmentScheduleStore");
-    __name(createOwnedAppointmentManageStore, "createOwnedAppointmentManageStore");
-  }
-});
-
-// lib/staff-owned-appointment-identity.js
-function identityError2(body, status) {
-  const error = new Error(body?.detail || body?.error || "Owned appointment identity is unavailable.");
-  error.code = body?.error || "owned_appointment_identity_unavailable";
-  error.status = status;
-  return error;
-}
-async function resolveStaffOwnedAppointmentIdentity(context, reference) {
-  if (!context?.env?.WORKER_AUTH_SECRET) throw identityError2({}, 503);
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS4);
-  try {
-    const response2 = await fetch(`${WORKER_URL4}/${encodeURIComponent(reference)}/identity`, {
-      headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
-      signal: controller.signal
-    });
-    const body = await response2.json().catch(() => ({}));
-    if (!response2.ok) throw identityError2(body, response2.status);
-    const identity2 = body?.identity;
-    if (!identity2?.ownedAppointmentId || !identity2?.ownedContactId) throw identityError2({}, 503);
-    return Object.freeze(identity2);
-  } catch (error) {
-    if (error?.code) throw error;
-    throw identityError2({}, 503);
-  } finally {
-    clearTimeout(timer);
-  }
-}
-function requireProviderAppointmentIdentity(identity2) {
-  const provider = String(identity2?.provider || (identity2?.providerContactId ? "ghl" : ""));
-  if (!identity2?.providerAppointmentId || !(/* @__PURE__ */ new Set(["ghl", "google_calendar"])).has(provider) || provider === "ghl" && !identity2?.providerContactId) {
-    throw identityError2({
-      error: "provider_appointment_identity_missing",
-      detail: "This owned appointment has no verified temporary provider link."
-    }, 409);
-  }
-  return {
-    provider,
-    appointmentId: identity2.providerAppointmentId,
-    contactId: identity2.providerContactId || null
-  };
-}
-var WORKER_URL4, TIMEOUT_MS4;
-var init_staff_owned_appointment_identity = __esm({
-  "lib/staff-owned-appointment-identity.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    WORKER_URL4 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
-    TIMEOUT_MS4 = 1e4;
-    __name(identityError2, "identityError");
-    __name(resolveStaffOwnedAppointmentIdentity, "resolveStaffOwnedAppointmentIdentity");
-    __name(requireProviderAppointmentIdentity, "requireProviderAppointmentIdentity");
-  }
-});
-
 // api/staff-appointments.js
 function json12(body, status, headers5) {
   return new Response(JSON.stringify(body), { status, headers: headers5 });
 }
-function clean6(value, max = 160) {
+function clean8(value, max = 160) {
   return typeof value === "string" ? value.trim().slice(0, max) : "";
 }
 function validDate(value) {
@@ -25082,13 +25496,13 @@ async function onRequestPost39(context) {
   if (FORBIDDEN_FIELDS.some((field) => Object.prototype.hasOwnProperty.call(body, field))) {
     return json12({ error: "Appointment identity and status are controlled by the server." }, 400, headers5);
   }
-  const action = clean6(body.action, 30);
-  const contactId = clean6(body.contactId, 100);
-  const appointmentId = clean6(body.appointmentId, 100);
+  const action = clean8(body.action, 30);
+  const contactId = clean8(body.contactId, 100);
+  const appointmentId = clean8(body.appointmentId, 100);
   if (action === "list-types") return json12({ types: listStaffBookTypes() }, 200, headers5);
   if (action === "availability") {
-    const startDate = clean6(body.startDate, 10);
-    const endDate = clean6(body.endDate, 10);
+    const startDate = clean8(body.startDate, 10);
+    const endDate = clean8(body.endDate, 10);
     if (!validDate(startDate) || !validDate(endDate)) return json12({ error: "Choose a valid date range." }, 400, headers5);
     try {
       let original = null;
@@ -25108,11 +25522,11 @@ async function onRequestPost39(context) {
         if (!["new", "confirmed"].includes(appointmentStatus(original))) {
           return json12({ error: `This appointment is already ${appointmentStatus(original) || "not manageable"}.` }, 409, headers5);
         }
-        calendarId = clean6(original.calendarId || original.calendar_id, 100);
+        calendarId = clean8(original.calendarId || original.calendar_id, 100);
       } else {
         if (!contactId) return json12({ error: "Choose a person." }, 400, headers5);
         identity2 = await ownedIdentity(context, contactId);
-        booking = resolveStaffBookType(clean6(body.sessionType, 64));
+        booking = resolveStaffBookType(clean8(body.sessionType, 64));
         if (!booking) return json12({ error: "Choose an appointment type." }, 400, headers5);
         calendarId = booking.calendarId;
         provider = createStaffCalendarProvider(
@@ -25132,7 +25546,7 @@ async function onRequestPost39(context) {
           startTime: original.startTime || original.start_time,
           calendarName: original.calendarName || ""
         } : null,
-        service: booking ? { id: clean6(body.sessionType, 64), label: booking.label, durationMinutes: booking.durationMinutes } : null,
+        service: booking ? { id: clean8(body.sessionType, 64), label: booking.label, durationMinutes: booking.durationMinutes } : null,
         slots: internalAvailability({
           calendarId,
           startDate,
@@ -25154,10 +25568,10 @@ async function onRequestPost39(context) {
     }
   }
   if (action === "schedule") {
-    const sessionType = clean6(body.sessionType, 64);
+    const sessionType = clean8(body.sessionType, 64);
     const booking = resolveStaffBookType(sessionType);
-    const idempotencyKey2 = clean6(body.idempotencyKey, 160);
-    const startTime2 = clean6(body.startTime, 100);
+    const idempotencyKey2 = clean8(body.idempotencyKey, 160);
+    const startTime2 = clean8(body.startTime, 100);
     if (!contactId) return json12({ error: "Choose a person." }, 400, headers5);
     if (!booking) return json12({ error: "Choose an appointment type." }, 400, headers5);
     if (idempotencyKey2.length < 8) return json12({ error: "A valid action key is required." }, 400, headers5);
@@ -25223,9 +25637,9 @@ async function onRequestPost39(context) {
   }
   if (!contactId || !appointmentId) return json12({ error: "Choose a person and appointment." }, 400, headers5);
   if (!["cancel", "reschedule"].includes(action)) return json12({ error: "Choose cancel or reschedule." }, 400, headers5);
-  const idempotencyKey = clean6(body.idempotencyKey, 160);
+  const idempotencyKey = clean8(body.idempotencyKey, 160);
   if (idempotencyKey.length < 8) return json12({ error: "A valid action key is required." }, 400, headers5);
-  const startTime = clean6(body.startTime, 100);
+  const startTime = clean8(body.startTime, 100);
   if (action === "reschedule" && !startTime) return json12({ error: "Choose a new time." }, 400, headers5);
   try {
     const identity2 = await ownedIdentity(context, contactId);
@@ -25281,7 +25695,7 @@ async function onRequestPost39(context) {
 var METHODS3, FORBIDDEN_FIELDS;
 var init_staff_appointments = __esm({
   "api/staff-appointments.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_datetime();
     init_booking_slot_policy();
@@ -25297,7 +25711,7 @@ var init_staff_appointments = __esm({
     METHODS3 = "POST, OPTIONS";
     FORBIDDEN_FIELDS = ["calendarId", "title", "appointmentStatus", "status", "replacementAppointmentId", "timezone", "actor", "user"];
     __name(json12, "json");
-    __name(clean6, "clean");
+    __name(clean8, "clean");
     __name(validDate, "validDate");
     __name(exactAppointment, "exactAppointment");
     __name(appointmentStatus, "appointmentStatus");
@@ -25318,7 +25732,7 @@ async function onRequestOptions47(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet34(context) {
+async function onRequestGet35(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -25386,11 +25800,11 @@ async function onRequestGet34(context) {
 }
 var init_staff_attestation = __esm({
   "api/staff-attestation.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
     __name(onRequestOptions47, "onRequestOptions");
-    __name(onRequestGet34, "onRequestGet");
+    __name(onRequestGet35, "onRequestGet");
   }
 });
 
@@ -25520,7 +25934,7 @@ async function onRequestPost40(context) {
 var ALLOWED_ORIGINS36;
 var init_staff_auth = __esm({
   "api/staff-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_rate_limit();
     init_endpoint_guards();
     init_ops_last_run();
@@ -25549,14 +25963,14 @@ async function onRequestPost41(context) {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS);
     try {
-      const response2 = await fetch(WORKER_URL5, {
+      const response3 = await fetch(WORKER_URL4, {
         method: "POST",
         headers: { Authorization: `Bearer ${secret}`, "X-Staff-Actor": String(payload?.user || "").slice(0, 80) },
         signal: controller.signal
       });
-      const body = await response2.json().catch(() => ({}));
-      if (!response2.ok || !body?.url) {
-        return new Response(JSON.stringify({ error: `Automation Watch returned ${response2.status}` }), { status: 422, headers: headers5 });
+      const body = await response3.json().catch(() => ({}));
+      if (!response3.ok || !body?.url) {
+        return new Response(JSON.stringify({ error: `Automation Watch returned ${response3.status}` }), { status: 422, headers: headers5 });
       }
       return new Response(JSON.stringify({ url: body.url, expiresInSeconds: body.expiresInSeconds ?? 300 }), { status: 200, headers: headers5 });
     } catch (err) {
@@ -25572,12 +25986,12 @@ async function onRequestPost41(context) {
     return new Response(JSON.stringify({ error: `Failed to open Automation Watch: ${message}` }), { status: 500, headers: headers5 });
   }
 }
-var WORKER_URL5, WORKER_TIMEOUT_MS;
+var WORKER_URL4, WORKER_TIMEOUT_MS;
 var init_staff_automation_watch_access = __esm({
   "api/staff-automation-watch-access.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL5 = "https://reminder-engine.eben-fa2.workers.dev/dashboard-access-link";
+    WORKER_URL4 = "https://reminder-engine.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS = 15e3;
     __name(onRequestOptions49, "onRequestOptions");
     __name(onRequestPost41, "onRequestPost");
@@ -25608,6 +26022,7 @@ function defineWorkflow(document) {
   requireText2(document?.name, "workflow name");
   if (!Number.isInteger(document?.version) || document.version < 1) throw new Error("workflow version must be a positive integer");
   if (!Array.isArray(document?.trigger?.calendarIds) || !document.trigger.calendarIds.length) throw new Error("workflow trigger needs a calendar");
+  optionalStringList(document.trigger.serviceIds, "workflow trigger service ids");
   optionalStringList(document.trigger.statuses, "workflow trigger statuses");
   optionalStringList(document.trigger.eventTypes, "workflow trigger event types");
   optionalStringList(document.sourceGaps, "workflow source gaps");
@@ -25658,6 +26073,7 @@ function executableFlow(workflow) {
     definitionVersion: workflow.version,
     flowKey: workflow.id,
     calendarIds: workflow.trigger.calendarIds,
+    serviceIds: workflow.trigger.serviceIds,
     enrollOn: {
       statuses: workflow.trigger.statuses,
       eventTypes: workflow.trigger.eventTypes,
@@ -25682,7 +26098,7 @@ function executableFlow(workflow) {
 var MESSAGE_ACTIONS, CONTROL_ACTIONS, ACTIONS, CHANNELS2, AUDIENCES, TIMING;
 var init_workflow_definition = __esm({
   "../reminder-engine-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_assessment_paid_booking_workflow();
     __name(deepFreeze2, "deepFreeze");
     __name(requireText2, "requireText");
@@ -25702,7 +26118,7 @@ var init_workflow_definition = __esm({
 var INITIAL_IN_PERSON_WORKFLOW, INITIAL_IN_PERSON;
 var init_initial_in_person_workflow = __esm({
   "../reminder-engine-worker/src/initial-in-person-workflow.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_workflow_definition();
     INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
       id: "initial-in-person",
@@ -25735,7 +26151,7 @@ var init_initial_in_person_workflow = __esm({
 var INITIAL_VIRTUAL_WORKFLOW, INITIAL_VIRTUAL;
 var init_initial_virtual_workflow = __esm({
   "../reminder-engine-worker/src/initial-virtual-workflow.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_workflow_definition();
     INITIAL_VIRTUAL_WORKFLOW = defineWorkflow({
       id: "initial-virtual",
@@ -25771,12 +26187,12 @@ var init_initial_virtual_workflow = __esm({
 var NO_SHOW_RECOVERY_WORKFLOW, NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY;
 var init_no_show_recovery_workflow = __esm({
   "../reminder-engine-worker/src/no-show-recovery-workflow.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_workflow_definition();
     NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
       id: "no-show-recovery",
       name: "No Show Email SMS series",
-      version: 2,
+      version: 3,
       executionMode: "shadow",
       trigger: {
         event: "appointment_status_changed",
@@ -25806,6 +26222,7 @@ var init_no_show_recovery_workflow = __esm({
       exits: [{
         event: "confirmed",
         effect: "exit_contact_pending",
+        serviceIds: ["partner-initial"],
         label: "Cancel pending recovery after a confirmed rebooking"
       }],
       sourceDecisionChecks: [
@@ -25887,24 +26304,138 @@ var init_no_show_recovery_workflow = __esm({
     });
     NO_SHOW_RECOVERY_RELEASE_WORKFLOW = defineWorkflow({
       ...NO_SHOW_RECOVERY_WORKFLOW,
-      version: 3,
+      version: 4,
       executionMode: "active"
     });
     NO_SHOW_RECOVERY = executableFlow(NO_SHOW_RECOVERY_WORKFLOW);
   }
 });
 
+// ../reminder-engine-worker/src/partner-initial-in-person-workflow.js
+var PARTNER_INITIAL_IN_PERSON_WORKFLOW, PARTNER_INITIAL_IN_PERSON;
+var init_partner_initial_in_person_workflow = __esm({
+  "../reminder-engine-worker/src/partner-initial-in-person-workflow.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_workflow_definition();
+    PARTNER_INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
+      id: "partner-initial-in-person",
+      name: "In-Person Partner Session: Confirmation & Reminder Flow",
+      version: 4,
+      executionMode: "shadow",
+      sourceGaps: [
+        "no_show_series_exit_shadow_publish_pending",
+        "owned_sms_provider_unselected"
+      ],
+      trigger: {
+        event: "appointment_status_changed",
+        calendarIds: ["lfsnaiGiLNL2z12pLKDP"],
+        serviceIds: ["partner-initial"],
+        statuses: ["confirmed"],
+        modifiedBy: null
+      },
+      exits: [{ event: "cancelled", effect: "cancel_pending", label: "Cancel every pending reminder" }],
+      nodes: [
+        {
+          id: "booked-internal",
+          label: "Notify Garrett by email",
+          at: "enroll",
+          action: { type: "internal_email", template: "booked-internal" },
+          skipIfPast: false,
+          message: {
+            audience: "internal",
+            channel: "email",
+            subject: "{{firstName}} booked a {{calendarName}}",
+            body: "Hi {{userFirstName}},\n\n{{contactName}} booked a {{calendarName}} for {{appointmentDate}} at {{appointmentTime}} {{appointmentTimezone}}\n\nStudio: 662 8th Ave, San Francisco, CA 94118"
+          }
+        },
+        {
+          id: "confirmation",
+          label: "Send partner-session confirmation",
+          at: "enroll",
+          action: { type: "email", template: "confirmation" },
+          skipIfPast: false,
+          message: {
+            audience: "client",
+            channel: "email",
+            from: "Amari Method <eben@amarimethod.com>",
+            subject: "Your partner session is confirmed",
+            preheader: "See you soon. Here are your session details.",
+            body: "Hi {{firstName}},\n\nYour session with Garrett is confirmed:\n\n{{calendarName}}\n{{appointmentDate}} at {{appointmentTime}} {{appointmentTimezone}}\n662 8th Ave, San Francisco, CA 94118\n\nA few reminders:\n\u2022 60-minute session\n\u2022 Wear comfortable clothes\n\u2022 Allow time for parking\n\nReschedule {{rescheduleLink}} \xB7 Cancel {{cancellationLink}}\n\nAdd to Google Calendar {{googleCalendarLink}} \xB7 Add to iCal/Outlook {{icalLink}}\n\nThe Amari Method Team"
+          }
+        },
+        {
+          id: "day-before",
+          label: "Send day-before email",
+          at: "start-1440m",
+          action: { type: "email", template: "day-before" },
+          skipIfPast: true,
+          message: {
+            audience: "client",
+            channel: "email",
+            from: "Amari Method <eben@amarimethod.com>",
+            subject: "See you tomorrow, {{firstName}}",
+            preheader: "Quick reminder about your session tomorrow.",
+            body: "Hi {{firstName}},\n\nJust a heads up about your upcoming session with Garrett:\n\n{{calendarName}}\n{{appointmentDate}} at {{appointmentTime}} {{appointmentTimezone}}\n662 8th Ave, San Francisco, CA 94118\n\nIf something came up:\nReschedule {{rescheduleLink}} \xB7 Cancel {{cancellationLink}}\n\nThe Amari Method Team"
+          }
+        },
+        {
+          id: "starting-soon",
+          label: "Send one-hour email",
+          at: "start-60m",
+          action: { type: "email", template: "starting-soon" },
+          skipIfPast: true,
+          message: {
+            audience: "client",
+            channel: "email",
+            from: "Amari Method <eben@amarimethod.com>",
+            subject: "Your session is in 1 hour",
+            preheader: "See you soon.",
+            body: "Hi {{firstName}},\n\nYour session with Garrett is at {{appointmentTime}} {{appointmentTimezone}}.\n\n662 8th Ave, San Francisco, CA 94118\n\nThe Amari Method Team"
+          }
+        },
+        {
+          id: "one-hour-sms",
+          label: "Send one-hour SMS",
+          at: "start-60m",
+          action: { type: "sms", template: "one-hour-sms" },
+          skipIfPast: true,
+          message: {
+            audience: "client",
+            channel: "sms",
+            body: "Hi {{firstName}}, just a friendly reminder that your appointment with Garrett is in one hour."
+          }
+        },
+        {
+          id: "one-hour-internal",
+          label: "Notify Garrett by SMS",
+          at: "start-60m",
+          action: { type: "internal_sms", template: "one-hour-internal" },
+          skipIfPast: true,
+          message: {
+            audience: "internal",
+            channel: "sms",
+            body: "{{contactName}}'s {{calendarName}} appointment at {{appointmentTime}} {{appointmentTimezone}}. These were the specific issues this person wanted to address (if applicable): {{additionalInformation}}"
+          }
+        }
+      ]
+    });
+    PARTNER_INITIAL_IN_PERSON = executableFlow(PARTNER_INITIAL_IN_PERSON_WORKFLOW);
+  }
+});
+
 // ../reminder-engine-worker/src/config.js
-var DISCOVERY_CALL, PARTNER_INITIAL_IN_PERSON, ASSESSMENT_NO_SHOW, FLOWS;
+var DISCOVERY_CALL, ASSESSMENT_NO_SHOW, FLOWS;
 var init_config = __esm({
   "../reminder-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_initial_in_person_workflow();
     init_initial_in_person_workflow();
     init_initial_virtual_workflow();
     init_initial_virtual_workflow();
     init_no_show_recovery_workflow();
     init_no_show_recovery_workflow();
+    init_partner_initial_in_person_workflow();
+    init_partner_initial_in_person_workflow();
     DISCOVERY_CALL = Object.freeze({
       name: "Discovery Call \u2014 Confirmation & Reminder",
       definitionVersion: 1,
@@ -25931,25 +26462,6 @@ var init_config = __esm({
         { at: "start-15m", type: "internal_sms", template: "fifteen-min-internal", skipIfPast: true }
       ])
     });
-    PARTNER_INITIAL_IN_PERSON = Object.freeze({
-      name: "In-Person Partner Session: Confirmation & Reminder Flow",
-      definitionVersion: 1,
-      flowKey: "partner-initial-in-person",
-      calendarIds: Object.freeze(["lfsnaiGiLNL2z12pLKDP"]),
-      // In Person Session for Partners
-      serviceIds: Object.freeze(["partner-initial"]),
-      enrollOn: Object.freeze({ statuses: Object.freeze(["confirmed"]), modifiedBy: null }),
-      cancelOn: Object.freeze(["cancelled"]),
-      mode: "shadow",
-      steps: Object.freeze([
-        { at: "enroll", type: "internal_email", template: "booked-internal", skipIfPast: false },
-        { at: "enroll", type: "email", template: "confirmation", skipIfPast: false },
-        { at: "start-1440m", type: "email", template: "day-before", skipIfPast: true },
-        { at: "start-60m", type: "email", template: "starting-soon", skipIfPast: true },
-        { at: "start-60m", type: "sms", template: "one-hour-sms", skipIfPast: true },
-        { at: "start-60m", type: "internal_sms", template: "one-hour-internal", skipIfPast: true }
-      ])
-    });
     ASSESSMENT_NO_SHOW = Object.freeze({
       name: "No Show Email SMS series \u2014 Assessment",
       definitionVersion: 1,
@@ -25972,10 +26484,10 @@ var init_config = __esm({
 });
 
 // ../nurture-engine-worker/src/config.js
-var DISCOVERY, DISCOVERY_AMBASSADOR, INITIAL_IN_PERSON2, INITIAL_VIRTUAL2, FOLLOWUP_IN_PERSON_PKG, FOLLOWUP_VIRTUAL_PKG, FOLLOWUP_IN_PERSON, FOLLOWUP_VIRTUAL, ENTRAINMENT, PRODUCT_4_SESSION, PRODUCT_8_SESSION, PRODUCT_UPGRADE_4, PRODUCT_UPGRADE_8, TAG_WORKFLOW_2, TAG_WORKFLOW_3, deepFreeze3, FLOW_1_QUIZ, FLOW_2_POST_DISCOVERY, FLOW_3_POST_INITIAL, SEQUENCES;
+var DISCOVERY, DISCOVERY_AMBASSADOR, INITIAL_IN_PERSON2, INITIAL_VIRTUAL2, FOLLOWUP_IN_PERSON_PKG, FOLLOWUP_VIRTUAL_PKG, FOLLOWUP_IN_PERSON, FOLLOWUP_VIRTUAL, ENTRAINMENT, ENTRAINMENT_20, SINGLE_SESSION_50, PRODUCT_4_SESSION, PRODUCT_8_SESSION, PRODUCT_UPGRADE_4, PRODUCT_UPGRADE_8, PRODUCT_6_WEEK_PRACTICE, PRODUCT_12_WEEK_PRACTICE, TAG_WORKFLOW_2, TAG_WORKFLOW_3, deepFreeze3, FLOW_1_QUIZ, FLOW_2_POST_DISCOVERY, FLOW_3_POST_INITIAL, SEQUENCES;
 var init_config2 = __esm({
   "../nurture-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     DISCOVERY = "USgPsktqRcuomdUgpShL";
     DISCOVERY_AMBASSADOR = "aVE54Qf4lrbYTB0zFqXy";
     INITIAL_IN_PERSON2 = "G7OAnnJuFbMF6nQSlZVQ";
@@ -25985,10 +26497,14 @@ var init_config2 = __esm({
     FOLLOWUP_IN_PERSON = "SKDVOL8wtUN6Ne0ppbC9";
     FOLLOWUP_VIRTUAL = "oVn77FcecFY16iS2pHyP";
     ENTRAINMENT = "B5aGXLoS4kzAjZAMMXxk";
+    ENTRAINMENT_20 = "wO5lnu7BOQOHEJ5YQU0f";
+    SINGLE_SESSION_50 = "waHmG2mHNThPfMVuNJWG";
     PRODUCT_4_SESSION = "69986faa724ecd2343ebaa6e";
     PRODUCT_8_SESSION = "69987357c839790426996114";
     PRODUCT_UPGRADE_4 = "6998739230cc6054f9bba62d";
     PRODUCT_UPGRADE_8 = "699873d6990b71ebc1fa26b4";
+    PRODUCT_6_WEEK_PRACTICE = "6a683360017263178d05d1a3";
+    PRODUCT_12_WEEK_PRACTICE = "6a66cde7ef7b07f122ad46fb";
     TAG_WORKFLOW_2 = "booked discovery call - workflow 2";
     TAG_WORKFLOW_3 = "workflow 3 (customer attended 1st session)";
     deepFreeze3 = /* @__PURE__ */ __name((obj) => {
@@ -25999,7 +26515,7 @@ var init_config2 = __esm({
     }, "deepFreeze");
     FLOW_1_QUIZ = deepFreeze3({
       name: "Quiz to Pain Consultation email flow",
-      definitionVersion: 1,
+      definitionVersion: 2,
       sequenceId: "flow-1-quiz",
       mode: "shadow",
       entry: {
@@ -26009,12 +26525,11 @@ var init_config2 = __esm({
       steps: [
         { after: "0d", kind: "email", template: "f1-email-1-quiz-results" },
         {
-          // field = GHL custom-field ID for Primary Pain Location (send-to-ghl.js FIELD_IDS) —
-          // send-time contact reads key by ID, same as Flow 2 (spec-05 finding D6: the name
-          // string would silently misroute every contact to the chronic fallback).
+          // Native CRM field. The CRM mirror adapter maps the transition-era GHL attribute ID to
+          // this stable key; sequence logic never branches on a provider identity.
           after: "+3d",
           kind: "branch",
-          field: "vKZTVAG7601lgV8413du",
+          field: "primaryPainLocation",
           test: "filled_not_other",
           yes: "f1-email-2",
           no: "f1-email-2-chronic"
@@ -26026,8 +26541,7 @@ var init_config2 = __esm({
           // fallback (None) branch sends its own 4c variant with a "chronic pain" subject.
           after: "+3d",
           kind: "branch_map",
-          field: "vKZTVAG7601lgV8413du",
-          // Primary Pain Location (by ID)
+          field: "primaryPainLocation",
           map: {
             "Lower back": "f1-email-4a-spinal-wave",
             Hips: "f1-email-4a-spinal-wave",
@@ -26047,7 +26561,7 @@ var init_config2 = __esm({
         {
           after: "+2d",
           kind: "branch",
-          field: "vKZTVAG7601lgV8413du",
+          field: "primaryPainLocation",
           test: "filled_not_other",
           yes: "f1-email-5-skeptical",
           no: "f1-email-5-chronic"
@@ -26055,7 +26569,7 @@ var init_config2 = __esm({
         {
           after: "+2d",
           kind: "branch",
-          field: "vKZTVAG7601lgV8413du",
+          field: "primaryPainLocation",
           test: "filled_not_other",
           yes: "f1-email-6-when-ready",
           no: "f1-email-6-chronic"
@@ -26073,7 +26587,7 @@ var init_config2 = __esm({
     });
     FLOW_2_POST_DISCOVERY = deepFreeze3({
       name: "Pain Consutation to first booking email flow",
-      definitionVersion: 1,
+      definitionVersion: 2,
       sequenceId: "flow-2-post-discovery",
       mode: "shadow",
       entry: {
@@ -26088,7 +26602,7 @@ var init_config2 = __esm({
         {
           after: "+4d",
           kind: "branch",
-          field: "vKZTVAG7601lgV8413du",
+          field: "primaryPainLocation",
           test: "filled_not_other",
           yes: "f2-email-2-personalized",
           no: "f2-email-2-chronic"
@@ -26103,32 +26617,363 @@ var init_config2 = __esm({
     });
     FLOW_3_POST_INITIAL = deepFreeze3({
       name: "First session to follow up session email flow",
-      definitionVersion: 1,
+      definitionVersion: 2,
       sequenceId: "flow-3-post-initial",
       mode: "shadow",
       entry: {
         on: { kind: "appointment", statuses: ["showed"], calendarIds: [INITIAL_IN_PERSON2, INITIAL_VIRTUAL2] },
         guard: { notTags: ["affiliate-partner"] },
         // This tag IS the exit signal for Flows 1+2 — the engine feeds it back through the exit
-        // pass on enrollment (and writes the real GHL tag in active mode for the transition window).
+        // pass on enrollment (and writes the owned CRM tag only after an active-mode cutover).
         onEnter: { addTags: [TAG_WORKFLOW_3] }
       },
       steps: [
         { after: "0d", kind: "email", template: "f3-email-1-protocols-portal" },
-        { after: "+5d", kind: "email", template: "f3-email-2-practice-going" },
-        { after: "+5d", kind: "email", template: "f3-email-3-series-pitch" }
+        { after: "+5d", kind: "email", template: "f3-email-2-practice-going" }
       ],
       exits: [
-        // "Remove from First session to followup" — 9 GHL triggers collapsed:
-        { kind: "purchase", productIds: [PRODUCT_4_SESSION, PRODUCT_8_SESSION, PRODUCT_UPGRADE_4, PRODUCT_UPGRADE_8] },
+        // "Remove from First session to followup" — 11 GHL triggers collapsed:
+        {
+          kind: "purchase",
+          productIds: [
+            PRODUCT_4_SESSION,
+            PRODUCT_8_SESSION,
+            PRODUCT_UPGRADE_4,
+            PRODUCT_UPGRADE_8,
+            PRODUCT_6_WEEK_PRACTICE,
+            PRODUCT_12_WEEK_PRACTICE
+          ]
+        },
         {
           kind: "appointment",
           statuses: ["booked", "confirmed"],
-          calendarIds: [FOLLOWUP_IN_PERSON_PKG, FOLLOWUP_VIRTUAL_PKG, FOLLOWUP_IN_PERSON, FOLLOWUP_VIRTUAL, ENTRAINMENT]
-        }
+          calendarIds: [
+            FOLLOWUP_IN_PERSON_PKG,
+            FOLLOWUP_VIRTUAL_PKG,
+            FOLLOWUP_IN_PERSON,
+            FOLLOWUP_VIRTUAL,
+            ENTRAINMENT
+          ]
+        },
+        { kind: "appointment", statuses: ["confirmed"], calendarIds: [ENTRAINMENT_20, SINGLE_SESSION_50] }
       ]
     });
     SEQUENCES = Object.freeze([FLOW_1_QUIZ, FLOW_2_POST_DISCOVERY, FLOW_3_POST_INITIAL]);
+  }
+});
+
+// ../nurture-engine-worker/src/templates.js
+function flow3MessagePreview() {
+  return Object.entries(FLOW_3_POST_INITIAL_TEMPLATES).map(([templateId, template], stepIndex) => ({
+    templateId,
+    stepIndex,
+    audience: template.audience,
+    channel: template.channel,
+    from: `${template.from.name} <${template.from.email}>`,
+    subject: template.subject,
+    preheader: template.preheader,
+    body: template.body
+  }));
+}
+var deepFreeze4, email, FLOW_1_SPRING_STEP_BODY, FLOW_1_SKEPTICAL_BODY, FLOW_1_WHEN_READY_BODY, FLOW_1_QUIZ_TEMPLATES, FLOW_2_POST_DISCOVERY_TEMPLATES, FLOW_3_POST_INITIAL_TEMPLATES, NURTURE_TEMPLATES;
+var init_templates = __esm({
+  "../nurture-engine-worker/src/templates.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    deepFreeze4 = /* @__PURE__ */ __name((value) => {
+      if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
+      for (const nested of Object.values(value)) deepFreeze4(nested);
+      return Object.freeze(value);
+    }, "deepFreeze");
+    email = /* @__PURE__ */ __name((sequenceId, subject2, preheader, body) => ({
+      sequenceId,
+      audience: "client",
+      channel: "email",
+      from: { name: "Garrett", email: "garrett@amarimethod.com" },
+      subject: subject2,
+      preheader,
+      body
+    }), "email");
+    FLOW_1_SPRING_STEP_BODY = `Hi {{contact.first_name}},
+I promised you a protocol. Here it is.
+It's called the Spring Step. I teach this to almost every client with {{contact.primary_pain_location}} pain because it decompresses your calves and Achilles, like hanging but for your lower body.
+How to do it:
+1. Find a step or curb at least 4 to 6 inches high.
+2. Stand with the balls of your feet on the edge, heels hanging off.
+3. Hold a railing for light balance support.
+4. Let your heels drop below the step level and let gravity do the work.
+5. Breathe and let your body relax into the decompression for 20 to 30 seconds.
+That's it. No forcing, no pulling. You're just letting gravity decompress years of tightness in your Achilles and calves. Once that releases, everything above it moves better too.
+This is one protocol. In a full session, you'd get a set adapted to your specific {{contact.pain_pattern_signature}} pattern. We work the whole chain of overworking and underworking, rather than one spot. Most clients feel a real shift in that first session.
+Read the full Spring Step guide \u2192 https://www.amarimethod.com/blog
+If you want to go deeper, a free discovery call is the best next step.
+Schedule a free discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Garrett`;
+    FLOW_1_SKEPTICAL_BODY = `Hi {{contact.first_name}},
+I want to be honest about something. The Amari Method doesn't work for everyone.
+If you're looking for someone to crack your back and send you on your way, that's not what I do. If you want something done to you while you lie on a table, this isn't that either.
+The Amari Method works for people who are willing to learn. I teach you protocols. You do them. Your body changes.
+It works best for people who:
+\u2022 Have tried PT or massage and gotten relief that didn't last
+\u2022 Are tired of depending on appointments to feel okay
+\u2022 Want to understand why they're in pain, instead of only chasing the symptom
+\u2022 Are willing to spend 5 to 10 minutes a day on the protocols
+If that sounds like you, this tends to work well.
+Schedule a free discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Garrett`;
+    FLOW_1_WHEN_READY_BODY = `Hi {{contact.first_name}},
+This is the last email I'll send you. No countdown timer. No manufactured urgency.
+Just one thing I want to be honest about.
+Patterns of overworking and underworking don't stay the same. They get deeper. Your body keeps building workarounds on top of workarounds. The hip thing becomes a hip and knee thing. The neck tension starts pulling your shoulder into it.
+I've had clients come in after a year of managing their pain with foam rollers and quick fixes. Those things worked for a little while, then stopped. By the time they got here, there were three layers to unwind instead of one.
+You took the quiz. You know your {{contact.pain_pattern_signature}} pattern. You've tried the protocol.
+Whenever you're ready:
+Schedule a free discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Or see the full session options:
+View sessions and pricing \u2192 https://www.amarimethod.com/booking
+Either way, the protocol guides on the blog are yours whenever you want them: amarimethod.com/blog
+Garrett`;
+    FLOW_1_QUIZ_TEMPLATES = deepFreeze4({
+      "f1-email-1-quiz-results": email(
+        "flow-1-quiz",
+        "{{contact.first_name}}, your {{contact.pain_pattern_signature}} pattern explained",
+        "Here's what your quiz results reveal about your {{contact.primary_pain_location}} pain.",
+        `Hi {{contact.first_name}},
+You just completed your Pain Pattern Assessment, and your results reveal something important about your {{contact.primary_pain_location}}.
+Your Pattern Signature: {{contact.pain_pattern_signature}}
+This means your body has developed a specific way of adapting to stress, and that adaptation is what's driving your {{contact.primary_pain_location}} pain right now.
+Here's the key insight from your results. You're not broken. You're out of balance.
+Some parts of your body are working too hard because other parts aren't working enough. That imbalance is what creates the pain. It's also what makes lasting relief possible.
+Your body already knows how to heal. It just needs the right input.
+That's exactly what the Amari Method provides. After 25+ years of bodywork, I built a systematic approach that helps people who've been stuck for years. I'm not the one who heals you. I show you what your body has been trying to tell you all along.
+If you'd like to understand exactly what's happening with your {{contact.primary_pain_location}} and what to do about it, a free 15-minute discovery call is the best next step.
+Schedule your free discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+It's just 15 minutes to get clear on your pattern and your options.
+Garrett
+P.S. Over the next few days, I'll share more about why your pattern keeps coming back, and what changes it.`
+      ),
+      "f1-email-2": email(
+        "flow-1-quiz",
+        "Why your {{contact.primary_pain_location}} pain keeps coming back",
+        "Where it hurts isn't why it hurts.",
+        `Hi {{contact.first_name}},
+If your {{contact.primary_pain_location}} pain keeps showing up no matter what you try, there's an important reason.
+What you've tried didn't fail you. It was aimed at the symptom, not the pattern behind it.
+After {{contact.pain_duration}} of dealing with {{contact.primary_pain_location}} pain, your body has settled into deep patterns of overworking and underworking. Every time one area stops doing its job, another area picks up the slack. That's your body being intelligent, but it comes at a cost.
+If what you've tried so far hasn't brought lasting relief, it's likely because those approaches targeted where it hurts instead of why it hurts.
+It comes down to balance. Your pain exists because some parts of your body are working too hard to make up for other parts that aren't working enough. Until that imbalance is addressed at its source, relief stays temporary.
+This is exactly what the Amari Method is built to solve. Not by chasing symptoms, but by rebalancing the system that's creating them.
+If you want to see exactly where your imbalance is and what to do about it, a free 15-minute discovery call is the best next step.
+Schedule your free 15-min discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Garrett`
+      ),
+      "f1-email-2-chronic": email(
+        "flow-1-quiz",
+        "Why your chronic pain keeps coming back",
+        "Where it hurts isn't why it hurts.",
+        `Hi {{contact.first_name}},
+If your chronic pain keeps showing up no matter what you try, there's an important reason.
+What you've tried didn't fail you. It was aimed at the symptom, not the pattern behind it.
+After years of persistent pain, your body has settled into deep patterns of overworking and underworking. Every time one area stops doing its job, another area picks up the slack. That's your body being intelligent, but it comes at a cost.
+If what you've tried so far hasn't brought lasting relief, it's likely because those approaches targeted where it hurts instead of why it hurts.
+It comes down to balance. Your pain exists because some parts of your body are working too hard to make up for other parts that aren't working enough. Until that imbalance is addressed at its source, relief stays temporary.
+This is exactly what the Amari Method is built to solve. Not by chasing symptoms, but by rebalancing the system that's creating them.
+If you want to see exactly where your imbalance is and what to do about it, a free 15-minute discovery call is the best next step.
+Schedule your free 15-min discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Garrett`
+      ),
+      "f1-email-3-real-reason": email(
+        "flow-1-quiz",
+        "The real reason behind your {{contact.pain_pattern_signature}} pattern",
+        "It comes down to balance.",
+        `Hi {{contact.first_name}},
+Remember your {{contact.pain_pattern_signature}} result from the Pain Pattern Assessment? Here's what most practitioners miss about it.
+Your {{contact.primary_pain_location}} pain isn't a muscle or joint problem. It's a balance problem.
+Here's what that means. Your body has settled into a pattern where some parts overwork while others shut down. It keeps recreating that pattern, even after you've worked on it. That's why the relief never holds. It's always temporary.
+Your body returns to the same place because the underlying cause was never addressed, the imbalance between what's working too hard and what isn't working enough.
+The Amari Method works differently.
+Instead of forcing your body into a position, we teach your body to hold its own balance. Once you learn it, you've got it for life. No dependency. No endless appointments.
+This is why I created the Amari Method. After 25+ years of bodywork, I kept seeing the same pattern: people getting temporary relief that never lasted. The method was built to solve that.
+Read how the Amari Method works \u2192 https://www.amarimethod.com/how-it-works
+If you want to find out what it could do for your {{contact.primary_pain_location}}, a free discovery call is the best next step.
+Schedule your free discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Garrett`
+      ),
+      "f1-email-4a-spinal-wave": email(
+        "flow-1-quiz",
+        "A free exercise for your {{contact.primary_pain_location}}, {{contact.first_name}}",
+        "Try this at home today \u2014 it takes 2 minutes.",
+        `Hi {{contact.first_name}},
+I promised you a protocol for your {{contact.primary_pain_location}}, so here it is.
+It's called the Spinal Wave, and it's one of the first protocols I teach clients with {{contact.primary_pain_location}} pain. It gently lengthens your spine and helps your nervous system let go of the patterns that keep pulling you back into the same position.
+How to do it:
+1. Lie on your back with knees bent, feet flat on the floor.
+2. Starting from your tailbone, slowly roll your spine up one vertebra at a time.
+3. Pause at the top, then roll back down just as slowly.
+4. Repeat 5 to 8 times, breathing slowly with each wave.
+The key is slow. Your nervous system responds to gentle input, not force. Go for the feeling of it, not the doing of it.
+This is a preview of what a full Amari Method session covers. In a session, every protocol is adapted to your specific {{contact.pain_pattern_signature}} pattern. We work the whole chain of overworking and underworking, rather than one area.
+Read the full Spinal Wave guide \u2192 https://www.amarimethod.com/blog
+If you want to go deeper, a free discovery call is the best next step.
+Schedule your free discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Garrett`
+      ),
+      "f1-email-4b-power-posture": email(
+        "flow-1-quiz",
+        "A free exercise for your {{contact.primary_pain_location}}, {{contact.first_name}}",
+        "Try this at home today \u2014 it takes 2 minutes.",
+        `Hi {{contact.first_name}},
+I promised you a protocol for your {{contact.primary_pain_location}}, so here it is.
+It's called Power Posture, and it's one of the first protocols I teach clients with {{contact.primary_pain_location}} pain. It reactivates your shoulder blade stabilizers, the muscles that are supposed to support your upper body but have often gone dormant.
+How to do it:
+1. Stand with your back against a wall, feet 6 inches out.
+2. Press the back of your hands into the wall at shoulder height.
+3. Slowly slide your arms up the wall like a snow angel, keeping contact.
+4. Hold at the top for 3 seconds, then slowly lower.
+5. Repeat 8 to 10 times.
+You should feel your upper back muscles engaging. That's your body relearning proper support. Most of us spend all day rounded forward, and this protocol works against that.
+This is a preview of what a full Amari Method session covers. In a session, every protocol is adapted to your specific {{contact.pain_pattern_signature}} pattern. We work the whole chain of overworking and underworking, rather than one area.
+Read the full Power Posture guide \u2192 https://www.amarimethod.com/blog
+If you want to go deeper, a free discovery call is the best next step.
+Schedule your free discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Garrett`
+      ),
+      "f1-email-4c-spring-step": email(
+        "flow-1-quiz",
+        "Try this for your {{contact.primary_pain_location}} \u2014 takes 2 minutes",
+        "One of the first exercises I teach clients with your pattern.",
+        FLOW_1_SPRING_STEP_BODY
+      ),
+      "f1-email-4c-chronic": email(
+        "flow-1-quiz",
+        "Try this for your chronic pain \u2014 takes 2 minutes",
+        "One of the first exercises I teach clients with your pattern.",
+        FLOW_1_SPRING_STEP_BODY
+      ),
+      "f1-email-4d-hand-balancer": email(
+        "flow-1-quiz",
+        "Try this for your {{contact.primary_pain_location}} \u2014 takes 2 minutes",
+        "One of the first exercises I teach clients with your pattern.",
+        `Hi {{contact.first_name}},
+I promised you a protocol. Here it is.
+It's called the Hand Balancer. I teach this to almost every client with {{contact.primary_pain_location}} pain because it activates the extensor muscles in your hands, the ones that have gone dormant from years of gripping and typing.
+The problem: your hands only do half their job. You grip and close all day (the flexors). You almost never open and spread (the extensors). That imbalance compresses the small bones in your palm, which squeezes the nerves running through your wrist.
+How it works: the Hand Balancer creates opposition between your thumb and pinky metacarpal bones, forcing your hand to open from the inside out. Your dormant extensors wake up, and the compression releases.
+The exact hand positioning and pressure are specific to your anatomy. This is one I teach in person, so you get it right from the start.
+This is one protocol. In a full session, you'd get a set adapted to your specific {{contact.pain_pattern_signature}} pattern. We work the whole chain of overworking and underworking, rather than one spot. Most clients feel a real shift in that first session.
+Read the full Hand Balancer guide \u2192 https://www.amarimethod.com/blog
+If you want to go deeper, a free discovery call is the best next step.
+Schedule a free discovery call \u2192 https://discoverycall.amarimethod.com/discovery-call-booking
+Garrett`
+      ),
+      "f1-email-5-skeptical": email(
+        "flow-1-quiz",
+        "I can't help everyone with {{contact.primary_pain_location}} pain",
+        "Here's who the Amari Method works for \u2014 and who it doesn't.",
+        FLOW_1_SKEPTICAL_BODY
+      ),
+      "f1-email-5-chronic": email(
+        "flow-1-quiz",
+        "I can't help everyone with chronic pain",
+        "Here's who the Amari Method works for \u2014 and who it doesn't.",
+        FLOW_1_SKEPTICAL_BODY
+      ),
+      "f1-email-6-when-ready": email(
+        "flow-1-quiz",
+        "{{contact.first_name}}, one last thought about your {{contact.primary_pain_location}}",
+        "This is the last email I'll send you.",
+        FLOW_1_WHEN_READY_BODY
+      ),
+      "f1-email-6-chronic": email(
+        "flow-1-quiz",
+        "{{contact.first_name}}, one last thought about your pain",
+        "This is the last email I'll send you.",
+        FLOW_1_WHEN_READY_BODY
+      )
+    });
+    FLOW_2_POST_DISCOVERY_TEMPLATES = deepFreeze4({
+      "f2-email-1-good-talking": email(
+        "flow-2-post-discovery",
+        "Good talking with you, {{contact.first_name}}",
+        "Here's what stuck with me from our call.",
+        `Hi {{contact.first_name}},
+
+So glad we got to talk!
+
+What I keep coming back to is that pain or tension can be a sign that part of your body is working harder than it needs to. In the Assessment, we look at how you move and what may be contributing.
+
+It is a 50-minute, $29 first visit. You will have space to experience the work and decide whether continuing together is right for you.
+
+Book your Assessment \u2192 https://www.amarimethod.com/assessment-booking
+
+Or just reply here, I read every one of these myself.
+
+Garrett`
+      ),
+      "f2-email-2-personalized": email(
+        "flow-2-post-discovery",
+        "What your Assessment looks like",
+        "So there are no surprises.",
+        `Hi {{contact.first_name}},
+
+I said I\u2019d tell you what the Assessment is like, so here it is.
+
+First I watch how you move. I\u2019m looking for where your body is working too hard and where it may need more support.
+
+Then I guide you through a simple protocol so you can notice what changes in real time. You are the one doing the work. I\u2019m there to guide you through it.
+
+The Assessment is 50 minutes and $29. It gives us a chance to see the work together and decide whether continuing is the right fit.
+
+Book your Assessment \u2192
+https://www.amarimethod.com/assessment-booking
+
+Garrett`
+      ),
+      "f2-email-2-chronic": email(
+        "flow-2-post-discovery",
+        "What your Assessment looks like",
+        "So there are no surprises.",
+        `Hi {{contact.first_name}},
+
+I promised I\u2019d tell you what the Assessment is like, so here it is.
+
+First I watch how you move. Simple things like walking or reaching can show where your body is working too hard and where it may need more support.
+
+Then I guide you through a simple protocol so you can notice what changes in real time. You are the one doing the work. I\u2019m your guide.
+
+The Assessment is 50 minutes and $29. It gives us a chance to see the work together and decide whether continuing is the right fit.
+
+Book your Assessment \u2192
+https://www.amarimethod.com/assessment-booking
+
+Garrett`
+      )
+    });
+    FLOW_3_POST_INITIAL_TEMPLATES = deepFreeze4({
+      "f3-email-1-protocols-portal": {
+        sequenceId: "flow-3-post-initial",
+        audience: "client",
+        channel: "email",
+        from: { name: "Garrett", email: "garrett@amarimethod.com" },
+        subject: "Your protocols are in the portal, {{contact.first_name}}",
+        preheader: "Do the protocols. Don't force them.",
+        body: "Hi {{contact.first_name}},\n\nLoved working with you today!\n\nOver the next day or two you'll probably feel some shifts. Things loosening up, maybe a little soreness in spots that haven't been sore in a while. That's your body recalibrating. It's a good sign.\n\nHere's everything you need.\n\nYour protocols:\nAccess your tools \u2192 https://www.amarimethod.com/tools\n\nBook sessions and track your progress:\nYour client portal \u2192 https://www.amarimethod.com/portal/\n\nThe main thing this week: do the protocols, but don't force them. They should feel like relief, not work. If something feels like effort, ease back. The movement should feel like your body remembering something, not learning something new.\n\nReply here if anything comes up. I read these myself.\n\nGarrett"
+      },
+      "f3-email-2-practice-going": {
+        sequenceId: "flow-3-post-initial",
+        audience: "client",
+        channel: "email",
+        from: { name: "Garrett", email: "garrett@amarimethod.com" },
+        subject: "How's the practice going, {{contact.first_name}}?",
+        preheader: "Most people notice something by now.",
+        body: "Hi {{contact.first_name}},\n\nIt's been a few days. Just wondering how you're doing.\n\nBy now you've probably noticed one of two things. Either something has clearly shifted, like less tension or better sleep. Or things feel like they're slowly reorganizing. Both are normal. Both mean it's working.\n\nThe protocols are doing the real work between sessions. Every time you do them, you're reinforcing what we started. That's how this becomes lasting. Your body starts to own it, so you don't need me for it.\n\nIf anything feels off, or you have questions about the protocols, just reply here.\n\nWhen you're ready to keep going:\nBook your next session \u2192 https://www.amarimethod.com/portal/\n\nGarrett"
+      }
+    });
+    NURTURE_TEMPLATES = deepFreeze4({
+      ...FLOW_1_QUIZ_TEMPLATES,
+      ...FLOW_2_POST_DISCOVERY_TEMPLATES,
+      ...FLOW_3_POST_INITIAL_TEMPLATES
+    });
+    __name(flow3MessagePreview, "flow3MessagePreview");
   }
 });
 
@@ -26136,7 +26981,7 @@ var init_config2 = __esm({
 var COPY, AGENDA_COPY, DEFAULT_FIRST_MINUTES, SECOND_OFFSET_MS, PREP_LEAD_MS, SEND_GRACE_MS;
 var init_schedule = __esm({
   "../morning-sms-worker/src/schedule.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     COPY = Object.freeze({
       prepare: "Good morning, time to prepare for the day.",
       meeting: "Staff meeting"
@@ -26206,7 +27051,7 @@ function defineMorningSmsWorkflow(input) {
 var REQUIRED_HANDLERS, EXECUTABLE_ORDER;
 var init_workflow_definition2 = __esm({
   "../morning-sms-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     REQUIRED_HANDLERS = Object.freeze([
       "scheduled_event",
       "read_todays_appointments",
@@ -26235,7 +27080,7 @@ var init_workflow_definition2 = __esm({
 var MORNING_SMS_DEFINITION;
 var init_config3 = __esm({
   "../morning-sms-worker/src/config.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_schedule();
     init_workflow_definition2();
     MORNING_SMS_DEFINITION = Object.freeze(defineMorningSmsWorkflow({
@@ -26243,7 +27088,7 @@ var init_config3 = __esm({
       engine: "morning-sms",
       key: "daily-staff-brief",
       name: "Morning SMS to Eben and Garrett",
-      definitionVersion: 2,
+      definitionVersion: 4,
       mode: "active",
       authority: "executable_definition",
       trigger: Object.freeze({
@@ -26261,7 +27106,7 @@ var init_config3 = __esm({
       steps: Object.freeze([
         Object.freeze({ id: "morning-cron", parentId: null, stepIndex: 0, type: "trigger", handler: "scheduled_event", owner: "cloudflare", label: "Cloudflare starts one scheduled check", at: "Every five minutes during the configured morning window" }),
         Object.freeze({ id: "morning-calendar-read", parentId: "morning-cron", stepIndex: 1, type: "read", handler: "read_todays_appointments", owner: "amari", provider: "ghl", label: "Read today's active appointments", source: "all GHL calendars" }),
-        Object.freeze({ id: "morning-last-session", parentId: "morning-calendar-read", stepIndex: 2, type: "reconcile", handler: "identify_last_package_session", owner: "amari", label: "Identify a package-ending appointment", confidence: "high_or_manual_lock_only", result: "LAST PACKAGE SESSION" }),
+        Object.freeze({ id: "morning-last-session", parentId: "morning-calendar-read", stepIndex: 2, type: "reconcile", handler: "identify_last_package_session", owner: "amari", label: "Identify names and evidence-backed sales opportunities", confidence: "high_or_manual_lock_only", result: "SELL cues" }),
         Object.freeze({ id: "morning-schedule", parentId: "morning-last-session", stepIndex: 3, type: "schedule", handler: "calculate_due_times", owner: "amari", label: "Decide what is due in this check", at: "Agenda at 08:00 PT or two hours before an earlier first appointment; meeting text 90 minutes later", afterMs: SECOND_OFFSET_MS }),
         Object.freeze({ id: "morning-agenda", parentId: "morning-schedule", stepIndex: 4, type: "compose", handler: "compose_agenda", owner: "amari", label: "Build today's appointment agenda when a text is due", failureCopy: "Today's appointment list could not be loaded." }),
         Object.freeze({
@@ -26278,8 +27123,10 @@ var init_config3 = __esm({
           copy: "{{agenda}}",
           logic: Object.freeze([
             "Read every active appointment from every GHL calendar and sort the complete day by start time.",
-            "Build one Pacific-time line with the client name and calendar or session name.",
-            "Append LAST PACKAGE SESSION only when the owned package ledger proves it with high confidence or a manual lock.",
+            "Build one Pacific-time line with the client name only; resolve a missing event name from that contact record when available.",
+            "Append SELL: FIRST / ONLY APPOINTMENT only when contact history proves it is an initial or Assessment appointment and the contact has exactly one active appointment.",
+            "Append SELL: SECOND-TO-LAST STUDY SESSION only when the study counter or completed study history proves one completed session.",
+            "Append SELL: LAST PACKAGE SESSION only when the owned package ledger proves it with high confidence or a manual lock.",
             "Send the completed agenda separately to Eben and Garrett.",
             "Skip a recipient when date + prepare + recipient was already recorded."
           ]),
@@ -26311,7 +27158,15 @@ function reminderDefinition(flow) {
     trigger: clone({ calendarIds: flow.calendarIds, ...flow.enrollOn }),
     exits: clone([
       ...flow.cancelOn.map((status) => ({ kind: "appointment", statuses: [status] })),
-      ...(flow.exitOn || []).map((status) => ({ kind: "rebooking", statuses: [status], scope: "contact" }))
+      ...(flow.exitOn || []).map((status) => {
+        const exit = (flow.workflowDocument?.exits || []).find((candidate) => candidate.effect === "exit_contact_pending" && candidate.event === status);
+        return {
+          kind: "rebooking",
+          statuses: [status],
+          scope: "contact",
+          ...exit?.serviceIds?.length ? { serviceIds: clone(exit.serviceIds) } : {}
+        };
+      })
     ]),
     steps: flow.steps.map((step, stepIndex) => ({ stepIndex, ...clone(step) })),
     source: {
@@ -26320,8 +27175,13 @@ function reminderDefinition(flow) {
     }
   };
   if (flow.flowKey === "partner-initial-in-person") {
-    definition.messagePreview = clone(PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW);
+    definition.messagePreview = {
+      status: "owned_delivery_contract_hard_shadow",
+      label: "Exact source copy rendered by the provider-neutral owned adapter. Delivery is source-level shadow.",
+      notices: clone(flow.workflowDocument.nodes.map((node, stepIndex) => ({ stepIndex, ...node.message })))
+    };
     definition.cutoverReadiness = clone(PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS);
+    definition.source.path = "reminder-engine-worker/src/partner-initial-in-person-workflow.js";
   }
   if (flow.flowKey === "initial-in-person") {
     definition.messagePreview = clone(INITIAL_IN_PERSON_MESSAGE_PREVIEW);
@@ -26348,7 +27208,7 @@ function reminderDefinition(flow) {
   return definition;
 }
 function nurtureDefinition(sequence) {
-  return {
+  const definition = {
     id: `nurture:${sequence.sequenceId}`,
     engine: "nurture",
     key: sequence.sequenceId,
@@ -26363,6 +27223,11 @@ function nurtureDefinition(sequence) {
       path: "nurture-engine-worker/src/config.js"
     }
   };
+  definition.cutoverReadiness = clone(NURTURE_CUTOVER_READINESS[sequence.sequenceId]);
+  if (sequence.sequenceId === "flow-3-post-initial") {
+    definition.messagePreview = clone(FLOW_3_POST_INITIAL_MESSAGE_PREVIEW);
+  }
+  return definition;
 }
 function automationDefinitions() {
   return DEFINITIONS.map(clone);
@@ -26418,12 +27283,13 @@ function eventEvidence(event2, { terminalOutcome = null } = {}) {
   }
   return { source: "owned_d1_append_only_log", gaps };
 }
-var REGISTRY_VERSION, OWNED_ONLY_GAP, PRE_REGISTRY_HISTORY_GAP, DELIVERY_GAP, DB_UNAVAILABLE_GAP, PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_VIRTUAL_MESSAGE_PREVIEW, ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW, PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_VIRTUAL_CUTOVER_READINESS, ASSESSMENT_NO_SHOW_CUTOVER_READINESS, NO_SHOW_RECOVERY_CUTOVER_READINESS, DEFINITIONS;
+var REGISTRY_VERSION, OWNED_ONLY_GAP, PRE_REGISTRY_HISTORY_GAP, DELIVERY_GAP, DB_UNAVAILABLE_GAP, INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_VIRTUAL_MESSAGE_PREVIEW, ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW, FLOW_3_POST_INITIAL_MESSAGE_PREVIEW, PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_VIRTUAL_CUTOVER_READINESS, ASSESSMENT_NO_SHOW_CUTOVER_READINESS, NO_SHOW_RECOVERY_CUTOVER_READINESS, NURTURE_CUTOVER_READINESS, DEFINITIONS;
 var init_automation_registry = __esm({
   "lib/automation-registry.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_config();
     init_config2();
+    init_templates();
     init_config3();
     REGISTRY_VERSION = 1;
     OWNED_ONLY_GAP = Object.freeze({
@@ -26443,18 +27309,6 @@ var init_automation_registry = __esm({
       label: "The shared automation execution store is not bound, so enrollments and execution events cannot be read."
     });
     __name(clone, "clone");
-    PARTNER_INITIAL_IN_PERSON_MESSAGE_PREVIEW = Object.freeze({
-      status: "source_verified_read_only",
-      label: "Source-verified read-only copy. This shadow definition does not send messages.",
-      notices: Object.freeze([
-        Object.freeze({ stepIndex: 0, audience: "internal", channel: "email", subject: "{{contact.first_name}} booked a {{calendar.name}}", body: "Hi {{user.first_name}},\n\n{{contact.name}} booked a {{calendar.name}} for {{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n\nStudio: 662 8th Ave, San Francisco, CA 94118" }),
-        Object.freeze({ stepIndex: 1, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "Your partner session is confirmed", preheader: "See you soon. Here are your session details.", body: "Hi {{contact.first_name}},\n\nYour session with Garrett is confirmed:\n\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n662 8th Ave, San Francisco, CA 94118\n\nA few reminders:\n\u2022 60-minute session\n\u2022 Wear comfortable clothes\n\u2022 Allow time for parking\n\nReschedule {{appointment.reschedule_link}} \xB7 Cancel {{appointment.cancellation_link}}\n\nAdd to Google Calendar {{appointment.add_to_google_calendar}} \xB7 Add to iCal/Outlook {{appointment.add_to_ical_outlook}}\n\nThe Amari Method Team" }),
-        Object.freeze({ stepIndex: 2, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "See you tomorrow, {{contact.first_name}}", preheader: "Quick reminder about your session tomorrow.", body: "Hi {{contact.first_name}},\n\nJust a heads up about your upcoming session with Garrett:\n\n{{calendar.name}}\n{{appointment.only_start_date}} at {{appointment.only_start_time}} {{appointment.timezone}}\n662 8th Ave, San Francisco, CA 94118\n\nIf something came up:\nReschedule {{appointment.reschedule_link}} \xB7 Cancel {{appointment.cancellation_link}}\n\nThe Amari Method Team" }),
-        Object.freeze({ stepIndex: 3, audience: "client", channel: "email", from: "Amari Method <eben@amarimethod.com>", subject: "Your session is in 1 hour", preheader: "See you soon.", body: "Hi {{contact.first_name}},\n\nYour session with Garrett is at {{appointment.only_start_time}} {{appointment.timezone}}.\n\n662 8th Ave, San Francisco, CA 94118\n\nThe Amari Method Team" }),
-        Object.freeze({ stepIndex: 4, audience: "client", channel: "sms", body: "Hi {{contact.first_name}}, just a friendly reminder that your appointment with Garrett is in one hour." }),
-        Object.freeze({ stepIndex: 5, audience: "internal", channel: "sms", body: "{{contact.name}}'s {{calendar.name}} appointment at {{appointment.only_start_time}} {{appointment.timezone}}. These were the specific issues this person wanted to address (if applicable): {{contact.additional_information}}" })
-      ])
-    });
     INITIAL_IN_PERSON_MESSAGE_PREVIEW = Object.freeze({
       status: "source_verified_read_only",
       label: "Source-verified read-only copy. This reconciled shadow definition does not send messages.",
@@ -26488,10 +27342,15 @@ var init_automation_registry = __esm({
         Object.freeze({ stepIndex: 2, audience: "client", channel: "email", from: "Garrett <garrett@amarimethod.com>", body: "Hi {{contact.first_name}},\n\nI know life gets busy. Scheduling is hard. But your body doesn't stop sending signals just because the calendar got in the way.\n\nIf something is still bothering you, it's worth looking into. Usually something is working too hard because something else isn't working enough. That pattern doesn't fix itself.\n\nWhenever you're ready:\n\nBook Your Session\n\nOr just reply here and I'll help find a time.\n\nGarrett" })
       ])
     });
+    FLOW_3_POST_INITIAL_MESSAGE_PREVIEW = Object.freeze({
+      status: "source_verified_read_only",
+      label: "Exact current two-email source copy from the owned fail-closed template catalog. The former Day-10 series pitch is deleted; delivery remains disabled.",
+      notices: Object.freeze(flow3MessagePreview().map(Object.freeze))
+    });
     PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS = Object.freeze({
       status: "not_eligible",
       label: "Not eligible for active delivery",
-      summary: "Shadow enrollment and cancellation are proven. GHL remains the sender until every blocked behavior below has an owned, verified replacement.",
+      summary: "One canonical source document now drives scheduling, Staff preview, secure client management links, and the provider-neutral delivery contract. The owned No Show-series exit is built but its reviewed shadow document is not published; owned SMS also remains unselected.",
       requirements: Object.freeze([
         Object.freeze({
           code: "native_lifecycle_shadow_proven",
@@ -26500,16 +27359,40 @@ var init_automation_registry = __esm({
           detail: "Confirmed enrollment, immediate would-send evidence, and cancellation of all four future reminders were proven beside the live flow on Aug. 9. No message was sent."
         }),
         Object.freeze({
-          code: "no_show_series_exit_not_owned",
-          status: "blocked",
-          label: "Exit No Show Email SMS series on confirmation",
-          detail: "This is the first action in the live confirmation workflow. It is still owned by GHL and must be preserved and proven before activation."
+          code: "no_show_series_exit_owned",
+          status: "proven",
+          label: "Exit No Show Email SMS series by owned person",
+          detail: "Confirmed Partner Initial events close every active No Show recovery enrollment for the exact owned contact and its one verified legacy GHL alias. The operation preserves completed evidence, cancels only pending work, isolates other contacts, and fails closed on a missing or ambiguous crosswalk."
         }),
         Object.freeze({
-          code: "delivery_templates_and_adapter_not_owned",
+          code: "no_show_series_exit_shadow_publish_pending",
           status: "blocked",
-          label: "Deliver the exact messages from Amari",
-          detail: "The six messages below are source-verified previews only. No owned template renderer or email/SMS sender adapter is active."
+          label: "Publish the reviewed No Show shadow document",
+          detail: "The provider-neutral exit lives in v3 source but is not installed in the Reminder workflow registry. Publishing that shadow-only document is a separate D1/runtime gate and cannot send a message."
+        }),
+        Object.freeze({
+          code: "owned_delivery_contract_built",
+          status: "proven",
+          label: "Render exact messages from owned CRM truth",
+          detail: "The six exact messages now live in the executable workflow document. The adapter resolves stable owned appointment/contact/service identity, follows reschedule lineage, applies DND/consent checks, uses E.164 destinations instead of provider contact IDs, and fails closed on missing inputs."
+        }),
+        Object.freeze({
+          code: "owned_client_manage_links_built",
+          status: "proven",
+          label: "Issue owned reschedule and cancellation links",
+          detail: "HMAC-signed links bind one owned contact, appointment revision, expiry, and capability. GET is read-only; a same-origin POST confirms the action through the owned command journal, with exact provider readback and stale-revision refusal. Calendar export uses owned appointment truth."
+        }),
+        Object.freeze({
+          code: "owned_sms_provider_pending",
+          status: "blocked",
+          label: "Select and prove the owned SMS edge",
+          detail: "The lifecycle passes an E.164 destination and idempotency key to a provider-neutral SMS contract, but no owned SMS service is selected or bound. GHL contact delivery is not used as a fallback."
+        }),
+        Object.freeze({
+          code: "durable_effect_receipts_built",
+          status: "proven",
+          label: "Close delivery effects durably",
+          detail: "Every attempt is hashed, compare-and-set claimed once, append-only receipted on acceptance, and held ambiguous without automatic resend when transport outcome is uncertain. Exact accepted replays do not resend."
         }),
         Object.freeze({
           code: "quiet_period_evidence_pending",
@@ -26563,18 +27446,77 @@ var init_automation_registry = __esm({
       ])
     });
     NO_SHOW_RECOVERY_CUTOVER_READINESS = Object.freeze({
-      status: "proof_ready",
-      label: "Delivery built; live release still gated",
-      summary: "The exact source path, owned delivery adapter, rebooking exits, and terminal SMS receipt reconciliation are built. GHL remains the live sender until a separately approved release.",
+      status: "not_eligible",
+      label: "Owned contract and review intake built; production gates remain",
+      summary: "The exact source path, provider-neutral delivery contract, rebooking exits, durable effect receipts, and signed missed-session review intake are built. GHL remains the live sender while the new schema/runtime and owned SMS provider are unreleased.",
       requirements: Object.freeze([
         Object.freeze({ code: "source_structure_reconciled", status: "proven", label: "Source structure reconciled", detail: "The exact 11 Normal/no-show calendars, five contact-mode filters, affiliate branch, regular three-message branch, two one-day waits, and two appointmentRescheduled=false checks are represented." }),
         Object.freeze({ code: "source_copy_reconciled", status: "proven", label: "Source copy reconciled", detail: "Both SMS messages, email subjects, preheaders, bodies, and destinations are exact source values." }),
         Object.freeze({ code: "owned_rebooking_equivalence_proven", status: "proven", label: "Owned rebooking exit proven", detail: "The controlled all-DND proof demonstrated affiliate and regular enrollment plus confirmed-rebooking cancellation without client sends." }),
-        Object.freeze({ code: "delivery_adapter_built", status: "proven", label: "Owned delivery built", detail: "The exact SMS and Garrett email templates render through the owned GHL conversations and Gmail adapters behind two disabled release gates." }),
-        Object.freeze({ code: "terminal_sms_receipts_built", status: "proven", label: "Terminal SMS receipt reconciliation built", detail: "No Show SMS provider references are reconciled into immutable delivery-status events with flow-specific health evidence." }),
-        Object.freeze({ code: "missed_count_owner_retained", status: "proven", label: "Keep the missed-count owner in GHL", detail: "The separate Published No Show \u2014 Increment Missed Count workflow remains the sole live counter owner. An owned durable observer is built but disabled; it records an expected increment and Staff exception evidence without changing the contact field or claiming parity." }),
+        Object.freeze({ code: "delivery_adapter_built", status: "proven", label: "Provider-neutral owned delivery built", detail: "The exact SMS and Garrett email templates read owned CRM identity, consent and E.164/email destinations, then use only the owned SMS service and verified Garrett Google Workspace adapters with durable idempotent effect receipts. No GHL read or sender fallback remains." }),
+        Object.freeze({ code: "owned_recovery_intake_built", status: "proven", label: "Signed recovery review intake built", detail: "Reminder issues a recovery-only same-origin bearer for the exact missed appointment revision. Client confirmation appends one idempotent pending Staff review and cannot book, grant, charge, message, or decide anything." }),
+        Object.freeze({ code: "owned_recovery_runtime_pending", status: "blocked", label: "Install and release the recovery runtime", detail: "Migrations 0025\u20130027 and the reviewed CRM, Reminder, and Pages source are not installed or deployed. Production remains unchanged until separately guarded releases and readback." }),
+        Object.freeze({ code: "owned_sms_provider_pending", status: "blocked", label: "Select and prove the owned SMS edge", detail: "The contract requires an E.164 destination, authenticated service binding and idempotency key. No SMS provider or cost has been selected or configured, and GHL Conversations is not a fallback." }),
+        Object.freeze({ code: "durable_effect_receipts_built", status: "proven", label: "Durable delivery effects built", detail: "Each email or SMS attempt binds the exact enrollment, definition, node, recipient hash and rendered request; uncertain transport is held for manual reconciliation rather than resent." }),
+        Object.freeze({ code: "owned_missed_truth_built", status: "proven", label: "Derive missed appointments from owned status facts", detail: "Migration 0026 retains one immutable canonical status fact per appointment revision and derives the current missed count without a mutable contact field. Corrections append a new revision and naturally leave the count. The durable observer expects CRM reconciliation and preserves GHL's ingest-time number only as non-authoritative comparison evidence." }),
+        Object.freeze({ code: "owned_attendance_command_built", status: "proven", label: "Own attendance and no-show corrections", detail: "Migration 0027 atomically binds one idempotent Staff command to an exact provider-free owned appointment revision, appends immutable evidence, and advances canonical status facts. It cannot write GHL, a provider mirror, sessions, entitlement, payment, messages, or recovery decisions; its production route remains source-pinned shadow." }),
+        Object.freeze({ code: "missed_count_runtime_retained", status: "review", label: "Keep the live GHL counter until cutover", detail: "The Published No Show \u2014 Increment Missed Count workflow and contact field remain live until migration 0026, runtime reconciliation, history coverage, and a separately approved authority cutover are read back. Local source does not write either counter." }),
         Object.freeze({ code: "ghl_retirement_not_approved", status: "review", label: "Keep GHL live until activation", detail: "The Published No Show Email SMS series remains the rollback sender until a separately approved coordinated cutover." })
       ])
+    });
+    NURTURE_CUTOVER_READINESS = Object.freeze({
+      "flow-1-quiz": Object.freeze({
+        status: "not_eligible",
+        label: "Exact native copy and gated submission path built; delivery is not enabled",
+        summary: "The six-step quiz nurture schedule, exact native copy, provider-neutral contact reads, guarded Google Workspace submission path, and exits are modeled in shadow. GHL remains the live owner until terminal receipt reconciliation and cutover evidence are proven.",
+        requirements: Object.freeze([
+          Object.freeze({ code: "source_contract_captured", status: "proven", label: "Current source contract captured", detail: "The live waits, pain-location branches, subjects, preheaders, bodies, and discovery exits are recorded in the canonical workflow register." }),
+          Object.freeze({ code: "owned_quiz_intake_built", status: "proven", label: "Capture quiz leads in the owned CRM", detail: "A Worker-authenticated, idempotent owned intake stores normalized source evidence, stable lead identity, tags, and provider-neutral personalization fields without calling GHL." }),
+          Object.freeze({ code: "owned_quiz_shadow_handoff_built", status: "proven", label: "Hand owned intake to native Flow 1", detail: "Quiz capture atomically creates a digest-bound outbox. The five-minute CRM sweep leases it through the authenticated NURTURE service binding and requires an exact Flow 1 acknowledgement; retries and manual review are durable, and every sequence remains shadow-only." }),
+          Object.freeze({ code: "owned_quiz_retention_plan_built", status: "proven", label: "Inventory every retained quiz copy", detail: "A bounded cross-store dry run identifies expired source evidence, CRM projections, every current contact reference, and the Flow 1 enrollment, step, and immutable-event copies. Staff receives aggregate counts and a plan digest only." }),
+          Object.freeze({ code: "retention_execution_policy_pending", status: "blocked", label: "Approve the privacy-safe deletion policy", detail: "No purge route or scheduler exists. The legal rule for immutable automation evidence, shared contact identity, and redaction versus deletion must be approved before any destructive execution path is built." }),
+          Object.freeze({ code: "public_quiz_bridge_pending", status: "blocked", label: "Connect the public quiz to owned intake", detail: "The sensitive server-to-server Pages payload seam is not connected or deployed; GHL remains the live intake owner until that exact boundary is separately reviewed." }),
+          Object.freeze({ code: "owned_contact_reads_built", status: "proven", label: "Read personalization from the owned CRM", detail: "Branches and copy use stable primaryPainLocation, painPatternSignature, and painDuration keys; the adapter maps transition provider attributes only at the boundary." }),
+          Object.freeze({ code: "owned_template_renderer_built", status: "proven", label: "Render exact copy from Amari", detail: "All 13 current branch variants live in an immutable allowlisted catalog that rejects unknown templates and missing required merge values." }),
+          Object.freeze({ code: "owned_delivery_built", status: "proven", label: "Owned submission boundary built", detail: "The server-owned Garrett Google Workspace adapter sits behind source-level shadow mode, an exact release flag, and a known-sequence JSON allowlist. An atomic pending-to-dispatching claim prevents concurrent duplicate submission and GHL is never a fallback." }),
+          Object.freeze({ code: "delivery_exception_visibility_built", status: "proven", label: "Expose submission exceptions truthfully", detail: "The authenticated aggregate readiness projection reports stuck dispatch claims, provider-accepted submissions missing CRM proof, exact submission matches, missing outcomes, and terminal failures without exposing client identifiers or message content." }),
+          Object.freeze({ code: "terminal_delivery_receipts_missing", status: "blocked", label: "Reconcile terminal delivery evidence", detail: "A Gmail message ID proves provider submission only. Activation remains blocked until the runtime has an evidence-backed terminal-success policy; accepted submissions are not mislabeled delivered." }),
+          Object.freeze({ code: "enrollment_transfer_built", status: "proven", label: "Exact position-transfer planner built", detail: "The authenticated importer requires a fresh provider-history cursor, checks its next-step time against the original sequence schedule, marks only earlier steps imported, rejects stale/mismatched/overdue evidence, and remains shadow-only." }),
+          Object.freeze({ code: "live_enrollment_snapshot_pending", status: "review", label: "Recount and capture the live queue at cutover", detail: "Immediately before activation, collect each active provider enrollment's original entry, exact next step, next-action time, and fresh capture time; the importer refuses to infer position from elapsed time alone." }),
+          Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep Quiz to Pain Consultation email flow live", detail: "Retirement requires a coordinated cutover after native shadow evidence and delivery receipts agree." })
+        ])
+      }),
+      "flow-2-post-discovery": Object.freeze({
+        status: "not_eligible",
+        label: "Draft native copy built; activation path is unresolved",
+        summary: "The $29 Assessment nurture structure, exact native copy, and provider-neutral contact reads are modeled in shadow, but delivery and activation semantics remain incomplete because the source workflow is Draft.",
+        requirements: Object.freeze([
+          Object.freeze({ code: "source_contract_captured", status: "proven", label: "Current Draft source captured", detail: "The showed entry, partner exclusion, immediate email, Day-4 branch, and Initial/Assessment booking exits are represented." }),
+          Object.freeze({ code: "activation_owner_unresolved", status: "review", label: "Choose the native activation moment", detail: "The provider workflow is intentionally Draft. Native activation must be tied to the owned Assessment journey, not inferred from an inactive provider flow." }),
+          Object.freeze({ code: "owned_contact_reads_built", status: "proven", label: "Read branches and guards from the owned CRM", detail: "The personalized/chronic branch uses primaryPainLocation and the owned CRM adapter supplies tags and values fail-closed." }),
+          Object.freeze({ code: "owned_template_renderer_built", status: "proven", label: "Render exact Assessment copy from Amari", detail: "All three current $29 / 50-minute Assessment variants live in the immutable fail-closed native catalog." }),
+          Object.freeze({ code: "owned_delivery_built", status: "proven", label: "Owned submission boundary built", detail: "The exact Garrett Google Workspace adapter is guarded by shadow source, release, and sequence-allowlist gates with an atomic dispatch claim and no GHL fallback." }),
+          Object.freeze({ code: "delivery_exception_visibility_built", status: "proven", label: "Expose submission exceptions truthfully", detail: "Aggregate readiness distinguishes exact CRM submission proof, missing proof, missing outcomes, failures, and stuck dispatch claims without exposing client data." }),
+          Object.freeze({ code: "terminal_delivery_receipts_missing", status: "blocked", label: "Reconcile terminal delivery evidence", detail: "Provider submission is not delivery. An evidence-backed terminal-success policy remains required before activation." })
+        ])
+      }),
+      "flow-3-post-initial": Object.freeze({
+        status: "not_eligible",
+        label: "Current two-email source and gated submission path built; delivery is not enabled",
+        summary: "The published two-email source, all 11 provider removal triggers, explicit 6-/12-week native purchase exits, and guarded Google Workspace submission path are represented in shadow. GHL remains live while terminal receipt reconciliation and transfer evidence are completed.",
+        requirements: Object.freeze([
+          Object.freeze({ code: "source_structure_reconciled", status: "proven", label: "Current source structure reconciled", detail: "The former Day-10 pitch and empty wait are absent; the two emails, seven calendar exits, and four legacy purchase exits match the published source." }),
+          Object.freeze({ code: "source_copy_reconciled", status: "proven", label: "Exact source copy captured", detail: "Both current emails are exposed below as read-only source evidence." }),
+          Object.freeze({ code: "current_practice_purchase_exit_owned", status: "proven", label: "Own 6- and 12-week purchase exits", detail: "Both current Practice product IDs are explicit native exits and are already carried by the existing normalized purchase event path." }),
+          Object.freeze({ code: "owned_template_renderer_built", status: "proven", label: "Render exact copy from Amari", detail: "Both current messages live in an immutable, fail-closed native catalog that rejects unknown templates and missing merge fields." }),
+          Object.freeze({ code: "owned_delivery_built", status: "proven", label: "Owned submission boundary built", detail: "The exact Garrett Google Workspace adapter is guarded by shadow source, release, and sequence-allowlist gates with an atomic dispatch claim and no GHL fallback." }),
+          Object.freeze({ code: "delivery_exception_visibility_built", status: "proven", label: "Expose submission exceptions truthfully", detail: "Aggregate readiness distinguishes exact CRM submission proof, missing proof, missing outcomes, failures, and stuck dispatch claims without exposing client data." }),
+          Object.freeze({ code: "terminal_delivery_receipts_missing", status: "blocked", label: "Reconcile terminal delivery evidence", detail: "Provider submission is not delivery. An evidence-backed terminal-success policy remains required before activation." }),
+          Object.freeze({ code: "enrollment_transfer_built", status: "proven", label: "Exact position-transfer planner built", detail: "The authenticated importer requires fresh provider-history cursor evidence and fails closed on stale, mismatched, or already-overdue next actions." }),
+          Object.freeze({ code: "live_enrollment_snapshot_pending", status: "review", label: "Recount and capture the live queue at cutover", detail: "Any active provider enrollment must be imported from its observed original cursor immediately before retirement; no position is inferred from elapsed time." }),
+          Object.freeze({ code: "ghl_retirement_not_approved", status: "blocked", label: "Keep First session to follow up session email flow live", detail: "Retirement requires coordinated native activation and receipt evidence." })
+        ])
+      })
     });
     __name(reminderDefinition, "reminderDefinition");
     __name(nurtureDefinition, "nurtureDefinition");
@@ -26617,10 +27559,16 @@ function familyEvidence(family, ownedDefinitions) {
       label: "Owned definitions expose exact template keys, timing, type, and branches; rendered template bodies are not present in the owned engine config yet."
     });
   }
-  if (ownedDefinitions.some((definition) => definition.messagePreview)) {
+  if (ownedDefinitions.some((definition) => definition.messagePreview?.status === "source_verified_read_only")) {
     gaps.push({
       code: "owned_delivery_templates_not_loaded",
       label: "Source-verified read-only copy is shown for this definition, but no active owned delivery template or sender adapter is loaded."
+    });
+  }
+  if (ownedDefinitions.some((definition) => definition.messagePreview?.status === "owned_delivery_contract_hard_shadow")) {
+    gaps.push({
+      code: "owned_delivery_contract_hard_shadow",
+      label: "Exact owned copy and a provider-neutral delivery contract are present, but the definition remains hard-shadow until its named cutover blockers close."
     });
   }
   if (family.kind === "evidence_only") {
@@ -26683,7 +27631,7 @@ function familyRegistryEvidence() {
 var AUTOMATION_INVENTORY_AS_OF, AUTOMATION_INVENTORY_SOURCE, record2, p, d, ASSESSMENT_CUTOVER_TREE, ASSESSMENT_PAID_BOOKING_CUTOVER_TREE, RAW_FAMILIES, OWNED_DEFINITIONS, FAMILIES;
 var init_automation_families = __esm({
   "lib/automation-families.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_automation_registry();
     AUTOMATION_INVENTORY_AS_OF = "2026-08-07";
     AUTOMATION_INVENTORY_SOURCE = "GHL-WORKFLOWS-MASTER.md";
@@ -27421,7 +28369,7 @@ async function failuresView(db, { sinceMs = 0, limit = 100 } = {}) {
 }
 var init_automation_views = __esm({
   "lib/automation-views.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_automation_registry();
     init_automation_families();
     __name(familyReference, "familyReference");
@@ -27455,7 +28403,7 @@ async function sha256Hex(value) {
 var FOLLOW_UP_FAMILY, NO_SHOW_MISSED_COUNT_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE, NO_SHOW_COUNTER_RELIABILITY_ROUTE, RAW_RETENTION_MS, NORMALIZED_RETENTION_MS;
 var init_reliability_contract = __esm({
   "lib/reliability-contract.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     FOLLOW_UP_FAMILY = "follow-up-session-reminders";
     NO_SHOW_MISSED_COUNT_FAMILY = "no-show-missed-count";
     FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
@@ -27470,12 +28418,12 @@ var init_reliability_contract = __esm({
     });
     NO_SHOW_COUNTER_RELIABILITY_ROUTE = Object.freeze({
       accepted: Object.freeze([
-        Object.freeze({ id: "durable-receipt", transition: "received", label: "Record durable no-show receipt", detail: "Amari stores the authenticated GHL no-show identity and payload hash before assessing the counter obligation." }),
+        Object.freeze({ id: "durable-receipt", transition: "received", label: "Record durable no-show receipt", detail: "Amari stores the authenticated GHL no-show identity and payload hash before assessing the canonical status obligation." }),
         Object.freeze({ id: "authenticate-source", transition: "authenticated", label: "Verify source authenticity", detail: "The event must pass the authenticated appointment-webhook boundary." }),
         Object.freeze({ id: "normalize-identity", transition: "normalized", label: "Normalize the exact no-show", detail: "Amari requires the appointment, person, start time, No Show status, Normal event type, and an approved calendar." }),
-        Object.freeze({ id: "expected-increment", transition: "accepted", label: "Record expected missed-count increment", detail: "A durable lifecycle records one expected increment plus the ingest-time GHL field observation. GHL remains the sole live counter owner; the observation is not parity proof." })
+        Object.freeze({ id: "owned-status-reconciliation", transition: "accepted", label: "Reconcile owned missed-status truth", detail: "A durable lifecycle expects the same appointment to appear in CRM's immutable status facts. The derived count writes no mutable contact field; the ingest-time GHL field remains non-authoritative comparison evidence." })
       ]),
-      rejected: Object.freeze({ id: "reliability-exception", transition: "rejected", label: "Open Staff reliability exception", detail: "Incomplete or ineligible no-show evidence is retained as a named Staff exception and never changes the contact counter." })
+      rejected: Object.freeze({ id: "reliability-exception", transition: "rejected", label: "Open Staff reliability exception", detail: "Incomplete or ineligible no-show evidence is retained as a named Staff exception and never changes an appointment or contact counter." })
     });
     RAW_RETENTION_MS = 30 * 24 * 60 * 60 * 1e3;
     NORMALIZED_RETENTION_MS = 400 * 24 * 60 * 60 * 1e3;
@@ -27636,7 +28584,7 @@ async function readReliabilitySchemaAuthority(db) {
 var RELIABILITY_SCHEMA_V1, RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY, V2_ONLY_OBJECTS, V2_ADDITIVE_TABLES;
 var init_reliability_schema_authority = __esm({
   "lib/reliability-schema-authority.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_reliability_contract();
     RELIABILITY_SCHEMA_V1 = Object.freeze({
       version: 1,
@@ -28401,7 +29349,7 @@ async function recordEvidenceAccess(db, { actor, family, action, sourceEventId =
 var FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION, FOLLOW_UP_RECONCILIATION_RUN_KIND, FOLLOW_UP_RECONCILIATION_EVIDENCE_SCOPE, FOLLOW_UP_RECONCILIATION_MAX_WINDOW_MS, FOLLOW_UP_RECONCILIATION_MAX_COMPLETION_LAG_MS, FOLLOW_UP_RECONCILIATION_MAX_RUN_MS, FOLLOW_UP_RECONCILIATION_MAX_DETAIL_BYTES, FOLLOW_UP_RECONCILIATION_MAX_ID_ARRAY_ITEMS, RECONCILIATION_SOURCE_VERSION_RE, RECONCILIATION_RUNTIME_VERSION_RE, RELEASE_MANIFEST_ID_RE, DEPLOYMENT_ATTESTATION_ID_RE, GHL_APPOINTMENT_EVENTS_WORKFLOW_ID, GHL_SOURCE_LIMITATION, RECONCILIATION_COMPONENT_KEYS, DETAIL_KEYS, WINDOW_KEYS, COMPONENT_KEYS;
 var init_reliability_store = __esm({
   "lib/reliability-store.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_reliability_contract();
     init_reliability_schema_authority();
     FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION = "follow-up-reconciliation.v1";
@@ -28578,12 +29526,12 @@ async function reminderRuntimeEvidence(context, flowKey) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
   try {
-    const response2 = await fetch(`${REMINDER_ENGINE_URL2}/runtime-status?flow=${encodeURIComponent(flowKey)}`, {
+    const response3 = await fetch(`${REMINDER_ENGINE_URL2}/runtime-status?flow=${encodeURIComponent(flowKey)}`, {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal
     });
-    if (!response2.ok) return null;
-    const runtime = (await response2.json()).runtime || null;
+    if (!response3.ok) return null;
+    const runtime = (await response3.json()).runtime || null;
     return runtime?.flow?.key === flowKey ? runtime : null;
   } catch {
     return null;
@@ -28596,12 +29544,12 @@ async function contactIdentityForReference(context, contactReference) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
   try {
-    const response2 = await fetch(`${CRM_WORKER_CONTACTS_URL}?limit=20&query=${encodeURIComponent(contactReference)}`, {
+    const response3 = await fetch(`${CRM_WORKER_CONTACTS_URL}?limit=20&query=${encodeURIComponent(contactReference)}`, {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal
     });
-    if (!response2.ok) return { ownedContactId: contactReference, providerContactId: null, name: null, phone: null, state: "unavailable" };
-    const body = await response2.json();
+    if (!response3.ok) return { ownedContactId: contactReference, providerContactId: null, name: null, phone: null, state: "unavailable" };
+    const body = await response3.json();
     const contact = (Array.isArray(body.contacts) ? body.contacts : []).find((candidate) => String(candidate.id || "") === contactReference || String(candidate.provider_contact_id || "") === contactReference);
     if (!contact) return { ownedContactId: contactReference, providerContactId: null, name: null, phone: null, state: "owned_contact_not_found" };
     return {
@@ -28629,12 +29577,12 @@ async function workerPersonAutomationEvidence(context, ownedContactId) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
   try {
-    const response2 = await fetch(`${CRM_WORKER_AUTOMATIONS_URL}/${encodeURIComponent(ownedContactId)}`, {
+    const response3 = await fetch(`${CRM_WORKER_AUTOMATIONS_URL}/${encodeURIComponent(ownedContactId)}`, {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal
     });
-    if (!response2.ok) return null;
-    return await response2.json();
+    if (!response3.ok) return null;
+    return await response3.json();
   } catch {
     return null;
   } finally {
@@ -28666,12 +29614,12 @@ async function workerFamilyAutomationEvidence(context, familyKey) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), CRM_WORKER_TIMEOUT_MS);
   try {
-    const response2 = await fetch(`${CRM_WORKER_FAMILIES_URL}/${encodeURIComponent(familyKey)}`, {
+    const response3 = await fetch(`${CRM_WORKER_FAMILIES_URL}/${encodeURIComponent(familyKey)}`, {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal
     });
-    if (!response2.ok) return null;
-    return await response2.json();
+    if (!response3.ok) return null;
+    return await response3.json();
   } catch {
     return null;
   } finally {
@@ -28711,15 +29659,15 @@ async function onRequestPost42(context) {
   const view = new URL(context.request.url).searchParams.get("view");
   const path = view === "workflow-draft" ? "/workflow-draft" : view === "workflow-publish" ? "/workflow-publish" : null;
   if (!path || !body) return new Response(JSON.stringify({ error: "Invalid workflow operation" }), { status: 400, headers: headers5 });
-  const response2 = await fetch(`${REMINDER_ENGINE_URL2}${path}`, {
+  const response3 = await fetch(`${REMINDER_ENGINE_URL2}${path}`, {
     method: "POST",
     headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`, "Content-Type": "application/json", "X-Staff-Actor": String(payload?.user || "Staff") },
     body: JSON.stringify(body)
   });
-  const result = await response2.text();
-  return new Response(result, { status: response2.status, headers: headers5 });
+  const result = await response3.text();
+  return new Response(result, { status: response3.status, headers: headers5 });
 }
-async function onRequestGet35(context) {
+async function onRequestGet36(context) {
   const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"),
     "Content-Type": "application/json"
@@ -28956,7 +29904,7 @@ async function onRequestGet35(context) {
 var RELIABILITY_ROUTES, VALID_CONTACT_ID, VALID_AUTOMATION_KEY, VALID_FAMILY_KEY, VALID_ENGINES, VALID_SOURCE_EVENT_ID, DEFAULT_FAILURE_WINDOW_HOURS, DEFAULT_ACTIVITY_WINDOW_HOURS, CRM_WORKER_CONTACTS_URL, CRM_WORKER_AUTOMATIONS_URL, CRM_WORKER_FAMILIES_URL, CRM_WORKER_TIMEOUT_MS, REMINDER_ENGINE_URL2;
 var init_staff_automations = __esm({
   "api/staff-automations.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_automation_views();
     init_automation_registry();
@@ -28989,7 +29937,7 @@ var init_staff_automations = __esm({
     __name(windowHours, "windowHours");
     __name(onRequestOptions50, "onRequestOptions");
     __name(onRequestPost42, "onRequestPost");
-    __name(onRequestGet35, "onRequestGet");
+    __name(onRequestGet36, "onRequestGet");
   }
 });
 
@@ -29000,7 +29948,7 @@ async function onRequestOptions51(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet36(context) {
+async function onRequestGet37(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -29157,7 +30105,7 @@ async function onRequestGet36(context) {
 var GHL_API_BASE28, GHL_LOCATION_ID21, CACHE_KEY, CACHE_TTL_SECONDS, MAX_CONTACT_PAGES, PAGE_SIZE2;
 var init_staff_balances = __esm({
   "api/staff-balances.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
@@ -29168,7 +30116,7 @@ var init_staff_balances = __esm({
     MAX_CONTACT_PAGES = 10;
     PAGE_SIZE2 = 100;
     __name(onRequestOptions51, "onRequestOptions");
-    __name(onRequestGet36, "onRequestGet");
+    __name(onRequestGet37, "onRequestGet");
   }
 });
 
@@ -29198,13 +30146,13 @@ async function freeSlots(context, calendarId, startDate, endDate, timezone) {
   )));
   const merged = {};
   let succeeded = false;
-  for (const response2 of responses) {
-    if (!response2.ok) {
-      console.error("[staff-book] slot lookup error:", response2.status, (await response2.text()).slice(0, 200));
+  for (const response3 of responses) {
+    if (!response3.ok) {
+      console.error("[staff-book] slot lookup error:", response3.status, (await response3.text()).slice(0, 200));
       continue;
     }
     succeeded = true;
-    const data = await response2.json();
+    const data = await response3.json();
     for (const [date2, value] of Object.entries(data)) {
       if (!merged[date2]) merged[date2] = { slots: [] };
       for (const slot of Array.isArray(value?.slots) ? value.slots : []) {
@@ -29221,9 +30169,9 @@ async function freeSlots(context, calendarId, startDate, endDate, timezone) {
   );
 }
 async function findUpcomingOnCalendar(context, contactId, calendarId) {
-  const response2 = await ghlFetch(context, `${GHL_API_BASE29}/contacts/${contactId}/appointments`);
-  if (!response2.ok) return null;
-  const data = await response2.json();
+  const response3 = await ghlFetch(context, `${GHL_API_BASE29}/contacts/${contactId}/appointments`);
+  if (!response3.ok) return null;
+  const data = await response3.json();
   const now = Date.now();
   const upcoming = (data.appointments || data.events || []).filter((appt) => appt?.calendarId === calendarId).map((appt) => ({
     id: String(appt.id || ""),
@@ -29380,7 +30328,7 @@ async function onRequestPost43(context) {
 var GHL_API_BASE29, GHL_LOCATION_ID22, METHODS4, CANCELLED;
 var init_staff_book = __esm({
   "api/staff-book.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_ghl();
     init_datetime();
@@ -29455,7 +30403,7 @@ function listStaffCalendarDefinitions() {
 var GROUPS, DEFINITIONS2, STAFF_BOOKABLE_IDS;
 var init_staff_calendar_catalog = __esm({
   "lib/staff-calendar-catalog.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_booking_slot_policy();
     init_staff_book_calendars();
     GROUPS = Object.freeze([
@@ -29635,7 +30583,7 @@ async function onRequestOptions53(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS5)
   });
 }
-async function onRequestGet37(context) {
+async function onRequestGet38(context) {
   const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS5),
     "Content-Type": "application/json",
@@ -29648,12 +30596,12 @@ async function onRequestGet37(context) {
 var METHODS5;
 var init_staff_calendars = __esm({
   "api/staff-calendars.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_calendar_catalog();
     METHODS5 = "GET, OPTIONS";
     __name(onRequestOptions53, "onRequestOptions");
-    __name(onRequestGet37, "onRequestGet");
+    __name(onRequestGet38, "onRequestGet");
   }
 });
 
@@ -29701,7 +30649,7 @@ async function onRequestPost44(context) {
 var WORKER_BASE;
 var init_staff_call_coach_run = __esm({
   "api/staff-call-coach-run.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     WORKER_BASE = "https://call-coach.eben-fa2.workers.dev";
     __name(onRequestOptions54, "onRequestOptions");
@@ -29805,7 +30753,7 @@ async function onRequestPost45(context) {
 var GHL_API_BASE30, AGREEMENT_VERSION;
 var init_staff_checkin = __esm({
   "api/staff-checkin.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
@@ -29911,7 +30859,7 @@ function summarizeClarity(payload, days) {
 async function onRequestOptions56(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet38(context) {
+async function onRequestGet39(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers5);
@@ -29924,9 +30872,9 @@ async function onRequestGet38(context) {
     return new Response(JSON.stringify({ error: "Clarity export is not configured" }), { status: 503, headers: headers5 });
   }
   const params = new URLSearchParams({ numOfDays: String(days), dimension1: "URL", dimension2: "Source", dimension3: "Device" });
-  let response2;
+  let response3;
   try {
-    response2 = await fetch(`${CLARITY_ENDPOINT}?${params}`, {
+    response3 = await fetch(`${CLARITY_ENDPOINT}?${params}`, {
       headers: {
         Accept: "application/json",
         Authorization: `Bearer ${context.env.CLARITY_API_TOKEN}`
@@ -29935,12 +30883,12 @@ async function onRequestGet38(context) {
   } catch {
     return new Response(JSON.stringify({ error: "Clarity export service could not be reached" }), { status: 502, headers: headers5 });
   }
-  if (!response2.ok) {
-    const diagnosis = response2.status === 403 ? "Clarity rejected this token for Data Export. Confirm it was generated by an admin of the Clarity project that tracks amarimethod.com, then replace the Pages production secret." : response2.status === 401 ? "Clarity rejected the export token as missing, invalid, or expired. Regenerate it in that Clarity project's Data Export settings and update the Pages production secret." : response2.status === 429 ? "Clarity's daily export-request quota has been reached. Try again tomorrow." : "Clarity export request failed.";
-    return new Response(JSON.stringify({ error: diagnosis, clarityStatus: response2.status }), { status: 502, headers: headers5 });
+  if (!response3.ok) {
+    const diagnosis = response3.status === 403 ? "Clarity rejected this token for Data Export. Confirm it was generated by an admin of the Clarity project that tracks amarimethod.com, then replace the Pages production secret." : response3.status === 401 ? "Clarity rejected the export token as missing, invalid, or expired. Regenerate it in that Clarity project's Data Export settings and update the Pages production secret." : response3.status === 429 ? "Clarity's daily export-request quota has been reached. Try again tomorrow." : "Clarity export request failed.";
+    return new Response(JSON.stringify({ error: diagnosis, clarityStatus: response3.status }), { status: 502, headers: headers5 });
   }
   try {
-    return new Response(JSON.stringify(summarizeClarity(await response2.json(), days)), { status: 200, headers: headers5 });
+    return new Response(JSON.stringify(summarizeClarity(await response3.json(), days)), { status: 200, headers: headers5 });
   } catch {
     return new Response(JSON.stringify({ error: "Clarity returned an unexpected response" }), { status: 502, headers: headers5 });
   }
@@ -29948,7 +30896,7 @@ async function onRequestGet38(context) {
 var CLARITY_ENDPOINT, STUDY_PATH, SIGNAL_METRICS;
 var init_staff_clarity_study = __esm({
   "api/staff-clarity-study.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     CLARITY_ENDPOINT = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
     STUDY_PATH = "/book/study";
@@ -29967,7 +30915,7 @@ var init_staff_clarity_study = __esm({
     __name(firstText, "firstText");
     __name(summarizeClarity, "summarizeClarity");
     __name(onRequestOptions56, "onRequestOptions");
-    __name(onRequestGet38, "onRequestGet");
+    __name(onRequestGet39, "onRequestGet");
   }
 });
 
@@ -29991,7 +30939,7 @@ async function onRequestPost46(context) {
     }
     const workerHeaders = context.env.WORKER_AUTH_SECRET ? { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` } : {};
     const ac = new AbortController();
-    const kickoff = fetch(`${WORKER_URL6}?contactId=${encodeURIComponent(contactId)}`, {
+    const kickoff = fetch(`${WORKER_URL5}?contactId=${encodeURIComponent(contactId)}`, {
       method: "GET",
       headers: workerHeaders,
       signal: ac.signal
@@ -30010,12 +30958,12 @@ async function onRequestPost46(context) {
     );
   }
 }
-var WORKER_URL6;
+var WORKER_URL5;
 var init_staff_coach_one = __esm({
   "api/staff-coach-one.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL6 = "https://call-coach.eben-fa2.workers.dev/coach-one";
+    WORKER_URL5 = "https://call-coach.eben-fa2.workers.dev/coach-one";
     __name(onRequestOptions57, "onRequestOptions");
     __name(onRequestPost46, "onRequestPost");
   }
@@ -30175,7 +31123,7 @@ function communicationPreferencesView({ user, preferences, saved, storageAvailab
 var TEAM_COMMUNICATION_PREFERENCES_VERSION, TEAM_COMMUNICATION_DEFAULT_TIMEZONE, STAFF_USERS, CHANNELS3, CADENCES, CATEGORY_DEFINITIONS, EXTERNAL_ROUTES, CURRENT_CHANNELS, CURRENT_CADENCE;
 var init_team_communication_preferences = __esm({
   "lib/team-communication-preferences.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     TEAM_COMMUNICATION_PREFERENCES_VERSION = 1;
     TEAM_COMMUNICATION_DEFAULT_TIMEZONE = "America/Los_Angeles";
     STAFF_USERS = Object.freeze(["Eben", "Garrett"]);
@@ -30289,7 +31237,7 @@ async function readRecord(kv, user) {
 async function onRequestOptions58(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, PUT, OPTIONS") });
 }
-async function onRequestGet39(context) {
+async function onRequestGet40(context) {
   const headers5 = responseHeaders2(context.request.headers.get("Origin"));
   const auth = await authenticate3(context, headers5);
   if (auth.error) return auth.error;
@@ -30344,7 +31292,7 @@ async function onRequestPut(context) {
 }
 var init_staff_communication_preferences = __esm({
   "api/staff-communication-preferences.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_team_communication_preferences();
     __name(responseHeaders2, "responseHeaders");
@@ -30352,7 +31300,7 @@ var init_staff_communication_preferences = __esm({
     __name(authenticate3, "authenticate");
     __name(readRecord, "readRecord");
     __name(onRequestOptions58, "onRequestOptions");
-    __name(onRequestGet39, "onRequestGet");
+    __name(onRequestGet40, "onRequestGet");
     __name(onRequestPut, "onRequestPut");
   }
 });
@@ -30367,7 +31315,7 @@ function preferred(a, b) {
 async function onRequestOptions59(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet40(context) {
+async function onRequestGet41(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
   try {
     const { error, payload } = await requireStaffAuth(context, headers5);
@@ -30416,14 +31364,14 @@ async function onRequestGet40(context) {
 var STAGE_RANK2;
 var init_staff_community = __esm({
   "api/staff-community.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGE_RANK2 = { host: 1, engaged_host: 2, partner: 3, workshop_opportunity: 4 };
     __name(identity, "identity");
     __name(preferred, "preferred");
     __name(onRequestOptions59, "onRequestOptions");
-    __name(onRequestGet40, "onRequestGet");
+    __name(onRequestGet41, "onRequestGet");
   }
 });
 
@@ -30442,7 +31390,7 @@ function dataUrl(buffer) {
 async function onRequestOptions60(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet41(context) {
+async function onRequestGet42(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
   try {
     const { error, payload } = await requireStaffAuth(context, headers5);
@@ -30475,12 +31423,12 @@ async function onRequestGet41(context) {
 }
 var init_staff_community_image = __esm({
   "api/staff-community-image.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_cos_field_visits();
     __name(dataUrl, "dataUrl");
     __name(onRequestOptions60, "onRequestOptions");
-    __name(onRequestGet41, "onRequestGet");
+    __name(onRequestGet42, "onRequestGet");
   }
 });
 
@@ -30536,7 +31484,7 @@ async function onRequestPost47(context) {
 var STAGES2;
 var init_staff_community_touch = __esm({
   "api/staff-community-touch.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGES2 = /* @__PURE__ */ new Set(["host", "engaged_host", "partner", "workshop_opportunity"]);
@@ -30623,23 +31571,46 @@ async function writePaymentRecord(kv, record3) {
   await kv.put(key, JSON.stringify(record3));
   return key;
 }
-async function listPaymentRecordsForContact(kv, contactId) {
-  if (!kv) return {};
+async function listPaymentRecordsForContact(kv, contactId, { strict = false } = {}) {
+  if (!kv) {
+    if (strict) throw new Error("Payment records are unavailable");
+    return {};
+  }
   const out = {};
   try {
-    const list = await kv.list({ prefix: contactPrefix(contactId) });
-    for (const k of list.keys || []) {
-      const rec = await kv.get(k.name, "json");
-      if (rec && rec.appointmentId) out[rec.appointmentId] = rec;
+    const prefix = contactPrefix(contactId);
+    const seen = /* @__PURE__ */ new Set();
+    let cursor;
+    for (let page = 0; page < 20; page++) {
+      const list = await kv.list({ prefix, ...cursor ? { cursor } : {} });
+      if (!list || !Array.isArray(list.keys)) throw new Error("Payment records are incomplete");
+      for (const k of list.keys) {
+        if (typeof k?.name !== "string" || !k.name.startsWith(prefix)) throw new Error("Invalid payment-record reference");
+        const rec = await kv.get(k.name, "json");
+        if (!rec || !rec.appointmentId || k.name !== paymentKey(contactId, rec.appointmentId) || rec.contactId && rec.contactId !== contactId) {
+          if (strict) throw new Error("Payment record could not be verified");
+          continue;
+        }
+        if (strict && (!PAYMENT_STATUSES.includes(rec.status) || rec.method != null && !PAYMENT_METHODS.includes(rec.method))) {
+          throw new Error("Payment record status or method could not be verified");
+        }
+        out[rec.appointmentId] = rec;
+      }
+      if (list.list_complete === true || !strict && list.list_complete === void 0) return out;
+      if (!list.cursor || seen.has(list.cursor)) throw new Error("Payment records are incomplete");
+      seen.add(list.cursor);
+      cursor = list.cursor;
     }
-  } catch {
+    throw new Error("Payment record page limit reached");
+  } catch (error) {
+    if (strict) throw error;
+    return out;
   }
-  return out;
 }
 var PAYMENT_STATUSES, PAYMENT_METHODS, SOURCES, NOTE_MAX, PREFIX2;
 var init_session_payment = __esm({
   "lib/session-payment.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     PAYMENT_STATUSES = Object.freeze([
       "paid",
       // confirmed paid (cash, venmo, a matched Stripe charge, …)
@@ -30681,7 +31652,7 @@ async function onRequestOptions62(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet42(context) {
+async function onRequestGet43(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31046,7 +32017,7 @@ async function onRequestGet42(context) {
 var GHL_API_BASE31, GHL_LOCATION_ID23;
 var init_staff_contact = __esm({
   "api/staff-contact.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -31058,7 +32029,7 @@ var init_staff_contact = __esm({
     GHL_API_BASE31 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID23 = "7pIO7FHVAyBT1jKGhfQM";
     __name(onRequestOptions62, "onRequestOptions");
-    __name(onRequestGet42, "onRequestGet");
+    __name(onRequestGet43, "onRequestGet");
   }
 });
 
@@ -31069,7 +32040,7 @@ async function onRequestOptions63(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet43(context) {
+async function onRequestGet44(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31122,14 +32093,14 @@ async function onRequestGet43(context) {
 var GHL_API_BASE32, GHL_LOCATION_ID24;
 var init_staff_contacts = __esm({
   "api/staff-contacts.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
     GHL_API_BASE32 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID24 = "7pIO7FHVAyBT1jKGhfQM";
     __name(onRequestOptions63, "onRequestOptions");
-    __name(onRequestGet43, "onRequestGet");
+    __name(onRequestGet44, "onRequestGet");
   }
 });
 
@@ -31176,7 +32147,7 @@ function isNonReply(text6) {
   if (t.length <= 40 && CLOSER_RE.test(t)) return true;
   return false;
 }
-async function onRequestGet44(context) {
+async function onRequestGet45(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31327,7 +32298,7 @@ async function onRequestGet44(context) {
 var GHL_API_BASE33, GHL_LOCATION_ID25, CLOSER_WORD, CLOSER_RE;
 var init_staff_conversations = __esm({
   "api/staff-conversations.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE33 = "https://services.leadconnectorhq.com";
@@ -31341,7 +32312,7 @@ var init_staff_conversations = __esm({
     CLOSER_WORD = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE = new RegExp(`^(?:${CLOSER_WORD}[\\s!.,]*)+$`, "i");
     __name(isNonReply, "isNonReply");
-    __name(onRequestGet44, "onRequestGet");
+    __name(onRequestGet45, "onRequestGet");
   }
 });
 
@@ -31370,7 +32341,7 @@ async function onRequestPost48(context) {
     let body;
     try {
       const requestedView = new URL(context.request.url || "https://www.amarimethod.com/api/staff-crm-mirror-access").searchParams.get("view") === "client-desk" ? "?view=client-desk" : "";
-      const res = await fetch(`${WORKER_URL7}${requestedView}`, {
+      const res = await fetch(`${WORKER_URL6}${requestedView}`, {
         method: "POST",
         headers: {
           Authorization: `Bearer ${secret}`,
@@ -31409,15 +32380,95 @@ async function onRequestPost48(context) {
     );
   }
 }
-var WORKER_URL7, WORKER_TIMEOUT_MS2;
+var WORKER_URL6, WORKER_TIMEOUT_MS2;
 var init_staff_crm_mirror_access = __esm({
   "api/staff-crm-mirror-access.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL7 = "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link";
+    WORKER_URL6 = "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS2 = 15e3;
     __name(onRequestOptions65, "onRequestOptions");
     __name(onRequestPost48, "onRequestPost");
+  }
+});
+
+// api/staff-crm-pilot.js
+function json15(status, body, headers5) {
+  return new Response(JSON.stringify(body), { status, headers: headers5 });
+}
+function boundedLimit2(value, maximum, fallback) {
+  const parsed = Number.parseInt(String(value || ""), 10);
+  return Number.isInteger(parsed) ? Math.min(Math.max(parsed, 1), maximum) : fallback;
+}
+async function onRequestOptions66(context) {
+  return new Response(null, {
+    status: 204,
+    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS6)
+  });
+}
+async function onRequestGet46(context) {
+  const headers5 = {
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
+    "Content-Type": "application/json",
+    "Cache-Control": "private, no-store"
+  };
+  const { error, payload } = await requireStaffAuth(context, headers5);
+  if (error) return error;
+  const secret = context.env.WORKER_AUTH_SECRET;
+  if (!secret) return json15(422, { error: "The private CRM pilot is not connected." }, headers5);
+  const requestUrl = new URL(context.request.url);
+  const view = requestUrl.searchParams.get("view") || "inbox";
+  let workerUrl;
+  if (view === "inbox") {
+    const params = new URLSearchParams({
+      limit: String(boundedLimit2(requestUrl.searchParams.get("limit"), 1e3, 1e3))
+    });
+    const query = String(requestUrl.searchParams.get("query") || "").trim();
+    if (query.length >= 2) params.set("query", query.slice(0, 100));
+    workerUrl = `${WORKER_ORIGIN2}/communications/inbox?${params}`;
+  } else if (view === "contact") {
+    const contactId = String(requestUrl.searchParams.get("id") || "");
+    if (!CONTACT_ID2.test(contactId)) return json15(400, { error: "A valid contact is required." }, headers5);
+    const limit = boundedLimit2(requestUrl.searchParams.get("limit"), 250, 250);
+    workerUrl = `${WORKER_ORIGIN2}/client-desk/contacts/${encodeURIComponent(contactId)}?limit=${limit}`;
+  } else {
+    return json15(400, { error: "Unknown CRM pilot view." }, headers5);
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS5);
+  try {
+    const response3 = await fetch(workerUrl, {
+      headers: {
+        Authorization: `Bearer ${secret}`,
+        "X-Staff-Actor": String(payload?.user || "Staff").slice(0, 80)
+      },
+      signal: controller.signal
+    });
+    const body = await response3.json().catch(() => ({}));
+    if (!response3.ok) {
+      return json15(422, { error: "The private CRM pilot data could not be read.", upstreamStatus: response3.status }, headers5);
+    }
+    return json15(200, body, headers5);
+  } catch (cause) {
+    const timedOut = cause instanceof Error && cause.name === "AbortError";
+    return json15(422, { error: timedOut ? "The private CRM pilot data timed out." : "The private CRM pilot data could not be reached." }, headers5);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+var WORKER_ORIGIN2, TIMEOUT_MS5, METHODS6, CONTACT_ID2;
+var init_staff_crm_pilot = __esm({
+  "api/staff-crm-pilot.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_endpoint_guards();
+    WORKER_ORIGIN2 = "https://amari-crm-mirror.eben-fa2.workers.dev";
+    TIMEOUT_MS5 = 15e3;
+    METHODS6 = "GET, OPTIONS";
+    CONTACT_ID2 = /^[A-Za-z0-9_-]{1,80}$/;
+    __name(json15, "json");
+    __name(boundedLimit2, "boundedLimit");
+    __name(onRequestOptions66, "onRequestOptions");
+    __name(onRequestGet46, "onRequestGet");
   }
 });
 
@@ -31431,14 +32482,14 @@ async function fetchOwnedAppointmentSchedule(context, input) {
   if (input.includeCancelled) params.set("includeCancelled", "1");
   if (input.includeDetail) params.set("detail", "1");
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS5);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS6);
   try {
-    const response2 = await fetch(`${WORKER_URL8}?${params}`, {
+    const response3 = await fetch(`${WORKER_URL7}?${params}`, {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal
     });
-    if (!response2.ok) throw new Error(`Owned appointment schedule failed (${response2.status}).`);
-    const body = await response2.json();
+    if (!response3.ok) throw new Error(`Owned appointment schedule failed (${response3.status}).`);
+    const body = await response3.json();
     if (body?.source !== "owned_crm" || !Array.isArray(body.appointments) || !body.truth) {
       throw new Error("Owned appointment schedule returned an invalid contract.");
     }
@@ -31454,8 +32505,8 @@ function staffScheduleDetails(schedule) {
     calendarId: appointment.providerCalendarId || "",
     contactId: appointment.contactId,
     contactName: appointment.contactName,
-    startTime: appointment.startTime,
-    endTime: appointment.endTime,
+    startTime: normalizeGhlTimestamp(appointment.startTime),
+    endTime: normalizeGhlTimestamp(appointment.endTime),
     title: appointment.serviceName || "Session",
     calendarName: appointment.serviceName || "Session",
     appointmentStatus: appointment.status,
@@ -31482,8 +32533,8 @@ function staffScheduleSummaries(schedule) {
     calendarId: appointment.providerCalendarId || "",
     contactId: appointment.contactId,
     contactName: appointment.contactName,
-    startTime: appointment.startTime,
-    endTime: appointment.endTime,
+    startTime: normalizeGhlTimestamp(appointment.startTime),
+    endTime: normalizeGhlTimestamp(appointment.endTime),
     title: appointment.serviceName || "Session",
     calendarName: appointment.serviceName || "Session",
     appointmentStatus: appointment.status,
@@ -31502,12 +32553,13 @@ function staffScheduleSummaries(schedule) {
     providerAppointmentId: appointment.providerAppointmentId
   }));
 }
-var WORKER_URL8, TIMEOUT_MS5;
+var WORKER_URL7, TIMEOUT_MS6;
 var init_staff_owned_appointment_schedule = __esm({
   "lib/staff-owned-appointment-schedule.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    WORKER_URL8 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
-    TIMEOUT_MS5 = 1e4;
+    init_functionsRoutes_0_18121058202988283();
+    init_datetime();
+    WORKER_URL7 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
+    TIMEOUT_MS6 = 1e4;
     __name(fetchOwnedAppointmentSchedule, "fetchOwnedAppointmentSchedule");
     __name(staffScheduleDetails, "staffScheduleDetails");
     __name(staffScheduleSummaries, "staffScheduleSummaries");
@@ -31515,13 +32567,13 @@ var init_staff_owned_appointment_schedule = __esm({
 });
 
 // api/staff-data.js
-async function onRequestOptions66(context) {
+async function onRequestOptions67(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet45(context) {
+async function onRequestGet47(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -31730,7 +32782,7 @@ async function onRequestGet45(context) {
 var GHL_API_BASE34, GHL_LOCATION_ID26, GHL_GARRETT_USER_ID2;
 var init_staff_data = __esm({
   "api/staff-data.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -31742,8 +32794,8 @@ var init_staff_data = __esm({
     GHL_API_BASE34 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID26 = "7pIO7FHVAyBT1jKGhfQM";
     GHL_GARRETT_USER_ID2 = "P5b0oSTaVYfULDjZ6YyG";
-    __name(onRequestOptions66, "onRequestOptions");
-    __name(onRequestGet45, "onRequestGet");
+    __name(onRequestOptions67, "onRequestOptions");
+    __name(onRequestGet47, "onRequestGet");
   }
 });
 
@@ -31832,7 +32884,7 @@ function sessionsDoneCount(record3) {
 var SESSION_COUNT, BODY_PART_VALUES, MAX_TEXT2, MAX_WEEKS, MAX_INSTRUMENT_ITEMS, MAX_ITEM_ID, ITEM_ID_RE, STUDY_SESSIONS_DONE_FIELD_ID;
 var init_study_capture = __esm({
   "lib/study-capture.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_studies();
     SESSION_COUNT = 3;
     BODY_PART_VALUES = /* @__PURE__ */ new Set(["left", "right", "both"]);
@@ -31857,13 +32909,13 @@ var init_study_capture = __esm({
 });
 
 // api/staff-elbow-study.js
-async function onRequestOptions67({ request: request2 }) {
+async function onRequestOptions68({ request: request2 }) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet46(context) {
+async function onRequestGet48(context) {
   const { request: request2, env } = context;
   const origin = request2.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
@@ -31917,14 +32969,14 @@ async function onRequestPost49(context) {
 var GHL_API_BASE35, STUDY_SLUG;
 var init_staff_elbow_study = __esm({
   "api/staff-elbow-study.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
     GHL_API_BASE35 = "https://services.leadconnectorhq.com";
     STUDY_SLUG = "tennis-elbow";
-    __name(onRequestOptions67, "onRequestOptions");
-    __name(onRequestGet46, "onRequestGet");
+    __name(onRequestOptions68, "onRequestOptions");
+    __name(onRequestGet48, "onRequestGet");
     __name(onRequestPost49, "onRequestPost");
   }
 });
@@ -31997,7 +33049,7 @@ function isOpsErrKey(key) {
 }
 var init_staff_exceptions = __esm({
   "lib/staff-exceptions.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(humanizeOpsError, "humanizeOpsError");
     __name(sourceLabel, "sourceLabel");
     __name(unique, "unique");
@@ -32006,15 +33058,15 @@ var init_staff_exceptions = __esm({
 });
 
 // api/staff-exceptions.js
-async function onRequestOptions68(context) {
+async function onRequestOptions69(context) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS6)
+    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS7)
   });
 }
-async function onRequestGet47(context) {
+async function onRequestGet49(context) {
   const headers5 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS7),
     "Content-Type": "application/json"
   };
   const { error } = await requireStaffAuth(context, headers5);
@@ -32032,7 +33084,7 @@ async function onRequestGet47(context) {
 }
 async function onRequestPost50(context) {
   const headers5 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS7),
     "Content-Type": "application/json"
   };
   const { error } = await requireStaffAuth(context, headers5);
@@ -32050,16 +33102,16 @@ async function onRequestPost50(context) {
   await clearOpsError(context.env, key);
   return new Response(JSON.stringify({ ok: true, key }), { status: 200, headers: headers5 });
 }
-var METHODS6;
+var METHODS7;
 var init_staff_exceptions2 = __esm({
   "api/staff-exceptions.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_ops_alert();
     init_staff_exceptions();
-    METHODS6 = "GET, POST, OPTIONS";
-    __name(onRequestOptions68, "onRequestOptions");
-    __name(onRequestGet47, "onRequestGet");
+    METHODS7 = "GET, POST, OPTIONS";
+    __name(onRequestOptions69, "onRequestOptions");
+    __name(onRequestGet49, "onRequestGet");
     __name(onRequestPost50, "onRequestPost");
   }
 });
@@ -32114,13 +33166,13 @@ async function studySlots(context, startDate, endDate, timezone) {
   )));
   const merged = {};
   let succeeded = false;
-  for (const response2 of responses) {
-    if (!response2.ok) {
-      console.error("[staff-field-study] slot lookup error:", response2.status, (await response2.text()).slice(0, 200));
+  for (const response3 of responses) {
+    if (!response3.ok) {
+      console.error("[staff-field-study] slot lookup error:", response3.status, (await response3.text()).slice(0, 200));
       continue;
     }
     succeeded = true;
-    const data = await response2.json();
+    const data = await response3.json();
     for (const [date2, value] of Object.entries(data)) {
       if (!merged[date2]) merged[date2] = { slots: [] };
       for (const slot of Array.isArray(value?.slots) ? value.slots : []) if (!merged[date2].slots.includes(slot)) merged[date2].slots.push(slot);
@@ -32134,8 +33186,8 @@ async function studySlots(context, startDate, endDate, timezone) {
 function isValidPhone6(phone) {
   return String(phone).replace(/[^\d+]/g, "").length >= 10;
 }
-function isValidEmail9(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email).trim());
+function isValidEmail9(email2) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email2).trim());
 }
 function isValidPaperDate(value) {
   return /^\d{4}-\d{2}-\d{2}$/.test(String(value)) && !Number.isNaN(Date.parse(`${value}T12:00:00Z`));
@@ -32170,10 +33222,10 @@ async function addToIndex(kv, id3) {
   ids.unshift(id3);
   await kv.put(INDEX_KEY2, JSON.stringify({ ids: ids.slice(0, MAX_INDEX) }));
 }
-async function findSameDayDuplicate(kv, { phone, email, fieldStudyKey, paperDate }) {
+async function findSameDayDuplicate(kv, { phone, email: email2, fieldStudyKey, paperDate }) {
   const index = await kv.get(INDEX_KEY2, "json");
   const records = await Promise.all(indexIds(index).map((id3) => kv.get(recordKey(id3), "json")));
-  return records.find((record3) => record3 && record3.fieldStudyKey === fieldStudyKey && record3.paperDate === paperDate && (record3.phone === phone || record3.email === email)) || null;
+  return records.find((record3) => record3 && record3.fieldStudyKey === fieldStudyKey && record3.paperDate === paperDate && (record3.phone === phone || record3.email === email2)) || null;
 }
 function studyAppointments(rawAppointments) {
   const cancelled = /* @__PURE__ */ new Set(["cancelled", "canceled"]);
@@ -32186,12 +33238,12 @@ function studyAppointments(rawAppointments) {
 async function withStudyAppointments(context, record3) {
   if (!record3?.contactId) return { ...record3, bookedSessions: [], bookingStatus: "unavailable" };
   try {
-    const response2 = await ghlFetch(context, `${GHL_API_BASE36}/contacts/${record3.contactId}/appointments`);
-    if (!response2.ok) {
-      console.error("[staff-field-study] appointment lookup error:", response2.status);
+    const response3 = await ghlFetch(context, `${GHL_API_BASE36}/contacts/${record3.contactId}/appointments`);
+    if (!response3.ok) {
+      console.error("[staff-field-study] appointment lookup error:", response3.status);
       return { ...record3, bookedSessions: [], bookingStatus: "unavailable" };
     }
-    const data = await response2.json();
+    const data = await response3.json();
     return { ...record3, bookedSessions: studyAppointments(data.appointments || data.events), bookingStatus: "loaded" };
   } catch (err) {
     console.error("[staff-field-study] appointment lookup error:", err.message);
@@ -32224,16 +33276,16 @@ function summarize(record3) {
     baselineCapturedAt: record3.baseline?.capturedAt || null
   };
 }
-function json15(data, status, headers5) {
+function json16(data, status, headers5) {
   return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
-async function onRequestOptions69({ request: request2 }) {
+async function onRequestOptions70({ request: request2 }) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet48(context) {
+async function onRequestGet50(context) {
   const { request: request2, env } = context;
   const headers5 = { ...corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error } = await requireStaffAuth(context, headers5);
@@ -32244,16 +33296,16 @@ async function onRequestGet48(context) {
     const includeBookings = url.searchParams.get("includeBookings") === "1";
     if (recordId) {
       const record3 = await env.PORTAL_KV.get(recordKey(recordId), "json");
-      return json15({ record: record3 ? await withStudyAppointments(context, record3) : null }, 200, headers5);
+      return json16({ record: record3 ? await withStudyAppointments(context, record3) : null }, 200, headers5);
     }
     const index = await env.PORTAL_KV.get(INDEX_KEY2, "json");
     const ids = indexIds(index);
     let records = (await Promise.all(ids.map((id3) => env.PORTAL_KV.get(recordKey(id3), "json")))).filter(Boolean).map(summarize);
     if (includeBookings) records = await enrichBookings(context, records);
-    return json15({ records }, 200, headers5);
+    return json16({ records }, 200, headers5);
   } catch (err) {
     console.error("[staff-field-study] GET error:", err.message);
-    return json15({ error: "Internal server error" }, 500, headers5);
+    return json16({ error: "Internal server error" }, 500, headers5);
   }
 }
 async function onRequestPost51(context) {
@@ -32269,28 +33321,28 @@ async function onRequestPost51(context) {
       const startDate = cleanText4(body.startDate, 10);
       const endDate = cleanText4(body.endDate, 10);
       const timezone = cleanText4(body.timezone, 80) || "America/Los_Angeles";
-      if (!recordId || !validDateRange2(startDate, endDate)) return json15({ error: "Choose a valid calendar month." }, 400, headers5);
+      if (!recordId || !validDateRange2(startDate, endDate)) return json16({ error: "Choose a valid calendar month." }, 400, headers5);
       const record4 = await env.PORTAL_KV.get(recordKey(recordId), "json");
-      if (!record4) return json15({ error: "Study record not found." }, 404, headers5);
-      return json15({ slots: await studySlots(context, startDate, endDate, timezone) }, 200, headers5);
+      if (!record4) return json16({ error: "Study record not found." }, 404, headers5);
+      return json16({ slots: await studySlots(context, startDate, endDate, timezone) }, 200, headers5);
     }
     if (body.action === "book-followup") {
       const recordId = cleanText4(body.recordId, 80);
       const startTime = cleanText4(body.startTime, 80);
       const timezone = cleanText4(body.timezone, 80) || "America/Los_Angeles";
       const idempotencyKey = cleanText4(body.idempotencyKey, 100);
-      if (!recordId || !startTime || Number.isNaN(Date.parse(startTime))) return json15({ error: "Choose an available study time." }, 400, headers5);
+      if (!recordId || !startTime || Number.isNaN(Date.parse(startTime))) return json16({ error: "Choose an available study time." }, 400, headers5);
       const record4 = await env.PORTAL_KV.get(recordKey(recordId), "json");
-      if (!record4) return json15({ error: "Study record not found." }, 404, headers5);
+      if (!record4) return json16({ error: "Study record not found." }, 404, headers5);
       const cacheKey = idempotencyKey ? `field-study-book:${recordId}:${idempotencyKey}` : null;
       if (cacheKey) {
         const existing = await env.PORTAL_KV.get(cacheKey, "json");
-        if (existing) return json15(existing, 200, headers5);
+        if (existing) return json16(existing, 200, headers5);
       }
       try {
         await assertSlotRespectsAppBuffer(context, startTime, STUDY_CALENDAR_ID);
       } catch {
-        return json15({ error: "That time is no longer available. Choose another one." }, 422, headers5);
+        return json16({ error: "That time is no longer available. Choose another one." }, 422, headers5);
       }
       let data;
       try {
@@ -32314,51 +33366,51 @@ async function onRequestPost51(context) {
       } catch (err) {
         const detail = String(err?.detail || err?.message || err);
         console.error("[staff-field-study] study booking error:", err?.status || 0, detail.slice(0, 300));
-        return json15({ error: "That time is no longer available. Choose another one." }, 422, headers5);
+        return json16({ error: "That time is no longer available. Choose another one." }, 422, headers5);
       }
       const result = { appointment: { id: data.id || data.appointment?.id || "", startTime } };
       if (cacheKey) await env.PORTAL_KV.put(cacheKey, JSON.stringify(result), { expirationTtl: 3600 });
-      return json15(result, 200, headers5);
+      return json16(result, 200, headers5);
     }
     if (body.action === "save-baseline") {
       const recordId = cleanText4(body.recordId, 80);
-      if (!recordId) return json15({ error: "recordId required" }, 400, headers5);
+      if (!recordId) return json16({ error: "recordId required" }, 400, headers5);
       const existing = await env.PORTAL_KV.get(recordKey(recordId), "json");
-      if (!existing) return json15({ error: "Study record not found" }, 404, headers5);
+      if (!existing) return json16({ error: "Study record not found" }, 404, headers5);
       const nowIso2 = (/* @__PURE__ */ new Date()).toISOString();
       const baseline = normalizeBaseline(body.baseline, nowIso2);
-      if (!isCompleteBaseline(baseline)) return json15({ error: "Enter all 6 answers and at least 1 marked body location before saving." }, 400, headers5);
+      if (!isCompleteBaseline(baseline)) return json16({ error: "Enter all 6 answers and at least 1 marked body location before saving." }, 400, headers5);
       const record4 = { ...existing, baseline, updatedAt: nowIso2 };
       await env.PORTAL_KV.put(recordKey(recordId), JSON.stringify(record4));
-      return json15({ record: record4 }, 200, headers5);
+      return json16({ record: record4 }, 200, headers5);
     }
-    if (body.action !== "enroll") return json15({ error: "Unknown action" }, 400, headers5);
+    if (body.action !== "enroll") return json16({ error: "Unknown action" }, 400, headers5);
     const fieldStudyKey = cleanText4(body.fieldStudyKey, 32);
     const study2 = FIELD_STUDIES[fieldStudyKey];
     const firstName = cleanText4(body.firstName, 100);
     const lastName = cleanText4(body.lastName, 100);
     const phone = String(body.phone || "").replace(/[^\d+]/g, "").slice(0, 20);
-    const email = cleanText4(body.email, 254).toLowerCase();
-    if (typeof body.firstSessionCompleted !== "boolean") return json15({ error: "Confirm whether they completed their first session." }, 400, headers5);
+    const email2 = cleanText4(body.email, 254).toLowerCase();
+    if (typeof body.firstSessionCompleted !== "boolean") return json16({ error: "Confirm whether they completed their first session." }, 400, headers5);
     const firstSessionCompleted = isFirstSessionCompleted(body.firstSessionCompleted);
     const afterSessionOnePain = score(body.afterSessionOnePain);
     const participantQuote = cleanText4(body.participantQuote, 500);
     const paperDate = cleanText4(body.paperDate, 10);
-    if (!study2) return json15({ error: "Choose one of the active field studies." }, 400, headers5);
-    if (!firstName || !lastName || !isValidPhone6(phone) || !isValidEmail9(email)) {
-      return json15({ error: "First name, last name, a valid mobile, and a valid email are required." }, 400, headers5);
+    if (!study2) return json16({ error: "Choose one of the active field studies." }, 400, headers5);
+    if (!firstName || !lastName || !isValidPhone6(phone) || !isValidEmail9(email2)) {
+      return json16({ error: "First name, last name, a valid mobile, and a valid email are required." }, 400, headers5);
     }
-    if (firstSessionCompleted && afterSessionOnePain === null) return json15({ error: "Record the after-session score before saving." }, 400, headers5);
-    if (!isValidPaperDate(paperDate)) return json15({ error: "Could not determine today\u2019s date. Refresh and try again." }, 400, headers5);
-    const duplicate = await findSameDayDuplicate(env.PORTAL_KV, { phone, email, fieldStudyKey, paperDate });
-    if (duplicate) return json15({ error: `${duplicate.paperId} is already saved for this study today. Open that record instead of saving a duplicate.` }, 409, headers5);
+    if (firstSessionCompleted && afterSessionOnePain === null) return json16({ error: "Record the after-session score before saving." }, 400, headers5);
+    if (!isValidPaperDate(paperDate)) return json16({ error: "Could not determine today\u2019s date. Refresh and try again." }, 400, headers5);
+    const duplicate = await findSameDayDuplicate(env.PORTAL_KV, { phone, email: email2, fieldStudyKey, paperDate });
+    if (duplicate) return json16({ error: `${duplicate.paperId} is already saved for this study today. Open that record instead of saving a duplicate.` }, 409, headers5);
     const upsert = await ghlFetch(context, `${GHL_API_BASE36}/contacts/upsert`, {
       method: "POST",
       body: JSON.stringify({
         firstName,
         lastName,
         phone,
-        email,
+        email: email2,
         locationId: GHL_LOCATION_ID27,
         // Deliberately NOT any flyer study tag: those start the QR flow and
         // would incorrectly ask a table participant to book session one.
@@ -32372,11 +33424,11 @@ async function onRequestPost51(context) {
     });
     if (!upsert.ok) {
       console.error("[staff-field-study] GHL upsert error:", upsert.status, await upsert.text());
-      return json15({ error: "Could not save the participant contact." }, 422, headers5);
+      return json16({ error: "Could not save the participant contact." }, 422, headers5);
     }
     const upsertData = await upsert.json();
     const contactId = upsertData.contact?.id;
-    if (!contactId) return json15({ error: "Contact was saved but no ID was returned." }, 422, headers5);
+    if (!contactId) return json16({ error: "Contact was saved but no ID was returned." }, 422, headers5);
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     const record3 = {
       id: crypto.randomUUID(),
@@ -32394,7 +33446,7 @@ async function onRequestPost51(context) {
       firstName,
       lastName,
       phone,
-      email,
+      email: email2,
       canUseFirstName: body.canUseFirstName === true,
       afterSessionOnePain: firstSessionCompleted ? afterSessionOnePain : null,
       participantQuote,
@@ -32404,16 +33456,16 @@ async function onRequestPost51(context) {
     };
     await env.PORTAL_KV.put(recordKey(record3.id), JSON.stringify(record3));
     await addToIndex(env.PORTAL_KV, record3.id);
-    return json15({ record: record3 }, 200, headers5);
+    return json16({ record: record3 }, 200, headers5);
   } catch (err) {
     console.error("[staff-field-study] POST error:", err.message);
-    return json15({ error: "Internal server error" }, 500, headers5);
+    return json16({ error: "Internal server error" }, 500, headers5);
   }
 }
 var GHL_API_BASE36, GHL_LOCATION_ID27, STUDY_NAME_FIELD_ID6, STUDY_SESSIONS_DONE_FIELD_ID2, FIELD_STUDY_TABLE_TAG, INDEX_KEY2, MAX_INDEX, MAX_TEXT3, FIELD_STUDIES;
 var init_staff_field_study = __esm({
   "api/staff-field-study.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_ghl();
     init_studies();
@@ -32455,9 +33507,9 @@ var init_staff_field_study = __esm({
     __name(withStudyAppointments, "withStudyAppointments");
     __name(enrichBookings, "enrichBookings");
     __name(summarize, "summarize");
-    __name(json15, "json");
-    __name(onRequestOptions69, "onRequestOptions");
-    __name(onRequestGet48, "onRequestGet");
+    __name(json16, "json");
+    __name(onRequestOptions70, "onRequestOptions");
+    __name(onRequestGet50, "onRequestGet");
     __name(onRequestPost51, "onRequestPost");
   }
 });
@@ -32497,7 +33549,7 @@ function parseBrief(text6) {
     drafts: Array.isArray(obj.drafts) ? obj.drafts.filter((d2) => d2 && typeof d2.text === "string").map((d2) => ({ channel: ["text", "call", "email"].includes(d2.channel) ? d2.channel : "text", text: d2.text })) : []
   };
 }
-async function onRequestOptions70(context) {
+async function onRequestOptions71(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
 async function onRequestPost52(context) {
@@ -32578,7 +33630,7 @@ async function onRequestPost52(context) {
 var GHL_API_BASE37, GHL_LOCATION_ID28, ANTHROPIC_API, ANTHROPIC_VERSION, MODEL, SYSTEM;
 var init_staff_followup_brief = __esm({
   "api/staff-followup-brief.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE37 = "https://services.leadconnectorhq.com";
@@ -32603,7 +33655,7 @@ OUTPUT: strict JSON only, no prose, no code fences. Shape exactly:
 Give 2-3 drafts. Prefer "text" channel unless the thread suggests a call or email fits better. Use the prospect's real details (name, what they do, where) \u2014 never invent facts you weren't given.`;
     __name(buildUserPrompt, "buildUserPrompt");
     __name(parseBrief, "parseBrief");
-    __name(onRequestOptions70, "onRequestOptions");
+    __name(onRequestOptions71, "onRequestOptions");
     __name(onRequestPost52, "onRequestPost");
   }
 });
@@ -32616,7 +33668,7 @@ function responseHeaders3(context) {
     "Cache-Control": "no-store"
   };
 }
-async function onRequestOptions71(context) {
+async function onRequestOptions72(context) {
   return new Response(null, { status: 204, headers: responseHeaders3(context) });
 }
 async function proxy(context, method) {
@@ -32628,7 +33680,7 @@ async function proxy(context, method) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS3);
   try {
-    const target = method === "GET" ? `${WORKER_URL9}?state=open&limit=50` : WORKER_URL9;
+    const target = method === "GET" ? `${WORKER_URL8}?state=open&limit=50` : WORKER_URL8;
     const options = {
       method,
       headers: method === "GET" ? { Authorization: `Bearer ${secret}` } : {
@@ -32650,29 +33702,29 @@ async function proxy(context, method) {
     clearTimeout(timer);
   }
 }
-async function onRequestGet49(context) {
+async function onRequestGet51(context) {
   return proxy(context, "GET");
 }
 async function onRequestPost53(context) {
   return proxy(context, "POST");
 }
-var WORKER_URL9, WORKER_TIMEOUT_MS3;
+var WORKER_URL8, WORKER_TIMEOUT_MS3;
 var init_staff_followups = __esm({
   "api/staff-followups.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL9 = "https://amari-crm-mirror.eben-fa2.workers.dev/owned-followups";
+    WORKER_URL8 = "https://amari-crm-mirror.eben-fa2.workers.dev/owned-followups";
     WORKER_TIMEOUT_MS3 = 15e3;
     __name(responseHeaders3, "responseHeaders");
-    __name(onRequestOptions71, "onRequestOptions");
+    __name(onRequestOptions72, "onRequestOptions");
     __name(proxy, "proxy");
-    __name(onRequestGet49, "onRequestGet");
+    __name(onRequestGet51, "onRequestGet");
     __name(onRequestPost53, "onRequestPost");
   }
 });
 
 // api/staff-founders-circle.js
-async function onRequestOptions72(context) {
+async function onRequestOptions73(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -32721,24 +33773,24 @@ async function onRequestPost54(context) {
 var GHL_API_BASE38;
 var init_staff_founders_circle = __esm({
   "api/staff-founders-circle.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
     GHL_API_BASE38 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions72, "onRequestOptions");
+    __name(onRequestOptions73, "onRequestOptions");
     __name(onRequestPost54, "onRequestPost");
   }
 });
 
 // api/staff-funnel.js
-async function onRequestOptions73(context) {
+async function onRequestOptions74(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet50(context) {
+async function onRequestGet52(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -32768,16 +33820,16 @@ async function onRequestGet50(context) {
 var KV_KEY;
 var init_staff_funnel = __esm({
   "api/staff-funnel.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     KV_KEY = "funnel:latest";
-    __name(onRequestOptions73, "onRequestOptions");
-    __name(onRequestGet50, "onRequestGet");
+    __name(onRequestOptions74, "onRequestOptions");
+    __name(onRequestGet52, "onRequestGet");
   }
 });
 
 // api/staff-funnel-refresh.js
-async function onRequestOptions74(context) {
+async function onRequestOptions75(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -32794,7 +33846,7 @@ async function onRequestPost55(context) {
     const workerHeaders = context.env.WORKER_AUTH_SECRET ? { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` } : void 0;
     let summary;
     try {
-      const res = await fetch(WORKER_URL10, {
+      const res = await fetch(WORKER_URL9, {
         method: "POST",
         headers: workerHeaders,
         signal: ac.signal
@@ -32830,14 +33882,14 @@ async function onRequestPost55(context) {
     );
   }
 }
-var WORKER_URL10, WORKER_TIMEOUT_MS4;
+var WORKER_URL9, WORKER_TIMEOUT_MS4;
 var init_staff_funnel_refresh = __esm({
   "api/staff-funnel-refresh.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL10 = "https://funnel-refresh.eben-fa2.workers.dev/refresh";
+    WORKER_URL9 = "https://funnel-refresh.eben-fa2.workers.dev/refresh";
     WORKER_TIMEOUT_MS4 = 9e4;
-    __name(onRequestOptions74, "onRequestOptions");
+    __name(onRequestOptions75, "onRequestOptions");
     __name(onRequestPost55, "onRequestPost");
   }
 });
@@ -32850,10 +33902,10 @@ function responseHeaders4(context) {
     "Cache-Control": "no-store"
   };
 }
-async function onRequestOptions75(context) {
+async function onRequestOptions76(context) {
   return new Response(null, { status: 204, headers: responseHeaders4(context) });
 }
-async function onRequestGet51(context) {
+async function onRequestGet53(context) {
   const headers5 = responseHeaders4(context);
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
@@ -32869,7 +33921,7 @@ async function onRequestGet51(context) {
   const timer = setTimeout(() => controller.abort(), WORKER_TIMEOUT_MS5);
   try {
     const query = new URLSearchParams({ actor, limit: "8" });
-    const upstream = await fetch(`${WORKER_URL11}?${query}`, {
+    const upstream = await fetch(`${WORKER_URL10}?${query}`, {
       method: "GET",
       headers: { Authorization: `Bearer ${secret}` },
       signal: controller.signal
@@ -32886,51 +33938,51 @@ async function onRequestGet51(context) {
     clearTimeout(timer);
   }
 }
-var WORKER_URL11, WORKER_TIMEOUT_MS5, STAFF_ACTORS;
+var WORKER_URL10, WORKER_TIMEOUT_MS5, STAFF_ACTORS;
 var init_staff_gmail_reply_readiness = __esm({
   "api/staff-gmail-reply-readiness.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL11 = "https://amari-crm-mirror.eben-fa2.workers.dev/gmail/reply-readiness";
+    WORKER_URL10 = "https://amari-crm-mirror.eben-fa2.workers.dev/gmail/reply-readiness";
     WORKER_TIMEOUT_MS5 = 1e4;
     STAFF_ACTORS = /* @__PURE__ */ new Set(["Eben", "Garrett"]);
     __name(responseHeaders4, "responseHeaders");
-    __name(onRequestOptions75, "onRequestOptions");
-    __name(onRequestGet51, "onRequestGet");
+    __name(onRequestOptions76, "onRequestOptions");
+    __name(onRequestGet53, "onRequestGet");
   }
 });
 
 // api/staff-google-calendar-auth.js
-function json16(data, status, headers5) {
+function json17(data, status, headers5) {
   return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
-async function onRequestOptions76(context) {
+async function onRequestOptions77(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet52(context) {
+async function onRequestGet54(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   try {
     resolveStaffCalendarActor(payload?.user);
-    return json16(await staffCalendarGrantReadiness(context, payload.user), 200, headers5);
+    return json17(await staffCalendarGrantReadiness(context, payload.user), 200, headers5);
   } catch {
-    return json16({ error: "Staff calendar identity is not authorized" }, 403, headers5);
+    return json17({ error: "Staff calendar identity is not authorized" }, 403, headers5);
   }
 }
 async function onRequestPost56(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
-  if (!ALLOWED_ORIGINS37.has(origin)) return json16({ error: "Untrusted origin" }, 403, headers5);
+  if (!ALLOWED_ORIGINS37.has(origin)) return json17({ error: "Untrusted origin" }, 403, headers5);
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   let identity2;
   try {
     identity2 = resolveStaffCalendarActor(payload?.user);
   } catch {
-    return json16({ error: "Staff calendar identity is not authorized" }, 403, headers5);
+    return json17({ error: "Staff calendar identity is not authorized" }, 403, headers5);
   }
-  if (!staffCalendarOAuthConfigured(context.env, identity2.actor)) return json16({ error: "Google Calendar authorization is not configured" }, 500, headers5);
+  if (!staffCalendarOAuthConfigured(context.env, identity2.actor)) return json17({ error: "Google Calendar authorization is not configured" }, 500, headers5);
   const state = await createStaffCalendarOAuthState(context.env, identity2.actor);
   const client = staffCalendarOAuthClient(context.env, identity2.actor);
   const authorizationUrl = new URL(AUTH_URL3);
@@ -32943,19 +33995,19 @@ async function onRequestPost56(context) {
     prompt: "consent",
     state
   }).toString();
-  return json16({ actor: identity2.actor, requiredPrimaryCalendarId: identity2.primaryCalendarId, authorizationUrl: authorizationUrl.toString(), bookingActivationEnabled: false }, 200, headers5);
+  return json17({ actor: identity2.actor, requiredPrimaryCalendarId: identity2.primaryCalendarId, authorizationUrl: authorizationUrl.toString(), bookingActivationEnabled: false }, 200, headers5);
 }
 var AUTH_URL3, ALLOWED_ORIGINS37;
 var init_staff_google_calendar_auth = __esm({
   "api/staff-google-calendar-auth.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_calendar_oauth();
     AUTH_URL3 = "https://accounts.google.com/o/oauth2/v2/auth";
     ALLOWED_ORIGINS37 = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
-    __name(json16, "json");
-    __name(onRequestOptions76, "onRequestOptions");
-    __name(onRequestGet52, "onRequestGet");
+    __name(json17, "json");
+    __name(onRequestOptions77, "onRequestOptions");
+    __name(onRequestGet54, "onRequestGet");
     __name(onRequestPost56, "onRequestPost");
   }
 });
@@ -33015,7 +34067,7 @@ async function maybeSendLpOnboarding(context, { contactId, seriesType, newRemain
 var MODE2, LP_ONBOARDING_EMAIL;
 var init_lp_onboarding = __esm({
   "lib/lp-onboarding.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_upgrade_offer();
     init_ghl_send();
     MODE2 = "shadow";
@@ -33041,10 +34093,10 @@ Garrett`
 async function writeOwnedAppointmentPayment(context, record3) {
   if (!context?.env?.WORKER_AUTH_SECRET) throw new Error("Owned appointment payment is not configured.");
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS6);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS7);
   try {
     const amountCents = record3.amount == null ? null : Math.round(Number(record3.amount) * 100);
-    const response2 = await fetch(`${WORKER_URL12}/${encodeURIComponent(record3.appointmentId)}/payment`, {
+    const response3 = await fetch(`${WORKER_URL11}/${encodeURIComponent(record3.appointmentId)}/payment`, {
       method: "PUT",
       headers: {
         Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`,
@@ -33061,18 +34113,18 @@ async function writeOwnedAppointmentPayment(context, record3) {
       }),
       signal: controller.signal
     });
-    if (!response2.ok) throw new Error(`Owned appointment payment failed (${response2.status}).`);
-    return response2.json();
+    if (!response3.ok) throw new Error(`Owned appointment payment failed (${response3.status}).`);
+    return response3.json();
   } finally {
     clearTimeout(timer);
   }
 }
-var WORKER_URL12, TIMEOUT_MS6;
+var WORKER_URL11, TIMEOUT_MS7;
 var init_staff_owned_appointment_payment = __esm({
   "lib/staff-owned-appointment-payment.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    WORKER_URL12 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
-    TIMEOUT_MS6 = 1e4;
+    init_functionsRoutes_0_18121058202988283();
+    WORKER_URL11 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
+    TIMEOUT_MS7 = 1e4;
     __name(writeOwnedAppointmentPayment, "writeOwnedAppointmentPayment");
   }
 });
@@ -33101,7 +34153,7 @@ async function isDebited(db, appointmentId) {
 }
 var init_attendance_claim = __esm({
   "lib/attendance-claim.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(changesOf9, "changesOf");
     __name(claimDebit, "claimDebit");
     __name(releaseDebit, "releaseDebit");
@@ -33117,7 +34169,7 @@ function isAlreadyProcessed(apptStatus, needsFields, alreadyDebited) {
   if (!needsFields) return true;
   return !!alreadyDebited;
 }
-async function onRequestOptions77(context) {
+async function onRequestOptions78(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -33472,7 +34524,7 @@ async function onRequestPost57(context) {
 var GHL_API_BASE39, GHL_LOCATION_ID29, FIELD_IDS5, ENTRAINMENT_CALENDAR_ID, FOLLOWUP_CALENDAR_IDS, PAIR_WINDOW_MS, DISCOVERY_CALENDAR_IDS;
 var init_staff_mark_attended = __esm({
   "api/staff-mark-attended.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_upgrade_offer();
     init_lp_onboarding();
@@ -33518,7 +34570,7 @@ var init_staff_mark_attended = __esm({
       // Ambassador Prospect Discovery Call
     ]);
     __name(isAlreadyProcessed, "isAlreadyProcessed");
-    __name(onRequestOptions77, "onRequestOptions");
+    __name(onRequestOptions78, "onRequestOptions");
     __name(onRequestPost57, "onRequestPost");
   }
 });
@@ -33540,18 +34592,18 @@ function normalizeMediaName(value) {
   return cleanText5(value).toLocaleLowerCase("en-US");
 }
 function validateMediaUpload({ name, mimeType, sizeBytes }, { allowSvg = false } = {}) {
-  const displayName2 = cleanText5(name);
+  const displayName = cleanText5(name);
   const type = cleanText5(mimeType, 100).toLowerCase();
   const size = Number(sizeBytes);
-  if (displayName2.length < 1) throw failure("A file name is required");
+  if (displayName.length < 1) throw failure("A file name is required");
   if (!STAFF_MEDIA_TYPES[type] || type === "image/svg+xml" && !allowSvg) {
     throw failure("Use a JPG, PNG, WebP, GIF, AVIF, MP4, MOV, WebM, or PDF file");
   }
   if (!Number.isSafeInteger(size) || size < 1) throw failure("The file is empty or its size could not be verified");
   if (size > MAX_FILE_BYTES) throw failure("Files must be 95 MB or smaller");
   return {
-    displayName: displayName2,
-    normalizedName: normalizeMediaName(displayName2),
+    displayName,
+    normalizedName: normalizeMediaName(displayName),
     mimeType: type,
     kind: STAFF_MEDIA_TYPES[type],
     sizeBytes: size
@@ -33653,26 +34705,6 @@ async function createMediaFolder(db, input, { actor, now, id: id3 } = {}) {
   }
   return mapFolder({ id: folderId, parent_id: parentId, name, status: "active", version: 1, created_at: timestamp, created_by: staffActor, updated_at: timestamp, updated_by: staffActor });
 }
-async function archiveMediaFolder(db, folderId, { actor, now } = {}) {
-  if (!db) throw failure("Media metadata storage is not configured", 422);
-  const id3 = cleanText5(folderId, 80);
-  const current = id3 ? await db.prepare("SELECT * FROM staff_media_folders WHERE id = ?").bind(id3).first() : null;
-  if (!current) throw failure("Media folder not found", 404);
-  if (current.status === "archived") return mapFolder(current);
-  const [asset, child] = await Promise.all([
-    db.prepare("SELECT id FROM staff_media_assets WHERE folder_id = ? AND status = 'active' LIMIT 1").bind(id3).first(),
-    db.prepare("SELECT id FROM staff_media_folders WHERE parent_id = ? AND status = 'active' LIMIT 1").bind(id3).first()
-  ]);
-  if (asset || child) throw failure("Move files and subfolders before retiring this folder", 409);
-  const timestamp = now || (/* @__PURE__ */ new Date()).toISOString();
-  const staffActor = cleanText5(actor, 80) || "Staff";
-  await db.batch([
-    db.prepare("UPDATE staff_media_folders SET status = 'archived', version = version + 1, updated_at = ?, updated_by = ? WHERE id = ?").bind(timestamp, staffActor, id3),
-    db.prepare(`INSERT INTO staff_media_events (id, folder_id, action, actor, occurred_at, detail)
-      VALUES (?, ?, 'folder_archived', ?, ?, ?)`).bind(crypto.randomUUID(), id3, staffActor, timestamp, `Archived empty folder ${current.name}`)
-  ]);
-  return mapFolder({ ...current, status: "archived", version: Number(current.version) + 1, updated_at: timestamp, updated_by: staffActor });
-}
 async function registerMediaAsset(db, input, { actor, now, id: id3, allowSvg = false } = {}) {
   if (!db) throw failure("Media metadata storage is not configured", 422);
   const upload = validateMediaUpload(input, { allowSvg });
@@ -33761,7 +34793,7 @@ async function getMediaAssetRecord(db, assetId) {
 var MAX_FILE_BYTES, MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, WEBSITE_USAGES, CURATION_STATUSES, STAFF_MEDIA_TYPES;
 var init_staff_media = __esm({
   "lib/staff-media.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     MAX_FILE_BYTES = 95 * 1024 * 1024;
     MAX_NAME_LENGTH = 160;
     MAX_DESCRIPTION_LENGTH = 600;
@@ -33790,275 +34822,9 @@ var init_staff_media = __esm({
     __name(requireFolder, "requireFolder");
     __name(listStaffMedia, "listStaffMedia");
     __name(createMediaFolder, "createMediaFolder");
-    __name(archiveMediaFolder, "archiveMediaFolder");
     __name(registerMediaAsset, "registerMediaAsset");
     __name(updateMediaAsset, "updateMediaAsset");
     __name(getMediaAssetRecord, "getMediaAssetRecord");
-  }
-});
-
-// lib/staff-site-media.js
-function internalDescription(path) {
-  if (DESCRIPTIONS[path]) return DESCRIPTIONS[path];
-  const label = displayName(path).replace(/\.[^.]+$/, "").replace(/[-_]+/g, " ");
-  return `Amari website asset: ${label}. Review its preview in Staff before assigning it to a new placement.`;
-}
-function displayName(path) {
-  return decodeURIComponent(path.split("/").pop() || "site-asset");
-}
-async function ensureFolder(db, folders, name, parentId, actor) {
-  const existing = folders.find((folder2) => folder2.status === "active" && folder2.parentId === parentId && folder2.name === name);
-  if (existing) return existing;
-  const folder = await createMediaFolder(db, { action: "create_folder", name, parentId }, { actor });
-  folders.push(folder);
-  return folder;
-}
-function hasLegacyMediaFolders(folders) {
-  return folders.some((folder) => folder.status === "active" && RETIRED_LIBRARY_FOLDERS.has(folder.name));
-}
-function hasMisfiledStudyMaterials(library) {
-  const printFolder = library.folders.find((folder) => folder.status === "active" && !folder.parentId && folder.name === PRINT_MATERIALS_FOLDER);
-  const digitalFolder = library.folders.find((folder) => folder.status === "active" && !folder.parentId && folder.name === DIGITAL_SHARE_GRAPHICS_FOLDER);
-  return library.assets.some((asset) => {
-    if (asset.status !== "active") return false;
-    const name = normalizeMediaName(asset.name);
-    return STUDY_FLYER_NAMES.has(name) && asset.folderId !== digitalFolder?.id || STUDY_PRINT_MASTER_NAMES.has(name) && asset.folderId !== printFolder?.id;
-  });
-}
-async function organizeMediaByWebsiteUsage({ db, actor }) {
-  if (!db) throw Object.assign(new Error("Media metadata storage is not configured"), { status: 422 });
-  const library = await listStaffMedia(db);
-  const activeFolders = library.folders.filter((folder) => folder.status === "active");
-  const folders = /* @__PURE__ */ new Map();
-  for (const name of [
-    WEBSITE_IMAGES_FOLDER,
-    PHOTO_LIBRARY_FOLDER,
-    BRAND_LOGOS_FOLDER,
-    PRINT_MATERIALS_FOLDER,
-    DIGITAL_SHARE_GRAPHICS_FOLDER,
-    DOCUMENTS_FOLDER
-  ]) {
-    folders.set(name, await ensureFolder(db, activeFolders, name, null, actor));
-  }
-  const usedNames = new Set(SITE_ASSETS.filter((asset) => asset.websiteUsage === "currently_used").map((asset) => normalizeMediaName(displayName(asset.path))));
-  const isBrand = /* @__PURE__ */ __name((name) => /(?:^amari(?:logo|[-_ ]method[-_ ]logo)?|wordmark|favicon|icon)/i.test(name), "isBrand");
-  const isPrintMaterial = /* @__PURE__ */ __name((name, folderId) => STUDY_PRINT_MASTER_NAMES.has(normalizeMediaName(name)) || /(?:business[-_ ]card|postcard|flyer|sticker)/i.test(name) || folderNameFor(library.folders, folderId) === "Print collateral", "isPrintMaterial");
-  let moved = 0;
-  for (const asset of library.assets) {
-    if (asset.status !== "active") continue;
-    const targetName = isPrintMaterial(asset.name, asset.folderId) ? PRINT_MATERIALS_FOLDER : STUDY_FLYER_NAMES.has(normalizeMediaName(asset.name)) ? DIGITAL_SHARE_GRAPHICS_FOLDER : asset.kind !== "image" ? DOCUMENTS_FOLDER : isBrand(asset.name) ? BRAND_LOGOS_FOLDER : usedNames.has(normalizeMediaName(asset.name)) ? WEBSITE_IMAGES_FOLDER : PHOTO_LIBRARY_FOLDER;
-    const targetFolderId = folders.get(targetName).id;
-    if (asset.folderId === targetFolderId) continue;
-    await updateMediaAsset(db, { action: "move_asset", assetId: asset.id, folderId: targetFolderId }, { actor });
-    moved += 1;
-  }
-  const depth = /* @__PURE__ */ __name((folder) => {
-    let current = folder;
-    let count = 0;
-    while (current?.parentId) {
-      count += 1;
-      current = library.folders.find((candidate) => candidate.id === current.parentId);
-    }
-    return count;
-  }, "depth");
-  let retired = 0;
-  for (const folder of [...activeFolders].filter((candidate) => RETIRED_LIBRARY_FOLDERS.has(candidate.name)).sort((left, right) => depth(right) - depth(left))) {
-    await archiveMediaFolder(db, folder.id, { actor });
-    retired += 1;
-  }
-  return { moved, retired };
-}
-function folderNameFor(folders, folderId) {
-  return folders.find((folder) => folder.id === folderId)?.name || "";
-}
-var RAW_SITE_ASSETS, NOT_CURRENTLY_USED, DELETE_CANDIDATES, DESCRIPTIONS, SITE_ASSETS, ROOT_FOLDER, WEBSITE_IMAGES_FOLDER, PHOTO_LIBRARY_FOLDER, BRAND_LOGOS_FOLDER, PRINT_MATERIALS_FOLDER, DIGITAL_SHARE_GRAPHICS_FOLDER, DOCUMENTS_FOLDER, FOLDER_ALIASES, RETIRED_LIBRARY_FOLDERS, STUDY_FLYER_NAMES, STUDY_PRINT_MASTER_NAMES;
-var init_staff_site_media = __esm({
-  "lib/staff-site-media.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    init_staff_media();
-    RAW_SITE_ASSETS = [
-      ["Brand", "/images/identity/amari-method-wordmark.svg"],
-      ["Brand", "/images/AmariLogo.avif"],
-      ["Brand", "/images/AmariLogo.jpg"],
-      ["Brand", "/images/amari-icon.png"],
-      ["Brand", "/images/amari-method-logo-1200.png"],
-      ["Brand", "/images/amari-method-logo-1200x300.png"],
-      ["Brand", "/images/v6/logo-icon.png"],
-      ["Brand", "/images/v6/real/amari-icon.png"],
-      ["Brand", "/images/v6/real/amari-method-logo-1200x300.png"],
-      ["Site photography", "/images/Dr-Garrett-Headshot-2.avif"],
-      ["Site photography", "/images/Justin.webp"],
-      ["Site photography", "/images/Maria.webp"],
-      ["Site photography", "/images/Sarah.webp"],
-      ["Site photography", "/images/amy-testimonial.webp"],
-      ["Site photography", "/images/dan-testimonial.webp"],
-      ["Site photography", "/images/danielle-testimonial.avif"],
-      ["Site photography", "/images/foam-roller-v3.webp"],
-      ["Site photography", "/images/gregg-testimonial.jpg"],
-      ["Site photography", "/images/gymnastic-rings.webp"],
-      ["Site photography", "/images/kate-testimonial.avif"],
-      ["Site photography", "/images/nina-testimonial.jpg"],
-      ["Site photography", "/images/pull-up-bar.webp"],
-      ["Site photography", "/images/samantha-testimonial.avif"],
-      ["Site photography", "/images/terri-testimonial.jpg"],
-      ["Site photography", "/images/tyler-testimonial.jpg"],
-      ["Site photography", "/images/yoga-block.webp"],
-      ["Current site photography", "/images/photos/amari-method-active-bridge-ocean-swimmer.png"],
-      ["Current site photography", "/images/photos/amari-method-passive-bridge-south-asian-client.png"],
-      ["Current site photography", "/images/photos/amari-method-concept-explanation-athletic-client.png"],
-      ["Current site photography", "/images/photos/amari-method-elbow-reset-athletic-ceo.png"],
-      ["Current site photography", "/images/photos/amari-method-guided-forearm-position-athletic-client.png"],
-      ["Current site photography", "/images/photos/amari-method-guided-hand-position-athletic-client.png"],
-      ["Current site photography", "/images/photos/amari-method-guided-jaw-position-athletic-client.png"],
-      ["Current site photography", "/images/photos/amari-method-power-posture-athletic-client.png"],
-      ["Current site photography", "/images/photos/amari-method-sf-hillside-athletic-lifestyle.png"],
-      ["Current site photography", "/images/photos/amari-method-shoulder-athletic-client.jpeg"],
-      ["Current site photography", "/images/photos/amari-method-suspension-squat-athletic-client.png"],
-      ["Current site photography", "/images/photos/black-man42-room-roller.jpg"],
-      ["Current site photography", "/images/photos/black-woman38-window-seat.jpg"],
-      ["Current site photography", "/images/photos/chronic-pain-woman-asn61.jpg"],
-      ["Current site photography", "/images/photos/condition-base/knee-refined.jpg"],
-      ["Current site photography", "/images/photos/condition-base/lower-back-refined.jpg"],
-      ["Current site photography", "/images/photos/condition-base/lowerback-hands-support.jpg"],
-      ["Current site photography", "/images/photos/condition-base/neck.jpg"],
-      ["Current site photography", "/images/photos/condition-base/shoulder-refined.jpg"],
-      ["Current site photography", "/images/photos/condition-base/shoulder.jpg"],
-      ["Current site photography", "/images/photos/conditions-hub-man-blk49.jpg"],
-      ["Current site photography", "/images/photos/detail-crops/hand-reaching-open.jpg"],
-      ["Current site photography", "/images/photos/detail-crops/shoulder-forearm-gym.jpg"],
-      ["Current site photography", "/images/photos/firstvisit-doorway-woman-wht48.jpg"],
-      ["Current site photography", "/images/photos/hero-home-cedar-woman.jpg"],
-      ["Current site photography", "/images/photos/hip-woman-wht60-doorway.jpg"],
-      ["Current site photography", "/images/photos/hip-woman-wht60.jpg"],
-      ["Current site photography", "/images/photos/inperson-logistics-woman-wht45.jpg"],
-      ["Current site photography", "/images/photos/jh-myofascial.jpg"],
-      ["Current site photography", "/images/photos/jh-psoas.jpg"],
-      ["Current site photography", "/images/photos/jh-stretching.jpg"],
-      ["Current site photography", "/images/photos/journal-base/jh-spinal-wave-refined.jpg"],
-      ["Current site photography", "/images/photos/journal-base/jh-spinal-wave.jpg"],
-      ["Current site photography", "/images/photos/journal-base/jh-spring-step.jpg"],
-      ["Current site photography", "/images/photos/journal-base/jh-vertical-drop.jpg"],
-      ["Current site photography", "/images/photos/knee-man-his44-window.jpg"],
-      ["Current site photography", "/images/photos/knee-man-his44.jpg"],
-      ["Current site photography", "/images/photos/living-practice-woman-asn35.jpg"],
-      ["Current site photography", "/images/photos/materials/hand-cedar-grain.jpg"],
-      ["Current site photography", "/images/photos/materials/hand-handrail-grip.jpg"],
-      ["Current site photography", "/images/photos/materials/jaw-neck-soft.jpg"],
-      ["Current site photography", "/images/photos/materials/wood-floor-grain.jpg"],
-      ["Current site photography", "/images/photos/neck-man-asn47.jpg"],
-      ["Current site photography", "/images/photos/partner-coach.jpg"],
-      ["Current site photography", "/images/photos/partner-movement-man-his52.jpg"],
-      ["Current site photography", "/images/photos/partner-trainer.jpg"],
-      ["Current site photography", "/images/photos/partner-woman-his41.jpg"],
-      ["Current site photography", "/images/photos/partner-yoga-woman-wht38.jpg"],
-      ["Current site photography", "/images/photos/plantar-woman-multi41.jpg"],
-      ["Current site photography", "/images/photos/sciatica-man-wht50.jpg"],
-      ["Current site photography", "/images/photos/tmj-woman-asn39.jpg"],
-      ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Golfers.png"],
-      ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Lifters.png"],
-      ["Digital share graphics", "/images/study-flyers-textable/Elbow-Pain-Study-Tennis-Pickleball.png"],
-      ["Digital share graphics", "/images/study-flyers-textable/Foot-Pain-On-Feet.png"],
-      ["Digital share graphics", "/images/study-flyers-textable/Foot-Pain-Runners.png"],
-      ["Digital share graphics", "/images/study-flyers-textable/Hand-Pain-Study-Climbers.png"],
-      ["Digital share graphics", "/images/study-flyers-textable/Jaw-Tension-Grinders.png"],
-      ["Digital share graphics", "/images/study-flyers-textable/Jaw-Tension-TMJ.png"],
-      ["Digital share graphics", "/images/study-flyers-textable/Shoulder-Upper-Back-Pain-Study-Coworking.png"],
-      ["Legacy site imagery", "/images/v6/amari-cutout-journal.png"],
-      ["Legacy site imagery", "/images/v6/amari-cutout-living.png"],
-      ["Legacy site imagery", "/images/v6/amari-cutout-partner.png"],
-      ["Legacy site imagery", "/images/v6/amari-cutout-pricing.png"],
-      ["Legacy site imagery", "/images/v6/real/Amari-child.jpg"],
-      ["Legacy site imagery", "/images/v6/real/active-bridge.jpg"],
-      ["Legacy site imagery", "/images/v6/real/back-pain-from-sitting.webp"],
-      ["Legacy site imagery", "/images/v6/real/danielle-testimonial.jpg"],
-      ["Legacy site imagery", "/images/v6/real/elbow-reset.jpg"],
-      ["Legacy site imagery", "/images/v6/real/foam-roller-v2.jpg"],
-      ["Legacy site imagery", "/images/v6/real/garrett-face-1200.jpg"],
-      ["Legacy site imagery", "/images/v6/real/garrett-session-img-3348.jpg"],
-      ["Legacy site imagery", "/images/v6/real/gymnastic-rings.jpg"],
-      ["Legacy site imagery", "/images/v6/real/hand-balancer.jpg"],
-      ["Legacy site imagery", "/images/v6/real/jaw-align.jpg"],
-      ["Legacy site imagery", "/images/v6/real/passive-bridge.jpg"],
-      ["Legacy site imagery", "/images/v6/real/pull-up-bar.jpg"],
-      ["Legacy site imagery", "/images/v6/real/putting-it-all-together.jpg"],
-      ["Legacy site imagery", "/images/v6/real/spring-step.jpg"]
-    ];
-    NOT_CURRENTLY_USED = /* @__PURE__ */ new Set([
-      "/images/AmariLogo.jpg",
-      "/images/amari-icon.png",
-      "/images/amari-method-logo-1200.png",
-      "/images/amari-method-logo-1200x300.png",
-      "/images/v6/logo-icon.png",
-      "/images/v6/real/amari-icon.png",
-      "/images/v6/real/amari-method-logo-1200x300.png",
-      "/images/Dr-Garrett-Headshot-2.avif",
-      "/images/photos/amari-method-active-bridge-ocean-swimmer.png",
-      "/images/photos/amari-method-concept-explanation-athletic-client.png",
-      "/images/photos/amari-method-guided-hand-position-athletic-client.png",
-      "/images/photos/amari-method-sf-hillside-athletic-lifestyle.png",
-      "/images/photos/amari-method-shoulder-athletic-client.jpeg",
-      "/images/photos/amari-method-suspension-squat-athletic-client.png",
-      "/images/photos/condition-base/neck.jpg",
-      "/images/photos/detail-crops/hand-reaching-open.jpg",
-      "/images/photos/jh-myofascial.jpg",
-      "/images/photos/jh-psoas.jpg",
-      "/images/photos/jh-stretching.jpg",
-      "/images/photos/materials/hand-handrail-grip.jpg",
-      "/images/photos/partner-coach.jpg",
-      "/images/v6/real/foam-roller-v2.jpg",
-      "/images/v6/real/garrett-session-img-3348.jpg",
-      "/images/v6/real/gymnastic-rings.jpg",
-      "/images/v6/real/jaw-align.jpg"
-    ]);
-    DELETE_CANDIDATES = /* @__PURE__ */ new Set([
-      "/images/photos/black-woman38-window-seat.jpg",
-      "/images/photos/black-man42-room-roller.jpg",
-      "/images/photos/living-practice-woman-asn35.jpg",
-      "/images/photos/firstvisit-doorway-woman-wht48.jpg"
-    ]);
-    DESCRIPTIONS = {
-      "/images/photos/black-woman38-window-seat.jpg": "Seated woman by a window in the Amari room; currently used for the homepage method panel.",
-      "/images/photos/black-man42-room-roller.jpg": "Man standing in the Amari room near a foam roller; currently used as the How It Works hero.",
-      "/images/photos/living-practice-woman-asn35.jpg": "Woman doing a seated arm movement in the Amari room; currently used for Living Practice.",
-      "/images/photos/firstvisit-doorway-woman-wht48.jpg": "Woman entering through the Amari doorway; currently used for First Visit and the homepage assessment panel."
-    };
-    __name(internalDescription, "internalDescription");
-    SITE_ASSETS = Object.freeze(RAW_SITE_ASSETS.map(([folder, path]) => Object.freeze({
-      folder,
-      path,
-      description: internalDescription(path),
-      websiteUsage: NOT_CURRENTLY_USED.has(path) ? "not_used" : "currently_used",
-      curationStatus: DELETE_CANDIDATES.has(path) ? "delete_candidate" : "good"
-    })));
-    ROOT_FOLDER = "Amari site assets";
-    WEBSITE_IMAGES_FOLDER = "Website images";
-    PHOTO_LIBRARY_FOLDER = "Photo library";
-    BRAND_LOGOS_FOLDER = "Brand & logos";
-    PRINT_MATERIALS_FOLDER = "Print materials";
-    DIGITAL_SHARE_GRAPHICS_FOLDER = "Digital share graphics";
-    DOCUMENTS_FOLDER = "Documents";
-    FOLDER_ALIASES = {
-      Brand: ["Brand", "Current identity", "Historical logo files"],
-      "Site photography": ["Site photography", "Current site photography", "Current photography"],
-      "Current site photography": ["Current site photography", "Site photography", "Current photography"],
-      "Study materials": ["Study materials", "Study flyers"],
-      "Legacy site imagery": ["Legacy site imagery", "Historical imagery", "Historical logo files"]
-    };
-    RETIRED_LIBRARY_FOLDERS = /* @__PURE__ */ new Set([
-      ROOT_FOLDER,
-      "Print collateral",
-      "Used on website",
-      "Not used on website",
-      ...Object.values(FOLDER_ALIASES).flat()
-    ]);
-    __name(displayName, "displayName");
-    STUDY_FLYER_NAMES = new Set(RAW_SITE_ASSETS.filter(([, path]) => path.startsWith("/images/study-flyers-textable/")).map(([, path]) => normalizeMediaName(displayName(path))));
-    STUDY_PRINT_MASTER_NAMES = new Set([...STUDY_FLYER_NAMES].map((name) => name.replace(/\.png$/, ".pdf")));
-    __name(ensureFolder, "ensureFolder");
-    __name(hasLegacyMediaFolders, "hasLegacyMediaFolders");
-    __name(hasMisfiledStudyMaterials, "hasMisfiledStudyMaterials");
-    __name(organizeMediaByWebsiteUsage, "organizeMediaByWebsiteUsage");
-    __name(folderNameFor, "folderNameFor");
   }
 });
 
@@ -34070,37 +34836,30 @@ function responseHeaders5(context) {
     "Cache-Control": "no-store"
   };
 }
-function json17(value, status, headers5) {
+function json18(value, status, headers5) {
   return new Response(JSON.stringify(value), { status, headers: headers5 });
 }
 function safeStatus(cause) {
   const status = Number(cause?.status) || 500;
   return [400, 404, 409, 422].includes(status) ? status : 500;
 }
-async function onRequestOptions78(context) {
+async function onRequestOptions79(context) {
   return new Response(null, { status: 204, headers: responseHeaders5(context) });
 }
-async function onRequestGet53(context) {
+async function onRequestGet55(context) {
   const headers5 = responseHeaders5(context);
   const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
   try {
     const url = new URL(context.request.url);
-    let library = await listStaffMedia(context.env.ATTEND_DB || null, {
+    const library = await listStaffMedia(context.env.ATTEND_DB || null, {
       includeArchived: url.searchParams.get("archived") === "1"
     });
-    const hasUsageFolders = [WEBSITE_IMAGES_FOLDER, PHOTO_LIBRARY_FOLDER, BRAND_LOGOS_FOLDER, PRINT_MATERIALS_FOLDER, DIGITAL_SHARE_GRAPHICS_FOLDER, DOCUMENTS_FOLDER].every((name) => library.folders.some((folder) => folder.status === "active" && !folder.parentId && folder.name === name));
-    if ((!hasUsageFolders || hasLegacyMediaFolders(library.folders) || hasMisfiledStudyMaterials(library)) && library.assets.some((asset) => asset.status === "active" && asset.kind === "image")) {
-      await organizeMediaByWebsiteUsage({ db: context.env.ATTEND_DB || null, actor: auth.payload?.user || "Staff" });
-      library = await listStaffMedia(context.env.ATTEND_DB || null, {
-        includeArchived: url.searchParams.get("archived") === "1"
-      });
-    }
-    return json17({ ...library, storage: "owned-d1-r2", uploadReady: !!context.env.MEDIA_BUCKET }, 200, headers5);
+    return json18({ ...library, storage: "owned-d1-r2", uploadReady: !!context.env.MEDIA_BUCKET }, 200, headers5);
   } catch (cause) {
     const status = safeStatus(cause);
     if (status === 500) console.error("[staff-media] list", cause);
-    return json17({ error: cause instanceof Error ? cause.message : "Media library could not be loaded" }, status, headers5);
+    return json18({ error: cause instanceof Error ? cause.message : "Media library could not be loaded" }, status, headers5);
   }
 }
 async function onRequestPost58(context) {
@@ -34113,27 +34872,26 @@ async function onRequestPost58(context) {
     const actor = auth.payload?.user || "Staff";
     if (parsed.body.action === "create_folder") {
       const folder = await createMediaFolder(context.env.ATTEND_DB || null, parsed.body, { actor });
-      return json17({ folder }, 201, headers5);
+      return json18({ folder }, 201, headers5);
     }
     const asset = await updateMediaAsset(context.env.ATTEND_DB || null, parsed.body, { actor });
-    return json17({ asset }, 200, headers5);
+    return json18({ asset }, 200, headers5);
   } catch (cause) {
     const status = safeStatus(cause);
     if (status === 500) console.error("[staff-media] mutate", cause);
-    return json17({ error: cause instanceof Error ? cause.message : "Media library could not be updated" }, status, headers5);
+    return json18({ error: cause instanceof Error ? cause.message : "Media library could not be updated" }, status, headers5);
   }
 }
 var init_staff_media2 = __esm({
   "api/staff-media.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_media();
-    init_staff_site_media();
     __name(responseHeaders5, "responseHeaders");
-    __name(json17, "json");
+    __name(json18, "json");
     __name(safeStatus, "safeStatus");
-    __name(onRequestOptions78, "onRequestOptions");
-    __name(onRequestGet53, "onRequestGet");
+    __name(onRequestOptions79, "onRequestOptions");
+    __name(onRequestGet55, "onRequestGet");
     __name(onRequestPost58, "onRequestPost");
   }
 });
@@ -34194,10 +34952,10 @@ async function serve(context, headOnly = false) {
     });
   }
 }
-async function onRequestOptions79(context) {
+async function onRequestOptions80(context) {
   return new Response(null, { status: 204, headers: baseHeaders(context) });
 }
-async function onRequestGet54(context) {
+async function onRequestGet56(context) {
   return serve(context, false);
 }
 async function onRequestHead(context) {
@@ -34205,15 +34963,15 @@ async function onRequestHead(context) {
 }
 var init_staff_media_file = __esm({
   "api/staff-media-file.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_media();
     __name(baseHeaders, "baseHeaders");
     __name(contentDisposition, "contentDisposition");
     __name(parseRange, "parseRange");
     __name(serve, "serve");
-    __name(onRequestOptions79, "onRequestOptions");
-    __name(onRequestGet54, "onRequestGet");
+    __name(onRequestOptions80, "onRequestOptions");
+    __name(onRequestGet56, "onRequestGet");
     __name(onRequestHead, "onRequestHead");
   }
 });
@@ -34227,7 +34985,7 @@ function responseHeaders6(context) {
     "Cache-Control": "no-store"
   };
 }
-function json18(value, status, headers5) {
+function json19(value, status, headers5) {
   return new Response(JSON.stringify(value), { status, headers: headers5 });
 }
 function decodedHeader(request2, key) {
@@ -34238,7 +34996,7 @@ function decodedHeader(request2, key) {
     return "";
   }
 }
-async function onRequestOptions80(context) {
+async function onRequestOptions81(context) {
   return new Response(null, { status: 204, headers: responseHeaders6(context) });
 }
 async function onRequestPost59(context) {
@@ -34246,7 +35004,7 @@ async function onRequestPost59(context) {
   const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
   if (!context.env.MEDIA_BUCKET || !context.env.ATTEND_DB) {
-    return json18({ error: "Media upload storage is not configured" }, 422, headers5);
+    return json19({ error: "Media upload storage is not configured" }, 422, headers5);
   }
   const name = decodedHeader(context.request, "X-Amari-File-Name");
   const folderId = decodedHeader(context.request, "X-Amari-Folder-Id") || null;
@@ -34256,9 +35014,9 @@ async function onRequestPost59(context) {
   try {
     upload = validateMediaUpload({ name, mimeType, sizeBytes });
   } catch (cause) {
-    return json18({ error: cause instanceof Error ? cause.message : "Invalid media upload" }, Number(cause?.status) || 400, headers5);
+    return json19({ error: cause instanceof Error ? cause.message : "Invalid media upload" }, Number(cause?.status) || 400, headers5);
   }
-  if (!context.request.body) return json18({ error: "The file is empty" }, 400, headers5);
+  if (!context.request.body) return json19({ error: "The file is empty" }, 400, headers5);
   const assetId = crypto.randomUUID();
   const objectKey = mediaObjectKey(assetId, upload.mimeType);
   try {
@@ -34272,7 +35030,7 @@ async function onRequestPost59(context) {
       sizeBytes: upload.sizeBytes,
       folderId
     }, { actor: auth.payload?.user || "Staff", id: assetId });
-    return json18({ asset: registered.asset }, 201, headers5);
+    return json19({ asset: registered.asset }, 201, headers5);
   } catch (cause) {
     try {
       await context.env.MEDIA_BUCKET.delete(objectKey);
@@ -34280,24 +35038,24 @@ async function onRequestPost59(context) {
     }
     const status = [400, 404, 409, 422].includes(Number(cause?.status)) ? Number(cause.status) : 500;
     if (status === 500) console.error("[staff-media-upload]", cause);
-    return json18({ error: cause instanceof Error ? cause.message : "File upload failed" }, status, headers5);
+    return json19({ error: cause instanceof Error ? cause.message : "File upload failed" }, status, headers5);
   }
 }
 var init_staff_media_upload = __esm({
   "api/staff-media-upload.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_media();
     __name(responseHeaders6, "responseHeaders");
-    __name(json18, "json");
+    __name(json19, "json");
     __name(decodedHeader, "decodedHeader");
-    __name(onRequestOptions80, "onRequestOptions");
+    __name(onRequestOptions81, "onRequestOptions");
     __name(onRequestPost59, "onRequestPost");
   }
 });
 
 // api/staff-not-a-fit.js
-async function onRequestOptions81(context) {
+async function onRequestOptions82(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -34376,180 +35134,68 @@ async function onRequestPost60(context) {
 var GHL_API_BASE40, GHL_LOCATION_ID30;
 var init_staff_not_a_fit = __esm({
   "api/staff-not-a-fit.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE40 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID30 = "7pIO7FHVAyBT1jKGhfQM";
-    __name(onRequestOptions81, "onRequestOptions");
+    __name(onRequestOptions82, "onRequestOptions");
     __name(onRequestPost60, "onRequestPost");
   }
 });
 
-// ../shared/staff-note-policy.js
-function isSystemNote(body) {
-  const text6 = typeof body === "string" ? body.trim() : "";
-  return SYSTEM_NOTE_PATTERNS.some((pattern) => pattern.test(text6));
+// lib/staff-note-retirement.js
+function retiredStaffNoteResponse(headers5 = {}) {
+  return new Response(JSON.stringify(RETIRED_STAFF_NOTE), { status: 410, headers: headers5 });
 }
-function hasNoteSignature(body) {
-  return /<img[^>]*\bsrc=["']data:image\//i.test(typeof body === "string" ? body : "");
-}
-function isEditableStaffNote(body) {
-  return !isSystemNote(body) && !hasNoteSignature(body);
-}
-var SYSTEM_NOTE_PATTERNS;
-var init_staff_note_policy = __esm({
-  "../shared/staff-note-policy.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    SYSTEM_NOTE_PATTERNS = [
-      /^migrat/i,
-      /^\[?reconciliation/i,
-      /^outcome:/i,
-      /^touch:/i,
-      /^skip:/i,
-      /^enrichment/i,
-      /^audit/i,
-      /^correction/i,
-      /^ip:/i,
-      /^user.?agent:/i,
-      /captured at:/i,
-      /^next: customer redirected/i
-    ];
-    __name(isSystemNote, "isSystemNote");
-    __name(hasNoteSignature, "hasNoteSignature");
-    __name(isEditableStaffNote, "isEditableStaffNote");
+var RETIRED_STAFF_NOTE;
+var init_staff_note_retirement = __esm({
+  "lib/staff-note-retirement.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    RETIRED_STAFF_NOTE = Object.freeze({
+      error: "Staff note writes moved to Amari CRM",
+      code: "staff_note_path_retired",
+      destination: "/staff/client-desk"
+    });
+    __name(retiredStaffNoteResponse, "retiredStaffNoteResponse");
   }
 });
 
 // api/staff-note.js
-function noteText(value) {
-  return typeof value === "string" ? value.trim() : "";
-}
-function buildNoteUpdatePath(contactId, noteId) {
-  return `${GHL_API_BASE41}/contacts/${contactId}/notes/${noteId}`;
-}
-function validateNoteUpdate({ contactId, noteId, body }) {
-  if (!noteText(contactId)) return { error: "Contact ID required" };
-  if (!noteText(noteId)) return { error: "Note ID required" };
-  if (!noteText(body)) return { error: "Note body required" };
-  if (noteText(body).length > 5e3) return { error: "Note too long (max 5000 chars)" };
-  return { contactId: noteText(contactId), noteId: noteText(noteId), body: noteText(body) };
-}
-function editableExistingNote(noteResponse) {
-  const note = noteResponse?.note || noteResponse;
-  return typeof note?.body === "string" && isEditableStaffNote(note.body);
-}
-function validationResponse(validation, headers5) {
-  return new Response(JSON.stringify({ error: validation.error }), { status: 400, headers: headers5 });
-}
-async function onRequestOptions82(context) {
+async function onRequestOptions83(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "POST, PUT, OPTIONS")
   });
 }
-async function onRequestPost61(context) {
+async function rejectRetiredStaffNote(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
-  try {
-    const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
-    if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
-    if (parseError) return parseError;
-    const validation = validateNoteUpdate({ contactId: body.contactId, noteId: "new", body: body.body });
-    if (validation.error) return validationResponse(validation, headers5);
-    const contactId = requireProviderContactIdentity(
-      await resolveOwnedContactIdentity(context, validation.contactId)
-    );
-    const noteRes = await ghlFetch(context, `${GHL_API_BASE41}/contacts/${contactId}/notes`, {
-      method: "POST",
-      body: JSON.stringify({ body: validation.body })
-    });
-    if (!noteRes.ok) {
-      const errText = await noteRes.text();
-      console.error(`[staff-note] GHL note create error: ${noteRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to save note" }), { status: 422, headers: headers5 });
-    }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
-  } catch (err) {
-    console.error("[staff-note] Unexpected error:", err);
-    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
-      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
-      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
-    }
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
-  }
+  const { error } = await requireStaffAuth(context, headers5);
+  return error || retiredStaffNoteResponse(headers5);
 }
-async function onRequestPut2(context) {
-  const origin = context.request.headers.get("Origin") || "";
-  const headers5 = { ...corsHeaders3(origin, "POST, PUT, OPTIONS"), "Content-Type": "application/json" };
-  try {
-    const { error } = await requireStaffAuth(context, headers5);
-    if (error) return error;
-    const { body, error: parseError } = await parseJsonBody(context.request, headers5);
-    if (parseError) return parseError;
-    const validation = validateNoteUpdate(body);
-    if (validation.error) return validationResponse(validation, headers5);
-    const contactId = requireProviderContactIdentity(
-      await resolveOwnedContactIdentity(context, validation.contactId)
-    );
-    const existingRes = await ghlFetch(context, buildNoteUpdatePath(contactId, validation.noteId));
-    if (!existingRes.ok) {
-      const errText = await existingRes.text();
-      console.error(`[staff-note] GHL note read before update error: ${existingRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Could not verify note for editing" }), { status: 422, headers: headers5 });
-    }
-    const existingNote = await existingRes.json();
-    if (!editableExistingNote(existingNote)) {
-      return new Response(JSON.stringify({ error: "Only ordinary Staff notes can be edited" }), { status: 403, headers: headers5 });
-    }
-    const noteRes = await ghlFetch(context, buildNoteUpdatePath(contactId, validation.noteId), {
-      method: "PUT",
-      body: JSON.stringify({ body: validation.body })
-    });
-    if (!noteRes.ok) {
-      const errText = await noteRes.text();
-      console.error(`[staff-note] GHL note update error: ${noteRes.status} ${errText}`);
-      return new Response(JSON.stringify({ error: "Failed to update note" }), { status: 422, headers: headers5 });
-    }
-    return new Response(JSON.stringify({ success: true }), { status: 200, headers: headers5 });
-  } catch (err) {
-    console.error("[staff-note] Unexpected update error:", err);
-    if (String(err?.code || "").startsWith("owned_") || String(err?.code || "").startsWith("provider_")) {
-      const status = [400, 404, 409, 503].includes(Number(err?.status)) ? Number(err.status) : 503;
-      return new Response(JSON.stringify({ error: err.message, code: err.code }), { status, headers: headers5 });
-    }
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
-  }
-}
-var GHL_API_BASE41;
+var onRequestPost61, onRequestPut2;
 var init_staff_note = __esm({
   "api/staff-note.js"() {
-    init_functionsRoutes_0_17324749639504822();
-    init_ghl();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    init_staff_note_policy();
-    init_staff_owned_contact_identity();
-    GHL_API_BASE41 = "https://services.leadconnectorhq.com";
-    __name(noteText, "noteText");
-    __name(buildNoteUpdatePath, "buildNoteUpdatePath");
-    __name(validateNoteUpdate, "validateNoteUpdate");
-    __name(editableExistingNote, "editableExistingNote");
-    __name(validationResponse, "validationResponse");
-    __name(onRequestOptions82, "onRequestOptions");
-    __name(onRequestPost61, "onRequestPost");
-    __name(onRequestPut2, "onRequestPut");
+    init_staff_note_retirement();
+    init_staff_note_retirement();
+    __name(onRequestOptions83, "onRequestOptions");
+    __name(rejectRetiredStaffNote, "rejectRetiredStaffNote");
+    onRequestPost61 = rejectRetiredStaffNote;
+    onRequestPut2 = rejectRetiredStaffNote;
   }
 });
 
 // api/staff-outreach-cards.js
-async function onRequestOptions83(context) {
+async function onRequestOptions84(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS")
   });
 }
-async function onRequestGet55(context) {
+async function onRequestGet57(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
   try {
@@ -34590,11 +35236,11 @@ async function onRequestGet55(context) {
 var KV_KEY2;
 var init_staff_outreach_cards = __esm({
   "api/staff-outreach-cards.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     KV_KEY2 = "outreach-snapshot:current";
-    __name(onRequestOptions83, "onRequestOptions");
-    __name(onRequestGet55, "onRequestGet");
+    __name(onRequestOptions84, "onRequestOptions");
+    __name(onRequestGet57, "onRequestGet");
   }
 });
 
@@ -34608,7 +35254,7 @@ function corsHeaders36(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions84(context) {
+async function onRequestOptions85(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders36(context.request.headers.get("Origin"))
@@ -34679,7 +35325,7 @@ async function onRequestPost62(context) {
 var KV_KEY3, ALLOWED_ORIGINS38;
 var init_staff_outreach_upload = __esm({
   "api/staff-outreach-upload.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_heartbeat();
     KV_KEY3 = "outreach-snapshot:current";
     ALLOWED_ORIGINS38 = [
@@ -34687,7 +35333,7 @@ var init_staff_outreach_upload = __esm({
       "https://amarimethod.com"
     ];
     __name(corsHeaders36, "corsHeaders");
-    __name(onRequestOptions84, "onRequestOptions");
+    __name(onRequestOptions85, "onRequestOptions");
     __name(onRequestPost62, "onRequestPost");
   }
 });
@@ -34720,9 +35366,15 @@ function keepCharge(c) {
   const net = (c.amount || 0) - (c.amount_refunded || 0);
   return net > 0;
 }
-async function resolveContactCharges(stripe, { contactId, email, customerId } = {}) {
+async function resolveContactCharges(stripe, { contactId, email: email2, customerId } = {}) {
   const byId = /* @__PURE__ */ new Map();
   const customerIds = /* @__PURE__ */ new Set();
+  const checkedData = /* @__PURE__ */ __name((result) => {
+    if (!result || result.error || result.incomplete || !Array.isArray(result.data)) {
+      throw new Error("Payment history could not be verified");
+    }
+    return result.data;
+  }, "checkedData");
   if (customerId) customerIds.add(customerId);
   const add = /* @__PURE__ */ __name((charges) => {
     for (const c of charges || []) {
@@ -34733,18 +35385,18 @@ async function resolveContactCharges(stripe, { contactId, email, customerId } = 
   }, "add");
   if (contactId) {
     const r = await stripe.searchCharges(`metadata["contactId"]:"${contactId}"`);
-    if (r && !r.error) add(r.data);
+    add(checkedData(r));
   }
   const notForeign = /* @__PURE__ */ __name((c) => !(contactId && c.metadata?.contactId && c.metadata.contactId !== contactId), "notForeign");
   for (const cust of [...customerIds]) {
     const r = await stripe.listChargesByCustomer(cust);
-    if (r && !r.error) add((r.data || []).filter(notForeign));
+    add(checkedData(r).filter(notForeign));
   }
-  if (email && byId.size === 0) {
-    const cu = await stripe.listCustomersByEmail(email);
-    for (const c of cu?.data || []) {
+  if (email2 && byId.size === 0) {
+    const cu = await stripe.listCustomersByEmail(email2);
+    for (const c of checkedData(cu)) {
       const r = await stripe.listChargesByCustomer(c.id);
-      if (r && !r.error) add((r.data || []).filter(notForeign));
+      add(checkedData(r).filter(notForeign));
     }
   }
   return [...byId.values()];
@@ -34760,59 +35412,55 @@ function makeStripeClient(secretKey, fetchImpl = fetch) {
   const base = "https://api.stripe.com/v1";
   const get = /* @__PURE__ */ __name(async (path) => {
     const res = await fetchImpl(`${base}${path}`, { headers: { Authorization: `Bearer ${secretKey}` } });
-    return res.json();
+    const body = await res.json();
+    if (res.ok === false && !body?.error) return { error: { message: "Payment provider read failed" } };
+    return body;
   }, "get");
-  const getList = /* @__PURE__ */ __name(async (label, buildPath) => {
+  const invalidPage = /* @__PURE__ */ __name((page) => !page || page.error || !Array.isArray(page.data) || typeof page.has_more !== "boolean", "invalidPage");
+  const incomplete = /* @__PURE__ */ __name((data) => ({ data, incomplete: true }), "incomplete");
+  const firstPageError = /* @__PURE__ */ __name((page) => page?.error ? page : { error: { message: "Payment provider returned an invalid page" } }, "firstPageError");
+  const getList = /* @__PURE__ */ __name(async (_label, buildPath) => {
     const all2 = [];
+    const seen = /* @__PURE__ */ new Set();
     let cursor = null;
     for (let page = 0; page < STRIPE_MAX_PAGES; page++) {
       const r = await get(buildPath(cursor));
-      if (!r || r.error) {
-        if (all2.length === 0) return r;
-        break;
-      }
-      const data = r.data || [];
-      all2.push(...data);
-      if (!r.has_more || data.length === 0) break;
-      cursor = data[data.length - 1].id;
-      if (page === STRIPE_MAX_PAGES - 1 && r.has_more) {
-        console.warn(`[stripe-charges] ${label}: hit ${STRIPE_MAX_PAGES}-page cap with has_more=true \u2014 charge list may be truncated`);
-      }
+      if (invalidPage(r)) return all2.length ? incomplete(all2) : firstPageError(r);
+      all2.push(...r.data);
+      if (!r.has_more) return { data: all2 };
+      const next = r.data.at(-1)?.id;
+      if (!next || seen.has(next)) return incomplete(all2);
+      seen.add(next);
+      cursor = next;
     }
-    return { data: all2 };
+    return incomplete(all2);
   }, "getList");
   const searchCharges = /* @__PURE__ */ __name(async (query) => {
     const all2 = [];
+    const seen = /* @__PURE__ */ new Set();
     let pageToken = null;
     for (let page = 0; page < STRIPE_MAX_PAGES; page++) {
       const pageParam = pageToken ? `&page=${encodeURIComponent(pageToken)}` : "";
       const r = await get(`/charges/search?query=${encodeURIComponent(query)}&limit=100${pageParam}`);
-      if (!r || r.error) {
-        if (all2.length === 0) return r;
-        break;
-      }
-      all2.push(...r.data || []);
-      if (!r.has_more || !r.next_page) break;
+      if (invalidPage(r)) return all2.length ? incomplete(all2) : firstPageError(r);
+      all2.push(...r.data);
+      if (!r.has_more) return { data: all2 };
+      if (!r.next_page || seen.has(r.next_page)) return incomplete(all2);
+      seen.add(r.next_page);
       pageToken = r.next_page;
-      if (page === STRIPE_MAX_PAGES - 1 && r.has_more) {
-        console.warn(`[stripe-charges] searchCharges: hit ${STRIPE_MAX_PAGES}-page cap with has_more=true \u2014 search results may be truncated`);
-      }
     }
-    return { data: all2 };
+    return incomplete(all2);
   }, "searchCharges");
   return {
     searchCharges,
-    listChargesByCustomer: /* @__PURE__ */ __name((customerId) => getList(
-      `listChargesByCustomer(${customerId})`,
-      (cursor) => `/charges?customer=${encodeURIComponent(customerId)}&limit=100` + (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : "")
-    ), "listChargesByCustomer"),
-    listCustomersByEmail: /* @__PURE__ */ __name((email) => get(`/customers?email=${encodeURIComponent(email)}&limit=10`), "listCustomersByEmail")
+    listChargesByCustomer: /* @__PURE__ */ __name((customerId) => getList("charges", (cursor) => `/charges?customer=${encodeURIComponent(customerId)}&limit=100` + (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : "")), "listChargesByCustomer"),
+    listCustomersByEmail: /* @__PURE__ */ __name((email2) => getList("customers", (cursor) => `/customers?email=${encodeURIComponent(email2)}&limit=100` + (cursor ? `&starting_after=${encodeURIComponent(cursor)}` : "")), "listCustomersByEmail")
   };
 }
 var AMOUNT_TO_SESSIONS, STRIPE_MAX_PAGES;
 var init_stripe_charges = __esm({
   "lib/stripe-charges.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     AMOUNT_TO_SESSIONS = Object.freeze({
       5400: { sessions: 24, label: "The 12-Week Amari Practice" },
       5500: { sessions: 24, label: "The 12-Week Amari Practice" },
@@ -34865,7 +35513,7 @@ function computeOwedStatus({ sessionsPurchased, unknownCount, unknownMax = 0, at
 var ATTENDED, LEGACY_MIN;
 var init_session_owed = __esm({
   "lib/session-owed.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_session_ledger();
     init_datetime();
     ATTENDED = /* @__PURE__ */ new Set(["showed", "completed"]);
@@ -34885,7 +35533,7 @@ function settledReason(contactId) {
 var SETTLED_CONTACT_IDS;
 var init_owed_settled = __esm({
   "lib/owed-settled.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     SETTLED_CONTACT_IDS = /* @__PURE__ */ new Map([
       ["zjewEnCWTi7Q7aY8hHYD", "Igor Khizver \u2014 Garrett comped the session"],
       ["brfGSo7wRyF7MIJT8SmM", "Jon Holsbach \u2014 initial session comped, wasn't a fit"],
@@ -34901,10 +35549,10 @@ var init_owed_settled = __esm({
 });
 
 // api/staff-owed.js
-async function onRequestOptions85(context) {
+async function onRequestOptions86(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet56(context) {
+async function onRequestGet58(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -34918,14 +35566,23 @@ async function onRequestGet56(context) {
       return new Response(JSON.stringify({ status: "unavailable", reason: "Stripe not configured" }), { status: 200, headers: headers5 });
     }
     const [contactRes, apptRes] = await Promise.all([
-      ghlFetch(context, `${GHL_API_BASE42}/contacts/${contactId}`),
-      ghlFetch(context, `${GHL_API_BASE42}/contacts/${contactId}/appointments`)
+      ghlFetch(context, `${GHL_API_BASE41}/contacts/${contactId}`),
+      ghlFetch(context, `${GHL_API_BASE41}/contacts/${contactId}/appointments`)
     ]);
-    let email = null;
+    if (!contactRes.ok || !apptRes.ok) {
+      return new Response(JSON.stringify({
+        status: "unavailable",
+        reason: "Contact and attendance evidence could not be verified. Try again."
+      }), { status: 200, headers: { ...headers5, "Cache-Control": "no-store" } });
+    }
+    let email2 = null;
     let name = null;
     if (contactRes.ok) {
       const c = await contactRes.json();
-      email = c.contact?.email || null;
+      if (!c?.contact || typeof c.contact !== "object" || Array.isArray(c.contact) || c.contact.id !== contactId) {
+        throw new Error("Contact evidence could not be verified");
+      }
+      email2 = c.contact?.email || null;
       const fn = (c.contact?.firstName || "").trim();
       const ln = (c.contact?.lastName || "").trim();
       name = [fn, ln].filter(Boolean).join(" ") || c.contact?.name || null;
@@ -34933,19 +35590,23 @@ async function onRequestGet56(context) {
     let appointments = [];
     if (apptRes.ok) {
       const a = await apptRes.json();
-      appointments = a.appointments || a.events || [];
+      const rows2 = a?.appointments ?? a?.events;
+      if (!Array.isArray(rows2) || rows2.some((row) => {
+        if (!row || typeof row !== "object" || Array.isArray(row)) return true;
+        const status = row.appointmentStatus || row.status;
+        const startsAt = row.startTime || row.start_time;
+        return typeof row.id !== "string" || !row.id.trim() || typeof row.calendarId !== "string" || !row.calendarId.trim() || typeof status !== "string" || !status.trim() || typeof startsAt !== "string" || !Number.isFinite(parsePacificWallClock(startsAt));
+      })) {
+        throw new Error("Attendance evidence could not be verified");
+      }
+      appointments = rows2;
     }
     const KV = context.env.PURCHASE_KV;
     const CUST_KEY = `stripe-cust:${contactId}`;
     let storedCustomerId3 = null;
-    if (KV) {
-      try {
-        storedCustomerId3 = await KV.get(CUST_KEY);
-      } catch {
-      }
-    }
+    if (KV) storedCustomerId3 = await KV.get(CUST_KEY);
     const stripe = makeStripeClient(stripeKey);
-    const charges = await resolveContactCharges(stripe, { contactId, email, customerId: storedCustomerId3 || void 0 });
+    const charges = await resolveContactCharges(stripe, { contactId, email: email2, customerId: storedCustomerId3 || void 0 });
     const summary = summarizeCharges(charges);
     if (KV) {
       try {
@@ -34962,17 +35623,27 @@ async function onRequestGet56(context) {
       amount: ((c.amount || 0) - (c.amount_refunded || 0)) / 100,
       label: classifyCharge(c).label || c.description || "Payment"
     })).sort((a, b) => String(b.date).localeCompare(String(a.date)));
-    const payRecords = await listPaymentRecordsForContact(context.env.PURCHASE_KV, contactId);
-    const compedIds = new Set(
-      Object.entries(payRecords).filter(([, r]) => r && r.status === "comped").map(([apptId]) => apptId)
+    const payRecords = await listPaymentRecordsForContact(context.env.PURCHASE_KV, contactId, { strict: true });
+    const coveredAppointmentIds = new Set(
+      Object.entries(payRecords).filter(([, r]) => r && (r.status === "comped" || r.status === "paid" && ["cash", "venmo", "check", "other"].includes(r.method))).map(([apptId]) => apptId)
     );
-    const attendedBillable = countBillableSessionsAttended(appointments, Date.now(), compedIds);
+    const attendedBillable = countBillableSessionsAttended(appointments, Date.now(), coveredAppointmentIds);
     const owed = isSettled(contactId) ? { status: "square", shortBy: 0, settled: true, settledReason: settledReason(contactId) } : computeOwedStatus({
       sessionsPurchased: summary.sessionsPurchased,
       unknownCount: summary.unknownCount,
       unknownMax: summary.unknownMax,
       attendedBillable
     });
+    const conflictingPaidEvidence = owed.status === "owed" && appointments.some((appointment) => {
+      const record3 = payRecords[appointment.id];
+      return record3?.status === "paid" && !["cash", "venmo", "check", "other"].includes(record3.method) && countBillableSessionsAttended([appointment], Date.now()) > 0;
+    });
+    if (conflictingPaidEvidence) {
+      return new Response(JSON.stringify({
+        status: "unavailable",
+        reason: "A session is recorded as paid, but its payment coverage could not be reconciled. Review the payment evidence."
+      }), { status: 200, headers: { ...headers5, "Cache-Control": "no-store" } });
+    }
     return new Response(JSON.stringify({
       ...owed,
       name,
@@ -34985,22 +35656,23 @@ async function onRequestGet56(context) {
     }), { status: 200, headers: headers5 });
   } catch (err) {
     console.error("[staff-owed] error:", err);
-    return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
+    return new Response(JSON.stringify({ status: "unavailable", reason: "Payment and attendance evidence could not be verified. Try again." }), { status: 200, headers: { ...headers5, "Cache-Control": "no-store" } });
   }
 }
-var GHL_API_BASE42;
+var GHL_API_BASE41;
 var init_staff_owed = __esm({
   "api/staff-owed.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
+    init_datetime();
     init_stripe_charges();
     init_session_owed();
     init_owed_settled();
     init_session_payment();
     init_endpoint_guards();
-    GHL_API_BASE42 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions85, "onRequestOptions");
-    __name(onRequestGet56, "onRequestGet");
+    GHL_API_BASE41 = "https://services.leadconnectorhq.com";
+    __name(onRequestOptions86, "onRequestOptions");
+    __name(onRequestGet58, "onRequestGet");
   }
 });
 
@@ -35023,16 +35695,16 @@ function clientNameFromTitle(title) {
 }
 var init_owed_list = __esm({
   "lib/owed-list.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(clientNameFromTitle, "clientNameFromTitle");
   }
 });
 
 // api/staff-owed-list.js
-async function onRequestOptions86(context) {
+async function onRequestOptions87(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet57(context) {
+async function onRequestGet59(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -35048,10 +35720,11 @@ async function onRequestGet57(context) {
         startTime: String(since),
         endTime: String(now)
       });
-      const res = await ghlFetch(context, `${GHL_API_BASE43}/calendars/events?${params}`);
-      if (!res.ok) continue;
+      const res = await ghlFetch(context, `${GHL_API_BASE42}/calendars/events?${params}`);
+      if (!res.ok) throw new Error("Calendar attendance could not be verified");
       const data = await res.json();
-      const events = data.events || data.appointments || [];
+      const events = data?.events ?? data?.appointments;
+      if (!Array.isArray(events)) throw new Error("Calendar attendance evidence is invalid");
       for (const e of events) {
         const cid = e.contactId;
         if (!cid) continue;
@@ -35073,21 +35746,21 @@ async function onRequestGet57(context) {
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
-var GHL_API_BASE43, GHL_LOCATION_ID31, ROSTER_WINDOW_DAYS, ATTENDED2;
+var GHL_API_BASE42, GHL_LOCATION_ID31, ROSTER_WINDOW_DAYS, ATTENDED2;
 var init_staff_owed_list = __esm({
   "api/staff-owed-list.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_datetime();
     init_session_ledger();
     init_owed_list();
     init_endpoint_guards();
-    GHL_API_BASE43 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE42 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID31 = "7pIO7FHVAyBT1jKGhfQM";
     ROSTER_WINDOW_DAYS = 540;
     ATTENDED2 = /* @__PURE__ */ new Set(["showed", "completed"]);
-    __name(onRequestOptions86, "onRequestOptions");
-    __name(onRequestGet57, "onRequestGet");
+    __name(onRequestOptions87, "onRequestOptions");
+    __name(onRequestGet59, "onRequestGet");
   }
 });
 
@@ -35099,10 +35772,10 @@ function headers2(origin) {
     "Cache-Control": "private, no-store"
   };
 }
-async function onRequestOptions87(context) {
+async function onRequestOptions88(context) {
   return new Response(null, { status: 204, headers: headers2(context.request.headers.get("Origin")) });
 }
-async function onRequestGet58(context) {
+async function onRequestGet60(context) {
   const responseHeaders10 = headers2(context.request.headers.get("Origin"));
   const { error } = await requireStaffAuth(context, responseHeaders10);
   if (error) return error;
@@ -35112,9 +35785,9 @@ async function onRequestGet58(context) {
   const query = (new URL(context.request.url).searchParams.get("query") || "").trim();
   if (query.length < 2 || query.length > 120) return new Response(JSON.stringify([]), { status: 200, headers: responseHeaders10 });
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS7);
+  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS8);
   try {
-    const upstream = await fetch(`${WORKER_URL13}?limit=20&query=${encodeURIComponent(query)}`, {
+    const upstream = await fetch(`${WORKER_URL12}?limit=20&query=${encodeURIComponent(query)}`, {
       headers: { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` },
       signal: controller.signal
     });
@@ -35137,16 +35810,16 @@ async function onRequestGet58(context) {
     clearTimeout(timer);
   }
 }
-var WORKER_URL13, TIMEOUT_MS7;
+var WORKER_URL12, TIMEOUT_MS8;
 var init_staff_owned_contacts = __esm({
   "api/staff-owned-contacts.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL13 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
-    TIMEOUT_MS7 = 1e4;
+    WORKER_URL12 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
+    TIMEOUT_MS8 = 1e4;
     __name(headers2, "headers");
-    __name(onRequestOptions87, "onRequestOptions");
-    __name(onRequestGet58, "onRequestGet");
+    __name(onRequestOptions88, "onRequestOptions");
+    __name(onRequestGet60, "onRequestGet");
   }
 });
 
@@ -35192,13 +35865,13 @@ function mapMessageType(typeRaw) {
   if (t.includes("SMS")) return "sms";
   return null;
 }
-async function onRequestOptions88(context) {
+async function onRequestOptions89(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet59(context) {
+async function onRequestGet61(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -35215,7 +35888,7 @@ async function onRequestGet59(context) {
     }
     const events = [];
     const convRes = await fetch(
-      `${GHL_API_BASE44}/conversations/search?contactId=${encodeURIComponent(contactId)}&locationId=${GHL_LOCATION_ID32}`,
+      `${GHL_API_BASE43}/conversations/search?contactId=${encodeURIComponent(contactId)}&locationId=${GHL_LOCATION_ID32}`,
       { headers: ghlHeaders(ghlToken) }
     );
     if (convRes.ok) {
@@ -35223,7 +35896,7 @@ async function onRequestGet59(context) {
       const conversations = (convData.conversations || []).slice(0, 5);
       for (const conv of conversations) {
         const msgRes = await fetch(
-          `${GHL_API_BASE44}/conversations/${conv.id}/messages?limit=20`,
+          `${GHL_API_BASE43}/conversations/${conv.id}/messages?limit=20`,
           { headers: ghlHeaders(ghlToken) }
         );
         if (!msgRes.ok) continue;
@@ -35247,7 +35920,7 @@ async function onRequestGet59(context) {
       }
     }
     const apptRes = await fetch(
-      `${GHL_API_BASE44}/contacts/${contactId}/appointments`,
+      `${GHL_API_BASE43}/contacts/${contactId}/appointments`,
       { headers: ghlHeaders(ghlToken) }
     );
     if (apptRes.ok) {
@@ -35268,7 +35941,7 @@ async function onRequestGet59(context) {
       /^Late migration /i
     ];
     const notesRes = await fetch(
-      `${GHL_API_BASE44}/contacts/${contactId}/notes`,
+      `${GHL_API_BASE43}/contacts/${contactId}/notes`,
       { headers: ghlHeaders(ghlToken) }
     );
     if (notesRes.ok) {
@@ -35307,13 +35980,13 @@ async function onRequestGet59(context) {
     );
   }
 }
-var GHL_API_BASE44, GHL_LOCATION_ID32, MAX_EVENTS3, NUMERIC_TYPE_MAP;
+var GHL_API_BASE43, GHL_LOCATION_ID32, MAX_EVENTS3, NUMERIC_TYPE_MAP;
 var init_staff_partner_activity = __esm({
   "api/staff-partner-activity.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
-    GHL_API_BASE44 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE43 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID32 = "7pIO7FHVAyBT1jKGhfQM";
     MAX_EVENTS3 = 50;
     NUMERIC_TYPE_MAP = {
@@ -35333,13 +36006,13 @@ var init_staff_partner_activity = __esm({
     };
     __name(callOutcomeLabel, "callOutcomeLabel");
     __name(mapMessageType, "mapMessageType");
-    __name(onRequestOptions88, "onRequestOptions");
-    __name(onRequestGet59, "onRequestGet");
+    __name(onRequestOptions89, "onRequestOptions");
+    __name(onRequestGet61, "onRequestGet");
   }
 });
 
 // api/staff-partner-outcome.js
-async function onRequestOptions89(context) {
+async function onRequestOptions90(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -35359,6 +36032,9 @@ async function onRequestPost63(context) {
     if (!contactId || typeof contactId !== "string") {
       return new Response(JSON.stringify({ error: "contactId required" }), { status: 400, headers: headers5 });
     }
+    if (signal === "note") {
+      return retiredStaffNoteResponse(headers5);
+    }
     if (!VALID_SIGNALS.has(signal)) {
       return new Response(
         JSON.stringify({ error: `Invalid signal: ${signal}. Must be one of: ${Array.from(VALID_SIGNALS).join(", ")}` }),
@@ -35368,41 +36044,42 @@ async function onRequestPost63(context) {
     if (signal === "deferred" && !followupAt) {
       return new Response(JSON.stringify({ error: "followupAt required when signal === 'deferred'" }), { status: 400, headers: headers5 });
     }
-    if (signal === "note" && (!note || !String(note).trim())) {
-      return new Response(JSON.stringify({ error: "note text required when signal === 'note'" }), { status: 400, headers: headers5 });
-    }
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) {
       return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     }
     let currentTouchCount = 0;
     let currentStage = null;
+    let currentContact;
     try {
-      const getRes = await fetch(`${GHL_API_BASE45}/contacts/${contactId}`, {
+      const getRes = await fetch(`${GHL_API_BASE44}/contacts/${contactId}`, {
         headers: ghlHeaders(ghlToken)
       });
-      if (getRes.ok) {
-        const cdata = await getRes.json();
-        const contact = cdata.contact || cdata;
-        const fields = Array.isArray(contact.customFields) ? contact.customFields : [];
-        const tf = fields.find((f) => f.id === FIELD_IDS6.partner_touch_count);
-        const raw = tf?.value ?? tf?.field_value;
-        const n = Number(raw);
-        if (Number.isFinite(n) && n >= 0) currentTouchCount = Math.floor(n);
-        const sf = fields.find((f) => f.id === FIELD_IDS6.partner_stage);
-        const rawStage = sf?.value ?? sf?.field_value;
-        if (typeof rawStage === "string" && rawStage.length > 0) currentStage = rawStage;
+      if (!getRes.ok) {
+        return new Response(JSON.stringify({ error: "Current outreach state could not be verified. Nothing was changed." }), { status: 422, headers: headers5 });
       }
+      const cdata = await getRes.json();
+      currentContact = cdata?.contact ?? (cdata?.id ? cdata : null);
+      if (!currentContact || typeof currentContact !== "object") throw new Error("contact response was invalid");
     } catch (err) {
       console.error("[staff-partner-outcome] contact read failed:", err instanceof Error ? err.message : String(err));
+      return new Response(JSON.stringify({ error: "Current outreach state could not be verified. Nothing was changed." }), { status: 422, headers: headers5 });
     }
+    const fields = Array.isArray(currentContact.customFields) ? currentContact.customFields : [];
+    const tf = fields.find((f) => f.id === FIELD_IDS6.partner_touch_count);
+    const raw = tf?.value ?? tf?.field_value;
+    const n = Number(raw);
+    if (Number.isFinite(n) && n >= 0) currentTouchCount = Math.floor(n);
+    const sf = fields.find((f) => f.id === FIELD_IDS6.partner_stage);
+    const rawStage = sf?.value ?? sf?.field_value;
+    if (typeof rawStage === "string" && rawStage.length > 0) currentStage = rawStage;
     const nowIso = (/* @__PURE__ */ new Date()).toISOString();
     let newStage = SIGNAL_TO_STAGE[signal];
-    if (!newStage && signal !== "skip" && signal !== "note" && (!currentStage || currentStage === "no-outreach")) {
+    if (!newStage && signal !== "skip" && (!currentStage || currentStage === "no-outreach")) {
       newStage = "working";
     }
     const customFields = [];
-    if (signal !== "skip" && signal !== "note") {
+    if (signal !== "skip") {
       customFields.push({ id: FIELD_IDS6.partner_last_signal, value: signal });
       customFields.push({ id: FIELD_IDS6.partner_last_signal_at, value: nowIso });
       customFields.push({ id: FIELD_IDS6.partner_touch_count, value: currentTouchCount + 1 });
@@ -35416,7 +36093,7 @@ async function onRequestPost63(context) {
       customFields.push({ id: FIELD_IDS6.partner_followup_at, value: normalizedFollowupAt });
     }
     if (customFields.length > 0) {
-      const updateRes = await fetch(`${GHL_API_BASE45}/contacts/${contactId}`, {
+      const updateRes = await fetch(`${GHL_API_BASE44}/contacts/${contactId}`, {
         method: "PUT",
         headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
         body: JSON.stringify({ customFields })
@@ -35426,10 +36103,10 @@ async function onRequestPost63(context) {
         throw new Error(`GHL PUT /contacts/${contactId} ${updateRes.status}: ${text6.slice(0, 250)}`);
       }
     }
-    const notePrefix = signal === "note" ? "Note" : signal === "skip" ? "Skip" : TOUCH_SIGNALS.has(signal) ? "Touch" : "Outcome";
+    const notePrefix = signal === "skip" ? "Skip" : TOUCH_SIGNALS.has(signal) ? "Touch" : "Outcome";
     const noteLabel = SIGNAL_NOTE_LABEL[signal] || signal;
-    const noteBody = signal === "note" ? `Note: ${String(note).trim()}` : `${notePrefix}: ${noteLabel}${note && note.trim() ? ` \u2014 ${note.trim()}` : ""}`;
-    const noteRes = await fetch(`${GHL_API_BASE45}/contacts/${contactId}/notes`, {
+    const noteBody = `${notePrefix}: ${noteLabel}${note && note.trim() ? ` \u2014 ${note.trim()}` : ""}`;
+    const noteRes = await fetch(`${GHL_API_BASE44}/contacts/${contactId}/notes`, {
       method: "POST",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
       body: JSON.stringify({ body: noteBody })
@@ -35449,11 +36126,11 @@ async function onRequestPost63(context) {
         contactId,
         signal,
         newStage: newStage || null,
-        // 'skip' and 'note' don't record signal/touch — return null so the
+        // 'skip' doesn't record signal/touch — return null so the
         // client knows not to update its local state for these fields.
-        signalAt: signal === "skip" || signal === "note" ? null : nowIso,
+        signalAt: signal === "skip" ? null : nowIso,
         followupAt: signal === "deferred" ? followupAt : null,
-        touchCount: signal === "skip" || signal === "note" ? currentTouchCount : currentTouchCount + 1
+        touchCount: signal === "skip" ? currentTouchCount : currentTouchCount + 1
       }),
       { status: 200, headers: headers5 }
     );
@@ -35466,13 +36143,14 @@ async function onRequestPost63(context) {
     );
   }
 }
-var GHL_API_BASE45, FIELD_IDS6, VALID_SIGNALS, SIGNAL_TO_STAGE, TOUCH_SIGNALS, SIGNAL_NOTE_LABEL;
+var GHL_API_BASE44, FIELD_IDS6, VALID_SIGNALS, SIGNAL_TO_STAGE, TOUCH_SIGNALS, SIGNAL_NOTE_LABEL;
 var init_staff_partner_outcome = __esm({
   "api/staff-partner-outcome.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
+    init_staff_note_retirement();
     init_ghl();
     init_endpoint_guards();
-    GHL_API_BASE45 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE44 = "https://services.leadconnectorhq.com";
     FIELD_IDS6 = {
       partner_stage: "KfPow1mYDxJqiOCS6mDZ",
       partner_last_signal: "XyUoMtbxadTuZunQwX3Y",
@@ -35504,12 +36182,7 @@ var init_staff_partner_outcome = __esm({
       // (which implies they declined). Sets partner_stage=dropped but does NOT
       // set partner_last_signal, partner_last_signal_at, or increment touch_count
       // — because no outreach actually happened.
-      "skip",
-      // Note-only: the user typed a note but did NOT record an outcome. Writes a
-      // GHL note ("Note: …") and nothing else — no stage change, no signal, no
-      // touch_count, no last_signal_at (a note isn't outreach, so it must not
-      // pollute the "touched this week" meter). Requires non-empty note text.
-      "note"
+      "skip"
     ]);
     SIGNAL_TO_STAGE = {
       "no-answer": null,
@@ -35525,8 +36198,7 @@ var init_staff_partner_outcome = __esm({
       "linkedin-req": null,
       "instagram-msg": null,
       "in-person": null,
-      "skip": "dropped",
-      "note": null
+      "skip": "dropped"
     };
     TOUCH_SIGNALS = /* @__PURE__ */ new Set([
       "linkedin-msg",
@@ -35548,10 +36220,9 @@ var init_staff_partner_outcome = __esm({
       "linkedin-req": "LinkedIn connection request",
       "instagram-msg": "Instagram message",
       "in-person": "In-person",
-      "skip": "Skipped \u2014 not a fit",
-      "note": "Note"
+      "skip": "Skipped \u2014 not a fit"
     };
-    __name(onRequestOptions89, "onRequestOptions");
+    __name(onRequestOptions90, "onRequestOptions");
     __name(onRequestPost63, "onRequestPost");
   }
 });
@@ -42342,7 +43013,7 @@ var init_partner_sheet_cache = __esm({
 });
 
 // lib/partner-sheet.js
-function clean7(value) {
+function clean9(value) {
   const result = String(value || "").trim();
   return result || null;
 }
@@ -42352,20 +43023,20 @@ function normalizePhone(value) {
   return digits.length === 10 && /^[2-9]/.test(digits) ? digits : null;
 }
 function normalizeEmail(value) {
-  const result = clean7(value);
+  const result = clean9(value);
   return result && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(result) ? result.toLowerCase() : null;
 }
 function rowFromTab(tab, row) {
   if (tab === "Sheet3") {
-    return { name: clean7(row[0]), instagram: clean7(row[1]), status: clean7(row[2]), notes: clean7(row[4]), category: clean7(row[5]), raw_phone: clean7(row[6]), phone: normalizePhone(row[6]), email: normalizeEmail(row[7]), website: clean7(row[8]) };
+    return { name: clean9(row[0]), instagram: clean9(row[1]), status: clean9(row[2]), notes: clean9(row[4]), category: clean9(row[5]), raw_phone: clean9(row[6]), phone: normalizePhone(row[6]), email: normalizeEmail(row[7]), website: clean9(row[8]) };
   }
   if (tab === "Yelp") {
-    return { name: clean7(row[0]), category: clean7(row[1]), website: clean7(row[2]), email: normalizeEmail(row[3]), raw_phone: clean7(row[4]), phone: normalizePhone(row[4]), instagram: clean7(row[5]), status: clean7(row[6]), notes: null };
+    return { name: clean9(row[0]), category: clean9(row[1]), website: clean9(row[2]), email: normalizeEmail(row[3]), raw_phone: clean9(row[4]), phone: normalizePhone(row[4]), instagram: clean9(row[5]), status: clean9(row[6]), notes: null };
   }
   if (tab === "Insta") {
-    return { name: clean7(row[1]) || clean7(row[0]), instagram: clean7(row[0]), status: clean7(row[2]), notes: clean7(row[4]), category: clean7(row[5]), raw_phone: null, phone: null, email: null, website: null };
+    return { name: clean9(row[1]) || clean9(row[0]), instagram: clean9(row[0]), status: clean9(row[2]), notes: clean9(row[4]), category: clean9(row[5]), raw_phone: null, phone: null, email: null, website: null };
   }
-  return { name: clean7(row[0]), raw_phone: clean7(row[1]), phone: normalizePhone(row[1]), email: normalizeEmail(row[2]), website: clean7(row[3]), instagram: clean7(row[4]), status: null, notes: null, category: clean7(row[11]) };
+  return { name: clean9(row[0]), raw_phone: clean9(row[1]), phone: normalizePhone(row[1]), email: normalizeEmail(row[2]), website: clean9(row[3]), instagram: clean9(row[4]), status: null, notes: null, category: clean9(row[11]) };
 }
 function rowKey(row) {
   if (row.email) return `email:${row.email}`;
@@ -42419,9 +43090,9 @@ async function fetchLiveSheet(context) {
   const token = await getGoogleToken(context, "Eben");
   const url = new URL(`https://sheets.googleapis.com/v4/spreadsheets/${SPREADSHEET_ID}/values:batchGet`);
   for (const range of RANGES) url.searchParams.append("ranges", range);
-  const response2 = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
-  if (!response2.ok) throw new Error(`Google Sheet refresh failed (${response2.status})`);
-  const body = await response2.json();
+  const response3 = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+  if (!response3.ok) throw new Error(`Google Sheet refresh failed (${response3.status})`);
+  const body = await response3.json();
   return makePartnerSheetCache(body.valueRanges || []);
 }
 async function getPartnerSheetCache(context) {
@@ -42446,14 +43117,14 @@ async function getPartnerSheetCache(context) {
 var SPREADSHEET_ID, CACHE_KEY2, REFRESH_AFTER_MS, RANGES;
 var init_partner_sheet = __esm({
   "lib/partner-sheet.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_partner_sheet_cache();
     init_google_api();
     SPREADSHEET_ID = "1uYsTyyMu9NUefscLKORUglNXrhq_ylcUMZr4Ml-nMiw";
     CACHE_KEY2 = "partner-sheet:cache:v1";
     REFRESH_AFTER_MS = 20 * 60 * 60 * 1e3;
     RANGES = ["Sheet3!A:Q", "Yelp!A:G", "Insta!A:F", "Goog Maps!A:N"];
-    __name(clean7, "clean");
+    __name(clean9, "clean");
     __name(normalizePhone, "normalizePhone");
     __name(normalizeEmail, "normalizeEmail");
     __name(rowFromTab, "rowFromTab");
@@ -42519,7 +43190,7 @@ function daysSince(iso2, now) {
     const d2 = new Date(ms);
     return Date.UTC(d2.getUTCFullYear(), d2.getUTCMonth(), d2.getUTCDate());
   }, "dayStart");
-  return Math.max(0, Math.round((dayStart(now) - dayStart(t)) / DAY_MS2));
+  return Math.max(0, Math.round((dayStart(now) - dayStart(t)) / DAY_MS3));
 }
 function agoLabel(d2) {
   if (d2 === null) return "";
@@ -42613,10 +43284,10 @@ function buildCard(dossier, now = Date.now()) {
     }
   };
 }
-var CLOSER_WORD2, CLOSER_RE2, DECLINE_RE, CONNECT_CALL_SEC, ORG_WORDS, UNTEXTABLE, PLACEHOLDER_EMAIL_RE, LINKEDIN_SOURCE_RE, PHONE_UNVERIFIED_NOTE, DAY_MS2;
+var CLOSER_WORD2, CLOSER_RE2, DECLINE_RE, CONNECT_CALL_SEC, ORG_WORDS, UNTEXTABLE, PLACEHOLDER_EMAIL_RE, LINKEDIN_SOURCE_RE, PHONE_UNVERIFIED_NOTE, DAY_MS3;
 var init_build_card = __esm({
   "lib/build-card.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     CLOSER_WORD2 = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE2 = new RegExp(`^(?:${CLOSER_WORD2}[\\s!.,]*)+$`, "i");
     __name(isNonReply2, "isNonReply");
@@ -42633,7 +43304,7 @@ var init_build_card = __esm({
     PHONE_UNVERIFIED_NOTE = "phone unverified, from import research, not confirmed";
     __name(provesPhone, "provesPhone");
     __name(phoneProvenanceOf, "phoneProvenanceOf");
-    DAY_MS2 = 864e5;
+    DAY_MS3 = 864e5;
     __name(daysSince, "daysSince");
     __name(agoLabel, "agoLabel");
     __name(buildCard, "buildCard");
@@ -42797,6 +43468,22 @@ function buildContactDossier(p2, conv, lineTypeMap) {
   };
 }
 function overlayCard(base, card) {
+  if (card.hold) {
+    return {
+      ...base,
+      kind: "aside",
+      urgency: 0,
+      why: "",
+      action: null,
+      channel: null,
+      state: card.state,
+      play: card.play,
+      hold: card.hold,
+      asideReason: card.hold === "declined" ? "Declined \u2014 do not contact" : "Already answered \u2014 wait for them",
+      phoneProvenance: card.facts?.phoneProvenance || "on-file",
+      phoneNote: card.facts?.phoneNote || null
+    };
+  }
   const lineType = card.facts?.lineType || null;
   const isDiscovery = card.play === "discovery";
   const lineForced = FORCED_CALL_LINES.has(lineType);
@@ -43020,7 +43707,7 @@ async function fetchByTag(ghlToken, tag, pageLimit = 100) {
       page: Math.floor(pageOffset / pageLimit) + 1,
       filters: [{ field: "tags", operator: "contains", value: tag }]
     };
-    const res = await fetch(`${GHL_API_BASE46}/contacts/search`, {
+    const res = await fetch(`${GHL_API_BASE45}/contacts/search`, {
       method: "POST",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -43037,13 +43724,13 @@ async function fetchByTag(ghlToken, tag, pageLimit = 100) {
   }
   return all2;
 }
-async function onRequestOptions90(context) {
+async function onRequestOptions91(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet60(context) {
+async function onRequestGet62(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -43202,16 +43889,16 @@ async function onRequestGet60(context) {
     );
   }
 }
-var GHL_API_BASE46, GHL_LOCATION_ID33, FIELD_IDS7, CATEGORY_TAGS, BROAD_PARTNER_TAGS, ALL_PARTNER_TAGS, ALL_STAGES, VM_FOLLOWUP_DAYS, TALKED_FOLLOWUP_DAYS, LINK_FOLLOWUP_DAYS, OFFPLATFORM_FOLLOWUP_DAYS, NOANSWER_RETRY_DAYS, QUIET_NUDGE_DAYS, END_OF_ROPE_TOUCHES, FRESH_TOUCH_SIGNALS, KNOWN_SIGNALS, FORCED_CALL_LINES;
+var GHL_API_BASE45, GHL_LOCATION_ID33, FIELD_IDS7, CATEGORY_TAGS, BROAD_PARTNER_TAGS, ALL_PARTNER_TAGS, ALL_STAGES, VM_FOLLOWUP_DAYS, TALKED_FOLLOWUP_DAYS, LINK_FOLLOWUP_DAYS, OFFPLATFORM_FOLLOWUP_DAYS, NOANSWER_RETRY_DAYS, QUIET_NUDGE_DAYS, END_OF_ROPE_TOUCHES, FRESH_TOUCH_SIGNALS, KNOWN_SIGNALS, FORCED_CALL_LINES;
 var init_staff_partner_prospects = __esm({
   "api/staff-partner-prospects.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_partner_sheet();
     init_build_card();
     init_endpoint_guards();
     init_ghl_fields();
-    GHL_API_BASE46 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE45 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID33 = "7pIO7FHVAyBT1jKGhfQM";
     FIELD_IDS7 = {
       // New (state / signal tracking)
@@ -43318,8 +44005,8 @@ var init_staff_partner_prospects = __esm({
     __name(lookupSheetRow, "lookupSheetRow");
     __name(toProspect, "toProspect");
     __name(fetchByTag, "fetchByTag");
-    __name(onRequestOptions90, "onRequestOptions");
-    __name(onRequestGet60, "onRequestGet");
+    __name(onRequestOptions91, "onRequestOptions");
+    __name(onRequestGet62, "onRequestGet");
   }
 });
 
@@ -43383,7 +44070,7 @@ function rewardForPracticePurchase({ referralAt, purchasedAt, sessionCount }) {
 var PARTNER_REWARD_WINDOW_MS, CHARGEBACK_HOLD_MS, REWARD_CENTS, PARTNER_SESSION_ENTITLEMENT, LEGACY_REWARD_LABELS, asObject, dateValue, eventTime;
 var init_partner_reward_ledger = __esm({
   "lib/partner-reward-ledger.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     PARTNER_REWARD_WINDOW_MS = 90 * 24 * 60 * 60 * 1e3;
     CHARGEBACK_HOLD_MS = 30 * 24 * 60 * 60 * 1e3;
     REWARD_CENTS = Object.freeze({ 12: 25e3, 24: 5e4 });
@@ -43413,10 +44100,10 @@ function event(id3, rewardId, actor, type, detail) {
 function insert(db, rewardId, actor, type, detail) {
   return db.prepare("INSERT INTO partner_reward_events (id,reward_id,ts,actor,type,detail) VALUES (?,?,?,?,?,?)").bind(...event(crypto.randomUUID(), rewardId, actor, type, detail));
 }
-async function onRequestOptions91(context) {
+async function onRequestOptions92(context) {
   return new Response(null, { status: 204, headers: headers3(context) });
 }
-async function onRequestGet61(context) {
+async function onRequestGet63(context) {
   const out = headers3(context);
   const auth = await requireStaffAuth(context, out);
   if (auth.error) return auth.error;
@@ -43450,7 +44137,7 @@ async function onRequestPost64(context) {
   const { action, rewardId, partnerContactId, referredContactId, referralAt, purchasedAt, sessionCount, payoutReference, reason, correctionType } = parsed.body;
   const actor = String(auth.payload?.user || "Staff").slice(0, 80);
   if (action === "attribute") {
-    if (![partnerContactId, referredContactId, rewardId].every((v) => ID.test(String(v || "")))) return new Response(JSON.stringify({ error: "Valid reward, partner, and referred-contact IDs are required" }), { status: 400, headers: out });
+    if (![partnerContactId, referredContactId, rewardId].every((v) => ID2.test(String(v || "")))) return new Response(JSON.stringify({ error: "Valid reward, partner, and referred-contact IDs are required" }), { status: 400, headers: out });
     const referredAt = iso(referralAt);
     if (!referredAt) return new Response(JSON.stringify({ error: "A valid referral date is required" }), { status: 400, headers: out });
     const existing = await db.prepare("SELECT id FROM partner_reward_events WHERE reward_id=? AND type='attributed' LIMIT 1").bind(rewardId).first();
@@ -43460,7 +44147,7 @@ async function onRequestPost64(context) {
     return new Response(JSON.stringify({ success: true, state: "attributed" }), { status: 201, headers: out });
   }
   if (action === "qualify") {
-    if (!ID.test(String(rewardId || ""))) return new Response(JSON.stringify({ error: "Valid reward ID is required" }), { status: 400, headers: out });
+    if (!ID2.test(String(rewardId || ""))) return new Response(JSON.stringify({ error: "Valid reward ID is required" }), { status: 400, headers: out });
     const attribution = await db.prepare("SELECT detail FROM partner_reward_events WHERE reward_id=? AND type='attributed' ORDER BY ts ASC LIMIT 1").bind(rewardId).first();
     if (!attribution) return new Response(JSON.stringify({ error: "Reward must be attributed before it can qualify" }), { status: 422, headers: out });
     const existing = await db.prepare("SELECT id FROM partner_reward_events WHERE reward_id=? AND type='qualifying_purchase' LIMIT 1").bind(rewardId).first();
@@ -43472,7 +44159,7 @@ async function onRequestPost64(context) {
     return new Response(JSON.stringify({ success: true, state: "chargeback_hold", ...detail }), { status: 201, headers: out });
   }
   if (action === "pay") {
-    if (!ID.test(String(rewardId || "")) || !String(payoutReference || "").trim()) return new Response(JSON.stringify({ error: "Valid reward ID and payout reference are required" }), { status: 400, headers: out });
+    if (!ID2.test(String(rewardId || "")) || !String(payoutReference || "").trim()) return new Response(JSON.stringify({ error: "Valid reward ID and payout reference are required" }), { status: 400, headers: out });
     const last = await db.prepare("SELECT detail FROM partner_reward_events WHERE reward_id=? AND type='chargeback_hold' ORDER BY ts DESC LIMIT 1").bind(rewardId).first();
     const hold = last && JSON.parse(last.detail).holdUntil;
     if (!hold || Date.now() < Date.parse(hold)) return new Response(JSON.stringify({ error: "Chargeback hold has not elapsed" }), { status: 422, headers: out });
@@ -43486,19 +44173,19 @@ async function onRequestPost64(context) {
   }
   if (action === "correct") {
     const type = String(correctionType || "correction");
-    if (!ID.test(String(rewardId || "")) || !["expired", "refunded", "disputed", "voided", "correction"].includes(type) || !String(reason || "").trim()) return new Response(JSON.stringify({ error: "Reward ID, correction type, and evidence note are required" }), { status: 400, headers: out });
+    if (!ID2.test(String(rewardId || "")) || !["expired", "refunded", "disputed", "voided", "correction"].includes(type) || !String(reason || "").trim()) return new Response(JSON.stringify({ error: "Reward ID, correction type, and evidence note are required" }), { status: 400, headers: out });
     await insert(db, rewardId, actor, type, { reason: String(reason).trim().slice(0, 500), recordedAt: (/* @__PURE__ */ new Date()).toISOString() }).run();
     return new Response(JSON.stringify({ success: true, state: type }), { status: 201, headers: out });
   }
   return new Response(JSON.stringify({ error: "Unsupported partner-reward action" }), { status: 400, headers: out });
 }
-var ID, iso;
+var ID2, iso;
 var init_staff_partner_rewards = __esm({
   "api/staff-partner-rewards.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_partner_reward_ledger();
-    ID = /^[A-Za-z0-9_-]{1,80}$/;
+    ID2 = /^[A-Za-z0-9_-]{1,80}$/;
     iso = /* @__PURE__ */ __name((value) => {
       const date2 = new Date(value);
       return Number.isFinite(date2.getTime()) ? date2.toISOString() : null;
@@ -43506,14 +44193,14 @@ var init_staff_partner_rewards = __esm({
     __name(headers3, "headers");
     __name(event, "event");
     __name(insert, "insert");
-    __name(onRequestOptions91, "onRequestOptions");
-    __name(onRequestGet61, "onRequestGet");
+    __name(onRequestOptions92, "onRequestOptions");
+    __name(onRequestGet63, "onRequestGet");
     __name(onRequestPost64, "onRequestPost");
   }
 });
 
 // api/staff-partner-toggle-verified.js
-async function onRequestOptions92(context) {
+async function onRequestOptions93(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -43540,7 +44227,7 @@ async function onRequestPost65(context) {
     if (!ghlToken) {
       return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     }
-    const updateRes = await fetch(`${GHL_API_BASE47}/contacts/${contactId}`, {
+    const updateRes = await fetch(`${GHL_API_BASE46}/contacts/${contactId}`, {
       method: "PUT",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -43566,21 +44253,21 @@ async function onRequestPost65(context) {
     );
   }
 }
-var GHL_API_BASE47, OUTREACH_VERIFIED_FIELD_ID;
+var GHL_API_BASE46, OUTREACH_VERIFIED_FIELD_ID;
 var init_staff_partner_toggle_verified = __esm({
   "api/staff-partner-toggle-verified.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
-    GHL_API_BASE47 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE46 = "https://services.leadconnectorhq.com";
     OUTREACH_VERIFIED_FIELD_ID = "PVftrxrmNRPmfdlQAwzl";
-    __name(onRequestOptions92, "onRequestOptions");
+    __name(onRequestOptions93, "onRequestOptions");
     __name(onRequestPost65, "onRequestPost");
   }
 });
 
 // api/staff-partner-update-field.js
-async function onRequestOptions93(context) {
+async function onRequestOptions94(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
 function validateValue(field, value) {
@@ -43626,33 +44313,36 @@ async function onRequestPost66(context) {
     const ghlToken = await getGhlToken(context);
     if (!ghlToken) return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     let previousValue = "";
+    let currentContact;
     try {
-      const getRes = await fetch(`${GHL_API_BASE48}/contacts/${contactId}`, { headers: ghlHeaders(ghlToken) });
-      if (getRes.ok) {
-        const cdata = await getRes.json();
-        const contact = cdata.contact || cdata;
-        const spec2 = EDITABLE_FIELDS[field];
-        if (spec2.kind === "standard") {
-          previousValue = contact[field] || "";
-        } else {
-          const cf = (contact.customFields || []).find((f) => f.id === spec2.id);
-          previousValue = (cf?.value ?? cf?.field_value ?? "") + "";
-        }
+      const getRes = await fetch(`${GHL_API_BASE47}/contacts/${contactId}`, { headers: ghlHeaders(ghlToken) });
+      if (!getRes.ok) {
+        return new Response(JSON.stringify({ error: "Current field value could not be verified. Nothing was changed." }), { status: 422, headers: headers5 });
       }
+      const cdata = await getRes.json();
+      currentContact = cdata?.contact ?? (cdata?.id ? cdata : null);
+      if (!currentContact || typeof currentContact !== "object") throw new Error("contact response was invalid");
     } catch (err) {
       console.error("[update-field] read prev failed:", err instanceof Error ? err.message : String(err));
+      return new Response(JSON.stringify({ error: "Current field value could not be verified. Nothing was changed." }), { status: 422, headers: headers5 });
+    }
+    const spec = EDITABLE_FIELDS[field];
+    if (spec.kind === "standard") {
+      previousValue = currentContact[field] || "";
+    } else {
+      const cf = (currentContact.customFields || []).find((f) => f.id === spec.id);
+      previousValue = (cf?.value ?? cf?.field_value ?? "") + "";
     }
     if ((previousValue || "") === value) {
       return new Response(JSON.stringify({ success: true, contactId, field, value, changed: false }), { status: 200, headers: headers5 });
     }
-    const spec = EDITABLE_FIELDS[field];
     const body = {};
     if (spec.kind === "standard") {
       body[field] = value || null;
     } else {
       body.customFields = [{ id: spec.id, value }];
     }
-    const updateRes = await fetch(`${GHL_API_BASE48}/contacts/${contactId}`, {
+    const updateRes = await fetch(`${GHL_API_BASE47}/contacts/${contactId}`, {
       method: "PUT",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
       body: JSON.stringify(body)
@@ -43663,7 +44353,7 @@ async function onRequestPost66(context) {
     }
     const noteBody = value ? `Field edit: ${spec.label} = "${value}"${previousValue ? ` (was "${previousValue}")` : ""}` : `Field cleared: ${spec.label}${previousValue ? ` (was "${previousValue}")` : ""}`;
     try {
-      await fetch(`${GHL_API_BASE48}/contacts/${contactId}/notes`, {
+      await fetch(`${GHL_API_BASE47}/contacts/${contactId}/notes`, {
         method: "POST",
         headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
         body: JSON.stringify({ body: noteBody })
@@ -43678,13 +44368,13 @@ async function onRequestPost66(context) {
     return new Response(JSON.stringify({ error: `Failed to update field: ${detail}` }), { status: 500, headers: headers5 });
   }
 }
-var GHL_API_BASE48, EDITABLE_FIELDS;
+var GHL_API_BASE47, EDITABLE_FIELDS;
 var init_staff_partner_update_field = __esm({
   "api/staff-partner-update-field.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
-    GHL_API_BASE48 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE47 = "https://services.leadconnectorhq.com";
     EDITABLE_FIELDS = {
       phone: { kind: "standard", label: "Phone" },
       email: { kind: "standard", label: "Email" },
@@ -43701,14 +44391,14 @@ var init_staff_partner_update_field = __esm({
       partnerOtherUrls: { kind: "custom", id: "7KvhcBornVP0k0vT2h68", label: "Other URLs" },
       partnerRundown: { kind: "custom", id: "Yd3lsw6fAxl0HVCxr1cD", label: "Rundown" }
     };
-    __name(onRequestOptions93, "onRequestOptions");
+    __name(onRequestOptions94, "onRequestOptions");
     __name(validateValue, "validateValue");
     __name(onRequestPost66, "onRequestPost");
   }
 });
 
 // api/staff-partner-verify.js
-async function onRequestOptions94(context) {
+async function onRequestOptions95(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
 async function onRequestPost67(context) {
@@ -43728,7 +44418,7 @@ async function onRequestPost67(context) {
     if (!ghlToken) return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
     let wasName = "";
     try {
-      const r = await fetch(`${GHL_API_BASE49}/contacts/${contactId}`, { headers: ghlHeaders(ghlToken) });
+      const r = await fetch(`${GHL_API_BASE48}/contacts/${contactId}`, { headers: ghlHeaders(ghlToken) });
       if (r.ok) {
         const d2 = await r.json();
         const c = d2.contact || d2;
@@ -43736,7 +44426,7 @@ async function onRequestPost67(context) {
       }
     } catch {
     }
-    const tagRes = await fetch(`${GHL_API_BASE49}/contacts/${contactId}/tags`, {
+    const tagRes = await fetch(`${GHL_API_BASE48}/contacts/${contactId}/tags`, {
       method: "POST",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
       body: JSON.stringify({ tags: [VERIFIED_TAG] })
@@ -43752,7 +44442,7 @@ async function onRequestPost67(context) {
     if (dmFirstName) update.firstName = dmFirstName;
     if (dmLastName) update.lastName = dmLastName;
     if (dmPhone) update.phone = dmPhone;
-    const upRes = await fetch(`${GHL_API_BASE49}/contacts/${contactId}`, {
+    const upRes = await fetch(`${GHL_API_BASE48}/contacts/${contactId}`, {
       method: "PUT",
       headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
       body: JSON.stringify(update)
@@ -43761,7 +44451,7 @@ async function onRequestPost67(context) {
     const dmName = [dmFirstName, dmLastName].filter(Boolean).join(" ");
     const noteBody = `Discovery verified ${(/* @__PURE__ */ new Date()).toISOString().slice(0, 10)}: decision-maker confirmed${dmName ? ` \u2014 ${dmName}` : ""}${dmPhone ? ` (${dmPhone})` : ""}.${wasName && dmName && wasName !== dmName ? ` Was: ${wasName}.` : ""}`;
     try {
-      await fetch(`${GHL_API_BASE49}/contacts/${contactId}/notes`, {
+      await fetch(`${GHL_API_BASE48}/contacts/${contactId}/notes`, {
         method: "POST",
         headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
         body: JSON.stringify({ body: noteBody, userId: payload.user || void 0 })
@@ -43774,16 +44464,16 @@ async function onRequestPost67(context) {
     return new Response(JSON.stringify({ error: "Internal error" }), { status: 500, headers: headers5 });
   }
 }
-var GHL_API_BASE49, VERIFIED_TAG, OUTREACH_VERIFIED_FIELD_ID2;
+var GHL_API_BASE48, VERIFIED_TAG, OUTREACH_VERIFIED_FIELD_ID2;
 var init_staff_partner_verify = __esm({
   "api/staff-partner-verify.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
-    GHL_API_BASE49 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE48 = "https://services.leadconnectorhq.com";
     VERIFIED_TAG = "dm-verified";
     OUTREACH_VERIFIED_FIELD_ID2 = "PVftrxrmNRPmfdlQAwzl";
-    __name(onRequestOptions94, "onRequestOptions");
+    __name(onRequestOptions95, "onRequestOptions");
     __name(onRequestPost67, "onRequestPost");
   }
 });
@@ -43836,41 +44526,29 @@ function assignColumn(contact, discoveryStatusMap, sessionAttendanceMap, purchas
   if (touchCount >= 1) return "touch-1";
   return null;
 }
-async function fetchByTag2(ghlToken, tag) {
-  const all2 = [];
-  let page = 1;
-  while (page <= 20) {
-    const res = await fetch(`${GHL_API_BASE50}/contacts/search`, {
-      method: "POST",
-      headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
-      body: JSON.stringify({
-        locationId: GHL_LOCATION_ID34,
-        pageLimit: 100,
-        page,
-        filters: [{ field: "tags", operator: "contains", value: tag }]
-      })
-    });
-    if (!res.ok) break;
-    const data = await res.json();
-    const contacts = data.contacts || [];
-    all2.push(...contacts);
-    if (contacts.length < 100) break;
-    page += 1;
+async function readProviderJson(url, options, source, signal) {
+  const response3 = await fetch(url, { ...options, signal });
+  if (!response3.ok) throw new Error(`${source} returned ${response3.status}`);
+  const payload = await response3.json();
+  if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
+    throw new Error(`${source} returned an invalid response`);
   }
-  return all2;
+  return payload;
 }
-async function fetchSessionAttendance(ghlToken) {
+async function fetchSessionAttendance(ghlToken, signal) {
   const start = (/* @__PURE__ */ new Date("2024-01-01")).getTime();
   const end = (/* @__PURE__ */ new Date("2028-01-01")).getTime();
   const map = {};
   await Promise.all(SESSION_CALENDARS.map(async (calId) => {
-    const res = await fetch(
-      `${GHL_API_BASE50}/calendars/events?locationId=${GHL_LOCATION_ID34}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
-      { headers: ghlHeaders(ghlToken) }
+    const data = await readProviderJson(
+      `${GHL_API_BASE49}/calendars/events?locationId=${GHL_LOCATION_ID34}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
+      { headers: ghlHeaders(ghlToken) },
+      "Session calendar",
+      signal
     );
-    if (!res.ok) return;
-    const data = await res.json();
-    for (const appt of data.appointments || data.events || []) {
+    const appointments = data.appointments || data.events;
+    if (!Array.isArray(appointments)) throw new Error("Session calendar returned an invalid response");
+    for (const appt of appointments) {
       const cId = appt.contactId;
       if (!cId) continue;
       if (!map[cId]) map[cId] = { showed: 0, noShow: false, hasPackage: false };
@@ -43884,7 +44562,7 @@ async function fetchSessionAttendance(ghlToken) {
   }));
   return map;
 }
-async function fetchDiscoveryStatus(ghlToken) {
+async function fetchDiscoveryStatus(ghlToken, signal) {
   const start = (/* @__PURE__ */ new Date("2024-01-01")).getTime();
   const end = (/* @__PURE__ */ new Date("2028-01-01")).getTime();
   const calIds = [
@@ -43898,13 +44576,15 @@ async function fetchDiscoveryStatus(ghlToken) {
   const statusMap = {};
   const events = [];
   await Promise.all(calIds.map(async (calId) => {
-    const res = await fetch(
-      `${GHL_API_BASE50}/calendars/events?locationId=${GHL_LOCATION_ID34}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
-      { headers: ghlHeaders(ghlToken) }
+    const data = await readProviderJson(
+      `${GHL_API_BASE49}/calendars/events?locationId=${GHL_LOCATION_ID34}&calendarId=${calId}&startTime=${start}&endTime=${end}`,
+      { headers: ghlHeaders(ghlToken) },
+      "Discovery calendar",
+      signal
     );
-    if (!res.ok) return;
-    const data = await res.json();
-    for (const appt of data.appointments || data.events || []) {
+    const appointments = data.appointments || data.events;
+    if (!Array.isArray(appointments)) throw new Error("Discovery calendar returned an invalid response");
+    for (const appt of appointments) {
       const cId = appt.contactId;
       if (!cId) continue;
       events.push({
@@ -43919,42 +44599,45 @@ async function fetchDiscoveryStatus(ghlToken) {
   }));
   return { statusMap, events };
 }
-async function fetchAllContacts(ghlToken) {
-  const all2 = [];
-  let page = 1;
-  while (page <= 10) {
-    const res = await fetch(`${GHL_API_BASE50}/contacts/search`, {
-      method: "POST",
-      headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
-      body: JSON.stringify({
-        locationId: GHL_LOCATION_ID34,
-        pageLimit: 100,
-        page
-      })
-    });
-    if (!res.ok) break;
-    const data = await res.json();
-    const contacts = data.contacts || [];
-    all2.push(...contacts);
-    if (contacts.length < 100) break;
-    page += 1;
-  }
-  return all2;
+async function fetchContactPage(ghlToken, page, signal) {
+  const data = await readProviderJson(`${GHL_API_BASE49}/contacts/search`, {
+    method: "POST",
+    headers: { ...ghlHeaders(ghlToken), "Content-Type": "application/json" },
+    body: JSON.stringify({
+      locationId: GHL_LOCATION_ID34,
+      pageLimit: CONTACT_PAGE_LIMIT,
+      page
+    })
+  }, "Contact search", signal);
+  if (!Array.isArray(data.contacts)) throw new Error("Contact search returned an invalid response");
+  return data.contacts;
 }
-async function fetchStripePurchaseHistory(stripeKey, contacts = []) {
+async function fetchAllContacts(ghlToken, signal) {
+  const firstPage = await fetchContactPage(ghlToken, 1, signal);
+  if (firstPage.length < CONTACT_PAGE_LIMIT) return firstPage;
+  const remainingPages = await Promise.all(
+    Array.from({ length: CONTACT_PAGE_CAP - 1 }, (_, index) => fetchContactPage(ghlToken, index + 2, signal))
+  );
+  const all2 = [...firstPage];
+  for (const contacts of remainingPages) {
+    all2.push(...contacts);
+    if (contacts.length < CONTACT_PAGE_LIMIT) return all2;
+  }
+  throw new Error("Contact search exceeded the complete-read limit");
+}
+async function fetchStripePurchaseHistory(stripeKey, contacts = [], signal) {
   const purchases = /* @__PURE__ */ new Map();
-  if (!stripeKey) return purchases;
+  if (!stripeKey) throw new Error("Stripe is not configured");
   const charges = [];
   let cursor = null;
   for (let page = 0; page < 10; page += 1) {
     const params = new URLSearchParams({ limit: "100" });
     if (cursor) params.set("starting_after", cursor);
-    const res = await fetch(`https://api.stripe.com/v1/charges?${params}`, {
+    const payload = await readProviderJson(`https://api.stripe.com/v1/charges?${params}`, {
       headers: { Authorization: `Bearer ${stripeKey}` }
-    });
-    if (!res.ok) break;
-    const payload = await res.json();
-    const batch = payload.data || [];
+    }, "Stripe charges", signal);
+    if (!Array.isArray(payload.data)) throw new Error("Stripe charges returned an invalid response");
+    const batch = payload.data;
     charges.push(...batch);
     if (!payload.has_more || batch.length === 0) break;
     cursor = batch[batch.length - 1].id;
@@ -43964,8 +44647,8 @@ async function fetchStripePurchaseHistory(stripeKey, contacts = []) {
   );
   const contactForCharge = /* @__PURE__ */ __name((charge) => {
     if (charge.metadata?.contactId) return charge.metadata.contactId;
-    const email = charge.billing_details?.email || charge.receipt_email;
-    return email ? contactByEmail.get(String(email).trim().toLowerCase()) : null;
+    const email2 = charge.billing_details?.email || charge.receipt_email;
+    return email2 ? contactByEmail.get(String(email2).trim().toLowerCase()) : null;
   }, "contactForCharge");
   const customerToContact = /* @__PURE__ */ new Map();
   for (const charge of charges) {
@@ -43988,8 +44671,7 @@ async function fetchStripePurchaseHistory(stripeKey, contacts = []) {
   return purchases;
 }
 function buildCohortMetrics(snapshot, discoveryEvents, purchasesByContact) {
-  const blank = { reachedOut: 0, discoveryAttended: 0, initialResolved: 0, initialAttended: 0, initialNoShows: 0, firstPurchasers: 0, repeatPurchasers: 0 };
-  if (!snapshot) return blank;
+  if (!snapshot) return null;
   const windowStart = snapshot.generatedAt ? new Date(new Date(snapshot.generatedAt).getTime() - (snapshot.windowDays || 180) * 864e5).toISOString().slice(0, 10) : "";
   const outreachIds = new Set(
     (snapshot.calls || []).filter((event2) => event2.contactId).map((event2) => event2.contactId)
@@ -44017,43 +44699,56 @@ function buildCohortMetrics(snapshot, discoveryEvents, purchasesByContact) {
     repeatPurchasers: repeatPurchasers.size
   };
 }
-async function onRequestOptions95(context) {
+async function onRequestOptions96(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet62(context) {
+async function onRequestGet64(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
   if (error) return error;
-  const ghlToken = await getGhlToken(context);
-  if (!ghlToken) {
-    return new Response(JSON.stringify({ error: "GHL not configured" }), { status: 500, headers: headers5 });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), PIPELINE_READ_TIMEOUT_MS);
+  let allContacts;
+  let discoveryData;
+  let sessionAttendanceMap;
+  let funnelSnapshot;
+  let purchasesByContact;
+  try {
+    const ghlToken = await getGhlToken(context);
+    if (!ghlToken) throw new Error("GHL is not configured");
+    [allContacts, discoveryData, sessionAttendanceMap, funnelSnapshot] = await Promise.all([
+      fetchAllContacts(ghlToken, controller.signal),
+      fetchDiscoveryStatus(ghlToken, controller.signal),
+      fetchSessionAttendance(ghlToken, controller.signal),
+      context.env.PORTAL_KV?.get("funnel:latest", "json").catch(() => null)
+    ]);
+    purchasesByContact = await fetchStripePurchaseHistory(
+      context.env.STRIPE_SECRET_KEY,
+      allContacts,
+      controller.signal
+    );
+  } catch (cause) {
+    const timedOut = cause?.name === "AbortError";
+    console.error("[staff-pipeline] required read failed", cause);
+    return new Response(JSON.stringify({
+      error: timedOut ? "Pipeline sources timed out. Nothing incomplete was shown. Try again." : "Pipeline sources are unavailable. Nothing incomplete was shown. Try again."
+    }), { status: 422, headers: headers5 });
+  } finally {
+    clearTimeout(timeoutId);
   }
-  const [tagResults, allContacts, discoveryData, sessionAttendanceMap, funnelSnapshot] = await Promise.all([
-    Promise.all(OUTREACH_TAGS.map((tag) => fetchByTag2(ghlToken, tag).catch(() => []))),
-    fetchAllContacts(ghlToken).catch(() => []),
-    fetchDiscoveryStatus(ghlToken).catch(() => ({ statusMap: {}, events: [] })),
-    fetchSessionAttendance(ghlToken).catch(() => ({})),
-    context.env.PORTAL_KV?.get("funnel:latest", "json").catch(() => null)
-  ]);
-  const purchasesByContact = await fetchStripePurchaseHistory(context.env.STRIPE_SECRET_KEY, allContacts).catch(() => /* @__PURE__ */ new Map());
   const discoveryStatusMap = discoveryData.statusMap;
   const cohortMetrics = buildCohortMetrics(funnelSnapshot, discoveryData.events, purchasesByContact);
   const byId = /* @__PURE__ */ new Map();
-  for (const list of tagResults) {
-    for (const c of list) {
-      if (EXCLUDED_EMAILS.has(c.email)) continue;
-      if (!byId.has(c.id)) byId.set(c.id, c);
-    }
-  }
   for (const c of allContacts) {
     if (EXCLUDED_EMAILS.has(c.email)) continue;
-    if (byId.has(c.id)) continue;
+    const tags = getTags(c);
     const attendance = sessionAttendanceMap[c.id];
-    if (attendance?.showed > 0 || attendance?.noShow) byId.set(c.id, c);
+    const isOutreachContact = tags.some((tag) => OUTREACH_TAGS.includes(tag));
+    if (isOutreachContact || attendance?.showed > 0 || attendance?.noShow) byId.set(c.id, c);
   }
   const columns = {
     "touch-1": [],
@@ -44099,16 +44794,19 @@ async function onRequestGet62(context) {
   }
   return new Response(JSON.stringify({ columns, cohortMetrics }), { status: 200, headers: headers5 });
 }
-var GHL_API_BASE50, GHL_LOCATION_ID34, EXCLUDED_EMAILS, FIELD_IDS8, SIX_MONTHS_MS, OUTREACH_TAGS, SESSION_CALENDARS, PACKAGE_CALENDAR_IDS;
+var GHL_API_BASE49, GHL_LOCATION_ID34, PIPELINE_READ_TIMEOUT_MS, CONTACT_PAGE_LIMIT, CONTACT_PAGE_CAP, EXCLUDED_EMAILS, FIELD_IDS8, SIX_MONTHS_MS, OUTREACH_TAGS, SESSION_CALENDARS, PACKAGE_CALENDAR_IDS;
 var init_staff_pipeline = __esm({
   "api/staff-pipeline.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
     init_stripe_charges();
-    GHL_API_BASE50 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE49 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID34 = "7pIO7FHVAyBT1jKGhfQM";
+    PIPELINE_READ_TIMEOUT_MS = 12e3;
+    CONTACT_PAGE_LIMIT = 100;
+    CONTACT_PAGE_CAP = 10;
     EXCLUDED_EMAILS = /* @__PURE__ */ new Set(["eben@ebenforrest.com"]);
     FIELD_IDS8 = {
       touch_count: "qKtPT2XZP61emgUDK7fd",
@@ -44139,7 +44837,7 @@ var init_staff_pipeline = __esm({
     __name(getTags, "getTags");
     __name(getLastActivity, "getLastActivity");
     __name(assignColumn, "assignColumn");
-    __name(fetchByTag2, "fetchByTag");
+    __name(readProviderJson, "readProviderJson");
     SESSION_CALENDARS = [
       "G7OAnnJuFbMF6nQSlZVQ",
       // Initial Session — In Person
@@ -44172,11 +44870,12 @@ var init_staff_pipeline = __esm({
     ]);
     __name(fetchSessionAttendance, "fetchSessionAttendance");
     __name(fetchDiscoveryStatus, "fetchDiscoveryStatus");
+    __name(fetchContactPage, "fetchContactPage");
     __name(fetchAllContacts, "fetchAllContacts");
     __name(fetchStripePurchaseHistory, "fetchStripePurchaseHistory");
     __name(buildCohortMetrics, "buildCohortMetrics");
-    __name(onRequestOptions95, "onRequestOptions");
-    __name(onRequestGet62, "onRequestGet");
+    __name(onRequestOptions96, "onRequestOptions");
+    __name(onRequestGet64, "onRequestGet");
   }
 });
 
@@ -44424,7 +45123,7 @@ function posCatalogFromProducts(products) {
 var MAX_NAME2, MAX_DESCRIPTION, MAX_REASON, MAX_AMOUNT_CENTS2, CATEGORIES, BUILT_IN_META;
 var init_staff_products = __esm({
   "lib/staff-products.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_staff_pos();
     init_staff_pos_invoice_bridge();
     init_ghl_products();
@@ -44495,13 +45194,13 @@ async function stripeRequest(secretKey, method, path, params, { idempotencyKey }
   }
   return data;
 }
-async function findOrCreateStripeCustomer(secretKey, { email, name, contactId, phone }) {
+async function findOrCreateStripeCustomer(secretKey, { email: email2, name, contactId, phone }) {
   if (contactId && !String(contactId).startsWith("draft_")) {
     const proven = await resolveProvenStripeCustomer(secretKey, { contactId });
     if (proven) return proven;
   }
-  if (email) {
-    const listed = await stripeRequest(secretKey, "GET", "/customers", { email, limit: 5 });
+  if (email2) {
+    const listed = await stripeRequest(secretKey, "GET", "/customers", { email: email2, limit: 5 });
     const existing = (listed.data || []).find((c) => c && !c.deleted);
     if (existing) {
       if (contactId && existing.metadata?.contactId !== contactId) {
@@ -44517,7 +45216,7 @@ async function findOrCreateStripeCustomer(secretKey, { email, name, contactId, p
   }
   return stripeRequest(secretKey, "POST", "/customers", {
     name: name || void 0,
-    email: email || void 0,
+    email: email2 || void 0,
     phone: phone || void 0,
     "metadata[contactId]": contactId || void 0,
     "metadata[id]": contactId || void 0
@@ -44741,7 +45440,7 @@ async function verifyStripeWebhookSignature(rawBody, signatureHeader, webhookSec
 var STRIPE_API;
 var init_stripe_api = __esm({
   "lib/stripe-api.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     STRIPE_API = "https://api.stripe.com/v1";
     __name(encodeForm, "encodeForm");
     __name(stripeRequest, "stripeRequest");
@@ -44759,7 +45458,7 @@ var init_stripe_api = __esm({
 });
 
 // api/staff-pos-sales.js
-function json19(data, status, headers5) {
+function json20(data, status, headers5) {
   return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
 function posPaymentActionAvailable(env, action, sale) {
@@ -44769,7 +45468,7 @@ function posPaymentActionAvailable(env, action, sale) {
   return env?.STAFF_POS_GHL_INVOICE_BRIDGE_ENABLED === "true";
 }
 function unavailablePaymentResponse(headers5) {
-  return json19({
+  return json20({
     error: "POS payments are temporarily disabled while fulfillment is being verified.",
     code: "pos_fulfillment_not_ready"
   }, 409, headers5);
@@ -44804,10 +45503,10 @@ async function rememberCustomer(env, contactId, customerId) {
   } catch {
   }
 }
-async function onRequestOptions96(context) {
+async function onRequestOptions97(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet63(context) {
+async function onRequestGet65(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers5);
@@ -44815,10 +45514,10 @@ async function onRequestGet63(context) {
   const id3 = new URL(context.request.url).searchParams.get("id") || "";
   try {
     const sale = await readPosSale(context.env.PORTAL_KV, id3);
-    return sale ? json19({ sale }, 200, headers5) : json19({ error: "Saved cart not found" }, 404, headers5);
+    return sale ? json20({ sale }, 200, headers5) : json20({ error: "Saved cart not found" }, 404, headers5);
   } catch (error2) {
     console.error("[staff-pos-sales] GET", error2 instanceof Error ? error2.message : error2);
-    return json19({ error: "Could not load saved cart" }, 422, headers5);
+    return json20({ error: "Could not load saved cart" }, 422, headers5);
   }
 }
 async function ensureSale(context, body, reviewer, catalog) {
@@ -45007,36 +45706,53 @@ async function onRequestPost68(context) {
     if (action === "create") {
       const sale = buildPosSale({ id: saleId(), client: body.client, cart: body.cart, paymentLegs: body.paymentLegs, reviewer, catalog });
       await writePosSale(context.env.PORTAL_KV, sale);
-      return json19({ sale }, 201, headers5);
+      return json20({ sale }, 201, headers5);
     }
     if (action === "start-checkout") {
       const sale = await ensureSale(context, body, reviewer, catalog);
       if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers5);
-      if (!sale.paymentLegs?.length) return json19({ error: "Add a payment method before checkout" }, 400, headers5);
+      if (!sale.paymentLegs?.length) return json20({ error: "Add a payment method before checkout" }, 400, headers5);
       const result = await openStripeLegs(context, sale, reviewer);
-      return json19(result, 200, headers5);
+      return json20(result, 200, headers5);
     }
     if (action === "charge-saved-card") {
+      if (typeof body.id !== "string" || !body.id) {
+        return json20({ error: "Save the cart before charging a card on file." }, 400, headers5);
+      }
+      const existing2 = await readPosSale(context.env.PORTAL_KV, body.id);
+      if (!existing2) return json20({ error: "Saved cart not found" }, 404, headers5);
+      if (!posPaymentActionAvailable(context.env, action, existing2)) return unavailablePaymentResponse(headers5);
+      if (typeof body.paymentLegId === "string" && !existing2.paymentLegs.some((leg) => leg.id === body.paymentLegId)) {
+        return json20({ error: "Saved-card payment portion not found" }, 400, headers5);
+      }
+      const requestedLeg = typeof body.paymentLegId === "string" && existing2.paymentLegs.find((leg) => leg.id === body.paymentLegId) || existing2.paymentLegs.find((leg) => leg.method === "saved-card");
+      if (requestedLeg?.status === "paid") {
+        if (existing2.status === "paid" && existing2.fulfillmentStatus !== "fulfilled") {
+          const { sale: fulfilled, result: result2 } = await fulfillPaidPosSale(context, existing2, { actor: reviewer });
+          await writePosSale(context.env.PORTAL_KV, fulfilled);
+          return json20({ sale: fulfilled, fulfillment: result2, recovered: true }, 200, headers5);
+        }
+        return json20({ sale: existing2, recovered: true }, 200, headers5);
+      }
       const sale = await ensureSale(context, body, reviewer, catalog);
-      if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers5);
-      if (!sale.paymentLegs?.length) return json19({ error: "Add a payment method before charging" }, 400, headers5);
+      if (!sale.paymentLegs?.length) return json20({ error: "Add a payment method before charging" }, 400, headers5);
       const result = await chargeSavedCardLeg(context, sale, reviewer, {
         paymentMethodId: body.paymentMethodId,
         paymentLegId: body.paymentLegId,
         confirmed: body.confirmed === true
       });
-      return json19(result, 200, headers5);
+      return json20(result, 200, headers5);
     }
     if (action === "record-cash") {
       const sale = await ensureSale(context, body, reviewer, catalog);
       if (!posPaymentActionAvailable(context.env, action, sale)) return unavailablePaymentResponse(headers5);
       const legId = typeof body.paymentLegId === "string" ? body.paymentLegId : sale.paymentLegs.find((leg2) => leg2.method === "cash" && leg2.status !== "paid")?.id;
-      if (!legId) return json19({ error: "No cash payment leg found" }, 400, headers5);
+      if (!legId) return json20({ error: "No cash payment leg found" }, 400, headers5);
       const cashReceivedCents = Number(body.cashReceivedCents);
       const leg = sale.paymentLegs.find((item) => item.id === legId);
-      if (!leg || leg.method !== "cash") return json19({ error: "Cash leg not found" }, 400, headers5);
+      if (!leg || leg.method !== "cash") return json20({ error: "Cash leg not found" }, 400, headers5);
       if (!Number.isSafeInteger(cashReceivedCents) || cashReceivedCents < leg.amountCents) {
-        return json19({ error: "Cash received must cover the cash leg amount" }, 400, headers5);
+        return json20({ error: "Cash received must cover the cash leg amount" }, 400, headers5);
       }
       const next = markLegPaid(sale, legId, {
         cashReceivedCents,
@@ -45047,52 +45763,52 @@ async function onRequestPost68(context) {
       if (next.status === "paid") {
         const { sale: fulfilled, result } = await fulfillPaidPosSale(context, next, { actor: reviewer });
         await writePosSale(context.env.PORTAL_KV, fulfilled);
-        return json19({ sale: fulfilled, fulfillment: result }, 200, headers5);
+        return json20({ sale: fulfilled, fulfillment: result }, 200, headers5);
       }
-      return json19({ sale: next }, 200, headers5);
+      return json20({ sale: next }, 200, headers5);
     }
     if (action === "fulfill") {
       const id4 = typeof body.id === "string" ? body.id : "";
       const existing2 = await readPosSale(context.env.PORTAL_KV, id4);
-      if (!existing2) return json19({ error: "Saved cart not found" }, 404, headers5);
+      if (!existing2) return json20({ error: "Saved cart not found" }, 404, headers5);
       if (!posPaymentActionAvailable(context.env, action, existing2)) return unavailablePaymentResponse(headers5);
-      if (existing2.status !== "paid") return json19({ error: "Sale must be fully paid before fulfillment" }, 400, headers5);
+      if (existing2.status !== "paid") return json20({ error: "Sale must be fully paid before fulfillment" }, 400, headers5);
       const { sale: fulfilled, result } = await fulfillPaidPosSale(context, existing2, { actor: reviewer });
       await writePosSale(context.env.PORTAL_KV, fulfilled);
-      return json19({ sale: fulfilled, fulfillment: result }, 200, headers5);
+      return json20({ sale: fulfilled, fulfillment: result }, 200, headers5);
     }
     const id3 = typeof body.id === "string" ? body.id : "";
     const existing = await readPosSale(context.env.PORTAL_KV, id3);
-    if (!existing) return json19({ error: "Saved cart not found" }, 404, headers5);
+    if (!existing) return json20({ error: "Saved cart not found" }, 404, headers5);
     if (action === "save") {
-      if (body.version !== void 0 && body.version !== existing.version) return json19({ error: "This cart changed elsewhere. Reload it before saving." }, 409, headers5);
+      if (body.version !== void 0 && body.version !== existing.version) return json20({ error: "This cart changed elsewhere. Reload it before saving." }, 409, headers5);
       const sale = updatePosSale(existing, { client: body.client, cart: body.cart, paymentLegs: body.paymentLegs, reviewer, catalog });
       await writePosSale(context.env.PORTAL_KV, sale);
-      return json19({ sale }, 200, headers5);
+      return json20({ sale }, 200, headers5);
     }
     if (action === "preview-checkout-text") {
       const result = buildInactiveTextPreview(existing, reviewer);
       await writePosSale(context.env.PORTAL_KV, result.sale);
-      return json19({ sale: result.sale, preview: result.preview }, 200, headers5);
+      return json20({ sale: result.sale, preview: result.preview }, 200, headers5);
     }
-    return json19({ error: "Unknown POS action" }, 400, headers5);
+    return json20({ error: "Unknown POS action" }, 400, headers5);
   } catch (error2) {
     console.error("[staff-pos-sales] POST", error2 instanceof Error ? error2.message : error2);
     const status = error2?.status === 404 || error2?.status === 409 ? error2.status : 422;
-    return json19({ error: error2 instanceof Error ? error2.message : "Could not save cart" }, status, headers5);
+    return json20({ error: error2 instanceof Error ? error2.message : "Could not save cart" }, status, headers5);
   }
 }
 var POS_PAYMENT_ACTIONS;
 var init_staff_pos_sales = __esm({
   "api/staff-pos-sales.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_pos();
     init_staff_pos_fulfill();
     init_staff_pos_receipts();
     init_staff_products();
     init_stripe_api();
-    __name(json19, "json");
+    __name(json20, "json");
     POS_PAYMENT_ACTIONS = /* @__PURE__ */ new Set([
       "start-checkout",
       "charge-saved-card",
@@ -45105,8 +45821,8 @@ var init_staff_pos_sales = __esm({
     __name(siteOrigin, "siteOrigin");
     __name(storedCustomerId, "storedCustomerId");
     __name(rememberCustomer, "rememberCustomer");
-    __name(onRequestOptions96, "onRequestOptions");
-    __name(onRequestGet63, "onRequestGet");
+    __name(onRequestOptions97, "onRequestOptions");
+    __name(onRequestGet65, "onRequestGet");
     __name(ensureSale, "ensureSale");
     __name(openStripeLegs, "openStripeLegs");
     __name(chargeSavedCardLeg, "chargeSavedCardLeg");
@@ -45122,7 +45838,7 @@ function responseHeaders7(context, methods) {
     "Cache-Control": "no-store"
   };
 }
-function json20(value, status, headers5) {
+function json21(value, status, headers5) {
   return new Response(JSON.stringify(value), { status, headers: headers5 });
 }
 function publicProduct(product) {
@@ -45149,15 +45865,15 @@ function publicCoverage(coverage) {
     }))
   };
 }
-async function onRequestOptions97(context) {
+async function onRequestOptions98(context) {
   return new Response(null, { status: 204, headers: responseHeaders7(context, "GET, POST, OPTIONS") });
 }
-async function onRequestGet64(context) {
+async function onRequestGet66(context) {
   const headers5 = responseHeaders7(context, "GET, POST, OPTIONS");
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const result = await listStaffProducts(context.env.ATTEND_DB || null);
-  return json20({
+  return json21({
     ...result,
     products: result.products.map(publicProduct),
     coverage: publicCoverage(result.coverage),
@@ -45174,31 +45890,31 @@ async function onRequestPost69(context) {
     const product = await createStaffProduct(context.env.ATTEND_DB || null, parsed.body, {
       actor: auth.payload?.user || "Eben"
     });
-    return json20({ product: publicProduct(product) }, 201, headers5);
+    return json21({ product: publicProduct(product) }, 201, headers5);
   } catch (cause) {
     const status = Number(cause?.status) || 500;
     const safeStatus2 = [400, 409, 503].includes(status) ? status : 500;
     if (safeStatus2 === 500) console.error("[staff-products] create", cause instanceof Error ? cause.message : cause);
-    return json20({ error: cause instanceof Error ? cause.message : "Could not create product" }, safeStatus2, headers5);
+    return json21({ error: cause instanceof Error ? cause.message : "Could not create product" }, safeStatus2, headers5);
   }
 }
 var init_staff_products2 = __esm({
   "api/staff-products.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_products();
     __name(responseHeaders7, "responseHeaders");
-    __name(json20, "json");
+    __name(json21, "json");
     __name(publicProduct, "publicProduct");
     __name(publicCoverage, "publicCoverage");
-    __name(onRequestOptions97, "onRequestOptions");
-    __name(onRequestGet64, "onRequestGet");
+    __name(onRequestOptions98, "onRequestOptions");
+    __name(onRequestGet66, "onRequestGet");
     __name(onRequestPost69, "onRequestPost");
   }
 });
 
 // api/staff-refresh-activity.js
-async function onRequestOptions98(context) {
+async function onRequestOptions99(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -45212,7 +45928,7 @@ async function onRequestPost70(context) {
     if (error) return error;
     const ac = new AbortController();
     const workerHeaders = context.env.WORKER_AUTH_SECRET ? { Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}` } : void 0;
-    const kickoff = fetch(WORKER_URL14, {
+    const kickoff = fetch(WORKER_URL13, {
       method: "GET",
       headers: workerHeaders,
       signal: ac.signal
@@ -45237,19 +45953,19 @@ async function onRequestPost70(context) {
     );
   }
 }
-var WORKER_URL14;
+var WORKER_URL13;
 var init_staff_refresh_activity = __esm({
   "api/staff-refresh-activity.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
-    WORKER_URL14 = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
-    __name(onRequestOptions98, "onRequestOptions");
+    WORKER_URL13 = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
+    __name(onRequestOptions99, "onRequestOptions");
     __name(onRequestPost70, "onRequestPost");
   }
 });
 
 // api/staff-reply-dismiss.js
-async function onRequestOptions99({ request: request2 }) {
+async function onRequestOptions100({ request: request2 }) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(request2.headers.get("Origin") || "", "POST, OPTIONS")
@@ -45283,10 +45999,10 @@ async function onRequestPost71(context) {
 var KV_KEY4;
 var init_staff_reply_dismiss = __esm({
   "api/staff-reply-dismiss.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     KV_KEY4 = "reply:dismissed";
-    __name(onRequestOptions99, "onRequestOptions");
+    __name(onRequestOptions100, "onRequestOptions");
     __name(onRequestPost71, "onRequestPost");
   }
 });
@@ -45336,11 +46052,11 @@ function summarizeRevenueCharges(charges, monthKeys) {
   return { trend, thisMonth: trend.at(-1) };
 }
 async function stripeJson(secretKey, path, fetchImpl) {
-  const response2 = await fetchImpl(`https://api.stripe.com/v1${path}`, {
+  const response3 = await fetchImpl(`https://api.stripe.com/v1${path}`, {
     headers: { Authorization: `Bearer ${secretKey}` }
   });
-  const data = await response2.json();
-  if (!response2.ok || data?.error) {
+  const data = await response3.json();
+  if (!response3.ok || data?.error) {
     throw new Error(data?.error?.message || "Stripe revenue request failed");
   }
   return data;
@@ -45370,7 +46086,7 @@ async function getStaffRevenue(secretKey, { now = /* @__PURE__ */ new Date(), mo
 var TIME_ZONE, MONTH_COUNT, STRIPE_PAGE_LIMIT;
 var init_staff_revenue = __esm({
   "lib/staff-revenue.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     TIME_ZONE = "America/Los_Angeles";
     MONTH_COUNT = 6;
     STRIPE_PAGE_LIMIT = 20;
@@ -45384,13 +46100,13 @@ var init_staff_revenue = __esm({
 });
 
 // api/staff-revenue.js
-async function onRequestOptions100(context) {
+async function onRequestOptions101(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet65(context) {
+async function onRequestGet67(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -45412,16 +46128,16 @@ async function onRequestGet65(context) {
 }
 var init_staff_revenue2 = __esm({
   "api/staff-revenue.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_staff_revenue();
-    __name(onRequestOptions100, "onRequestOptions");
-    __name(onRequestGet65, "onRequestGet");
+    __name(onRequestOptions101, "onRequestOptions");
+    __name(onRequestGet67, "onRequestGet");
   }
 });
 
 // api/staff-save-progress.js
-async function onRequestOptions101(context) {
+async function onRequestOptions102(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -45460,7 +46176,7 @@ async function onRequestPost72(context) {
       id: YOGA_BLOCK_FIELD,
       field_value: blockSize === "3" ? '3"' : blockSize === "4" ? '4"' : ""
     });
-    const updateRes = await ghlFetch(context, `${GHL_API_BASE51}/contacts/${contactId}`, {
+    const updateRes = await ghlFetch(context, `${GHL_API_BASE50}/contacts/${contactId}`, {
       method: "PUT",
       body: JSON.stringify({ customFields })
     });
@@ -45479,14 +46195,14 @@ async function onRequestPost72(context) {
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
-var GHL_API_BASE51, MODULE_FIELDS, BODY_FIELDS, YOGA_BLOCK_FIELD;
+var GHL_API_BASE50, MODULE_FIELDS, BODY_FIELDS, YOGA_BLOCK_FIELD;
 var init_staff_save_progress = __esm({
   "api/staff-save-progress.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
-    GHL_API_BASE51 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE50 = "https://services.leadconnectorhq.com";
     MODULE_FIELDS = {
       "suspension-squat": "ppSis1mS8JHM0zFY5WdC",
       "hand-balancer": "8Nj0epPxQu2xRQVKWLSr",
@@ -45505,7 +46221,7 @@ var init_staff_save_progress = __esm({
       lower: "yeiKwwcNnuUsAAz1LpQt"
     };
     YOGA_BLOCK_FIELD = "dRiVGU2Q2lRbCAaPIQai";
-    __name(onRequestOptions101, "onRequestOptions");
+    __name(onRequestOptions102, "onRequestOptions");
     __name(onRequestPost72, "onRequestPost");
   }
 });
@@ -45520,7 +46236,7 @@ function maskEmail(e) {
   const [u, d2] = String(e).split("@");
   return `${u.slice(0, 2)}***@${d2 || ""}`;
 }
-async function onRequestOptions102(context) {
+async function onRequestOptions103(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
 async function onRequestPost73(context) {
@@ -45568,18 +46284,18 @@ async function onRequestPost73(context) {
       }
     }
   }, "releaseDedupe");
-  const contactRes = await ghlFetch(context, `${GHL_API_BASE52}/contacts/${encodeURIComponent(contactId)}`);
+  const contactRes = await ghlFetch(context, `${GHL_API_BASE51}/contacts/${encodeURIComponent(contactId)}`);
   if (!contactRes.ok) {
     await releaseDedupe();
     return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
   }
   const contact = (await contactRes.json()).contact;
-  const email = (contact?.email || "").trim();
-  if (!email || !VALID_EMAIL.test(email)) {
+  const email2 = (contact?.email || "").trim();
+  if (!email2 || !VALID_EMAIL.test(email2)) {
     await releaseDedupe();
     return new Response(JSON.stringify({ error: "Contact has no valid email" }), { status: 400, headers: headers5 });
   }
-  const sendRes = await ghlFetch(context, `${GHL_API_BASE52}/conversations/messages`, {
+  const sendRes = await ghlFetch(context, `${GHL_API_BASE51}/conversations/messages`, {
     method: "POST",
     body: JSON.stringify({ type: "Email", contactId, subject: subject2, html })
   });
@@ -45589,17 +46305,17 @@ async function onRequestPost73(context) {
     console.error(`[staff-send-email] send failed: ${sendRes.status} ${errText}`);
     return new Response(JSON.stringify({ error: "Failed to send email" }), { status: 422, headers: headers5 });
   }
-  console.log(`[staff-send-email] sent by ${tokenPayload.user || "staff"} to ${contactId} (${maskEmail(email)}, subj ${subject2.length}c, body ${html.length}c)`);
-  return new Response(JSON.stringify({ success: true, sentTo: maskEmail(email) }), { status: 200, headers: headers5 });
+  console.log(`[staff-send-email] sent by ${tokenPayload.user || "staff"} to ${contactId} (${maskEmail(email2)}, subj ${subject2.length}c, body ${html.length}c)`);
+  return new Response(JSON.stringify({ success: true, sentTo: maskEmail(email2) }), { status: 200, headers: headers5 });
 }
-var GHL_API_BASE52, MAX_SUBJECT, MAX_BODY, DEDUPE_TTL_S, VALID_CONTACT_ID2, BAD_CHARS2, VALID_EMAIL;
+var GHL_API_BASE51, MAX_SUBJECT, MAX_BODY, DEDUPE_TTL_S, VALID_CONTACT_ID2, BAD_CHARS2, VALID_EMAIL;
 var init_staff_send_email = __esm({
   "api/staff-send-email.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
-    GHL_API_BASE52 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE51 = "https://services.leadconnectorhq.com";
     MAX_SUBJECT = 200;
     MAX_BODY = 8e3;
     DEDUPE_TTL_S = 300;
@@ -45608,7 +46324,7 @@ var init_staff_send_email = __esm({
     VALID_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     __name(hashKey, "hashKey");
     __name(maskEmail, "maskEmail");
-    __name(onRequestOptions102, "onRequestOptions");
+    __name(onRequestOptions103, "onRequestOptions");
     __name(onRequestPost73, "onRequestPost");
   }
 });
@@ -45619,7 +46335,7 @@ function buildMessage(product) {
 
 ${BASE_URL}${product.path}`;
 }
-async function onRequestOptions103(context) {
+async function onRequestOptions104(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -45647,7 +46363,7 @@ async function onRequestPost74(context) {
     const contactId = requireProviderContactIdentity(
       await resolveOwnedContactIdentity(context, contactReference)
     );
-    const contactRes = await ghlFetch(context, `${GHL_API_BASE53}/contacts/${contactId}`);
+    const contactRes = await ghlFetch(context, `${GHL_API_BASE52}/contacts/${contactId}`);
     if (!contactRes.ok) {
       return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
     }
@@ -45672,7 +46388,7 @@ async function onRequestPost74(context) {
       claimedDedupeKey = dedupeKey;
       claimedDedupeKv = dedupeKv;
     }
-    const smsRes = await ghlFetch(context, `${GHL_API_BASE53}/conversations/messages`, {
+    const smsRes = await ghlFetch(context, `${GHL_API_BASE52}/conversations/messages`, {
       method: "POST",
       body: JSON.stringify({
         type: "SMS",
@@ -45711,14 +46427,14 @@ async function onRequestPost74(context) {
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
-var GHL_API_BASE53, BASE_URL, PAY_LINK_PRODUCTS;
+var GHL_API_BASE52, BASE_URL, PAY_LINK_PRODUCTS;
 var init_staff_send_paylink = __esm({
   "api/staff-send-paylink.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
-    GHL_API_BASE53 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE52 = "https://services.leadconnectorhq.com";
     BASE_URL = "https://link.amarimethod.com";
     PAY_LINK_PRODUCTS = {
       "6-week-practice": {
@@ -45783,24 +46499,24 @@ var init_staff_send_paylink = __esm({
       }
     };
     __name(buildMessage, "buildMessage");
-    __name(onRequestOptions103, "onRequestOptions");
+    __name(onRequestOptions104, "onRequestOptions");
     __name(onRequestPost74, "onRequestPost");
   }
 });
 
 // api/staff-send-receipt.js
-function json21(body, status, headers5) {
+function json22(body, status, headers5) {
   return new Response(JSON.stringify(body), { status, headers: headers5 });
 }
-async function onRequestOptions104(context) {
+async function onRequestOptions105(context) {
   return new Response(null, {
     status: 204,
-    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS7)
+    headers: corsHeaders3(context.request.headers.get("Origin"), METHODS8)
   });
 }
 async function onRequestPost75(context) {
   const headers5 = {
-    ...corsHeaders3(context.request.headers.get("Origin"), METHODS7),
+    ...corsHeaders3(context.request.headers.get("Origin"), METHODS8),
     "Content-Type": "application/json"
   };
   const { error } = await requireStaffAuth(context, headers5);
@@ -45809,32 +46525,32 @@ async function onRequestPost75(context) {
   if (parseError) return parseError;
   const contactId = typeof body.contactId === "string" ? body.contactId.trim() : "";
   const channel = body.channel === "email" ? "email" : "sms";
-  if (!contactId) return json21({ error: "contactId required" }, 400, headers5);
+  if (!contactId) return json22({ error: "contactId required" }, 400, headers5);
   const stripeKey = context.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) return json21({ error: "Stripe is not configured" }, 503, headers5);
-  const contactRes = await ghlFetch(context, `${GHL_API_BASE54}/contacts/${contactId}`);
-  if (!contactRes.ok) return json21({ error: "Could not load that contact." }, 404, headers5);
+  if (!stripeKey) return json22({ error: "Stripe is not configured" }, 503, headers5);
+  const contactRes = await ghlFetch(context, `${GHL_API_BASE53}/contacts/${contactId}`);
+  if (!contactRes.ok) return json22({ error: "Could not load that contact." }, 404, headers5);
   const contactData = await contactRes.json();
   const contact = contactData.contact || contactData;
-  const email = contact.email || "";
+  const email2 = contact.email || "";
   const phone = contact.phone || "";
   const stripe = makeStripeClient(stripeKey);
   const charges = await resolveContactCharges(stripe, {
     contactId,
-    email: email || void 0
+    email: email2 || void 0
   });
   const withReceipt = (charges || []).filter((c) => c && c.status === "succeeded" && c.receipt_url).sort((a, b) => (b.created || 0) - (a.created || 0));
   const charge = withReceipt[0];
   if (!charge) {
-    return json21({ error: "No Stripe receipt found for this person yet." }, 404, headers5);
+    return json22({ error: "No Stripe receipt found for this person yet." }, 404, headers5);
   }
   const amount = typeof charge.amount === "number" ? `$${(charge.amount / 100).toFixed(2)}` : "your payment";
   const message = `Here's your Amari Method receipt for ${amount}:
 
 ${charge.receipt_url}`;
   if (channel === "email") {
-    if (!email) return json21({ error: "No email on this contact." }, 400, headers5);
-    const sendRes = await ghlFetch(context, `${GHL_API_BASE54}/conversations/messages`, {
+    if (!email2) return json22({ error: "No email on this contact." }, 400, headers5);
+    const sendRes = await ghlFetch(context, `${GHL_API_BASE53}/conversations/messages`, {
       method: "POST",
       body: JSON.stringify({
         type: "Email",
@@ -45846,11 +46562,11 @@ ${charge.receipt_url}`;
     if (!sendRes.ok) {
       const detail = await sendRes.text();
       console.error("[staff-send-receipt] email failed", sendRes.status, detail.slice(0, 200));
-      return json21({ error: "Could not send the receipt email." }, 502, headers5);
+      return json22({ error: "Could not send the receipt email." }, 502, headers5);
     }
   } else {
-    if (!phone) return json21({ error: "No phone on this contact \u2014 try email." }, 400, headers5);
-    const sendRes = await ghlFetch(context, `${GHL_API_BASE54}/conversations/messages`, {
+    if (!phone) return json22({ error: "No phone on this contact \u2014 try email." }, 400, headers5);
+    const sendRes = await ghlFetch(context, `${GHL_API_BASE53}/conversations/messages`, {
       method: "POST",
       body: JSON.stringify({
         type: "SMS",
@@ -45861,10 +46577,10 @@ ${charge.receipt_url}`;
     if (!sendRes.ok) {
       const detail = await sendRes.text();
       console.error("[staff-send-receipt] sms failed", sendRes.status, detail.slice(0, 200));
-      return json21({ error: "Could not send the receipt text." }, 502, headers5);
+      return json22({ error: "Could not send the receipt text." }, 502, headers5);
     }
   }
-  return json21({
+  return json22({
     ok: true,
     channel,
     receiptUrl: charge.receipt_url,
@@ -45872,17 +46588,17 @@ ${charge.receipt_url}`;
     chargeId: charge.id
   }, 200, headers5);
 }
-var GHL_API_BASE54, METHODS7;
+var GHL_API_BASE53, METHODS8;
 var init_staff_send_receipt = __esm({
   "api/staff-send-receipt.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_ghl();
     init_stripe_charges();
-    GHL_API_BASE54 = "https://services.leadconnectorhq.com";
-    METHODS7 = "POST, OPTIONS";
-    __name(json21, "json");
-    __name(onRequestOptions104, "onRequestOptions");
+    GHL_API_BASE53 = "https://services.leadconnectorhq.com";
+    METHODS8 = "POST, OPTIONS";
+    __name(json22, "json");
+    __name(onRequestOptions105, "onRequestOptions");
     __name(onRequestPost75, "onRequestPost");
   }
 });
@@ -45903,7 +46619,7 @@ function hashKey2(s) {
 function buildStaffSmsPayload(contactId, message) {
   return { type: "SMS", contactId, message, fromNumber: PRACTICE_SMS_FROM_NUMBER };
 }
-async function onRequestOptions105(context) {
+async function onRequestOptions106(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS") });
 }
 async function onRequestPost76(context) {
@@ -45950,7 +46666,7 @@ async function onRequestPost76(context) {
       }
     }
   }, "releaseDedupe");
-  const contactRes = await ghlFetch(context, `${GHL_API_BASE55}/contacts/${encodeURIComponent(contactId)}`);
+  const contactRes = await ghlFetch(context, `${GHL_API_BASE54}/contacts/${encodeURIComponent(contactId)}`);
   if (!contactRes.ok) {
     await releaseDedupe();
     return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
@@ -45961,7 +46677,7 @@ async function onRequestPost76(context) {
     await releaseDedupe();
     return new Response(JSON.stringify({ error: "Contact has no valid phone number" }), { status: 400, headers: headers5 });
   }
-  const smsRes = await ghlFetch(context, `${GHL_API_BASE55}/conversations/messages`, {
+  const smsRes = await ghlFetch(context, `${GHL_API_BASE54}/conversations/messages`, {
     method: "POST",
     body: JSON.stringify(buildStaffSmsPayload(contactId, message))
   });
@@ -45974,14 +46690,14 @@ async function onRequestPost76(context) {
   console.log(`[staff-send-text] sent by ${tokenPayload.user || "staff"} to ${contactId} (last4 ${phone.slice(-4)}, ${message.length} chars)`);
   return new Response(JSON.stringify({ success: true, sentTo: `***${phone.slice(-4)}` }), { status: 200, headers: headers5 });
 }
-var GHL_API_BASE55, PRACTICE_SMS_FROM_NUMBER, MAX_LEN, DEDUPE_TTL_S2, VALID_CONTACT_ID3, BAD_CHARS3;
+var GHL_API_BASE54, PRACTICE_SMS_FROM_NUMBER, MAX_LEN, DEDUPE_TTL_S2, VALID_CONTACT_ID3, BAD_CHARS3;
 var init_staff_send_text = __esm({
   "api/staff-send-text.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
-    GHL_API_BASE55 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE54 = "https://services.leadconnectorhq.com";
     PRACTICE_SMS_FROM_NUMBER = "+16288777673";
     MAX_LEN = 720;
     DEDUPE_TTL_S2 = 300;
@@ -45990,13 +46706,13 @@ var init_staff_send_text = __esm({
     __name(normalizePhone3, "normalizePhone");
     __name(hashKey2, "hashKey");
     __name(buildStaffSmsPayload, "buildStaffSmsPayload");
-    __name(onRequestOptions105, "onRequestOptions");
+    __name(onRequestOptions106, "onRequestOptions");
     __name(onRequestPost76, "onRequestPost");
   }
 });
 
 // api/staff-send-toolkit.js
-async function onRequestOptions106(context) {
+async function onRequestOptions107(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -46017,7 +46733,7 @@ async function onRequestPost77(context) {
     const contactId = requireProviderContactIdentity(
       await resolveOwnedContactIdentity(context, contactReference)
     );
-    const contactRes = await ghlFetch(context, `${GHL_API_BASE56}/contacts/${contactId}`);
+    const contactRes = await ghlFetch(context, `${GHL_API_BASE55}/contacts/${contactId}`);
     if (!contactRes.ok) {
       return new Response(JSON.stringify({ error: "Contact not found" }), { status: 404, headers: headers5 });
     }
@@ -46038,7 +46754,7 @@ async function onRequestPost77(context) {
       }
     }
     try {
-      const pipelinesRes = await ghlFetch(context, `${GHL_API_BASE56}/opportunities/pipelines?locationId=${GHL_LOCATION_ID35}`);
+      const pipelinesRes = await ghlFetch(context, `${GHL_API_BASE55}/opportunities/pipelines?locationId=${GHL_LOCATION_ID35}`);
       if (pipelinesRes.ok) {
         const pipelinesData = await pipelinesRes.json();
         const partnership = (pipelinesData.pipelines || []).find(
@@ -46051,7 +46767,7 @@ async function onRequestPost77(context) {
           if (partnerStage) {
             const oppsRes = await ghlFetch(
               context,
-              `${GHL_API_BASE56}/opportunities/search?location_id=${GHL_LOCATION_ID35}&pipeline_id=${partnership.id}&contact_id=${contactId}`
+              `${GHL_API_BASE55}/opportunities/search?location_id=${GHL_LOCATION_ID35}&pipeline_id=${partnership.id}&contact_id=${contactId}`
             );
             if (oppsRes.ok) {
               const oppsData = await oppsRes.json();
@@ -46059,7 +46775,7 @@ async function onRequestPost77(context) {
                 (o) => o.pipelineId === partnership.id
               );
               if (opp) {
-                await ghlFetch(context, `${GHL_API_BASE56}/opportunities/${opp.id}`, {
+                await ghlFetch(context, `${GHL_API_BASE55}/opportunities/${opp.id}`, {
                   method: "PUT",
                   body: JSON.stringify({
                     pipelineStageId: partnerStage.id,
@@ -46074,7 +46790,7 @@ async function onRequestPost77(context) {
     } catch (err) {
       console.error(`[staff-send-toolkit] Pipeline update failed: ${err.message}`);
     }
-    const smsRes = await ghlFetch(context, `${GHL_API_BASE56}/conversations/messages`, {
+    const smsRes = await ghlFetch(context, `${GHL_API_BASE55}/conversations/messages`, {
       method: "POST",
       body: JSON.stringify({
         type: "SMS",
@@ -46097,21 +46813,21 @@ async function onRequestPost77(context) {
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
-var GHL_API_BASE56, GHL_LOCATION_ID35, TOOLKIT_MESSAGE;
+var GHL_API_BASE55, GHL_LOCATION_ID35, TOOLKIT_MESSAGE;
 var init_staff_send_toolkit = __esm({
   "api/staff-send-toolkit.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
-    GHL_API_BASE56 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE55 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID35 = "7pIO7FHVAyBT1jKGhfQM";
     TOOLKIT_MESSAGE = `Hey! Here's your Amari Method partner toolkit \u2014 everything you need to refer clients and track your earnings:
 
 https://www.amarimethod.com/partner-app
 
 Log in with your email and you're all set. Reach out anytime if you have questions!`;
-    __name(onRequestOptions106, "onRequestOptions");
+    __name(onRequestOptions107, "onRequestOptions");
     __name(onRequestPost77, "onRequestPost");
   }
 });
@@ -46122,10 +46838,10 @@ async function authenticatedResponse(context) {
   const { error, payload } = await requireStaffAuth(context, headers5);
   return error || { payload, headers: headers5 };
 }
-async function onRequestOptions107(context) {
+async function onRequestOptions108(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, DELETE, OPTIONS") });
 }
-async function onRequestGet66(context) {
+async function onRequestGet68(context) {
   const result = await authenticatedResponse(context);
   if (result instanceof Response) return result;
   return new Response(JSON.stringify({ authenticated: true, user: result.payload.user }), { status: 200, headers: result.headers });
@@ -46144,22 +46860,22 @@ async function onRequestDelete(context) {
 var MAX_AGE_SECONDS, sessionCookie, responseHeaders8, bearerToken;
 var init_staff_session = __esm({
   "api/staff-session.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
     sessionCookie = /* @__PURE__ */ __name((value, maxAge = MAX_AGE_SECONDS) => `${STAFF_SESSION_COOKIE}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`, "sessionCookie");
     responseHeaders8 = /* @__PURE__ */ __name((origin, cookie) => ({ ...corsHeaders3(origin, "GET, POST, DELETE, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store", "Set-Cookie": cookie }), "responseHeaders");
     bearerToken = /* @__PURE__ */ __name((request2) => request2.headers.get("Authorization")?.startsWith("Bearer ") ? request2.headers.get("Authorization").slice(7) : null, "bearerToken");
     __name(authenticatedResponse, "authenticatedResponse");
-    __name(onRequestOptions107, "onRequestOptions");
-    __name(onRequestGet66, "onRequestGet");
+    __name(onRequestOptions108, "onRequestOptions");
+    __name(onRequestGet68, "onRequestGet");
     __name(onRequestPost78, "onRequestPost");
     __name(onRequestDelete, "onRequestDelete");
   }
 });
 
 // api/staff-sharpen.js
-async function onRequestOptions108(context) {
+async function onRequestOptions109(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
 async function readCards(env) {
@@ -46169,7 +46885,7 @@ async function readCards(env) {
 async function writeCards(env, cards) {
   await env.PORTAL_KV.put(CARDS_KEY, JSON.stringify({ cards, updatedAt: (/* @__PURE__ */ new Date()).toISOString() }));
 }
-async function onRequestGet67(context) {
+async function onRequestGet69(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
@@ -46228,22 +46944,22 @@ async function onRequestPost79(context) {
 var CARDS_KEY, MAX_CARDS, MAX_LEN2, CATEGORIES2;
 var init_staff_sharpen = __esm({
   "api/staff-sharpen.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     CARDS_KEY = "staff:sharpen-cards";
     MAX_CARDS = 200;
     MAX_LEN2 = 600;
     CATEGORIES2 = ["frame", "objection", "discovery", "close", "real-call"];
-    __name(onRequestOptions108, "onRequestOptions");
+    __name(onRequestOptions109, "onRequestOptions");
     __name(readCards, "readCards");
     __name(writeCards, "writeCards");
-    __name(onRequestGet67, "onRequestGet");
+    __name(onRequestGet69, "onRequestGet");
     __name(onRequestPost79, "onRequestPost");
   }
 });
 
 // api/staff-stripe-cards.js
-function json22(data, status, headers5) {
+function json23(data, status, headers5) {
   return new Response(JSON.stringify(data), { status, headers: headers5 });
 }
 async function storedCustomerId2(env, contactId) {
@@ -46263,17 +46979,17 @@ async function rememberCustomer2(env, contactId, customerId) {
   } catch {
   }
 }
-async function onRequestOptions109(context) {
+async function onRequestOptions110(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS") });
 }
-async function onRequestGet68(context) {
+async function onRequestGet70(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers5);
   if (error) return error;
   const contactId = (new URL(context.request.url).searchParams.get("contactId") || "").trim();
-  if (!contactId) return json22({ error: "contactId required" }, 400, headers5);
-  if (contactId.startsWith("draft_")) return json22({ available: false, reason: "draft_client", cards: [] }, 200, headers5);
+  if (!contactId) return json23({ error: "contactId required" }, 400, headers5);
+  if (contactId.startsWith("draft_")) return json23({ available: false, reason: "draft_client", cards: [] }, 200, headers5);
   const secret = context.env.STRIPE_SECRET_KEY;
   if (!secret) {
     await writeOpsLastRun(context.env, OPS_READY_KEYS.stripe, {
@@ -46281,7 +46997,7 @@ async function onRequestGet68(context) {
       checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
       error: "STRIPE_SECRET_KEY not configured"
     });
-    return json22({ available: false, reason: "stripe_not_configured", cards: [] }, 200, headers5);
+    return json23({ available: false, reason: "stripe_not_configured", cards: [] }, 200, headers5);
   }
   try {
     const stored = await storedCustomerId2(context.env, contactId);
@@ -46291,11 +47007,11 @@ async function onRequestGet68(context) {
       checkedAt: (/* @__PURE__ */ new Date()).toISOString()
     });
     if (!customer) {
-      return json22({ available: false, reason: "no_proven_customer", cards: [] }, 200, headers5);
+      return json23({ available: false, reason: "no_proven_customer", cards: [] }, 200, headers5);
     }
     if (customer.id !== stored) await rememberCustomer2(context.env, contactId, customer.id);
     const cards = await listCustomerCards(secret, customer.id);
-    return json22({
+    return json23({
       available: cards.length > 0,
       reason: cards.length ? null : "no_cards",
       cards
@@ -46307,31 +47023,31 @@ async function onRequestGet68(context) {
       checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
       error: err instanceof Error ? err.message : "lookup_failed"
     });
-    return json22({ available: false, reason: "lookup_failed", cards: [] }, 200, headers5);
+    return json23({ available: false, reason: "lookup_failed", cards: [] }, 200, headers5);
   }
 }
 var init_staff_stripe_cards = __esm({
   "api/staff-stripe-cards.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_stripe_api();
     init_ops_last_run();
-    __name(json22, "json");
+    __name(json23, "json");
     __name(storedCustomerId2, "storedCustomerId");
     __name(rememberCustomer2, "rememberCustomer");
-    __name(onRequestOptions109, "onRequestOptions");
-    __name(onRequestGet68, "onRequestGet");
+    __name(onRequestOptions110, "onRequestOptions");
+    __name(onRequestGet70, "onRequestGet");
   }
 });
 
 // api/staff-study.js
-async function onRequestOptions110({ request: request2 }) {
+async function onRequestOptions111({ request: request2 }) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet69(context) {
+async function onRequestGet71(context) {
   const { request: request2, env } = context;
   const origin = request2.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
@@ -46375,7 +47091,7 @@ async function onRequestPost80(context) {
     await env.PORTAL_KV.put(kvKey2(studySlug, contactId), JSON.stringify(normalized));
     const sessionsDone = sessionsDoneCount(normalized);
     try {
-      await ghlFetch(context, `${GHL_API_BASE57}/contacts/${contactId}`, {
+      await ghlFetch(context, `${GHL_API_BASE56}/contacts/${contactId}`, {
         method: "PUT",
         body: JSON.stringify({
           customFields: [{ id: STUDY_SESSIONS_DONE_FIELD_ID, value: sessionsDone }]
@@ -46390,22 +47106,22 @@ async function onRequestPost80(context) {
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
-var GHL_API_BASE57;
+var GHL_API_BASE56;
 var init_staff_study = __esm({
   "api/staff-study.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
-    GHL_API_BASE57 = "https://services.leadconnectorhq.com";
-    __name(onRequestOptions110, "onRequestOptions");
-    __name(onRequestGet69, "onRequestGet");
+    GHL_API_BASE56 = "https://services.leadconnectorhq.com";
+    __name(onRequestOptions111, "onRequestOptions");
+    __name(onRequestGet71, "onRequestGet");
     __name(onRequestPost80, "onRequestPost");
   }
 });
 
 // api/staff-tasks.js
-async function onRequestOptions111(context) {
+async function onRequestOptions112(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
 async function readState(env) {
@@ -46422,7 +47138,7 @@ async function writeState(env, state) {
 function publicView(state) {
   return { goal: state.goal, rule: state.rule, tasks: state.tasks };
 }
-async function onRequestGet70(context) {
+async function onRequestGet72(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
@@ -46486,24 +47202,24 @@ async function onRequestPost81(context) {
 var TASKS_KEY, MAX_TASKS, MAX_TEXT_LEN, DEFAULT_GOAL, DEFAULT_RULE;
 var init_staff_tasks = __esm({
   "api/staff-tasks.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     TASKS_KEY = "staff:garrett-tasks";
     MAX_TASKS = 50;
     MAX_TEXT_LEN = 280;
     DEFAULT_GOAL = "Today: get people out of pain \u2014 every call is someone you could help.";
     DEFAULT_RULE = "Every call ends with a text \u2014 tap VM + text or Talked + text.";
-    __name(onRequestOptions111, "onRequestOptions");
+    __name(onRequestOptions112, "onRequestOptions");
     __name(readState, "readState");
     __name(writeState, "writeState");
     __name(publicView, "publicView");
-    __name(onRequestGet70, "onRequestGet");
+    __name(onRequestGet72, "onRequestGet");
     __name(onRequestPost81, "onRequestPost");
   }
 });
 
 // api/staff-toggle-prepaid.js
-async function onRequestOptions112(context) {
+async function onRequestOptions113(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"))
@@ -46522,7 +47238,7 @@ async function onRequestPost82(context) {
     if (!contactId) {
       return new Response(JSON.stringify({ error: "Contact ID required" }), { status: 400, headers: headers5 });
     }
-    const updateRes = await ghlFetch(context, `${GHL_API_BASE58}/contacts/${contactId}`, {
+    const updateRes = await ghlFetch(context, `${GHL_API_BASE57}/contacts/${contactId}`, {
       method: "PUT",
       body: JSON.stringify({
         customFields: [
@@ -46541,28 +47257,28 @@ async function onRequestPost82(context) {
     return new Response(JSON.stringify({ error: "Internal server error" }), { status: 500, headers: headers5 });
   }
 }
-var GHL_API_BASE58, FIELD_ID_SESSION_PREPAID;
+var GHL_API_BASE57, FIELD_ID_SESSION_PREPAID;
 var init_staff_toggle_prepaid = __esm({
   "api/staff-toggle-prepaid.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
-    GHL_API_BASE58 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE57 = "https://services.leadconnectorhq.com";
     FIELD_ID_SESSION_PREPAID = FIELD_IDS.session_prepaid;
-    __name(onRequestOptions112, "onRequestOptions");
+    __name(onRequestOptions113, "onRequestOptions");
     __name(onRequestPost82, "onRequestPost");
   }
 });
 
 // api/stream-health.js
-async function onRequestOptions113() {
+async function onRequestOptions114() {
   return new Response(null, {
     status: 204,
     headers: { "Access-Control-Allow-Methods": "GET, OPTIONS" }
   });
 }
-async function onRequestGet71(context) {
+async function onRequestGet73(context) {
   const headers5 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
   const CF_ACCOUNT_ID = context.env.CF_STREAM_ACCOUNT_ID;
   const CF_STREAM_TOKEN = context.env.CF_STREAM_TOKEN;
@@ -46574,7 +47290,7 @@ async function onRequestGet71(context) {
     );
   }
   const exp = Math.floor(Date.now() / 1e3) + 120;
-  let res, json25;
+  let res, json26;
   try {
     res = await fetch(
       `https://api.cloudflare.com/client/v4/accounts/${CF_ACCOUNT_ID}/stream/${TEST_UID}/token`,
@@ -46584,14 +47300,14 @@ async function onRequestGet71(context) {
         body: JSON.stringify({ exp, downloadable: false })
       }
     );
-    json25 = await res.json().catch(() => null);
+    json26 = await res.json().catch(() => null);
   } catch (err) {
     return new Response(
       JSON.stringify({ healthy: false, reason: "fetch-failed", detail: String(err).slice(0, 160), checkedAt: (/* @__PURE__ */ new Date()).toISOString() }),
       { status: 200, headers: headers5 }
     );
   }
-  const signingHealthy = !!(res.ok && json25 && json25.success && json25.result && json25.result.token);
+  const signingHealthy = !!(res.ok && json26 && json26.success && json26.result && json26.result.token);
   let reason = null;
   if (!signingHealthy) {
     if (res.status === 401 || res.status === 403 || res.status === 400) {
@@ -46611,14 +47327,14 @@ async function onRequestGet71(context) {
         testUid: TEST_UID,
         checkedAt: (/* @__PURE__ */ new Date()).toISOString(),
         // first CF error message only (no secret material), for the alert detail
-        detail: json25 && json25.errors && json25.errors[0] && json25.errors[0].message || null
+        detail: json26 && json26.errors && json26.errors[0] && json26.errors[0].message || null
       }),
       { status: 200, headers: headers5 }
     );
   }
   let manifestRes, manifest;
   try {
-    const manifestUrl = `https://customer-${CUSTOMER_CODE}.cloudflarestream.com/${json25.result.token}/manifest/video.m3u8`;
+    const manifestUrl = `https://customer-${CUSTOMER_CODE}.cloudflarestream.com/${json26.result.token}/manifest/video.m3u8`;
     manifestRes = await fetch(manifestUrl, {
       headers: { Accept: "application/vnd.apple.mpegurl, application/x-mpegURL, */*" }
     });
@@ -46653,10 +47369,10 @@ async function onRequestGet71(context) {
 var TEST_UID;
 var init_stream_health = __esm({
   "api/stream-health.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     TEST_UID = "9072ff146ba6434f9463ae78c6616e3d";
-    __name(onRequestOptions113, "onRequestOptions");
-    __name(onRequestGet71, "onRequestGet");
+    __name(onRequestOptions114, "onRequestOptions");
+    __name(onRequestGet73, "onRequestGet");
   }
 });
 
@@ -46670,13 +47386,13 @@ function corsHeaders37(origin) {
     "Access-Control-Max-Age": "86400"
   };
 }
-async function onRequestOptions114(context) {
+async function onRequestOptions115(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders37(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet72(context) {
+async function onRequestGet74(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders37(origin);
   headers5["Content-Type"] = "application/json";
@@ -46719,8 +47435,8 @@ async function onRequestGet72(context) {
     }
     const contactId = tokenPayload.contactId;
     const [contactResponse, fieldDefsResponse] = await Promise.all([
-      fetch(`${GHL_API_BASE59}/contacts/${contactId}`, { headers: ghlHeaders(GHL_API_KEY) }),
-      fetch(`${GHL_API_BASE59}/locations/${GHL_LOCATION_ID36}/customFields`, { headers: ghlHeaders(GHL_API_KEY) })
+      fetch(`${GHL_API_BASE58}/contacts/${contactId}`, { headers: ghlHeaders(GHL_API_KEY) }),
+      fetch(`${GHL_API_BASE58}/locations/${GHL_LOCATION_ID36}/customFields`, { headers: ghlHeaders(GHL_API_KEY) })
     ]);
     if (!contactResponse.ok) {
       return new Response(
@@ -46790,15 +47506,15 @@ async function onRequestGet72(context) {
     );
   }
 }
-var GHL_API_BASE59, GHL_LOCATION_ID36, ALLOWED_ORIGINS39, TOKEN_TTL_SECONDS;
+var GHL_API_BASE58, GHL_LOCATION_ID36, ALLOWED_ORIGINS39, TOKEN_TTL_SECONDS;
 var init_stream_token = __esm({
   "api/stream-token.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_auth();
     init_portal_helpers();
     init_session_ledger();
-    GHL_API_BASE59 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE58 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID36 = "7pIO7FHVAyBT1jKGhfQM";
     ALLOWED_ORIGINS39 = [
       "https://www.amarimethod.com",
@@ -46806,13 +47522,13 @@ var init_stream_token = __esm({
     ];
     TOKEN_TTL_SECONDS = 60 * 60;
     __name(corsHeaders37, "corsHeaders");
-    __name(onRequestOptions114, "onRequestOptions");
-    __name(onRequestGet72, "onRequestGet");
+    __name(onRequestOptions115, "onRequestOptions");
+    __name(onRequestGet74, "onRequestGet");
   }
 });
 
 // api/stripe-pos-webhook.js
-function json23(data, status = 200) {
+function json24(data, status = 200) {
   return new Response(JSON.stringify(data), {
     status,
     headers: { "Content-Type": "application/json" }
@@ -46881,10 +47597,10 @@ async function onRequestPost83(context) {
   const secret = context.env.STRIPE_POS_WEBHOOK_SECRET || context.env.STRIPE_WEBHOOK_SECRET;
   if (!secret) {
     console.error("[stripe-pos-webhook] webhook secret not configured");
-    return json23({ error: "Webhook not configured" }, 500);
+    return json24({ error: "Webhook not configured" }, 500);
   }
   if (!context.env.PORTAL_KV) {
-    return json23({ error: "POS storage not configured" }, 500);
+    return json24({ error: "POS storage not configured" }, 500);
   }
   const rawBody = await context.request.text();
   const signature = context.request.headers.get("Stripe-Signature") || "";
@@ -46893,26 +47609,26 @@ async function onRequestPost83(context) {
     valid = await verifyStripeWebhookSignature(rawBody, signature, secret);
   } catch (error) {
     console.error("[stripe-pos-webhook] signature setup", error instanceof Error ? error.message : error);
-    return json23({ error: "Webhook not configured" }, 500);
+    return json24({ error: "Webhook not configured" }, 500);
   }
-  if (!valid) return json23({ error: "Invalid signature" }, 400);
+  if (!valid) return json24({ error: "Invalid signature" }, 400);
   let event2;
   try {
     event2 = JSON.parse(rawBody);
   } catch {
-    return json23({ error: "Invalid JSON" }, 400);
+    return json24({ error: "Invalid JSON" }, 400);
   }
   const eventId = typeof event2.id === "string" ? event2.id : "";
   let eventClaim = null;
   if (eventId && context.env.ATTEND_DB) {
     const key = `stripe:${eventId}`;
     const claim = await claimProcessedEvent(context.env.ATTEND_DB, key);
-    if (claim && claim.duplicate) return json23({ received: true, duplicate: true });
+    if (claim && claim.duplicate) return json24({ received: true, duplicate: true });
     if (claim?.ok) eventClaim = { backend: "d1", key };
   } else if (eventId && context.env.PORTAL_KV) {
     const key = `staff-pos:stripe-event:${eventId}`;
     const existing = await context.env.PORTAL_KV.get(key);
-    if (existing) return json23({ received: true, duplicate: true });
+    if (existing) return json24({ received: true, duplicate: true });
     await context.env.PORTAL_KV.put(key, (/* @__PURE__ */ new Date()).toISOString(), { expirationTtl: 90 * 86400 });
     eventClaim = { backend: "kv", key };
   }
@@ -46923,14 +47639,14 @@ async function onRequestPost83(context) {
         status: "ok",
         eventType: event2.type
       });
-      return json23({ received: true, ...result });
+      return json24({ received: true, ...result });
     }
     await writeOpsLastRun(context.env, OPS_LAST_RUN_KEYS.stripeWebhook, {
       status: "ok",
       eventType: event2.type,
       ignored: true
     });
-    return json23({ received: true, ignored: event2.type });
+    return json24({ received: true, ignored: event2.type });
   } catch (error) {
     console.error("[stripe-pos-webhook]", error instanceof Error ? error.message : error);
     if (eventClaim?.backend === "d1") {
@@ -46949,19 +47665,19 @@ async function onRequestPost83(context) {
       eventType: event2?.type || null,
       error: error instanceof Error ? error.message : String(error)
     });
-    return json23({ error: "Webhook handler failed" }, 500);
+    return json24({ error: "Webhook handler failed" }, 500);
   }
 }
 var init_stripe_pos_webhook = __esm({
   "api/stripe-pos-webhook.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_processed_events();
     init_staff_pos_fulfill();
     init_staff_pos();
     init_stripe_api();
     init_ops_path_emit();
     init_ops_last_run();
-    __name(json23, "json");
+    __name(json24, "json");
     __name(loadSaleForSession, "loadSaleForSession");
     __name(maybeFulfill, "maybeFulfill");
     __name(settleSession, "settleSession");
@@ -46984,27 +47700,27 @@ async function ensureStudyBookingConfirmedMarker(context, contactId) {
   await applyTagDelta(context, contactId, {
     add: [STUDY_BOOKING_CONFIRMED_MARKER]
   });
-  const response2 = await ghlFetch(
+  const response3 = await ghlFetch(
     context,
-    GHL_API_BASE60 + "/contacts/" + encodeURIComponent(contactId)
+    GHL_API_BASE59 + "/contacts/" + encodeURIComponent(contactId)
   );
-  if (!response2.ok) {
+  if (!response3.ok) {
     throw new Error(
-      "study booking marker readback failed (" + response2.status + ")"
+      "study booking marker readback failed (" + response3.status + ")"
     );
   }
-  const payload = await response2.json();
+  const payload = await response3.json();
   if (!contactHasStudyBookingConfirmedMarker(payload)) {
     throw new Error("study booking marker was not present in provider readback");
   }
   return { tag: STUDY_BOOKING_CONFIRMED_MARKER, verified: true };
 }
-var GHL_API_BASE60, STUDY_BOOKING_CONFIRMED_MARKER;
+var GHL_API_BASE59, STUDY_BOOKING_CONFIRMED_MARKER;
 var init_study_enrollment_marker = __esm({
   "lib/study-enrollment-marker.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
-    GHL_API_BASE60 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE59 = "https://services.leadconnectorhq.com";
     STUDY_BOOKING_CONFIRMED_MARKER = "study-booking-confirmed-before-enrollment";
     __name(tagName, "tagName");
     __name(contactHasStudyBookingConfirmedMarker, "contactHasStudyBookingConfirmedMarker");
@@ -47115,7 +47831,7 @@ function resolveStudyBookingRuntime(context, options = {}) {
 var PRODUCTION_ORIGINS, PREVIEW_HOST_SUFFIX, StudyBookingRuntimeError;
 var init_study_booking_runtime = __esm({
   "lib/study-booking-runtime.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     PRODUCTION_ORIGINS = /* @__PURE__ */ new Set([
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -47182,7 +47898,7 @@ function validateStudyBooking(input) {
   if (!config) return invalid("Choose one of the five current studies.");
   const name = typeof input.name === "string" ? input.name.trim().replace(/\s+/g, " ") : "";
   const phone = typeof input.phone === "string" ? input.phone.replace(/[^\d+]/g, "").slice(0, 20) : "";
-  const email = typeof input.email === "string" ? input.email.trim().toLowerCase().slice(0, 254) : "";
+  const email2 = typeof input.email === "string" ? input.email.trim().toLowerCase().slice(0, 254) : "";
   const startTime = typeof input.startTime === "string" ? input.startTime.trim() : "";
   const timezone = typeof input.timezone === "string" && input.timezone.trim() ? input.timezone.trim().slice(0, 100) : "America/Los_Angeles";
   const idempotencyKey = typeof input.idempotencyKey === "string" ? input.idempotencyKey.trim() : "";
@@ -47190,7 +47906,7 @@ function validateStudyBooking(input) {
   const publishOptIn = wantsPublishOptIn(input.publishOptIn);
   if (!name || name.length > 200) return invalid("Enter your name.");
   if (phone.replace(/\D/g, "").length < 10) return invalid("Enter a valid mobile number.");
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return invalid("Enter a valid email.");
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email2)) return invalid("Enter a valid email.");
   if (!startTime || Number.isNaN(Date.parse(startTime))) return invalid("Choose an available time.");
   if (!/^[A-Za-z0-9_-]{16,100}$/.test(idempotencyKey)) return invalid("Refresh the page and choose your time again.");
   if (bodyPart && !["left", "right", "both"].includes(bodyPart)) return invalid("Choose left, right, both, or leave the side blank.");
@@ -47212,7 +47928,7 @@ function validateStudyBooking(input) {
       firstName: firstName.slice(0, 100),
       lastName: lastName.slice(0, 100),
       phone,
-      email,
+      email: email2,
       startTime,
       timezone,
       idempotencyKey,
@@ -47225,7 +47941,7 @@ function validateStudyBooking(input) {
 var STUDY_NAME_FIELD_ID7, STUDY_BOOKING_KIND, VISIT_QUALIFICATION, LIVE_STUDY_BOOKINGS;
 var init_study_booking = __esm({
   "lib/study-booking.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_studies();
     init_study_consent();
     STUDY_NAME_FIELD_ID7 = "1xhxStKyEN47shwjOKC0";
@@ -47298,7 +48014,7 @@ function headers4(context) {
     Vary: "Origin"
   };
 }
-function json24(data, status, context) {
+function json25(data, status, context) {
   return new Response(JSON.stringify(data), { status, headers: headers4(context) });
 }
 function validDate2(value) {
@@ -47322,10 +48038,10 @@ function flattenSlots3(data) {
 async function slots(context, startDate, endDate, timezone) {
   const start = Date.parse(startDate + "T00:00:00Z");
   const end = Date.parse(endDate + "T23:59:59Z") + 12 * 60 * 60 * 1e3;
-  const url = GHL_API_BASE61 + "/calendars/" + STUDY_CALENDAR_ID + "/free-slots?startDate=" + start + "&endDate=" + end + "&timezone=" + encodeURIComponent(timezone);
-  const response2 = await ghlFetch(context, url);
-  if (!response2.ok) throw new Error("Could not load available times.");
-  const rawSlots = flattenSlots3(await response2.json());
+  const url = GHL_API_BASE60 + "/calendars/" + STUDY_CALENDAR_ID + "/free-slots?startDate=" + start + "&endDate=" + end + "&timezone=" + encodeURIComponent(timezone);
+  const response3 = await ghlFetch(context, url);
+  if (!response3.ok) throw new Error("Could not load available times.");
+  const rawSlots = flattenSlots3(await response3.json());
   const events = await fetchAppBufferEvents(context, start, end);
   return filterSlotsByAppBuffer(rawSlots, STUDY_CALENDAR_ID, events);
 }
@@ -47339,11 +48055,11 @@ async function rateLimit(kv, key) {
 function contactIdFrom(data) {
   return data?.contact?.id || data?.contactId || (Array.isArray(data?.contacts) ? data.contacts[0]?.id : null) || data?.id || null;
 }
-async function findExistingContactId(context, email) {
+async function findExistingContactId(context, email2) {
   try {
     const duplicate = await ghlFetch(
       context,
-      GHL_API_BASE61 + "/contacts/search/duplicate?locationId=" + GHL_LOCATION_ID37 + "&email=" + encodeURIComponent(email)
+      GHL_API_BASE60 + "/contacts/search/duplicate?locationId=" + GHL_LOCATION_ID37 + "&email=" + encodeURIComponent(email2)
     );
     if (duplicate.ok) {
       const id3 = contactIdFrom(await duplicate.json());
@@ -47352,12 +48068,12 @@ async function findExistingContactId(context, email) {
   } catch (error) {
     console.warn("[study-book] duplicate contact lookup failed:", error.message);
   }
-  const search = await ghlFetch(context, GHL_API_BASE61 + "/contacts/search", {
+  const search = await ghlFetch(context, GHL_API_BASE60 + "/contacts/search", {
     method: "POST",
     body: JSON.stringify({
       locationId: GHL_LOCATION_ID37,
       pageLimit: 1,
-      filters: [{ field: "email", operator: "eq", value: email }]
+      filters: [{ field: "email", operator: "eq", value: email2 }]
     })
   });
   if (!search.ok) {
@@ -47374,18 +48090,18 @@ async function saveStudyIdentity(context, contactId, data) {
     source: data.config.source,
     customFields: [{ id: STUDY_NAME_FIELD_ID7, fieldValue: data.config.studyName }]
   };
-  const response2 = contactId ? await ghlFetch(context, GHL_API_BASE61 + "/contacts/" + encodeURIComponent(contactId), {
+  const response3 = contactId ? await ghlFetch(context, GHL_API_BASE60 + "/contacts/" + encodeURIComponent(contactId), {
     method: "PUT",
     body: JSON.stringify(payload)
-  }) : await ghlFetch(context, GHL_API_BASE61 + "/contacts/upsert", {
+  }) : await ghlFetch(context, GHL_API_BASE60 + "/contacts/upsert", {
     method: "POST",
     body: JSON.stringify({ ...payload, locationId: GHL_LOCATION_ID37 })
   });
-  if (!response2.ok) {
+  if (!response3.ok) {
     throw new RetryableFlowError("We could not save your study details. Please try again.");
   }
   if (contactId) return contactId;
-  const createdId = contactIdFrom(await response2.json());
+  const createdId = contactIdFrom(await response3.json());
   if (!createdId) throw new RetryableFlowError("We could not verify your study record. Please try again.");
   return createdId;
 }
@@ -47405,14 +48121,14 @@ function cleanupWasAccepted(status) {
   return Number.isInteger(status) && status >= 200 && status < 300;
 }
 async function readContactAppointments(context, contactId) {
-  const response2 = await ghlFetch(
+  const response3 = await ghlFetch(
     context,
-    GHL_API_BASE61 + "/contacts/" + encodeURIComponent(contactId) + "/appointments"
+    GHL_API_BASE60 + "/contacts/" + encodeURIComponent(contactId) + "/appointments"
   );
-  if (!response2.ok) {
+  if (!response3.ok) {
     throw new RetryableFlowError("We could not verify the calendar before booking. Please try again.", 500);
   }
-  const body = await response2.json();
+  const body = await response3.json();
   return body.events || body.appointments || [];
 }
 function isExactStudyAppointment(item, data) {
@@ -47461,14 +48177,14 @@ async function preserveUncertainCheckpoint(db, operation, appointmentId) {
   }
 }
 async function checkpointedAppointment(context, db, operation, data, progress) {
-  const response2 = await ghlFetch(
+  const response3 = await ghlFetch(
     context,
-    GHL_API_BASE61 + "/contacts/" + encodeURIComponent(operation.contactId) + "/appointments"
+    GHL_API_BASE60 + "/contacts/" + encodeURIComponent(operation.contactId) + "/appointments"
   );
-  if (!response2.ok) {
+  if (!response3.ok) {
     throw new ManualReviewError("The reserved appointment could not be reconciled.");
   }
-  const body = await response2.json();
+  const body = await response3.json();
   const appointments = body.events || body.appointments || [];
   const appointment = appointments.find((item) => item.id === operation.appointmentId);
   if (!appointment) {
@@ -47539,19 +48255,19 @@ async function markOperationFailure(db, opKey, error, manualReview) {
     console.error("[study-book] operation failure state:", stateError.message);
   }
 }
-async function onRequestOptions115(context) {
+async function onRequestOptions116(context) {
   return new Response(null, {
     status: 204,
     headers: headers4(context)
   });
 }
-async function onRequestGet73(context) {
+async function onRequestGet75(context) {
   let runtime;
   try {
     runtime = resolveStudyBookingRuntime(context);
   } catch (error) {
     if (error instanceof StudyBookingRuntimeError) {
-      return json24({ error: error.message }, error.status, context);
+      return json25({ error: error.message }, error.status, context);
     }
     throw error;
   }
@@ -47561,16 +48277,16 @@ async function onRequestGet73(context) {
   const timezone = url.searchParams.get("timezone") || "America/Los_Angeles";
   const studySlug = url.searchParams.get("study") || "";
   if (studySlug && !getLiveStudyBooking(studySlug)) {
-    return json24({ error: "Choose one of the five current studies." }, 400, context);
+    return json25({ error: "Choose one of the five current studies." }, 400, context);
   }
   if (!validDate2(startDate) || !validDate2(endDate) || Date.parse(endDate + "T00:00:00Z") < Date.parse(startDate + "T00:00:00Z")) {
-    return json24({ error: "Choose a valid calendar month." }, 400, context);
+    return json25({ error: "Choose a valid calendar month." }, 400, context);
   }
   try {
-    return json24({ slots: await slots(runtime.providerContext, startDate, endDate, timezone) }, 200, context);
+    return json25({ slots: await slots(runtime.providerContext, startDate, endDate, timezone) }, 200, context);
   } catch (error) {
     console.error("[study-book] slots:", error.message);
-    return json24({ error: "Could not load available times. Please try again." }, 422, context);
+    return json25({ error: "Could not load available times. Please try again." }, 422, context);
   }
 }
 async function onRequestPost84(context) {
@@ -47579,7 +48295,7 @@ async function onRequestPost84(context) {
     runtime = resolveStudyBookingRuntime(context, { mutation: true });
   } catch (error) {
     if (error instanceof StudyBookingRuntimeError) {
-      return json24({ error: error.message }, error.status, context);
+      return json25({ error: error.message }, error.status, context);
     }
     throw error;
   }
@@ -47587,14 +48303,14 @@ async function onRequestPost84(context) {
   try {
     raw = await context.request.json();
   } catch {
-    return json24({ error: "Invalid booking request." }, 400, context);
+    return json25({ error: "Invalid booking request." }, 400, context);
   }
   const validated = validateStudyBooking(raw);
-  if (validated.error) return json24({ error: validated.error }, 400, context);
+  if (validated.error) return json25({ error: validated.error }, 400, context);
   const data = validated.data;
   const ip = context.request.headers.get("CF-Connecting-IP") || "unknown";
   if (await rateLimit(runtime.rateLimitKv, "study-book:" + ip)) {
-    return json24({ error: "Please wait a moment and try again." }, 429, context);
+    return json25({ error: "Please wait a moment and try again." }, 429, context);
   }
   const db = runtime.db;
   let contactId = null;
@@ -47609,7 +48325,7 @@ async function onRequestPost84(context) {
   try {
     const existingContactId = await findExistingContactId(runtime.providerContext, data.email);
     if (runtime.mode === "preview" && existingContactId !== runtime.fixtureContactId) {
-      return json24({
+      return json25({
         error: "This preview is limited to the approved proof contact."
       }, 403, context);
     }
@@ -47617,10 +48333,10 @@ async function onRequestPost84(context) {
       contactId = existingContactId;
       const claim = await claimBookingOperation(db, operationInput(contactId, data));
       if (claim.state === "completed") {
-        return json24({ ...claim.operation.result, alreadyProcessed: true }, 200, context);
+        return json25({ ...claim.operation.result, alreadyProcessed: true }, 200, context);
       }
       if (claim.state === "in_progress") {
-        return json24({
+        return json25({
           error: "This booking is still being finished. Wait a moment, then submit again.",
           retrySameKey: true,
           doNotRebook: true,
@@ -47628,7 +48344,7 @@ async function onRequestPost84(context) {
         }, 409, context);
       }
       if (claim.state === "manual_review" || claim.state === "conflict") {
-        return json24({
+        return json25({
           error: "This booking needs staff review. Do not book another time; email eben@amarimethod.com.",
           manualReview: true,
           doNotRebook: true
@@ -47642,9 +48358,9 @@ async function onRequestPost84(context) {
       const claim = await claimBookingOperation(db, operationInput(contactId, data));
       if (claim.state !== "acquired") {
         if (claim.state === "completed") {
-          return json24({ ...claim.operation.result, alreadyProcessed: true }, 200, context);
+          return json25({ ...claim.operation.result, alreadyProcessed: true }, 200, context);
         }
-        return json24({
+        return json25({
           error: "This booking key is already in use. Submit the same booking again or refresh after choosing a different time.",
           retrySameKey: claim.state === "in_progress",
           doNotRebook: claim.state === "in_progress",
@@ -47721,7 +48437,7 @@ async function onRequestPost84(context) {
       correlationId: operation.opKey,
       trigger: { type: "study.booking", id: data.config.slug }
     });
-    return json24(result, 200, context);
+    return json25(result, 200, context);
   } catch (error) {
     console.error("[study-book] booking:", error.message);
     if (error instanceof AppointmentHandoffError && error.appointmentId) {
@@ -47739,7 +48455,7 @@ async function onRequestPost84(context) {
           );
           await markOperationFailure(db, operation.opKey, verifiedError, false);
         }
-        return json24({
+        return json25({
           error: "That appointment was not confirmed. Submit the same booking again or choose another available time.",
           retryable: true
         }, 422, context);
@@ -47751,7 +48467,7 @@ async function onRequestPost84(context) {
         );
         await markOperationFailure(db, operation.opKey, uncertainError, true);
       }
-      return json24({
+      return json25({
         error: "We could not verify whether the reservation was cancelled. Do not book another time; email eben@amarimethod.com.",
         manualReview: true,
         doNotRebook: true,
@@ -47760,7 +48476,7 @@ async function onRequestPost84(context) {
     }
     if (error instanceof ManualReviewError) {
       if (operationClaimed) await markOperationFailure(db, operation.opKey, error, true);
-      return json24({
+      return json25({
         error: "Your reservation needs staff review. Do not book another time; email eben@amarimethod.com.",
         manualReview: true,
         doNotRebook: true
@@ -47782,7 +48498,7 @@ async function onRequestPost84(context) {
       reasonCode: progress.appointmentConfirmed ? "enrollment_pending" : sameKeyOnly ? "appointment_reconciliation_pending" : "booking_failed"
     });
     if (progress.appointmentConfirmed) {
-      return json24({
+      return json25({
         error: "Your time is reserved, but we could not finish the study enrollment. Submit again to finish; this will not create another appointment.",
         booked: true,
         retrySameKey: true,
@@ -47792,7 +48508,7 @@ async function onRequestPost84(context) {
       }, 422, context);
     }
     if (sameKeyOnly) {
-      return json24({
+      return json25({
         error: progress.appointmentId ? "A reservation exists but is not fully reconciled. Submit the same booking again; do not choose another time." : "The calendar request may have been accepted. Submit the same booking again; do not choose another time.",
         retrySameKey: true,
         doNotRebook: true,
@@ -47801,16 +48517,16 @@ async function onRequestPost84(context) {
         appointment: { id: progress.appointmentId, startTime: data.startTime }
       }, 422, context);
     }
-    return json24({
+    return json25({
       error: error instanceof RetryableFlowError ? error.message : "We could not save that booking. Please try again.",
       retryable: true
     }, error instanceof RetryableFlowError ? error.status : 422, context);
   }
 }
-var GHL_API_BASE61, GHL_LOCATION_ID37, APPOINTMENT_ENDPOINT, RetryableFlowError, ManualReviewError;
+var GHL_API_BASE60, GHL_LOCATION_ID37, APPOINTMENT_ENDPOINT, RetryableFlowError, ManualReviewError;
 var init_study_book_v2 = __esm({
   "api/study-book-v2.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ghl();
     init_studies();
     init_datetime();
@@ -47821,9 +48537,9 @@ var init_study_book_v2 = __esm({
     init_study_enrollment_marker();
     init_study_booking_runtime();
     init_study_booking();
-    GHL_API_BASE61 = "https://services.leadconnectorhq.com";
+    GHL_API_BASE60 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID37 = "7pIO7FHVAyBT1jKGhfQM";
-    APPOINTMENT_ENDPOINT = GHL_API_BASE61 + "/calendars/events/appointments";
+    APPOINTMENT_ENDPOINT = GHL_API_BASE60 + "/calendars/events/appointments";
     RetryableFlowError = class extends Error {
       static {
         __name(this, "RetryableFlowError");
@@ -47844,7 +48560,7 @@ var init_study_book_v2 = __esm({
       }
     };
     __name(headers4, "headers");
-    __name(json24, "json");
+    __name(json25, "json");
     __name(validDate2, "validDate");
     __name(flattenSlots3, "flattenSlots");
     __name(slots, "slots");
@@ -47864,8 +48580,8 @@ var init_study_book_v2 = __esm({
     __name(checkpointedAppointment, "checkpointedAppointment");
     __name(deferEvidence, "deferEvidence");
     __name(markOperationFailure, "markOperationFailure");
-    __name(onRequestOptions115, "onRequestOptions");
-    __name(onRequestGet73, "onRequestGet");
+    __name(onRequestOptions116, "onRequestOptions");
+    __name(onRequestGet75, "onRequestGet");
     __name(onRequestPost84, "onRequestPost");
   }
 });
@@ -47895,7 +48611,7 @@ async function onRequestPost85({ request: request2 }) {
 var ORIGINS;
 var init_study_book = __esm({
   "api/study-book.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_study_book_v2();
     ORIGINS = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(responseHeaders9, "responseHeaders");
@@ -47946,7 +48662,7 @@ async function checkDailyAudit(kv) {
   const n = Array.isArray(rec.issues) ? rec.issues.length : "?";
   return { label: "Daily audit", state: "green", note: `present for ${ds} (${n} issues)` };
 }
-async function onRequestGet74(context) {
+async function onRequestGet76(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers5 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -47986,7 +48702,7 @@ async function onRequestGet74(context) {
 var HOUR4;
 var init_system_health = __esm({
   "api/system-health.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_auth();
     HOUR4 = 3600 * 1e3;
     __name(ageHours3, "ageHours");
@@ -47994,12 +48710,12 @@ var init_system_health = __esm({
     __name(judgeWorker, "judgeWorker");
     __name(checkToken, "checkToken");
     __name(checkDailyAudit, "checkDailyAudit");
-    __name(onRequestGet74, "onRequestGet");
+    __name(onRequestGet76, "onRequestGet");
   }
 });
 
 // api/voice-write.js
-async function onRequestOptions116(context) {
+async function onRequestOptions117(context) {
   return new Response(null, {
     status: 204,
     headers: corsHeaders3(context.request.headers.get("Origin"), "POST, OPTIONS")
@@ -48052,7 +48768,7 @@ async function onRequestPost86(context) {
     return new Response(JSON.stringify({ error: "The writer hit a problem. Try again." }), { status: 500, headers: headers5 });
   }
 }
-async function onRequestGet75(context) {
+async function onRequestGet77(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers5);
@@ -48066,13 +48782,189 @@ async function onRequestGet75(context) {
 var HISTORY_CAP2;
 var init_voice_write = __esm({
   "api/voice-write.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_endpoint_guards();
     init_voice_engine();
     HISTORY_CAP2 = 25;
-    __name(onRequestOptions116, "onRequestOptions");
+    __name(onRequestOptions117, "onRequestOptions");
     __name(onRequestPost86, "onRequestPost");
-    __name(onRequestGet75, "onRequestGet");
+    __name(onRequestGet77, "onRequestGet");
+  }
+});
+
+// lib/client-no-show-recovery.js
+function fail3(message, code, status = 409) {
+  throw Object.assign(new Error(message), { code, status });
+}
+async function resolveClientNoShowRecoveryContext(context, token, nowMs = Date.now()) {
+  const secret = context?.env?.APPOINTMENT_MANAGE_LINK_SECRET;
+  if (clean10(secret).length < 32) {
+    fail3("Appointment recovery is temporarily unavailable.", "appointment_manage_secret_unavailable", 503);
+  }
+  let claims;
+  try {
+    claims = await verifyAppointmentManageToken(secret, token, { capability: "recovery", nowMs });
+  } catch {
+    fail3("This recovery link is invalid or has expired.", "appointment_recovery_link_invalid", 401);
+  }
+  const identity2 = await resolveStaffOwnedAppointmentIdentity(context, claims.appointmentId);
+  if (identity2.ownedAppointmentId !== claims.appointmentId || identity2.ownedContactId !== claims.contactId) {
+    fail3("This recovery link does not match the owned appointment.", "appointment_recovery_identity_mismatch");
+  }
+  if (Number(identity2.revision) !== claims.revision) {
+    fail3("This appointment has changed since the recovery link was issued.", "appointment_recovery_link_stale");
+  }
+  if (!clean10(identity2.serviceId)) {
+    fail3("This appointment has no governed service identity.", "appointment_recovery_service_unavailable");
+  }
+  if (!RECOVERABLE_AUTHORITY.has(clean10(identity2.authority)) || !RECOVERABLE_SYNC.has(clean10(identity2.providerSyncState))) {
+    fail3("This appointment is not ready for a recovery request.", "appointment_recovery_authority_unavailable");
+  }
+  if (clean10(identity2.status, 40).toLowerCase() !== "no_show") {
+    fail3("This appointment is not recorded as missed.", "appointment_recovery_not_missed");
+  }
+  const startsAt = Date.parse(identity2.startsAt || "");
+  if (!Number.isFinite(startsAt) || startsAt > nowMs) {
+    fail3("This appointment is not eligible for recovery review.", "appointment_recovery_time_invalid");
+  }
+  return Object.freeze({ claims, identity: Object.freeze(identity2) });
+}
+async function executeClientNoShowRecoveryRequest(context, token, nowMs = Date.now()) {
+  const { claims, identity: identity2 } = await resolveClientNoShowRecoveryContext(context, token, nowMs);
+  return captureOwnedAppointmentRecoveryRequest(context, {
+    appointmentId: identity2.ownedAppointmentId,
+    contactId: identity2.ownedContactId,
+    appointmentRevision: claims.revision
+  });
+}
+var RECOVERABLE_AUTHORITY, RECOVERABLE_SYNC, clean10;
+var init_client_no_show_recovery = __esm({
+  "lib/client-no-show-recovery.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_appointment_manage_token();
+    init_staff_owned_appointment_identity();
+    init_staff_owned_appointment_store();
+    RECOVERABLE_AUTHORITY = /* @__PURE__ */ new Set(["owned", "provider_mirror"]);
+    RECOVERABLE_SYNC = /* @__PURE__ */ new Set(["synced", "not_required"]);
+    clean10 = /* @__PURE__ */ __name((value, max = 240) => typeof value === "string" ? value.trim().slice(0, max) : "", "clean");
+    __name(fail3, "fail");
+    __name(resolveClientNoShowRecoveryContext, "resolveClientNoShowRecoveryContext");
+    __name(executeClientNoShowRecoveryRequest, "executeClientNoShowRecoveryRequest");
+  }
+});
+
+// appointment/manage.js
+function escapeHtml2(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (character) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#39;"
+  })[character]);
+}
+function response2(body, status = 200) {
+  return new Response(body, { status, headers: { ...HEADERS4, "Content-Type": "text/html; charset=utf-8" } });
+}
+function frame(content, title = "Manage your appointment") {
+  return `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml2(title)} \u2014 Amari Method</title><style>
+  :root{color-scheme:light;--ink:#18211c;--muted:#5d675f;--paper:#f7f2e9;--card:#fffdf8;--accent:#b55532;--line:#d8d0c3}*{box-sizing:border-box}body{margin:0;background:var(--paper);color:var(--ink);font:17px/1.55 system-ui,-apple-system,sans-serif}main{max-width:720px;margin:0 auto;padding:48px 20px 80px}.mark{font-size:14px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);font-weight:700}.card{margin-top:18px;padding:clamp(24px,5vw,46px);background:var(--card);border:1px solid var(--line);border-radius:18px;box-shadow:0 16px 50px #4d3c2a12}h1{font:500 clamp(34px,7vw,56px)/1.02 Georgia,serif;margin:8px 0 18px}.summary{color:var(--muted);margin:0 0 28px}.facts{border-block:1px solid var(--line);padding:18px 0;margin:22px 0}.facts p{margin:4px 0}label{display:block;font-weight:650;margin:14px 0 7px}select{width:100%;padding:13px;border:1px solid var(--line);border-radius:9px;background:white;font:inherit}button,.button{display:inline-block;margin-top:18px;padding:13px 20px;border:0;border-radius:999px;background:var(--ink);color:white;font:inherit;font-weight:700;text-decoration:none;cursor:pointer}.danger{background:#8d3028}.secondary{background:transparent;color:var(--ink);border:1px solid var(--line);margin-left:8px}.note{font-size:14px;color:var(--muted);margin-top:20px}.error{color:#8d3028;font-weight:650}@media(max-width:520px){.secondary{display:block;margin-left:0}}
+  </style></head><body><main><div class="mark">Amari Method</div><section class="card">${content}</section></main></body></html>`;
+}
+function dateTime(value, timezone) {
+  const date2 = new Date(value);
+  if (!Number.isFinite(date2.getTime())) return "Time unavailable";
+  return new Intl.DateTimeFormat("en-US", {
+    timeZone: timezone || "America/Los_Angeles",
+    weekday: "long",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short"
+  }).format(date2);
+}
+function appointmentFacts(identity2) {
+  return `<div class="facts"><p><strong>${escapeHtml2(identity2.serviceName || "Amari Method Session")}</strong></p><p>${escapeHtml2(dateTime(identity2.startsAt, identity2.timezone))}</p><p>${escapeHtml2(identity2.meetingLocation || "662 8th Ave, San Francisco")}</p></div>`;
+}
+function unavailable(error) {
+  const status = [400, 401, 403, 404, 409, 413, 503].includes(Number(error?.status)) ? Number(error.status) : 503;
+  return response2(frame('<h1>This link is unavailable.</h1><p class="summary">The appointment may have changed, passed, or already been managed. Please email <a href="mailto:hello@amarimethod.com">hello@amarimethod.com</a> if you need help.</p>', "Link unavailable"), status);
+}
+async function onRequestGet78(context) {
+  const url = new URL(context.request.url);
+  const token = url.searchParams.get("token") || "";
+  const action = url.searchParams.get("action") || "";
+  if (!(/* @__PURE__ */ new Set(["cancel", "reschedule", "recovery"])).has(action)) return unavailable({ status: 400 });
+  try {
+    if (action === "recovery") {
+      const { identity: identity3 } = await resolveClientNoShowRecoveryContext(context, token);
+      return response2(frame(`<h1>Request a reschedule review?</h1><p class="summary">Missed appointments count as used sessions. This asks Amari to review your situation; it does not book a time, grant a session, charge a payment, or guarantee approval.</p>${appointmentFacts(identity3)}<form method="post" action="/appointment/manage"><input type="hidden" name="token" value="${escapeHtml2(token)}"><input type="hidden" name="action" value="recovery"><button type="submit">Send review request</button><a class="button secondary" href="/">Not now</a></form><p class="note">Opening this link makes no change. Only the confirmation button records a pending Staff review.</p>`, "Request a reschedule review"));
+    }
+    const resolved = await resolveClientAppointmentManageContext(context, token, action);
+    const identity2 = resolved.identity;
+    if (action === "cancel") {
+      return response2(frame(`<h1>Cancel this appointment?</h1><p class="summary">Nothing changes until you confirm below.</p>${appointmentFacts(identity2)}<form method="post" action="/appointment/manage"><input type="hidden" name="token" value="${escapeHtml2(token)}"><input type="hidden" name="action" value="cancel"><button class="danger" type="submit">Yes, cancel appointment</button><a class="button secondary" href="/">Keep appointment</a></form><p class="note">Opening this link never cancels an appointment. Only the confirmation button does.</p>`));
+    }
+    const availability = await clientAppointmentAvailability(resolved);
+    const options = availability.slots.map(
+      (slot) => `<option value="${escapeHtml2(slot.datetime)}">${escapeHtml2(dateTime(slot.datetime, availability.timezone))}</option>`
+    ).join("");
+    return response2(frame(`<h1>Choose a new time.</h1><p class="summary">Your current appointment stays in place until a new time is confirmed.</p>${appointmentFacts(identity2)}${options ? `<form method="post" action="/appointment/manage"><input type="hidden" name="token" value="${escapeHtml2(token)}"><input type="hidden" name="action" value="reschedule"><label for="startTime">Available times</label><select id="startTime" name="startTime" required>${options}</select><button type="submit">Confirm new time</button><a class="button secondary" href="/">Keep current time</a></form>` : '<p class="error">No new times are available right now. Your current appointment has not changed.</p>'}<p class="note">Changing the time does not send a payment or create an extra appointment.</p>`));
+  } catch (error) {
+    return unavailable(error);
+  }
+}
+async function onRequestPost87(context) {
+  const requestOrigin = context.request.headers.get("Origin");
+  if (requestOrigin !== new URL(context.request.url).origin) return unavailable({ status: 403 });
+  if (!String(context.request.headers.get("Content-Type") || "").toLowerCase().startsWith("application/x-www-form-urlencoded")) return unavailable({ status: 400 });
+  const length = Number(context.request.headers.get("Content-Length") || 0);
+  if (length > 1e4) return unavailable({ status: 413 });
+  let form;
+  try {
+    form = await context.request.formData();
+  } catch {
+    return unavailable({ status: 400 });
+  }
+  const token = String(form.get("token") || "");
+  const action = String(form.get("action") || "");
+  const startTime = String(form.get("startTime") || "");
+  try {
+    if (action === "recovery") {
+      await executeClientNoShowRecoveryRequest(context, token);
+      return response2(frame('<h1>Your request is recorded.</h1><p class="summary">It is pending Amari review. No appointment, session credit, charge, or automatic message was created.</p><p><a class="button" href="mailto:hello@amarimethod.com">Contact Amari</a></p>', "Review requested"));
+    }
+    const result = await executeClientAppointmentManage(context, token, action, startTime);
+    const message = action === "cancel" ? "Your appointment is cancelled." : "Your appointment has been rescheduled.";
+    const detail = action === "reschedule" && result?.newStartTime ? `<p class="summary">New time: ${escapeHtml2(dateTime(result.newStartTime, "America/Los_Angeles"))}</p>` : '<p class="summary">You are all set.</p>';
+    return response2(frame(`<h1>${escapeHtml2(message)}</h1>${detail}<p><a class="button" href="mailto:hello@amarimethod.com">Contact Amari</a></p>`, "Appointment updated"));
+  } catch (error) {
+    return unavailable(error);
+  }
+}
+var HEADERS4;
+var init_manage = __esm({
+  "appointment/manage.js"() {
+    init_functionsRoutes_0_18121058202988283();
+    init_client_appointment_manage();
+    init_client_no_show_recovery();
+    HEADERS4 = Object.freeze({
+      "Cache-Control": "private, no-store, max-age=0",
+      "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'self'; frame-ancestors 'none'",
+      "Cross-Origin-Opener-Policy": "same-origin",
+      "Referrer-Policy": "no-referrer",
+      "X-Content-Type-Options": "nosniff",
+      "X-Frame-Options": "DENY"
+    });
+    __name(escapeHtml2, "escapeHtml");
+    __name(response2, "response");
+    __name(frame, "frame");
+    __name(dateTime, "dateTime");
+    __name(appointmentFacts, "appointmentFacts");
+    __name(unavailable, "unavailable");
+    __name(onRequestGet78, "onRequestGet");
+    __name(onRequestPost87, "onRequestPost");
   }
 });
 
@@ -48087,11 +48979,11 @@ async function onRequest(context) {
   }
   try {
     const assetUrl = new URL("/portal/index.html", url.origin);
-    const response2 = await context.env.ASSETS.fetch(assetUrl);
-    return new Response(response2.body, {
+    const response3 = await context.env.ASSETS.fetch(assetUrl);
+    return new Response(response3.body, {
       status: 200,
       headers: {
-        ...Object.fromEntries(response2.headers.entries()),
+        ...Object.fromEntries(response3.headers.entries()),
         "Content-Type": "text/html; charset=utf-8"
       }
     });
@@ -48101,7 +48993,7 @@ async function onRequest(context) {
 }
 var init_path = __esm({
   "portal/[[path]].js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(onRequest, "onRequest");
   }
 });
@@ -48115,19 +49007,19 @@ async function onRequest2(context) {
   if (isStaticFile(url.pathname)) return context.next();
   try {
     const assetUrl = new URL("/staff/index.html", url.origin);
-    const response2 = await context.env.ASSETS.fetch(assetUrl);
-    if (!response2.ok) return context.next();
-    const headers5 = new Headers(response2.headers);
+    const response3 = await context.env.ASSETS.fetch(assetUrl);
+    if (!response3.ok) return context.next();
+    const headers5 = new Headers(response3.headers);
     headers5.set("Content-Type", "text/html; charset=utf-8");
     headers5.set("Cache-Control", "private, no-store");
-    return new Response(response2.body, { status: 200, headers: headers5 });
+    return new Response(response3.body, { status: 200, headers: headers5 });
   } catch {
     return context.next();
   }
 }
 var init_path2 = __esm({
   "staff/[[path]].js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     __name(isStaticFile, "isStaticFile");
     __name(onRequest2, "onRequest");
   }
@@ -48158,7 +49050,7 @@ function opsEmbedBootScript() {
 var OPS_SURFACE_URLS, OPS_SURFACE_NAV_CSS;
 var init_ops_surface_nav = __esm({
   "lib/ops-surface-nav.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     OPS_SURFACE_URLS = Object.freeze({
       systems: "https://www.amarimethod.com/ops",
       crmMirror: "https://amari-crm-mirror.eben-fa2.workers.dev/",
@@ -48198,7 +49090,7 @@ var init_ops_surface_nav = __esm({
 });
 
 // ops.js
-async function onRequestGet76() {
+async function onRequestGet79() {
   const html = OPS_HTML.replace("/*__OPS_SURFACE_NAV_CSS__*/", OPS_SURFACE_NAV_CSS).replace("__OPS_SURFACE_NAV__", opsSurfaceNavHtml("systems")).replace("__OPS_EMBED_BOOT__", opsEmbedBootScript());
   return new Response(html, {
     status: 200,
@@ -48212,9 +49104,9 @@ async function onRequestGet76() {
 var OPS_HTML;
 var init_ops = __esm({
   "ops.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_ops_surface_nav();
-    __name(onRequestGet76, "onRequestGet");
+    __name(onRequestGet79, "onRequestGet");
     OPS_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -49243,7 +50135,7 @@ async function onRequest3(context) {
 var PUBLIC_STAFF_PATHS;
 var init_middleware = __esm({
   "_middleware.js"() {
-    init_functionsRoutes_0_17324749639504822();
+    init_functionsRoutes_0_18121058202988283();
     init_auth();
     init_endpoint_guards();
     PUBLIC_STAFF_PATHS = /* @__PURE__ */ new Set(["/staff/login", "/staff/access"]);
@@ -49254,10 +50146,10 @@ var init_middleware = __esm({
   }
 });
 
-// ../.wrangler/tmp/pages-d9rR5r/functionsRoutes-0.17324749639504822.mjs
+// ../.wrangler/tmp/pages-V1dvXm/functionsRoutes-0.18121058202988283.mjs
 var routes;
-var init_functionsRoutes_0_17324749639504822 = __esm({
-  "../.wrangler/tmp/pages-d9rR5r/functionsRoutes-0.17324749639504822.mjs"() {
+var init_functionsRoutes_0_18121058202988283 = __esm({
+  "../.wrangler/tmp/pages-V1dvXm/functionsRoutes-0.18121058202988283.mjs"() {
     init_create_checkout();
     init_create_checkout();
     init_public_slots();
@@ -49279,6 +50171,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
     init_resource();
     init_affiliate_refer();
     init_affiliate_refer();
+    init_appointment_calendar2();
     init_appointment_webhook();
     init_call_coach();
     init_call_coach();
@@ -49418,6 +50311,8 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
     init_staff_conversations();
     init_staff_crm_mirror_access();
     init_staff_crm_mirror_access();
+    init_staff_crm_pilot();
+    init_staff_crm_pilot();
     init_staff_data();
     init_staff_data();
     init_staff_elbow_study();
@@ -49546,6 +50441,8 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
     init_voice_write();
     init_voice_write();
     init_voice_write();
+    init_manage();
+    init_manage();
     init_path();
     init_path2();
     init_ops();
@@ -49699,6 +50596,13 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         modules: [onRequestPost6]
       },
       {
+        routePath: "/api/appointment-calendar",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet7]
+      },
+      {
         routePath: "/api/appointment-webhook",
         mountPath: "/api",
         method: "POST",
@@ -49710,7 +50614,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet7]
+        modules: [onRequestGet8]
       },
       {
         routePath: "/api/call-coach",
@@ -49738,7 +50642,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet8]
+        modules: [onRequestGet9]
       },
       {
         routePath: "/api/contact-message",
@@ -49759,7 +50663,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet9]
+        modules: [onRequestGet10]
       },
       {
         routePath: "/api/cos-actions",
@@ -49850,21 +50754,21 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet10]
+        modules: [onRequestGet11]
       },
       {
         routePath: "/api/cos-health",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet11]
+        modules: [onRequestGet12]
       },
       {
         routePath: "/api/cos-parking-current",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet12]
+        modules: [onRequestGet13]
       },
       {
         routePath: "/api/cos-parking-current",
@@ -49878,7 +50782,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet13]
+        modules: [onRequestGet14]
       },
       {
         routePath: "/api/cos-parking-seed",
@@ -49899,14 +50803,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet14]
+        modules: [onRequestGet15]
       },
       {
         routePath: "/api/cos-spotify-callback",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet15]
+        modules: [onRequestGet16]
       },
       {
         routePath: "/api/cos-vault-sync",
@@ -49927,14 +50831,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet16]
+        modules: [onRequestGet17]
       },
       {
         routePath: "/api/ecosystem-scan",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet17]
+        modules: [onRequestGet18]
       },
       {
         routePath: "/api/elbow-study-interest",
@@ -49983,7 +50887,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet18]
+        modules: [onRequestGet19]
       },
       {
         routePath: "/api/ghl-invoice-webhook",
@@ -49997,7 +50901,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet19]
+        modules: [onRequestGet20]
       },
       {
         routePath: "/api/ghl-purchase-webhook",
@@ -50025,7 +50929,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet20]
+        modules: [onRequestGet21]
       },
       {
         routePath: "/api/heartbeats",
@@ -50067,7 +50971,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet21]
+        modules: [onRequestGet22]
       },
       {
         routePath: "/api/outreach-coach",
@@ -50095,7 +50999,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet22]
+        modules: [onRequestGet23]
       },
       {
         routePath: "/api/partner-data",
@@ -50109,7 +51013,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet23]
+        modules: [onRequestGet24]
       },
       {
         routePath: "/api/partner-stats",
@@ -50123,7 +51027,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet24]
+        modules: [onRequestGet25]
       },
       {
         routePath: "/api/partner-verify",
@@ -50179,7 +51083,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet25]
+        modules: [onRequestGet26]
       },
       {
         routePath: "/api/portal-data",
@@ -50207,7 +51111,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet26]
+        modules: [onRequestGet27]
       },
       {
         routePath: "/api/portal-progress",
@@ -50228,7 +51132,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet27]
+        modules: [onRequestGet28]
       },
       {
         routePath: "/api/portal-reimbursement-packet",
@@ -50242,7 +51146,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet28]
+        modules: [onRequestGet29]
       },
       {
         routePath: "/api/portal-slots",
@@ -50270,7 +51174,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet29]
+        modules: [onRequestGet30]
       },
       {
         routePath: "/api/portal-verify",
@@ -50319,7 +51223,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet30]
+        modules: [onRequestGet31]
       },
       {
         routePath: "/api/staff-amari-description-lab",
@@ -50340,7 +51244,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet31]
+        modules: [onRequestGet32]
       },
       {
         routePath: "/api/staff-amari-mail-auth",
@@ -50361,14 +51265,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet32]
+        modules: [onRequestGet33]
       },
       {
         routePath: "/api/staff-appointment-readiness",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet33]
+        modules: [onRequestGet34]
       },
       {
         routePath: "/api/staff-appointment-readiness",
@@ -50396,7 +51300,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet34]
+        modules: [onRequestGet35]
       },
       {
         routePath: "/api/staff-attestation",
@@ -50438,7 +51342,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet35]
+        modules: [onRequestGet36]
       },
       {
         routePath: "/api/staff-automations",
@@ -50459,7 +51363,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet36]
+        modules: [onRequestGet37]
       },
       {
         routePath: "/api/staff-balances",
@@ -50487,7 +51391,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet37]
+        modules: [onRequestGet38]
       },
       {
         routePath: "/api/staff-calendars",
@@ -50529,7 +51433,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet38]
+        modules: [onRequestGet39]
       },
       {
         routePath: "/api/staff-clarity-study",
@@ -50557,7 +51461,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet39]
+        modules: [onRequestGet40]
       },
       {
         routePath: "/api/staff-communication-preferences",
@@ -50578,7 +51482,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet40]
+        modules: [onRequestGet41]
       },
       {
         routePath: "/api/staff-community",
@@ -50592,7 +51496,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet41]
+        modules: [onRequestGet42]
       },
       {
         routePath: "/api/staff-community-image",
@@ -50620,7 +51524,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet42]
+        modules: [onRequestGet43]
       },
       {
         routePath: "/api/staff-contact",
@@ -50634,7 +51538,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet43]
+        modules: [onRequestGet44]
       },
       {
         routePath: "/api/staff-contacts",
@@ -50648,7 +51552,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet44]
+        modules: [onRequestGet45]
       },
       {
         routePath: "/api/staff-conversations",
@@ -50672,32 +51576,46 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         modules: [onRequestPost48]
       },
       {
-        routePath: "/api/staff-data",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet45]
-      },
-      {
-        routePath: "/api/staff-data",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions66]
-      },
-      {
-        routePath: "/api/staff-elbow-study",
+        routePath: "/api/staff-crm-pilot",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet46]
       },
       {
-        routePath: "/api/staff-elbow-study",
+        routePath: "/api/staff-crm-pilot",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions66]
+      },
+      {
+        routePath: "/api/staff-data",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet47]
+      },
+      {
+        routePath: "/api/staff-data",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions67]
+      },
+      {
+        routePath: "/api/staff-elbow-study",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet48]
+      },
+      {
+        routePath: "/api/staff-elbow-study",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions68]
       },
       {
         routePath: "/api/staff-elbow-study",
@@ -50711,14 +51629,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet47]
+        modules: [onRequestGet49]
       },
       {
         routePath: "/api/staff-exceptions",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions68]
+        modules: [onRequestOptions69]
       },
       {
         routePath: "/api/staff-exceptions",
@@ -50732,14 +51650,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet48]
+        modules: [onRequestGet50]
       },
       {
         routePath: "/api/staff-field-study",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions69]
+        modules: [onRequestOptions70]
       },
       {
         routePath: "/api/staff-field-study",
@@ -50753,7 +51671,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions70]
+        modules: [onRequestOptions71]
       },
       {
         routePath: "/api/staff-followup-brief",
@@ -50767,14 +51685,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet49]
+        modules: [onRequestGet51]
       },
       {
         routePath: "/api/staff-followups",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions71]
+        modules: [onRequestOptions72]
       },
       {
         routePath: "/api/staff-followups",
@@ -50788,7 +51706,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions72]
+        modules: [onRequestOptions73]
       },
       {
         routePath: "/api/staff-founders-circle",
@@ -50802,21 +51720,21 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet50]
+        modules: [onRequestGet52]
       },
       {
         routePath: "/api/staff-funnel",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions73]
+        modules: [onRequestOptions74]
       },
       {
         routePath: "/api/staff-funnel-refresh",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions74]
+        modules: [onRequestOptions75]
       },
       {
         routePath: "/api/staff-funnel-refresh",
@@ -50830,28 +51748,28 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet51]
+        modules: [onRequestGet53]
       },
       {
         routePath: "/api/staff-gmail-reply-readiness",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions75]
+        modules: [onRequestOptions76]
       },
       {
         routePath: "/api/staff-google-calendar-auth",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet52]
+        modules: [onRequestGet54]
       },
       {
         routePath: "/api/staff-google-calendar-auth",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions76]
+        modules: [onRequestOptions77]
       },
       {
         routePath: "/api/staff-google-calendar-auth",
@@ -50865,7 +51783,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions77]
+        modules: [onRequestOptions78]
       },
       {
         routePath: "/api/staff-mark-attended",
@@ -50879,14 +51797,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet53]
+        modules: [onRequestGet55]
       },
       {
         routePath: "/api/staff-media",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions78]
+        modules: [onRequestOptions79]
       },
       {
         routePath: "/api/staff-media",
@@ -50900,7 +51818,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet54]
+        modules: [onRequestGet56]
       },
       {
         routePath: "/api/staff-media-file",
@@ -50914,14 +51832,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions79]
+        modules: [onRequestOptions80]
       },
       {
         routePath: "/api/staff-media-upload",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions80]
+        modules: [onRequestOptions81]
       },
       {
         routePath: "/api/staff-media-upload",
@@ -50935,7 +51853,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions81]
+        modules: [onRequestOptions82]
       },
       {
         routePath: "/api/staff-not-a-fit",
@@ -50949,7 +51867,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions82]
+        modules: [onRequestOptions83]
       },
       {
         routePath: "/api/staff-note",
@@ -50991,21 +51909,21 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet55]
+        modules: [onRequestGet57]
       },
       {
         routePath: "/api/staff-outreach-cards",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions83]
+        modules: [onRequestOptions84]
       },
       {
         routePath: "/api/staff-outreach-upload",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions84]
+        modules: [onRequestOptions85]
       },
       {
         routePath: "/api/staff-outreach-upload",
@@ -51019,63 +51937,63 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet56]
+        modules: [onRequestGet58]
       },
       {
         routePath: "/api/staff-owed",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions85]
-      },
-      {
-        routePath: "/api/staff-owed-list",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet57]
-      },
-      {
-        routePath: "/api/staff-owed-list",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
         modules: [onRequestOptions86]
       },
       {
-        routePath: "/api/staff-owned-contacts",
-        mountPath: "/api",
-        method: "GET",
-        middlewares: [],
-        modules: [onRequestGet58]
-      },
-      {
-        routePath: "/api/staff-owned-contacts",
-        mountPath: "/api",
-        method: "OPTIONS",
-        middlewares: [],
-        modules: [onRequestOptions87]
-      },
-      {
-        routePath: "/api/staff-partner-activity",
+        routePath: "/api/staff-owed-list",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet59]
       },
       {
-        routePath: "/api/staff-partner-activity",
+        routePath: "/api/staff-owed-list",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions87]
+      },
+      {
+        routePath: "/api/staff-owned-contacts",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet60]
+      },
+      {
+        routePath: "/api/staff-owned-contacts",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions88]
       },
       {
-        routePath: "/api/staff-partner-outcome",
+        routePath: "/api/staff-partner-activity",
+        mountPath: "/api",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet61]
+      },
+      {
+        routePath: "/api/staff-partner-activity",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
         modules: [onRequestOptions89]
+      },
+      {
+        routePath: "/api/staff-partner-outcome",
+        mountPath: "/api",
+        method: "OPTIONS",
+        middlewares: [],
+        modules: [onRequestOptions90]
       },
       {
         routePath: "/api/staff-partner-outcome",
@@ -51089,28 +52007,28 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet60]
+        modules: [onRequestGet62]
       },
       {
         routePath: "/api/staff-partner-prospects",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions90]
+        modules: [onRequestOptions91]
       },
       {
         routePath: "/api/staff-partner-rewards",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet61]
+        modules: [onRequestGet63]
       },
       {
         routePath: "/api/staff-partner-rewards",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions91]
+        modules: [onRequestOptions92]
       },
       {
         routePath: "/api/staff-partner-rewards",
@@ -51124,7 +52042,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions92]
+        modules: [onRequestOptions93]
       },
       {
         routePath: "/api/staff-partner-toggle-verified",
@@ -51138,7 +52056,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions93]
+        modules: [onRequestOptions94]
       },
       {
         routePath: "/api/staff-partner-update-field",
@@ -51152,7 +52070,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions94]
+        modules: [onRequestOptions95]
       },
       {
         routePath: "/api/staff-partner-verify",
@@ -51166,28 +52084,28 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet62]
+        modules: [onRequestGet64]
       },
       {
         routePath: "/api/staff-pipeline",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions95]
+        modules: [onRequestOptions96]
       },
       {
         routePath: "/api/staff-pos-sales",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet63]
+        modules: [onRequestGet65]
       },
       {
         routePath: "/api/staff-pos-sales",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions96]
+        modules: [onRequestOptions97]
       },
       {
         routePath: "/api/staff-pos-sales",
@@ -51201,14 +52119,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet64]
+        modules: [onRequestGet66]
       },
       {
         routePath: "/api/staff-products",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions97]
+        modules: [onRequestOptions98]
       },
       {
         routePath: "/api/staff-products",
@@ -51222,7 +52140,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions98]
+        modules: [onRequestOptions99]
       },
       {
         routePath: "/api/staff-refresh-activity",
@@ -51236,7 +52154,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions99]
+        modules: [onRequestOptions100]
       },
       {
         routePath: "/api/staff-reply-dismiss",
@@ -51250,21 +52168,21 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet65]
+        modules: [onRequestGet67]
       },
       {
         routePath: "/api/staff-revenue",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions100]
+        modules: [onRequestOptions101]
       },
       {
         routePath: "/api/staff-save-progress",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions101]
+        modules: [onRequestOptions102]
       },
       {
         routePath: "/api/staff-save-progress",
@@ -51278,7 +52196,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions102]
+        modules: [onRequestOptions103]
       },
       {
         routePath: "/api/staff-send-email",
@@ -51292,7 +52210,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions103]
+        modules: [onRequestOptions104]
       },
       {
         routePath: "/api/staff-send-paylink",
@@ -51306,7 +52224,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions104]
+        modules: [onRequestOptions105]
       },
       {
         routePath: "/api/staff-send-receipt",
@@ -51320,7 +52238,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions105]
+        modules: [onRequestOptions106]
       },
       {
         routePath: "/api/staff-send-text",
@@ -51334,7 +52252,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions106]
+        modules: [onRequestOptions107]
       },
       {
         routePath: "/api/staff-send-toolkit",
@@ -51355,14 +52273,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet66]
+        modules: [onRequestGet68]
       },
       {
         routePath: "/api/staff-session",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions107]
+        modules: [onRequestOptions108]
       },
       {
         routePath: "/api/staff-session",
@@ -51376,14 +52294,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet67]
+        modules: [onRequestGet69]
       },
       {
         routePath: "/api/staff-sharpen",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions108]
+        modules: [onRequestOptions109]
       },
       {
         routePath: "/api/staff-sharpen",
@@ -51397,28 +52315,28 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet68]
+        modules: [onRequestGet70]
       },
       {
         routePath: "/api/staff-stripe-cards",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions109]
+        modules: [onRequestOptions110]
       },
       {
         routePath: "/api/staff-study",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet69]
+        modules: [onRequestGet71]
       },
       {
         routePath: "/api/staff-study",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions110]
+        modules: [onRequestOptions111]
       },
       {
         routePath: "/api/staff-study",
@@ -51432,14 +52350,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet70]
+        modules: [onRequestGet72]
       },
       {
         routePath: "/api/staff-tasks",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions111]
+        modules: [onRequestOptions112]
       },
       {
         routePath: "/api/staff-tasks",
@@ -51453,7 +52371,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions112]
+        modules: [onRequestOptions113]
       },
       {
         routePath: "/api/staff-toggle-prepaid",
@@ -51467,28 +52385,28 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet71]
+        modules: [onRequestGet73]
       },
       {
         routePath: "/api/stream-health",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions113]
+        modules: [onRequestOptions114]
       },
       {
         routePath: "/api/stream-token",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet72]
+        modules: [onRequestGet74]
       },
       {
         routePath: "/api/stream-token",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions114]
+        modules: [onRequestOptions115]
       },
       {
         routePath: "/api/stripe-pos-webhook",
@@ -51502,14 +52420,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet73]
+        modules: [onRequestGet75]
       },
       {
         routePath: "/api/study-book",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions115]
+        modules: [onRequestOptions116]
       },
       {
         routePath: "/api/study-book",
@@ -51523,14 +52441,14 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet73]
+        modules: [onRequestGet75]
       },
       {
         routePath: "/api/study-book-v2",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions115]
+        modules: [onRequestOptions116]
       },
       {
         routePath: "/api/study-book-v2",
@@ -51544,21 +52462,21 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet74]
+        modules: [onRequestGet76]
       },
       {
         routePath: "/api/voice-write",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet75]
+        modules: [onRequestGet77]
       },
       {
         routePath: "/api/voice-write",
         mountPath: "/api",
         method: "OPTIONS",
         middlewares: [],
-        modules: [onRequestOptions116]
+        modules: [onRequestOptions117]
       },
       {
         routePath: "/api/voice-write",
@@ -51566,6 +52484,20 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         method: "POST",
         middlewares: [],
         modules: [onRequestPost86]
+      },
+      {
+        routePath: "/appointment/manage",
+        mountPath: "/appointment",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet78]
+      },
+      {
+        routePath: "/appointment/manage",
+        mountPath: "/appointment",
+        method: "POST",
+        middlewares: [],
+        modules: [onRequestPost87]
       },
       {
         routePath: "/portal/:path*",
@@ -51586,7 +52518,7 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
         mountPath: "/",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet76]
+        modules: [onRequestGet79]
       },
       {
         routePath: "/",
@@ -51599,11 +52531,11 @@ var init_functionsRoutes_0_17324749639504822 = __esm({
   }
 });
 
-// ../../../../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
-init_functionsRoutes_0_17324749639504822();
+// ../../../../../../../private/tmp/amari-staff-crm-npm-cache/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+init_functionsRoutes_0_18121058202988283();
 
-// ../../../../../../.npm/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
-init_functionsRoutes_0_17324749639504822();
+// ../../../../../../../private/tmp/amari-staff-crm-npm-cache/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
+init_functionsRoutes_0_18121058202988283();
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -51929,7 +52861,7 @@ function pathToRegexp(path, keys, options) {
 }
 __name(pathToRegexp, "pathToRegexp");
 
-// ../../../../../../.npm/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+// ../../../../../../../private/tmp/amari-staff-crm-npm-cache/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
 var escapeRegex = /[.+?^${}()|[\]\\]/g;
 function* executeRequest(request2) {
   const requestPath = new URL(request2.url).pathname;
@@ -52017,35 +52949,35 @@ var pages_template_worker_default = {
             isFailOpen = true;
           }, "passThroughOnException")
         };
-        const response2 = await handler(context);
-        if (!(response2 instanceof Response)) {
+        const response3 = await handler(context);
+        if (!(response3 instanceof Response)) {
           throw new Error("Your Pages function should return a Response");
         }
-        return cloneResponse(response2);
+        return cloneResponse(response3);
       } else if ("ASSETS") {
-        const response2 = await env["ASSETS"].fetch(request2);
-        return cloneResponse(response2);
+        const response3 = await env["ASSETS"].fetch(request2);
+        return cloneResponse(response3);
       } else {
-        const response2 = await fetch(request2);
-        return cloneResponse(response2);
+        const response3 = await fetch(request2);
+        return cloneResponse(response3);
       }
     }, "next");
     try {
       return await next();
     } catch (error) {
       if (isFailOpen) {
-        const response2 = await env["ASSETS"].fetch(request2);
-        return cloneResponse(response2);
+        const response3 = await env["ASSETS"].fetch(request2);
+        return cloneResponse(response3);
       }
       throw error;
     }
   }
 };
-var cloneResponse = /* @__PURE__ */ __name((response2) => (
+var cloneResponse = /* @__PURE__ */ __name((response3) => (
   // https://fetch.spec.whatwg.org/#null-body-status
   new Response(
-    [101, 204, 205, 304].includes(response2.status) ? null : response2.body,
-    response2
+    [101, 204, 205, 304].includes(response3.status) ? null : response3.body,
+    response3
   )
 ), "cloneResponse");
 export {

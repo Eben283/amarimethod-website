@@ -4,9 +4,9 @@ import {
   CalendarDays,
   Check,
   ChevronRight,
-  CircleDollarSign,
   Ellipsis,
   Home,
+  Loader2,
   MessageSquare,
   MoreHorizontal,
   Search,
@@ -16,131 +16,141 @@ import {
   WalletCards,
   Workflow,
 } from 'lucide-react';
+import {
+  getCalendarSummary,
+  getCrmPilotContact,
+  getCrmPilotInbox,
+  getOpsSystemsBoard,
+  getStaffRevenue,
+  type CrmPilotContactResponse,
+  type CrmPilotThread,
+  type OpsSystemsBoard,
+  type StaffRevenueData,
+} from '../lib/api';
+import { conversationWorkState, type ConversationWorkState } from '../lib/conversation-work-state';
+import type { TodayAppointment } from '../types/staff';
 import './StaffCrmPilotPage.css';
 
 type PilotSurface = 'home' | 'inbox';
-type WorkState = 'needs_reply' | 'waiting' | 'done';
-type InboxView = WorkState | 'all';
+type InboxView = ConversationWorkState | 'all';
 
-type PilotMessage = {
-  id: string;
-  author: 'client' | 'staff';
-  body: string;
-  time: string;
-  day: string;
-};
-
-type PilotConversation = {
+type PilotConversation = CrmPilotThread & {
   id: string;
   initials: string;
   name: string;
   preview: string;
   age: string;
-  state: WorkState;
-  channel: 'SMS' | 'Email';
-  reason?: string;
-  profile: {
-    memberSince: string;
-    phone: string;
-    email: string;
-    nextAppointment: string;
-    appointmentDetail: string;
-    balance: string;
-    lastVisit: string;
-  };
-  messages: PilotMessage[];
+  state: ConversationWorkState;
+  reason: string;
 };
 
-const initialConversations: PilotConversation[] = [
-  {
-    id: 'michaela',
-    initials: 'MC',
-    name: 'Michaela Cassidy',
-    preview: 'Could we move Friday a little later?',
-    age: '18m',
-    state: 'needs_reply',
-    channel: 'SMS',
-    reason: 'Scheduling question',
-    profile: { memberSince: 'June 2026', phone: '(415) 555-0138', email: 'michaela@example.com', nextAppointment: 'Friday · 2:00 PM', appointmentDetail: 'Follow-up · Session 3 of 6', balance: '4 sessions', lastVisit: 'September 5' },
-    messages: [
-      { id: 'm1', author: 'staff', body: 'You are all set for Friday at 2:00 PM. Let me know if anything changes.', time: '4:21 PM', day: 'Tuesday, September 12' },
-      { id: 'm2', author: 'client', body: 'Thanks! I may need to move it a little later. Is 3:30 available?', time: '4:43 PM', day: 'Tuesday, September 12' },
-      { id: 'm3', author: 'client', body: 'Could we move Friday a little later?', time: '8:42 AM', day: 'Today' },
-    ],
-  },
-  {
-    id: 'robin',
-    initials: 'RS',
-    name: 'Robin Schultz',
-    preview: 'Is the assessment at the same address?',
-    age: '1h',
-    state: 'needs_reply',
-    channel: 'SMS',
-    reason: 'Client question',
-    profile: { memberSince: 'August 2026', phone: '(415) 555-0184', email: 'robin@example.com', nextAppointment: 'Monday · 11:00 AM', appointmentDetail: 'Assessment · First visit', balance: 'Assessment paid', lastVisit: 'New client' },
-    messages: [
-      { id: 'r1', author: 'staff', body: 'Your assessment is booked for Monday at 11:00 AM.', time: '9:06 AM', day: 'Today' },
-      { id: 'r2', author: 'client', body: 'Is the assessment at the same address?', time: '9:34 AM', day: 'Today' },
-    ],
-  },
-  {
-    id: 'jason',
-    initials: 'JP',
-    name: "Jason 'jp' Peterson",
-    preview: 'Liked “You got it 👍”',
-    age: '8h',
-    state: 'done',
-    channel: 'SMS',
-    reason: 'Reaction closed automatically',
-    profile: { memberSince: 'January 2026', phone: '(415) 555-0151', email: 'jason@example.com', nextAppointment: 'September 21 · 9:30 AM', appointmentDetail: 'Follow-up · Session 5 of 6', balance: '2 sessions', lastVisit: 'September 12' },
-    messages: [
-      { id: 'j1', author: 'staff', body: 'You got it 👍', time: '8:31 AM', day: 'Today' },
-      { id: 'j2', author: 'client', body: 'Liked “You got it 👍”', time: '8:33 AM', day: 'Today' },
-    ],
-  },
-  {
-    id: 'zach',
-    initials: 'ZT',
-    name: 'Zach Taylor',
-    preview: 'Loved “Great! And yes, I would absolutely come to you.”',
-    age: '15h',
-    state: 'done',
-    channel: 'SMS',
-    reason: 'Reaction closed automatically',
-    profile: { memberSince: 'March 2026', phone: '(415) 555-0167', email: 'zach@example.com', nextAppointment: 'Today · 1:30 PM', appointmentDetail: 'Follow-up · Session 2 of 6', balance: '5 sessions', lastVisit: 'August 29' },
-    messages: [
-      { id: 'z1', author: 'staff', body: 'Great! And yes, I would absolutely come to you.', time: '5:17 PM', day: 'Tuesday, September 12' },
-      { id: 'z2', author: 'client', body: 'Loved “Great! And yes, I would absolutely come to you.”', time: '5:19 PM', day: 'Tuesday, September 12' },
-    ],
-  },
-  {
-    id: 'julio',
-    initials: 'JM',
-    name: 'Julio Munoz',
-    preview: "Sounds amazing. Much appreciated. I'm definitely doing the exercises.",
-    age: '1d',
-    state: 'done',
-    channel: 'SMS',
-    reason: 'Closing acknowledgement',
-    profile: { memberSince: 'November 2025', phone: '(415) 555-0192', email: 'julio@example.com', nextAppointment: 'September 25 · 4:00 PM', appointmentDetail: 'Follow-up · Session 4 of 6', balance: '3 sessions', lastVisit: 'September 11' },
-    messages: [
-      { id: 'u1', author: 'staff', body: 'I sent the practice notes from today. Let me know if anything feels unclear.', time: '2:18 PM', day: 'Monday, September 11' },
-      { id: 'u2', author: 'client', body: "Sounds amazing. Much appreciated. I'm definitely doing the exercises.", time: '2:25 PM', day: 'Monday, September 11' },
-    ],
-  },
-];
-
-const appointments = [
-  { time: '10:00 AM', name: 'Surrina Haas', detail: 'Follow-up · Session 4 of 6' },
-  { time: '1:30 PM', name: 'Zach Taylor', detail: 'Follow-up · Session 2 of 6' },
-  { time: '4:00 PM', name: 'Priya Desai', detail: 'Assessment · First visit' },
-];
-
-const stateLabel: Record<WorkState, string> = {
+const stateLabel: Record<ConversationWorkState, string> = {
   needs_reply: 'Needs reply',
   waiting: 'Waiting',
   done: 'Done',
 };
+
+const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
+const NAIVE_DATETIME = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/;
+
+function pacificDate() {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
+  }).formatToParts();
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value || '';
+  return `${value('year')}-${value('month')}-${value('day')}`;
+}
+
+function initials(name: string) {
+  return name.split(/\s+/).filter(Boolean).slice(0, 2).map(part => part[0]?.toUpperCase()).join('') || '?';
+}
+
+function relativeTime(value: string | null) {
+  if (!value) return 'No activity';
+  const elapsed = Math.max(0, Date.now() - new Date(value).getTime());
+  const minutes = Math.floor(elapsed / 60_000);
+  if (minutes < 1) return 'Now';
+  if (minutes < 60) return `${minutes}m`;
+  if (minutes < 1_440) return `${Math.floor(minutes / 60)}h`;
+  if (minutes < 10_080) return `${Math.floor(minutes / 1_440)}d`;
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric' }).format(new Date(value));
+}
+
+function pacificWallClockAsUtc(ms: number) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'America/Los_Angeles', year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false,
+  }).formatToParts(new Date(ms));
+  const value = (type: Intl.DateTimeFormatPartTypes) => parts.find(part => part.type === type)?.value || '0';
+  return Date.UTC(+value('year'), +value('month') - 1, +value('day'), +value('hour') % 24, +value('minute'), +value('second'));
+}
+
+function appointmentMs(value: string) {
+  if (!value) return Number.NaN;
+  if (OFFSET_OR_Z.test(value)) return new Date(value).getTime();
+  const match = NAIVE_DATETIME.exec(value);
+  if (!match) return Number.NaN;
+  const naiveAsUtc = Date.UTC(+match[1], +match[2] - 1, +match[3], +match[4], +match[5], +(match[6] || 0));
+  let ms = naiveAsUtc - (pacificWallClockAsUtc(naiveAsUtc) - naiveAsUtc);
+  ms = naiveAsUtc - (pacificWallClockAsUtc(ms) - ms);
+  return ms;
+}
+
+function appointmentTime(value: string) {
+  const ms = appointmentMs(value);
+  if (!Number.isFinite(ms)) return 'Time unavailable';
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles',
+  }).format(new Date(ms));
+}
+
+function fullDate(value = new Date()) {
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'long', month: 'long', day: 'numeric', timeZone: 'America/Los_Angeles',
+  }).format(value);
+}
+
+function dayLabel(value: string | null) {
+  if (!value) return 'Date unavailable';
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'short', month: 'short', day: 'numeric', timeZone: 'America/Los_Angeles',
+  }).format(new Date(value));
+}
+
+function messageTime(value: string | null) {
+  if (!value) return 'Time unavailable';
+  return new Intl.DateTimeFormat('en-US', {
+    hour: 'numeric', minute: '2-digit', timeZone: 'America/Los_Angeles',
+  }).format(new Date(value));
+}
+
+function reasonFor(state: ConversationWorkState, preview: string) {
+  if (state === 'needs_reply') return 'Client is waiting';
+  if (state === 'waiting') return 'Waiting for client';
+  const reaction = /^(liked|loved|laughed at|emphasized|questioned|disliked)\b/i.test(preview);
+  return reaction ? 'Reaction closed automatically' : 'Conversation complete';
+}
+
+function toConversation(thread: CrmPilotThread): PilotConversation {
+  const name = thread.display_name || thread.email_normalized || thread.phone_e164 || 'Unnamed contact';
+  const preview = thread.last_preview || 'No communication mirrored yet.';
+  const state = conversationWorkState(thread.last_direction, preview);
+  return {
+    ...thread,
+    id: thread.thread_id || thread.contact_id,
+    initials: initials(name),
+    name,
+    preview,
+    age: relativeTime(thread.last_event_at),
+    state,
+    reason: reasonFor(state, preview),
+  };
+}
+
+function goToCurrentStaff(path: string) {
+  window.location.assign(`/staff${path}`);
+}
 
 function PilotMark() {
   return <span className="crm-pilot__mark" aria-hidden="true">A</span>;
@@ -149,117 +159,158 @@ function PilotMark() {
 export default function StaffCrmPilotPage() {
   const [surface, setSurface] = useState<PilotSurface>('home');
   const [view, setView] = useState<InboxView>('needs_reply');
-  const [conversations, setConversations] = useState(initialConversations);
-  const [selectedId, setSelectedId] = useState('michaela');
+  const [threads, setThreads] = useState<CrmPilotThread[]>([]);
+  const [inboxLoading, setInboxLoading] = useState(true);
+  const [inboxError, setInboxError] = useState<string | null>(null);
+  const [selectedId, setSelectedId] = useState('');
+  const [selectedDetail, setSelectedDetail] = useState<CrmPilotContactResponse | null>(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState<string | null>(null);
   const [threadOpen, setThreadOpen] = useState(false);
-  const [draft, setDraft] = useState('');
   const [query, setQuery] = useState('');
-
-  const actionable = useMemo(() => conversations.filter(item => item.state === 'needs_reply'), [conversations]);
-  const visibleConversations = useMemo(
-    () => {
-      const normalizedQuery = query.trim().toLocaleLowerCase();
-      return conversations.filter(item => {
-        const isInView = view === 'all' || item.state === view;
-        const matchesSearch = !normalizedQuery || `${item.name} ${item.preview} ${item.channel}`.toLocaleLowerCase().includes(normalizedQuery);
-        return isInView && matchesSearch;
-      });
-    },
-    [conversations, query, view],
-  );
-  const selected = visibleConversations.find(item => item.id === selectedId) ?? visibleConversations[0] ?? conversations.find(item => item.id === selectedId) ?? conversations[0];
+  const [schedule, setSchedule] = useState<TodayAppointment[]>([]);
+  const [systems, setSystems] = useState<OpsSystemsBoard | null>(null);
+  const [revenue, setRevenue] = useState<StaffRevenueData | null>(null);
+  const [homeLoading, setHomeLoading] = useState(true);
 
   useEffect(() => {
-    if (visibleConversations.length > 0 && !visibleConversations.some(item => item.id === selectedId)) {
-      setSelectedId(visibleConversations[0].id);
+    let active = true;
+    void getCrmPilotInbox()
+      .then(result => {
+        if (!active) return;
+        const nextThreads = result.threads || [];
+        setThreads(nextThreads);
+        const nextConversations = nextThreads.map(toConversation);
+        setSelectedId(nextConversations.find(item => item.state === 'needs_reply')?.contact_id || nextConversations[0]?.contact_id || '');
+        setInboxError(null);
+      })
+      .catch(error => { if (active) setInboxError(error instanceof Error ? error.message : 'Inbox could not be loaded.'); })
+      .finally(() => { if (active) setInboxLoading(false); });
+
+    void Promise.allSettled([getCalendarSummary(pacificDate()), getOpsSystemsBoard(), getStaffRevenue(6)])
+      .then(([scheduleResult, systemsResult, revenueResult]) => {
+        if (!active) return;
+        if (scheduleResult.status === 'fulfilled') setSchedule(scheduleResult.value.filter(item => item.appointmentStatus?.toLowerCase() !== 'cancelled'));
+        if (systemsResult.status === 'fulfilled') setSystems(systemsResult.value);
+        if (revenueResult.status === 'fulfilled') setRevenue(revenueResult.value);
+      })
+      .finally(() => { if (active) setHomeLoading(false); });
+    return () => { active = false; };
+  }, []);
+
+  const conversations = useMemo(() => threads.map(toConversation), [threads]);
+  const actionable = useMemo(() => conversations.filter(item => item.state === 'needs_reply'), [conversations]);
+  const visibleConversations = useMemo(() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    return conversations.filter(item => {
+      const isInView = view === 'all' || item.state === view;
+      const matchesSearch = !normalizedQuery || `${item.name} ${item.preview} ${item.email_normalized || ''} ${item.phone_e164 || ''}`.toLocaleLowerCase().includes(normalizedQuery);
+      return isInView && matchesSearch;
+    });
+  }, [conversations, query, view]);
+  const selected = visibleConversations.find(item => item.contact_id === selectedId)
+    || conversations.find(item => item.contact_id === selectedId)
+    || visibleConversations[0]
+    || conversations[0]
+    || null;
+
+  useEffect(() => {
+    if (visibleConversations.length > 0 && !visibleConversations.some(item => item.contact_id === selectedId)) {
+      setSelectedId(visibleConversations[0].contact_id);
     }
   }, [selectedId, visibleConversations]);
+
+  useEffect(() => {
+    if (!selected?.contact_id) {
+      setSelectedDetail(null);
+      return;
+    }
+    let active = true;
+    setDetailLoading(true);
+    setDetailError(null);
+    void getCrmPilotContact(selected.contact_id)
+      .then(result => { if (active) setSelectedDetail(result); })
+      .catch(error => { if (active) { setSelectedDetail(null); setDetailError(error instanceof Error ? error.message : 'Contact history could not be loaded.'); } })
+      .finally(() => { if (active) setDetailLoading(false); });
+    return () => { active = false; };
+  }, [selected?.contact_id]);
+
+  const orderedSchedule = useMemo(() => [...schedule].sort((a, b) => appointmentMs(a.startTime) - appointmentMs(b.startTime)), [schedule]);
+  const systemIssues = systems?.systems.filter(item => ['red', 'sick', 'stuck', 'map_bad'].includes(item.state)) || [];
+  const totalAttention = actionable.length + (systems?.attentionCount || 0);
+  const messages = useMemo(() => [...(selectedDetail?.communicationTimeline || [])].reverse(), [selectedDetail]);
+  const lastVisit = selectedDetail?.appointments?.find(item => item.status?.toLowerCase() !== 'cancelled' && new Date(item.starts_at).getTime() < Date.now()) || null;
 
   const openSurface = (next: PilotSurface) => {
     setSurface(next);
     if (next === 'home') setThreadOpen(false);
   };
 
-  const openConversation = (id: string) => {
-    setSelectedId(id);
+  const openConversation = (contactId: string) => {
+    setSelectedId(contactId);
     setThreadOpen(true);
   };
 
-  const markDone = () => {
-    setConversations(items => items.map(item => item.id === selected.id ? { ...item, state: 'done' } : item));
-    const next = conversations.find(item => item.id !== selected.id && item.state === 'needs_reply');
-    if (next) setSelectedId(next.id);
-    else setThreadOpen(false);
-  };
-
-  const sendReply = () => {
-    const body = draft.trim();
-    if (!body) return;
-    setConversations(items => items.map(item => item.id === selected.id
-      ? {
-          ...item,
-          preview: body,
-          age: 'Now',
-          state: 'waiting',
-          messages: [...item.messages, { id: `draft-${Date.now()}`, author: 'staff', body, time: 'Now', day: 'Today' }],
-        }
-      : item));
-    setDraft('');
-    setView('waiting');
+  const openCurrentInbox = () => {
+    const externalId = selectedDetail?.contact.ghl_contact_id || selected?.external_contact_id;
+    goToCurrentStaff(`/client-desk${externalId ? `?contact=${encodeURIComponent(externalId)}` : ''}`);
   };
 
   return (
     <main className="crm-pilot">
       <aside className="crm-pilot__rail">
-        <div className="crm-pilot__brand"><PilotMark /><span><strong>Amari Method</strong><small>Staff workspace</small></span></div>
+        <div className="crm-pilot__brand"><PilotMark /><span><strong>Amari Method</strong><small>Staff workspace preview</small></span></div>
         <p className="crm-pilot__rail-label">Practice</p>
         <nav aria-label="Practice navigation">
           <button className={surface === 'home' ? 'is-active' : ''} onClick={() => openSurface('home')}><Home /><span>Home</span></button>
-          <button><CalendarDays /><span>Calendar</span></button>
+          <button onClick={() => goToCurrentStaff('/calendar')}><CalendarDays /><span>Calendar</span></button>
           <button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox</span>{actionable.length > 0 ? <b>{actionable.length}</b> : null}</button>
-          <button><Users /><span>People</span></button>
-          <button><Send /><span>Outreach</span></button>
-          <button><Workflow /><span>Pipeline</span></button>
+          <button onClick={() => goToCurrentStaff('/clients')}><Users /><span>People</span></button>
+          <button onClick={() => goToCurrentStaff('/outreach')}><Send /><span>Outreach</span></button>
+          <button onClick={() => goToCurrentStaff('/pipeline')}><Workflow /><span>Pipeline</span></button>
         </nav>
         <div className="crm-pilot__rail-foot">
           <p className="crm-pilot__rail-label">Business</p>
-          <nav><button><SlidersHorizontal /><span>Products</span></button><button><WalletCards /><span>Money</span></button></nav>
-          <div className="crm-pilot__actor"><span>GH</span><div><strong>Garrett Hewstan</strong><small>Practitioner</small></div></div>
+          <nav><button onClick={() => goToCurrentStaff('/products')}><SlidersHorizontal /><span>Products</span></button><button onClick={() => goToCurrentStaff('/balances')}><WalletCards /><span>Money</span></button></nav>
+          <div className="crm-pilot__actor"><span>AM</span><div><strong>Private preview</strong><small>Real data · read only</small></div></div>
         </div>
       </aside>
 
       <section className="crm-pilot__workspace">
-        <header className="crm-pilot__mobile-head"><div><PilotMark /><strong>Staff</strong></div><button aria-label="Search"><Search /></button></header>
+        <header className="crm-pilot__mobile-head"><div><PilotMark /><strong>Staff preview</strong></div><button aria-label="Search" onClick={() => openSurface('inbox')}><Search /></button></header>
 
         {surface === 'home' ? (
           <section className="crm-home">
-            <header className="crm-home__opening"><div><p>Wednesday, September 13</p><h1>Good morning, Garrett.</h1></div><span>Three sessions today. {actionable.length === 1 ? 'One conversation needs' : `${actionable.length} conversations need`} a reply, and one system issue needs review.</span></header>
+            <header className="crm-home__opening"><div><p>{fullDate()}</p><h1>Good morning.</h1></div><span>{homeLoading ? 'Loading today’s practice data.' : `${orderedSchedule.length} ${orderedSchedule.length === 1 ? 'session' : 'sessions'} today. ${actionable.length} ${actionable.length === 1 ? 'conversation needs' : 'conversations need'} a reply${systems?.attentionCount ? `, and ${systems.attentionCount} system ${systems.attentionCount === 1 ? 'issue needs' : 'issues need'} review` : ''}.`}</span></header>
+            {inboxError ? <div className="crm-pilot__notice" role="alert">Inbox data is unavailable. {inboxError}</div> : null}
             <div className="crm-home__primary-grid">
-              <section><header className="crm-section-head"><h2>Today</h2><span>Pacific time</span></header><div className="crm-schedule"><header><strong>Session schedule</strong><span>On time</span></header>{appointments.map(item => <button key={item.time}><time>{item.time}</time><i /><span><strong>{item.name}</strong><small>{item.detail}</small></span><em>Open session</em></button>)}</div><footer className="crm-schedule-foot"><span>Next session in 48 minutes</span><button>Open calendar</button></footer></section>
-              <section><header className="crm-section-head"><h2>Attention</h2><span>{actionable.length + 1} items</span></header><div className="crm-attention"><header><strong>Work requiring a person</strong><span>{actionable.length} {actionable.length === 1 ? 'reply' : 'replies'} · 1 system</span></header>{actionable.slice(0, 2).map(item => <button key={item.id} onClick={() => { openSurface('inbox'); openConversation(item.id); }}><span className="crm-attention__icon"><MessageSquare /></span><span><strong>{item.name}</strong><small>{item.preview}</small></span><time>{item.age}</time></button>)}<button><span className="crm-attention__icon crm-attention__icon--system"><Workflow /></span><span><strong>Ledger drift scan</strong><small>Two records need reconciliation</small></span><time>Review</time></button></div><div className="crm-settled"><Check /><span><strong>Three conversations settled automatically</strong><small>Reactions and closing acknowledgements remain in history without entering this queue.</small></span></div></section>
+              <section><header className="crm-section-head"><h2>Today</h2><span>Pacific time</span></header><div className="crm-schedule"><header><strong>Session schedule</strong><span>{homeLoading ? 'Loading' : `${orderedSchedule.length} booked`}</span></header>{orderedSchedule.slice(0, 5).map(item => <button key={item.id} onClick={() => goToCurrentStaff(`/client/${encodeURIComponent(item.contactId)}/session?appointment=${encodeURIComponent(item.id)}`)}><time>{appointmentTime(item.startTime)}</time><i /><span><strong>{item.contactName}</strong><small>{item.title || item.calendarName}</small></span><em>Open session</em></button>)}{!homeLoading && orderedSchedule.length === 0 ? <p className="crm-schedule__empty">No sessions are on today’s schedule.</p> : null}</div><footer className="crm-schedule-foot"><span>{orderedSchedule.length > 5 ? `${orderedSchedule.length - 5} more today` : 'Live Staff calendar'}</span><button onClick={() => goToCurrentStaff('/calendar')}>Open calendar</button></footer></section>
+              <section><header className="crm-section-head"><h2>Attention</h2><span>{totalAttention} {totalAttention === 1 ? 'item' : 'items'}</span></header><div className="crm-attention"><header><strong>Work requiring a person</strong><span>{actionable.length} {actionable.length === 1 ? 'reply' : 'replies'} · {systems?.attentionCount || 0} {(systems?.attentionCount || 0) === 1 ? 'system' : 'systems'}</span></header>{actionable.slice(0, 3).map(item => <button key={item.id} onClick={() => { openSurface('inbox'); openConversation(item.contact_id); }}><span className="crm-attention__icon"><MessageSquare /></span><span><strong>{item.name}</strong><small>{item.preview}</small></span><time>{item.age}</time></button>)}{systemIssues.slice(0, 1).map(item => <button key={item.id} onClick={() => goToCurrentStaff('/operations')}><span className="crm-attention__icon crm-attention__icon--system"><Workflow /></span><span><strong>{item.label}</strong><small>{item.note || item.status}</small></span><time>Review</time></button>)}{!inboxLoading && totalAttention === 0 ? <p className="crm-attention__empty">Nothing needs attention right now.</p> : null}</div><div className="crm-settled"><Check /><span><strong>{conversations.filter(item => item.state === 'done').length} conversations are outside the work queue</strong><small>Clear reactions and closing acknowledgements remain available in All without counting as work.</small></span></div></section>
             </div>
-            <div className="crm-home__secondary-grid"><section><header className="crm-section-head"><h2>Practice</h2><span>September</span></header><div className="crm-metrics"><div><span>Sessions</span><strong>34</strong><small>8 this week</small></div><div><span>Collected</span><strong>$8,420</strong><small>22 charges</small></div><div><span>Needs review</span><strong>2</strong><small>Session balances</small></div></div></section><section><header className="crm-section-head"><h2>Quick access</h2></header><div className="crm-quick"><button onClick={() => openSurface('inbox')}><span>Start a new message</span><ChevronRight /></button><button><span>Review session balances</span><ChevronRight /></button><button><span>Find a practice member</span><ChevronRight /></button></div></section></div>
+            <div className="crm-home__secondary-grid"><section><header className="crm-section-head"><h2>Practice</h2><span>{revenue?.thisMonth.month || 'Current month'}</span></header><div className="crm-metrics"><div><span>Sessions today</span><strong>{homeLoading ? '…' : orderedSchedule.length}</strong><small>Live calendar</small></div><div><span>Collected</span><strong>{revenue ? money.format(revenue.thisMonth.gross) : '—'}</strong><small>{revenue?.thisMonth.chargeCount || 0} successful charges</small></div><div><span>Needs review</span><strong>{systems?.attentionCount ?? '—'}</strong><small>Monitored systems</small></div></div></section><section><header className="crm-section-head"><h2>Quick access</h2></header><div className="crm-quick"><button onClick={openCurrentInbox}><span>Open the current message desk</span><ChevronRight /></button><button onClick={() => goToCurrentStaff('/balances')}><span>Review session balances</span><ChevronRight /></button><button onClick={() => goToCurrentStaff('/clients')}><span>Find a practice member</span><ChevronRight /></button></div></section></div>
           </section>
         ) : (
           <section className={`crm-inbox${threadOpen ? ' is-thread-open' : ''}`}>
             <section className="crm-inbox__list">
-              <header><h1>Inbox</h1><p>Conversations requiring a response or decision</p><label><Search /><input aria-label="Search conversations" placeholder="Search conversations" value={query} onChange={event => setQuery(event.target.value)} /></label></header>
+              <header><h1>Inbox</h1><p>Real mirrored conversations · read-only preview</p><label><Search /><input aria-label="Search conversations" placeholder="Search conversations" value={query} onChange={event => setQuery(event.target.value)} /></label></header>
               <nav className="crm-inbox__tabs" aria-label="Inbox views">{(['needs_reply','waiting','done','all'] as InboxView[]).map(tab => <button key={tab} className={view === tab ? 'is-active' : ''} onClick={() => setView(tab)}>{tab === 'all' ? 'All' : stateLabel[tab]}{tab === 'needs_reply' ? ` · ${actionable.length}` : ''}</button>)}</nav>
-              <div className="crm-inbox__rows">{visibleConversations.map(item => <button key={item.id} className={selected.id === item.id ? 'is-active' : ''} onClick={() => openConversation(item.id)}><span className="crm-avatar">{item.initials}</span><span><strong>{item.name}</strong><small>{item.preview}</small><em>{item.reason ?? stateLabel[item.state]}</em></span><time>{item.age}</time></button>)}{visibleConversations.length === 0 ? <p className="crm-inbox__empty">Nothing is waiting in this view.</p> : null}</div>
-              <footer>Reactions and clear closing acknowledgements move to Done automatically. Every message remains available in All conversations.</footer>
+              <div className="crm-inbox__rows">{inboxLoading ? <div className="crm-inbox__loading"><Loader2 /> Loading conversations…</div> : null}{inboxError ? <p className="crm-inbox__empty" role="alert">{inboxError}</p> : null}{!inboxLoading && !inboxError ? visibleConversations.map(item => <button key={item.contact_id} className={selected?.contact_id === item.contact_id ? 'is-active' : ''} onClick={() => openConversation(item.contact_id)}><span className="crm-avatar">{item.initials}</span><span><strong>{item.name}</strong><small>{item.preview}</small><em>{item.reason}</em></span><time>{item.age}</time></button>) : null}{!inboxLoading && !inboxError && visibleConversations.length === 0 ? <p className="crm-inbox__empty">Nothing is waiting in this view.</p> : null}</div>
+              <footer>Needs reply is derived from the latest mirrored sender and clear terminal-message rules. This preview does not change conversation state or send messages.</footer>
             </section>
 
             <section className="crm-thread">
-              <header><div className="crm-thread__person"><button className="crm-thread__back" aria-label="Back to inbox" onClick={() => setThreadOpen(false)}><ArrowLeft /></button><span className="crm-avatar">{selected.initials}</span><div><h2>{selected.name}</h2><p>Practice member · {selected.channel}</p></div></div><div className="crm-thread__actions"><button>Snooze</button>{selected.state !== 'done' ? <button className="is-primary" onClick={markDone}>Mark done</button> : <button className="is-primary" onClick={() => setConversations(items => items.map(item => item.id === selected.id ? { ...item, state: 'needs_reply' } : item))}>Reopen</button>}<button aria-label="More actions"><Ellipsis /></button></div></header>
-              <div className="crm-thread__stream">{selected.messages.map((message, index) => <div key={message.id}>{index === 0 || selected.messages[index - 1].day !== message.day ? <div className="crm-thread__date"><span>{message.day}</span></div> : null}<div className={`crm-bubble-row ${message.author === 'staff' ? 'is-outbound' : ''}`}><div className="crm-bubble">{message.body}<small>{message.author === 'staff' ? 'Garrett' : selected.name.split(' ')[0]} · {message.time}</small></div></div></div>)}<div className={`crm-thread__state crm-thread__state--${selected.state}`}>{selected.state === 'needs_reply' ? `Waiting for Staff · ${selected.age}` : selected.state === 'waiting' ? 'Waiting for client' : 'Conversation complete'}</div></div>
-              <footer className="crm-composer"><div><textarea aria-label="Message" value={draft} onChange={event => setDraft(event.target.value)} placeholder="Write a reply…" onKeyDown={event => { if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendReply(); } }} /><button aria-label="Send reply" onClick={sendReply}><Send /></button></div><p><span>{selected.channel} from Amari Method</span><span>Enter to send · Shift Enter for a new line</span></p></footer>
+              {!selected ? <div className="crm-thread__empty"><MessageSquare /><strong>Select a conversation</strong><span>All mirrored contacts remain available in All.</span></div> : <>
+                <header><div className="crm-thread__person"><button className="crm-thread__back" aria-label="Back to inbox" onClick={() => setThreadOpen(false)}><ArrowLeft /></button><span className="crm-avatar">{selected.initials}</span><div><h2>{selected.name}</h2><p>Practice record · {selected.channel || 'No channel'}</p></div></div><div className="crm-thread__actions"><button onClick={openCurrentInbox}>Open current Inbox</button><button className="is-primary" disabled title="State changes are disabled in the private read-only preview">{selected.state === 'done' ? 'Done' : 'Mark done'}</button><button aria-label="More actions" disabled><Ellipsis /></button></div></header>
+                <div className="crm-thread__stream">{detailLoading ? <div className="crm-thread__loading"><Loader2 /> Loading complete history…</div> : null}{detailError ? <p className="crm-thread__error" role="alert">{detailError}</p> : null}{!detailLoading && !detailError && messages.length === 0 ? <p className="crm-thread__error">No communication has been mirrored for this contact.</p> : null}{!detailLoading && !detailError ? messages.map((message, index) => { const previous = messages[index - 1]; const showDay = !previous || dayLabel(previous.occurred_at) !== dayLabel(message.occurred_at); const body = message.body_clean || message.subject || 'Message content is not available in the mirror.'; return <div key={message.id || message.message_ref || `${message.occurred_at}-${index}`}>{showDay ? <div className="crm-thread__date"><span>{dayLabel(message.occurred_at)}</span></div> : null}<div className={`crm-bubble-row ${message.direction === 'outbound' ? 'is-outbound' : ''}`}><div className="crm-bubble">{body}<small>{message.direction === 'outbound' ? message.sender_label || 'Staff' : selected.name.split(' ')[0]} · {message.thread_channel || message.event_kind || 'message'} · {messageTime(message.occurred_at)}</small></div></div></div>; }) : null}<div className={`crm-thread__state crm-thread__state--${selected.state}`}>{selected.state === 'needs_reply' ? `Waiting for Staff · ${selected.age}` : selected.state === 'waiting' ? 'Waiting for client' : 'Conversation complete'}</div></div>
+                <footer className="crm-composer crm-composer--readonly"><div><textarea aria-label="Message" value="" readOnly placeholder="Replying stays in the current Inbox during this read-only pilot." /><button aria-label="Open current Inbox to reply" onClick={openCurrentInbox}><Send /></button></div><p><span>Real history from the owned mirror</span><span>No message can be sent here</span></p></footer>
+              </>}
             </section>
 
-            <aside className="crm-person"><header><span className="crm-avatar">{selected.initials}</span><h2>{selected.name}</h2><p>Practice member since {selected.profile.memberSince}</p></header><section><h3>Contact</h3><dl><div><dt>Phone</dt><dd>{selected.profile.phone}</dd></div><div><dt>Email</dt><dd>{selected.profile.email}</dd></div><div><dt>Status</dt><dd>Active practice</dd></div></dl></section><section><h3>Next appointment</h3><div className="crm-person__appointment"><strong>{selected.profile.nextAppointment}</strong><span>{selected.profile.appointmentDetail}</span></div><button>Manage appointment</button></section><section><h3>Current context</h3><dl><div><dt>Owner</dt><dd>Garrett</dd></div><div><dt>Balance</dt><dd>{selected.profile.balance}</dd></div><div><dt>Last visit</dt><dd>{selected.profile.lastVisit}</dd></div></dl><button>Open full record</button></section></aside>
+            <aside className="crm-person">{!selected ? null : detailLoading ? <div className="crm-person__loading"><Loader2 /> Loading record…</div> : selectedDetail ? <><header><span className="crm-avatar">{selected.initials}</span><h2>{selectedDetail.contact.display_name || selected.name}</h2><p>{selectedDetail.contact.created_at ? `Record since ${dayLabel(selectedDetail.contact.created_at)}` : 'Practice record'}</p></header><section><h3>Contact</h3><dl><div><dt>Phone</dt><dd>{selectedDetail.contact.phone_e164 || 'Not recorded'}</dd></div><div><dt>Email</dt><dd>{selectedDetail.contact.email_normalized || 'Not recorded'}</dd></div><div><dt>Source</dt><dd>{selectedDetail.contact.referral_source_label || 'Not recorded'}</dd></div></dl></section><section><h3>Next appointment</h3>{selectedDetail.nextAppointment ? <div className="crm-person__appointment"><strong>{dayLabel(selectedDetail.nextAppointment.starts_at)} · {appointmentTime(selectedDetail.nextAppointment.starts_at)}</strong><span>{selectedDetail.nextAppointment.service_name || selectedDetail.nextAppointment.status || 'Appointment'}</span></div> : <p className="crm-person__quiet">No upcoming appointment mirrored.</p>}<button onClick={() => goToCurrentStaff('/calendar')}>Open calendar</button></section><section><h3>Current context</h3><dl><div><dt>Series</dt><dd>{selectedDetail.importedCurrentState?.series_type || 'Not recorded'}</dd></div><div><dt>Balance</dt><dd>{selectedDetail.importedCurrentState?.sessions_remaining ?? 'Not recorded'}</dd></div><div><dt>Last visit</dt><dd>{lastVisit ? dayLabel(lastVisit.starts_at) : 'Not recorded'}</dd></div></dl><button onClick={openCurrentInbox}>Open full current record</button></section></> : <p className="crm-person__quiet">The selected record is unavailable.</p>}</aside>
           </section>
         )}
 
-        <nav className="crm-pilot__bottom-nav" aria-label="Mobile navigation"><button className={surface === 'home' ? 'is-active' : ''} onClick={() => openSurface('home')}><Home /><span>Home</span></button><button><CalendarDays /><span>Calendar</span></button><button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox{actionable.length ? ` · ${actionable.length}` : ''}</span></button><button><Users /><span>People</span></button><button><MoreHorizontal /><span>More</span></button></nav>
+        <nav className="crm-pilot__bottom-nav" aria-label="Mobile navigation"><button className={surface === 'home' ? 'is-active' : ''} onClick={() => openSurface('home')}><Home /><span>Home</span></button><button onClick={() => goToCurrentStaff('/calendar')}><CalendarDays /><span>Calendar</span></button><button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox{actionable.length ? ` · ${actionable.length}` : ''}</span></button><button onClick={() => goToCurrentStaff('/clients')}><Users /><span>People</span></button><button onClick={() => goToCurrentStaff('/')}><MoreHorizontal /><span>Current app</span></button></nav>
       </section>
     </main>
   );
