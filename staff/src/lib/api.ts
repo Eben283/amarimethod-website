@@ -545,7 +545,11 @@ export async function getAutomationFamilies(): Promise<import('../types/staff').
 export async function getAutomationFamily(
   key: string,
 ): Promise<import('../types/staff').AutomationFamilyResponse> {
-  const detail = await fetchApi<import('../types/staff').AutomationFamilyResponse>(`/staff-automations?view=family&key=${encodeURIComponent(key)}`);
+  const detail = await fetchApi<import('../types/staff').AutomationFamilyResponse>(
+    `/staff-automations?view=family&key=${encodeURIComponent(key)}`,
+    {},
+    25000,
+  );
   if (key !== 'initial-session-reminders') return detail;
   const enrollments = await Promise.all(detail.enrollments.map(async (enrollment) => {
     if (enrollment.contactName && enrollment.contactPhone) return enrollment;
