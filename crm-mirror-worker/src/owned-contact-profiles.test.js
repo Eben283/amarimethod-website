@@ -8,6 +8,7 @@ import {
   captureOwnedContactProfile,
   OWNED_CONTACT_PROFILE_SOURCE_MODE,
   ownedContactProfileReleaseReadiness,
+  readOwnedContactProfileAuthority,
 } from "./owned-contact-profiles.js";
 
 function migrations() {
@@ -104,12 +105,13 @@ describe("owned contact profile authority", () => {
     sqlite.close();
   });
 
-  it("is source-pinned shadow with no provider, delivery, creation, or destructive fallback", async () => {
-    expect(OWNED_CONTACT_PROFILE_SOURCE_MODE).toBe("shadow");
+  it("activates only name revision with no provider, delivery, creation, or destructive fallback", async () => {
+    expect(OWNED_CONTACT_PROFILE_SOURCE_MODE).toBe("active");
     expect(ownedContactProfileReleaseReadiness()).toEqual({
       version: "owned-contact-profile-authority.v1",
-      sourceMode: "shadow",
-      enabled: false,
+      sourceMode: "active",
+      enabled: true,
+      allowedActions: ["revise_name"],
       providerFallback: null,
       providerWrite: false,
       messageWrite: false,
@@ -117,14 +119,21 @@ describe("owned contact profile authority", () => {
       appointmentWrite: false,
       contactCreation: false,
       destructiveEvidenceDelete: false,
+      destinationActionsEnabled: false,
       destinationConsentRequired: true,
       independentFieldRevisions: true,
     });
     let storageTouches = 0;
     await expect(captureOwnedContactProfile({
-      prepare() { storageTouches += 1; throw new Error("shadow must not touch storage"); },
-    }, base("revise_name", "profile-shadow-0001", { firstName: "Avery", lastName: "Updated" })))
-      .rejects.toMatchObject({ code: "owned_contact_profile_shadow_only", status: 503 });
+      prepare() { storageTouches += 1; throw new Error("unreleased destinations must not touch storage"); },
+    }, base("set_email", "profile-destination-0001", {
+      email: "new@example.test", consentState: "granted", consentEvidenceRef: "intake-1",
+    }))).rejects.toMatchObject({ code: "owned_contact_profile_action_unavailable", status: 409 });
+    await expect(captureOwnedContactProfile({
+      prepare() { storageTouches += 1; throw new Error("unreleased destinations must not touch storage"); },
+    }, base("set_phone", "profile-destination-0002", {
+      phone: "+14155550199", consentState: "unknown",
+    }))).rejects.toMatchObject({ code: "owned_contact_profile_action_unavailable", status: 409 });
     expect(storageTouches).toBe(0);
   });
 
@@ -168,73 +177,82 @@ describe("owned contact profile authority", () => {
     sqlite.close();
   });
 
-  it("binds a granted email consent to the exact new destination and refuses stale or unsupported reuse", async () => {
+  it("rejects destination actions and invalid command scalar types before storage", async () => {
     const sqlite = database();
     insertContact(sqlite);
-    sqlite.prepare(
-      `INSERT INTO consents
-       (id,contact_id,channel,state,effective_at,source,evidence_ref,recorded_by)
-       VALUES ('legacy-consent','contact-1','email','granted','2026-08-01T00:00:00.000Z','ghl','legacy','crm_mirror')`,
-    ).run();
     const db = d1(sqlite);
-
-    await expect(captureOwnedContactProfile(db, base("set_email", "profile-email-invalid", {
-      email: "new@example.test", consentState: "granted",
-    }), "2026-09-01T17:00:00.000Z", active)).rejects.toMatchObject({ code: "missing_consent_evidence" });
-
-    const changed = await captureOwnedContactProfile(db, base("set_email", "profile-email-0001", {
-      email: "New@Example.Test", consentState: "granted", consentEvidenceRef: "signed-intake-42",
-    }), "2026-09-01T17:00:00.000Z", active);
-    expect(changed).toMatchObject({
-      action: "set_email", resultState: "applied", resultRevision: 1,
-      channel: "email", destinationMasked: "ne***@example.test", consentState: "granted",
-    });
-    const contact = sqlite.prepare(
-      "SELECT email_normalized,email_authority,email_revision FROM contacts WHERE id='contact-1'",
-    ).get();
-    expect(contact).toEqual({ email_normalized: "new@example.test", email_authority: "owned", email_revision: 1 });
-    const evidence = sqlite.prepare(
-      `SELECT channel,state,source,evidence_ref,destination_normalized,destination_sha256
-         FROM consents WHERE source='owned:staff_destination'`,
-    ).get();
-    expect(evidence).toMatchObject({
-      channel: "email", state: "granted", source: "owned:staff_destination",
-      evidence_ref: "signed-intake-42", destination_normalized: "new@example.test",
-    });
-    expect(evidence.destination_sha256).toMatch(/^[a-f0-9]{64}$/);
-    await expect(loadCommunicationContact(db, "contact-1")).resolves.toMatchObject({
-      email_normalized: "new@example.test", email_authority: "owned", email_consent_state: "granted",
-    });
-
-    await expect(captureOwnedContactProfile(db, base("set_email", "profile-email-stale", {
-      email: "third@example.test", consentState: "unknown",
-    }), "2026-09-01T17:01:00.000Z", active)).rejects.toMatchObject({ code: "stale_profile_revision" });
-    await expect(captureOwnedContactProfile(db, base("set_email", "profile-email-0001", {
-      email: "different@example.test", consentState: "unknown",
-    }), "2026-09-01T17:01:00.000Z", active)).rejects.toMatchObject({ code: "idempotency_conflict" });
+    for (const command of [
+      base("set_email", "profile-email-0001", { email: "New@Example.Test", consentState: "granted", consentEvidenceRef: "signed-intake-42" }),
+      base("set_phone", "profile-phone-0001", { phone: "+14155550199", consentState: "unknown" }),
+      base("revise_name", "profile-invalid-0001", { firstName: ["Avery"], lastName: "Owned" }),
+      base(["revise_name"], "profile-invalid-0002", { firstName: "Avery", lastName: "Owned" }),
+      base("revise_name", "profile-invalid-0003", { expectedRevision: "0", firstName: "Avery", lastName: "Owned" }),
+    ]) {
+      await expect(captureOwnedContactProfile(db, command, "2026-09-01T17:00:00.000Z", active))
+        .rejects.toMatchObject({ status: command.action === "set_email" || command.action === "set_phone" ? 409 : 400 });
+    }
+    expect(sqlite.prepare("SELECT COUNT(*) AS count FROM owned_contact_profile_commands").get()).toEqual({ count: 0 });
+    expect(sqlite.prepare("SELECT COUNT(*) AS count FROM consents").get()).toEqual({ count: 0 });
     sqlite.close();
   });
 
-  it("treats unknown consent for a new owned phone as current and does not inherit an older grant", async () => {
+  it("fails closed before command lookup or writes when the command table or a protective trigger is absent", async () => {
+    const queries = [];
+    const missingTable = {
+      prepare(sql) {
+        queries.push(sql);
+        return {
+          bind() {
+            return { all: async () => ({ results: [] }) };
+          },
+        };
+      },
+    };
+    await expect(captureOwnedContactProfile(missingTable, base("revise_name", "profile-schema-table-1", {
+      firstName: "Avery", lastName: "Schema",
+    }), "2026-09-01T17:00:00.000Z", active)).rejects.toMatchObject({
+      status: 503, code: "owned_contact_profile_schema_unavailable",
+    });
+    expect(queries).toHaveLength(1);
+    expect(queries[0]).toContain("sqlite_master");
+    expect(queries.join("\n")).not.toContain("FROM owned_contact_profile_commands");
+
     const sqlite = database();
     insertContact(sqlite);
-    sqlite.prepare(
-      `INSERT INTO consents
-       (id,contact_id,channel,state,effective_at,source,evidence_ref,recorded_by)
-       VALUES ('legacy-sms','contact-1','sms','granted','2026-08-01T00:00:00.000Z','ghl','legacy','crm_mirror')`,
-    ).run();
-    const db = d1(sqlite);
-    await captureOwnedContactProfile(db, base("set_phone", "profile-phone-0001", {
-      phone: "415-555-0199", consentState: "unknown",
-    }), "2026-09-01T17:00:00.000Z", active);
-    await expect(loadCommunicationContact(db, "contact-1")).resolves.toMatchObject({
-      phone_e164: "+14155550199", phone_authority: "owned", sms_consent_state: "unknown",
+    sqlite.exec("DROP TRIGGER owned_contact_profile_apply");
+    await expect(captureOwnedContactProfile(d1(sqlite), base("revise_name", "profile-schema-trigger-1", {
+      firstName: "Avery", lastName: "Schema",
+    }), "2026-09-01T17:00:00.000Z", active)).rejects.toMatchObject({
+      status: 503, code: "owned_contact_profile_schema_unavailable",
     });
-    const current = await captureOwnedContactProfile(db, base("set_phone", "profile-phone-0002", {
-      expectedRevision: 1, phone: "+14155550199", consentState: "unknown",
-    }), "2026-09-01T17:01:00.000Z", active);
-    expect(current).toMatchObject({ resultState: "already_current", resultRevision: 1 });
-    expect(sqlite.prepare("SELECT COUNT(*) AS count FROM consents").get()).toEqual({ count: 2 });
+    expect(sqlite.prepare("SELECT COUNT(*) AS count FROM owned_contact_profile_commands").get()).toEqual({ count: 0 });
+    sqlite.close();
+  });
+
+  it("returns a schema-gated, name-only authority readback", async () => {
+    const sqlite = database();
+    insertContact(sqlite);
+    const db = d1(sqlite);
+    await expect(readOwnedContactProfileAuthority(db, "contact-1")).resolves.toEqual({
+      version: "owned-contact-profile-authority.v1",
+      state: "ready",
+      allowedActions: ["revise_name"],
+      name: { firstName: "Avery", lastName: "Example", displayName: "Avery Example", authority: "provider_mirror", revision: 0 },
+      providerWrite: false,
+      messageWrite: false,
+    });
+    await captureOwnedContactProfile(db, base("revise_name", "profile-authority-0001", {
+      firstName: "Avery", lastName: "Owned",
+    }), "2026-09-01T17:00:00.000Z", active);
+    await expect(readOwnedContactProfileAuthority(db, "contact-1")).resolves.toMatchObject({
+      state: "ready", allowedActions: ["revise_name"],
+      name: { firstName: "Avery", lastName: "Owned", displayName: "Avery Owned", authority: "owned", revision: 1 },
+    });
+    await expect(readOwnedContactProfileAuthority({ prepare() { throw new Error("no v31"); } }, "contact-1"))
+      .resolves.toMatchObject({ state: "unavailable", allowedActions: [], name: null });
+    sqlite.exec("DROP TRIGGER owned_contact_profile_apply");
+    await expect(readOwnedContactProfileAuthority(db, "contact-1"))
+      .resolves.toMatchObject({ state: "unavailable", allowedActions: [], name: null });
     sqlite.close();
   });
 
@@ -267,7 +285,7 @@ describe("owned contact profile authority", () => {
     sqlite.close();
   });
 
-  it("changes only the selected contact field, bound consent, and immutable command evidence", async () => {
+  it("changes only the selected name field and immutable command evidence", async () => {
     const sqlite = database();
     insertContact(sqlite);
     const db = d1(sqlite);
@@ -276,19 +294,15 @@ describe("owned contact profile authority", () => {
       "owned_task_versions", "owned_communication_commands", "outbound_delivery_attempts",
       "appointment_payment_records", "appointment_payment_events", "session_ledger_entries", "purchases",
     ];
-    await captureOwnedContactProfile(db, base("set_phone", "profile-zero-effect-1", {
-      phone: "+14155550188", consentState: "revoked", consentEvidenceRef: "staff-confirmed-revocation",
+    await captureOwnedContactProfile(db, base("revise_name", "profile-zero-effect-1", {
+      firstName: "Avery", lastName: "Only Name",
     }), "2026-09-01T17:00:00.000Z", active);
     expect(sqlite.prepare("SELECT COUNT(*) AS count FROM owned_contact_profile_commands").get()).toEqual({ count: 1 });
-    expect(sqlite.prepare("SELECT COUNT(*) AS count FROM consents WHERE source='owned:staff_destination'").get()).toEqual({ count: 1 });
+    expect(sqlite.prepare("SELECT COUNT(*) AS count FROM consents").get()).toEqual({ count: 0 });
     for (const table of tables) expect(sqlite.prepare(`SELECT COUNT(*) AS count FROM ${table}`).get(), table).toEqual({ count: 0 });
     expect(() => sqlite.exec("UPDATE owned_contact_profile_commands SET actor='Eben'"))
       .toThrow(/append-only/i);
     expect(() => sqlite.exec("DELETE FROM owned_contact_profile_commands")).toThrow(/append-only/i);
-    expect(() => sqlite.exec("UPDATE consents SET state='granted' WHERE source='owned:staff_destination'"))
-      .toThrow(/append-only/i);
-    expect(() => sqlite.exec("DELETE FROM consents WHERE source='owned:staff_destination'"))
-      .toThrow(/append-only/i);
     expect(sqlite.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
     sqlite.close();
   });

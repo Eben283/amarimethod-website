@@ -81,6 +81,7 @@ import {
 import {
   captureOwnedContactProfile,
   OwnedContactProfileError,
+  readOwnedContactProfileAuthority,
 } from "./owned-contact-profiles.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
@@ -635,6 +636,12 @@ export default {
         if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
           return json(400, { error: "invalid_request", detail: "JSON object required" });
         }
+        if (typeof payload.action !== "string") {
+          return json(400, { error: "invalid_profile_action" });
+        }
+        if (!new Set(["revise_name", "set_email", "set_phone"]).has(payload.action)) {
+          return json(400, { error: "invalid_profile_action" });
+        }
         const allowedByAction = {
           revise_name: new Set(["action", "contactId", "idempotencyKey", "expectedRevision", "firstName", "lastName"]),
           set_email: new Set(["action", "contactId", "idempotencyKey", "expectedRevision", "email", "consentState", "consentEvidenceRef"]),
@@ -643,6 +650,33 @@ export default {
         const allowed = allowedByAction[payload.action] || new Set(["action"]);
         const unsupported = Object.keys(payload).filter((key) => !allowed.has(key));
         if (unsupported.length) return json(400, { error: "unsupported_fields", fields: unsupported });
+        const actionValue = payload.action === "revise_name" ? [
+          typeof payload.firstName !== "string" && "firstName",
+          typeof payload.lastName !== "string" && "lastName",
+        ] : payload.action === "set_email" ? [
+          typeof payload.email !== "string" && "email",
+          typeof payload.consentState !== "string" && "consentState",
+          payload.consentEvidenceRef != null && typeof payload.consentEvidenceRef !== "string" && "consentEvidenceRef",
+        ] : [
+          typeof payload.phone !== "string" && "phone",
+          typeof payload.consentState !== "string" && "consentState",
+          payload.consentEvidenceRef != null && typeof payload.consentEvidenceRef !== "string" && "consentEvidenceRef",
+        ];
+        const invalidScalars = [
+          typeof payload.contactId !== "string" && "contactId",
+          typeof payload.idempotencyKey !== "string" && "idempotencyKey",
+          !Number.isSafeInteger(payload.expectedRevision) && "expectedRevision",
+          ...actionValue,
+        ].filter(Boolean);
+        if (invalidScalars.length) return json(400, { error: "invalid_profile_fields", fields: invalidScalars });
+        // Destinations remain unavailable even when the name authority is
+        // source-active: Client Desk SMS still uses its imported GHL identity.
+        if (payload.action !== "revise_name") {
+          return json(409, {
+            error: "owned_contact_profile_action_unavailable",
+            detail: "Only Amari CRM name changes are currently available",
+          });
+        }
         try {
           const profile = await captureOwnedContactProfile(
             env.CRM_DB, { ...payload, actor }, new Date().toISOString(),
@@ -1123,6 +1157,7 @@ export default {
         profile = await withOwnedNotes(env.CRM_DB, profile, limit);
         profile = await withOwnedTasks(env.CRM_DB, profile, limit);
         profile.ownedClassificationAuthority = await readOwnedContactClassifications(env.CRM_DB, profile.contact.id);
+        profile.ownedContactProfileAuthority = await readOwnedContactProfileAuthority(env.CRM_DB, profile.contact.id);
         const automationEvidence = await personAutomationInspection(env.AUTOMATION_DB, profile.contact);
         let missedAppointmentTruth;
         try {
@@ -1164,6 +1199,7 @@ export default {
           profile = await withOwnedNotes(env.CRM_DB, profile, limit);
           profile = await withOwnedTasks(env.CRM_DB, profile, limit);
           profile.ownedClassificationAuthority = await readOwnedContactClassifications(env.CRM_DB, profile.contact.id);
+          profile.ownedContactProfileAuthority = await readOwnedContactProfileAuthority(env.CRM_DB, profile.contact.id);
         }
         return profile
           ? json(200, { success: true, worker: "amari-crm-mirror", ...profile })

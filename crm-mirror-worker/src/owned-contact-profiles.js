@@ -1,20 +1,32 @@
 // Provider-neutral Staff ownership for contact names and exact communication destinations.
 //
-// Production is source-pinned shadow. Tests can exercise the separately reviewable active path;
-// that path appends immutable before/after evidence and updates only the selected field family.
-// A destination change must carry consent for that exact normalized email/phone, preventing a
-// grant observed for an old address from silently authorizing a new one.
+// Only names are active. Each revision appends immutable before/after evidence
+// and updates only the selected name field family. Destination commands remain
+// unavailable even in active source mode while Client Desk SMS uses GHL identity.
 
-export const OWNED_CONTACT_PROFILE_SOURCE_MODE = "shadow";
+// Names are the only active profile field family. Communication destinations
+// remain provider-owned while Client Desk SMS uses the imported GHL identity.
+export const OWNED_CONTACT_PROFILE_SOURCE_MODE = "active";
 export const OWNED_CONTACT_PROFILE_CONTRACT_VERSION = "owned-contact-profile-authority.v1";
 
 const ACTIONS = new Set(["revise_name", "set_email", "set_phone"]);
+const ACTIVE_ACTIONS = Object.freeze(["revise_name"]);
 const ACTORS = new Set(["Eben", "Garrett"]);
 const CONSENT_STATES = new Set(["granted", "revoked", "unknown"]);
 const REFERENCE = /^[A-Za-z0-9_-]{1,160}$/;
 const IDEMPOTENCY_KEY = /^[A-Za-z0-9._:-]{8,160}$/;
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const E164 = /^\+[1-9][0-9]{7,14}$/;
+const REQUIRED_PROFILE_WRITE_SCHEMA = Object.freeze([
+  { type: "table", name: "owned_contact_profile_commands", fragments: ["create table", "idempotency_key", "result_revision", "result_state"] },
+  { type: "trigger", name: "owned_contact_profile_commands_no_update", fragments: ["before update", "append-only"] },
+  { type: "trigger", name: "owned_contact_profile_commands_no_delete", fragments: ["before delete", "append-only"] },
+  { type: "trigger", name: "owned_contact_profile_contact_guard", fragments: ["before insert", "contact unavailable"] },
+  { type: "trigger", name: "owned_contact_profile_previous_guard", fragments: ["before insert", "stale revision"] },
+  { type: "trigger", name: "owned_contact_profile_result_guard", fragments: ["before insert", "result mismatch"] },
+  { type: "trigger", name: "owned_contact_profile_revision_guard", fragments: ["before insert", "result revision mismatch"] },
+  { type: "trigger", name: "owned_contact_profile_apply", fragments: ["after insert", "name_revision"] },
+]);
 
 export class OwnedContactProfileError extends Error {
   constructor(message, code = "owned_contact_profile_invalid", status = 409) {
@@ -30,28 +42,34 @@ function fail(message, code, status = 409) {
 }
 
 function clean(value) {
-  return String(value ?? "").trim();
+  return value.trim();
 }
 
-function nullableClean(value) {
-  const normalized = clean(value);
+function requiredString(value, field) {
+  if (typeof value !== "string") fail(`${field} must be a string`, `invalid_${field}`, 400);
+  return clean(value);
+}
+
+function nullableString(value, field) {
+  if (value != null && typeof value !== "string") fail(`${field} must be a string`, `invalid_${field}`, 400);
+  const normalized = value == null ? "" : clean(value);
   return normalized || null;
 }
 
 function normalizedName(value, field) {
-  const result = nullableClean(value);
+  const result = requiredString(value, field) || null;
   if (result && result.length > 100) fail(`${field} is too long`, `invalid_${field}`, 400);
   return result;
 }
 
 function normalizedEmail(value) {
-  const result = nullableClean(value)?.toLowerCase() || null;
+  const result = nullableString(value, "email")?.toLowerCase() || null;
   if (result && (result.length > 254 || !EMAIL.test(result))) fail("valid email required", "invalid_email", 400);
   return result;
 }
 
 function normalizedPhone(value) {
-  const raw = nullableClean(value);
+  const raw = nullableString(value, "phone");
   if (!raw) return null;
   const digits = raw.replace(/\D/g, "");
   const result = raw.startsWith("+") ? `+${digits}`
@@ -65,11 +83,11 @@ function normalize(input) {
   if (!input || typeof input !== "object" || Array.isArray(input)) {
     fail("contact profile command required", "invalid_profile_command", 400);
   }
-  const action = clean(input.action).toLowerCase();
-  const contactId = clean(input.contactId);
-  const actor = clean(input.actor);
-  const idempotencyKey = clean(input.idempotencyKey);
-  const expectedRevision = Number(input.expectedRevision);
+  const action = requiredString(input.action, "profile_action").toLowerCase();
+  const contactId = requiredString(input.contactId, "contact_id");
+  const actor = requiredString(input.actor, "actor");
+  const idempotencyKey = requiredString(input.idempotencyKey, "idempotency_key");
+  const expectedRevision = input.expectedRevision;
   if (!ACTIONS.has(action)) fail("recognized profile action required", "invalid_profile_action", 400);
   if (!REFERENCE.test(contactId)) fail("exact contact id required", "invalid_contact_id", 400);
   if (!ACTORS.has(actor)) fail("recognized Staff actor required", "invalid_actor", 403);
@@ -100,8 +118,8 @@ function normalize(input) {
       destination: null, consentState: null, consentEvidenceRef: null,
     });
   }
-  const consentState = clean(input.consentState).toLowerCase();
-  const consentEvidenceRef = nullableClean(input.consentEvidenceRef);
+  const consentState = requiredString(input.consentState, "destination_consent").toLowerCase();
+  const consentEvidenceRef = nullableString(input.consentEvidenceRef, "consent_evidence");
   if (!CONSENT_STATES.has(consentState)) {
     fail("explicit destination consent state required", "invalid_destination_consent", 400);
   }
@@ -221,10 +239,12 @@ function maskDestination(channel, value) {
 
 export function ownedContactProfileReleaseReadiness(mode = OWNED_CONTACT_PROFILE_SOURCE_MODE) {
   const sourceMode = mode === "active" ? "active" : "shadow";
+  const allowedActions = sourceMode === "active" ? ACTIVE_ACTIONS : [];
   return Object.freeze({
     version: OWNED_CONTACT_PROFILE_CONTRACT_VERSION,
     sourceMode,
-    enabled: sourceMode === "active",
+    enabled: allowedActions.length > 0,
+    allowedActions,
     providerFallback: null,
     providerWrite: false,
     messageWrite: false,
@@ -232,19 +252,98 @@ export function ownedContactProfileReleaseReadiness(mode = OWNED_CONTACT_PROFILE
     appointmentWrite: false,
     contactCreation: false,
     destructiveEvidenceDelete: false,
+    destinationActionsEnabled: false,
     destinationConsentRequired: true,
     independentFieldRevisions: true,
   });
 }
 
+function unavailableAuthority(reason) {
+  return Object.freeze({
+    version: OWNED_CONTACT_PROFILE_CONTRACT_VERSION,
+    state: "unavailable",
+    reason,
+    allowedActions: Object.freeze([]),
+    name: null,
+    providerWrite: false,
+    messageWrite: false,
+  });
+}
+
+async function profileWriteSchemaReady(db) {
+  try {
+    const names = REQUIRED_PROFILE_WRITE_SCHEMA.map((entry) => entry.name);
+    const placeholders = names.map(() => "?").join(", ");
+    const result = await db.prepare(
+      `SELECT type, name, sql FROM sqlite_master WHERE name IN (${placeholders})`,
+    ).bind(...names).all();
+    const rows = Array.isArray(result?.results) ? result.results : [];
+    return REQUIRED_PROFILE_WRITE_SCHEMA.every((required) => {
+      const actual = rows.find((row) => row?.name === required.name && row?.type === required.type);
+      const sql = String(actual?.sql || "").toLowerCase();
+      return actual && required.fragments.every((fragment) => sql.includes(fragment));
+    });
+  } catch {
+    return false;
+  }
+}
+
+// The Desk reads this only after its normal authenticated contact lookup. A
+// missing or malformed v31 schema, immutable command table, or protective
+// trigger set never becomes an inferred write authority.
+export async function readOwnedContactProfileAuthority(db, contactId) {
+  if (!REFERENCE.test(String(contactId || "")) || !db?.prepare) {
+    return unavailableAuthority("owned_contact_profile_schema_unavailable");
+  }
+  try {
+    if (!await profileWriteSchemaReady(db)) {
+      return unavailableAuthority("owned_contact_profile_schema_unavailable");
+    }
+    const row = await db.prepare(
+      `SELECT first_name, last_name, display_name, name_authority, name_revision
+         FROM contacts WHERE id = ? AND archived_at IS NULL`,
+    ).bind(contactId).first();
+    if (!row || !["provider_mirror", "owned"].includes(row.name_authority)
+      || !Number.isSafeInteger(row.name_revision) || row.name_revision < 0
+      || (row.first_name != null && typeof row.first_name !== "string")
+      || (row.last_name != null && typeof row.last_name !== "string")
+      || typeof row.display_name !== "string") {
+      return unavailableAuthority("owned_contact_profile_schema_unavailable");
+    }
+    const readiness = ownedContactProfileReleaseReadiness();
+    return Object.freeze({
+      version: OWNED_CONTACT_PROFILE_CONTRACT_VERSION,
+      state: "ready",
+      allowedActions: readiness.allowedActions,
+      name: Object.freeze({
+        firstName: row.first_name,
+        lastName: row.last_name,
+        displayName: row.display_name,
+        authority: row.name_authority,
+        revision: Number(row.name_revision),
+      }),
+      providerWrite: false,
+      messageWrite: false,
+    });
+  } catch {
+    return unavailableAuthority("owned_contact_profile_schema_unavailable");
+  }
+}
+
 export async function captureOwnedContactProfile(db, rawInput, now = new Date().toISOString(), options = {}) {
+  const command = normalize(rawInput);
   const readiness = ownedContactProfileReleaseReadiness(options.sourceMode ?? OWNED_CONTACT_PROFILE_SOURCE_MODE);
   if (!readiness.enabled) fail("owned contact profile commands remain source-level shadow", "owned_contact_profile_shadow_only", 503);
+  if (!readiness.allowedActions.includes(command.action)) {
+    fail("only Amari CRM name changes are currently available", "owned_contact_profile_action_unavailable", 409);
+  }
   if (!db?.prepare) fail("owned CRM is unavailable", "owned_crm_unavailable", 503);
+  if (!await profileWriteSchemaReady(db)) {
+    fail("owned contact profile write schema is unavailable", "owned_contact_profile_schema_unavailable", 503);
+  }
   const recordedMs = Date.parse(now);
   if (!Number.isFinite(recordedMs)) fail("valid command time required", "invalid_command_time", 400);
   const recordedAt = new Date(recordedMs).toISOString();
-  const command = normalize(rawInput);
   const digest = await commandDigest(command);
   const replay = await commandByKey(db, command.actor, command.idempotencyKey);
   if (replay) {
