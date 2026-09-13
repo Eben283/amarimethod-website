@@ -66,6 +66,7 @@ const create = (overrides = {}) => ({
   idempotencyKey: "owned-task-command-0001",
   title: "Confirm the client's next practice plan",
   dueAt: "2026-09-02T10:00:00-07:00",
+  assignedTo: "Eben",
   ...overrides,
 });
 
@@ -86,7 +87,7 @@ describe("owned task authority", () => {
   it("is source-pinned active and exposes no provider or destructive fallback", async () => {
     expect(OWNED_TASK_SOURCE_MODE).toBe("active");
     expect(ownedTaskReleaseReadiness()).toEqual({
-      version: "owned-task-authority.v1",
+      version: "owned-task-authority.v2",
       sourceMode: "active",
       enabled: true,
       providerFallback: null,
@@ -117,6 +118,7 @@ describe("owned task authority", () => {
       revision: 1,
       priorRevision: 0,
       dueAt: "2026-09-02T17:00:00.000Z",
+      assignedTo: "Eben",
       state: "open",
       completedAt: null,
       deduped: false,
@@ -135,9 +137,10 @@ describe("owned task authority", () => {
         actor: "Eben",
         title: "Confirm the client's updated practice plan",
         dueAt: "2026-09-02T11:00:00-07:00",
+        assignedTo: "Garrett",
       },
     ), "2026-09-01T17:12:00.000Z", active);
-    expect(revised).toMatchObject({ action: "revise", revision: 2, state: "open", dueAt: "2026-09-02T18:00:00.000Z" });
+    expect(revised).toMatchObject({ action: "revise", revision: 2, state: "open", dueAt: "2026-09-02T18:00:00.000Z", assignedTo: "Garrett" });
 
     const completed = await captureOwnedTaskVersion(db, transition(
       "complete", created.taskId, 2, "owned-task-command-0003",
@@ -145,6 +148,7 @@ describe("owned task authority", () => {
     expect(completed).toMatchObject({
       action: "complete", revision: 3, state: "completed",
       title: revised.title, dueAt: revised.dueAt, completedAt: "2026-09-01T17:13:00.000Z",
+      assignedTo: "Garrett",
     });
 
     const archivedCompleted = await captureOwnedTaskVersion(db, transition(
@@ -191,6 +195,7 @@ describe("owned task authority", () => {
         revision: 8,
         title: revised.title,
         due_at: revised.dueAt,
+        assigned_to: "Garrett",
         completed_at: null,
         status: "open",
         state: "open",
@@ -229,7 +234,7 @@ describe("owned task authority", () => {
     sqlite.close();
   });
 
-  it("accepts only the three reviewed HTTP commands with authenticated actor and exact replay", async () => {
+  it("accepts the four reviewed HTTP commands with authenticated actor and exact replay", async () => {
     const sqlite = database();
     insertContact(sqlite);
     const values = new Map();
@@ -246,19 +251,22 @@ describe("owned task authority", () => {
     const send = (body) => worker.fetch(new Request("https://crm.test/tasks/commands", {
       method: "POST", headers: { Cookie: cookie, Origin: "https://crm.test", "Content-Type": "application/json" }, body: JSON.stringify(body),
     }), env);
-    const command = { action: "create", contactId: "contact-1", title: "Review assessment", dueAt: null, idempotencyKey: "route-create-00001" };
+    const command = { action: "create", contactId: "contact-1", title: "Review assessment", dueAt: null, assignedTo: "Garrett", idempotencyKey: "route-create-00001" };
     const response = await send(command);
     expect(response.status).toBe(201);
     const task = (await response.json()).task;
-    expect(task).toMatchObject({ actor: "Eben", contactId: "contact-1", revision: 1, dueAt: null });
+    expect(task).toMatchObject({ actor: "Eben", contactId: "contact-1", revision: 1, dueAt: null, assignedTo: "Garrett" });
     expect((await send(command)).status).toBe(200);
-    for (const [action, revision] of [["complete", 1], ["reopen", 2]]) {
+    const revised = await send({ action: "revise", contactId: "contact-1", taskId: task.taskId, expectedRevision: 1, title: "Review updated assessment", dueAt: "2026-09-04T09:30:00-07:00", assignedTo: "Eben", idempotencyKey: "route-revise-00001" });
+    expect(revised.status).toBe(201);
+    await expect(revised.json()).resolves.toMatchObject({ task: { revision: 2, assignedTo: "Eben", dueAt: "2026-09-04T16:30:00.000Z" } });
+    for (const [action, revision] of [["complete", 2], ["reopen", 3]]) {
       const changed = await send({ action, contactId: "contact-1", taskId: task.taskId, expectedRevision: revision, idempotencyKey: "route-" + action + "-00001" });
       expect(changed.status).toBe(201);
       expect((await changed.json()).task.revision).toBe(revision + 1);
     }
-    for (const action of ["revise", "archive", "restore"]) expect((await send({ ...command, action })).status).toBe(400);
-    expect(sqlite.prepare("SELECT COUNT(*) AS n FROM owned_task_versions").get().n).toBe(3);
+    for (const action of ["archive", "restore"]) expect((await send({ ...command, action })).status).toBe(400);
+    expect(sqlite.prepare("SELECT COUNT(*) AS n FROM owned_task_versions").get().n).toBe(4);
     sqlite.close();
   });
 
@@ -282,7 +290,7 @@ describe("owned task authority", () => {
     expect(response.status).toBe(200);
     const body = await response.json();
     expect(body.ownedTaskAuthority).toMatchObject({
-      version: "owned-task-authority.v1",
+      version: "owned-task-authority.v2",
       state: "ready",
       readOnly: true,
     });
@@ -313,6 +321,10 @@ describe("owned task authority", () => {
       idempotencyKey: "owned-task-command-bad-due",
       dueAt: "2026-09-02",
     }), "2026-09-01T17:11:00.000Z", active)).rejects.toMatchObject({ code: "invalid_task_due_at" });
+    await expect(captureOwnedTaskVersion(db, create({
+      idempotencyKey: "owned-task-command-bad-assignee",
+      assignedTo: "Someone else",
+    }), "2026-09-01T17:11:00.000Z", active)).rejects.toMatchObject({ code: "invalid_task_assignee" });
     await expect(captureOwnedTaskVersion(db, transition(
       "complete", created.taskId, 2, "owned-task-command-stale",
     ), "2026-09-01T17:11:00.000Z", active)).rejects.toMatchObject({ code: "task_revision_conflict" });
@@ -366,11 +378,64 @@ describe("owned task authority", () => {
     sqlite.close();
   });
 
+  it("adds assignment without rewriting existing task history and preserves legacy replay", async () => {
+    const sqlite = new DatabaseSync(":memory:");
+    sqlite.exec("PRAGMA foreign_keys = ON");
+    const entries = readdirSync(new URL("../migrations/", import.meta.url))
+      .filter((name) => /^\d{4}_.+\.sql$/.test(name)).sort();
+    for (const name of entries.filter((name) => name < "0032_")) {
+      sqlite.exec(readFileSync(new URL(`../migrations/${name}`, import.meta.url), "utf8"));
+    }
+    insertContact(sqlite);
+    const legacyKey = "legacy-task-command-0001";
+    const legacyCommand = [
+      "owned-task-authority.v1", "Eben", legacyKey, "create", "contact-1", "", "", "0",
+      "Legacy task", "",
+    ].join("\n");
+    const legacyDigest = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(legacyCommand))),
+      (byte) => byte.toString(16).padStart(2, "0")).join("");
+    sqlite.prepare(
+      `INSERT INTO owned_task_versions (
+         id, task_id, contact_id, actor, idempotency_key, action, revision,
+         prior_revision, title_clean, title_sha256, due_at, state,
+         archived_from_state, completed_at, command_sha256, recorded_at
+       ) VALUES ('legacy-v1', 'legacy-task', 'contact-1', 'Eben', ?, 'create',
+                 1, 0, 'Legacy task', ?, NULL, 'open', NULL, NULL, ?, '2026-09-01T17:00:00.000Z')`,
+    ).run(legacyKey, "a".repeat(64), legacyDigest);
+    sqlite.exec(readFileSync(new URL("../migrations/0032_owned_task_assignment.sql", import.meta.url), "utf8"));
+
+    expect(sqlite.prepare("SELECT assigned_to FROM owned_task_versions WHERE task_id = 'legacy-task'").get())
+      .toEqual({ assigned_to: null });
+    const replay = await captureOwnedTaskVersion(d1(sqlite), {
+      action: "create", contactId: "contact-1", actor: "Eben", idempotencyKey: legacyKey,
+      title: "Legacy task", dueAt: null,
+    }, "2026-09-01T18:00:00.000Z", active);
+    expect(replay).toMatchObject({ taskId: "legacy-task", assignedTo: null, deduped: true });
+
+    const revised = await captureOwnedTaskVersion(d1(sqlite), {
+      action: "revise", contactId: "contact-1", taskId: "legacy-task", expectedRevision: 1,
+      actor: "Garrett", idempotencyKey: "legacy-task-revise-0001", title: "Assigned legacy task",
+      dueAt: "2026-09-04T09:30:00-07:00", assignedTo: "Garrett",
+    }, "2026-09-01T18:01:00.000Z", active);
+    expect(revised).toMatchObject({ revision: 2, assignedTo: "Garrett" });
+    const revisedTitleHash = sqlite.prepare("SELECT title_sha256 FROM owned_task_versions WHERE task_id = 'legacy-task' AND revision = 2").get().title_sha256;
+    expect(() => sqlite.prepare(
+      `INSERT INTO owned_task_versions (
+         id, task_id, contact_id, actor, idempotency_key, action, revision, prior_revision,
+         title_clean, title_sha256, due_at, state, completed_at, command_sha256, recorded_at, assigned_to
+       ) VALUES ('bad-assignment-v3', 'legacy-task', 'contact-1', 'Eben', 'bad-assignment-state-key',
+                 'complete', 3, 2, 'Assigned legacy task', ?, '2026-09-04T16:30:00.000Z', 'completed',
+                 '2026-09-01T18:02:00.000Z', ?, '2026-09-01T18:02:00.000Z', 'Eben')`,
+    ).run(revisedTitleHash, "d".repeat(64))).toThrow(/assignment conflict/i);
+    expect(sqlite.prepare("PRAGMA foreign_key_check").all()).toEqual([]);
+    sqlite.close();
+  });
+
   it("degrades read-only before schema installation and produces no provider, message, payment, appointment, or ledger effect", async () => {
     await expect(readOwnedTasks({
       prepare: () => ({ bind() { return this; }, all: async () => { throw new Error("no such table: owned_task_versions"); } }),
     }, { contactId: "contact-1" })).resolves.toEqual({
-      version: "owned-task-authority.v1",
+      version: "owned-task-authority.v2",
       state: "unavailable",
       reason: "schema_unavailable",
       readOnly: true,

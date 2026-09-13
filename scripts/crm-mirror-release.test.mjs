@@ -69,12 +69,21 @@ test('owned note authority is source-level active, provider-free, and non-destru
 test('owned task authority is source-level active, provider-free, and non-destructive', () => {
   const source = readFileSync(new URL('../crm-mirror-worker/src/owned-tasks.js', import.meta.url), 'utf8');
   const router = readFileSync(new URL('../crm-mirror-worker/src/index.js', import.meta.url), 'utf8');
+  const migration = readFileSync(new URL('../crm-mirror-worker/migrations/0032_owned_task_assignment.sql', import.meta.url), 'utf8');
+  const schemaPlan = readFileSync(new URL('./crm-task-assignment-schema-install-plan.mjs', import.meta.url), 'utf8');
   assert.match(source, /export const OWNED_TASK_SOURCE_MODE = ["']active["']/);
+  assert.match(source, /OWNED_TASK_CONTRACT_VERSION = ["']owned-task-authority\.v2["']/);
   assert.doesNotMatch(source, /export const OWNED_TASK_SOURCE_MODE = ["']shadow["']/);
   assert.match(source, /providerFallback:\s*null/);
   assert.match(source, /providerWrite:\s*false/);
   assert.match(source, /destructiveDeleteExposed:\s*false/);
   assert.match(router, /captureOwnedTaskVersion\(env\.CRM_DB/);
+  assert.match(router, /create: new Set\(\[[^\]]*["']assignedTo["']/);
+  assert.match(router, /revise: new Set\(\[[^\]]*["']assignedTo["']/);
+  assert.match(migration, /ADD COLUMN assigned_to TEXT/);
+  assert.match(migration, /owned_task_version_state_change_preserves_assignment/);
+  assert.match(schemaPlan, /executionAuthorized:\s*false/);
+  assert.doesNotMatch(schemaPlan, /wrangler|fetch\s*\(|CLOUDFLARE|bws\s/);
   assert.doesNotMatch(router, /OWNED_TASK_SOURCE_MODE\s*:\s*env\./);
 });
 

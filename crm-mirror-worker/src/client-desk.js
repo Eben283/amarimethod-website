@@ -34,6 +34,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
   .tag-catalog-results { display:grid; gap:6px; max-height:240px; overflow:auto; } .tag-catalog-choice { display:grid; gap:4px; padding:9px; border:1px solid #aebfbb; border-radius:7px; background:#fff; text-align:left; overflow-wrap:anywhere; cursor:pointer; } .tag-catalog-choice span { font-size:11px; } .tag-catalog-choice:disabled { opacity:.65; cursor:default; }
   #owned-classifications input, #owned-classifications select { width:100%; min-width:0; border:1px solid #aebfbb; border-radius:7px; padding:9px; background:#fffefa; color:#243f49; font-size:12px; }
   .note-composer { display:grid; gap:8px; margin:0 0 12px; padding:11px; border:1px solid #c5d7d2; border-radius:9px; background:#fff; } .note-composer label { color:#526b72; font-size:11px; font-weight:800; } .note-composer textarea { width:100%; min-height:82px; max-height:220px; resize:vertical; border:1px solid #aebfbb; border-radius:7px; padding:9px; background:#fffefa; color:#243f49; font:inherit; font-size:12px; line-height:1.5; } .note-composer-actions { display:flex; align-items:center; justify-content:space-between; gap:9px; } .note-submit,.note-edit { border:1px solid #7da29a; border-radius:7px; padding:7px 10px; background:#e8f3f0; color:#24574f; cursor:pointer; font-size:11px; font-weight:800; } .note-submit { border-color:#0d6268; background:#0d6268; color:#fff; } .note-submit:disabled,.note-edit:disabled { cursor:wait; opacity:.6; } .note-status { min-height:1.4em; color:#657b82; font-size:10px; line-height:1.4; } .note-status.error { color:#91382f; } .note-origin { display:block; margin-top:5px; color:#7f8e91; font-size:9px; font-weight:800; letter-spacing:.05em; text-transform:uppercase; } .note-edit { margin-top:8px; } .note-revision { margin-top:8px; } .note-revision[hidden] { display:none; }
+  .task-fields { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; } .task-fields label { display:grid; gap:4px; } .task-fields input,.task-fields select { width:100%; min-width:0; border:1px solid #aebfbb; border-radius:7px; padding:8px; background:#fffefa; color:#243f49; font:inherit; font-size:12px; } .task-actions { display:flex; gap:7px; flex-wrap:wrap; } .task-overdue { border-left-color:#c65e4b; background:#fff3ef; } .task-state { font-weight:800; } .task-state.overdue { color:#a53c2e; }
+  @media (max-width:520px) { .task-fields { grid-template-columns:1fr; } }
   @media (max-width: 1080px) { .workspace { height: auto; max-height: none; overflow: visible; grid-template-columns: minmax(245px, .72fr) minmax(380px, 1.28fr); } .inbox, .conversation { height: min(66vh, 640px); } .record { max-height: min(70vh, 720px); grid-column: 1 / -1; border-top: 1px solid #e4eceb; } .record-scroll { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 22px; max-height: none; } }
   @media (max-width: 720px) { main { width: min(100% - 20px, 580px); padding-top: 20px; } .page-head { display: block; } .page-note { margin-top: 10px; text-align: left; } .count { display: none; } .workspace { height: auto; grid-template-columns: 1fr; border-radius: 14px; } .inbox, .conversation { border-right: 0; border-bottom: 1px solid #e4eceb; } .conversation { min-height: 560px; } .record-scroll { display: block; } .timeline { padding: 15px; } .conversation-empty { min-height: 210px; } .payment-row { grid-template-columns: minmax(70px, 1fr) minmax(70px, .85fr) minmax(68px, .9fr); } }
   /* Channel is text in the thread; the blue dot belongs only to unread inbox rows. */
@@ -351,8 +353,16 @@ const CLIENT_DESK_HTML = `<!doctype html>
     catch { taskStorageAvailable = false; return false; }
   }
   function taskDraft(contactId) {
-    if (!Object.hasOwn(taskDrafts, contactId)) taskDrafts[contactId] = { title: '', command: null, message: '' };
-    return taskDrafts[contactId];
+    if (!Object.hasOwn(taskDrafts, contactId)) taskDrafts[contactId] = { title: '', dueLocal: '', assignedTo: taskActor || '', edit: null, command: null, message: '' };
+    const draft = taskDrafts[contactId];
+    if (typeof draft.title !== 'string') draft.title = '';
+    if (typeof draft.dueLocal !== 'string') draft.dueLocal = '';
+    if (!['Eben', 'Garrett'].includes(draft.assignedTo)) draft.assignedTo = taskActor || '';
+    if (!draft.edit || typeof draft.edit !== 'object' || typeof draft.edit.taskId !== 'string'
+      || !Number.isSafeInteger(Number(draft.edit.revision)) || Number(draft.edit.revision) < 1
+      || typeof draft.edit.title !== 'string' || typeof draft.edit.dueLocal !== 'string') draft.edit = null;
+    else if (!['Eben', 'Garrett'].includes(draft.edit.assignedTo)) draft.edit.assignedTo = taskActor || '';
+    return draft;
   }
   // Names use their own actor-scoped durable draft. An unresolved payload is
   // deliberately retained verbatim so an iframe/session renewal never creates
@@ -603,6 +613,18 @@ const CLIENT_DESK_HTML = `<!doctype html>
   function taskTime(value) {
     return value ? new Date(value).toLocaleString(undefined, { year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' }) : 'No due time';
   }
+  function taskLocalValue(value) {
+    if (!value) return '';
+    const date = new Date(value);
+    if (!Number.isFinite(date.getTime())) return '';
+    const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+    return local.toISOString().slice(0, 16);
+  }
+  function taskDueIso(value) {
+    if (!value) return null;
+    const due = new Date(value);
+    return Number.isFinite(due.getTime()) ? due.toISOString() : null;
+  }
   function tasksMarkup(data) {
     const contactId = data.contact?.id;
     const draft = taskDraft(contactId);
@@ -612,10 +634,16 @@ const CLIENT_DESK_HTML = `<!doctype html>
     const cards = (data.tasks || []).map((row) => {
       const owned = row.authority === 'owned';
       const completed = row.state === 'completed' || Boolean(row.completed_at);
-      const control = enabled && owned && !draft.command ? '<button type="button" class="show-all" data-task-id="' + esc(row.task_id) + '" data-task-action="' + (completed ? 'reopen' : 'complete') + '"' + (busy ? ' disabled' : '') + '>' + (completed ? 'Reopen' : 'Complete') + '</button>' : '';
-      return '<div class="compact-card ' + (completed ? '' : 'task-open') + '"><b>' + esc(row.title) + '</b><div>' + (owned ? 'Amari CRM' : 'GHL history · read-only') + ' · ' + (completed ? 'Completed' : esc(row.status || 'Open')) + '</div><div>' + esc(taskTime(row.due_at)) + '</div>' + (owned ? '<div>Created by ' + esc(row.defined_by || 'Staff') + '</div>' : '') + control + '</div>';
+      const overdue = !completed && row.due_at && new Date(row.due_at).getTime() < Date.now();
+      const controls = enabled && owned && !draft.command ? '<div class="task-actions">' + (!completed ? '<button type="button" class="note-edit" data-task-edit="' + esc(row.task_id) + '"' + (busy ? ' disabled' : '') + '>Edit task</button>' : '') + '<button type="button" class="show-all" data-task-id="' + esc(row.task_id) + '" data-task-action="' + (completed ? 'reopen' : 'complete') + '"' + (busy ? ' disabled' : '') + '>' + (completed ? 'Reopen' : 'Complete') + '</button></div>' : '';
+      return '<div class="compact-card ' + (completed ? '' : overdue ? 'task-overdue' : 'task-open') + '"><b>' + esc(row.title) + '</b><div>' + (owned ? 'Amari CRM' : 'GHL history · read-only') + ' · <span class="task-state' + (overdue ? ' overdue' : '') + '">' + (completed ? 'Completed' : overdue ? 'Overdue' : esc(row.status || 'Open')) + '</span></div><div>' + esc(taskTime(row.due_at)) + '</div>' + (owned ? '<div>Assigned to ' + esc(row.assigned_to || 'Unassigned') + ' · Created by ' + esc(row.defined_by || 'Staff') + '</div>' : '') + controls + '</div>';
     }).join('');
-    const composer = (ownedTaskCommandsEnabled && ready ? '<form id="task-form" class="note-composer"><label for="task-title">Add a client task</label><textarea id="task-title" maxlength="300"' + (!draft.command ? ' required' : '') + (draft.command || busy ? ' readonly' : '') + '>' + esc(draft.title) + '</textarea><p class="source-note">Saved to Amari CRM only. No due time or reminder is set.</p><p class="note-status" role="status">' + esc(!taskStorageAvailable ? 'Task saving needs a named Staff session and session storage. Reopen Inbox after allowing session storage.' : draft.message || (draft.command ? 'An earlier save needs confirmation. Retry it safely.' : '')) + '</p><button class="note-submit" type="submit"' + (!enabled || busy ? ' disabled' : '') + '>' + (busy ? 'Saving…' : draft.command ? 'Retry save' : 'Add task') + '</button></form>' : '');
+    const editing = draft.edit;
+    const title = editing ? editing.title : draft.title;
+    const dueLocal = editing ? editing.dueLocal : draft.dueLocal;
+    const assignedTo = editing ? editing.assignedTo : draft.assignedTo;
+    const locked = draft.command || busy;
+    const composer = (ownedTaskCommandsEnabled && ready ? '<form id="task-form" class="note-composer"><label for="task-title">' + (editing ? 'Edit client task' : 'Add a client task') + '</label><textarea id="task-title" maxlength="300"' + (!draft.command ? ' required' : '') + (locked ? ' readonly' : '') + '>' + esc(title) + '</textarea><div class="task-fields"><label for="task-due">Due date and time (optional)<input id="task-due" type="datetime-local" value="' + esc(dueLocal) + '"' + (locked ? ' disabled' : '') + '></label><label for="task-assignee">Assigned to<select id="task-assignee"' + (locked ? ' disabled' : '') + '><option value="Eben"' + (assignedTo === 'Eben' ? ' selected' : '') + '>Eben</option><option value="Garrett"' + (assignedTo === 'Garrett' ? ' selected' : '') + '>Garrett</option></select></label></div><p class="source-note">Saved to Amari CRM only. Due and overdue status appears here; no SMS or email reminder is sent.</p><p class="note-status" role="status">' + esc(!taskStorageAvailable ? 'Task saving needs a named Staff session and session storage. Reopen Inbox after allowing session storage.' : draft.message || (draft.command ? 'An earlier save needs confirmation. Retry it safely.' : '')) + '</p><div class="task-actions"><button class="note-submit" type="submit"' + (!enabled || busy ? ' disabled' : '') + '>' + (busy ? 'Saving…' : draft.command ? 'Retry save' : editing ? 'Save task' : 'Add task') + '</button>' + (editing && !locked ? '<button class="note-edit" type="button" data-task-edit-cancel>Cancel edit</button>' : '') + '</div></form>' : '');
     return '<h3>Tasks</h3>' + composer + '<div class="compact-list">' + (cards || '<p class="empty-small">No tasks recorded.</p>') + '</div>' + (!ready ? '<p role="status">Amari tasks are unavailable. Imported history remains read-only.</p>' : '');
   }
   function renderTasks(data) {
@@ -632,7 +660,15 @@ const CLIENT_DESK_HTML = `<!doctype html>
     const form = section?.querySelector('#task-form');
     const draft = taskDraft(contactId);
     form?.querySelector('textarea')?.addEventListener('input', (event) => {
-      draft.title = event.target.value;
+      if (draft.edit) draft.edit.title = event.target.value; else draft.title = event.target.value;
+      if (!persistTaskDrafts()) renderTasks(data);
+    });
+    form?.querySelector('#task-due')?.addEventListener('input', (event) => {
+      if (draft.edit) draft.edit.dueLocal = event.target.value; else draft.dueLocal = event.target.value;
+      if (!persistTaskDrafts()) renderTasks(data);
+    });
+    form?.querySelector('#task-assignee')?.addEventListener('change', (event) => {
+      if (draft.edit) draft.edit.assignedTo = event.target.value; else draft.assignedTo = event.target.value;
       if (!persistTaskDrafts()) renderTasks(data);
     });
     const save = async (command) => {
@@ -650,8 +686,13 @@ const CLIENT_DESK_HTML = `<!doctype html>
         const result = await response.json();
         if (result.error === 'task_revision_conflict') { draft.command = null; draft.needsRefresh = true; persistTaskDrafts(); }
         if (!response.ok) throw new Error(result.error === 'task_revision_conflict' ? 'This task changed. Reload the record to review it; this command has not been applied.' : result.detail || result.error || 'Task save could not be confirmed.');
-        if (!result.task || result.task.contactId !== contactId) throw new Error('Task save identity could not be confirmed. Retry safely.');
-        if (command.action === 'create') draft.title = '';
+        if (!result.task || result.task.contactId !== contactId || result.task.action !== command.action
+          || (command.taskId && result.task.taskId !== command.taskId)
+          || (command.action === 'create' && (!result.task.taskId || Number(result.task.revision) !== 1))
+          || (command.expectedRevision && Number(result.task.revision) !== Number(command.expectedRevision) + 1)
+          || (['create', 'revise'].includes(command.action) && (result.task.title !== command.title || (result.task.dueAt || null) !== (command.dueAt || null) || (result.task.assignedTo || null) !== (command.assignedTo || null)))) throw new Error('Task save identity could not be confirmed. Retry safely.');
+        if (command.action === 'create') { draft.title = ''; draft.dueLocal = ''; draft.assignedTo = taskActor; }
+        if (command.action === 'revise') draft.edit = null;
         draft.command = null;
         draft.message = 'Saved to Amari CRM.';
         persistTaskDrafts();
@@ -673,9 +714,26 @@ const CLIENT_DESK_HTML = `<!doctype html>
       event.preventDefault();
       if (!taskStorageAvailable || draft.needsRefresh) return;
       if (draft.command) { save(draft.command); return; }
-      const title = draft.title.trim();
-      if (!title) return;
-      save({ action: 'create', contactId, appointmentId: null, title, dueAt: null, idempotencyKey: noteIdempotencyKey('task-create') });
+      const source = draft.edit || draft;
+      const title = source.title.trim();
+      const dueAt = taskDueIso(source.dueLocal);
+      if (!title || (source.dueLocal && !dueAt) || !['Eben', 'Garrett'].includes(source.assignedTo)) return;
+      save(draft.edit ? { action: 'revise', contactId, appointmentId: draft.edit.appointmentId || null, taskId: draft.edit.taskId, expectedRevision: draft.edit.revision, title, dueAt, assignedTo: source.assignedTo, idempotencyKey: noteIdempotencyKey('task-revise') } : { action: 'create', contactId, appointmentId: null, title, dueAt, assignedTo: source.assignedTo, idempotencyKey: noteIdempotencyKey('task-create') });
+    });
+    section?.querySelectorAll('[data-task-edit]').forEach((button) => button.addEventListener('click', () => {
+      const row = (data.tasks || []).find((task) => task.authority === 'owned' && task.task_id === button.dataset.taskEdit && task.state === 'open');
+      if (!row || draft.command || !taskStorageAvailable || draft.needsRefresh) return;
+      draft.edit = { taskId: row.task_id, revision: Number(row.revision), appointmentId: row.appointment_id || null, title: row.title || '', dueLocal: taskLocalValue(row.due_at), assignedTo: row.assigned_to || taskActor };
+      draft.message = '';
+      persistTaskDrafts();
+      renderTasks(data);
+      record.querySelector('#task-title')?.focus({ preventScroll: true });
+    }));
+    section?.querySelector('[data-task-edit-cancel]')?.addEventListener('click', () => {
+      draft.edit = null;
+      draft.message = '';
+      persistTaskDrafts();
+      renderTasks(data);
     });
     section?.querySelectorAll('[data-task-action]').forEach((button) => button.addEventListener('click', () => {
       const row = (data.tasks || []).find((task) => task.authority === 'owned' && task.task_id === button.dataset.taskId);

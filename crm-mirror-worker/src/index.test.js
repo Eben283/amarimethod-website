@@ -592,6 +592,7 @@ describe("CRM mirror dashboard access handoff", () => {
       idempotencyKey: "owned-task-command-0001",
       title: "Confirm the client's next practice plan",
       dueAt: "2026-09-02T10:00:00-07:00",
+      assignedTo: "Garrett",
     };
     const request = (cookie, extra = {}) => new Request("https://crm.test/tasks/commands", {
       method: "POST",
@@ -624,7 +625,7 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(unsupported.status).toBe(400);
     await expect(unsupported.json()).resolves.toEqual({ error: "unsupported_fields", fields: ["providerTaskId"] });
 
-    for (const action of ["revise", "archive", "restore", "unknown", "toString", "__proto__", ["create"], null]) {
+    for (const action of ["archive", "restore", "unknown", "toString", "__proto__", ["create"], null]) {
       const denied = await worker.fetch(request(namedCookie, { action }), env);
       expect(denied.status).toBe(400);
       await expect(denied.json()).resolves.toEqual({ error: "unsupported_task_action" });
