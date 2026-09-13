@@ -26,6 +26,32 @@ describe("Staff owned appointment schedule", () => {
     expect(fetch.mock.calls[0][1].headers.Authorization).toBe("Bearer secret");
   });
 
+  it("normalizes naive Pacific appointment times before sending them to Staff browsers", () => {
+    const appointment = {
+      id: "appt-naive", contactId: "contact-owned", contactName: "Partner Person",
+      serviceName: "Partner Initial Session", startTime: "2026-09-07T12:00:00",
+      endTime: "2026-09-07T13:00:00", status: "confirmed", authority: "mirror",
+      providerSyncState: "synced", truthState: "mirrored", providerAppointmentId: "ghl-1",
+      providerCalendarId: "calendar-1",
+    };
+
+    const [summary] = staffScheduleSummaries({ appointments: [appointment] });
+    expect(summary.startTime).toBe("2026-09-07T12:00:00-07:00");
+    expect(summary.endTime).toBe("2026-09-07T13:00:00-07:00");
+
+    const [detail] = staffScheduleDetails({
+      detailIncluded: true,
+      appointments: [{
+        ...appointment,
+        meetingLocation: null, sessionsRemaining: 0, sessionsCompleted: 0,
+        seriesType: "none", tags: [], sessionPrepaid: false, paymentStatus: "unknown",
+        paymentMethod: null, paymentNote: null, enrichmentFailed: false, detailTruth: {},
+      }],
+    });
+    expect(detail.startTime).toBe("2026-09-07T12:00:00-07:00");
+    expect(detail.endTime).toBe("2026-09-07T13:00:00-07:00");
+  });
+
   it("maps detailed owned evidence without inventing missing payment truth", () => {
     const detail = staffScheduleDetails({
       detailIncluded: true,
