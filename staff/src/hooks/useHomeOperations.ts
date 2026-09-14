@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   getCalendarSummary,
-  getConversations,
+  getCrmPilotInbox,
   getOpsSystemsBoard,
   getPartnerProspects,
   getStaffRevenue,
@@ -13,6 +13,7 @@ import type {
   PartnerProspectsResponse,
   TodayAppointment,
 } from '../types/staff';
+import { conversationWorkState } from '../lib/conversation-work-state';
 
 type HomeResource<T> = {
   data: T | null;
@@ -79,8 +80,30 @@ export function useHomeOperations() {
       .then((data) => update('schedule', { data, loading: false, error: null }))
       .catch((error) => update('schedule', { data: null, loading: false, error: message(error, 'Today’s schedule could not be loaded.') }));
 
-    void getConversations('needs_reply')
-      .then((result) => update('conversations', { data: result.conversations || [], loading: false, error: null }))
+    // Home and Inbox must share one definition of work. The legacy
+    // needs-reply endpoint includes imported GHL backlog and reactions, while
+    // the owned CRM queue intentionally starts fresh and closes simple
+    // acknowledgements automatically.
+    void getCrmPilotInbox()
+      .then((result) => {
+        const conversations = (result.threads || [])
+          .filter((thread) => conversationWorkState(thread.last_direction, thread.last_preview, thread.last_event_at) === 'needs_reply')
+          .map((thread): ConversationSummary => ({
+            id: thread.thread_id || thread.contact_id,
+            contactId: thread.external_contact_id || thread.contact_id,
+            contactName: thread.display_name || '',
+            email: thread.email_normalized || '',
+            phone: thread.phone_e164 || '',
+            lastMessagePreview: thread.last_preview || 'New message',
+            lastMessageDate: thread.last_event_at,
+            lastMessageType: thread.channel || 'message',
+            lastMessageDirection: thread.last_direction || 'inbound',
+            unreadCount: thread.unread_inbound_count || 0,
+            needsReply: true,
+            assignedTo: null,
+          }));
+        update('conversations', { data: conversations, loading: false, error: null });
+      })
       .catch((error) => update('conversations', { data: null, loading: false, error: message(error, 'Replies could not be loaded.') }));
 
     void getPartnerProspects()
