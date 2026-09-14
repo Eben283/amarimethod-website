@@ -6,6 +6,7 @@ import { getBalances, getOwedList, getOwedStatus, ApiError, type OwedRow } from 
 import type { BalanceRow } from '../types/staff';
 import LedgerWarning from '../components/LedgerWarning';
 import { resolveDataReadState } from '../lib/data-read-state';
+import './BalancesPage.css';
 
 type SortKey = 'remaining' | 'recent' | 'name';
 
@@ -192,7 +193,7 @@ export default function BalancesPage() {
   const readState = resolveDataReadState({ loading: isLoading, error: error || null, hasData: rows.length > 0 });
 
   return (
-    <div className="px-4 pt-6 pb-4">
+    <main className="staff-balances px-4 pt-6 pb-4">
       <div className="staff-pagehead flex items-center justify-between">
         <h1 className="text-xl font-serif text-amari-charcoal">Balances</h1>
         <div className="flex items-center gap-2">
@@ -216,11 +217,11 @@ export default function BalancesPage() {
       <div className="staff-card mb-4 flex items-center justify-between">
         <div>
           <p className="staff-mlabel">Prepaid practice members</p>
-          <p className="text-2xl font-serif text-amari-charcoal">{readState === 'unavailable' ? '—' : rows.length}</p>
+          <p className="text-2xl font-serif text-amari-charcoal">{readState === 'unavailable' || readState === 'loading' ? '—' : rows.length}</p>
         </div>
         <div className="text-right">
           <p className="staff-mlabel">Sessions owed</p>
-          <p className="text-2xl font-serif text-amari-accent-warm">{readState === 'unavailable' ? '—' : totalRemaining}</p>
+          <p className="text-2xl font-serif text-amari-accent-warm">{readState === 'unavailable' || readState === 'loading' ? '—' : totalRemaining}</p>
         </div>
       </div>
 
@@ -339,7 +340,7 @@ export default function BalancesPage() {
           ))}
         </div>
       )}
-    </div>
+    </main>
   );
 }
 
