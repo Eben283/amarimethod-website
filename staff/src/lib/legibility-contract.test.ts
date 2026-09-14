@@ -214,6 +214,7 @@ describe('Staff legibility contract', () => {
     expect(home).not.toContain('More tools');
     expect(home).not.toContain("getConversations('needs_reply')");
     expect(homeCss).toContain("font-family: 'ABC Diatype'");
+    expect(homeCss).toContain('.staff-shell__content .staff-home');
     expect(homeCss).toContain('max-width: 1140px');
     expect(homeCss).not.toContain('IBM Plex Mono');
     expect(homeCss).toContain('@media (max-width: 820px)');

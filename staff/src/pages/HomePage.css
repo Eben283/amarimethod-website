@@ -14,7 +14,7 @@
   font-display: swap;
 }
 
-.staff-home {
+.staff-shell__content .staff-home {
   --home-sheet: #fcfbf7;
   --home-ink: #17383c;
   --home-body: #466065;
