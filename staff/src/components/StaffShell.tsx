@@ -132,7 +132,7 @@ function useShellCounts() {
 
   const refresh = useCallback(async () => {
     const [inbox, operations] = await Promise.allSettled([
-      getConversations('unread'),
+      getConversations('needs_reply'),
       getOpsSystemsBoard(),
     ]);
     setCounts((current) => ({
@@ -251,7 +251,7 @@ function MemberSearch({ inputRef, onChoose }: { inputRef: MutableRefObject<HTMLI
 function CountBadge({ kind, count }: { kind: 'inbox' | 'operations'; count: number | null }) {
   if (!count) return null;
   const label = kind === 'inbox'
-    ? `${count} unread conversation${count === 1 ? '' : 's'}`
+    ? `${count} conversation${count === 1 ? '' : 's'} need${count === 1 ? 's' : ''} a reply`
     : `${count} system${count === 1 ? '' : 's'} need attention`;
   return <span className={`practice-rail__badge practice-rail__badge--${kind}`} aria-label={label}>{count > 99 ? '99+' : count}</span>;
 }
