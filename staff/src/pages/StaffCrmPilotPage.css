@@ -237,6 +237,88 @@
 .crm-pipeline__avatar { display: grid; width: 32px; height: 32px; place-items: center; border-radius: 50%; background: var(--crm-teal-soft); color: var(--crm-teal); font-size: 10px; font-weight: 600; }
 .crm-pipeline__empty { padding: 25px 8px; color: var(--crm-muted); font-size: 11px; text-align: center; }
 
+.crm-collection { width: 100%; height: 100%; overflow: auto; background: var(--crm-paper); }
+.crm-collection__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; padding: 34px 38px 25px; border-bottom: 1px solid var(--crm-line-dark); background: var(--crm-sheet); }
+.crm-collection__head p { margin: 0 0 5px; color: var(--crm-teal); font-size: 12px; font-weight: 500; }
+.crm-collection__head h1 { margin: 0; font-size: 31px; font-weight: 600; letter-spacing: -.04em; line-height: 1; }
+.crm-collection__head div > span { display: block; max-width: 620px; margin-top: 9px; color: var(--crm-body); font-size: 13px; }
+.crm-collection__head > button, .crm-collection__section-head button { display: flex; min-height: 42px; align-items: center; gap: 8px; padding: 0 14px 0 16px; border: 1px solid var(--crm-line-dark); border-radius: 8px; background: transparent; color: var(--crm-teal); font-size: 12px; font-weight: 500; white-space: nowrap; }
+.crm-collection__head > button svg, .crm-collection__section-head button svg { width: 15px; height: 15px; }
+.crm-collection__body { padding: 28px 38px 50px; }
+.crm-collection__section-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; margin: 31px 0 13px; }
+.crm-collection__section-head h2 { margin: 0; font-size: 17px; font-weight: 600; letter-spacing: -.015em; }
+.crm-collection__section-head p { margin: 5px 0 0; color: var(--crm-body); font-size: 12px; }
+.crm-collection__section-head > span { color: var(--crm-muted); font-size: 11px; }
+.crm-collection__loading, .crm-collection__empty { display: grid; min-height: 210px; place-content: center; justify-items: center; gap: 9px; border: 1px solid var(--crm-line); border-radius: 9px; background: var(--crm-sheet); color: var(--crm-muted); font-size: 12px; text-align: center; }
+.crm-collection__loading { display: flex; align-items: center; justify-content: center; }
+.crm-collection__loading svg { width: 18px; height: 18px; animation: crm-pilot-spin 900ms linear infinite; }
+.crm-collection__empty svg { width: 24px; height: 24px; color: var(--crm-green); }
+.crm-collection__empty strong { color: var(--crm-ink); font-size: 14px; }
+
+.crm-outreach__summary { display: grid; grid-template-columns: repeat(3,1fr); border: 1px solid var(--crm-line-dark); border-radius: 9px; background: var(--crm-sheet); }
+.crm-outreach__summary > div { padding: 19px 22px 18px; }
+.crm-outreach__summary > div + div { border-left: 1px solid var(--crm-line); }
+.crm-outreach__summary span, .crm-outreach__summary small { display: block; color: var(--crm-muted); font-size: 11px; }
+.crm-outreach__summary strong { display: block; margin: 7px 0 4px; font-family: 'Bona Nova', Georgia, serif; font-size: 31px; font-weight: 400; line-height: 1; }
+.crm-outreach__summary small { color: var(--crm-body); }
+.crm-outreach__rows { overflow: hidden; border: 1px solid var(--crm-line-dark); border-radius: 9px; background: var(--crm-sheet); }
+.crm-outreach__rows > button { display: grid; width: 100%; min-height: 84px; grid-template-columns: 28px 36px minmax(150px,.8fr) minmax(210px,1.4fr) 56px 16px; align-items: center; gap: 13px; padding: 13px 18px; border: 0; border-bottom: 1px solid var(--crm-line); background: transparent; text-align: left; }
+.crm-outreach__rows > button:last-child { border-bottom: 0; }
+.crm-outreach__rows > button:hover { background: var(--crm-teal-pale); }
+.crm-outreach__rank { color: var(--crm-muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+.crm-outreach__person, .crm-outreach__next, .crm-outreach__touch { display: grid; min-width: 0; }
+.crm-outreach__person strong, .crm-outreach__next strong { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.crm-outreach__person small, .crm-outreach__next small, .crm-outreach__touch small { margin-top: 4px; overflow: hidden; color: var(--crm-muted); font-size: 11px; text-overflow: ellipsis; white-space: nowrap; }
+.crm-outreach__next strong { color: var(--crm-teal); font-weight: 500; }
+.crm-outreach__touch { text-align: right; }
+.crm-outreach__touch strong { font-size: 14px; font-weight: 600; }
+.crm-outreach__rows > button > svg { width: 15px; height: 15px; color: var(--crm-muted); }
+
+.crm-products__groups { display: grid; gap: 24px; }
+.crm-products__group { overflow: hidden; border: 1px solid var(--crm-line-dark); border-radius: 9px; background: var(--crm-sheet); }
+.crm-products__group > header { display: flex; min-height: 77px; align-items: center; justify-content: space-between; gap: 20px; padding: 14px 18px; border-bottom: 1px solid var(--crm-line); background: var(--crm-teal-pale); }
+.crm-products__group--custom > header { background: #eef0e8; }
+.crm-products__group--legacy > header { background: #f2ece3; }
+.crm-products__group > header p { margin: 0; font-size: 15px; font-weight: 600; }
+.crm-products__group > header span { display: block; margin-top: 4px; color: var(--crm-body); font-size: 11px; }
+.crm-products__group > header b { display: grid; min-width: 29px; height: 29px; place-items: center; border-radius: 50%; background: var(--crm-sheet); font-size: 11px; }
+.crm-products__group > div > button { display: grid; width: 100%; min-height: 92px; grid-template-columns: 38px minmax(170px,1fr) minmax(220px,1.25fr) 100px 16px; align-items: center; gap: 15px; padding: 14px 18px; border: 0; border-bottom: 1px solid var(--crm-line); background: transparent; text-align: left; }
+.crm-products__group > div > button:last-child { border-bottom: 0; }
+.crm-products__group > div > button:hover { background: var(--crm-teal-pale); }
+.crm-products__icon { display: grid; width: 36px; height: 36px; place-items: center; border-radius: 7px; background: var(--crm-teal-soft); color: var(--crm-teal); }
+.crm-products__group--custom .crm-products__icon { background: #e7eadc; color: #5f6945; }
+.crm-products__group--legacy .crm-products__icon { background: var(--crm-ochre-soft); color: var(--crm-ochre); }
+.crm-products__icon svg { width: 17px; height: 17px; }
+.crm-products__identity, .crm-products__effect, .crm-products__price { display: grid; min-width: 0; }
+.crm-products__identity strong { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.crm-products__identity small, .crm-products__effect small, .crm-products__price small { margin-top: 4px; overflow: hidden; color: var(--crm-muted); font-size: 10px; text-overflow: ellipsis; white-space: nowrap; }
+.crm-products__effect strong { margin-top: 4px; overflow: hidden; color: var(--crm-body); font-size: 11px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.crm-products__price { justify-items: end; }
+.crm-products__price strong { font-family: 'Bona Nova', Georgia, serif; font-size: 19px; font-weight: 400; }
+.crm-products__price small.is-ready { color: var(--crm-green); }
+.crm-products__price small.needs-work { color: var(--crm-ochre); }
+.crm-products__group > div > button > svg { width: 15px; height: 15px; color: var(--crm-muted); }
+.crm-products__empty { margin: 0; padding: 21px 18px; color: var(--crm-muted); font-size: 11px; }
+
+.crm-money__summary { display: grid; grid-template-columns: repeat(3,1fr); border-top: 1px solid var(--crm-line-dark); border-bottom: 1px solid var(--crm-line-dark); }
+.crm-money__summary > div { display: flex; align-items: flex-start; gap: 13px; padding: 19px 22px 18px 0; }
+.crm-money__summary > div + div { padding-left: 22px; border-left: 1px solid var(--crm-line); }
+.crm-money__summary > div > svg { width: 19px; height: 19px; margin-top: 2px; color: var(--crm-teal); stroke-width: 1.7; }
+.crm-money__summary span { display: grid; }
+.crm-money__summary small, .crm-money__summary em { color: var(--crm-muted); font-size: 11px; font-style: normal; }
+.crm-money__summary strong { margin: 5px 0 3px; font-family: 'Bona Nova', Georgia, serif; font-size: 27px; font-weight: 400; line-height: 1; }
+.crm-money__summary em { color: var(--crm-body); }
+.crm-money__rows { overflow: hidden; border: 1px solid var(--crm-line-dark); border-radius: 9px; background: var(--crm-sheet); }
+.crm-money__rows > button { display: grid; width: 100%; min-height: 78px; grid-template-columns: 36px minmax(160px,1fr) repeat(3,82px) 100px 16px; align-items: center; gap: 13px; padding: 12px 18px; border: 0; border-bottom: 1px solid var(--crm-line); background: transparent; text-align: left; }
+.crm-money__rows > button:last-child { border-bottom: 0; }
+.crm-money__rows > button:hover { background: var(--crm-teal-pale); }
+.crm-money__rows > button > span { display: grid; min-width: 0; }
+.crm-money__rows > button > span > strong { overflow: hidden; font-size: 13px; font-weight: 600; text-overflow: ellipsis; white-space: nowrap; }
+.crm-money__rows > button > span > small { margin-top: 3px; color: var(--crm-muted); font-size: 10px; }
+.crm-money__rows > button > span.is-low > strong { color: var(--crm-ochre); }
+.crm-money__rows time { color: var(--crm-muted); font-size: 10px; text-align: right; }
+.crm-money__rows > button > svg { width: 15px; height: 15px; color: var(--crm-muted); }
+
 @keyframes crm-pilot-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 1199px) {
@@ -252,6 +334,11 @@
   .crm-home__primary-grid, .crm-home__secondary-grid { grid-template-columns: minmax(0,1.35fr) minmax(280px,.75fr); gap: 30px; }
   .crm-pipeline__head { padding-right: 30px; padding-left: 30px; }
   .crm-pipeline__board { padding-right: 22px; padding-left: 22px; scroll-snap-type: x proximity; }
+  .crm-collection__head { padding-right: 30px; padding-left: 30px; }
+  .crm-collection__body { padding-right: 30px; padding-left: 30px; }
+  .crm-outreach__rows > button { grid-template-columns: 24px 34px minmax(135px,.75fr) minmax(180px,1.25fr) 48px 14px; gap: 10px; padding-right: 14px; padding-left: 14px; }
+  .crm-products__group > div > button { grid-template-columns: 36px minmax(145px,1fr) minmax(170px,1fr) 90px 14px; gap: 11px; padding-right: 14px; padding-left: 14px; }
+  .crm-money__rows > button { grid-template-columns: 34px minmax(145px,1fr) repeat(3,68px) 85px 14px; gap: 9px; padding-right: 14px; padding-left: 14px; }
 }
 
 @media (max-width: 820px) {
@@ -264,7 +351,7 @@
   .crm-pilot__mobile-head strong { font-size: 13px; }
   .crm-pilot__mobile-head > button { width: 36px; height: 36px; border: 1px solid var(--crm-line-dark); border-radius: 50%; background: transparent; color: var(--crm-body); }
   .crm-pilot__mobile-head button svg { width: 17px; height: 17px; margin: auto; }
-  .crm-pilot__bottom-nav { position: absolute; z-index: 5; right: 0; bottom: 0; left: 0; display: grid; min-height: 72px; grid-template-columns: repeat(5,1fr); padding: 8px 8px 11px; border-top: 1px solid var(--crm-line-dark); background: rgba(252,251,247,.97); }
+  .crm-pilot__bottom-nav { position: absolute; z-index: 5; right: 0; bottom: 0; left: 0; display: grid; min-height: 72px; grid-template-columns: repeat(6,1fr); padding: 8px 8px 11px; border-top: 1px solid var(--crm-line-dark); background: rgba(252,251,247,.97); }
   .crm-pilot__bottom-nav button { display: grid; place-items: center; gap: 4px; border: 0; background: transparent; color: var(--crm-muted); font-size: 9px; }
   .crm-pilot__bottom-nav button.is-active { color: var(--crm-teal); }
   .crm-pilot__bottom-nav svg { width: 19px; height: 19px; stroke-width: 1.65; }
@@ -302,6 +389,19 @@
   .crm-pipeline__phase { height: 21px; }
   .crm-pipeline__stage > header { min-height: 66px; }
   .crm-pipeline__cards > button { min-height: 88px; }
+  .crm-collection { height: calc(100dvh - 132px); }
+  .crm-collection__head { display: block; padding: 21px 20px 18px; }
+  .crm-collection__head h1 { font-size: 26px; }
+  .crm-collection__head > button { display: none; }
+  .crm-collection__body { padding: 20px 20px 30px; }
+  .crm-outreach__summary, .crm-money__summary { grid-template-columns: repeat(3,1fr); }
+  .crm-outreach__summary > div { padding: 16px; }
+  .crm-outreach__summary strong { font-size: 27px; }
+  .crm-outreach__rows > button { grid-template-columns: 24px 36px minmax(145px,1fr) minmax(185px,1.15fr) 45px 14px; }
+  .crm-outreach__rows, .crm-products__group > div, .crm-money__rows { overflow-x: auto; }
+  .crm-outreach__rows > button { min-width: 690px; }
+  .crm-products__group > div > button { min-width: 670px; }
+  .crm-money__rows > button { min-width: 680px; }
 }
 
 @media (max-width: 520px) {
@@ -315,6 +415,15 @@
   .crm-thread__person .crm-avatar { display: none; }
   .crm-thread__person h2 { max-width: 150px; }
   .crm-composer > p span:last-child { display: none; }
+  .crm-pilot__bottom-nav { overflow-x: auto; grid-template-columns: repeat(6,minmax(62px,1fr)); }
+  .crm-collection__body { padding-right: 16px; padding-left: 16px; }
+  .crm-collection__section-head { align-items: flex-start; }
+  .crm-collection__section-head > span, .crm-collection__section-head > button { display: none; }
+  .crm-outreach__summary, .crm-money__summary { grid-template-columns: 1fr; }
+  .crm-outreach__summary > div + div, .crm-money__summary > div + div { border-top: 1px solid var(--crm-line); border-left: 0; }
+  .crm-money__summary > div, .crm-money__summary > div + div { padding: 15px 4px; }
+  .crm-outreach__summary > div { display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 2px 14px; padding: 13px 15px; }
+  .crm-outreach__summary strong { grid-row: 1 / 3; grid-column: 2; margin: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

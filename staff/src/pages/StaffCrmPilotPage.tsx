@@ -1,13 +1,18 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
   ArrowLeft,
+  Archive,
   CalendarDays,
   Check,
   ChevronRight,
+  CircleDollarSign,
+  Clock3,
   Ellipsis,
   Home,
   Loader2,
   MessageSquare,
+  Package,
+  Phone,
   Search,
   Send,
   SlidersHorizontal,
@@ -19,8 +24,11 @@ import {
   getCalendarSummary,
   getCrmPilotContact,
   getCrmPilotInbox,
+  getBalances,
   getOpsSystemsBoard,
+  getPartnerProspects,
   getPipeline,
+  getStaffProducts,
   getStaffRevenue,
   type CrmPilotContactResponse,
   type CrmPilotThread,
@@ -28,13 +36,15 @@ import {
   type PipelineCard,
   type PipelineColumns,
   type PipelineData,
+  type StaffProduct,
+  type StaffProductsResponse,
   type StaffRevenueData,
 } from '../lib/api';
 import { conversationWorkState, type ConversationWorkState } from '../lib/conversation-work-state';
-import type { TodayAppointment } from '../types/staff';
+import type { BalanceRow, BalancesResponse, PartnerProspect, PartnerProspectsResponse, TodayAppointment } from '../types/staff';
 import './StaffCrmPilotPage.css';
 
-type PilotSurface = 'home' | 'inbox' | 'pipeline';
+type PilotSurface = 'home' | 'inbox' | 'outreach' | 'pipeline' | 'products' | 'money';
 type InboxView = ConversationWorkState | 'all';
 
 type PilotConversation = CrmPilotThread & {
@@ -79,6 +89,7 @@ function pipelineCardNote(card: PipelineCard, stage: keyof PipelineColumns) {
 }
 
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
+const preciseMoney = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' });
 const OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
 const NAIVE_DATETIME = /^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2})(?::(\d{2}))?/;
 
@@ -184,6 +195,22 @@ function PilotMark() {
   return <span className="crm-pilot__mark" aria-hidden="true">A</span>;
 }
 
+function CollectionHead({ eyebrow, title, detail, action, onAction }: { eyebrow: string; title: string; detail: string; action: string; onAction: () => void }) {
+  return <header className="crm-collection__head"><div><p>{eyebrow}</p><h1>{title}</h1><span>{detail}</span></div><button onClick={onAction}>{action}<ChevronRight /></button></header>;
+}
+
+function OutreachPreview({ people }: { people: PartnerProspect[] }) {
+  return <div className="crm-outreach__rows">{people.map((person, index) => <button key={person.contactId} onClick={() => goToCurrentStaff(`/outreach?contact=${encodeURIComponent(person.contactId)}`)}><span className="crm-outreach__rank">{String(index + 1).padStart(2, '0')}</span><span className="crm-avatar">{initials(person.fullName)}</span><span className="crm-outreach__person"><strong>{person.fullName || 'Unnamed prospect'}</strong><small>{person.partnerFacility || person.companyName || person.category || 'Prospect'}</small></span><span className="crm-outreach__next"><strong>{person.derived?.action === 'text' ? 'Send a text' : person.derived?.action === 'discovery' ? 'Find the right person' : person.derived?.action === 'decide' ? 'Decide next step' : 'Make a call'}</strong><small>{person.derived?.why || person.stageLabel || 'Proactive outreach is due'}</small></span><span className="crm-outreach__touch"><strong>{person.touchCount || 0}</strong><small>touches</small></span><ChevronRight /></button>)}</div>;
+}
+
+function ProductPreviewGroup({ title, detail, products, tone }: { title: string; detail: string; products: StaffProduct[]; tone: 'current' | 'custom' | 'legacy' }) {
+  return <section className={`crm-products__group crm-products__group--${tone}`}><header><div><p>{title}</p><span>{detail}</span></div><b>{products.length}</b></header><div>{products.map(product => { const ready = product.readiness === 'ready' && product.availableInPos; return <button key={product.key} onClick={() => goToCurrentStaff('/products')}><span className="crm-products__icon"><Package /></span><span className="crm-products__identity"><strong>{product.name}</strong><small>{product.description || product.internalReason}</small></span><span className="crm-products__effect"><small>After payment</small><strong>{product.fulfillmentSummary}</strong></span><span className="crm-products__price"><strong>{preciseMoney.format(product.amountCents / 100)}</strong><small className={ready ? 'is-ready' : 'needs-work'}>{ready ? 'Ready in POS' : 'Review needed'}</small></span><ChevronRight /></button>; })}{products.length === 0 ? <p className="crm-products__empty">No products in this group.</p> : null}</div></section>;
+}
+
+function BalancePreview({ rows }: { rows: BalanceRow[] }) {
+  return <div className="crm-money__rows">{rows.map(row => <button key={row.id} onClick={() => goToCurrentStaff(`/client/${encodeURIComponent(row.id)}`)}><span className="crm-avatar">{initials(row.name)}</span><span><strong>{row.name}</strong><small>{row.seriesType === 'none' ? 'No active series' : row.seriesType}</small></span><span><strong>{row.purchased ?? '—'}</strong><small>Purchased</small></span><span><strong>{row.attended}</strong><small>Completed</small></span><span className={row.remaining <= 1 ? 'is-low' : ''}><strong>{row.remaining}</strong><small>Remaining</small></span><time>{row.lastSessionDate ? dayLabel(row.lastSessionDate) : 'No recent visit'}</time><ChevronRight /></button>)}</div>;
+}
+
 export default function StaffCrmPilotPage() {
   const [surface, setSurface] = useState<PilotSurface>('home');
   const [view, setView] = useState<InboxView>('needs_reply');
@@ -202,6 +229,15 @@ export default function StaffCrmPilotPage() {
   const [pipeline, setPipeline] = useState<PipelineData | null>(null);
   const [pipelineLoading, setPipelineLoading] = useState(false);
   const [pipelineError, setPipelineError] = useState<string | null>(null);
+  const [outreach, setOutreach] = useState<PartnerProspectsResponse | null>(null);
+  const [outreachLoading, setOutreachLoading] = useState(false);
+  const [outreachError, setOutreachError] = useState<string | null>(null);
+  const [products, setProducts] = useState<StaffProductsResponse | null>(null);
+  const [productsLoading, setProductsLoading] = useState(false);
+  const [productsError, setProductsError] = useState<string | null>(null);
+  const [balances, setBalances] = useState<BalancesResponse | null>(null);
+  const [balancesLoading, setBalancesLoading] = useState(false);
+  const [balancesError, setBalancesError] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
 
   useEffect(() => {
@@ -241,6 +277,42 @@ export default function StaffCrmPilotPage() {
       .finally(() => { if (active) setPipelineLoading(false); });
     return () => { active = false; };
   }, [pipeline, surface]);
+
+  useEffect(() => {
+    if (surface !== 'outreach' || outreach) return;
+    let active = true;
+    setOutreachLoading(true);
+    setOutreachError(null);
+    void getPartnerProspects()
+      .then(result => { if (active) setOutreach(result); })
+      .catch(error => { if (active) setOutreachError(error instanceof Error ? error.message : 'Outreach could not be loaded.'); })
+      .finally(() => { if (active) setOutreachLoading(false); });
+    return () => { active = false; };
+  }, [outreach, surface]);
+
+  useEffect(() => {
+    if (surface !== 'products' || products) return;
+    let active = true;
+    setProductsLoading(true);
+    setProductsError(null);
+    void getStaffProducts()
+      .then(result => { if (active) setProducts(result); })
+      .catch(error => { if (active) setProductsError(error instanceof Error ? error.message : 'Products could not be loaded.'); })
+      .finally(() => { if (active) setProductsLoading(false); });
+    return () => { active = false; };
+  }, [products, surface]);
+
+  useEffect(() => {
+    if (surface !== 'money' || balances) return;
+    let active = true;
+    setBalancesLoading(true);
+    setBalancesError(null);
+    void getBalances()
+      .then(result => { if (active) setBalances(result); })
+      .catch(error => { if (active) setBalancesError(error instanceof Error ? error.message : 'Balances could not be loaded.'); })
+      .finally(() => { if (active) setBalancesLoading(false); });
+    return () => { active = false; };
+  }, [balances, surface]);
 
   const conversations = useMemo(() => threads.map(toConversation), [threads]);
   const actionable = useMemo(() => conversations.filter(item => item.state === 'needs_reply'), [conversations]);
@@ -283,6 +355,18 @@ export default function StaffCrmPilotPage() {
   const messages = useMemo(() => [...(selectedDetail?.communicationTimeline || [])].reverse(), [selectedDetail]);
   const lastVisit = selectedDetail?.appointments?.find(item => item.status?.toLowerCase() !== 'cancelled' && new Date(item.starts_at).getTime() < Date.now()) || null;
   const pipelineTotal = pipeline ? Object.values(pipeline.columns).reduce((sum, cards) => sum + cards.length, 0) : 0;
+  const needsReplyExternalIds = useMemo(() => new Set(actionable.map(item => item.external_contact_id).filter(Boolean)), [actionable]);
+  const outreachDue = useMemo(() => (outreach?.prospects || [])
+    .filter(person => person.derived?.kind === 'act' && !needsReplyExternalIds.has(person.contactId))
+    .sort((a, b) => (b.derived?.urgency || 0) - (a.derived?.urgency || 0))
+    .slice(0, 30), [needsReplyExternalIds, outreach]);
+  const outreachWaiting = outreach?.prospects.filter(person => person.derived?.kind === 'waiting').length || 0;
+  const productGroups = useMemo(() => ({
+    current: products?.products.filter(product => product.salesPolicy === 'current') || [],
+    custom: products?.products.filter(product => product.salesPolicy === 'custom') || [],
+    legacy: products?.products.filter(product => product.salesPolicy === 'legacy') || [],
+  }), [products]);
+  const orderedBalances = useMemo(() => [...(balances?.rows || [])].sort((a, b) => b.remaining - a.remaining), [balances]);
 
   const openSurface = (next: PilotSurface) => {
     setSurface(next);
@@ -309,12 +393,12 @@ export default function StaffCrmPilotPage() {
           <button onClick={() => goToCurrentStaff('/calendar')}><CalendarDays /><span>Calendar</span></button>
           <button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox</span>{actionable.length > 0 ? <b>{actionable.length}</b> : null}</button>
           <button onClick={() => goToCurrentStaff('/clients')}><Users /><span>People</span></button>
-          <button onClick={() => goToCurrentStaff('/outreach')}><Send /><span>Outreach</span></button>
+          <button className={surface === 'outreach' ? 'is-active' : ''} onClick={() => openSurface('outreach')}><Send /><span>Outreach</span></button>
           <button className={surface === 'pipeline' ? 'is-active' : ''} onClick={() => openSurface('pipeline')}><Workflow /><span>Pipeline</span></button>
         </nav>
         <div className="crm-pilot__rail-foot">
           <p className="crm-pilot__rail-label">Business</p>
-          <nav><button onClick={() => goToCurrentStaff('/products')}><SlidersHorizontal /><span>Products</span></button><button onClick={() => goToCurrentStaff('/balances')}><WalletCards /><span>Money</span></button></nav>
+          <nav><button className={surface === 'products' ? 'is-active' : ''} onClick={() => openSurface('products')}><SlidersHorizontal /><span>Products</span></button><button className={surface === 'money' ? 'is-active' : ''} onClick={() => openSurface('money')}><WalletCards /><span>Money</span></button></nav>
           <div className="crm-pilot__actor"><span>AM</span><div><strong>Private preview</strong><small>Real data · read only</small></div></div>
         </div>
       </aside>
@@ -351,16 +435,45 @@ export default function StaffCrmPilotPage() {
 
             <aside className="crm-person">{!selected ? null : detailLoading ? <div className="crm-person__loading"><Loader2 /> Loading record…</div> : selectedDetail ? <><header><span className="crm-avatar">{selected.initials}</span><h2>{selectedDetail.contact.display_name || selected.name}</h2><p>{selectedDetail.contact.created_at ? `Record since ${dayLabel(selectedDetail.contact.created_at)}` : 'Practice record'}</p></header><section><h3>Contact</h3><dl><div><dt>Phone</dt><dd>{selectedDetail.contact.phone_e164 || 'Not recorded'}</dd></div><div><dt>Email</dt><dd>{selectedDetail.contact.email_normalized || 'Not recorded'}</dd></div><div><dt>Source</dt><dd>{selectedDetail.contact.referral_source_label || 'Not recorded'}</dd></div></dl></section><section><h3>Next appointment</h3>{selectedDetail.nextAppointment ? <div className="crm-person__appointment"><strong>{dayLabel(selectedDetail.nextAppointment.starts_at)} · {appointmentTime(selectedDetail.nextAppointment.starts_at)}</strong><span>{selectedDetail.nextAppointment.service_name || selectedDetail.nextAppointment.status || 'Appointment'}</span></div> : <p className="crm-person__quiet">No upcoming appointment mirrored.</p>}<button onClick={() => goToCurrentStaff('/calendar')}>Open calendar</button></section><section><h3>Current context</h3><dl><div><dt>Series</dt><dd>{selectedDetail.importedCurrentState?.series_type || 'Not recorded'}</dd></div><div><dt>Balance</dt><dd>{selectedDetail.importedCurrentState?.sessions_remaining ?? 'Not recorded'}</dd></div><div><dt>Last visit</dt><dd>{lastVisit ? dayLabel(lastVisit.starts_at) : 'Not recorded'}</dd></div></dl><button onClick={openCurrentInbox}>Open full current record</button></section></> : <p className="crm-person__quiet">The selected record is unavailable.</p>}</aside>
           </section>
-        ) : (
+        ) : surface === 'pipeline' ? (
           <section className="crm-pipeline">
             <header className="crm-pipeline__head"><div><p>Practice development</p><h1>Pipeline</h1><span>{pipelineLoading ? 'Loading the current care flow.' : pipelineError ? 'The current care flow is temporarily unavailable.' : `${pipelineTotal} people across outreach, discovery, and care.`}</span></div><button onClick={() => goToCurrentStaff('/pipeline')}><span>Open current pipeline</span><ChevronRight /></button></header>
             {pipelineError ? <div className="crm-pilot__notice" role="alert">Pipeline data is unavailable. {pipelineError}</div> : null}
             {pipelineLoading ? <div className="crm-pipeline__loading"><Loader2 /> Loading pipeline…</div> : null}
             {!pipelineLoading && pipeline ? <div className="crm-pipeline__board">{pipelineStages.map((stage, index) => { const cards = pipeline.columns[stage.id] || []; const phaseStart = index === 0 || pipelineStages[index - 1].phase !== stage.phase; return <section className="crm-pipeline__stage" key={stage.id}>{phaseStart ? <p className="crm-pipeline__phase">{stage.phase}</p> : <p className="crm-pipeline__phase" aria-hidden="true">&nbsp;</p>}<header><div><h2>{stage.label}</h2><span>{cards.length} {cards.length === 1 ? 'person' : 'people'}</span></div><b>{cards.length}</b></header><div className="crm-pipeline__cards">{cards.length ? cards.map(card => <button key={card.id} onClick={() => goToCurrentStaff(`/client/${encodeURIComponent(card.id)}`)}><span className="crm-pipeline__avatar">{initials(card.name)}</span><span><strong>{card.name}</strong><small>{pipelineCardNote(card, stage.id)}</small>{card.dateAdded ? <time>Added {dayLabel(card.dateAdded)}</time> : null}</span><ChevronRight /></button>) : <div className="crm-pipeline__empty">No one in this stage</div>}</div></section>; })}</div> : null}
           </section>
+        ) : surface === 'outreach' ? (
+          <section className="crm-collection crm-outreach">
+            <CollectionHead eyebrow="Practice development" title="Outreach" detail={outreachLoading ? 'Loading the acquisition worklist.' : outreachError ? 'The acquisition worklist is temporarily unavailable.' : `${outreachDue.length} proactive contacts are due. ${outreachWaiting} are cooling off.`} action="Open working outreach" onAction={() => goToCurrentStaff('/outreach')} />
+            {outreachError ? <div className="crm-pilot__notice" role="alert">Outreach data is unavailable. {outreachError}</div> : null}
+            <div className="crm-collection__body">
+              <section className="crm-outreach__summary"><div><span>Reach out now</span><strong>{outreachLoading ? '…' : outreachDue.length}</strong><small>A focused day list, not the full backlog</small></div><div><span>Cooling off</span><strong>{outreachLoading ? '…' : outreachWaiting}</strong><small>Hidden until the next useful touch</small></div><div><span>Prospects tracked</span><strong>{outreachLoading ? '…' : outreach?.total ?? '—'}</strong><small>Searchable in the working view</small></div></section>
+              <div className="crm-collection__section-head"><div><h2>Today’s worklist</h2><p>Incoming replies stay in Inbox. This list is only proactive acquisition work.</p></div><span>Ordered by urgency</span></div>
+              {outreachLoading ? <div className="crm-collection__loading"><Loader2 /> Loading outreach…</div> : outreachDue.length ? <OutreachPreview people={outreachDue} /> : !outreachError ? <div className="crm-collection__empty"><Check /><strong>No proactive outreach is due</strong><span>New work will appear when a contact reaches the next useful step.</span></div> : null}
+            </div>
+          </section>
+        ) : surface === 'products' ? (
+          <section className="crm-collection crm-products">
+            <CollectionHead eyebrow="Sales catalog" title="Products" detail={productsLoading ? 'Loading the Staff catalog.' : productsError ? 'The Staff catalog is temporarily unavailable.' : `${products?.products.length || 0} products, separated by who they are for and what happens after payment.`} action="Open working products" onAction={() => goToCurrentStaff('/products')} />
+            {productsError ? <div className="crm-pilot__notice" role="alert">Product data is unavailable. {productsError}</div> : null}
+            <div className="crm-collection__body">
+              <div className="crm-collection__section-head"><div><h2>Staff catalog</h2><p>Price, purpose, fulfillment, and availability are visible without opening a product.</p></div><button onClick={() => goToCurrentStaff('/pos')}>Open POS <ChevronRight /></button></div>
+              {productsLoading ? <div className="crm-collection__loading"><Loader2 /> Loading products…</div> : products ? <div className="crm-products__groups"><ProductPreviewGroup title="Current offers" detail="The products Staff should use for new sales" products={productGroups.current} tone="current" /><ProductPreviewGroup title="Custom products" detail="Owned one-off and reusable Staff items" products={productGroups.custom} tone="custom" /><ProductPreviewGroup title="Legacy offers" detail="Founding-member support, kept separate from current pricing" products={productGroups.legacy} tone="legacy" /></div> : null}
+            </div>
+          </section>
+        ) : (
+          <section className="crm-collection crm-money">
+            <CollectionHead eyebrow="Practice ledger" title="Money & balances" detail={balancesLoading ? 'Loading the session ledger.' : balancesError ? 'The session ledger is temporarily unavailable.' : `${balances?.count || 0} prepaid practice members with ${balances?.totalRemaining || 0} sessions remaining.`} action="Open working balances" onAction={() => goToCurrentStaff('/balances')} />
+            {balancesError ? <div className="crm-pilot__notice" role="alert">Balance data is unavailable. {balancesError}</div> : null}
+            <div className="crm-collection__body">
+              <section className="crm-money__summary"><div><CircleDollarSign /><span><small>Collected this month</small><strong>{revenue ? money.format(revenue.thisMonth.gross) : '—'}</strong><em>{revenue?.thisMonth.chargeCount || 0} successful charges</em></span></div><div><Archive /><span><small>Prepaid members</small><strong>{balancesLoading ? '…' : balances?.count ?? '—'}</strong><em>Tracked in the session ledger</em></span></div><div><Clock3 /><span><small>Sessions remaining</small><strong>{balancesLoading ? '…' : balances?.totalRemaining ?? '—'}</strong><em>Across active prepaid records</em></span></div></section>
+              <div className="crm-collection__section-head"><div><h2>Session balances</h2><p>Purchased, completed, and remaining are shown as distinct columns.</p></div><span>{orderedBalances.length} records</span></div>
+              {balancesLoading ? <div className="crm-collection__loading"><Loader2 /> Loading balances…</div> : orderedBalances.length ? <BalancePreview rows={orderedBalances} /> : !balancesError ? <div className="crm-collection__empty"><Check /><strong>No prepaid balances to show</strong><span>The ledger is current and contains no active records.</span></div> : null}
+            </div>
+          </section>
         )}
 
-        <nav className="crm-pilot__bottom-nav" aria-label="Mobile navigation"><button className={surface === 'home' ? 'is-active' : ''} onClick={() => openSurface('home')}><Home /><span>Home</span></button><button onClick={() => goToCurrentStaff('/calendar')}><CalendarDays /><span>Calendar</span></button><button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox{actionable.length ? ` · ${actionable.length}` : ''}</span></button><button onClick={() => goToCurrentStaff('/clients')}><Users /><span>People</span></button><button className={surface === 'pipeline' ? 'is-active' : ''} onClick={() => openSurface('pipeline')}><Workflow /><span>Pipeline</span></button></nav>
+        <nav className="crm-pilot__bottom-nav" aria-label="Mobile navigation"><button className={surface === 'home' ? 'is-active' : ''} onClick={() => openSurface('home')}><Home /><span>Home</span></button><button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox{actionable.length ? ` · ${actionable.length}` : ''}</span></button><button className={surface === 'outreach' ? 'is-active' : ''} onClick={() => openSurface('outreach')}><Phone /><span>Outreach</span></button><button className={surface === 'pipeline' ? 'is-active' : ''} onClick={() => openSurface('pipeline')}><Workflow /><span>Pipeline</span></button><button className={surface === 'products' ? 'is-active' : ''} onClick={() => openSurface('products')}><Package /><span>Products</span></button><button className={surface === 'money' ? 'is-active' : ''} onClick={() => openSurface('money')}><WalletCards /><span>Money</span></button></nav>
       </section>
     </main>
   );

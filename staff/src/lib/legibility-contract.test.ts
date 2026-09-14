@@ -207,8 +207,14 @@ describe('Staff legibility contract', () => {
     const pilot = css('pages/StaffCrmPilotPage.tsx');
     const pilotCss = css('pages/StaffCrmPilotPage.css');
 
-    expect(pilot).toContain("type PilotSurface = 'home' | 'inbox' | 'pipeline'");
+    expect(pilot).toContain("type PilotSurface = 'home' | 'inbox' | 'outreach' | 'pipeline' | 'products' | 'money'");
     expect(pilot).toContain("className=\"crm-pipeline\"");
+    expect(pilot).toContain('title="Outreach"');
+    expect(pilot).toContain('title="Products"');
+    expect(pilot).toContain('title="Money & balances"');
+    expect(pilot).toContain('Incoming replies stay in Inbox. This list is only proactive acquisition work.');
+    expect(pilot).toContain('Founding-member support, kept separate from current pricing');
+    expect(pilot).toContain('Purchased, completed, and remaining are shown as distinct columns.');
     expect(pilot).toContain("setThreadOpen(false)");
     expect(pilot).not.toContain("|| conversations.find(item => item.contact_id === selectedId)");
     expect(pilotCss).toContain('@media (max-width: 1199px)');
@@ -217,6 +223,9 @@ describe('Staff legibility contract', () => {
     expect(pilotCss).toContain('.crm-inbox.is-thread-open .crm-thread { display: grid; }');
     expect(pilotCss).toContain('scroll-snap-type: x mandatory;');
     expect(pilotCss).toContain('width: min(78vw, 330px);');
+    expect(pilotCss).toContain('grid-template-columns: repeat(6,1fr);');
+    expect(pilotCss).toContain("font-family: 'ABC Diatype', 'Avenir Next', sans-serif;");
+    expect(pilotCss).not.toContain('font-family: monospace');
   });
 
   it('keeps specialist study execution out of the administrative Member Record', () => {
