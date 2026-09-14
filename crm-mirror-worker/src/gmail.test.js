@@ -184,8 +184,50 @@ describe("Gmail provider", () => {
     expect(request.body).not.toContain("current-token");
     expect(JSON.parse(request.body).raw).toBeTruthy();
     const decoded = Buffer.from(JSON.parse(request.body).raw, "base64url").toString("utf8");
+    expect(decoded).toContain("Subject: A subject\r\n");
     expect(decoded).toContain("From: eben@amarimethod.com");
     expect(decoded).toContain("Reply-To: eben@amarimethod.com");
+  });
+
+
+  it.each([
+    "You're booked — here's what to expect",
+    "Réservation confirmée · à bientôt",
+    "Your session 予約確認",
+    `Reservation — ${"🙂é".repeat(45)}`,
+  ])("round-trips a Unicode subject through bounded MIME encoded words: %s", async (subject) => {
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [{ sendAsEmail: "eben@amarimethod.com", verificationStatus: "accepted" }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "gmail-id" }), { status: 200 })));
+    await sendGmailEmail(e, { actor: "Eben", to: "person@example.test", subject, text: "Body — remains UTF-8" });
+    const mime = Buffer.from(JSON.parse(fetch.mock.calls[1][1].body).raw, "base64url").toString("utf8");
+    const header = mime.match(/^Subject: ([^\r\n]*(?:\r\n[ \t][^\r\n]*)*)/m)[1];
+    expect(header).toMatch(/^[\x00-\x7f]+$/);
+    const words = header.split(/\r\n /);
+    const decoded = words.map((word) => {
+      expect(word.length).toBeLessThanOrEqual(75);
+      expect(word).toMatch(/^=\?UTF-8\?B\?[A-Za-z0-9+/]+=*\?=$/);
+      return new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(word.slice(10, -2), "base64"));
+    }).join("");
+    expect(decoded).toBe(subject);
+    for (const line of `Subject: ${header}`.split("\r\n")) expect(line.length).toBeLessThanOrEqual(78);
+    expect(mime).toContain("\r\n\r\nBody — remains UTF-8");
+  });
+
+  it.each(["Hello\r\nBcc: victim@example.test", "Booked —\r\nBcc: victim@example.test"])("keeps attempted subject header injection inside the subject: %s", async (subject) => {
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [{ sendAsEmail: "eben@amarimethod.com", verificationStatus: "accepted" }] }), { status: 200 }))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "gmail-id" }), { status: 200 })));
+    await sendGmailEmail(e, { actor: "Eben", to: "person@example.test", subject, text: "Private body" });
+    const mime = Buffer.from(JSON.parse(fetch.mock.calls[1][1].body).raw, "base64url").toString("utf8");
+    expect(mime).not.toMatch(/^Bcc:/mi);
+    const header = mime.match(/^Subject: ([^\r\n]*(?:\r\n[ \t][^\r\n]*)*)/m)[1];
+    const decoded = header.startsWith("=?UTF-8?B?")
+      ? header.split(/\r\n /).map((word) => Buffer.from(word.slice(10, -2), "base64").toString("utf8")).join("")
+      : header;
+    expect(decoded).toBe(subject.replace(/[\r\n]+/g, " "));
   });
 
   it("renders an optional preheader as a multipart inbox-preview value without changing the plain-text body", async () => {

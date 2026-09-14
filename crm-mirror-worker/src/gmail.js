@@ -53,6 +53,28 @@ function cleanHeader(value, name, maximum) {
   return text;
 }
 
+// MIME header charsets are independent of the body's UTF-8 Content-Type.
+// Keep ASCII subjects unchanged; encode Unicode in bounded RFC 2047 words.
+function encodeSubject(value) {
+  if (/^[\x20-\x7e]*$/.test(value)) return value;
+  const words = [];
+  let bytes = [];
+  const flush = () => {
+    if (!bytes.length) return;
+    words.push(`=?UTF-8?B?${btoa(String.fromCharCode(...bytes))}?=`);
+    bytes = [];
+  };
+  for (const character of value) {
+    const encoded = new TextEncoder().encode(character);
+    // 42 bytes yields a 68-character word, keeping "Subject: " below 78.
+    // Chunk on code points so every encoded word is independently valid UTF-8.
+    if (bytes.length + encoded.length > 42) flush();
+    bytes.push(...encoded);
+  }
+  flush();
+  return words.join("\r\n ");
+}
+
 function cleanEmail(value, name) {
   const email = cleanHeader(value, name, 320).toLowerCase();
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) throw new Error(`invalid ${name}`);
@@ -191,7 +213,7 @@ export async function sendGmailEmail(env, message) {
     `From: ${sender}`,
     `Reply-To: ${identity.replyTo}`,
     `To: ${recipient}`,
-    `Subject: ${safeSubject}`,
+    `Subject: ${encodeSubject(safeSubject)}`,
     "MIME-Version: 1.0",
     `Content-Type: ${contentType}`,
     "Content-Transfer-Encoding: 8bit",
