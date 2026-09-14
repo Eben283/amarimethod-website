@@ -42,7 +42,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
   .message .channel-mark { display: none; }
   /* Staff legibility contract. The Desk is hosted by the mirror Worker, so it
      carries the same tokens explicitly instead of inheriting the React shell. */
-  :root { --desk-paper:#f4f3ee; --desk-sheet:#fffefa; --desk-ink:#12333b; --desk-body:#303c3d; --desk-muted:#526a70; --desk-line:#aebdb9; --desk-line-soft:#d7deda; --desk-active:#0d6268; --desk-active-soft:#d8e9e7; --desk-attention:#7a5100; --desk-attention-soft:#f4e2b4; --desk-danger:#91382f; font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; color:var(--desk-body); background:var(--desk-paper); }
+  :root { --desk-paper:#f4f3ee; --desk-sheet:#fffefa; --desk-ink:#12333b; --desk-body:#303c3d; --desk-muted:#526a70; --desk-line:#aebdb9; --desk-line-soft:#d7deda; --desk-active:#0d6268; --desk-active-soft:#d8e9e7; --desk-attention:#7a5100; --desk-attention-soft:#f4e2b4; --desk-danger:#91382f; font-family:"Avenir Next","Helvetica Neue",ui-sans-serif,system-ui,sans-serif; color:var(--desk-body); background:var(--desk-paper); }
   body { background:var(--desk-paper); color:var(--desk-body); font-size:16px; }
   main { width:100%; min-height:100dvh; height:100dvh; padding:0; }
   .desk-toolbar { display:grid; min-height:64px; grid-template-columns:auto minmax(280px,620px) minmax(0,1fr); align-items:center; gap:18px; padding:10px 20px; border-bottom:1px solid var(--desk-line); background:var(--desk-paper); }
@@ -50,7 +50,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
   .mirror-health { position:fixed; z-index:3; top:17px; right:20px; display:inline-flex; align-items:center; min-height:30px; padding:5px 10px; border:1px solid #c9ddd8; border-radius:999px; color:#456860; background:#edf6f3; font-size:12px; font-weight:800; white-space:nowrap; }
   .mirror-health.degraded { border-color:#dfb66e; color:#77551b; background:#fff7e8; }
   .desk-toolbar h1 { margin:0; color:var(--desk-ink); font-size:20px; line-height:1; white-space:nowrap; }
-  .desk-toolbar .eyebrow { color:var(--desk-muted); font-size:12px; white-space:nowrap; }
+  .desk-toolbar .eyebrow { color:var(--desk-muted); font-family:"Avenir Next","Helvetica Neue",ui-sans-serif,system-ui,sans-serif; font-size:13px; font-weight:600; letter-spacing:-.01em; text-transform:none; white-space:nowrap; }
   .desk-toolbar .page-note { display:none; }
   .desk-toolbar .searchbar { min-height:42px; padding:7px 11px; }
   h1,.pane-title { color:var(--desk-ink); font-family:"IBM Plex Sans",ui-sans-serif,system-ui,sans-serif; font-weight:650; }
@@ -114,8 +114,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
   }
 </style></head><body><main>
 <div class="mirror-health degraded" id="mirror-health" role="status">Checking mirror…</div>
-<header class="desk-toolbar"><div class="desk-toolbar__title"><span class="eyebrow">Amari Method · staff</span><h1>Communication</h1></div><label class="searchbar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="query" type="search" autocomplete="off" placeholder="Search name, email, or phone" aria-label="Search all contacts" /><span class="count" id="count">Loading…</span></label><p class="page-note">Every mirrored contact, ordered by most recent activity. Client, automated, and operational messages remain visible in the selected record. This mirror does not send messages.</p></header>
-<section class="workspace" id="workspace" aria-label="Complete communication workspace"><aside class="pane inbox"><header class="pane-head"><h2 class="pane-title">All contacts</h2><span class="unread" id="unread" aria-live="polite">—</span></header><ul class="thread-list" id="thread-list"></ul></aside><section class="pane conversation" id="conversation" aria-live="polite"><div class="conversation-empty"><div><strong>Select a contact</strong>Read the complete mirrored chronology without leaving the record.</div></div></section><aside class="pane record" id="record" aria-live="polite"><div class="conversation-empty"><div><strong>Contact record</strong>Contact details, appointments, notes, tasks, and payments appear here.</div></div></aside></section>
+<header class="desk-toolbar"><div class="desk-toolbar__title"><span class="eyebrow">Amari Method</span><h1>Communication</h1></div><label class="searchbar"><svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true"><circle cx="11" cy="11" r="6" fill="none" stroke="currentColor" stroke-width="2"/><path d="m16 16 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><input id="query" type="search" autocomplete="off" placeholder="Search name, email, or phone" aria-label="Search all contacts" /><span class="count" id="count">Loading…</span></label><p class="page-note">Every mirrored contact, ordered by most recent activity. Client, automated, and operational messages remain visible in the selected record. This mirror does not send messages.</p></header>
+<section class="workspace" id="workspace" aria-label="Complete communication workspace"><aside class="pane inbox"><header class="pane-head"><h2 class="pane-title">All conversations</h2><span class="unread" id="unread" aria-live="polite">—</span></header><ul class="thread-list" id="thread-list"></ul></aside><section class="pane conversation" id="conversation" aria-live="polite"><div class="conversation-empty"><div><strong>Select a conversation</strong>Read the complete mirrored chronology without leaving the record.</div></div></section><aside class="pane record" id="record" aria-live="polite"><div class="conversation-empty"><div><strong>Contact record</strong>Contact details, appointments, notes, tasks, and payments appear here.</div></div></aside></section>
 </main><script>
 (() => {
   const ownedClassificationCommandsEnabled = __OWNED_CLASSIFICATION_COMMANDS_ENABLED__;
@@ -151,7 +151,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
   function dayMarker(value) { return '<div class="day-line">' + esc(value ? new Date(value).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : 'Timeline') + '</div>'; }
   function timelineDayKey(value) { return value ? new Date(value).toLocaleDateString(undefined, { year: 'numeric', month: 'numeric', day: 'numeric' }) : 'unknown'; }
   function channelMark(kind) { return kind === 'email' ? '✉' : kind === 'sms' ? '●' : '◷'; }
-  function renderThreads() { list.replaceChildren(); const unreadRows = current.filter((row) => Number(row.unread_inbound_count) > 0).length; count.textContent = current.length + ' contact' + (current.length === 1 ? '' : 's'); unread.textContent = unreadRows ? unreadRows + ' needs attention' : 'All caught up'; if (!current.length) { list.innerHTML = '<li class="list-empty">No matching contacts.</li>'; return; } current.forEach((row) => { const item = document.createElement('li'); const button = document.createElement('button'); button.type = 'button'; button.className = 'thread-row'; button.setAttribute('aria-current', String(selected === row.contact_id)); button.innerHTML = '<i class="blue-dot ' + (Number(row.unread_inbound_count) > 0 ? 'unread' : '') + '"></i><span><span class="thread-name">' + esc(row.display_name || 'Unnamed contact') + '</span><span class="thread-preview">' + esc(inboxPreview(row.last_preview || 'No communication mirrored yet.')) + '</span></span><span class="thread-meta">' + esc(row.channel || '—') + '<br>' + threadTime(row.last_event_at) + '</span>'; button.addEventListener('click', () => openClient(row.contact_id)); item.append(button); list.append(item); }); }
+  function renderThreads() { list.replaceChildren(); const replyRows = current.filter((row) => conversationWorkState(row) === 'needs_reply').length; count.textContent = current.length + ' contact' + (current.length === 1 ? '' : 's'); unread.textContent = replyRows ? replyRows + ' need a reply' : 'No replies waiting'; if (!current.length) { list.innerHTML = '<li class="list-empty">No matching contacts.</li>'; return; } current.forEach((row) => { const item = document.createElement('li'); const button = document.createElement('button'); const workState = conversationWorkState(row); button.type = 'button'; button.className = 'thread-row'; button.setAttribute('aria-current', String(selected === row.contact_id)); button.innerHTML = '<i class="blue-dot ' + (workState === 'needs_reply' ? 'unread' : '') + '"></i><span><span class="thread-name">' + esc(row.display_name || 'Unnamed contact') + '</span><span class="thread-preview">' + esc(inboxPreview(row.last_preview || 'No communication mirrored yet.')) + '</span></span><span class="thread-meta">' + (workState === 'needs_reply' ? 'Needs reply' : esc(row.channel || '—')) + '<br>' + threadTime(row.last_event_at) + '</span>'; button.addEventListener('click', () => openClient(row.contact_id)); item.append(button); list.append(item); }); }
   async function loadInbox() { const params = new URLSearchParams({ limit: '1000' }); const text = query.value.trim(); if (text.length >= 2) params.set('query', text); count.textContent = 'Loading…'; try { const response = await fetch('/communications/inbox?' + params, { credentials: 'same-origin' }); if (!response.ok) throw new Error('unavailable'); current = (await response.json()).threads || []; if (selected && !current.some((row) => row.contact_id === selected)) { selected = null; workspace.classList.remove('has-selection'); } renderThreads(); } catch { current = []; list.innerHTML = '<li class="list-empty">Index unavailable. Refresh to try again.</li>'; count.textContent = 'Unavailable'; unread.textContent = '—'; } }
   const timelineFilters = [['all', 'All'], ['messages', 'Messages'], ['appointments', 'Appointments'], ['payments', 'Payments'], ['invoices', 'Invoices'], ['notes', 'Notes'], ['tasks', 'Tasks']];
   function filterTimeline(timeline, filter) { if (filter === 'all') return timeline; const type = filter === 'messages' ? 'message' : filter.slice(0, -1); return timeline.filter((event) => (event.activity_type || 'message') === type); }
@@ -1000,9 +1000,29 @@ const CLIENT_DESK_HTML = `<!doctype html>
     }));
   }
   function visibleFieldMarkup(fields) { return fields.filter((field) => field.attribute_value && !String(field.attribute_key || '').startsWith('system.')).map((field) => '<div class="field-row"><span class="field-key">' + esc(labelKey(field.attribute_key)) + '</span><span class="field-value">' + esc(field.attribute_value) + '</span></div>').join('') || '<p class="empty-small">No additional fields mirrored.</p>'; }
-  // Each contact appears once in this person-level inbox. A dot is an owned
-  // attention marker: it clears only after this signed-in staff member opens
-  // the selected record, and returns on a newer inbound source event.
+  // Every contact remains in All conversations. Attention is work state, not
+  // read state: opening an old inbound does not create or clear work.
+  const WORK_QUEUE_START_AT = Date.parse('2026-09-13T13:00:22Z');
+  const CLEAR_REACTION = /^(?:(?:liked|loved|laughed at|emphasized|questioned|disliked)\\s+[“"].+[”"]|reacted\\s+.+?\\s+to\\s+[“"].+[”"])\\s*$/i;
+  const CLEAR_CLOSER = /^(?:(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|no problem|much appreciated)[\\s!.,👍🙏😊🙂]*)+$/i;
+  const CLOSING_PHRASE = /\\b(?:thanks?|thank you|much appreciated|appreciate(?:d| it)?|see you soon|wrong number|stop|i(?:'|’)ll do|i will certainly remember|hope so too|be well|have a great day)\\b/i;
+  const ACTION_OR_QUESTION = /\\?|\\b(?:can|could|would|when|where|what|how|please|need|want|question|help|send|book|move|reschedule|cancel)\\b/i;
+  const AUTOMATED_ACKNOWLEDGEMENT = /\\b(?:thanks? for (?:calling|contacting)|sorry we missed your call|we (?:just )?(?:missed|saw we missed) (?:your|a) call|currently (?:closed|away)|business hours|will (?:respond|get back to you))\\b/i;
+  function clearlyCompleteMessage(value) {
+    const message = String(value || '').trim();
+    if (!message || /^no communication mirrored yet\\.?$/i.test(message)) return true;
+    if (CLEAR_REACTION.test(message) || /^(?:stop|wrong number)[.!\\s]*$/i.test(message)) return true;
+    if (AUTOMATED_ACKNOWLEDGEMENT.test(message)) return true;
+    if (message.length <= 80 && CLEAR_CLOSER.test(message)) return true;
+    return CLOSING_PHRASE.test(message) && !ACTION_OR_QUESTION.test(message);
+  }
+  function conversationWorkState(row) {
+    const occurredAt = Date.parse(row?.last_event_at || '');
+    if (!Number.isFinite(occurredAt) || occurredAt <= WORK_QUEUE_START_AT) return 'done';
+    if (row?.last_direction === 'outbound') return 'waiting';
+    if (row?.last_direction === 'inbound' && !clearlyCompleteMessage(row?.last_preview)) return 'needs_reply';
+    return 'done';
+  }
   function renderMirrorFreshness() {
     const state = mirrorFreshness?.state || 'missing';
     const healthy = state === 'healthy';
@@ -1011,9 +1031,9 @@ const CLIENT_DESK_HTML = `<!doctype html>
   }
   function renderThreads() {
     list.replaceChildren();
-    const attentionRows = current.filter((row) => Number(row.unread_inbound_count) > 0).length;
+    const attentionRows = current.filter((row) => conversationWorkState(row) === 'needs_reply').length;
     count.textContent = current.length + ' contact' + (current.length === 1 ? '' : 's');
-    unread.textContent = mirrorFreshness?.state === 'healthy' ? (attentionRows ? attentionRows + ' needs attention' : 'All caught up') : 'Mirror degraded';
+    unread.textContent = mirrorFreshness?.state === 'healthy' ? (attentionRows ? attentionRows + ' need a reply' : 'No replies waiting') : 'Mirror degraded';
     if (!current.length) {
       list.innerHTML = '<li class="list-empty">No matching contacts.</li>';
       return;
@@ -1024,7 +1044,8 @@ const CLIENT_DESK_HTML = `<!doctype html>
       button.type = 'button';
       button.className = 'thread-row';
       button.setAttribute('aria-current', String(selected === row.contact_id));
-      button.innerHTML = '<i class="blue-dot ' + (Number(row.unread_inbound_count) > 0 ? 'unread' : '') + '"></i><span><span class="thread-name">' + esc(row.display_name || 'Unnamed contact') + '</span><span class="thread-preview">' + esc(inboxPreview(row.last_preview || 'No communication mirrored yet.')) + '</span></span><span class="thread-meta">' + esc(row.channel || '—') + '<br>' + threadTime(row.last_event_at) + '</span>';
+      const workState = conversationWorkState(row);
+      button.innerHTML = '<i class="blue-dot ' + (workState === 'needs_reply' ? 'unread' : '') + '"></i><span><span class="thread-name">' + esc(row.display_name || 'Unnamed contact') + '</span><span class="thread-preview">' + esc(inboxPreview(row.last_preview || 'No communication mirrored yet.')) + '</span></span><span class="thread-meta">' + (workState === 'needs_reply' ? 'Needs reply' : esc(row.channel || '—')) + '<br>' + threadTime(row.last_event_at) + '</span>';
       button.addEventListener('click', () => openClient(row.contact_id));
       item.append(button);
       list.append(item);
@@ -1104,7 +1125,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       list.querySelector('[aria-current="true"]')?.focus();
     };
     const bindMobileBack = () => conversation.querySelector('.mobile-back')?.addEventListener('click', backToContacts);
-    conversation.innerHTML = '<button class="mobile-back" type="button">← All contacts</button><div class="conversation-empty" role="status"><div><strong>Loading conversation</strong>Getting the client record.</div></div>';
+    conversation.innerHTML = '<button class="mobile-back" type="button">← All conversations</button><div class="conversation-empty" role="status"><div><strong>Loading conversation</strong>Getting the client record.</div></div>';
     bindMobileBack();
     record.innerHTML = '<div class="conversation-empty" role="status"><div><strong>Loading client record</strong></div></div>';
     try {
@@ -1123,7 +1144,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       const allowedParentOrigin = new URLSearchParams(window.location.search).get('parent_origin');
       const canReplyBySms = window.parent !== window && ['https://amarimethod.com', 'https://www.amarimethod.com'].includes(allowedParentOrigin || '') && /^[A-Za-z0-9]+$/.test(String(c.ghl_contact_id || ''));
       const composer = canReplyBySms ? '<form class="composer" id="sms-composer"><label for="sms-reply">Reply by SMS<textarea id="sms-reply" maxlength="720" placeholder="Write a reply…" required></textarea></label><div class="composer-actions"><span class="composer-status" id="sms-status">Sends from the current Amari number.</span><button type="submit">Send SMS</button></div></form>' : '<p class="send-state">Messages are mirrored here. SMS reply is unavailable because this record is not linked to an active GHL contact.</p>';
-      conversation.innerHTML = '<header class="client-head"><button class="mobile-back" type="button">← All contacts</button><div class="client-head-row"><span class="avatar">' + esc(initials(c.display_name)) + '</span><div><h2 class="client-name">' + esc(c.display_name || 'Unnamed client') + '</h2><p class="client-address">' + esc(c.email_normalized || c.phone_e164 || 'Client record') + '</p></div></div></header>' + timelineToolbar(activeTimelineFilter) + '<div class="timeline-scroll"><div class="timeline">' + timelineMarkup(timeline, activeTimelineFilter) + '</div></div>' + composer;
+      conversation.innerHTML = '<header class="client-head"><button class="mobile-back" type="button">← All conversations</button><div class="client-head-row"><span class="avatar">' + esc(initials(c.display_name)) + '</span><div><h2 class="client-name">' + esc(c.display_name || 'Unnamed client') + '</h2><p class="client-address">' + esc(c.email_normalized || c.phone_e164 || 'Client record') + '</p></div></div></header>' + timelineToolbar(activeTimelineFilter) + '<div class="timeline-scroll"><div class="timeline">' + timelineMarkup(timeline, activeTimelineFilter) + '</div></div>' + composer;
       // The API supplies the authoritative next booked/confirmed appointment.
       // Do not let an earlier cancelled future hold replace it in the record UI.
       const profileData = {
@@ -1183,7 +1204,7 @@ const CLIENT_DESK_HTML = `<!doctype html>
       }
     } catch (error) {
       if (requestId !== detailRequest || error?.name === 'AbortError') return;
-      conversation.innerHTML = '<button class="mobile-back" type="button">← All contacts</button><div class="conversation-empty" role="alert"><div><strong>Conversation unavailable</strong>Refresh to try again.</div></div>';
+      conversation.innerHTML = '<button class="mobile-back" type="button">← All conversations</button><div class="conversation-empty" role="alert"><div><strong>Conversation unavailable</strong>Refresh to try again.</div></div>';
       bindMobileBack();
       record.innerHTML = '<div class="conversation-empty" role="alert"><div><strong>Client record unavailable</strong></div></div>';
     }
