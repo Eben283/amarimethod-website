@@ -8,6 +8,7 @@ import {
   Users,
 } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
+import './FollowUpPage.css';
 import {
   getPartnerProspects, getConversations, getPartnerActivity,
   recordPartnerOutcome, updateContactField, getCallCoach, triggerCoachOne,
@@ -482,8 +483,8 @@ export default function FollowUpPage() {
   }, [logout, markHandled]);
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-5">
-      <div className="mb-4 flex items-center justify-between">
+    <main className="staff-outreach">
+      <header className="staff-outreach__opening mb-4 flex items-center justify-between">
         <div>
           <h1 className="text-xl font-semibold text-amari-charcoal">Outreach</h1>
           <p className="text-xs text-amari-text-muted">
@@ -508,9 +509,9 @@ export default function FollowUpPage() {
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </button>
         </div>
-      </div>
+      </header>
 
-      <div className="mb-4 flex items-start justify-between gap-3 border-l-4 border-amari-accent-warm bg-amari-light-sand/50 px-3 py-3 text-xs text-amari-charcoal">
+      <div className="staff-outreach__scope mb-4 flex items-start justify-between gap-3 border-l-4 border-amari-accent-warm bg-amari-light-sand/50 px-3 py-3 text-xs text-amari-charcoal">
         <p><strong>New-client acquisition only.</strong> Current and former clients stay in People; incoming messages stay in Communication.</p>
         <Link to="/client-desk" className="shrink-0 font-semibold underline underline-offset-2">
           Open Communication{counts.inCommunication ? ` (${counts.inCommunication})` : ''}
@@ -521,7 +522,7 @@ export default function FollowUpPage() {
           different schedules; a glance here beats discovering one silently
           stalled by working a contact off stale data. */}
       {!loading && (
-        <div className="mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+        <div className="staff-outreach__freshness mb-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
           <span className={freshness.sheetRefreshError ? 'text-red-500' : agoColorClass(freshness.sheetCachedAt)}>
             Sheet {freshness.sheetRefreshError ? 'refresh error' : freshness.sheetCachedAt ? relTime(freshness.sheetCachedAt) : 'never'}
           </span>
@@ -534,7 +535,7 @@ export default function FollowUpPage() {
 
       {/* Date bar — today + how the weekday is weighting calls/texts. The list
           below reorders by this; nothing is blocked. */}
-      <div className="mb-3 flex items-start gap-2 rounded-xl border border-amari-border bg-amari-light-sand/60 px-3 py-2 text-xs">
+      <div className="staff-outreach__day mb-3 flex items-start gap-2 rounded-xl border border-amari-border bg-amari-light-sand/60 px-3 py-2 text-xs">
         <Calendar className="mt-0.5 h-4 w-4 shrink-0 text-amari-accent-warm" />
         <p className="text-amari-charcoal">
           <span className="font-semibold">{todayLabel}</span>
@@ -558,7 +559,7 @@ export default function FollowUpPage() {
       )}
 
       {/* Search across prospect and set-aside acquisition records only. */}
-      <div className="relative mb-3">
+      <div className="staff-outreach__search relative mb-3">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-amari-text-muted" />
         <input
           value={query}
@@ -639,7 +640,7 @@ export default function FollowUpPage() {
         )
       ) : (
         <>
-          <div className="mb-2 flex gap-1 rounded-xl bg-amari-light-sand p-1">
+          <div className="staff-outreach__tabs mb-2 flex gap-1 rounded-xl bg-amari-light-sand p-1">
             <Tab active={view === 'act'} onClick={() => setView('act')} label={`Reach Out (${counts.act})`} icon={Clock} />
             <Tab active={view === 'aside'} onClick={() => setView('aside')} label={`Set Aside (${counts.aside})`} icon={MoonStar} />
           </div>
@@ -708,7 +709,7 @@ export default function FollowUpPage() {
           )}
         </>
       )}
-    </div>
+    </main>
   );
 }
 
@@ -938,8 +939,8 @@ function ActRow({ item, expanded, activity, busy, onToggle, onOutcome, onDismiss
   }
 
   return (
-    <div className={`rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
-      <button type="button" onClick={onToggle} className="flex w-full items-start justify-between gap-2 p-3 text-left">
+    <div className={`staff-outreach__card rounded-xl border bg-white ${isClient ? 'border-l-4 border-l-amari-accent-warm border-amari-border' : 'border-amari-border'}`}>
+      <button type="button" onClick={onToggle} aria-expanded={expanded} className="flex w-full items-start justify-between gap-2 p-3 text-left">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
             {isReply
@@ -1001,8 +1002,8 @@ function ActRow({ item, expanded, activity, busy, onToggle, onOutcome, onDismiss
       )}
 
       {/* quick triage — prospects only */}
-      {!isReply && (
-        <div className="flex flex-wrap gap-1.5 px-3 pb-3">
+      {!isReply && expanded && (
+        <div className="staff-outreach__actions flex flex-wrap gap-1.5 px-3 pb-3">
           <Link to={communicationUrl(contactId)}
             className="inline-flex items-center gap-1 rounded-lg border border-amari-border px-2.5 py-1.5 text-xs text-amari-charcoal hover:bg-amari-light-sand">
             <MessageSquare className="h-3.5 w-3.5" /> Open Communication
