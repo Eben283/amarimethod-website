@@ -14,6 +14,8 @@ export const PROVENANCE_PATHS = Object.freeze([
   'package.json',
   'nurture-engine-worker',
   'functions',
+  'crm-mirror-worker/src/gmail.js',
+  'crm-mirror-worker/src/gmail-submission.js',
 ]);
 
 function runGit(args, options = {}) {
