@@ -254,6 +254,14 @@ describe('Staff legibility contract', () => {
     expect(productsCss).not.toContain('monospace');
   });
 
+  it('keeps Money honest while loading and in the shared type system', () => {
+    const money = css('pages/BalancesPage.tsx');
+    const moneyCss = css('pages/BalancesPage.css');
+    expect(money).toContain("readState === 'unavailable' || readState === 'loading'");
+    expect(moneyCss).toContain("font-family:'ABC Diatype'");
+    expect(moneyCss).not.toContain('monospace');
+  });
+
   it('keeps Outreach calm until a person is selected', () => {
     const outreach = css('pages/FollowUpPage.tsx');
     const outreachCss = css('pages/FollowUpPage.css');
