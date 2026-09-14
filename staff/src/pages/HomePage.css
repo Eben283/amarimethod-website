@@ -28,6 +28,7 @@
   --home-ochre: #9a6a22;
   --home-ochre-soft: #f5ead4;
   width: min(1140px, 100%);
+  max-width: 1140px;
   margin: 0 auto;
   padding: 44px clamp(28px, 4vw, 60px) 58px;
   color: var(--home-ink);
