@@ -227,6 +227,19 @@ describe('Staff legibility contract', () => {
     expect(shell).not.toContain("'inbox' | 'operations'");
   });
 
+  it('gives Pipeline a phased CRM workspace instead of one endless board', () => {
+    const pipeline = css('pages/PipelinePage.tsx');
+    const pipelineCss = css('pages/PipelinePage.css');
+
+    for (const phase of ['Outreach', 'Discovery', 'Care', 'Clients']) expect(pipeline).toContain(`label: '${phase}'`);
+    expect(pipeline).toContain('Find a person in this phase');
+    expect(pipeline).toContain('Show ${cards.length - 8} more');
+    expect(pipeline).toContain('Conversion snapshot');
+    expect(pipelineCss).toContain("font-family: 'ABC Diatype'");
+    expect(pipelineCss).not.toContain('monospace');
+    expect(pipelineCss).toContain('@media (max-width: 820px)');
+  });
+
   it('keeps the CRM pilot coherent across desktop and both iPad orientations', () => {
     const pilot = css('pages/StaffCrmPilotPage.tsx');
     const pilotCss = css('pages/StaffCrmPilotPage.css');
