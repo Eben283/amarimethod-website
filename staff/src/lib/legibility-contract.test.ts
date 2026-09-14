@@ -203,6 +203,20 @@ describe('Staff legibility contract', () => {
     expect(home).toContain("`/client-desk?contact=${encodeURIComponent(reply.contactId)}`");
   });
 
+  it('keeps Home aligned with the approved CRM language and the owned work queue', () => {
+    const home = css('pages/HomePage.tsx');
+    const homeCss = css('pages/HomePage.css');
+
+    expect(home).toContain('const totalAttention = replies.length + sickSystems.length;');
+    expect(home).toContain('Completed conversations stay out of the work queue');
+    expect(home).toContain('remain available in All conversations');
+    expect(home).not.toContain('New-client outreach');
+    expect(home).not.toContain('More tools');
+    expect(homeCss).toContain("font-family: 'ABC Diatype'");
+    expect(homeCss).not.toContain('IBM Plex Mono');
+    expect(homeCss).toContain('@media (max-width: 820px)');
+  });
+
   it('keeps Inbox work in the authoritative queue instead of a competing navigation badge', () => {
     const shell = css('components/StaffShell.tsx');
     expect(shell).not.toContain('getConversations');
