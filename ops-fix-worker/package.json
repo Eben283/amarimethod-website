@@ -5,7 +5,7 @@
   "type": "module",
   "description": "Amari Ops Fix layer — cron launches bounded Cursor cloud agents for board attention.",
   "scripts": {
-    "deploy": "wrangler deploy",
+    "deploy": "node ../scripts/worker-release.mjs --worker ops-fixer",
     "test": "node --test"
   },
   "devDependencies": {

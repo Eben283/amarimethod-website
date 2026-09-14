@@ -54,9 +54,9 @@ pull), `/due` (read the derived list), `/status`, `/conversations?contactId=`,
 `/index`. Cron every 3 hours runs sync → derive.
 
 ## Deploy
-`cd conversation-cache-worker && npx wrangler deploy`
-Secrets (from Keychain): `GHL_CLIENT_ID` (am-ghl-client-id), `GHL_CLIENT_SECRET`
-(am-ghl-client-secret), `WORKER_AUTH_SECRET` (am-worker-auth-secret).
+Use the protected GitHub **deploy protected Worker** workflow and select
+`conversation-cache`. Secrets remain in Bitwarden and are not loaded from
+Keychain or a local shell.
 
 ## Not done yet
 The cloud now produces `coach:due:latest`, but the LOCAL `coach-daily.sh` still

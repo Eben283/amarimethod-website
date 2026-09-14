@@ -1,0 +1,65 @@
+name: deploy protected Worker
+
+on:
+  workflow_dispatch:
+    inputs:
+      worker:
+        description: Exact Worker to release from current main
+        required: true
+        type: choice
+        options:
+          - amari-crm-mirror
+          - call-coach
+          - coach-daily
+          - comms-coherence
+          - conversation-cache
+          - daily-audit
+          - ecosystem-scanner
+          - funnel-refresh
+          - ghl-token-refresh
+          - morning-sms
+          - nurture-engine
+          - ops-fixer
+          - partner-activity-refresh
+          - reminder-engine
+          - series-reconcile
+
+permissions:
+  contents: read
+
+concurrency:
+  group: worker-production-${{ inputs.worker }}
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: verify candidate, then activate
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - run: npm ci
+      - name: Refuse stale source or an unguarded deployment path
+        run: |
+          git fetch origin main
+          test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
+          npm run check:worker-release
+      - name: Test the universal release gate
+        run: npm run test:worker-release
+      - name: Retrieve the approved deploy credential from Bitwarden
+        uses: bitwarden/sm-action@v2
+        with:
+          access_token: ${{ secrets.BWS_CRM_MIRROR_READ_TOKEN }}
+          secrets: |
+            ${{ vars.BWS_CRM_MIRROR_DEPLOY_SECRET_ID }} > CLOUDFLARE_API_TOKEN
+      - name: Upload, verify, and activate one Worker
+        run: npm run deploy:worker -- --worker "${{ inputs.worker }}" --deploy --approved-revision "$GITHUB_SHA"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b

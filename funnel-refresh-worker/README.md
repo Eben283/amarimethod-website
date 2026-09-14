@@ -79,10 +79,8 @@ Both are gated by `WORKER_AUTH_SECRET` if set (rollout-safe: unset = open).
 
 ## Deploy
 
-```bash
-cd funnel-refresh-worker
-npx wrangler deploy
-```
+Use the protected GitHub **deploy protected Worker** workflow and select
+`funnel-refresh`.
 
 URL: https://funnel-refresh.eben-fa2.workers.dev
 
