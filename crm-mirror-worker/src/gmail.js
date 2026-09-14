@@ -40,11 +40,21 @@ async function tokenStorePut(env, storageKey, value) {
   }
 }
 
-function base64url(value) {
+function utf8Base64(value) {
   const bytes = new TextEncoder().encode(value);
   let binary = "";
   for (const byte of bytes) binary += String.fromCharCode(byte);
-  return btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+  return btoa(binary);
+}
+
+function base64url(value) {
+  return utf8Base64(value).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+// MIME bodies use 7-bit-safe transfer encoding, independent of the Gmail JSON
+// envelope. Bounded lines survive SMTP relays and cannot collide with boundaries.
+function encodeBody(value) {
+  return utf8Base64(value).match(/.{1,76}/g)?.join("\r\n") || "";
 }
 
 function cleanHeader(value, name, maximum) {
@@ -198,17 +208,17 @@ export async function sendGmailEmail(env, message) {
     ? [
       "--amari-boundary",
       "Content-Type: text/plain; charset=UTF-8",
-      "Content-Transfer-Encoding: 8bit",
+      "Content-Transfer-Encoding: base64",
       "",
-      body,
+      encodeBody(body),
       "--amari-boundary",
       "Content-Type: text/html; charset=UTF-8",
-      "Content-Transfer-Encoding: 8bit",
+      "Content-Transfer-Encoding: base64",
       "",
-      `<div style=\"display:none!important;max-height:0;overflow:hidden;opacity:0;color:transparent\">${escapeHtml(preview)}</div><div style=\"white-space:pre-wrap\">${escapeHtml(body)}</div>`,
+      encodeBody(`<div style=\"display:none!important;max-height:0;overflow:hidden;opacity:0;color:transparent\">${escapeHtml(preview)}</div><div style=\"white-space:pre-wrap\">${escapeHtml(body)}</div>`),
       "--amari-boundary--",
     ].join("\r\n")
-    : body;
+    : encodeBody(body);
   const raw = [
     `From: ${sender}`,
     `Reply-To: ${identity.replyTo}`,
@@ -216,7 +226,7 @@ export async function sendGmailEmail(env, message) {
     `Subject: ${encodeSubject(safeSubject)}`,
     "MIME-Version: 1.0",
     `Content-Type: ${contentType}`,
-    "Content-Transfer-Encoding: 8bit",
+    ...(preview ? [] : ["Content-Transfer-Encoding: base64"]),
     "",
     content,
   ].join("\r\n");

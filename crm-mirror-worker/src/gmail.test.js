@@ -212,7 +212,7 @@ describe("Gmail provider", () => {
     }).join("");
     expect(decoded).toBe(subject);
     for (const line of `Subject: ${header}`.split("\r\n")) expect(line.length).toBeLessThanOrEqual(78);
-    expect(mime).toContain("\r\n\r\nBody — remains UTF-8");
+    expect(Buffer.from(mime.split("\r\n\r\n")[1].replace(/\s/g, ""), "base64").toString("utf8")).toBe("Body — remains UTF-8");
   });
 
   it.each(["Hello\r\nBcc: victim@example.test", "Booked —\r\nBcc: victim@example.test"])("keeps attempted subject header injection inside the subject: %s", async (subject) => {
@@ -238,8 +238,12 @@ describe("Gmail provider", () => {
     await sendGmailEmail(e, { actor: "Eben", to: "person@example.test", subject: "A subject", preheader: "Preview this", text: "Private body" });
     const decoded = Buffer.from(JSON.parse(fetch.mock.calls[1][1].body).raw, "base64url").toString("utf8");
     expect(decoded).toContain("Content-Type: multipart/alternative; boundary=amari-boundary");
-    expect(decoded).toContain("Preview this");
-    expect(decoded).toContain("Private body");
+    const parts = decoded.split("--amari-boundary").slice(1, -1);
+    expect(parts).toHaveLength(2);
+    const content = parts.map((part) => Buffer.from(part.split("\r\n\r\n")[1].replace(/\s/g, ""), "base64").toString("utf8"));
+    expect(content[0]).toBe("Private body");
+    expect(content[1]).toContain("Preview this");
+    expect(content[1]).toContain("Private body");
   });
 
   it("lists only exact server-owned identities that Gmail has accepted", async () => {
@@ -264,5 +268,38 @@ describe("Gmail provider", () => {
     vi.stubGlobal("fetch", vi.fn());
     await expect(getGoogleWorkspaceToken(e, "Eben")).rejects.toThrow("Amari mail grant is not verified");
     expect(fetch).not.toHaveBeenCalled();
+  });
+});
+
+describe("Unicode email transport", () => {
+  it.each([undefined, "Prévisualisation — 予約 🙂 & < >"])("preserves every body byte through a 7-bit relay, with preheader %s", async (preheader) => {
+    const e = env({ "amari-mail:eben:grant_status": grant("Eben"), "amari-mail:eben:access_token": "current-token", "amari-mail:eben:token_expiry": String(Date.now() + 600_000) });
+    vi.stubGlobal("fetch", vi.fn()
+      .mockResolvedValueOnce(new Response(JSON.stringify({ sendAs: [{ sendAsEmail: "eben@amarimethod.com", verificationStatus: "accepted" }] })))
+      .mockResolvedValueOnce(new Response(JSON.stringify({ id: "gmail-id" }))));
+    const text = "Hi José — 予約確認 🙂\n\n--amari-boundary\n" + "é & < > 🙂".repeat(1000);
+    await sendGmailEmail(e, { actor: "Eben", to: "person@example.test", subject: "Your session — confirmed", text, preheader });
+    const mime = Buffer.from(JSON.parse(fetch.mock.calls[1][1].body).raw, "base64url").toString("utf8");
+    expect(mime).toMatch(/^[\x00-\x7f]+$/);
+    expect(Buffer.from(mime, "ascii").toString("ascii")).toBe(mime);
+    expect(mime).not.toContain("Content-Transfer-Encoding: 8bit");
+    const parts = preheader ? mime.split("--amari-boundary").slice(1, -1) : [mime];
+    expect(parts).toHaveLength(preheader ? 2 : 1);
+    const bodies = parts.map((part) => {
+      const [headers, encoded] = part.split("\r\n\r\n");
+      expect(headers).toContain("charset=UTF-8");
+      expect(headers).toContain("Content-Transfer-Encoding: base64");
+      for (const line of encoded.trim().split("\r\n")) {
+        expect(line.length).toBeLessThanOrEqual(76);
+        expect(line).toMatch(/^[A-Za-z0-9+/]*={0,2}$/);
+      }
+      return new TextDecoder("utf-8", { fatal: true }).decode(Buffer.from(encoded.replace(/\s/g, ""), "base64"));
+    });
+    expect(bodies[0]).toBe(text);
+    if (preheader) {
+      expect(bodies[1]).toContain("Prévisualisation — 予約 🙂 &amp; &lt; &gt;");
+      expect(bodies[1]).toContain(text.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;"));
+      expect(mime.split("\r\n\r\n")[0]).not.toContain("Content-Transfer-Encoding:");
+    }
   });
 });

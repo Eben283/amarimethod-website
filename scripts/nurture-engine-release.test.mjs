@@ -17,6 +17,7 @@ test('attests a complete source closure with a large child-process buffer', () =
   assert.equal(CHILD_PROCESS_MAX_BUFFER_BYTES, 256 * 1024 * 1024);
   assert.deepEqual(PROVENANCE_PATHS, [
     '.node-version', 'package-lock.json', 'package.json', 'nurture-engine-worker', 'functions',
+    'crm-mirror-worker/src/gmail.js', 'crm-mirror-worker/src/gmail-submission.js',
   ]);
   assert.ok(sourceArchiveForRevision('HEAD').length > 1024 * 1024);
 });
