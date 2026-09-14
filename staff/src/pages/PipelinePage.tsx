@@ -1,162 +1,67 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Loader2, AlertCircle, RefreshCw } from 'lucide-react';
+import { AlertCircle, ChevronRight, Loader2, RefreshCw, Search } from 'lucide-react';
 import { getPipeline, type PipelineCard, type PipelineColumns } from '../lib/api';
 import { useApiCall } from '../hooks/useApiCall';
+import { memberWorkspacePath } from '../lib/member-workspace';
+import './PipelinePage.css';
 
-const COLUMNS: { id: keyof PipelineColumns; label: string; sub: string }[] = [
-  { id: 'touch-1', label: 'Touch 1', sub: '1 outreach' },
-  { id: 'touch-2', label: 'Touch 2', sub: '2 outreaches' },
-  { id: 'touch-3', label: 'Touch 3', sub: '3 outreaches' },
-  { id: 'touch-4', label: 'Touch 4', sub: '4 outreaches' },
-  { id: 'touch-5', label: 'Touch 5', sub: '5 outreaches' },
-  { id: 'touch-6', label: 'Touch 6+', sub: '6+ outreaches' },
-  { id: 'discovery-noshow', label: 'No-Show', sub: 'cancelled / ghosted' },
-  { id: 'discovery', label: 'Discovery', sub: 'call attended' },
-  { id: 'session-noshow', label: 'Session No-Show', sub: 'initial not attended' },
-  { id: 'first-session', label: 'First Session', sub: 'session attended' },
-  { id: 'multipack-1', label: 'First Purchase', sub: 'made 1 purchase' },
-  { id: 'multipack-2', label: 'Repeat Purchase', sub: 'made 2+ purchases' },
-];
+type StageId = keyof PipelineColumns;
+type PhaseId = 'outreach' | 'discovery' | 'care' | 'clients';
 
-// Column accent colors — warm left→right gradient from cold → loyal client
-const COL_COLORS: Record<keyof PipelineColumns, { bg: string; ring: string; dot: string }> = {
-  'touch-1': { bg: '#F5F0EB', ring: '#D9CFC5', dot: '#B0A899' },
-  'touch-2': { bg: '#F3EDE4', ring: '#D5C9BB', dot: '#A89985' },
-  'touch-3': { bg: '#F0E8DC', ring: '#D0C1AE', dot: '#A08B73' },
-  'touch-4': { bg: '#EDE3D3', ring: '#CBB99E', dot: '#977C61' },
-  'touch-5': { bg: '#E9DCC8', ring: '#C6AF8E', dot: '#8D6D4E' },
-  'touch-6': { bg: '#E5D5BC', ring: '#C0A47D', dot: '#855F3B' },
-  'discovery-noshow': { bg: '#F5E8E8', ring: '#DEB8B8', dot: '#A04040' },
-  'session-noshow': { bg: '#F5E8E8', ring: '#DEB8B8', dot: '#A04040' },
-  discovery: { bg: '#EAE0EE', ring: '#C9B5D8', dot: '#8B5DA8' },
-  'first-session': { bg: '#E4EEE6', ring: '#B4D3B9', dot: '#4A8C56' },
-  'multipack-1': { bg: '#EBE8D8', ring: '#C8C09A', dot: '#8B7A3A' },
-  'multipack-2': { bg: '#E8E0C8', ring: '#C4B880', dot: '#8A7020' },
+const STAGES: Record<StageId, { label: string; detail: string }> = {
+  'touch-1': { label: 'First touch', detail: 'One recorded outreach' },
+  'touch-2': { label: 'Second touch', detail: 'Two recorded outreaches' },
+  'touch-3': { label: 'Third touch', detail: 'Three recorded outreaches' },
+  'touch-4': { label: 'Fourth touch', detail: 'Four recorded outreaches' },
+  'touch-5': { label: 'Fifth touch', detail: 'Five recorded outreaches' },
+  'touch-6': { label: 'Sixth touch+', detail: 'Six or more outreaches' },
+  'discovery-noshow': { label: 'Discovery missed', detail: 'Call cancelled or missed' },
+  discovery: { label: 'Discovery complete', detail: 'Call attended' },
+  'session-noshow': { label: 'First session missed', detail: 'Initial session not attended' },
+  'first-session': { label: 'First session complete', detail: 'Initial session attended' },
+  'multipack-1': { label: 'First purchase', detail: 'One completed purchase' },
+  'multipack-2': { label: 'Repeat purchase', detail: 'Two or more purchases' },
 };
 
-function sessionLabel(card: PipelineCard): string {
-  if (!card.seriesType || card.seriesType === 'none') {
-    return card.sessionsCompleted > 0 ? `${card.sessionsCompleted} session${card.sessionsCompleted !== 1 ? 's' : ''}` : '';
+const PHASES: Array<{ id: PhaseId; label: string; detail: string; stages: StageId[] }> = [
+  { id: 'outreach', label: 'Outreach', detail: 'People moving through proactive contact', stages: ['touch-1', 'touch-2', 'touch-3', 'touch-4', 'touch-5', 'touch-6'] },
+  { id: 'discovery', label: 'Discovery', detail: 'Calls booked and completed', stages: ['discovery-noshow', 'discovery'] },
+  { id: 'care', label: 'Care', detail: 'First-session outcomes', stages: ['session-noshow', 'first-session'] },
+  { id: 'clients', label: 'Clients', detail: 'Purchase progression', stages: ['multipack-1', 'multipack-2'] },
+];
+
+function pct(numerator: number, denominator: number) {
+  return denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
+}
+
+function monthLabel(value: string | null) {
+  if (!value) return 'Date unavailable';
+  const date = new Date(value);
+  if (!Number.isFinite(date.getTime())) return 'Date unavailable';
+  return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(date);
+}
+
+function cardDetail(card: PipelineCard, stage: StageId) {
+  if (stage === 'first-session' || stage === 'multipack-1' || stage === 'multipack-2') {
+    if (card.seriesType && card.seriesType !== 'none') return `${card.sessionsCompleted} complete · ${card.sessionsRemaining} remaining`;
+    if (card.sessionsCompleted) return `${card.sessionsCompleted} session${card.sessionsCompleted === 1 ? '' : 's'} complete`;
+    return 'Care record';
   }
-  const total = card.sessionsCompleted + card.sessionsRemaining;
-  return total > 0 ? `${card.sessionsCompleted} of ${total}` : `${card.sessionsCompleted} done`;
+  return `${card.touchCount || 0} recorded touch${card.touchCount === 1 ? '' : 'es'}`;
 }
 
-function touchLabel(card: PipelineCard): string {
-  return card.touchCount > 0 ? `${card.touchCount} touch${card.touchCount !== 1 ? 'es' : ''}` : '';
-}
-
-function Card({ card, colId, onClick }: {
-  card: PipelineCard;
-  colId: keyof PipelineColumns;
-  onClick: () => void;
-}) {
-  const colors = COL_COLORS[colId];
-  const isClient = ['first-session', 'multipack-1', 'multipack-2', 'multipack-3'].includes(colId);
-  const subLabel = isClient ? sessionLabel(card) : touchLabel(card);
-
+function PipelineCardRow({ card, stage, onOpen }: { card: PipelineCard; stage: StageId; onOpen: () => void }) {
   return (
-    <button
-      onClick={onClick}
-      className="w-full text-left rounded-lg px-3 py-2.5 mb-2 last:mb-0 transition-opacity active:opacity-70"
-      style={{ background: 'white', border: `1px solid ${colors.ring}` }}
-    >
-      <div className="flex items-start gap-2">
-        <span
-          className="mt-1 flex-shrink-0 w-2 h-2 rounded-full"
-          style={{ background: colors.dot }}
-        />
-        <div className="min-w-0">
-          {card.dateAdded ? (
-            <p className="text-[10px] text-amari-text-muted mb-0.5">
-              {new Date(card.dateAdded).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
-            </p>
-          ) : null}
-          <p className="text-sm font-medium text-amari-charcoal leading-snug truncate">
-            {card.name}
-          </p>
-          {subLabel ? (
-            <p className="text-[11px] text-amari-text-muted mt-0.5">{subLabel}</p>
-          ) : null}
-          {(card.purchaseCount > 0 || card.hasSentReferral) && (
-            <div className="mt-1.5 flex flex-wrap gap-1">
-              {card.purchaseCount > 0 && (
-                <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style={{ background: '#F1E8C7', color: '#746221' }}>
-                  {card.purchaseCount} purchase{card.purchaseCount === 1 ? '' : 's'}
-                </span>
-              )}
-              {card.hasSentReferral && (
-                <span className="rounded-full px-1.5 py-0.5 text-[9px] font-semibold" style={{ background: '#DCEDEF', color: '#236A78' }}>
-                  Sent referral
-                </span>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
+    <button type="button" className="staff-pipeline__card" onClick={onOpen}>
+      <span className="staff-pipeline__avatar" aria-hidden="true">{card.name?.trim()?.charAt(0)?.toUpperCase() || '—'}</span>
+      <span className="staff-pipeline__card-copy"><strong>{card.name || 'Unnamed person'}</strong><small>{cardDetail(card, stage)}</small></span>
+      <span className="staff-pipeline__card-meta">
+        <time>{monthLabel(card.lastActivity || card.dateAdded)}</time>
+        {card.hasSentReferral ? <small>Sent referral</small> : card.purchaseCount > 0 ? <small>{card.purchaseCount} purchase{card.purchaseCount === 1 ? '' : 's'}</small> : null}
+      </span>
+      <ChevronRight aria-hidden="true" />
     </button>
-  );
-}
-
-function KanbanColumn({
-  col,
-  cards,
-  metric,
-  onCardClick,
-}: {
-  col: typeof COLUMNS[number];
-  cards: PipelineCard[];
-  metric?: string;
-  onCardClick: (id: string) => void;
-}) {
-  const colors = COL_COLORS[col.id];
-  return (
-    <div
-      className="flex-shrink-0 flex flex-col rounded-xl overflow-hidden"
-      style={{
-        width: 188,
-        background: colors.bg,
-        border: `1px solid ${colors.ring}`,
-      }}
-    >
-      {/* Column header */}
-      <div className="px-3 pt-3 pb-2" style={{ borderBottom: `1px solid ${colors.ring}` }}>
-        <div className="flex items-center justify-between gap-2">
-          <span className="text-[13px] font-semibold text-amari-charcoal leading-tight">
-            {col.label}
-          </span>
-          <span
-            className="text-[11px] font-medium tabular-nums px-1.5 py-0.5 rounded-full"
-            style={{ background: colors.ring, color: colors.dot }}
-          >
-            {cards.length}
-          </span>
-        </div>
-        <p className="text-[10px] text-amari-text-muted mt-0.5">{col.sub}</p>
-        {metric && (
-          <p className="mt-1 text-[10px] font-semibold tabular-nums" style={{ color: colors.dot }}>
-            {metric}
-          </p>
-        )}
-      </div>
-
-      {/* Cards */}
-      <div className="flex-1 overflow-y-auto p-2">
-        {cards.length === 0 ? (
-          <p className="text-[11px] text-amari-text-muted text-center py-4 px-1">Empty</p>
-        ) : (
-          cards.map((card) => (
-            <Card
-              key={card.id}
-              card={card}
-              colId={col.id}
-              onClick={() => onCardClick(card.id)}
-            />
-          ))
-        )}
-      </div>
-    </div>
   );
 }
 
@@ -164,68 +69,75 @@ export default function PipelinePage() {
   const navigate = useNavigate();
   const fetcher = useCallback(() => getPipeline(), []);
   const { data: pipeline, isLoading, error, refetch } = useApiCall(fetcher);
+  const [phase, setPhase] = useState<PhaseId>('outreach');
+  const [query, setQuery] = useState('');
+  const [expanded, setExpanded] = useState<Partial<Record<StageId, boolean>>>({});
   const columns = pipeline?.columns;
+  const currentPhase = PHASES.find((item) => item.id === phase) || PHASES[0];
+
+  const counts = useMemo(() => {
+    const count = (stages: StageId[]) => stages.reduce((sum, stage) => sum + (columns?.[stage]?.length || 0), 0);
+    return {
+      total: columns ? Object.values(columns).reduce((sum, cards) => sum + cards.length, 0) : 0,
+      outreach: count(PHASES[0].stages), discovery: count(PHASES[1].stages),
+      care: count(PHASES[2].stages), clients: count(PHASES[3].stages),
+    };
+  }, [columns]);
+
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const matchingCount = currentPhase.stages.reduce((sum, stage) => sum + (columns?.[stage] || [])
+    .filter((card) => !normalizedQuery || card.name.toLocaleLowerCase().includes(normalizedQuery)).length, 0);
   const cohort = pipeline?.cohortMetrics;
 
-  const total = columns
-    ? Object.values(columns).reduce((s, arr) => s + arr.length, 0)
-    : 0;
-  const pct = (numerator: number, denominator: number) => denominator > 0 ? `${Math.round((numerator / denominator) * 100)}%` : '—';
-  const columnMetrics: Partial<Record<keyof PipelineColumns, string>> = cohort ? {
-    discovery: `${pct(cohort.discoveryAttended, cohort.reachedOut)} attended · ${cohort.discoveryAttended} of ${cohort.reachedOut} called`,
-    'session-noshow': `${pct(cohort.initialNoShows, cohort.initialResolved)} no-show · ${cohort.initialNoShows} of ${cohort.initialResolved}`,
-    'first-session': `${pct(cohort.initialAttended, cohort.initialResolved)} attended · ${cohort.initialAttended} of ${cohort.initialResolved}`,
-    'multipack-1': `${pct(cohort.firstPurchasers, cohort.initialAttended)} first purchase · ${cohort.firstPurchasers} of ${cohort.initialAttended}`,
-    'multipack-2': `${pct(cohort.repeatPurchasers, cohort.firstPurchasers)} purchased again · ${cohort.repeatPurchasers} of ${cohort.firstPurchasers}`,
-  } : {};
-
   return (
-    <div className="flex flex-col" style={{ height: 'calc(100vh - 64px)' }}>
-      {/* Page header */}
-      <div className="flex items-center justify-between px-4 pt-5 pb-3 flex-shrink-0">
-        <div>
-          <h1 className="text-xl font-serif text-amari-charcoal">Pipeline</h1>
-          {!isLoading && columns && (
-            <p className="text-xs text-amari-text-muted mt-0.5">{total} people tracked</p>
-          )}
-        </div>
-        <button
-          onClick={refetch}
-          disabled={isLoading}
-          className="p-2 rounded-full text-amari-text-muted disabled:opacity-40"
-        >
-          <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
-        </button>
-      </div>
+    <main className="staff-pipeline">
+      <header className="staff-pipeline__opening">
+        <div><p>Care flow</p><h1>Pipeline</h1><span>See where every relationship stands without turning the whole practice into one endless board.</span></div>
+        <button type="button" onClick={() => { void refetch(); }} disabled={isLoading} aria-label="Refresh Pipeline data"><RefreshCw className={isLoading ? 'is-spinning' : ''} aria-hidden="true" />Refresh</button>
+      </header>
 
-      {/* Body */}
-      {isLoading ? (
-        <div className="flex-1 flex items-center justify-center">
-          <Loader2 className="w-6 h-6 text-amari-charcoal animate-spin" />
-        </div>
-      ) : error ? (
-        <div className="flex-1 flex flex-col items-center justify-center gap-2 px-6 text-center">
-          <AlertCircle className="w-6 h-6 text-red-400" />
-          <p className="text-sm text-amari-text-muted">{error}</p>
-          <button onClick={refetch} className="text-sm text-amari-charcoal underline mt-1">
-            Try again
-          </button>
-        </div>
-      ) : columns ? (
-        <div className="flex-1 overflow-x-auto overflow-y-hidden">
-          <div className="flex gap-3 px-4 pb-4 h-full" style={{ minWidth: 'max-content' }}>
-            {COLUMNS.map((col) => (
-              <KanbanColumn
-                key={col.id}
-                col={col}
-                cards={columns[col.id] ?? []}
-                metric={columnMetrics[col.id]}
-                onCardClick={(id) => navigate(`/client/${id}`)}
-              />
-            ))}
-          </div>
-        </div>
-      ) : null}
-    </div>
+      {isLoading ? <div className="staff-pipeline__state"><Loader2 aria-hidden="true" /> Loading the care flow…</div>
+        : error ? <div className="staff-pipeline__state staff-pipeline__state--error" role="alert"><AlertCircle aria-hidden="true" /><strong>Pipeline could not be loaded</strong><span>{error}</span><button type="button" onClick={() => { void refetch(); }}>Try again</button></div>
+          : columns ? <>
+            <section className="staff-pipeline__totals" aria-label="Pipeline totals">
+              <div><span>People tracked</span><strong>{counts.total}</strong><small>Complete care flow</small></div>
+              <div><span>In outreach</span><strong>{counts.outreach}</strong><small>Proactive contact</small></div>
+              <div><span>In discovery</span><strong>{counts.discovery}</strong><small>Discovery outcomes</small></div>
+              <div><span>In care</span><strong>{counts.care + counts.clients}</strong><small>Sessions and clients</small></div>
+            </section>
+
+            <section className="staff-pipeline__workspace" aria-labelledby="pipeline-phase-title">
+              <nav className="staff-pipeline__tabs" aria-label="Pipeline phases">
+                {PHASES.map((item) => <button key={item.id} type="button" className={phase === item.id ? 'is-active' : ''} onClick={() => { setPhase(item.id); setExpanded({}); }}><span>{item.label}</span><strong>{counts[item.id]}</strong></button>)}
+              </nav>
+              <header className="staff-pipeline__workspace-head">
+                <div><h2 id="pipeline-phase-title">{currentPhase.label}</h2><p>{currentPhase.detail}</p></div>
+                <label><Search aria-hidden="true" /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Find a person" aria-label="Find a person in this phase" /></label>
+              </header>
+              {normalizedQuery ? <p className="staff-pipeline__results">{matchingCount} {matchingCount === 1 ? 'person' : 'people'} match “{query.trim()}”</p> : null}
+              <div className={`staff-pipeline__board staff-pipeline__board--${phase}`}>
+                {currentPhase.stages.map((stage) => {
+                  const cards = (columns[stage] || []).filter((card) => !normalizedQuery || card.name.toLocaleLowerCase().includes(normalizedQuery));
+                  const shown = expanded[stage] || normalizedQuery ? cards : cards.slice(0, 8);
+                  return <section key={stage} className="staff-pipeline__stage">
+                    <header><div><h3>{STAGES[stage].label}</h3><p>{STAGES[stage].detail}</p></div><strong>{cards.length}</strong></header>
+                    <div className="staff-pipeline__rows">{shown.map((card) => <PipelineCardRow key={card.id} card={card} stage={stage} onOpen={() => navigate(memberWorkspacePath(card.id, 'record'))} />)}{!cards.length ? <p className="staff-pipeline__empty">No one is in this stage.</p> : null}</div>
+                    {!normalizedQuery && cards.length > 8 ? <button type="button" className="staff-pipeline__more" onClick={() => setExpanded((current) => ({ ...current, [stage]: !current[stage] }))}>{expanded[stage] ? 'Show fewer' : `Show ${cards.length - 8} more`}</button> : null}
+                  </section>;
+                })}
+              </div>
+            </section>
+
+            {cohort ? <section className="staff-pipeline__conversion" aria-labelledby="pipeline-conversion-title">
+              <header><div><p>Current cohort</p><h2 id="pipeline-conversion-title">Conversion snapshot</h2></div><span>Directional practice signals</span></header>
+              <div>
+                <article><span>Discovery attended</span><strong>{pct(cohort.discoveryAttended, cohort.reachedOut)}</strong><small>{cohort.discoveryAttended} of {cohort.reachedOut} reached</small></article>
+                <article><span>First session attended</span><strong>{pct(cohort.initialAttended, cohort.initialResolved)}</strong><small>{cohort.initialAttended} of {cohort.initialResolved} resolved</small></article>
+                <article><span>First purchase</span><strong>{pct(cohort.firstPurchasers, cohort.initialAttended)}</strong><small>{cohort.firstPurchasers} of {cohort.initialAttended} attendees</small></article>
+                <article><span>Purchased again</span><strong>{pct(cohort.repeatPurchasers, cohort.firstPurchasers)}</strong><small>{cohort.repeatPurchasers} of {cohort.firstPurchasers} purchasers</small></article>
+              </div>
+            </section> : null}
+          </> : null}
+    </main>
   );
 }
