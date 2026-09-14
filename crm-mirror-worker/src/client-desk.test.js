@@ -37,7 +37,7 @@ describe("Client Desk message rendering", () => {
     const html = clientDeskHtml();
     expect(html).toContain("Every mirrored contact, ordered by most recent activity.");
     expect(html).toContain("Client, automated, and operational messages remain visible");
-    expect(html).toContain(">All contacts<");
+    expect(html).toContain(">All conversations<");
     expect(html).toContain("limit: '1000'");
     expect(html).toContain("No communication mirrored yet.");
     expect(html).toContain("No activity");
@@ -536,11 +536,35 @@ describe("Client Desk message rendering", () => {
     expect(clientDeskHtml()).toContain('blue-dot ');
   });
 
-  it("uses an attention marker that is cleared only after a selected client record loads", () => {
+  it("uses reply work state instead of clearing attention when a record is opened", () => {
     const html = clientDeskHtml();
-    expect(html).toContain("needs attention");
+    expect(html).toContain("need a reply");
+    expect(html).toContain("conversationWorkState(row)");
+    expect(html).toContain("CLEAR_REACTION");
     expect(html).toContain("/seen', { method: 'POST'");
     expect(html).toContain("unread_inbound_count: 0");
+  });
+
+  it("does not turn reactions, acknowledgements, or historical unread rows into work", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { conversationWorkState }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+
+    expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Liked “You got it”", last_event_at: "2026-09-14T12:00:00Z" })).toBe("done");
+    expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Thank you!!", last_event_at: "2026-09-14T12:00:00Z" })).toBe("done");
+    expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Can we move this to Friday?", last_event_at: "2026-09-14T12:00:00Z" })).toBe("needs_reply");
+    expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Please reply", last_event_at: "2026-09-01T12:00:00Z", unread_inbound_count: 12 })).toBe("done");
+  });
+
+  it("removes the monospace all-caps AI treatment from the working Inbox brand", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain('<span class="eyebrow">Amari Method</span>');
+    expect(html).toContain('font-family:"Avenir Next","Helvetica Neue",ui-sans-serif,system-ui,sans-serif');
+    expect(html).toContain('text-transform:none');
+    expect(html).not.toContain('Amari Method · staff');
   });
 
   it("does not let a late detail response overwrite a newer selection", () => {
