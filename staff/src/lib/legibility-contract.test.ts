@@ -203,6 +203,22 @@ describe('Staff legibility contract', () => {
     expect(home).toContain("`/client-desk?contact=${encodeURIComponent(reply.contactId)}`");
   });
 
+  it('keeps the CRM pilot coherent across desktop and both iPad orientations', () => {
+    const pilot = css('pages/StaffCrmPilotPage.tsx');
+    const pilotCss = css('pages/StaffCrmPilotPage.css');
+
+    expect(pilot).toContain("type PilotSurface = 'home' | 'inbox' | 'pipeline'");
+    expect(pilot).toContain("className=\"crm-pipeline\"");
+    expect(pilot).toContain("setThreadOpen(false)");
+    expect(pilot).not.toContain("|| conversations.find(item => item.contact_id === selectedId)");
+    expect(pilotCss).toContain('@media (max-width: 1199px)');
+    expect(pilotCss).toContain('.crm-inbox { grid-template-columns: 320px minmax(0,1fr); }');
+    expect(pilotCss).toContain('@media (max-width: 820px)');
+    expect(pilotCss).toContain('.crm-inbox.is-thread-open .crm-thread { display: grid; }');
+    expect(pilotCss).toContain('scroll-snap-type: x mandatory;');
+    expect(pilotCss).toContain('width: min(78vw, 330px);');
+  });
+
   it('keeps specialist study execution out of the administrative Member Record', () => {
     const record = css('pages/ClientDetailPage.tsx');
     expect(record).not.toContain('StudyCapturePanel');

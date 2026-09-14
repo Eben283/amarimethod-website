@@ -8,7 +8,6 @@ import {
   Home,
   Loader2,
   MessageSquare,
-  MoreHorizontal,
   Search,
   Send,
   SlidersHorizontal,
@@ -21,17 +20,21 @@ import {
   getCrmPilotContact,
   getCrmPilotInbox,
   getOpsSystemsBoard,
+  getPipeline,
   getStaffRevenue,
   type CrmPilotContactResponse,
   type CrmPilotThread,
   type OpsSystemsBoard,
+  type PipelineCard,
+  type PipelineColumns,
+  type PipelineData,
   type StaffRevenueData,
 } from '../lib/api';
 import { conversationWorkState, type ConversationWorkState } from '../lib/conversation-work-state';
 import type { TodayAppointment } from '../types/staff';
 import './StaffCrmPilotPage.css';
 
-type PilotSurface = 'home' | 'inbox';
+type PilotSurface = 'home' | 'inbox' | 'pipeline';
 type InboxView = ConversationWorkState | 'all';
 
 type PilotConversation = CrmPilotThread & {
@@ -49,6 +52,31 @@ const stateLabel: Record<ConversationWorkState, string> = {
   waiting: 'Waiting',
   done: 'Done',
 };
+
+const pipelineStages: { id: keyof PipelineColumns; label: string; phase: string }[] = [
+  { id: 'touch-1', label: 'First touch', phase: 'Outreach' },
+  { id: 'touch-2', label: 'Second touch', phase: 'Outreach' },
+  { id: 'touch-3', label: 'Third touch', phase: 'Outreach' },
+  { id: 'touch-4', label: 'Fourth touch', phase: 'Outreach' },
+  { id: 'touch-5', label: 'Fifth touch', phase: 'Outreach' },
+  { id: 'touch-6', label: 'Sixth touch+', phase: 'Outreach' },
+  { id: 'discovery-noshow', label: 'Discovery missed', phase: 'Discovery' },
+  { id: 'discovery', label: 'Discovery complete', phase: 'Discovery' },
+  { id: 'session-noshow', label: 'First session missed', phase: 'Care' },
+  { id: 'first-session', label: 'First session complete', phase: 'Care' },
+  { id: 'multipack-1', label: 'First purchase', phase: 'Client' },
+  { id: 'multipack-2', label: 'Repeat purchase', phase: 'Client' },
+];
+
+function pipelineCardNote(card: PipelineCard, stage: keyof PipelineColumns) {
+  if (stage === 'multipack-1' || stage === 'multipack-2' || stage === 'first-session') {
+    if (card.seriesType && card.seriesType !== 'none') {
+      return `${card.sessionsCompleted} complete · ${card.sessionsRemaining} remaining`;
+    }
+    return card.sessionsCompleted ? `${card.sessionsCompleted} session${card.sessionsCompleted === 1 ? '' : 's'} complete` : 'Care record';
+  }
+  return card.touchCount ? `${card.touchCount} recorded touch${card.touchCount === 1 ? '' : 'es'}` : 'No recorded touch';
+}
 
 const money = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 });
 const OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
@@ -171,6 +199,9 @@ export default function StaffCrmPilotPage() {
   const [schedule, setSchedule] = useState<TodayAppointment[]>([]);
   const [systems, setSystems] = useState<OpsSystemsBoard | null>(null);
   const [revenue, setRevenue] = useState<StaffRevenueData | null>(null);
+  const [pipeline, setPipeline] = useState<PipelineData | null>(null);
+  const [pipelineLoading, setPipelineLoading] = useState(false);
+  const [pipelineError, setPipelineError] = useState<string | null>(null);
   const [homeLoading, setHomeLoading] = useState(true);
 
   useEffect(() => {
@@ -195,8 +226,21 @@ export default function StaffCrmPilotPage() {
         if (revenueResult.status === 'fulfilled') setRevenue(revenueResult.value);
       })
       .finally(() => { if (active) setHomeLoading(false); });
+
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    if (surface !== 'pipeline' || pipeline) return;
+    let active = true;
+    setPipelineLoading(true);
+    setPipelineError(null);
+    void getPipeline()
+      .then(result => { if (active) setPipeline(result); })
+      .catch(error => { if (active) setPipelineError(error instanceof Error ? error.message : 'Pipeline could not be loaded.'); })
+      .finally(() => { if (active) setPipelineLoading(false); });
+    return () => { active = false; };
+  }, [pipeline, surface]);
 
   const conversations = useMemo(() => threads.map(toConversation), [threads]);
   const actionable = useMemo(() => conversations.filter(item => item.state === 'needs_reply'), [conversations]);
@@ -209,9 +253,7 @@ export default function StaffCrmPilotPage() {
     });
   }, [conversations, query, view]);
   const selected = visibleConversations.find(item => item.contact_id === selectedId)
-    || conversations.find(item => item.contact_id === selectedId)
     || visibleConversations[0]
-    || conversations[0]
     || null;
 
   useEffect(() => {
@@ -240,10 +282,11 @@ export default function StaffCrmPilotPage() {
   const totalAttention = actionable.length + (systems?.attentionCount || 0);
   const messages = useMemo(() => [...(selectedDetail?.communicationTimeline || [])].reverse(), [selectedDetail]);
   const lastVisit = selectedDetail?.appointments?.find(item => item.status?.toLowerCase() !== 'cancelled' && new Date(item.starts_at).getTime() < Date.now()) || null;
+  const pipelineTotal = pipeline ? Object.values(pipeline.columns).reduce((sum, cards) => sum + cards.length, 0) : 0;
 
   const openSurface = (next: PilotSurface) => {
     setSurface(next);
-    if (next === 'home') setThreadOpen(false);
+    setThreadOpen(false);
   };
 
   const openConversation = (contactId: string) => {
@@ -267,7 +310,7 @@ export default function StaffCrmPilotPage() {
           <button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox</span>{actionable.length > 0 ? <b>{actionable.length}</b> : null}</button>
           <button onClick={() => goToCurrentStaff('/clients')}><Users /><span>People</span></button>
           <button onClick={() => goToCurrentStaff('/outreach')}><Send /><span>Outreach</span></button>
-          <button onClick={() => goToCurrentStaff('/pipeline')}><Workflow /><span>Pipeline</span></button>
+          <button className={surface === 'pipeline' ? 'is-active' : ''} onClick={() => openSurface('pipeline')}><Workflow /><span>Pipeline</span></button>
         </nav>
         <div className="crm-pilot__rail-foot">
           <p className="crm-pilot__rail-label">Business</p>
@@ -289,12 +332,12 @@ export default function StaffCrmPilotPage() {
             </div>
             <div className="crm-home__secondary-grid"><section><header className="crm-section-head"><h2>Practice</h2><span>{revenue?.thisMonth.month || 'Current month'}</span></header><div className="crm-metrics"><div><span>Sessions today</span><strong>{homeLoading ? '…' : orderedSchedule.length}</strong><small>Live calendar</small></div><div><span>Collected</span><strong>{revenue ? money.format(revenue.thisMonth.gross) : '—'}</strong><small>{revenue?.thisMonth.chargeCount || 0} successful charges</small></div><div><span>Needs review</span><strong>{systems?.attentionCount ?? '—'}</strong><small>Monitored systems</small></div></div></section><section><header className="crm-section-head"><h2>Quick access</h2></header><div className="crm-quick"><button onClick={openCurrentInbox}><span>Open the current message desk</span><ChevronRight /></button><button onClick={() => goToCurrentStaff('/balances')}><span>Review session balances</span><ChevronRight /></button><button onClick={() => goToCurrentStaff('/clients')}><span>Find a practice member</span><ChevronRight /></button></div></section></div>
           </section>
-        ) : (
+        ) : surface === 'inbox' ? (
           <section className={`crm-inbox${threadOpen ? ' is-thread-open' : ''}`}>
             <section className="crm-inbox__list">
               <header><h1>Inbox</h1><p>Real mirrored conversations · read-only preview</p><label><Search /><input aria-label="Search conversations" placeholder="Search conversations" value={query} onChange={event => setQuery(event.target.value)} /></label></header>
-              <nav className="crm-inbox__tabs" aria-label="Inbox views">{(['needs_reply','waiting','done','all'] as InboxView[]).map(tab => <button key={tab} className={view === tab ? 'is-active' : ''} onClick={() => setView(tab)}>{tab === 'all' ? 'All' : stateLabel[tab]}{tab === 'needs_reply' ? ` · ${actionable.length}` : ''}</button>)}</nav>
-              <div className="crm-inbox__rows">{inboxLoading ? <div className="crm-inbox__loading"><Loader2 /> Loading conversations…</div> : null}{inboxError ? <p className="crm-inbox__empty" role="alert">{inboxError}</p> : null}{!inboxLoading && !inboxError ? visibleConversations.map(item => <button key={item.contact_id} className={selected?.contact_id === item.contact_id ? 'is-active' : ''} onClick={() => openConversation(item.contact_id)}><span className="crm-avatar">{item.initials}</span><span><strong>{item.name}</strong><small>{item.preview}</small><em>{item.reason}</em></span><time>{item.age}</time></button>) : null}{!inboxLoading && !inboxError && visibleConversations.length === 0 ? <p className="crm-inbox__empty">Nothing is waiting in this view.</p> : null}</div>
+              <nav className="crm-inbox__tabs" aria-label="Inbox views">{(['needs_reply','waiting','done','all'] as InboxView[]).map(tab => <button key={tab} className={view === tab ? 'is-active' : ''} onClick={() => { setView(tab); setThreadOpen(false); }}>{tab === 'all' ? 'All' : stateLabel[tab]}{tab === 'needs_reply' ? ` · ${actionable.length}` : ''}</button>)}</nav>
+              <div className="crm-inbox__rows">{inboxLoading ? <div className="crm-inbox__loading"><Loader2 /> Loading conversations…</div> : null}{inboxError ? <p className="crm-inbox__empty" role="alert">{inboxError}</p> : null}{!inboxLoading && !inboxError ? visibleConversations.map(item => <button key={item.contact_id} className={selected?.contact_id === item.contact_id ? 'is-active' : ''} onClick={() => openConversation(item.contact_id)}><span className="crm-avatar">{item.initials}</span><span><strong>{item.name}</strong><small>{item.preview}</small><em>{item.reason}</em></span><time>{item.age}</time></button>) : null}{!inboxLoading && !inboxError && visibleConversations.length === 0 ? <div className="crm-inbox__empty"><Check /><strong>{query.trim() ? 'No matching conversations' : view === 'needs_reply' ? 'Nobody is waiting for a reply' : `No conversations are ${view === 'waiting' ? 'waiting' : 'in this view'}`}</strong><span>{query.trim() ? 'Try another name, email, phone number, or message.' : view === 'needs_reply' ? 'New substantive replies will appear here. The complete record stays in All.' : 'Choose another view to continue.'}</span>{view !== 'all' && !query.trim() ? <button onClick={() => setView('all')}>Open all conversations</button> : null}</div> : null}</div>
               <footer>Needs reply is derived from the latest mirrored sender and clear terminal-message rules. This preview does not change conversation state or send messages.</footer>
             </section>
 
@@ -308,9 +351,16 @@ export default function StaffCrmPilotPage() {
 
             <aside className="crm-person">{!selected ? null : detailLoading ? <div className="crm-person__loading"><Loader2 /> Loading record…</div> : selectedDetail ? <><header><span className="crm-avatar">{selected.initials}</span><h2>{selectedDetail.contact.display_name || selected.name}</h2><p>{selectedDetail.contact.created_at ? `Record since ${dayLabel(selectedDetail.contact.created_at)}` : 'Practice record'}</p></header><section><h3>Contact</h3><dl><div><dt>Phone</dt><dd>{selectedDetail.contact.phone_e164 || 'Not recorded'}</dd></div><div><dt>Email</dt><dd>{selectedDetail.contact.email_normalized || 'Not recorded'}</dd></div><div><dt>Source</dt><dd>{selectedDetail.contact.referral_source_label || 'Not recorded'}</dd></div></dl></section><section><h3>Next appointment</h3>{selectedDetail.nextAppointment ? <div className="crm-person__appointment"><strong>{dayLabel(selectedDetail.nextAppointment.starts_at)} · {appointmentTime(selectedDetail.nextAppointment.starts_at)}</strong><span>{selectedDetail.nextAppointment.service_name || selectedDetail.nextAppointment.status || 'Appointment'}</span></div> : <p className="crm-person__quiet">No upcoming appointment mirrored.</p>}<button onClick={() => goToCurrentStaff('/calendar')}>Open calendar</button></section><section><h3>Current context</h3><dl><div><dt>Series</dt><dd>{selectedDetail.importedCurrentState?.series_type || 'Not recorded'}</dd></div><div><dt>Balance</dt><dd>{selectedDetail.importedCurrentState?.sessions_remaining ?? 'Not recorded'}</dd></div><div><dt>Last visit</dt><dd>{lastVisit ? dayLabel(lastVisit.starts_at) : 'Not recorded'}</dd></div></dl><button onClick={openCurrentInbox}>Open full current record</button></section></> : <p className="crm-person__quiet">The selected record is unavailable.</p>}</aside>
           </section>
+        ) : (
+          <section className="crm-pipeline">
+            <header className="crm-pipeline__head"><div><p>Practice development</p><h1>Pipeline</h1><span>{pipelineLoading ? 'Loading the current care flow.' : pipelineError ? 'The current care flow is temporarily unavailable.' : `${pipelineTotal} people across outreach, discovery, and care.`}</span></div><button onClick={() => goToCurrentStaff('/pipeline')}><span>Open current pipeline</span><ChevronRight /></button></header>
+            {pipelineError ? <div className="crm-pilot__notice" role="alert">Pipeline data is unavailable. {pipelineError}</div> : null}
+            {pipelineLoading ? <div className="crm-pipeline__loading"><Loader2 /> Loading pipeline…</div> : null}
+            {!pipelineLoading && pipeline ? <div className="crm-pipeline__board">{pipelineStages.map((stage, index) => { const cards = pipeline.columns[stage.id] || []; const phaseStart = index === 0 || pipelineStages[index - 1].phase !== stage.phase; return <section className="crm-pipeline__stage" key={stage.id}>{phaseStart ? <p className="crm-pipeline__phase">{stage.phase}</p> : <p className="crm-pipeline__phase" aria-hidden="true">&nbsp;</p>}<header><div><h2>{stage.label}</h2><span>{cards.length} {cards.length === 1 ? 'person' : 'people'}</span></div><b>{cards.length}</b></header><div className="crm-pipeline__cards">{cards.length ? cards.map(card => <button key={card.id} onClick={() => goToCurrentStaff(`/client/${encodeURIComponent(card.id)}`)}><span className="crm-pipeline__avatar">{initials(card.name)}</span><span><strong>{card.name}</strong><small>{pipelineCardNote(card, stage.id)}</small>{card.dateAdded ? <time>Added {dayLabel(card.dateAdded)}</time> : null}</span><ChevronRight /></button>) : <div className="crm-pipeline__empty">No one in this stage</div>}</div></section>; })}</div> : null}
+          </section>
         )}
 
-        <nav className="crm-pilot__bottom-nav" aria-label="Mobile navigation"><button className={surface === 'home' ? 'is-active' : ''} onClick={() => openSurface('home')}><Home /><span>Home</span></button><button onClick={() => goToCurrentStaff('/calendar')}><CalendarDays /><span>Calendar</span></button><button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox{actionable.length ? ` · ${actionable.length}` : ''}</span></button><button onClick={() => goToCurrentStaff('/clients')}><Users /><span>People</span></button><button onClick={() => goToCurrentStaff('/')}><MoreHorizontal /><span>Current app</span></button></nav>
+        <nav className="crm-pilot__bottom-nav" aria-label="Mobile navigation"><button className={surface === 'home' ? 'is-active' : ''} onClick={() => openSurface('home')}><Home /><span>Home</span></button><button onClick={() => goToCurrentStaff('/calendar')}><CalendarDays /><span>Calendar</span></button><button className={surface === 'inbox' ? 'is-active' : ''} onClick={() => openSurface('inbox')}><MessageSquare /><span>Inbox{actionable.length ? ` · ${actionable.length}` : ''}</span></button><button onClick={() => goToCurrentStaff('/clients')}><Users /><span>People</span></button><button className={surface === 'pipeline' ? 'is-active' : ''} onClick={() => openSurface('pipeline')}><Workflow /><span>Pipeline</span></button></nav>
       </section>
     </main>
   );
