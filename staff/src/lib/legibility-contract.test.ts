@@ -203,12 +203,11 @@ describe('Staff legibility contract', () => {
     expect(home).toContain("`/client-desk?contact=${encodeURIComponent(reply.contactId)}`");
   });
 
-  it('uses reply work rather than unread history for the Inbox navigation badge', () => {
+  it('keeps Inbox work in the authoritative queue instead of a competing navigation badge', () => {
     const shell = css('components/StaffShell.tsx');
-    expect(shell).toContain("getConversations('needs_reply')");
-    expect(shell).not.toContain("getConversations('unread')");
-    expect(shell).toContain("need${count === 1 ? 's' : ''} a reply");
-    expect(shell).not.toContain('unread conversation');
+    expect(shell).not.toContain('getConversations');
+    expect(shell).not.toContain("badge: 'inbox'");
+    expect(shell).not.toContain("'inbox' | 'operations'");
   });
 
   it('keeps the CRM pilot coherent across desktop and both iPad orientations', () => {

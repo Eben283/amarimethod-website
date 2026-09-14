@@ -42,7 +42,7 @@ import {
 } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
-import { getConversations, getOpsSystemsBoard, searchContacts } from '../lib/api';
+import { getOpsSystemsBoard, searchContacts } from '../lib/api';
 import type { ContactListItem } from '../types/staff';
 import '../styles/staff-shell.css';
 
@@ -52,19 +52,18 @@ type RailItem = {
   detail: string;
   to: string;
   Icon: LucideIcon;
-  badge?: 'inbox' | 'operations';
+  badge?: 'operations';
   matches?: (pathname: string) => boolean;
 };
 
 type ShellCounts = {
-  inbox: number | null;
   operations: number | null;
 };
 
 const PRIMARY_ITEMS: RailItem[] = [
   { label: 'Home', detail: 'Your practice day', to: '/', Icon: House, matches: (path) => path === '/' },
   { label: 'Calendar', detail: 'Day, week, month and services', to: '/calendar', Icon: CalendarDays, matches: (path) => path === '/calendar' || path === '/today' },
-  { label: 'Inbox', detail: 'Member communication', to: '/client-desk', Icon: MessageSquareText, badge: 'inbox', matches: (path) => path === '/client-desk' || path === '/messages' },
+  { label: 'Inbox', detail: 'Member communication', to: '/client-desk', Icon: MessageSquareText, matches: (path) => path === '/client-desk' || path === '/messages' },
   { label: 'Communications', shortLabel: 'Comms', detail: 'Text from the Amari number', to: '/communications', Icon: PhoneCall },
   { label: 'Practice members', shortLabel: 'Members', detail: 'People and records', to: '/clients', Icon: UsersRound, matches: (path) => path === '/clients' || path.startsWith('/client/') },
   { label: 'Outreach', detail: 'Proactive calls, messages and future contact', to: '/outreach', Icon: ListChecks, matches: (path) => path === '/outreach' || path === '/follow-up' },
@@ -128,16 +127,12 @@ function useCompactLayout() {
 }
 
 function useShellCounts() {
-  const [counts, setCounts] = useState<ShellCounts>({ inbox: null, operations: null });
+  const [counts, setCounts] = useState<ShellCounts>({ operations: null });
 
   const refresh = useCallback(async () => {
-    const [inbox, operations] = await Promise.allSettled([
-      getConversations('needs_reply'),
-      getOpsSystemsBoard(),
-    ]);
+    const operations = await Promise.allSettled([getOpsSystemsBoard()]);
     setCounts((current) => ({
-      inbox: inbox.status === 'fulfilled' ? inbox.value.total : current.inbox,
-      operations: operations.status === 'fulfilled' ? operations.value.attentionCount : current.operations,
+      operations: operations[0].status === 'fulfilled' ? operations[0].value.attentionCount : current.operations,
     }));
   }, []);
 
@@ -248,11 +243,9 @@ function MemberSearch({ inputRef, onChoose }: { inputRef: MutableRefObject<HTMLI
   );
 }
 
-function CountBadge({ kind, count }: { kind: 'inbox' | 'operations'; count: number | null }) {
+function CountBadge({ kind, count }: { kind: 'operations'; count: number | null }) {
   if (!count) return null;
-  const label = kind === 'inbox'
-    ? `${count} conversation${count === 1 ? '' : 's'} need${count === 1 ? 's' : ''} a reply`
-    : `${count} system${count === 1 ? '' : 's'} need attention`;
+  const label = `${count} system${count === 1 ? '' : 's'} need attention`;
   return <span className={`practice-rail__badge practice-rail__badge--${kind}`} aria-label={label}>{count > 99 ? '99+' : count}</span>;
 }
 
