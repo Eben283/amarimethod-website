@@ -6,7 +6,7 @@ import test from "node:test";
 // Only authored production code and email copy. Fixtures deliberately contain
 // corrupt text; deployed artifacts are rebuilt from their corresponding sources.
 const paths = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" }).split("\0")
-  .filter((path) => /^(functions\/|[^/]+-worker\/src\/|emails\/|email-copy\/|staff\/src\/lib\/.*(?:follow-up|email))/.test(path)
+  .filter((path) => /^(functions\/|[^/]+-worker\/src\/|emails\/|email-copy\/|staff\/src\/lib\/.*(?:follow-?up|email))/.test(path)
     && /\.(?:[cm]?[jt]sx?|json|html|md)$/.test(path)
     && !/\.(?:test|spec)\./.test(path));
 const sender = "crm-mirror-worker/src/gmail.js";
@@ -16,6 +16,7 @@ const mojibake = /\uFFFD|\u00e2\u20ac|\u00f0\u0178|\u00c3[\u0080-\u00bf]|\u00c2[
 
 test("authored email source and copy remain valid UTF-8 without known corruption", () => {
   assert.ok(paths.length > 400, "production source inventory unexpectedly shrank");
+  assert.ok(paths.includes("staff/src/lib/followupCopy.ts"), "Staff suggested email copy is missing from the source inventory");
   for (const path of paths) {
     const text = new TextDecoder("utf-8", { fatal: true }).decode(readFileSync(path));
     assert.equal(mojibake.test(text), false, path + " contains likely character-encoding corruption");
