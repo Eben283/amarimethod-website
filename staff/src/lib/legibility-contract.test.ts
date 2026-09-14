@@ -240,6 +240,16 @@ describe('Staff legibility contract', () => {
     expect(pipelineCss).toContain('@media (max-width: 820px)');
   });
 
+  it('keeps Outreach calm until a person is selected', () => {
+    const outreach = css('pages/FollowUpPage.tsx');
+    const outreachCss = css('pages/FollowUpPage.css');
+    expect(outreach).toContain('!isReply && expanded');
+    expect(outreach).toContain('aria-expanded={expanded}');
+    expect(outreach).toContain('className="staff-outreach"');
+    expect(outreachCss).toContain("font-family: 'ABC Diatype'");
+    expect(outreachCss).not.toContain('monospace');
+  });
+
   it('keeps the CRM pilot coherent across desktop and both iPad orientations', () => {
     const pilot = css('pages/StaffCrmPilotPage.tsx');
     const pilotCss = css('pages/StaffCrmPilotPage.css');
