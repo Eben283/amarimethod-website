@@ -24,7 +24,7 @@
     "check:nurture-engine-release": "node --test scripts/nurture-engine-release.test.mjs",
     "deploy:nurture-engine": "node scripts/nurture-engine-release.mjs",
     "test:staff-legibility": "vitest run --config functions/api/vitest.config.js staff/src/lib/legibility-contract.test.ts staff/src/lib/outreach-scope.test.ts staff/src/lib/training-sections.test.ts",
-    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config reminder-engine-worker/vitest.config.js && vitest run --config nurture-engine-worker/vitest.config.js && vitest run --config crm-mirror-worker/vitest.config.js && node --test morning-sms-worker/src/*.test.js && npm run test:staff-legibility && npm run check:portal-release && npm run check:crm-mirror-release && npm run check:reminder-engine-release && npm run check:nurture-engine-release"
+    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config reminder-engine-worker/vitest.config.js && vitest run --config nurture-engine-worker/vitest.config.js && vitest run --config crm-mirror-worker/vitest.config.js && node --test morning-sms-worker/src/*.test.js && npm run test:staff-legibility && npm run check:portal-release && npm run check:crm-mirror-release && npm run check:reminder-engine-release && npm run check:nurture-engine-release && node --test scripts/email-encoding-contract.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",
