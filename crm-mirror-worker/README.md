@@ -43,15 +43,15 @@ An email candidate is evidence for staff review, not a purchase link. The import
 
 ## Provisioning and deployment
 
-**Do not run `wrangler deploy` directly.** Every CRM Mirror release must use the repository-root command below from a clean checkout at the exact reviewed `origin/main` SHA:
+Every CRM Mirror release must use the protected GitHub **deploy protected Worker** workflow with `amari-crm-mirror` selected. A local command performs preflight only:
 
 ```bash
-npm run deploy:crm-mirror -- --deploy --approved-revision <full-origin-main-sha>
+npm run deploy:crm-mirror
 ```
 
-The command refuses a dirty or non-`origin/main` checkout, SHA-256 hashes the exact archived `crm-mirror-worker` source, deploys with `--strict --keep-vars`, then reads the resulting Worker version back. The Cloudflare Worker version tag/message are the durable release record and must contain both `git_sha=<40-char SHA>` and `artifact_sha256=<64-char SHA-256>`. A missing or mismatched record fails the release. `npm run deploy:crm-mirror` without `--deploy` is a non-writing preflight.
+The production workflow refuses stale source, uploads an inactive candidate with strict setting preservation, verifies its complete binding contract and source provenance, rechecks that no concurrent release occurred, and only then activates it. Local production activation is rejected.
 
-The supported production path is the protected **deploy CRM Mirror** GitHub Actions workflow, dispatched from current `main`; it uses the dedicated `CLOUDFLARE_CRM_MIRROR_DEPLOY_TOKEN` repository/environment secret. This repository guard deprecates arbitrary local Wrangler releases. It cannot prevent a user who deliberately bypasses the command and retains broad Cloudflare deploy credentials; enforce that boundary by moving the Worker deploy identity to scoped GitHub Actions and withdrawing broad local Worker-deploy authority in a separately approved Cloudflare access change.
+The same protected workflow covers every production Worker and serializes releases per Worker, while allowing different Workers to verify independently.
 
 The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its initial schema migration has been applied. The scheduled sweep advances each provider cursor with a bounded read. An authenticated `POST /sync` remains available for an operator-requested import.
 

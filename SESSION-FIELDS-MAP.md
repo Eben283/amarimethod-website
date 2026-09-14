@@ -217,4 +217,4 @@ Wrangler bundles transitively across worker boundaries. **No CI build check** ve
 4. Does an existing watchdog already cover what you're about to add?
 5. If you add a new audit / drift surface, will it generate daily noise? Compare against the todo-discipline rule.
 6. Tests: which existing test files should change? Are there untested paths your change relies on?
-7. Cross-worker imports: does your change need to be deployed to a worker too? `git push` doesn't deploy worker subdirs — they need `wrangler deploy`.
+7. Cross-worker imports: does your change need a Worker release too? A Git push does not release Worker subdirectories; dispatch the protected per-Worker GitHub workflow after review.

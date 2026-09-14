@@ -18,17 +18,10 @@ Configured as `MORNING_SMS_CONTACT_IDS` in `wrangler.toml`.
 
 ## Deploy
 
-```bash
-cd morning-sms-worker
-bws run --project-id f259cb76-481e-4f7c-b6d4-b47901086c3a -- printenv GHL_CLIENT_ID \
-  | npx wrangler secret put GHL_CLIENT_ID
-bws run --project-id f259cb76-481e-4f7c-b6d4-b47901086c3a -- printenv GHL_CLIENT_SECRET \
-  | npx wrangler secret put GHL_CLIENT_SECRET
-bws run --project-id f259cb76-481e-4f7c-b6d4-b47901086c3a -- printenv WORKER_AUTH_SECRET \
-  | npx wrangler secret put WORKER_AUTH_SECRET
-
-npx wrangler deploy
-```
+Use the protected GitHub **deploy protected Worker** workflow and select
+`morning-sms`. Existing settings and secrets are preserved and compared before
+the candidate can receive traffic. Secret changes use a separate reviewed
+Bitwarden operation.
 
 ## Manual test
 

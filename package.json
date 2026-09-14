@@ -18,13 +18,16 @@
     "check:dist-assets": "node scripts/check-dist-assets.mjs",
     "check:portal-release": "node scripts/check-portal-release.mjs",
     "check:crm-mirror-release": "node --test scripts/crm-mirror-release.test.mjs",
-    "deploy:crm-mirror": "node scripts/crm-mirror-release.mjs",
+    "deploy:crm-mirror": "node scripts/worker-release.mjs --worker amari-crm-mirror",
     "check:reminder-engine-release": "node --test scripts/reminder-engine-release.test.mjs",
-    "deploy:reminder-engine": "node scripts/reminder-engine-release.mjs",
+    "deploy:reminder-engine": "node scripts/worker-release.mjs --worker reminder-engine",
     "check:nurture-engine-release": "node --test scripts/nurture-engine-release.test.mjs",
-    "deploy:nurture-engine": "node scripts/nurture-engine-release.mjs",
+    "deploy:nurture-engine": "node scripts/worker-release.mjs --worker nurture-engine",
+    "check:worker-release": "node scripts/check-worker-release-policy.mjs",
+    "test:worker-release": "node --test scripts/worker-release.test.mjs",
+    "deploy:worker": "node scripts/worker-release.mjs",
     "test:staff-legibility": "vitest run --config functions/api/vitest.config.js staff/src/lib/legibility-contract.test.ts staff/src/lib/outreach-scope.test.ts staff/src/lib/training-sections.test.ts",
-    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config reminder-engine-worker/vitest.config.js && vitest run --config nurture-engine-worker/vitest.config.js && vitest run --config crm-mirror-worker/vitest.config.js && node --test morning-sms-worker/src/*.test.js && npm run test:staff-legibility && npm run check:portal-release && npm run check:crm-mirror-release && npm run check:reminder-engine-release && npm run check:nurture-engine-release && node --test scripts/email-encoding-contract.test.mjs"
+    "test": "vitest run --config functions/api/vitest.config.js --root . functions && vitest run --config series-reconcile-worker/vitest.config.js && vitest run --config daily-audit-worker/vitest.config.js && vitest run --config reminder-engine-worker/vitest.config.js && vitest run --config nurture-engine-worker/vitest.config.js && vitest run --config crm-mirror-worker/vitest.config.js && node --test morning-sms-worker/src/*.test.js && npm run test:staff-legibility && npm run check:portal-release && npm run check:crm-mirror-release && npm run check:reminder-engine-release && npm run check:nurture-engine-release && npm run check:worker-release && npm run test:worker-release && node --test scripts/email-encoding-contract.test.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.0",

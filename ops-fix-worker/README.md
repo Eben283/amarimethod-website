@@ -10,17 +10,10 @@ Amari Ops **Fix layer** — every 15 minutes, scan board attention and launch a 
 
 ## Deploy
 
-```bash
-cd ops-fix-worker
-# Cursor API key (Dashboard → API Keys)
-printenv CURSOR_API_KEY | npx wrangler secret put CURSOR_API_KEY
-printenv WORKER_AUTH_SECRET | npx wrangler secret put WORKER_AUTH_SECRET
-
-npx wrangler deploy
-# When ready to actually launch agents:
-npx wrangler vars set OPS_FIX_MODE=auto
-# or edit wrangler.toml and redeploy
-```
+Use the protected GitHub **deploy protected Worker** workflow and select
+`ops-fixer`. It releases only current `main`, preserves the existing secret and
+binding contract, and serializes with every other `ops-fixer` release. Runtime
+mode or secret changes are separate reviewed operations.
 
 ## Manual sweep
 

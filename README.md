@@ -42,11 +42,11 @@ an invalid duplicate deployment check.
 5. Build output directory: (leave empty)
 6. Point your domain (amarimethod.com) to Cloudflare Pages
 
-### CRM Mirror Worker
+### Production Workers
 
-The standalone CRM Mirror Worker is released only by the manual **deploy CRM
-Mirror** GitHub Actions workflow from the exact current `main` revision. Direct
-`wrangler deploy` paths are prohibited. The workflow retrieves its Cloudflare
+Every production Worker is released only by the manual **deploy protected
+Worker** GitHub Actions workflow from the exact current `main` revision. Direct
+Wrangler deployment paths are prohibited. The workflow retrieves its Cloudflare
 deploy credential from Bitwarden Secrets Manager at runtime: GitHub retains
 only a read-only Bitwarden machine-account bootstrap token and the immutable
 Bitwarden secret ID; the raw Cloudflare token remains solely in Bitwarden.
