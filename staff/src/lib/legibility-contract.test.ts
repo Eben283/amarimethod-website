@@ -240,6 +240,20 @@ describe('Staff legibility contract', () => {
     expect(pipelineCss).toContain('@media (max-width: 820px)');
   });
 
+  it('gives Products distinct families without bringing monospace labels back', () => {
+    const products = css('pages/ProductsPage.tsx');
+    const productsCss = css('pages/ProductsPage.css');
+
+    for (const family of ['program', 'assessment', 'session', 'digital']) {
+      expect(productsCss).toContain(`staff-product-row--${family}`);
+    }
+    expect(products).toContain("label: 'Care program'");
+    expect(products).toContain("label: 'First visit'");
+    expect(products).toContain("label: 'Digital support'");
+    expect(productsCss).toContain("font-family:'ABC Diatype'");
+    expect(productsCss).not.toContain('monospace');
+  });
+
   it('keeps Outreach calm until a person is selected', () => {
     const outreach = css('pages/FollowUpPage.tsx');
     const outreachCss = css('pages/FollowUpPage.css');

@@ -1,4 +1,5 @@
 import {
+  Activity,
   AlertTriangle,
   ArrowRight,
   BookOpenCheck,
@@ -11,6 +12,8 @@ import {
   ReceiptText,
   RefreshCw,
   ShoppingBag,
+  Sparkles,
+  Timer,
   X,
 } from 'lucide-react';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
@@ -37,15 +40,28 @@ function ProductRow({ product }: { product: StaffProduct }) {
   const navigate = useNavigate();
   const ready = product.readiness === 'ready' && product.availableInPos;
   const noEffect = product.fulfillmentPolicy === 'none';
+  const family = product.key.includes('week-practice')
+    ? { key: 'program', label: 'Care program', Icon: Activity }
+    : product.key === 'amari-assessment'
+      ? { key: 'assessment', label: 'First visit', Icon: Sparkles }
+      : product.key === 'living-practice'
+        ? { key: 'digital', label: 'Digital support', Icon: BookOpenCheck }
+        : product.key.includes('session') || product.key.includes('entrainment') || product.key === 'follow-up'
+          ? { key: 'session', label: 'Appointment', Icon: Timer }
+          : { key: product.category, label: product.category === 'retail' ? 'Retail' : product.category === 'practice-support' ? 'Practice support' : 'Service', Icon: ReceiptText };
+  const ProductIcon = family.Icon;
   return (
-    <article className={`staff-product-row staff-product-row--${product.salesPolicy}`}>
+    <article className={`staff-product-row staff-product-row--${product.salesPolicy} staff-product-row--${family.key}`}>
       <div className="staff-product-row__identity">
-        <div>
-          <span className="staff-product-row__policy">
-            {product.salesPolicy === 'legacy' ? 'Legacy · Founding members only' : product.salesPolicy === 'custom' ? 'Custom' : 'Current'}
-          </span>
-          <h3>{product.name}</h3>
-          <p>{product.description}</p>
+        <div className="staff-product-row__title">
+          <span className="staff-product-row__icon" aria-hidden="true"><ProductIcon /></span>
+          <div>
+            <span className="staff-product-row__policy">
+              {product.salesPolicy === 'legacy' ? 'Legacy · Founding members only' : product.salesPolicy === 'custom' ? 'Custom' : family.label}
+            </span>
+            <h3>{product.name}</h3>
+            <p>{product.description}</p>
+          </div>
         </div>
         <strong>{money.format(product.amountCents / 100)}</strong>
       </div>
