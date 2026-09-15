@@ -51,9 +51,11 @@ Study signup / field tools still use site-v6 tokens and (except `field-signup`) 
 | Display / H1–H4 | `--serif`, weight 400–500, tight line-height (~1.12–1.14) |
 | Headline treatment | Keep each headline in one consistent face; do not italicize a singled-out word or phrase. |
 | Body | `--sans`, ~1.65 line-height, color `--body`, typically `max-width: 60ch` |
-| Eyebrow / label | `--sans`, 11px, weight 600, uppercase, letter-spacing ~`.2em` |
-| Button / CTA label | `--sans`, 12px, weight 600, uppercase, letter-spacing ~`.16em` |
+| Eyebrow / label | `--sans`, 12–14px, weight 600, uppercase, letter-spacing ~`.14em` |
+| Button / CTA label | `--sans`, 14–16px, weight 500–600 |
 | Wordmark | Serif, wide tracking (`.34em`); on scroll collapses to logomark |
+
+Locked screen floors: 16px for reading copy, 14px for public navigation and actions, and 12px for captions or utility labels that do not carry essential information. Principal H1 text never falls below 42px on mobile.
 
 Hero H1: white, `clamp(2.5rem, 5vw, 4.5rem)`, max ~16ch centered (default hero).
 

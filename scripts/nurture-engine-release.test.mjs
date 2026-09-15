@@ -16,13 +16,14 @@ test('release source keeps every nurture flow shadow-only and current Flow 3 at 
   assert.equal(FLOW_3_POST_INITIAL.steps.length, 2);
 });
 
-test('workflow is a serialized production-gated exact-main Bitwarden-backed release', () => {
+test('workflow is a serialized production-gated exact-main release using the isolated GitHub environment credential', () => {
   const workflow = readFileSync(fileURLToPath(new URL('../.github/workflows/deploy-worker.yml', import.meta.url)), 'utf8');
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /environment: production/);
   assert.match(workflow, /ref: main/);
   assert.match(workflow, /test "\$GITHUB_SHA" = "\$\(git rev-parse origin\/main\)"/);
-  assert.match(workflow, /bitwarden\/sm-action@v2/);
+  assert.match(workflow, /CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}/);
+  assert.doesNotMatch(workflow, /bitwarden\/sm-action|BWS_CRM_MIRROR/);
   assert.match(workflow, /worker-production-\$\{\{ inputs\.worker \}\}/);
   assert.match(workflow, /deploy:worker -- --worker/);
 });

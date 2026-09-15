@@ -27,18 +27,18 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="preload" as="image" href="/images/photos/optimized/amari-method-eben-garrett-rings-1448.webp" imagesrcset="/images/photos/optimized/amari-method-eben-garrett-rings-768.webp 768w, /images/photos/optimized/amari-method-eben-garrett-rings-1448.webp 1448w" imagesizes="(max-width:860px) 100vw, 58vw" fetchpriority="high">
 <!-- Shared design system (header/footer markup injected by amari-mockup.js) -->
-<link rel="stylesheet" href="/css/site-v6.css?v=site-20260826">
+<link rel="stylesheet" href="/css/site-v6.css?v=site-20260915-assessment">
 <style>
   /* ---------- Homepage-specific styles ---------- */
   .home-hero{display:grid;grid-template-columns:minmax(0,42fr) minmax(0,58fr);align-items:center;min-height:0;padding:0;background:var(--carbon)}
   .home-hero .hero-photo{grid-column:2;grid-row:1;display:block;width:100%;height:auto;aspect-ratio:4/3}
   .home-hero .hero-inner{grid-column:1;grid-row:1;width:100%;padding:56px clamp(32px,calc((100vw - var(--maxw))/2 + 40px),120px);padding-right:36px;color:#fff;transform:none}
-  .home-hero h1{color:#fff;font-size:clamp(36px,4.1vw,64px)}
+  .home-hero h1{color:#fff;font-size:clamp(42px,4.1vw,64px)}
   .home-hero p{color:rgba(255,255,255,.9)}
   .home-hero .btn-pale{background:var(--chalk);color:var(--carbon)}
   .home-hero .btn-pale:hover{background:var(--paper);color:var(--carbon)}
   .hero p{max-width:46ch}
-  .first-visit-link{display:inline-block;margin:16px 0 0;font-family:var(--sans);font-size:13px;line-height:1.4}
+  .first-visit-link{display:inline-block;margin:16px 0 0;font-family:var(--sans);font-size:14px;line-height:1.4}
   .first-visit-link a{color:inherit;border-bottom:1px solid currentColor;padding-bottom:2px}
   .capacity-note{margin:14px 0 0;font-family:var(--sans);font-size:12px;line-height:1.45;letter-spacing:.04em;text-transform:uppercase;color:var(--body)}
   /* The first decision: concrete, quiet, and rooted in the actual visit. */
@@ -49,27 +49,27 @@
   .first-steps-intro p{font-size:1.06rem;line-height:1.65;margin:0;max-width:43ch}
   .first-steps-intro p + p{margin-top:18px}
   .first-visit-facts{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--line);border-bottom:1px solid var(--line);margin-bottom:42px}
-  .first-visit-facts span{padding:16px 18px 16px 0;font-size:12px;letter-spacing:.04em;color:var(--ink)}
+  .first-visit-facts span{padding:16px 18px 16px 0;font-size:16px;letter-spacing:.01em;color:var(--ink)}
   .first-visit-facts span + span{padding-left:18px;border-left:1px solid var(--line)}
   .first-step-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:28px}
   .first-step{border-top:1px solid var(--ink);padding-top:16px}
   .first-step figure{margin:0 0 22px;aspect-ratio:4/3;overflow:hidden;background:var(--tan)}
   .first-step img{display:block;width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
   .first-step:hover img{transform:scale(1.035)}
-  .first-step .step-number{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--body)}
+  .first-step .step-number{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--body)}
   .first-step h3{font-size:clamp(1.35rem,2vw,1.7rem);font-weight:500;line-height:1.08;max-width:16ch;margin-top:10px}
-  .first-step p{margin-top:13px;max-width:35ch;font-size:.96rem;line-height:1.6}
+  .first-step p{margin-top:13px;max-width:35ch;font-size:1rem;line-height:1.6}
   .first-step-cta{margin-top:40px}
   /* Journal */
   .justin{padding:clamp(70px,8vw,112px) 0 clamp(56px,6vw,84px);text-align:left}
-  .justin .kicker{font-family:var(--sans);font-weight:500;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-bottom:30px}
+  .justin .kicker{font-family:var(--sans);font-weight:500;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);margin-bottom:30px}
   .cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:28px;text-align:left}
   .jcard img{width:100%;aspect-ratio:4/3;object-fit:cover;background:var(--cream-2);margin-bottom:22px}
   .jph{position:relative;width:100%;aspect-ratio:4/3;margin-bottom:22px;border-radius:1px;overflow:hidden}
   .jph img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .8s var(--ease)}
   .jcard{cursor:pointer}
   .jcard:hover .jph img{transform:scale(1.045)}
-  .jcard .cat{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);font-weight:500}
+  .jcard .cat{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--body);font-weight:500}
   .jcard h3{font-family:var(--sans);font-size:1.06rem;margin-top:10px;line-height:1.28;font-weight:500;letter-spacing:-.015em}
 
   /* Category tiles */
@@ -110,7 +110,7 @@
   .faq-list summary::-webkit-details-marker{display:none}
   .faq-plus{font-family:var(--sans);font-size:20px;line-height:1;flex-shrink:0;color:var(--body)}
   .faq-list details[open] .faq-plus{transform:rotate(45deg)}
-  .faq-answer{margin-top:14px;color:var(--body);max-width:64ch;font-size:.98rem;line-height:1.7}
+  .faq-answer{margin-top:14px;color:var(--body);max-width:64ch;font-size:1rem;line-height:1.7}
   .faq-updated{margin-top:36px;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--body);opacity:.75}
 
   /* The client quote is a factual pause, not a material-mood interlude. */
@@ -119,6 +119,18 @@
   .home-pullquote .mark{display:none}
   .home-pullquote blockquote{font-family:var(--sans);font-weight:500;font-size:clamp(1.85rem,3.6vw,3rem);line-height:1.14;letter-spacing:-.028em;color:var(--chalk);max-width:23ch}
   .home-pullquote cite{font-family:var(--sans);font-size:12px;font-weight:400;letter-spacing:.02em;color:rgba(244,243,238,.68)}
+
+  /* The homepage owns the whole first action, including choosing a time. */
+  .assessment-booking-home{padding:clamp(72px,9vw,124px) 0;background:var(--paper);border-bottom:1px solid var(--line);scroll-margin-top:110px}
+  .assessment-booking-grid{display:grid;grid-template-columns:minmax(240px,.55fr) minmax(0,1.45fr);gap:clamp(44px,7vw,104px);align-items:start}
+  .assessment-booking-copy{position:sticky;top:132px}
+  .assessment-booking-copy .eyebrow{display:block;margin-bottom:16px}
+  .assessment-booking-copy h2{font-size:clamp(2.35rem,4vw,3.75rem);font-weight:500;max-width:9ch}
+  .assessment-booking-copy > p{margin-top:22px;font-size:1rem;line-height:1.6;max-width:36ch}
+  .assessment-booking-details{margin-top:32px;border-top:1px solid var(--line)}
+  .assessment-booking-details p{padding:16px 0;border-bottom:1px solid var(--line);font-size:16px;color:var(--ink)}
+  .assessment-booking-frame{background:var(--cream);border:1px solid var(--line);overflow:hidden}
+  .assessment-booking-frame iframe{display:block;width:100%;height:960px;border:0;background:var(--cream)}
 
   @media (prefers-reduced-motion:reduce){.tile img,.jph img,.first-step img,.btn{transition:none!important}}
   @media (max-width:1000px){
@@ -129,6 +141,8 @@
     .first-step-grid{grid-template-columns:1fr 1fr}
     .shop-panel{grid-template-columns:1fr}
     .shop-panel img.prod{min-height:320px}
+    .assessment-booking-grid{grid-template-columns:1fr}
+    .assessment-booking-copy{position:static;max-width:640px}
   }
   @media (max-width:640px){
     .cards4,.tiles,.first-step-grid{grid-template-columns:1fr}
@@ -140,8 +154,11 @@
     .home-hero{grid-template-columns:1fr;min-height:0;padding:0}
     .home-hero .hero-photo{grid-column:1;grid-row:1}
     .home-hero .hero-inner{grid-column:1;grid-row:2;padding:32px 22px 38px}
-    .home-hero h1{font-size:clamp(36px,7vw,52px)}
+    .home-hero h1{font-size:clamp(42px,7vw,52px)}
     .home-hero p{max-width:34ch}
+  }
+  @media (max-width:720px){
+    .assessment-booking-frame iframe{height:1100px}
   }
   /* Yinova-style band: cutout person floating on the color field (not a boxed photo) */
   .band .band-fig{align-self:stretch;position:relative;display:flex;align-items:flex-end;justify-content:center;overflow:hidden;min-height:540px}
@@ -186,7 +203,7 @@
     <span class="eyebrow light">The Amari Method</span>
     <h1>Pain relief through<br>guided exploration.</h1>
     <p>Private, hands-on sessions for pain and restriction—one-on-one in San Francisco.</p>
-    <a href="/assessment-booking" class="btn btn-pale">Start with a private Assessment</a>
+    <a href="#book-assessment" class="btn btn-pale">Start with a private Assessment</a>
   </div>
 </section>
 
@@ -228,7 +245,26 @@
         <p>Notice what becomes easier or more available, then decide what you want to do next.</p>
       </article>
     </div>
-    <a href="/assessment-booking" class="btn first-step-cta reveal">Book your $29 Assessment</a>
+    <a href="#book-assessment" class="btn first-step-cta reveal">Book your $29 Assessment</a>
+  </div>
+</section>
+
+<!-- BOOKING: the current native Assessment flow stays on the homepage. -->
+<section class="assessment-booking-home" id="book-assessment" aria-labelledby="book-assessment-title">
+  <div class="wrap assessment-booking-grid">
+    <div class="assessment-booking-copy reveal">
+      <span class="eyebrow">Book your Assessment</span>
+      <h2 id="book-assessment-title">Choose a time.</h2>
+      <p>Your Assessment is a private first session with Garrett in San Francisco. Pick an available time and share your details. The secure $29 payment comes next.</p>
+      <div class="assessment-booking-details" aria-label="Assessment booking details">
+        <p>$29, paid when you book</p>
+        <p>50 minutes</p>
+        <p>Private and in person</p>
+      </div>
+    </div>
+    <div class="assessment-booking-frame reveal">
+      <iframe id="assessmentBookingFrame" src="/assessment-booking.html?embed=1" title="Choose a time for your $29 Amari Assessment" loading="eager"></iframe>
+    </div>
   </div>
 </section>
 
@@ -370,12 +406,34 @@
     <span class="eyebrow">Start here</span>
     <h2>Explore what changes.</h2>
     <p>Begin with a 50-minute private Assessment in San Francisco. Experience guided exploration for yourself, then decide whether a longer Amari practice is right for you.</p>
-    <a href="/assessment-booking" class="btn">Book your $29 Assessment</a>
+    <a href="#book-assessment" class="btn">Book your $29 Assessment</a>
   </div>
 </section>
 
 <!-- Footer is injected by amari-mockup.js -->
-<script src="/js/site-v6.js?v=site-20260826"></script>
+<script src="/js/site-v6.js?v=site-20260915"></script>
+<script>
+  (function () {
+    var frame = document.getElementById('assessmentBookingFrame');
+    if (!frame) return;
+
+    function validCheckoutUrl(value) {
+      try {
+        var url = new URL(value);
+        return url.origin === 'https://link.amarimethod.com' && url.pathname.indexOf('/payment-link/') === 0;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    window.addEventListener('message', function (event) {
+      var data = event.data || {};
+      if (event.origin !== window.location.origin || event.source !== frame.contentWindow ||
+          data.type !== 'amari-assessment-checkout' || !validCheckoutUrl(data.checkoutUrl)) return;
+      window.location.assign(data.checkoutUrl);
+    });
+  })();
+</script>
 
 <!-- JSON-LD: LocalBusiness + WebSite schema (no aggregateRating). -->
 
