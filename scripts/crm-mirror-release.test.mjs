@@ -13,6 +13,19 @@ test('keeps privileged D1 migration access out of the Worker-only release creden
   assert.match(workflow, /Upload, verify, and activate one Worker/);
 });
 
+test('installs attachment schema through a separate exact migration gate', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/install-crm-attachment-schema.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /environment: production/);
+  assert.match(workflow, /secrets\.CLOUDFLARE_D1_TOKEN/);
+  assert.doesNotMatch(workflow, /secrets\.CLOUDFLARE_API_TOKEN/);
+  assert.match(workflow, /0033_client_desk_conversation_dispositions\.sql/);
+  assert.match(workflow, /0034_communication_attachments\.sql/);
+  assert.match(workflow, /d1 migrations apply amari-crm-mirror --config wrangler\.jsonc --remote/);
+  assert.match(workflow, /PRAGMA integrity_check/);
+  assert.match(workflow, /PRAGMA foreign_key_check/);
+  assert.doesNotMatch(workflow, /deploy:worker|owned-email|gmail/i);
+});
+
 test('release source retains both owned lifecycle service bindings', () => {
   const config = JSON.parse(readFileSync(new URL('../crm-mirror-worker/wrangler.jsonc', import.meta.url), 'utf8'));
   const services = Object.fromEntries((config.services || []).map((entry) => [entry.binding, entry.service]));
