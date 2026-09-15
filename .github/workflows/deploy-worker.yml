@@ -59,27 +59,6 @@ jobs:
           access_token: ${{ secrets.BWS_CRM_MIRROR_READ_TOKEN }}
           secrets: |
             ${{ vars.BWS_CRM_MIRROR_DEPLOY_SECRET_ID }} > CLOUDFLARE_API_TOKEN
-      - name: Install the additive Client Desk disposition schema
-        if: inputs.worker == 'amari-crm-mirror'
-        working-directory: crm-mirror-worker
-        shell: bash
-        run: |
-          set -euo pipefail
-          migration_state="$(mktemp)"
-          npx --yes wrangler@4.125.0 d1 execute CRM_DB --config wrangler.jsonc --remote --command "SELECT name FROM d1_migrations ORDER BY id DESC LIMIT 1" --json > "$migration_state"
-          last_migration="$(node -e 'const fs=require("node:fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const rows=p?.[0]?.results||p?.result?.[0]?.results||[];process.stdout.write(rows[0]?.name||"")' "$migration_state")"
-          if [[ "$last_migration" == "0032_owned_task_assignment.sql" ]]; then
-            npx --yes wrangler@4.125.0 d1 migrations apply CRM_DB --config wrangler.jsonc --remote
-          elif [[ "$last_migration" != "0033_client_desk_conversation_dispositions.sql" ]]; then
-            echo "Refusing unexpected CRM schema boundary: ${last_migration:-missing}" >&2
-            exit 1
-          fi
-          table_state="$(mktemp)"
-          npx --yes wrangler@4.125.0 d1 execute CRM_DB --config wrangler.jsonc --remote --command "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'client_desk_conversation_dispositions'" --json > "$table_state"
-          disposition_table="$(node -e 'const fs=require("node:fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const rows=p?.[0]?.results||p?.result?.[0]?.results||[];process.stdout.write(rows[0]?.name||"")' "$table_state")"
-          test "$disposition_table" = "client_desk_conversation_dispositions"
-        env:
-          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
       - name: Upload, verify, and activate one Worker
         run: npm run deploy:worker -- --worker "${{ inputs.worker }}" --deploy --approved-revision "$GITHUB_SHA"
         env:
