@@ -20,6 +20,9 @@ test('installs attachment schema through a separate exact migration gate', () =>
   assert.doesNotMatch(workflow, /secrets\.CLOUDFLARE_API_TOKEN/);
   assert.match(workflow, /0033_client_desk_conversation_dispositions\.sql/);
   assert.match(workflow, /0034_communication_attachments\.sql/);
+  assert.match(workflow, /action=apply/);
+  assert.match(workflow, /action=verify/);
+  assert.match(workflow, /if: steps\.boundary\.outputs\.action == 'apply'/);
   assert.match(workflow, /d1 migrations apply amari-crm-mirror --config wrangler\.jsonc --remote/);
   assert.match(workflow, /PRAGMA integrity_check/);
   assert.match(workflow, /PRAGMA foreign_key_check/);
