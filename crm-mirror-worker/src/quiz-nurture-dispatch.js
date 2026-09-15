@@ -95,11 +95,15 @@ export async function dispatchOwnedQuizNurture(env, nowMs = Date.now(), limit = 
 export async function ownedQuizNurtureDispatchReadiness(db) {
   if (!db) return { configured: false, state: "unavailable", reason: "CRM_DB is unavailable" };
   try {
-    const rows = (await db.prepare(
+    const dispatchRows = await db.prepare(
       "SELECT state, COUNT(*) AS count FROM quiz_nurture_dispatches GROUP BY state",
-    ).all()).results || [];
-    const counts = Object.fromEntries(["pending", "executing", "retryable", "dispatched", "manual_review"].map((state) => [state, 0]));
+    ).all();
+    const intakeRow = await db.prepare("SELECT COUNT(*) AS count FROM quiz_intake_submissions").first();
+    const rows = dispatchRows.results || [];
+    const counts = Object.fromEntries(["pending", "executing", "retryable", "dispatched", "manual_review", "suppressed"].map((state) => [state, 0]));
     for (const row of rows) counts[row.state] = Number(row.count || 0);
+    const dispatchTotal = rows.reduce((sum, row) => sum + Number(row.count || 0), 0);
+    counts.suppressed = Math.max(0, Number(intakeRow?.count || 0) - dispatchTotal);
     const blocking = counts.pending + counts.executing + counts.retryable + counts.manual_review;
     return {
       configured: true,

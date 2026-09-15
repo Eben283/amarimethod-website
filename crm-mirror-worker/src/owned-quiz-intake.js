@@ -219,7 +219,19 @@ export async function upsertOwnedQuizIntake(db, rawInput, now = new Date().toISO
   const submissionId = `quiz_intake_${input.idempotencyKey.slice(0, 32)}`;
   const nurtureEventJson = JSON.stringify({ kind: "quiz.submitted", contactId });
   const nurtureEventSha256 = await sha256(nurtureEventJson);
-  const nurtureDispatchId = `quiz_nurture_${input.idempotencyKey.slice(0, 32)}`;
+  // Flow 1 does not allow re-entry. Preserve that behavior across the transition:
+  // an imported/provider quiz tag or an earlier owned dispatch means this submission updates
+  // the latest quiz facts without restarting the six-email sequence. The contact-derived ID
+  // plus INSERT OR IGNORE also closes a concurrent first-submission race without rejecting the
+  // second immutable intake record.
+  const priorNurture = await db.prepare(`
+    SELECT 1 AS present FROM contact_tags
+     WHERE contact_id = ? AND lower(trim(tag)) = 'quiz submitted'
+    UNION ALL
+    SELECT 1 AS present FROM quiz_nurture_dispatches WHERE contact_id = ?
+    LIMIT 1
+  `).bind(contactId, contactId).first();
+  const nurtureDispatchId = `quiz_nurture_contact_${(await sha256(contactId)).slice(0, 32)}`;
   const attributes = ATTRIBUTE_FIELDS
     .map(([key, inputKey]) => [key, input[inputKey]])
     .filter(([, value]) => value !== null && value !== "")
@@ -255,12 +267,12 @@ export async function upsertOwnedQuizIntake(db, rawInput, now = new Date().toISO
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(submissionId, input.idempotencyKey, contactId, payloadSha256, normalizedJson,
       now, retentionUntil, now),
-    db.prepare(`
-      INSERT INTO quiz_nurture_dispatches
+    ...(!priorNurture ? [db.prepare(`
+      INSERT OR IGNORE INTO quiz_nurture_dispatches
         (id, submission_id, contact_id, event_json, payload_sha256, state,
          attempts, lease_until, created_at, updated_at)
       VALUES (?, ?, ?, ?, ?, 'pending', 0, 0, ?, ?)
-    `).bind(nurtureDispatchId, submissionId, contactId, nurtureEventJson, nurtureEventSha256, now, now),
+    `).bind(nurtureDispatchId, submissionId, contactId, nurtureEventJson, nurtureEventSha256, now, now)] : []),
     db.prepare("DELETE FROM contact_tags WHERE contact_id = ? AND source = ?").bind(contactId, SOURCE),
     db.prepare("DELETE FROM contact_attributes WHERE contact_id = ? AND source = ?").bind(contactId, SOURCE),
     db.prepare(`
