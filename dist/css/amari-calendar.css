@@ -70,7 +70,7 @@
 .am-cal-label,
 .cal-month-label {
   font-family: var(--am-cal-sans);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: var(--am-cal-ink);
   letter-spacing: 0.01em;
@@ -93,7 +93,7 @@
   transition: border-color 0.12s ease, color 0.12s ease;
   padding: 0;
   font-family: var(--am-cal-sans);
-  font-size: 14px;
+  font-size: 16px;
   line-height: 1;
   flex-shrink: 0;
 }
@@ -123,7 +123,7 @@
   grid-template-columns: repeat(7, 1fr);
   text-align: center;
   font-family: var(--am-cal-sans);
-  font-size: 10px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -227,7 +227,7 @@
   min-height: 200px;
   color: var(--am-cal-mute);
   font-family: var(--am-cal-sans);
-  font-size: 14px;
+  font-size: 16px;
 }
 
 .am-cal-err {
@@ -238,7 +238,7 @@
   gap: 10px;
   align-items: center;
   font-family: var(--am-cal-sans);
-  font-size: 14px;
+  font-size: 16px;
   color: #c64a3a;
 }
 
@@ -256,7 +256,7 @@
 .am-slots-label,
 .time-slots-label {
   font-family: var(--am-cal-sans);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -285,7 +285,7 @@
   border-radius: 6px;
   cursor: pointer;
   font-family: var(--am-cal-sans);
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 500;
   color: var(--am-cal-ink);
   transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
@@ -337,7 +337,7 @@
 .slot-empty {
   padding: 8px 0;
   font-family: var(--am-cal-sans);
-  font-size: 14px;
+  font-size: 16px;
   color: var(--am-cal-body);
 }
 

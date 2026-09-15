@@ -29,6 +29,9 @@
   --serif:var(--sans);
   --ease:cubic-bezier(0.32,0.72,0,1);
   --maxw:1360px;
+  --type-reading-min:16px;
+  --type-action-min:14px;
+  --type-utility-min:12px;
 }
 *{box-sizing:border-box;margin:0;padding:0}
 @font-face{font-family:"ABC Diatype";src:url("/fonts/ABCDiatype-Regular.otf") format("opentype");font-weight:400;font-style:normal;font-display:swap}
@@ -44,11 +47,11 @@ em{font-style:normal}
 .wrap{max-width:var(--maxw);margin:0 auto;padding:0 40px}
 
 /* Small, factual labels; display type is reserved for headings. */
-.eyebrow{font-family:var(--sans);font-weight:500;font-size:11px;text-transform:uppercase;letter-spacing:.14em;color:var(--ink)}
+.eyebrow{font-family:var(--sans);font-weight:500;font-size:var(--type-utility-min);text-transform:uppercase;letter-spacing:.14em;color:var(--ink)}
 .eyebrow.light{color:rgba(255,255,255,.85)}
 
 /* One quiet, rectangular CTA system. */
-.btn{display:inline-block;background:var(--carbon);color:var(--chalk);font-family:var(--sans);font-weight:500;font-size:13px;text-transform:none;letter-spacing:.01em;padding:15px 20px;border-radius:0;border:none;cursor:pointer;transition:background .25s var(--ease),transform .25s var(--ease)}
+.btn{display:inline-block;background:var(--carbon);color:var(--chalk);font-family:var(--sans);font-weight:500;font-size:var(--type-action-min);text-transform:none;letter-spacing:.01em;padding:15px 20px;border-radius:0;border:none;cursor:pointer;transition:background .25s var(--ease),transform .25s var(--ease)}
 .btn:hover{background:#000;transform:translateY(-1px)}
 .btn:active{transform:scale(.985)}
 .btn-pale{background:var(--cream);color:var(--ink)}
@@ -64,7 +67,7 @@ header.site.scrolled{box-shadow:0 4px 18px rgba(23,26,24,.05)}
 .brand-slot{display:inline-flex;align-items:center;justify-content:flex-start;line-height:1;color:var(--carbon)}
 .wordmark{display:block;width:228px;height:auto}
 .hdr-right{display:flex;gap:18px;align-items:center;justify-self:end}
-.hdr-portal{font-family:var(--header-sans);font-size:12px;font-weight:400;letter-spacing:.01em;color:var(--carbon);opacity:.72;white-space:nowrap}
+.hdr-portal{font-family:var(--header-sans);font-size:var(--type-action-min);font-weight:400;letter-spacing:.01em;color:var(--carbon);opacity:.72;white-space:nowrap}
 .hdr-portal:hover{color:var(--mineral)}
 .hdr-ico{width:18px;height:18px;opacity:.78}
 .nav-row{display:flex;justify-content:flex-end;gap:28px;font-family:var(--header-sans);font-size:17px;font-weight:400}
@@ -72,7 +75,7 @@ header.site nav a{position:relative;padding:7px 0;color:var(--carbon)}
 header.site nav a::after{content:"";position:absolute;left:0;bottom:2px;width:100%;height:1px;background:currentColor;transform:scaleX(0);transform-origin:left center;transition:transform .35s var(--ease)}
 header.site nav a:hover,header.site nav a.current{color:var(--carbon)}
 header.site nav a:hover::after,header.site nav a.current::after{transform:scaleX(1)}
-.btn.hdr-book{background:var(--carbon);color:var(--chalk);padding:13px 18px;border-radius:0;font-family:var(--header-sans);font-size:13px;letter-spacing:.01em}
+.btn.hdr-book{background:var(--carbon);color:var(--chalk);padding:13px 18px;border-radius:0;font-family:var(--header-sans);font-size:var(--type-action-min);letter-spacing:.01em}
 .btn.hdr-book:hover{background:var(--mineral);color:var(--chalk);transform:none}
 
 /* ---------- Hero (image provides context; type carries the composition) ---------- */
@@ -88,7 +91,7 @@ header.site nav a:hover::after,header.site nav a.current::after{transform:scaleX
 .hero-stats{display:flex;gap:clamp(34px,6vw,72px);justify-content:flex-start;margin:40px 0 0}
 .hero-stats .st{color:#fff}
 .hero-stats .st b{font-family:var(--serif);font-weight:500;font-size:clamp(2.1rem,3.4vw,2.8rem);display:block;line-height:1}
-.hero-stats .st span{font-family:var(--sans);font-size:11px;font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.78);display:block;margin-top:10px}
+.hero-stats .st span{font-family:var(--sans);font-size:var(--type-utility-min);font-weight:600;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,255,255,.78);display:block;margin-top:10px}
 
 /* ---------- Color-block band (edge portrait) ---------- */
 .band{display:grid;grid-template-columns:1fr 1fr;min-height:540px;align-items:center;
@@ -148,18 +151,18 @@ header.site nav a:hover::after,header.site nav a.current::after{transform:scaleX
 .footer-directory .wrap{display:grid;grid-template-columns:minmax(180px,.8fr) minmax(360px,1.2fr);gap:clamp(52px,10vw,180px);align-items:start}
 .footer-identity{display:flex;flex-direction:column;align-items:flex-start;gap:16px}
 .footer-directory-mark{display:block;width:182px;height:auto}
-.footer-place{font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--body)}
+.footer-place{font-size:var(--type-utility-min);letter-spacing:.13em;text-transform:uppercase;color:var(--body)}
 .footer-links{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:28px clamp(44px,7vw,104px)}
 .footer-links nav{display:flex;flex-direction:column;align-items:flex-start;gap:12px}
-.footer-links h2{font-family:var(--sans);font-size:11px;font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--body);margin:0 0 4px}
+.footer-links h2{font-family:var(--sans);font-size:var(--type-utility-min);font-weight:500;letter-spacing:.13em;text-transform:uppercase;color:var(--body);margin:0 0 4px}
 .footer-links nav a{font-size:16px;line-height:1.35;border-bottom:1px solid transparent}
 .footer-links nav a:hover{border-color:currentColor}
 .footer-utility{background:var(--cream-2);border-top:1px solid var(--line);padding:24px 0}
 .footer-utility .wrap{display:flex;justify-content:space-between;align-items:center;gap:28px;flex-wrap:wrap}
-.footer-utility nav{display:flex;gap:22px;flex-wrap:wrap;font-size:13px}
+.footer-utility nav{display:flex;gap:22px;flex-wrap:wrap;font-size:var(--type-action-min)}
 .footer-utility nav a{border-bottom:1px solid currentColor;padding-bottom:2px}
 .footer-utility nav a:hover{border-color:currentColor}
-.footer-utility span{font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--body)}
+.footer-utility span{font-size:var(--type-utility-min);letter-spacing:.1em;text-transform:uppercase;color:var(--body)}
 
 /* ---------- Reveal on scroll ---------- */
 .reveal{transition:opacity .8s var(--ease),transform .8s var(--ease),filter .8s var(--ease)}
@@ -231,7 +234,7 @@ header.site.menu-open .hdr-menu span:last-child{transform:translateY(-3.25px) ro
   .hdr-menu{display:flex}
   .wordmark{width:190px}
   .hdr-right{gap:12px}
-  .btn.hdr-book{padding:10px 14px;font-size:12px;letter-spacing:.01em;white-space:nowrap}
+  .btn.hdr-book{padding:10px 14px;font-size:var(--type-action-min);letter-spacing:.01em;white-space:nowrap}
   .hdr-portal,.hdr-search{display:none}
   .mobile-nav{position:fixed;inset:0;background:var(--chalk);padding:118px 30px 40px;flex-direction:column;gap:20px;font-family:var(--header-sans);font-size:20px;opacity:0;pointer-events:none;transition:opacity .35s var(--ease);color:var(--carbon);overflow-y:auto}
   header.site.menu-open{background:var(--chalk);color:var(--carbon);box-shadow:none}
@@ -265,12 +268,12 @@ header.site.menu-open .hdr-menu span:last-child{transform:translateY(-3.25px) ro
 
 /* Newsletter form states */
 .news{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;padding:4px;border:1px solid rgba(23,26,24,.22);background:var(--paper);max-width:460px}
-.news input{min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:400 14px/1.2 var(--sans);padding:11px 12px}
+.news input{min-width:0;border:0;outline:0;background:transparent;color:var(--ink);font:400 var(--type-reading-min)/1.2 var(--sans);padding:11px 12px}
 .news input::placeholder{color:var(--body);opacity:.7}
 .news input:focus-visible{outline:1px solid var(--ink);outline-offset:-1px}
-.news button{appearance:none;border:0;border-radius:0;background:var(--carbon);color:var(--chalk);font:500 12px/1 var(--sans);letter-spacing:.02em;padding:0 17px;min-height:40px;cursor:pointer;transition:background .2s var(--ease)}
+.news button{appearance:none;border:0;border-radius:0;background:var(--carbon);color:var(--chalk);font:500 var(--type-action-min)/1 var(--sans);letter-spacing:.02em;padding:0 17px;min-height:40px;cursor:pointer;transition:background .2s var(--ease)}
 .news button:hover{background:var(--mineral)}
-.news-msg{margin:14px auto 0;font-size:13.5px;max-width:32ch}
+.news-msg{margin:14px auto 0;font-size:var(--type-reading-min);max-width:32ch}
 .news-msg:empty{display:none}
 
 @media (max-width:640px){
