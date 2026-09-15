@@ -169,6 +169,46 @@ describe("owned quiz intake", () => {
     db.sqlite.close();
   });
 
+  it("retains a repeat quiz without restarting nurture when the contact already has the quiz tag", async () => {
+    const db = d1Database();
+    db.sqlite.prepare(`
+      INSERT INTO contacts
+        (id, first_name, last_name, display_name, email_normalized, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run("existing-quiz", "Ari", "Example", "Ari Example", "ari@example.test",
+      "2026-08-01T00:00:00.000Z", "2026-08-01T00:00:00.000Z");
+    db.sqlite.prepare(`
+      INSERT INTO contact_tags (contact_id, tag, source, created_at) VALUES (?, ?, ?, ?)
+    `).run("existing-quiz", "quiz submitted", "ghl", "2026-08-01T00:00:00.000Z");
+
+    const result = await upsertOwnedQuizIntake(db, valid(), "2026-09-01T16:00:00.000Z");
+
+    expect(result.contactId).toBe("existing-quiz");
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_intake_submissions").get().count).toBe(1);
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_nurture_dispatches").get().count).toBe(0);
+    expect(db.sqlite.prepare(
+      "SELECT attribute_value FROM contact_attributes WHERE contact_id = ? AND source = 'owned:quiz' AND attribute_key = 'primaryPainLocation'",
+    ).get("existing-quiz").attribute_value).toBe("Lower back");
+    db.sqlite.close();
+  });
+
+  it("queues only the first of two distinct quiz submissions for the same contact", async () => {
+    const db = d1Database();
+    const first = await upsertOwnedQuizIntake(db, valid(), "2026-09-01T16:00:00.000Z");
+    const second = await upsertOwnedQuizIntake(db, valid({
+      idempotencyKey: "b".repeat(64),
+      primaryPainLocation: "Neck",
+    }), "2026-09-02T16:00:00.000Z");
+
+    expect(second.contactId).toBe(first.contactId);
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_intake_submissions").get().count).toBe(2);
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_nurture_dispatches").get().count).toBe(1);
+    expect(db.sqlite.prepare(
+      "SELECT attribute_value FROM contact_attributes WHERE contact_id = ? AND source = 'owned:quiz' AND attribute_key = 'primaryPainLocation'",
+    ).get(first.contactId).attribute_value).toBe("Neck");
+    db.sqlite.close();
+  });
+
   it("does not let quiz intake overwrite a Staff-owned name or phone destination", async () => {
     const db = d1Database();
     db.sqlite.prepare(`
