@@ -120,17 +120,13 @@
   .home-pullquote blockquote{font-family:var(--sans);font-weight:500;font-size:clamp(1.85rem,3.6vw,3rem);line-height:1.14;letter-spacing:-.028em;color:var(--chalk);max-width:23ch}
   .home-pullquote cite{font-family:var(--sans);font-size:12px;font-weight:400;letter-spacing:.02em;color:rgba(244,243,238,.68)}
 
-  /* The homepage owns the whole first action, including choosing a time. */
+  /* The homepage introduces the first visit, then hands booking to its dedicated page. */
   .assessment-booking-home{padding:clamp(72px,9vw,124px) 0;background:var(--paper);border-bottom:1px solid var(--line);scroll-margin-top:110px}
-  .assessment-booking-grid{display:grid;grid-template-columns:minmax(240px,.55fr) minmax(0,1.45fr);gap:clamp(44px,7vw,104px);align-items:start}
-  .assessment-booking-copy{position:sticky;top:132px}
+  .assessment-booking-grid{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:clamp(36px,7vw,104px);align-items:end}
   .assessment-booking-copy .eyebrow{display:block;margin-bottom:16px}
-  .assessment-booking-copy h2{font-size:clamp(2.35rem,4vw,3.75rem);font-weight:500;max-width:9ch}
-  .assessment-booking-copy > p{margin-top:22px;font-size:1rem;line-height:1.6;max-width:36ch}
-  .assessment-booking-details{margin-top:32px;border-top:1px solid var(--line)}
-  .assessment-booking-details p{padding:16px 0;border-bottom:1px solid var(--line);font-size:16px;color:var(--ink)}
-  .assessment-booking-frame{background:var(--cream);border:1px solid var(--line);overflow:hidden}
-  .assessment-booking-frame iframe{display:block;width:100%;height:960px;border:0;background:var(--cream)}
+  .assessment-booking-copy h2{font-size:clamp(2.35rem,4vw,3.75rem);font-weight:500;max-width:14ch}
+  .assessment-booking-copy > p{margin-top:22px;font-size:1rem;line-height:1.6;max-width:52ch}
+  .assessment-booking-action{padding-bottom:4px}
 
   @media (prefers-reduced-motion:reduce){.tile img,.jph img,.first-step img,.btn{transition:none!important}}
   @media (max-width:1000px){
@@ -142,7 +138,8 @@
     .shop-panel{grid-template-columns:1fr}
     .shop-panel img.prod{min-height:320px}
     .assessment-booking-grid{grid-template-columns:1fr}
-    .assessment-booking-copy{position:static;max-width:640px}
+    .assessment-booking-copy{max-width:640px}
+    .assessment-booking-action{padding-bottom:0}
   }
   @media (max-width:640px){
     .cards4,.tiles,.first-step-grid{grid-template-columns:1fr}
@@ -249,21 +246,16 @@
   </div>
 </section>
 
-<!-- BOOKING: the current native Assessment flow stays on the homepage. -->
+<!-- ASSESSMENT: a focused handoff to the dedicated booking page. -->
 <section class="assessment-booking-home" id="book-assessment" aria-labelledby="book-assessment-title">
   <div class="wrap assessment-booking-grid">
     <div class="assessment-booking-copy reveal">
-      <span class="eyebrow">Book your Assessment</span>
-      <h2 id="book-assessment-title">Choose a time.</h2>
-      <p>Your Assessment is a private first session with Garrett in San Francisco. Pick an available time and share your details. The secure $29 payment comes next.</p>
-      <div class="assessment-booking-details" aria-label="Assessment booking details">
-        <p>$29, paid when you book</p>
-        <p>50 minutes</p>
-        <p>Private and in person</p>
-      </div>
+      <span class="eyebrow">Your first visit</span>
+      <h2 id="book-assessment-title">Start with a $29 Assessment.</h2>
+      <p>A private, 50-minute first session with Garrett in San Francisco. Experience the work before deciding whether Amari feels right for you.</p>
     </div>
-    <div class="assessment-booking-frame reveal">
-      <iframe id="assessmentBookingFrame" src="/assessment-booking.html?embed=1" title="Choose a time for your $29 Amari Assessment" loading="eager"></iframe>
+    <div class="assessment-booking-action reveal">
+      <a href="/assessment-booking" class="btn">Choose a time</a>
     </div>
   </div>
 </section>
@@ -412,28 +404,6 @@
 
 <!-- Footer is injected by amari-mockup.js -->
 <script src="/js/site-v6.js?v=site-20260915"></script>
-<script>
-  (function () {
-    var frame = document.getElementById('assessmentBookingFrame');
-    if (!frame) return;
-
-    function validCheckoutUrl(value) {
-      try {
-        var url = new URL(value);
-        return url.origin === 'https://link.amarimethod.com' && url.pathname.indexOf('/payment-link/') === 0;
-      } catch (err) {
-        return false;
-      }
-    }
-
-    window.addEventListener('message', function (event) {
-      var data = event.data || {};
-      if (event.origin !== window.location.origin || event.source !== frame.contentWindow ||
-          data.type !== 'amari-assessment-checkout' || !validCheckoutUrl(data.checkoutUrl)) return;
-      window.location.assign(data.checkoutUrl);
-    });
-  })();
-</script>
 
 <!-- JSON-LD: LocalBusiness + WebSite schema (no aggregateRating). -->
 
