@@ -536,13 +536,25 @@ describe("Client Desk message rendering", () => {
     expect(clientDeskHtml()).toContain('blue-dot ');
   });
 
-  it("uses reply work state instead of clearing attention when a record is opened", () => {
+  it("keeps unseen and reply work as separate inbox states", () => {
     const html = clientDeskHtml();
     expect(html).toContain("need a reply");
     expect(html).toContain("conversationWorkState(row)");
+    expect(html).toContain("Number(row.unread_inbound_count || 0) > 0");
+    expect(html).not.toContain("workState === 'needs_reply' ? 'unread'");
     expect(html).toContain("CLEAR_REACTION");
     expect(html).toContain("/seen', { method: 'POST'");
     expect(html).toContain("unread_inbound_count: 0");
+  });
+
+  it("offers durable no-reply, spam, and reopen controls without hiding history", () => {
+    const html = clientDeskHtml();
+    expect(html).toContain("No reply needed");
+    expect(html).toContain("Mark as spam");
+    expect(html).toContain("Reopen");
+    expect(html).toContain("/disposition'");
+    expect(html).toContain("disposition_state");
+    expect(html).toContain("Conversation history is preserved");
   });
 
   it("does not turn reactions, acknowledgements, or historical unread rows into work", () => {
@@ -557,6 +569,8 @@ describe("Client Desk message rendering", () => {
     expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Thank you!!", last_event_at: "2026-09-14T12:00:00Z" })).toBe("done");
     expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Can we move this to Friday?", last_event_at: "2026-09-14T12:00:00Z" })).toBe("needs_reply");
     expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Please reply", last_event_at: "2026-09-01T12:00:00Z", unread_inbound_count: 12 })).toBe("done");
+    expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Please reply", last_event_at: "2026-09-14T12:00:00Z", disposition_state: "done" })).toBe("done");
+    expect(helpers.conversationWorkState({ last_direction: "inbound", last_preview: "Buy now", last_event_at: "2026-09-14T12:00:00Z", disposition_state: "spam" })).toBe("spam");
   });
 
   it("removes the monospace all-caps AI treatment from the working Inbox brand", () => {

@@ -318,6 +318,10 @@ describe("CRM mirror client profiles", () => {
     expect(calls[0].sql).toContain("FROM contacts contact");
     expect(calls[0].sql).toContain("LEFT JOIN latest_threads thread");
     expect(calls[0].sql).toContain("source.external_id AS external_contact_id");
+    expect(calls[0].sql).toContain("disposition.state AS disposition_state");
+    expect(calls[0].sql).toContain("client_desk_conversation_dispositions disposition");
+    expect(calls[0].sql).toContain("disposition.resolved_thread_id = thread.thread_id");
+    expect(calls[0].sql).toContain("disposition.resolved_event_at = thread.last_event_at");
     expect(calls[0].sql).toContain("datetime(thread.last_event_at) DESC");
     expect(calls[0].sql).not.toContain("OPS-%");
     expect(calls[0].sql).not.toContain("EXISTS (SELECT 1 FROM appointments");

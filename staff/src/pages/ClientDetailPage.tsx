@@ -882,20 +882,22 @@ function ClientDetailWorkspace({ surface = 'session' }: { surface?: MemberWorksp
         <section className="sa-card">
           <div className="sa-card-h">
             <span className="t">Appointments</span>
-            <button type="button" className="sa-manage-appt" onClick={() => setSchedulingAppointment(true)}><Plus size={14} /> New appointment</button>
-            {owed && owed.status === 'owed' && (
+            <div className="sa-card-h-actions">
+              {owed && owed.status === 'owed' && (
               <span title={`Attended ${owed.attendedBillable}, paid for ${owed.sessionsPurchased}${owed.confidence === 'medium' ? ' — verify' : ''}`}
                 style={{ fontSize: 11, fontWeight: 700, padding: '2px 8px', borderRadius: 999, background: '#fee2e2', color: '#b91c1c' }}>
                 Owed {owed.shortBy} session{owed.shortBy === 1 ? '' : 's'}{owed.confidence === 'medium' ? '?' : ''}
               </span>
-            )}
-            {owed && owed.status === 'square' && (
+              )}
+              {owed && owed.status === 'square' && (
               <span style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: '#dcfce7', color: '#15803d' }}>Paid up</span>
-            )}
-            {owed && owed.status === 'paid-legacy' && (
+              )}
+              {owed && owed.status === 'paid-legacy' && (
               <span title="Paid at a legacy price (amount not in current map)" style={{ fontSize: 11, fontWeight: 600, padding: '2px 8px', borderRadius: 999, background: '#f1f5f9', color: '#475569' }}>Paid (legacy)</span>
-            )}
-            <span className="sa-mod-count">{client.appointments.length} total</span>
+              )}
+              <span className="sa-mod-count">{client.appointments.length} total</span>
+              <button type="button" className="sa-manage-appt" onClick={() => setSchedulingAppointment(true)}><Plus size={14} /> New appointment</button>
+            </div>
           </div>
           {attendedError && <div className="sa-errbar" style={{ marginBottom: 10 }}>{attendedError}</div>}
           {client.appointments.length === 0 ? (

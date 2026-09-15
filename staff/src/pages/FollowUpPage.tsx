@@ -1170,6 +1170,21 @@ function ActRow({ item, expanded, activity, busy, onToggle, onOutcome, onDismiss
 }
 
 // Expanded prospect detail (replaces Outreach's modal info).
+function visibleRundownParagraphs(value: string | null) {
+  if (!value?.trim()) return [];
+  let visible = value
+    .replace(/\s+Provenance:\s*[\s\S]*$/i, '')
+    .replace(/\s+Research grouping:\s*[\s\S]*$/i, '')
+    .replace(/\s+Email:\s*[\s\S]*?(?=\s+Cautions:)/i, ' ')
+    .replace(/\s+Source:\s*https?:\/\/\S+/gi, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  for (const marker of ['Location:', 'Post:', 'Potential fit:', 'Contact ownership', 'Cautions:', 'Suggested first approach']) {
+    visible = visible.replace(new RegExp(`\\s+(${marker.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')})`, 'i'), '\n$1');
+  }
+  return visible.split(/\n+/).map((paragraph) => paragraph.trim()).filter(Boolean);
+}
+
 function Details({ p, unverifiedNumber = false }: { p: PartnerProspect; unverifiedNumber?: boolean }) {
   const socials = [
     p.linkedinUrl && { label: 'LinkedIn', url: p.linkedinUrl },
@@ -1642,9 +1657,14 @@ function EditableField({ contactId, field, label, value, multiline }: {
       </div>
     );
   }
+  const paragraphs = multiline ? visibleRundownParagraphs(val) : [];
   return (
     <div className="group flex items-start gap-1.5">
-      <span className={val ? 'text-amari-charcoal' : ' text-amari-text-muted'}>{val || `No ${label} yet`}</span>
+      {multiline && paragraphs.length ? (
+        <div className="outreach-rundown">{paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}</div>
+      ) : (
+        <span className={val ? 'text-amari-charcoal' : ' text-amari-text-muted'}>{val || `No ${label} yet`}</span>
+      )}
       <button type="button" onClick={() => { setDraft(val); setSaveError(null); setEditing(true); }}
         className="mt-0.5 shrink-0 text-amari-text-muted opacity-60 hover:opacity-100" aria-label={`Edit ${label}`}>
         <Pencil className="h-3 w-3" />

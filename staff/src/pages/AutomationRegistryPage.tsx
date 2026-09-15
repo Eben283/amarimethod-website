@@ -261,7 +261,7 @@ export default function AutomationRegistryPage() {
       {registryError && <p className="automation-registry-error"><AlertTriangle size={16} />{registryError}</p>}
       {!registry && !registryError && <div className="automation-registry-loading"><Loader2 className="spin" /> Loading the registry…</div>}
 
-      {registry && (
+      {registry && (selectedFamilyKey || isFocusedInspector) && (
         <div className={`automation-registry-workspace${isFocusedInspector ? ' is-focused' : ''}`}>
           <section className="automation-family-detail" id="automation-evidence" aria-live="polite">
             {familyLoading && <div className="automation-registry-loading"><Loader2 className="spin" /> Opening family…</div>}

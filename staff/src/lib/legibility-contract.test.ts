@@ -30,6 +30,12 @@ function contrast(foreground: string, background: string) {
 }
 
 describe('Staff legibility contract', () => {
+  it('uses a neutral white operating canvas instead of a low-contrast tan wash', () => {
+    const global = css('index.css');
+    expect(global).toContain('--staff-paper: #FFFFFF');
+    expect(global).toContain('--staff-sheet: #FFFFFF');
+    expect(global).not.toContain('--staff-paper: #F4F3EE');
+  });
   const globalCss = css('index.css');
 
   it('keeps every working text role at WCAG AA contrast', () => {
@@ -227,17 +233,19 @@ describe('Staff legibility contract', () => {
     expect(shell).not.toContain("'inbox' | 'operations'");
   });
 
-  it('gives Pipeline a phased CRM workspace instead of one endless board', () => {
+  it('keeps every Pipeline stage available in one touch-scrollable CRM board', () => {
     const pipeline = css('pages/PipelinePage.tsx');
     const pipelineCss = css('pages/PipelinePage.css');
 
     for (const phase of ['Outreach', 'Discovery', 'Care', 'Clients']) expect(pipeline).toContain(`label: '${phase}'`);
-    expect(pipeline).toContain('Find a person in this phase');
-    expect(pipeline).toContain('Show ${cards.length - 8} more');
-    expect(pipeline).toContain('Conversion snapshot');
-    expect(pipelineCss).toContain("font-family: 'ABC Diatype'");
+    expect(pipeline).toContain('Find anyone in Pipeline');
+    expect(pipeline).not.toContain('See where every relationship stands without turning the whole practice into one endless board.');
+    expect(pipeline).not.toContain("const [phase, setPhase]");
+    expect(pipelineCss).toContain('overflow-x:auto');
+    expect(pipelineCss).toContain('touch-action:pan-x pan-y');
+    expect(pipelineCss).toContain("font-family:'ABC Diatype'");
     expect(pipelineCss).not.toContain('monospace');
-    expect(pipelineCss).toContain('@media (max-width: 820px)');
+    expect(pipelineCss).toContain('@media(max-width:820px)');
   });
 
   it('gives Products distinct families without bringing monospace labels back', () => {
@@ -262,6 +270,21 @@ describe('Staff legibility contract', () => {
     expect(moneyCss).not.toContain('monospace');
   });
 
+  it('does not render an empty Automations evidence panel before a workflow is selected', () => {
+    const automations = css('pages/AutomationRegistryPage.tsx');
+    expect(automations).toContain('registry && (selectedFamilyKey || isFocusedInspector)');
+  });
+
+  it('keeps the member record appointment action in the header and removes monospace utility text', () => {
+    const member = css('pages/ClientDetailPage.tsx');
+    const memberCss = css('styles/session-a.css');
+    expect(member).toContain('className="sa-card-h-actions"');
+    expect(member).toContain('{client.appointments.length} total');
+    expect(memberCss).toContain('--mono:var(--sans)');
+    expect(memberCss).toContain('.sa-card-h-actions');
+    expect(memberCss).not.toContain("--mono:'IBM Plex Mono'");
+  });
+
   it('keeps Outreach calm until a person is selected', () => {
     const outreach = css('pages/FollowUpPage.tsx');
     const outreachCss = css('pages/FollowUpPage.css');
@@ -270,6 +293,8 @@ describe('Staff legibility contract', () => {
     expect(outreach).toContain('className="staff-outreach"');
     expect(outreachCss).toContain("font-family: 'ABC Diatype'");
     expect(outreachCss).not.toContain('monospace');
+    expect(outreach).toContain('visibleRundownParagraphs');
+    expect(outreach).toContain("className=\"outreach-rundown\"");
   });
 
   it('keeps the CRM pilot coherent across desktop and both iPad orientations', () => {

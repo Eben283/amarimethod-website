@@ -4,11 +4,11 @@
 
 @layer base {
   :root {
-    /* Staff is one operating ledger: warm paper, one working sheet, dark ink,
+    /* Staff is one operating ledger: a neutral canvas, one working sheet, dark ink,
        and semantic color reserved for state. These public roles are shared by
        every Staff surface; page-local palettes must map back to them. */
-    --staff-paper: #F4F3EE;
-    --staff-sheet: #FFFEFA;
+    --staff-paper: #FFFFFF;
+    --staff-sheet: #FFFFFF;
     --staff-ink: #12333B;
     --staff-body: #303C3D;
     --staff-muted: #526A70;
@@ -28,13 +28,13 @@
        surfaces use this as a hard floor; compactness comes from structure,
        spacing, and progressive disclosure rather than microtype. */
     --staff-readable-min: 1rem;
-    --background: 45 21% 95%;
+    --background: 0 0% 100%;
     --foreground: 190 53% 15%;
 
-    --card: 48 100% 99%;
+    --card: 0 0% 100%;
     --card-foreground: 190 53% 15%;
 
-    --popover: 48 100% 99%;
+    --popover: 0 0% 100%;
     --popover-foreground: 190 53% 15%;
 
     --primary: 187 78% 23%;
@@ -143,9 +143,9 @@
     background: var(--staff-paper);
   }
 
-  /* Mono uppercase micro-label — the client view's IBM Plex Mono small-caps. */
+  /* Compact labels use the same humanist sans as the rest of Staff. */
   .staff-mlabel {
-    @apply font-mono text-xs uppercase tracking-[0.08em] font-semibold;
+    @apply font-sans text-xs uppercase tracking-[0.08em] font-semibold;
     color: var(--staff-muted);
   }
 
