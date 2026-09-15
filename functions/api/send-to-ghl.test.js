@@ -179,18 +179,35 @@ describe("quiz submission boundary", () => {
 
   it("keeps GHL as the compatibility write while completing the public idempotency record", async () => {
     const values = new Map();
+    const callOrder = [];
     const kv = protectionKV({
       get: vi.fn(async (key) => values.get(key) || null),
       put: vi.fn(async (key, value) => { values.set(key, value); }),
       delete: vi.fn(async (key) => { values.delete(key); }),
     });
     const fetchSpy = vi.fn(async (url) => {
-      if (String(url).includes("siteverify")) return turnstileSuccess();
+      if (String(url).includes("siteverify")) {
+        callOrder.push("turnstile");
+        return turnstileSuccess();
+      }
       if (String(url).endsWith("/contacts/upsert")) {
+        callOrder.push("ghl-upsert");
         return Response.json({ contact: { id: "ghl-contact-1" } });
       }
-      if (String(url).endsWith("/contacts/ghl-contact-1")) return Response.json({ success: true });
+      if (String(url).endsWith("/contacts/ghl-contact-1")) {
+        callOrder.push("ghl-fields");
+        return Response.json({ success: true });
+      }
       throw new Error(`unexpected request: ${url}`);
+    });
+    const ownedFetch = vi.fn(async () => {
+      callOrder.push("owned");
+      return Response.json({
+        success: true,
+        contactId: "contact_email_1234",
+        payloadSha256: "b".repeat(64),
+        deduped: false,
+      }, { status: 201 });
     });
     vi.stubGlobal("fetch", fetchSpy);
 
@@ -202,17 +219,48 @@ describe("quiz submission boundary", () => {
       PORTAL_KV: kv,
       GHL_API_KEY: "ghl-secret",
       OWNED_QUIZ_BRIDGE_RELEASE: "approved",
-      CRM_MIRROR: { fetch: vi.fn(() => { throw new Error("source-shadow bridge must not run"); }) },
+      CRM_MIRROR: { fetch: ownedFetch },
       WORKER_AUTH_SECRET: "worker-secret",
     }));
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ success: true, audience: "bay-area" });
     expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect(ownedFetch).toHaveBeenCalledTimes(1);
+    expect(callOrder).toEqual(["turnstile", "owned", "ghl-upsert", "ghl-fields"]);
     expect([...values.entries()]).toEqual(expect.arrayContaining([
       [expect.stringMatching(/^quiz_submission:/), "completed"],
     ]));
     expect(kv.delete).not.toHaveBeenCalled();
+  });
+
+  it("fails before GHL and releases the public idempotency record when owned capture is unavailable", async () => {
+    const values = new Map();
+    const kv = protectionKV({
+      get: vi.fn(async (key) => values.get(key) || null),
+      put: vi.fn(async (key, value) => { values.set(key, value); }),
+      delete: vi.fn(async (key) => { values.delete(key); }),
+    });
+    const fetchSpy = vi.fn(async (url) => {
+      if (String(url).includes("siteverify")) return turnstileSuccess();
+      throw new Error(`GHL must not run: ${url}`);
+    });
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const response = await onRequestPost(context(validSubmission({ turnstileToken: "valid" }), {}, {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: kv,
+      GHL_API_KEY: "ghl-secret",
+      OWNED_QUIZ_BRIDGE_RELEASE: "approved",
+      CRM_MIRROR: { fetch: vi.fn(async () => new Response("unavailable", { status: 503 })) },
+      WORKER_AUTH_SECRET: "worker-secret",
+    }));
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({ error: "Owned contact capture unavailable." });
+    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(kv.delete).toHaveBeenCalledWith(expect.stringMatching(/^quiz_submission:/));
+    expect([...values.keys()].some((key) => key.startsWith("quiz_submission:"))).toBe(false);
   });
 
   it("releases the public idempotency record when the compatibility write fails", async () => {
@@ -230,6 +278,14 @@ describe("quiz submission boundary", () => {
       TURNSTILE_SECRET_KEY: "test-secret",
       PORTAL_KV: kv,
       GHL_API_KEY: "ghl-secret",
+      OWNED_QUIZ_BRIDGE_RELEASE: "approved",
+      CRM_MIRROR: { fetch: vi.fn(async () => Response.json({
+        success: true,
+        contactId: "contact_email_1234",
+        payloadSha256: "b".repeat(64),
+        deduped: false,
+      }, { status: 201 })) },
+      WORKER_AUTH_SECRET: "worker-secret",
     }));
 
     expect(response.status).toBe(422);

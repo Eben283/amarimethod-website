@@ -55,21 +55,20 @@ describe("owned public quiz intake bridge", () => {
     }));
   });
 
-  it("is source-level shadow and cannot be activated by environment alone", async () => {
-    expect(OWNED_QUIZ_BRIDGE_SOURCE_MODE).toBe("shadow");
+  it("is source-level active but still cannot run without the independent release flag", async () => {
+    expect(OWNED_QUIZ_BRIDGE_SOURCE_MODE).toBe("active");
     const fetch = vi.fn();
     await expect(forwardOwnedQuizIntake({
-      OWNED_QUIZ_BRIDGE_RELEASE: "approved",
       WORKER_AUTH_SECRET: "secret",
       CRM_MIRROR: { fetch },
-    }, payload())).resolves.toEqual({ ok: true, skipped: "source_shadow" });
+    }, payload())).resolves.toEqual({ ok: false, error: "release_not_approved" });
     expect(fetch).not.toHaveBeenCalled();
   });
 
   it("requires the independent release flag, private binding, and Worker auth", async () => {
-    await expect(forwardOwnedQuizIntake({}, payload(), { sourceMode: "active" }))
+    await expect(forwardOwnedQuizIntake({}, payload()))
       .resolves.toEqual({ ok: false, error: "release_not_approved" });
-    await expect(forwardOwnedQuizIntake({ OWNED_QUIZ_BRIDGE_RELEASE: "approved" }, payload(), { sourceMode: "active" }))
+    await expect(forwardOwnedQuizIntake({ OWNED_QUIZ_BRIDGE_RELEASE: "approved" }, payload()))
       .resolves.toEqual({ ok: false, error: "owned_intake_unconfigured" });
   });
 
@@ -89,7 +88,7 @@ describe("owned public quiz intake bridge", () => {
       OWNED_QUIZ_BRIDGE_RELEASE: "approved",
       WORKER_AUTH_SECRET: "private-secret",
       CRM_MIRROR: { fetch },
-    }, payload(), { sourceMode: "active" })).resolves.toEqual({ ok: true, deduped: false });
+    }, payload())).resolves.toEqual({ ok: true, deduped: false });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -99,11 +98,11 @@ describe("owned public quiz intake bridge", () => {
       WORKER_AUTH_SECRET: "secret",
       CRM_MIRROR: { fetch },
     });
-    await expect(forwardOwnedQuizIntake(env(async () => { throw new Error("offline"); }), payload(), { sourceMode: "active" }))
+    await expect(forwardOwnedQuizIntake(env(async () => { throw new Error("offline"); }), payload()))
       .resolves.toEqual({ ok: false, error: "owned_intake_unavailable" });
-    await expect(forwardOwnedQuizIntake(env(async () => new Response("no", { status: 409 })), payload(), { sourceMode: "active" }))
+    await expect(forwardOwnedQuizIntake(env(async () => new Response("no", { status: 409 })), payload()))
       .resolves.toEqual({ ok: false, error: "owned_intake_rejected", status: 409 });
-    await expect(forwardOwnedQuizIntake(env(async () => Response.json({ success: true })), payload(), { sourceMode: "active" }))
+    await expect(forwardOwnedQuizIntake(env(async () => Response.json({ success: true })), payload()))
       .resolves.toEqual({ ok: false, error: "owned_intake_invalid_acknowledgement" });
   });
 });
