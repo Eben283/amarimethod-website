@@ -7,17 +7,17 @@ const booking = readFileSync('assessment-booking.html', 'utf8');
 const calendarCss = readFileSync('css/amari-calendar.css', 'utf8');
 
 describe('homepage Assessment booking', () => {
-  it('keeps the current native $29 booking flow on the homepage', () => {
+  it('hands the $29 Assessment off to its dedicated booking page', () => {
     expect(home).toContain('id="book-assessment"');
-    expect(home).toContain('src="/assessment-booking.html?embed=1"');
-    expect(home).toContain('Choose a time for your $29 Amari Assessment');
+    expect(home).toContain('Start with a $29 Assessment.');
+    expect(home).toContain('<a href="/assessment-booking" class="btn">Choose a time</a>');
     expect(home.match(/href="#book-assessment"/g)).toHaveLength(3);
+    expect(home).not.toContain('<iframe');
   });
 
-  it('hands the embedded flow off only to the approved secure payment host', () => {
-    expect(home).toContain("event.origin !== window.location.origin");
-    expect(home).toContain("url.origin === 'https://link.amarimethod.com'");
-    expect(home).toContain("url.pathname.indexOf('/payment-link/') === 0");
+  it('does not carry embedded-booking messaging on the homepage', () => {
+    expect(home).not.toContain('assessmentBookingFrame');
+    expect(home).not.toContain('amari-assessment-checkout');
   });
 
   it('keeps the deployed static files exact with their sources', () => {
@@ -42,7 +42,7 @@ describe('locked public type floors', () => {
     expect(siteCss).toContain('font-size:var(--type-action-min)');
   });
 
-  it('keeps the embedded booking flow at those same floors', () => {
+  it('keeps the dedicated booking flow at those same floors', () => {
     expect(booking).toContain('.book-headline { font-family: var(--serif); font-weight: 400; font-size: clamp(42px, 5vw, 56px)');
     expect(booking).toContain('.checkbox-row > span { flex: 1; font-family: var(--sans); font-size: 16px');
     expect(booking).toContain('.btn-primary-pill { display: inline-flex;');
