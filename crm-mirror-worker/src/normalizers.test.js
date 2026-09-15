@@ -31,6 +31,22 @@ describe("CRM mirror normalizers", () => {
     });
   });
 
+  it("keeps only bounded HTTPS attachment locators from GHL messages", () => {
+    const message = normalizeGhlMessage({
+      id: "email_with_image", messageType: "TYPE_EMAIL", direction: "inbound", dateAdded: "2026-09-10T18:28:06.664Z",
+      body: "Here is the photo.",
+      attachments: [
+        "https://static-assets.internal.usercontent.site/files/d/zach-photo",
+        "http://insecure.example.test/photo.jpg",
+        "javascript:alert(1)",
+      ],
+    }, "thread_1", "contact_1");
+
+    expect(message.attachments).toEqual([
+      { position: 0, locator: "https://static-assets.internal.usercontent.site/files/d/zach-photo" },
+    ]);
+  });
+
   it("normalizes a GHL contact without treating the pipeline as data", () => {
     expect(normalizeGhlContact({
       id: "ghl_1",

@@ -39,6 +39,8 @@ Migration `0032_owned_task_assignment.sql` adds an optional Eben-or-Garrett assi
 
 Migration `0033_client_desk_conversation_dispositions.sql` separates a Staff member's personal read state from the shared work decision for a conversation. Opening a thread clears that actor's unread marker. “No reply needed” and “Spam” close the shared follow-up without deleting any messages, and “Reopen” restores it. Each close is anchored to the latest mirrored event, so a later inbound message automatically returns the conversation to active work instead of inheriting an obsolete resolution.
 
+Migration `0034_communication_attachments.sql` preserves bounded GHL attachment locators separately from message text. Client Desk returns only opaque attachment IDs, resolves private GHL file links server-side, rejects unsafe types and oversized files, and streams approved files with private no-store headers. Existing mirrored conversations are backfilled on their next bounded GHL refresh. This migration does not activate Gmail sending or native Gmail inbound synchronization.
+
 Stripe charges that cannot be linked to a mirrored GHL contact are retained as unlinked purchase candidates. Package balance is deliberately **not** written to `session_ledger_entries` yet: a full ledger backfill must reconcile purchases against explicit attendance and refunds, rather than guessing from a mutable GHL field.
 
 An email candidate is evidence for staff review, not a purchase link. The importer never turns it into `purchases.contact_id`, never posts a ledger entry, and never sends a message.
@@ -108,6 +110,7 @@ If this Worker is recreated, create a new dedicated D1 database and replace the 
 
 Retention execution remains intentionally unimplemented. The planner proves which original records and dependent copies would require coordinated treatment, while failing closed on incomplete schema coverage or unfinished dispatch. A separate privacy decision must define deletion versus redaction for immutable automation evidence and shared contact identities before any destructive path can be reviewed.
 - `GET /communications/outbox/readiness` — authenticated aggregate-only legacy command availability plus the source-disabled owned email dispatch state and blockers; no contact, destination, subject, body, or provider identifiers.
+- `GET /client-desk/attachments/:id` — signed Staff retrieval of one opaque mirrored attachment through the bounded server-side resolver.
 
 The root dashboard does **not** accept a pasted worker bearer secret in the browser. Operator access is minted by `POST /dashboard-access-link` (bearer, server-side only) into a one-time five-minute handoff URL backed by an opaque high-entropy code in KV; redeeming `/dashboard-access/:code` sets a signed eight-hour HttpOnly browser session and never exposes `WORKER_AUTH_SECRET` in the URL. Staff opens this via `POST /api/staff-crm-mirror-access` (Eben JWT). The root server-renders aggregate counts and source health once the session is present, so the health summary remains visible even in a browser that cannot run the dashboard JavaScript. That session can read only the dashboard's GET endpoints; `POST /sync` and `POST /dashboard-session` continue to require the bearer credential on every request (machine/operator tooling, not the staff UI).
 

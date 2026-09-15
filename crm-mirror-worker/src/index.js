@@ -84,6 +84,7 @@ import {
   readOwnedContactProfileAuthority,
 } from "./owned-contact-profiles.js";
 import { ClientDeskDispositionError, setClientDeskDisposition } from "./client-desk-dispositions.js";
+import { serveCommunicationAttachment } from "./communication-attachments.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -494,6 +495,18 @@ export default {
         return json(200, { success: true, result });
       }
       const clientDeskSeen = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)\/seen$/);
+      const clientDeskAttachment = url.pathname.match(/^\/client-desk\/attachments\/([^/]+)$/);
+      if (request.method === "GET" && clientDeskAttachment) {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff session required" }, { "Cache-Control": "no-store" });
+        try {
+          return await serveCommunicationAttachment(env, decodeURIComponent(clientDeskAttachment[1]));
+        } catch (error) {
+          const status = [404, 413, 415, 422, 502, 503].includes(Number(error?.status)) ? Number(error.status) : 500;
+          if (status === 500) console.error("[client-desk-attachment]", error);
+          return json(status, { error: error instanceof Error ? error.message : "Attachment could not be opened" }, { "Cache-Control": "no-store" });
+        }
+      }
       if (request.method === "POST" && clientDeskSeen) {
         const actor = await dashboardSessionActor(request, env);
         if (!actor) return json(401, { error: "staff session required" });

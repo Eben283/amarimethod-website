@@ -116,6 +116,24 @@ describe("Client Desk message rendering", () => {
     expect(html).not.toContain("data-note-archive");
   });
 
+  it("renders mirrored attachments through the authenticated Client Desk endpoint", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { timelineItem }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+    const rendered = helpers.timelineItem({
+      activity_type: "message", channel: "email", direction: "inbound", body: "Here it is.",
+      occurred_at: "2026-09-10T18:28:06.664Z",
+      attachments: [{ id: "attachment_1", label: "Photo attachment" }],
+    });
+
+    expect(rendered).toContain('/client-desk/attachments/attachment_1');
+    expect(rendered).toContain('Photo attachment');
+    expect(rendered).not.toContain('static-assets.internal.usercontent.site');
+  });
+
   it("orders the timeline oldest-to-newest and opens at the newest message", () => {
     const html = clientDeskHtml();
     expect(html).toContain(".sort((left, right) => String(left.occurred_at || '').localeCompare(String(right.occurred_at || ''))");

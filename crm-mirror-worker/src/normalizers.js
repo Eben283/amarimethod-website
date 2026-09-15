@@ -89,6 +89,18 @@ export function normalizeGhlMessage(raw, threadExternalId, contactExternalId) {
   const channel = messageChannel(raw?.messageType || raw?.type);
   const occurredAt = raw?.dateAdded || raw?.createdAt || raw?.date;
   if (!externalId || !channel || !threadExternalId || !contactExternalId || !occurredAt) return null;
+  const attachments = (Array.isArray(raw?.attachments) ? raw.attachments : [])
+    .slice(0, 10)
+    .flatMap((value, position) => {
+      if (typeof value !== "string" || value.length > 4096) return [];
+      try {
+        const locator = new URL(value);
+        if (locator.protocol !== "https:" || locator.username || locator.password) return [];
+        return [{ position, locator: locator.toString() }];
+      } catch {
+        return [];
+      }
+    });
   return {
     externalId,
     threadExternalId,
@@ -100,6 +112,7 @@ export function normalizeGhlMessage(raw, threadExternalId, contactExternalId) {
     body: channel === "email" ? cleanEmailMessage(raw.body || raw.message) : cleanMessage(raw.body || raw.message),
     occurredAt: typeof occurredAt === "number" ? new Date(occurredAt).toISOString() : text(occurredAt),
     senderLabel: text(raw.fromName || raw.userName),
+    attachments,
   };
 }
 

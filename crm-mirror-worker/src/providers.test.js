@@ -12,6 +12,7 @@ import {
   fetchGhlConversationsPage,
   fetchGhlEmail,
   fetchGhlMessage,
+  resolveGhlAttachmentUrl,
   fetchStripeCustomer,
   fetchStripeInvoicesPage,
   withGhlProviderInvocation,
@@ -52,6 +53,16 @@ describe("GHL contact pagination", () => {
     const secondUrl = new URL(fetch.mock.calls[1][0]);
     expect(secondUrl.searchParams.get("startAfterId")).toBe("cursor_id_1");
     expect(secondUrl.searchParams.get("startAfter")).toBe("1720000000000");
+  });
+
+  it("resolves a private GHL file slug server-side with the existing provider grant", async () => {
+    fetch.mockResolvedValueOnce(Response.json({ url: "https://signed.example.test/zach-photo.jpg" }));
+
+    await expect(resolveGhlAttachmentUrl(env, "https://services.leadconnectorhq.com/files/d/private_slug"))
+      .resolves.toBe("https://signed.example.test/zach-photo.jpg");
+    const [url, options] = fetch.mock.calls.at(-1);
+    expect(url).toBe("https://services.leadconnectorhq.com/files/d/private_slug");
+    expect(options.headers.Authorization).toBe("Bearer token");
   });
 
   it("restarts once rather than using the legacy id-only cursor", async () => {
