@@ -78,8 +78,30 @@ describe("owned quiz nurture dispatch", () => {
     expect(database.sqlite.prepare("SELECT state, attempts FROM quiz_nurture_dispatches").get())
       .toEqual({ state: "dispatched", attempts: 1 });
     expect(await ownedQuizNurtureDispatchReadiness(database)).toMatchObject({
-      configured: true, state: "ready", blocking: 0, counts: { dispatched: 1 }, shadowOnly: true, deliveryEnabled: false,
+      configured: true, state: "ready", blocking: 0,
+      counts: { dispatched: 1, suppressed: 0 }, shadowOnly: true, deliveryEnabled: false,
     });
+  });
+
+  it("reports repeat quiz submissions as suppressed without treating them as blocked", async () => {
+    const database = db();
+    const first = await captured(database);
+    await upsertOwnedQuizIntake(database, {
+      ...quiz(),
+      idempotencyKey: "b".repeat(64),
+      primaryPainLocation: "Neck",
+    }, "2026-09-02T18:00:00.000Z");
+
+    expect(database.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_nurture_dispatches").get().count).toBe(1);
+    await expect(ownedQuizNurtureDispatchReadiness(database)).resolves.toMatchObject({
+      configured: true,
+      state: "pending",
+      blocking: 1,
+      counts: { pending: 1, suppressed: 1 },
+      shadowOnly: true,
+      deliveryEnabled: false,
+    });
+    expect(first.contactId).toBeTruthy();
   });
 
   it("retries a missing binding and accepts the nurture engine's idempotent no-op", async () => {
