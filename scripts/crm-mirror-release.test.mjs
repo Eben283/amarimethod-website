@@ -12,7 +12,8 @@ test('installs only the guarded Client Desk disposition migration before CRM act
   assert.match(workflow, /last_migration/);
   assert.match(workflow, /0032_owned_task_assignment\.sql/);
   assert.match(workflow, /0033_client_desk_conversation_dispositions\.sql/);
-  assert.match(workflow, /d1 migrations apply amari-crm-mirror --remote/);
+  assert.match(workflow, /d1 migrations apply CRM_DB --config wrangler\.jsonc --remote/);
+  assert.match(workflow, /d1 execute CRM_DB --config wrangler\.jsonc --remote/);
   assert.ok(workflow.indexOf('Install the additive Client Desk disposition schema') < workflow.indexOf('Upload, verify, and activate one Worker'));
 });
 
