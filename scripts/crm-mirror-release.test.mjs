@@ -25,7 +25,7 @@ test('installs attachment schema through a separate exact migration gate', () =>
   assert.match(workflow, /if: steps\.boundary\.outputs\.action == 'apply'/);
   assert.match(workflow, /d1 migrations apply amari-crm-mirror --config wrangler\.jsonc --remote/);
   assert.match(workflow, /PRAGMA integrity_check/);
-  assert.match(workflow, /PRAGMA foreign_key_check/);
+  assert.match(workflow, /PRAGMA foreign_key_check\('communication_event_attachments'\)/);
   assert.doesNotMatch(workflow, /deploy:worker|owned-email|gmail/i);
 });
 
