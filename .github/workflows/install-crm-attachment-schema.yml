@@ -1,0 +1,73 @@
+name: install CRM attachment schema
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-production-schema
+  cancel-in-progress: false
+
+jobs:
+  install:
+    name: verify and install migration 0034
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - run: npm ci
+      - name: Refuse stale source or a broadened migration set
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
+          test "$(find crm-mirror-worker/migrations -maxdepth 1 -type f -name '*.sql' -print | sort | tail -n 1)" = "crm-mirror-worker/migrations/0034_communication_attachments.sql"
+          npm run check:crm-mirror-release
+      - name: Verify production schema boundary
+        working-directory: crm-mirror-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(mktemp)"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT id, name FROM d1_migrations ORDER BY id DESC LIMIT 1" --json > "$before"
+          node -e 'const fs=require("node:fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const rows=p?.[0]?.results||p?.result?.[0]?.results||[];if(rows.length!==1||rows[0].name!=="0033_client_desk_conversation_dispositions.sql")process.exit(1)' "$before"
+          table_state="$(mktemp)"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT name FROM sqlite_schema WHERE name IN ('communication_event_attachments','idx_communication_attachments_event') ORDER BY name" --json > "$table_state"
+          node -e 'const fs=require("node:fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const rows=p?.[0]?.results||p?.result?.[0]?.results||[];if(rows.length!==0)process.exit(1)' "$table_state"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
+          WRANGLER_SEND_METRICS: 'false'
+          WRANGLER_WRITE_LOGS: 'false'
+      - name: Apply only migration 0034
+        working-directory: crm-mirror-worker
+        run: npx --yes wrangler@4.125.0 d1 migrations apply amari-crm-mirror --config wrangler.jsonc --remote
+        env:
+          CI: 'true'
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
+          WRANGLER_SEND_METRICS: 'false'
+          WRANGLER_WRITE_LOGS: 'false'
+      - name: Verify exact installed schema and database integrity
+        working-directory: crm-mirror-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          after="$(mktemp)"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT id, name FROM d1_migrations ORDER BY id DESC LIMIT 1; SELECT type, name, tbl_name FROM sqlite_schema WHERE name IN ('communication_event_attachments','idx_communication_attachments_event') ORDER BY name; PRAGMA integrity_check; PRAGMA foreign_key_check" --json > "$after"
+          node -e 'const fs=require("node:fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const sets=Array.isArray(p)?p:(p?.result||[]);const rows=(i)=>sets[i]?.results||[];if(rows(0).length!==1||rows(0)[0].name!=="0034_communication_attachments.sql")process.exit(1);const names=rows(1).map(r=>r.name).sort();if(JSON.stringify(names)!==JSON.stringify(["communication_event_attachments","idx_communication_attachments_event"]))process.exit(1);if(rows(2).length!==1||rows(2)[0].integrity_check!=="ok")process.exit(1);if(rows(3).length!==0)process.exit(1)' "$after"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
+          WRANGLER_SEND_METRICS: 'false'
+          WRANGLER_WRITE_LOGS: 'false'
