@@ -26,6 +26,12 @@ describe('homepage Assessment booking', () => {
     expect(readFileSync('dist/css/site-v6.css', 'utf8')).toBe(siteCss);
     expect(readFileSync('dist/css/amari-calendar.css', 'utf8')).toBe(calendarCss);
   });
+
+  it('cache-busts the changed public stylesheets', () => {
+    expect(home).toContain('/css/site-v6.css?v=site-20260915-assessment');
+    expect(booking).toContain('/css/site-v6.css?v=site-20260915-assessment');
+    expect(booking).toContain('/css/amari-calendar.css?v=calendar-20260915-assessment');
+  });
 });
 
 describe('locked public type floors', () => {
