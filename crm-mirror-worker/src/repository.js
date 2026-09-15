@@ -224,6 +224,19 @@ export async function upsertCommunicationEvent(db, event, threadId, contactId, n
   } else {
     await db.prepare(`INSERT INTO communication_events (id, thread_id, contact_id, provider, provider_event_id, event_kind, direction, delivery_status, subject, body_clean, occurred_at, sender_label, created_at, updated_at) VALUES (?, ?, ?, 'ghl', ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).bind(eventId, threadId, contactId, event.externalId, event.channel, event.direction, event.deliveryStatus, event.subject, event.body, event.occurredAt, event.senderLabel, now, now).run();
   }
+  const attachmentStatements = [
+    db.prepare("DELETE FROM communication_event_attachments WHERE event_id = ?").bind(eventId),
+  ];
+  for (const attachment of Array.isArray(event.attachments) ? event.attachments.slice(0, 10) : []) {
+    if (!Number.isInteger(attachment?.position) || attachment.position < 0 || attachment.position >= 10) continue;
+    if (typeof attachment?.locator !== "string" || attachment.locator.length > 4096) continue;
+    attachmentStatements.push(db.prepare(
+      `INSERT INTO communication_event_attachments
+       (id, event_id, provider, provider_locator, display_name, mime_type, size_bytes, position, created_at, updated_at)
+       VALUES (?, ?, 'ghl', ?, NULL, NULL, NULL, ?, ?, ?)`,
+    ).bind(`cea_${eventId}_${attachment.position}`, eventId, attachment.locator, attachment.position, now, now));
+  }
+  await db.batch(attachmentStatements);
   return eventId;
 }
 
@@ -1100,7 +1113,7 @@ export async function consentReviewQueue(db, limit) {
 }
 
 export async function contactProfile(db, contactId, limit, now) {
-  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, purchaseCandidatesResult, invoicesResult, notesResult, tasksResult, consentResult, messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult] = await db.batch([
+  const [contactResult, tagsResult, rolesResult, attributesResult, stateResult, nextAppointmentResult, appointmentsResult, communicationsResult, timelineResult, purchasesResult, purchaseCandidatesResult, invoicesResult, notesResult, tasksResult, consentResult, messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult, attachmentResult] = await db.batch([
     db.prepare(
       `SELECT contact.id, contact.display_name, contact.email_normalized, contact.phone_e164,
               contact.referral_source_label, contact.created_at,
@@ -1170,7 +1183,7 @@ export async function contactProfile(db, contactId, limit, now) {
        LIMIT ?`,
     ).bind(contactId, limit),
     db.prepare(
-      `SELECT event.id, event.provider_event_id AS message_ref, event.event_kind, event.direction, event.delivery_status,
+      `SELECT event.id, event.id AS event_id, event.provider_event_id AS message_ref, event.event_kind, event.direction, event.delivery_status,
               event.subject, event.body_clean, event.occurred_at, event.sender_label,
               event.read_at, thread.channel AS thread_channel
        FROM communication_events event
@@ -1229,7 +1242,7 @@ export async function contactProfile(db, contactId, limit, now) {
        ORDER BY channel`,
     ).bind(contactId),
     db.prepare(
-      `SELECT 'message' AS activity_type, event.provider_event_id AS message_ref, event.occurred_at, event.direction,
+      `SELECT 'message' AS activity_type, event.id AS event_id, event.provider_event_id AS message_ref, event.occurred_at, event.direction,
               COALESCE(thread.channel, event.event_kind) AS channel, event.delivery_status,
               event.subject, event.body_clean AS body, NULL AS status, NULL AS detail,
               NULL AS amount_cents, NULL AS currency
@@ -1270,11 +1283,32 @@ export async function contactProfile(db, contactId, limit, now) {
               task.status, task.due_at AS detail, NULL AS amount_cents, NULL AS currency
        FROM client_tasks task WHERE task.contact_id = ? ORDER BY datetime(task.created_at) DESC, task.id DESC LIMIT ?`,
     ).bind(contactId, limit),
+    db.prepare(
+      `SELECT attachment.id, attachment.event_id, attachment.display_name, attachment.mime_type, attachment.size_bytes,
+              attachment.position
+       FROM communication_event_attachments attachment
+       JOIN communication_events event ON event.id = attachment.event_id
+       WHERE event.contact_id = ?
+       ORDER BY datetime(event.occurred_at) DESC, attachment.position
+       LIMIT ?`,
+    ).bind(contactId, Math.min(limit * 10, 2500)),
   ]);
   const contact = contactResult.results?.[0] || null;
   if (!contact) return null;
   const importedCurrentState = stateResult.results?.[0] || {};
   const purchases = purchasesResult.results || [];
+  const attachmentsByEvent = new Map();
+  for (const attachment of attachmentResult?.results || []) {
+    const list = attachmentsByEvent.get(attachment.event_id) || [];
+    list.push({
+      id: attachment.id,
+      label: attachment.display_name || `Attachment ${list.length + 1}`,
+      mimeType: attachment.mime_type || null,
+      sizeBytes: attachment.size_bytes == null ? null : Number(attachment.size_bytes),
+    });
+    attachmentsByEvent.set(attachment.event_id, list);
+  }
+  const withAttachments = (rows) => (rows || []).map((row) => ({ ...row, attachments: attachmentsByEvent.get(row.event_id || row.id) || [] }));
   return {
     contact,
     tags: (tagsResult.results || []).map((row) => row.tag),
@@ -1293,12 +1327,15 @@ export async function contactProfile(db, contactId, limit, now) {
     // D1 has a lower compound-SELECT term ceiling than local SQLite. Merge the
     // six independently bounded source queries here instead of a UNION, while
     // keeping the exact same read-only client timeline shape.
-    activityTimeline: [messageActivityResult, appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult]
+    activityTimeline: [
+      { results: withAttachments(messageActivityResult.results) },
+      appointmentActivityResult, paymentActivityResult, invoiceActivityResult, noteActivityResult, taskActivityResult,
+    ]
       .flatMap((result) => result.results || [])
       .sort((left, right) => String(right.occurred_at || "").localeCompare(String(left.occurred_at || "")))
       .slice(0, limit),
     communications: communicationsResult.results || [],
-    communicationTimeline: timelineResult.results || [],
+    communicationTimeline: withAttachments(timelineResult.results),
   };
 }
 

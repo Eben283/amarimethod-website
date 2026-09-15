@@ -848,6 +848,16 @@ describe("CRM mirror dashboard access handoff", () => {
     expect(response.status).toBe(401);
   });
 
+  it("keeps mirrored attachment bytes behind the signed Staff session", async () => {
+    const response = await worker.fetch(
+      new Request("https://crm.test/client-desk/attachments/attachment_1"),
+      { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {} },
+    );
+
+    expect(response.status).toBe(401);
+    await expect(response.json()).resolves.toMatchObject({ error: "staff session required" });
+  });
+
   it("rejects browser-supplied provider evidence on the non-delivering outbox command route", async () => {
     const env = { WORKER_AUTH_SECRET: "test-secret", CRM_DB: {} };
     const session = await worker.fetch(new Request("https://crm.test/dashboard-session", {

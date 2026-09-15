@@ -285,6 +285,23 @@ export async function fetchGhlEmail(env, emailMessageExternalId) {
   return { ...email, messageType: email.messageType || "TYPE_EMAIL" };
 }
 
+// GHL file-service attachment URLs become private after a short public window.
+// Resolve only the opaque file slug through the authenticated provider API so
+// the Staff browser never receives a GHL credential or durable provider URL.
+export async function resolveGhlAttachmentUrl(env, locator) {
+  let source;
+  try { source = new URL(locator); } catch { throw new Error("GHL attachment locator is invalid"); }
+  if (source.protocol !== "https:" || source.username || source.password) throw new Error("GHL attachment locator is invalid");
+  const slug = source.pathname.match(/\/files\/d\/([A-Za-z0-9_-]{1,512})(?:\/|$)/)?.[1];
+  if (!slug) return source.toString();
+  const payload = await ghlGet(env, `/files/d/${encodeURIComponent(slug)}`);
+  const resolved = payload?.url || payload?.fileUrl || payload?.signedUrl || payload?.data?.url;
+  let result;
+  try { result = new URL(resolved); } catch { throw new Error("GHL attachment URL is unavailable"); }
+  if (result.protocol !== "https:" || result.username || result.password) throw new Error("GHL attachment URL is unavailable");
+  return result.toString();
+}
+
 export async function fetchGhlMessageExport(env, cursor = null, limit = 50) {
   const params = new URLSearchParams({ locationId: env.GHL_LOCATION_ID, limit: String(Math.min(100, Math.max(10, limit))) });
   if (cursor) params.set("cursor", cursor);
