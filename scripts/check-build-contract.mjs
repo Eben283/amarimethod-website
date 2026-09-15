@@ -60,17 +60,30 @@ assert.equal(
 
 assert.match(
   ownedQuizBridge,
-  /export const OWNED_QUIZ_BRIDGE_SOURCE_MODE = ["']shadow["']/,
-  "owned quiz intake must remain source-level shadow until separately reviewed",
+  /export const OWNED_QUIZ_BRIDGE_SOURCE_MODE = ["']active["']/,
+  "owned quiz intake activation must be explicit in reviewed source",
 );
 assert.doesNotMatch(
   ownedQuizBridge,
-  /export const OWNED_QUIZ_BRIDGE_SOURCE_MODE = ["']active["']/,
-  "an environment-only change must not activate owned quiz intake",
+  /export const OWNED_QUIZ_BRIDGE_SOURCE_MODE = ["']shadow["']/,
+  "published activation must not silently fall back to source shadow",
 );
+assert.match(
+  ownedQuizBridge,
+  /env\?\.OWNED_QUIZ_BRIDGE_RELEASE !== ["']approved["']/,
+  "owned quiz intake must require its independent release flag",
+);
+assert.match(
+  ownedQuizBridge,
+  /env\?\.CRM_MIRROR\?\.fetch[^\n]+env\?\.WORKER_AUTH_SECRET/,
+  "owned quiz intake must require the private CRM binding and Worker auth",
+);
+const ownedCaptureIndex = publicQuizHandler.indexOf("forwardOwnedQuizIntake(");
+const ghlCompatibilityIndex = publicQuizHandler.indexOf("getGhlToken(context)");
+assert.notEqual(ownedCaptureIndex, -1, "the public quiz must call owned intake");
+assert.notEqual(ghlCompatibilityIndex, -1, "the temporary GHL compatibility write must remain");
 assert.ok(
-  publicQuizHandler.indexOf("forwardOwnedQuizIntake(")
-    < publicQuizHandler.indexOf("getGhlToken(context)"),
+  ownedCaptureIndex < ghlCompatibilityIndex,
   "owned quiz capture must precede the temporary GHL compatibility write",
 );
 assert.doesNotMatch(

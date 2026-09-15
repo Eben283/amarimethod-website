@@ -3,7 +3,7 @@
 // rate-limit, and idempotency ownership; this module carries only the already
 // normalized payload across the private same-account service binding.
 
-export const OWNED_QUIZ_BRIDGE_SOURCE_MODE = "shadow";
+export const OWNED_QUIZ_BRIDGE_SOURCE_MODE = "active";
 const INTAKE_URL = "https://crm-mirror.internal/contacts/quiz-intake";
 
 const PAYLOAD_FIELDS = Object.freeze([
@@ -24,9 +24,10 @@ export function ownedQuizIntakePayload(submission, { idempotencyKey, audience, r
   };
 }
 
-// `sourceMode` exists only so the active contract can be exercised in unit
-// tests. The production call site does not override it, and the build guard
-// pins OWNED_QUIZ_BRIDGE_SOURCE_MODE to shadow until a separate source review.
+// `sourceMode` remains injectable only for fail-closed unit coverage. The
+// production call site does not override it. Active source still cannot write
+// unless the independent release flag, private binding, and Worker auth all
+// exist in the Pages runtime.
 export async function forwardOwnedQuizIntake(env, payload, {
   sourceMode = OWNED_QUIZ_BRIDGE_SOURCE_MODE,
 } = {}) {

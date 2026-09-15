@@ -371,8 +371,8 @@ export async function onRequestPost(context) {
     }
 
     // GHL stays the compatibility owner until the separately gated cutover.
-    // Owned capture is source-shadow today; once reviewed active, it must
-    // succeed first so GHL can never become the sole durable identity again.
+    // Release-gated owned capture must succeed first so GHL can never become
+    // the sole durable identity again.
     const GHL_API_KEY = await getGhlToken(context);
     if (!GHL_API_KEY) {
       await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
