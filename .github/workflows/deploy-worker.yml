@@ -53,13 +53,8 @@ jobs:
           npm run check:worker-release
       - name: Test the universal release gate
         run: npm run test:worker-release
-      - name: Retrieve the approved deploy credential from Bitwarden
-        uses: bitwarden/sm-action@v2
-        with:
-          access_token: ${{ secrets.BWS_CRM_MIRROR_READ_TOKEN }}
-          secrets: |
-            ${{ vars.BWS_CRM_MIRROR_DEPLOY_SECRET_ID }} > CLOUDFLARE_API_TOKEN
       - name: Upload, verify, and activate one Worker
         run: npm run deploy:worker -- --worker "${{ inputs.worker }}" --deploy --approved-revision "$GITHUB_SHA"
         env:
           CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
