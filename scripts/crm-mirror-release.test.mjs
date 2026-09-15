@@ -7,6 +7,15 @@ test('routes CRM Mirror through the universal production gate', () => {
   assert.doesNotMatch(source, /spawnSync|wrangler/);
 });
 
+test('installs only the guarded Client Desk disposition migration before CRM activation', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/deploy-worker.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /last_migration/);
+  assert.match(workflow, /0032_owned_task_assignment\.sql/);
+  assert.match(workflow, /0033_client_desk_conversation_dispositions\.sql/);
+  assert.match(workflow, /d1 migrations apply amari-crm-mirror --remote/);
+  assert.ok(workflow.indexOf('Install the additive Client Desk disposition schema') < workflow.indexOf('Upload, verify, and activate one Worker'));
+});
+
 test('release source retains both owned lifecycle service bindings', () => {
   const config = JSON.parse(readFileSync(new URL('../crm-mirror-worker/wrangler.jsonc', import.meta.url), 'utf8'));
   const services = Object.fromEntries((config.services || []).map((entry) => [entry.binding, entry.service]));

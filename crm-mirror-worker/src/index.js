@@ -83,6 +83,7 @@ import {
   OwnedContactProfileError,
   readOwnedContactProfileAuthority,
 } from "./owned-contact-profiles.js";
+import { ClientDeskDispositionError, setClientDeskDisposition } from "./client-desk-dispositions.js";
 
 const JSON_HEADERS = { "Content-Type": "application/json; charset=utf-8" };
 const DEFAULT_SOURCES = ["ghl", "stripe", "stripe-invoices"];
@@ -502,6 +503,33 @@ export default {
         if (!profile?.contact) return json(404, { error: "contact not found" });
         await markClientDeskSeen(env.CRM_DB, contactId, actor, new Date().toISOString());
         return json(200, { success: true });
+      }
+      const clientDeskDisposition = url.pathname.match(/^\/client-desk\/contacts\/([^/]+)\/disposition$/);
+      if (request.method === "POST" && clientDeskDisposition) {
+        const actor = await dashboardSessionActor(request, env);
+        if (!actor) return json(401, { error: "staff session required" });
+        if (request.headers.get("Origin") !== url.origin) return json(403, { error: "invalid request origin" });
+        let payload;
+        try {
+          payload = await actionPayload(request, 1_000);
+        } catch (error) {
+          return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
+        }
+        const fields = payload && typeof payload === "object" && !Array.isArray(payload) ? Object.keys(payload) : [];
+        if (fields.some((field) => field !== "state")) return json(400, { error: "unsupported_fields" });
+        const contactId = decodeURIComponent(clientDeskDisposition[1]);
+        try {
+          const disposition = await setClientDeskDisposition(env.CRM_DB, {
+            contactId,
+            state: payload?.state,
+            actor,
+            now: new Date().toISOString(),
+          });
+          return json(200, { success: true, disposition });
+        } catch (error) {
+          if (error instanceof ClientDeskDispositionError) return json(error.status, { error: error.code, detail: error.message });
+          throw error;
+        }
       }
       if (request.method === "POST" && url.pathname === "/communications/outbox") {
         const actor = await dashboardSessionActor(request, env);

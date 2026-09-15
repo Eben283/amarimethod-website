@@ -59,6 +59,23 @@ jobs:
           access_token: ${{ secrets.BWS_CRM_MIRROR_READ_TOKEN }}
           secrets: |
             ${{ vars.BWS_CRM_MIRROR_DEPLOY_SECRET_ID }} > CLOUDFLARE_API_TOKEN
+      - name: Install the additive Client Desk disposition schema
+        if: inputs.worker == 'amari-crm-mirror'
+        working-directory: crm-mirror-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          last_migration="$(npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --remote --command "SELECT name FROM d1_migrations ORDER BY id DESC LIMIT 1" --json | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{const p=JSON.parse(s);const rows=p?.[0]?.results||p?.result?.[0]?.results||[];process.stdout.write(rows[0]?.name||"")})')"
+          if [[ "$last_migration" == "0032_owned_task_assignment.sql" ]]; then
+            npx --yes wrangler@4.125.0 d1 migrations apply amari-crm-mirror --remote
+          elif [[ "$last_migration" != "0033_client_desk_conversation_dispositions.sql" ]]; then
+            echo "Refusing unexpected CRM schema boundary: ${last_migration:-missing}" >&2
+            exit 1
+          fi
+          disposition_table="$(npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --remote --command "SELECT name FROM sqlite_schema WHERE type = 'table' AND name = 'client_desk_conversation_dispositions'" --json | node -e 'let s="";process.stdin.on("data",c=>s+=c).on("end",()=>{const p=JSON.parse(s);const rows=p?.[0]?.results||p?.result?.[0]?.results||[];process.stdout.write(rows[0]?.name||"")})')"
+          test "$disposition_table" = "client_desk_conversation_dispositions"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
       - name: Upload, verify, and activate one Worker
         run: npm run deploy:worker -- --worker "${{ inputs.worker }}" --deploy --approved-revision "$GITHUB_SHA"
         env:

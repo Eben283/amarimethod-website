@@ -1017,6 +1017,7 @@ export async function communicationsInbox(db, { query = null, limit = 50, actor 
             CASE WHEN thread.unread_inbound_count > 0
                     AND (seen.seen_at IS NULL OR datetime(thread.last_event_at) > datetime(seen.seen_at))
                  THEN 1 ELSE 0 END AS unread_inbound_count,
+            disposition.state AS disposition_state,
             contact.id AS contact_id, contact.display_name, contact.email_normalized, contact.phone_e164,
             source.external_id AS external_contact_id
        FROM contacts contact
@@ -1024,6 +1025,10 @@ export async function communicationsInbox(db, { query = null, limit = 50, actor 
          ON thread.contact_id = contact.id AND thread.recency_rank = 1
        LEFT JOIN client_desk_seen seen
          ON seen.contact_id = contact.id AND seen.staff_actor = ?
+       LEFT JOIN client_desk_conversation_dispositions disposition
+         ON disposition.contact_id = contact.id
+        AND disposition.resolved_thread_id = thread.thread_id
+        AND disposition.resolved_event_at = thread.last_event_at
        LEFT JOIN external_records source
          ON source.contact_id = contact.id
         AND source.provider = 'ghl'

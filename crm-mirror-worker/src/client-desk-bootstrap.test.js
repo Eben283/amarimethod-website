@@ -115,7 +115,7 @@ describe('Client Desk cookie-free Staff bootstrap', () => {
   it.each(['missing', 'forged', 'expired'])('never authorizes APIs or commands with embed metadata and a %s session', async (kind) => {
     const { env, read } = fixture();
     const token = kind === 'missing' ? null : kind === 'forged' ? '9999999999.RWJlbg.invalid' : await dashboardSessionToken(env, 'Eben', 1);
-    for (const [method, path] of [['GET', '/communications/inbox'], ['GET', '/client-desk/contacts/owned_123'], ['POST', '/client-desk/contacts/owned_123/seen'], ['POST', '/notes/commands']]) {
+    for (const [method, path] of [['GET', '/communications/inbox'], ['GET', '/client-desk/contacts/owned_123'], ['POST', '/client-desk/contacts/owned_123/seen'], ['POST', '/client-desk/contacts/owned_123/disposition'], ['POST', '/notes/commands']]) {
       const response = await worker.fetch(new Request(`https://crm.test${path}?embed=1&parent_origin=https://amarimethod.com`, {
         method, headers: { ...(token ? { 'X-Amari-Dashboard-Session': token } : {}), Origin: 'https://crm.test', 'Content-Type': 'application/json' },
         ...(method === 'POST' ? { body: '{}' } : {}),

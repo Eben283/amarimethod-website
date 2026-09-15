@@ -38,3 +38,5 @@
   .staff-outreach__opening { display: grid; gap: 10px; }
   .staff-outreach__opening > div:last-child { justify-self: stretch; justify-content: space-between; }
 }
+.outreach-rundown{display:grid;gap:10px;max-width:78ch;color:var(--staff-body);font-size:14px;line-height:1.55}
+.outreach-rundown p{margin:0}

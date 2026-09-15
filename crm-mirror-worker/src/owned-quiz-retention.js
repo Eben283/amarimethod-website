@@ -20,6 +20,7 @@ export const CONTACT_FOREIGN_KEY_COVERAGE = Object.freeze([
   ["appointment_source_observations", "contact_id"],
   ["appointment_status_facts", "contact_id"],
   ["appointments", "contact_id"],
+  ["client_desk_conversation_dispositions", "contact_id"],
   ["client_desk_seen", "contact_id"],
   ["client_notes", "contact_id"],
   ["client_tasks", "contact_id"],

@@ -37,6 +37,8 @@ Migration `0031_owned_contact_profile_authority.sql` adds provider-neutral Staff
 
 Migration `0032_owned_task_assignment.sql` adds an optional Eben-or-Garrett assignee to every immutable owned task version. Existing task history remains unassigned. Create and revise may set the assignee; complete, reopen, archive, and restore must copy it exactly. Client Desk accepts create, revise, complete, and reopen, displays local due time and overdue state, and makes clear that no SMS or email reminder is sent. The exact source-only install plan preserves all existing task versions and requires primary D1 readback before a matching runtime release.
 
+Migration `0033_client_desk_conversation_dispositions.sql` separates a Staff member's personal read state from the shared work decision for a conversation. Opening a thread clears that actor's unread marker. “No reply needed” and “Spam” close the shared follow-up without deleting any messages, and “Reopen” restores it. Each close is anchored to the latest mirrored event, so a later inbound message automatically returns the conversation to active work instead of inheriting an obsolete resolution.
+
 Stripe charges that cannot be linked to a mirrored GHL contact are retained as unlinked purchase candidates. Package balance is deliberately **not** written to `session_ledger_entries` yet: a full ledger backfill must reconcile purchases against explicit attendance and refunds, rather than guessing from a mutable GHL field.
 
 An email candidate is evidence for staff review, not a purchase link. The importer never turns it into `purchases.contact_id`, never posts a ledger entry, and never sends a message.

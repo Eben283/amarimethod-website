@@ -45,7 +45,7 @@ export default {
         // so every staff page matches that calm, cool/teal look. Token NAMES are
         // kept (used across all pages); only the values changed warm→cool, coral→teal.
         amari: {
-          "bone-white": "#FAFBFC",        // --paper (app background)
+          "bone-white": "#FFFFFF",        // --paper (app background)
           "light-sand": "#EFF5F7",        // --tint (hovers, soft fills)
           "charcoal": "#16242B",          // --ink (text + headings)
           "text-secondary": "#33454E",    // --ink2

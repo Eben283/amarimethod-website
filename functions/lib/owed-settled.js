@@ -25,6 +25,8 @@ export const SETTLED_CONTACT_IDS = new Map([
   ["Rxx5ILygOjE2qSyj1Oyq", "Mirko Buchwald — paid off-platform (not via Stripe)"],
   ["LxD8tZwqP11YVuHEfoqj", "Noah Pinaire — paid off-platform (not via Stripe)"],
   ["umT57oFIilMRwanGhf84", "Tae-woo Kim — paid via Stripe; remainder settled off-platform"],
+  ["S8ygFQr8yUoLwc6Ll8eq", "Jenn Kadri — completed 8-session package is paid and settled"],
+  ["kHPv1Zxz62HGcFIA26pG", "Leanne Gluck — paid $720 package is attached to her duplicate GHL/Stripe identity"],
 ]);
 
 // Has this contact been manually confirmed square? Pure.
