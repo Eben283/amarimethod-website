@@ -17,13 +17,14 @@ test('release source accepts the current D1 reschedule node and keeps Partner In
   assert.deepEqual(PARTNER_INITIAL_IN_PERSON.serviceIds, ['partner-initial']);
 });
 
-test('workflow is a serialized production-gated exact-main release using the Bitwarden-held credential', () => {
+test('workflow is a serialized production-gated exact-main release using the isolated GitHub environment credential', () => {
   const workflow = readFileSync(fileURLToPath(new URL('../.github/workflows/deploy-worker.yml', import.meta.url)), 'utf8');
   assert.match(workflow, /workflow_dispatch:/);
   assert.match(workflow, /environment: production/);
   assert.match(workflow, /ref: main/);
   assert.match(workflow, /test "\$GITHUB_SHA" = "\$\(git rev-parse origin\/main\)"/);
-  assert.match(workflow, /bitwarden\/sm-action@v2/);
+  assert.match(workflow, /CLOUDFLARE_API_TOKEN: \$\{\{ secrets\.CLOUDFLARE_API_TOKEN \}\}/);
+  assert.doesNotMatch(workflow, /bitwarden\/sm-action|BWS_CRM_MIRROR/);
   assert.match(workflow, /worker-production-\$\{\{ inputs\.worker \}\}/);
   assert.match(workflow, /deploy:worker -- --worker/);
 });
