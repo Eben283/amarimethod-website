@@ -1,4 +1,6 @@
 const API_BASE = '/api';
+// A cold balance rebuild safely checks the full roster and can take 30–60 seconds.
+const BALANCES_REQUEST_TIMEOUT_MS = 90_000;
 
 class ApiError extends Error {
   status: number;
@@ -1272,7 +1274,7 @@ export async function getCrmPilotContact(contactId: string): Promise<CrmPilotCon
 export async function getBalances(
   refresh = false,
 ): Promise<import('../types/staff').BalancesResponse> {
-  return fetchApi(`/staff-balances${refresh ? '?refresh=1' : ''}`);
+  return fetchApi(`/staff-balances${refresh ? '?refresh=1' : ''}`, {}, BALANCES_REQUEST_TIMEOUT_MS);
 }
 
 export async function getOutreachCards(): Promise<import('../types/staff').OutreachSnapshotResponse> {
