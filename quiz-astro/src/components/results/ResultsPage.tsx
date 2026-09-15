@@ -194,7 +194,7 @@ const EDITORIAL_STYLES = `
 [data-results] .chain-grid{display:flex;flex-direction:column}
 [data-results] .chain-grid.is-4{display:flex;flex-direction:column}
 [data-results] .chain-step,[data-results] .chain-cell{
-  display:grid;grid-template-columns:auto 1fr;gap:22px;padding:22px 0;
+  display:grid;grid-template-columns:120px minmax(0,1fr);gap:22px;padding:22px 0;
   border-top:1px solid var(--line);background:transparent;border-radius:0;
 }
 [data-results] .chain-step:first-child,[data-results] .chain-cell:first-child{border-top:none}
