@@ -34,22 +34,23 @@ jobs:
           test "$(find crm-mirror-worker/migrations -maxdepth 1 -type f -name '*.sql' -print | sort | tail -n 1)" = "crm-mirror-worker/migrations/0034_communication_attachments.sql"
           npm run check:crm-mirror-release
       - name: Verify production schema boundary
+        id: boundary
         working-directory: crm-mirror-worker
         shell: bash
         run: |
           set -euo pipefail
           before="$(mktemp)"
           npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT id, name FROM d1_migrations ORDER BY id DESC LIMIT 1" --json > "$before"
-          node -e 'const fs=require("node:fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const rows=p?.[0]?.results||p?.result?.[0]?.results||[];if(rows.length!==1||rows[0].name!=="0033_client_desk_conversation_dispositions.sql")process.exit(1)' "$before"
           table_state="$(mktemp)"
           npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT name FROM sqlite_schema WHERE name IN ('communication_event_attachments','idx_communication_attachments_event') ORDER BY name" --json > "$table_state"
-          node -e 'const fs=require("node:fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const rows=p?.[0]?.results||p?.result?.[0]?.results||[];if(rows.length!==0)process.exit(1)' "$table_state"
+          node -e 'const fs=require("node:fs");const rows=(path)=>{const p=JSON.parse(fs.readFileSync(path,"utf8"));return p?.[0]?.results||p?.result?.[0]?.results||[]};const ledger=rows(process.argv[1]);const names=rows(process.argv[2]).map(r=>r.name).sort();if(ledger.length!==1)process.exit(1);if(ledger[0].name==="0033_client_desk_conversation_dispositions.sql"&&names.length===0){fs.appendFileSync(process.env.GITHUB_OUTPUT,"action=apply\n");process.exit(0)}if(ledger[0].name==="0034_communication_attachments.sql"&&JSON.stringify(names)===JSON.stringify(["communication_event_attachments","idx_communication_attachments_event"])){fs.appendFileSync(process.env.GITHUB_OUTPUT,"action=verify\n");process.exit(0)}process.exit(1)' "$before" "$table_state"
         env:
           CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
           WRANGLER_SEND_METRICS: 'false'
           WRANGLER_WRITE_LOGS: 'false'
       - name: Apply only migration 0034
+        if: steps.boundary.outputs.action == 'apply'
         working-directory: crm-mirror-worker
         run: npx --yes wrangler@4.125.0 d1 migrations apply amari-crm-mirror --config wrangler.jsonc --remote
         env:
@@ -63,9 +64,15 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          after="$(mktemp)"
-          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT id, name FROM d1_migrations ORDER BY id DESC LIMIT 1; SELECT type, name, tbl_name FROM sqlite_schema WHERE name IN ('communication_event_attachments','idx_communication_attachments_event') ORDER BY name; PRAGMA integrity_check; PRAGMA foreign_key_check" --json > "$after"
-          node -e 'const fs=require("node:fs");const p=JSON.parse(fs.readFileSync(process.argv[1],"utf8"));const sets=Array.isArray(p)?p:(p?.result||[]);const rows=(i)=>sets[i]?.results||[];if(rows(0).length!==1||rows(0)[0].name!=="0034_communication_attachments.sql")process.exit(1);const names=rows(1).map(r=>r.name).sort();if(JSON.stringify(names)!==JSON.stringify(["communication_event_attachments","idx_communication_attachments_event"]))process.exit(1);if(rows(2).length!==1||rows(2)[0].integrity_check!=="ok")process.exit(1);if(rows(3).length!==0)process.exit(1)' "$after"
+          ledger="$(mktemp)"
+          schema="$(mktemp)"
+          integrity="$(mktemp)"
+          foreign_keys="$(mktemp)"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT id, name FROM d1_migrations ORDER BY id DESC LIMIT 1" --json > "$ledger"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT type, name, tbl_name FROM sqlite_schema WHERE name IN ('communication_event_attachments','idx_communication_attachments_event') ORDER BY name" --json > "$schema"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "PRAGMA integrity_check" --json > "$integrity"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "PRAGMA foreign_key_check" --json > "$foreign_keys"
+          node -e 'const fs=require("node:fs");const rows=(path)=>{const p=JSON.parse(fs.readFileSync(path,"utf8"));return p?.[0]?.results||p?.result?.[0]?.results||[]};const ledger=rows(process.argv[1]);const schema=rows(process.argv[2]);const integrity=rows(process.argv[3]);const foreignKeys=rows(process.argv[4]);if(ledger.length!==1||ledger[0].name!=="0034_communication_attachments.sql")process.exit(1);const expected=["communication_event_attachments","idx_communication_attachments_event"];if(JSON.stringify(schema.map(r=>r.name).sort())!==JSON.stringify(expected))process.exit(1);if(schema.some(r=>r.tbl_name!=="communication_event_attachments")||schema.find(r=>r.name===expected[0])?.type!=="table"||schema.find(r=>r.name===expected[1])?.type!=="index")process.exit(1);if(integrity.length!==1||integrity[0].integrity_check!=="ok")process.exit(1);if(foreignKeys.length!==0)process.exit(1)' "$ledger" "$schema" "$integrity" "$foreign_keys"
         env:
           CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
