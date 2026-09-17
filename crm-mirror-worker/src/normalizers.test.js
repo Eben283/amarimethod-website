@@ -28,7 +28,7 @@ describe("CRM mirror normalizers", () => {
       lastMessageBody: "free session offer stands", lastMessageStatus: "completed",
       lastMessageDirection: "inbound", lastMessageDate: "2026-09-17T00:35:00.000Z",
     })).toMatchObject({
-      channel: "call", lastPreview: "Inbound call · completed", lastDirection: "inbound",
+      channel: "mixed", lastPreview: "Inbound call · completed", lastDirection: "inbound",
     });
 
     expect(normalizeGhlMessage({

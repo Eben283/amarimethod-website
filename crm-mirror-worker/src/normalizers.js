@@ -96,7 +96,10 @@ export function normalizeGhlConversation(raw) {
   const externalId = text(raw?.id);
   const contactExternalId = text(raw?.contactId);
   if (!externalId || !contactExternalId) return null;
-  const channel = messageChannel(raw.lastMessageType || raw.type) || "mixed";
+  const latestEventChannel = messageChannel(raw.lastMessageType || raw.type);
+  // Threads are provider containers and the existing D1 contract intentionally
+  // permits only email, SMS, or mixed. Calls remain first-class event rows.
+  const channel = latestEventChannel === "call" ? "mixed" : latestEventChannel || "mixed";
   const occurredAt = raw.lastMessageDate || raw.dateUpdated || raw.dateAdded || null;
   const lastDirection = messageDirection({ direction: raw.lastMessageDirection ?? raw.lastMessage?.direction });
   return {
@@ -104,7 +107,7 @@ export function normalizeGhlConversation(raw) {
     contactExternalId,
     channel,
     lastOccurredAt: typeof occurredAt === "number" ? new Date(occurredAt).toISOString() : text(occurredAt),
-    lastPreview: channel === "call" ? callPreview(raw, lastDirection) : cleanMessage(raw.lastMessageBody || raw.lastMessage?.body),
+    lastPreview: latestEventChannel === "call" ? callPreview(raw, lastDirection) : cleanMessage(raw.lastMessageBody || raw.lastMessage?.body),
     lastDirection,
     unreadInboundCount: Math.max(0, Number(raw.unreadCount || 0) || 0),
   };
