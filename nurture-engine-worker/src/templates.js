@@ -85,7 +85,7 @@ P.S. Over the next few days, I'll share more about why your pattern keeps coming
   "f1-email-2": email(
     "flow-1-quiz",
     "Why your {{contact.primary_pain_location}} pain keeps coming back",
-    "Where it hurts isn't why it hurts.",
+    "It's not because you're doing something wrong.",
     `Hi {{contact.first_name}},
 If your {{contact.primary_pain_location}} pain keeps showing up no matter what you try, there's an important reason.
 What you've tried didn't fail you. It was aimed at the symptom, not the pattern behind it.
@@ -100,7 +100,7 @@ Garrett`,
   "f1-email-2-chronic": email(
     "flow-1-quiz",
     "Why your chronic pain keeps coming back",
-    "Where it hurts isn't why it hurts.",
+    "It's not because you're doing something wrong.",
     `Hi {{contact.first_name}},
 If your chronic pain keeps showing up no matter what you try, there's an important reason.
 What you've tried didn't fail you. It was aimed at the symptom, not the pattern behind it.
