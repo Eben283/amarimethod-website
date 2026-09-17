@@ -70,6 +70,10 @@ describe("owned nurture template catalog", () => {
       expect(rendered.subject).toBe(subject);
       expect(rendered.body).toContain(phrase);
     }
+    expect(renderNurtureTemplate("f1-email-2", fields).preheader)
+      .toBe("It's not because you're doing something wrong.");
+    expect(renderNurtureTemplate("f1-email-2-chronic", { "contact.first_name": "Ada" }).preheader)
+      .toBe("It's not because you're doing something wrong.");
     expect(renderNurtureTemplate("f1-email-2-chronic", { "contact.first_name": "Ada" }).body)
       .not.toContain("{{");
   });
