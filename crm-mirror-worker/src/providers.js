@@ -262,7 +262,15 @@ export async function fetchGhlConversationsPage(env, cursor = null, limit = 100)
 }
 
 export async function fetchGhlConversationMessages(env, conversationExternalId, limit = 100) {
-  const payload = await ghlGet(env, `/conversations/${encodeURIComponent(conversationExternalId)}/messages?limit=${Math.min(100, Math.max(1, limit))}`);
+  const params = new URLSearchParams({
+    limit: String(Math.min(100, Math.max(1, limit))),
+    // GHL can advance a conversation's lastMessageDate for a phone call while
+    // omitting that call from the default message-list response. Request the
+    // supported Staff timeline types explicitly so the stored event and thread
+    // summary stay tied to the same latest activity.
+    type: "TYPE_CALL,TYPE_SMS,TYPE_EMAIL",
+  });
+  const payload = await ghlGet(env, `/conversations/${encodeURIComponent(conversationExternalId)}/messages?${params}`);
   const messages = Array.isArray(payload.messages?.messages) ? payload.messages.messages : (Array.isArray(payload.messages) ? payload.messages : []);
   return messages.slice(0, limit);
 }
