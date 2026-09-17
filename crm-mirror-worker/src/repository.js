@@ -1173,11 +1173,10 @@ export async function contactProfile(db, contactId, limit, now) {
        LIMIT ?`,
     ).bind(contactId, limit),
     db.prepare(
-      `SELECT COALESCE(thread.channel, event.event_kind) AS channel, event.direction,
+      `SELECT event.event_kind AS channel, event.direction,
               event.delivery_status AS provider_status, event.occurred_at,
               COALESCE(event.subject, event.body_clean) AS subject_or_preview
        FROM communication_events event
-       LEFT JOIN communication_threads thread ON thread.id = event.thread_id
        WHERE event.contact_id = ?
        ORDER BY datetime(event.occurred_at) DESC, event.id DESC
        LIMIT ?`,
@@ -1243,10 +1242,10 @@ export async function contactProfile(db, contactId, limit, now) {
     ).bind(contactId),
     db.prepare(
       `SELECT 'message' AS activity_type, event.id AS event_id, event.provider_event_id AS message_ref, event.occurred_at, event.direction,
-              COALESCE(thread.channel, event.event_kind) AS channel, event.delivery_status,
+              event.event_kind AS channel, event.delivery_status,
               event.subject, event.body_clean AS body, NULL AS status, NULL AS detail,
               NULL AS amount_cents, NULL AS currency
-       FROM communication_events event LEFT JOIN communication_threads thread ON thread.id = event.thread_id
+       FROM communication_events event
        WHERE event.contact_id = ?
        ORDER BY datetime(event.occurred_at) DESC, event.id DESC LIMIT ?`,
     ).bind(contactId, limit),

@@ -389,7 +389,10 @@ describe("CRM mirror client profiles", () => {
     });
     expect(profileQueries[0]).toContain("source.external_id AS ghl_contact_id");
     expect(profileQueries.some((sql) => sql.includes("candidate.state = 'pending_review'") && sql.includes("purchase.contact_id IS NULL"))).toBe(true);
-    expect(profileQueries.filter((sql) => sql.includes("communication_events event")).join("\n")).not.toContain("OPS-%");
+    const communicationQueries = profileQueries.filter((sql) => sql.includes("communication_events event")).join("\n");
+    expect(communicationQueries).not.toContain("OPS-%");
+    expect(communicationQueries).toContain("event.event_kind AS channel");
+    expect(communicationQueries).not.toContain("COALESCE(thread.channel, event.event_kind) AS channel");
   });
 
   it("returns a bounded client directory with the latest communication only", async () => {
