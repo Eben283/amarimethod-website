@@ -56,8 +56,9 @@ function cleanEmailMessage(value) {
 
 function messageChannel(value) {
   const type = String(value || "").toUpperCase();
-  if (type.includes("EMAIL") || type === "3") return "email";
-  if (type.includes("SMS") || type === "2") return "sms";
+  if (type.includes("CALL") || ["1", "8", "13", "22"].includes(type)) return "call";
+  if (type.includes("EMAIL") || ["3", "9", "21"].includes(type)) return "email";
+  if (type.includes("SMS") || ["2", "4", "6", "7", "14", "20"].includes(type)) return "sms";
   return null;
 }
 
@@ -67,19 +68,44 @@ function messageDirection(raw) {
   return "outbound";
 }
 
+function callOutcome(value) {
+  const status = text(value)?.toLowerCase();
+  if (!status) return null;
+  if (["no-answer", "no_answer", "noanswer"].includes(status)) return "No answer";
+  if (status === "completed") return "Call completed";
+  if (status === "voicemail") return "Voicemail";
+  if (status === "failed") return "Call failed";
+  if (status === "busy") return "Busy";
+  if (["canceled", "cancelled"].includes(status)) return "Call canceled";
+  return `Call ${status.replace(/[_-]+/g, " ")}`;
+}
+
+function callStatus(raw, summary = false) {
+  return summary
+    ? raw?.lastMessageStatus ?? raw?.lastCallStatus ?? raw?.lastMessage?.status ?? raw?.status
+    : raw?.status ?? raw?.callStatus ?? raw?.meta?.call?.status;
+}
+
+function callPreview(raw, direction) {
+  const prefix = direction === "inbound" ? "Inbound call" : "Outbound call";
+  const outcome = callOutcome(callStatus(raw, true));
+  return outcome ? `${prefix} · ${outcome.replace(/^Call /, "").toLowerCase()}` : prefix;
+}
+
 export function normalizeGhlConversation(raw) {
   const externalId = text(raw?.id);
   const contactExternalId = text(raw?.contactId);
   if (!externalId || !contactExternalId) return null;
   const channel = messageChannel(raw.lastMessageType || raw.type) || "mixed";
   const occurredAt = raw.lastMessageDate || raw.dateUpdated || raw.dateAdded || null;
+  const lastDirection = messageDirection({ direction: raw.lastMessageDirection ?? raw.lastMessage?.direction });
   return {
     externalId,
     contactExternalId,
     channel,
     lastOccurredAt: typeof occurredAt === "number" ? new Date(occurredAt).toISOString() : text(occurredAt),
-    lastPreview: cleanMessage(raw.lastMessageBody || raw.lastMessage?.body),
-    lastDirection: messageDirection({ direction: raw.lastMessageDirection ?? raw.lastMessage?.direction }),
+    lastPreview: channel === "call" ? callPreview(raw, lastDirection) : cleanMessage(raw.lastMessageBody || raw.lastMessage?.body),
+    lastDirection,
     unreadInboundCount: Math.max(0, Number(raw.unreadCount || 0) || 0),
   };
 }
@@ -109,7 +135,7 @@ export function normalizeGhlMessage(raw, threadExternalId, contactExternalId) {
     direction: messageDirection(raw),
     deliveryStatus: text(raw.status),
     subject: text(raw.subject || raw.meta?.email?.subject),
-    body: channel === "email" ? cleanEmailMessage(raw.body || raw.message) : cleanMessage(raw.body || raw.message),
+    body: channel === "call" ? callOutcome(callStatus(raw)) : channel === "email" ? cleanEmailMessage(raw.body || raw.message) : cleanMessage(raw.body || raw.message),
     occurredAt: typeof occurredAt === "number" ? new Date(occurredAt).toISOString() : text(occurredAt),
     senderLabel: text(raw.fromName || raw.userName),
     attachments,

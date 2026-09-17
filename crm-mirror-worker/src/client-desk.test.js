@@ -134,6 +134,23 @@ describe("Client Desk message rendering", () => {
     expect(rendered).not.toContain('static-assets.internal.usercontent.site');
   });
 
+  it("renders mirrored calls with their direction and outcome", () => {
+    const script = [...clientDeskHtml().matchAll(/<script>([\s\S]*?)<\/script>/g)].map((match) => match[1]).at(-1);
+    const element = { value: "", textContent: "", innerHTML: "", addEventListener() {}, replaceChildren() {} };
+    const document = { getElementById: () => element };
+    const closing = script.lastIndexOf("})();");
+    const instrumented = `${script.slice(0, closing)}return { timelineItem }; })();${script.slice(closing + 5)}`;
+    const helpers = new Function("document", "fetch", `return (${instrumented.trim().slice(0, -1)})`)(document, async () => ({ ok: true, json: async () => ({ threads: [] }) }));
+
+    const rendered = helpers.timelineItem({
+      activity_type: "message", channel: "call", event_kind: "call", direction: "inbound",
+      delivery_status: "completed", body: "Call completed", occurred_at: "2026-09-17T00:35:00.000Z",
+    });
+
+    expect(rendered).toContain("Inbound call");
+    expect(rendered).toContain("Call completed");
+  });
+
   it("orders the timeline oldest-to-newest and opens at the newest message", () => {
     const html = clientDeskHtml();
     expect(html).toContain(".sort((left, right) => String(left.occurred_at || '').localeCompare(String(right.occurred_at || ''))");

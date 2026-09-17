@@ -22,6 +22,31 @@ describe("CRM mirror normalizers", () => {
       .toMatchObject({ externalId: "message_1", channel: "sms", direction: "inbound", body: "Can we reschedule?" });
   });
 
+  it("keeps a latest GHL call aligned across the inbox summary and timeline", () => {
+    expect(normalizeGhlConversation({
+      id: "thread_call", contactId: "contact_1", lastMessageType: "TYPE_CALL",
+      lastMessageBody: "free session offer stands", lastMessageStatus: "completed",
+      lastMessageDirection: "inbound", lastMessageDate: "2026-09-17T00:35:00.000Z",
+    })).toMatchObject({
+      channel: "call", lastPreview: "Inbound call · completed", lastDirection: "inbound",
+    });
+
+    expect(normalizeGhlMessage({
+      id: "call_1", type: 1, direction: "inbound", status: "completed",
+      dateAdded: "2026-09-17T00:35:00.000Z",
+    }, "thread_call", "contact_1")).toMatchObject({
+      externalId: "call_1", channel: "call", direction: "inbound",
+      deliveryStatus: "completed", body: "Call completed",
+    });
+
+    expect(normalizeGhlMessage({
+      id: "call_2", type: 1, direction: "outbound", status: "no-answer",
+      dateAdded: "2026-09-17T00:15:00.000Z",
+    }, "thread_call", "contact_1")).toMatchObject({
+      channel: "call", direction: "outbound", body: "No answer",
+    });
+  });
+
   it("keeps only the current email reply instead of provider CSS and quoted history", () => {
     expect(normalizeGhlMessage({
       id: "email_1", messageType: "TYPE_EMAIL", direction: "inbound", dateAdded: "2026-08-25T18:28:06.664Z",
