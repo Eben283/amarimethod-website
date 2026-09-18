@@ -39,8 +39,10 @@ test('installs the GHL source archive through its own exact migration gate', () 
   assert.match(workflow, /action=apply/);
   assert.match(workflow, /action=verify/);
   assert.match(workflow, /if: steps\.boundary\.outputs\.action == 'apply'/);
-  assert.match(workflow, /PRAGMA integrity_check/);
+  assert.doesNotMatch(workflow, /PRAGMA integrity_check/);
   assert.doesNotMatch(workflow, /PRAGMA foreign_key_check\('ghl_communication_source_records'\)/);
+  assert.match(workflow, /source_archive_table_shape_failed/);
+  assert.match(workflow, /source_archive_index_shape_failed/);
   assert.match(workflow, /source_archive_unexpected_foreign_key/);
   assert.doesNotMatch(workflow, /deploy:worker|owned-email|gmail/i);
 });
