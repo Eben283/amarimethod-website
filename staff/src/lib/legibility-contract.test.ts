@@ -297,6 +297,15 @@ describe('Staff legibility contract', () => {
     expect(outreach).toContain("className=\"outreach-rundown\"");
   });
 
+  it('shows every due outreach opportunity while keeping set-aside records separate', () => {
+    const outreach = css('pages/FollowUpPage.tsx');
+
+    expect(outreach).toContain("derived.filter((r) => r.d.kind === 'act'");
+    expect(outreach).toContain("derived.filter((r) => r.d.kind === 'aside')");
+    expect(outreach).not.toContain('ACT_NOW_CAP');
+    expect(outreach).not.toMatch(/\.slice\(0,\s*30\)/);
+  });
+
   it('keeps the CRM pilot coherent across desktop and both iPad orientations', () => {
     const pilot = css('pages/StaffCrmPilotPage.tsx');
     const pilotCss = css('pages/StaffCrmPilotPage.css');
