@@ -17,6 +17,7 @@ const mocks = vi.hoisted(() => ({
   upsertStripeInvoice: vi.fn(async () => ({ linked: true })),
   upsertCommunicationEvent: vi.fn(),
   upsertCommunicationThread: vi.fn(),
+  upsertGhlCommunicationSourceRecord: vi.fn(async () => true),
   ensureCommunicationThread: vi.fn(),
   deleteGhlEmailContainerEvent: vi.fn(async () => 0),
   fetchGhlAppointmentsForContact: vi.fn(),
@@ -47,6 +48,7 @@ vi.mock("./repository.js", () => ({
   recordConsentObservation: mocks.recordConsentObservation, backfillNativeBookingConsents: mocks.backfillNativeBookingConsents,
   upsertStripeCharge: mocks.upsertStripeCharge, upsertStripeInvoice: mocks.upsertStripeInvoice, upsertCommunicationEvent: mocks.upsertCommunicationEvent,
   upsertCommunicationThread: mocks.upsertCommunicationThread, ensureCommunicationThread: mocks.ensureCommunicationThread,
+  upsertGhlCommunicationSourceRecord: mocks.upsertGhlCommunicationSourceRecord,
   deleteGhlEmailContainerEvent: mocks.deleteGhlEmailContainerEvent,
 }));
 vi.mock("./providers.js", () => ({
@@ -58,7 +60,7 @@ vi.mock("./providers.js", () => ({
 }));
 vi.mock("./normalizers.js", () => ({
   normalizeGhlAppointment: (value) => value, normalizeGhlContact: (value) => value,
-  normalizeGhlConversation: (value) => value, normalizeGhlMessage: (value) => value,
+  normalizeGhlConversation: (value) => value, normalizeGhlMessage: (value) => value?.type === "TYPE_INSTAGRAM" ? null : value,
   normalizeGhlNote: (value) => value, normalizeGhlTask: (value) => value, nativeBookingConsentObservations: () => [],
   normalizeStripeCharge: (value) => value, normalizeStripeInvoice: (value) => value, normalizedEmail: (value) => value,
 }));
@@ -161,8 +163,41 @@ describe("recent GHL conversation freshness", () => {
     expect(mocks.fetchGhlConversationsPage).toHaveBeenCalledWith({ CRM_DB: {} }, null, 10);
     expect(mocks.fetchGhlConversationMessages).toHaveBeenCalledWith({ CRM_DB: {} }, "thread_1", 20);
     expect(mocks.fetchGhlMessage).toHaveBeenCalledWith({ CRM_DB: {} }, "message_1");
+    expect(mocks.upsertGhlCommunicationSourceRecord).toHaveBeenCalledWith({}, expect.objectContaining({ body: "authoritative reply" }), "2026-08-25T19:00:00.000Z", { threadExternalId: "thread_1", contactExternalId: "contact_1" });
     expect(mocks.upsertCommunicationEvent).toHaveBeenCalledWith({}, expect.objectContaining({ body: "authoritative reply" }), "owned_thread_1", "owned_contact_1", "2026-08-25T19:00:00.000Z");
     expect(outcome.status).toBe("succeeded");
+  });
+
+  it("archives an unsupported GHL message even when Staff cannot project it", async () => {
+    mocks.fetchGhlConversationsPage.mockResolvedValueOnce({
+      conversations: [{ externalId: "thread_1", contactExternalId: "contact_1" }], nextCursor: null,
+    });
+    mocks.findContactIdByGhlId.mockResolvedValueOnce("owned_contact_1");
+    mocks.upsertCommunicationThread.mockResolvedValueOnce("owned_thread_1");
+    const social = { id: "instagram_1", type: "TYPE_INSTAGRAM", conversationId: "thread_1", contactId: "contact_1" };
+    mocks.fetchGhlConversationMessages.mockResolvedValueOnce([social]);
+    mocks.fetchGhlMessage.mockResolvedValueOnce(social);
+
+    await syncRecentGhlConversations({ CRM_DB: {} }, 10, "2026-09-18T10:00:00.000Z");
+
+    expect(mocks.upsertGhlCommunicationSourceRecord).toHaveBeenCalledWith({}, social, "2026-09-18T10:00:00.000Z", { threadExternalId: "thread_1", contactExternalId: "contact_1" });
+    expect(mocks.upsertCommunicationEvent).not.toHaveBeenCalled();
+  });
+
+  it("archives source messages before requiring an owned contact match", async () => {
+    mocks.fetchGhlConversationsPage.mockResolvedValueOnce({
+      conversations: [{ externalId: "thread_unmatched", contactExternalId: "contact_unmatched" }], nextCursor: null,
+    });
+    mocks.findContactIdByGhlId.mockResolvedValueOnce(null);
+    const source = { id: "message_unmatched", type: "TYPE_SMS", conversationId: "thread_unmatched", contactId: "contact_unmatched" };
+    mocks.fetchGhlConversationMessages.mockResolvedValueOnce([source]);
+    mocks.fetchGhlMessage.mockResolvedValueOnce(source);
+
+    await syncRecentGhlConversations({ CRM_DB: {} }, 10, "2026-09-18T10:00:00.000Z");
+
+    expect(mocks.upsertGhlCommunicationSourceRecord).toHaveBeenCalledWith({}, source, "2026-09-18T10:00:00.000Z", { threadExternalId: "thread_unmatched", contactExternalId: "contact_unmatched" });
+    expect(mocks.upsertCommunicationThread).not.toHaveBeenCalled();
+    expect(mocks.upsertCommunicationEvent).not.toHaveBeenCalled();
   });
 
   it("expands a mutable GHL email container into immutable email revisions", async () => {

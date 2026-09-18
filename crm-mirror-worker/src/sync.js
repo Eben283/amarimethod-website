@@ -17,6 +17,7 @@ import {
   upsertCommunicationThread,
   ensureCommunicationThread,
   deleteGhlEmailContainerEvent,
+  upsertGhlCommunicationSourceRecord,
 } from "./repository.js";
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
 import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlEmail, fetchGhlMessage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
@@ -57,6 +58,14 @@ function emailRevisionIds(raw) {
   return Array.isArray(ids) ? [...new Set(ids.filter((value) => typeof value === "string" && value.trim()))] : [];
 }
 
+async function archiveGhlMessages(db, rawMessages, now, context) {
+  let archived = 0;
+  for (const rawMessage of rawMessages) {
+    if (await upsertGhlCommunicationSourceRecord(db, rawMessage, now, context)) archived += 1;
+  }
+  return archived;
+}
+
 async function expandGhlMessages(env, rawMessages, { hydrateNewest = false } = {}) {
   const newest = hydrateNewest ? newestMessage(rawMessages) : null;
   const expanded = [];
@@ -94,18 +103,22 @@ export async function syncRecentGhlConversations(env, limit, now) {
       outcome.recordsRead += 1;
       const thread = normalizeGhlConversation(rawThread);
       if (!thread) { outcome.recordsSkipped += 1; continue; }
+      const listedMessages = await fetchGhlConversationMessages(env, thread.externalId, RECENT_MESSAGE_LIMIT);
+      const emailContainers = listedMessages.filter((message) => emailRevisionIds(message).length);
+      outcome.sourceRecordsArchived = (outcome.sourceRecordsArchived || 0)
+        + await archiveGhlMessages(env.CRM_DB, emailContainers, now, { threadExternalId: thread.externalId, contactExternalId: thread.contactExternalId });
+      const rawMessages = await expandGhlMessages(env, listedMessages, { hydrateNewest: true });
+      outcome.sourceRecordsArchived += await archiveGhlMessages(env.CRM_DB, rawMessages, now, { threadExternalId: thread.externalId, contactExternalId: thread.contactExternalId });
+      outcome.recordsRead += rawMessages.length - listedMessages.length;
       const contactId = await findContactIdByGhlId(env.CRM_DB, thread.contactExternalId);
       if (!contactId) { outcome.recordsSkipped += 1; continue; }
       const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
       outcome.recordsWritten += 1;
-      const listedMessages = await fetchGhlConversationMessages(env, thread.externalId, RECENT_MESSAGE_LIMIT);
       for (const listedMessage of listedMessages) {
         if (emailRevisionIds(listedMessage).length) {
           outcome.recordsWritten += await deleteGhlEmailContainerEvent(env.CRM_DB, listedMessage.id || listedMessage.messageId || listedMessage.emailMessageId);
         }
       }
-      const rawMessages = await expandGhlMessages(env, listedMessages, { hydrateNewest: true });
-      outcome.recordsRead += rawMessages.length - listedMessages.length;
       for (const rawMessage of rawMessages) {
         outcome.recordsRead += 1;
         const message = normalizeGhlMessage(rawMessage, thread.externalId, thread.contactExternalId);
@@ -176,17 +189,21 @@ export async function syncGhlConversations(env, limit, now) {
       outcome.recordsRead += 1;
       const thread = normalizeGhlConversation(rawThread);
       if (!thread) { outcome.recordsSkipped += 1; continue; }
+      const listedMessages = await fetchGhlConversationMessages(env, thread.externalId, RECENT_MESSAGE_LIMIT);
+      const emailContainers = listedMessages.filter((message) => emailRevisionIds(message).length);
+      outcome.sourceRecordsArchived = (outcome.sourceRecordsArchived || 0)
+        + await archiveGhlMessages(env.CRM_DB, emailContainers, now, { threadExternalId: thread.externalId, contactExternalId: thread.contactExternalId });
+      const rawMessages = await expandGhlMessages(env, listedMessages);
+      outcome.sourceRecordsArchived += await archiveGhlMessages(env.CRM_DB, rawMessages, now, { threadExternalId: thread.externalId, contactExternalId: thread.contactExternalId });
       const contactId = await findContactIdByGhlId(env.CRM_DB, thread.contactExternalId);
       if (!contactId) { outcome.recordsSkipped += 1; continue; }
       const threadId = await upsertCommunicationThread(env.CRM_DB, thread, contactId, now);
       outcome.recordsWritten += 1;
-      const listedMessages = await fetchGhlConversationMessages(env, thread.externalId, RECENT_MESSAGE_LIMIT);
       for (const listedMessage of listedMessages) {
         if (emailRevisionIds(listedMessage).length) {
           outcome.recordsWritten += await deleteGhlEmailContainerEvent(env.CRM_DB, listedMessage.id || listedMessage.messageId || listedMessage.emailMessageId);
         }
       }
-      const rawMessages = await expandGhlMessages(env, listedMessages);
       for (const rawMessage of rawMessages) {
         outcome.recordsRead += 1;
         const message = normalizeGhlMessage(rawMessage, thread.externalId, thread.contactExternalId);
@@ -218,6 +235,8 @@ export async function backfillGhlMessageExport(env, { pages = 8, pageSize = 50 }
       const response = await fetchGhlMessageExport(env, cursor, pageSize);
       for (const rawMessage of response.messages) {
         outcome.recordsRead += 1;
+        outcome.sourceRecordsArchived = (outcome.sourceRecordsArchived || 0)
+          + (await upsertGhlCommunicationSourceRecord(env.CRM_DB, rawMessage, now) ? 1 : 0);
         const message = normalizeGhlMessage(rawMessage, rawMessage.conversationId, rawMessage.contactId);
         if (!message) { outcome.recordsSkipped += 1; continue; }
         const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);
