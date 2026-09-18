@@ -197,7 +197,7 @@ async function applyTagDelta(context, contactId, { add = [], remove = [] } = {})
 var GHL_API_BASE, GHL_TOKEN_URL, REFRESH_BUFFER_MS, KV_ACCESS_TOKEN, KV_REFRESH_TOKEN, KV_TOKEN_EXPIRY, refreshInFlight;
 var init_ghl = __esm({
   "lib/ghl.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     GHL_API_BASE = "https://services.leadconnectorhq.com";
     GHL_TOKEN_URL = "https://services.leadconnectorhq.com/oauth/token";
     REFRESH_BUFFER_MS = 5 * 60 * 1e3;
@@ -278,7 +278,7 @@ function appointmentEndTime(startTime, durationMinutes) {
 var PACIFIC_TZ, OFFSET_OR_Z, NAIVE_DATETIME;
 var init_datetime = __esm({
   "lib/datetime.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(formatIsoAtOffset, "formatIsoAtOffset");
     PACIFIC_TZ = "America/Los_Angeles";
     OFFSET_OR_Z = /([+-]\d{2}:?\d{2}|Z)$/i;
@@ -295,7 +295,7 @@ var init_datetime = __esm({
 var FIELD_IDS;
 var init_ghl_fields = __esm({
   "lib/ghl-fields.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     FIELD_IDS = {
       // Session balance — the most contended value in the stack. Raw GHL field,
       // reconciled hourly against the derived ledger (session-ledger.js).
@@ -383,7 +383,7 @@ function safeParse(raw) {
 var OPS_ERR_PREFIX, OPS_ERR_TTL_SECONDS;
 var init_ops_alert = __esm({
   "lib/ops-alert.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     OPS_ERR_PREFIX = "ops:err:";
     OPS_ERR_TTL_SECONDS = 60 * 60 * 24 * 30;
     __name(opsKv, "opsKv");
@@ -402,7 +402,7 @@ function registryPath(pathId) {
 var OPS_SEVERITY, PATH_ASSESSMENT_PAID_BOOK, OPS_ERR_PATH_SOURCES, OPS_REGISTRY, EXTERNAL_MONITOR_PATH_IDS;
 var init_ops_registry = __esm({
   "lib/ops-registry.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     OPS_SEVERITY = Object.freeze({
       MONEY: "money",
       BOOKING: "booking",
@@ -919,7 +919,7 @@ async function sendConversationMessage(context, params) {
 var GHL_MESSAGE_ENDPOINT, SEND_LIMITS, BAD_CHARS, CONTACT_ID;
 var init_ghl_send = __esm({
   "lib/ghl-send.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     GHL_MESSAGE_ENDPOINT = "https://services.leadconnectorhq.com/conversations/messages";
     SEND_LIMITS = Object.freeze({
@@ -1017,7 +1017,7 @@ async function notifyOpsFlip(context, incident) {
 var DEFAULT_OPS_ALERT_CONTACT_ID, SEVERITY_CHANNELS;
 var init_ops_notify = __esm({
   "lib/ops-notify.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl_send();
     DEFAULT_OPS_ALERT_CONTACT_ID = "3jsTC9Cb7hkDpC3FLuFd";
     SEVERITY_CHANNELS = Object.freeze({
@@ -1189,7 +1189,7 @@ async function touchMeta(kv, reason) {
 var EVENTS_PREFIX, INCIDENTS_KEY, META_KEY, MAX_EVENTS, MAX_INCIDENTS, TTL_SECONDS;
 var init_ops_trail_kv = __esm({
   "lib/ops-trail-kv.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     EVENTS_PREFIX = "ops:trail:events:";
     INCIDENTS_KEY = "ops:trail:incidents";
     META_KEY = "ops:trail:meta";
@@ -1628,7 +1628,7 @@ function safeJsonArray(raw) {
 var OUTCOMES;
 var init_ops_events = __esm({
   "lib/ops-events.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_registry();
     init_ops_notify();
     init_ops_trail_kv();
@@ -1839,7 +1839,7 @@ async function recordAssessmentCheckout(env, {
 var SOURCE;
 var init_ops_assessment = __esm({
   "lib/ops-assessment.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -1919,7 +1919,7 @@ function assessmentBookingFromWorkflow(document) {
 var ASSESSMENT_PAID_BOOKING_WORKFLOW_ID, ASSESSMENT_PRODUCT_ID, ASSESSMENT_PAID_BOOKING_WORKFLOW;
 var init_assessment_paid_booking_workflow = __esm({
   "lib/assessment-paid-booking-workflow.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     ASSESSMENT_PAID_BOOKING_WORKFLOW_ID = "assessment-paid-booking";
     ASSESSMENT_PRODUCT_ID = "6a66cf0103821ea09ea13f1b";
     __name(deepFreeze, "deepFreeze");
@@ -1984,7 +1984,7 @@ async function currentAssessmentPaidBookingWorkflow(context) {
 var REMINDER_ENGINE_URL;
 var init_assessment_paid_booking_runtime = __esm({
   "lib/assessment-paid-booking-runtime.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_assessment_paid_booking_workflow();
     REMINDER_ENGINE_URL = "https://reminder-engine.eben-fa2.workers.dev";
     __name(currentAssessmentPaidBookingWorkflow, "currentAssessmentPaidBookingWorkflow");
@@ -2182,7 +2182,7 @@ function paidBookPathForProduct(productId, pkg) {
 }
 var init_ops_path_emit = __esm({
   "lib/ops-path-emit.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_events();
     init_ops_alert();
     init_ops_assessment();
@@ -2282,7 +2282,7 @@ function applyHourPackPreference(slots2, opts) {
 var STUDIO_INTERVAL_MINUTES, WORK_HOURS, SLOT_POLICIES;
 var init_booking_slot_policy = __esm({
   "lib/booking-slot-policy.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     STUDIO_INTERVAL_MINUTES = 60;
     WORK_HOURS = Object.freeze({
       scheduleId: "WIPAUCHQ5WW18vLJ49Gk",
@@ -2572,7 +2572,7 @@ async function assertSlotRespectsAppBuffer(context, startTime, calendarId) {
 var GHL_API_BASE2, GHL_LOCATION_ID, GHL_GARRETT_USER_ID, INACTIVE_STATUSES, APP_BUFFER_CALENDAR_IDS;
 var init_app_owned_buffer = __esm({
   "lib/app-owned-buffer.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_datetime();
     init_booking_slot_policy();
@@ -2674,7 +2674,7 @@ async function createConfirmedAppointment({ request: request2, endpoint, payload
 var AppointmentHandoffError;
 var init_ghl_appointment_handoff = __esm({
   "lib/ghl-appointment-handoff.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     AppointmentHandoffError = class extends Error {
       static {
         __name(this, "AppointmentHandoffError");
@@ -2808,7 +2808,7 @@ async function completePaidBookingIntent(db, intentId, appointmentId, options = 
 }
 var init_paid_booking_intents = __esm({
   "lib/paid-booking-intents.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(changesOf2, "changesOf");
     __name(normalize, "normalize");
     __name(sameIntent, "sameIntent");
@@ -2844,7 +2844,7 @@ async function recordPartnerReferralAttribution(db, { partner, contactId, referr
 var PARTNERS;
 var init_partner_referrals = __esm({
   "lib/partner-referrals.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     PARTNERS = Object.freeze({ "vital-ice": Object.freeze({ entityId: "vital-ice", businessName: "Vital Ice", publicCode: "VI-001", entryPath: "/r/vital-ice" }), "zach-taylor": Object.freeze({ entityId: "zach-taylor", businessName: "Zach Taylor Fitness", publicCode: "ZT-001", entryPath: "/r/zach-taylor" }), "teddys-total-body": Object.freeze({ entityId: "teddys-total-body", businessName: "Teddy's Total Body", publicCode: "TTB-001", entryPath: "/r/teddys-total-body" }) });
     __name(resolvePartnerReferral, "resolvePartnerReferral");
     __name(recordPartnerReferralAttribution, "recordPartnerReferralAttribution");
@@ -3341,7 +3341,7 @@ async function onRequestPost(context) {
 var ALLOWED_ORIGINS, DEFAULT_LOCATION_ID, ALLOWED_BOOKINGS;
 var init_create_checkout = __esm({
   "api/book/create-checkout.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_datetime();
     init_ghl_fields();
@@ -3613,7 +3613,7 @@ function applyLookBusy(slots2, opts) {
 var MAX_SLOTS_PER_DAY, MIN_SLOTS_PER_DAY, PINNED_SLOT_TIMES;
 var init_look_busy = __esm({
   "lib/look-busy.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     MAX_SLOTS_PER_DAY = 12;
     MIN_SLOTS_PER_DAY = 2;
     __name(targetFullPercent, "targetFullPercent");
@@ -3656,7 +3656,7 @@ async function writeOpsLastRun(env, key, payload, ttlSeconds = 14 * 86400) {
 var OPS_LAST_RUN_KEYS, OPS_READY_KEYS;
 var init_ops_last_run = __esm({
   "lib/ops-last-run.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(writeOpsLastRun, "writeOpsLastRun");
     OPS_LAST_RUN_KEYS = Object.freeze({
       reminder: "ops:reminder-engine:lastRun",
@@ -3830,7 +3830,7 @@ async function onRequestGet(context) {
 var ALLOWED_ORIGIN, ALLOWED_CALENDARS;
 var init_public_slots = __esm({
   "api/book/public-slots.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_look_busy();
     init_booking_slot_policy();
@@ -3896,7 +3896,7 @@ function verifyWebhookSecret(request2, expectedSecret) {
 }
 var init_auth = __esm({
   "lib/auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(verifySessionToken, "verifySessionToken");
     __name(verifyWebhookSecret, "verifyWebhookSecret");
   }
@@ -3915,7 +3915,7 @@ function timingSafeEqual(a, b) {
 }
 var init_safe_equal = __esm({
   "lib/safe-equal.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(timingSafeEqual, "timingSafeEqual");
   }
 });
@@ -3947,7 +3947,7 @@ function requireOpsReadKey(request2, env, responseHeaders10 = {}) {
 }
 var init_ops_auth = __esm({
   "lib/ops-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_safe_equal();
     __name(requireOpsReadKey, "requireOpsReadKey");
   }
@@ -4033,7 +4033,7 @@ async function requireStaffOrOpsAuth(context, headers5) {
 var ALLOWED_ORIGINS2, STAFF_SESSION_COOKIE;
 var init_endpoint_guards = __esm({
   "lib/endpoint-guards.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     init_ops_auth();
     ALLOWED_ORIGINS2 = [
@@ -4085,7 +4085,7 @@ function requireWorkerAuth(request2, env) {
 }
 var init_worker_auth = __esm({
   "lib/worker-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(timingSafeEqual2, "timingSafeEqual");
     __name(requireWorkerAuth, "requireWorkerAuth");
   }
@@ -4109,7 +4109,7 @@ function isAttentionState(state) {
 var OPS_BOARD_ROLE, OPS_BOARD_META, OPS_ROW_STATE;
 var init_ops_board_meta = __esm({
   "lib/ops-board-meta.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     OPS_BOARD_ROLE = Object.freeze({
       HOT: "hot",
       // pay→book→confirm early warning
@@ -4651,7 +4651,7 @@ async function runOpsFixSweep(env, { buildSystemsBoard: buildSystemsBoard2 } = {
 var HOUR, JOB_TTL_S, REQUEST_TTL_S, OPS_FIX_COOLDOWN_MS, OPS_FIX_MODES;
 var init_ops_fix = __esm({
   "lib/ops-fix.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_board_meta();
     init_ops_board_meta();
     init_ops_registry();
@@ -6062,7 +6062,7 @@ function judgeCallCoachReadiness(ready, last, { maxAgeH = 36 } = {}) {
 var HOUR2, ERR_LOOKBACK_H, HOT_HEALTHY_MAX_AGE_H, EXTERNAL_MONITOR_MAX_AGE_H, EXTERNAL_MONITOR_HEARTBEAT_PATHS, STUCK_REASON_CODES;
 var init_ops_board = __esm({
   "lib/ops-board.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_registry();
     init_ops_events();
     init_ops_alert();
@@ -6207,7 +6207,7 @@ async function onRequestPost2(context) {
 }
 var init_fix = __esm({
   "api/ops/fix.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_worker_auth();
     init_ops_board();
@@ -6260,7 +6260,7 @@ async function onRequestGet3(context) {
 }
 var init_incidents = __esm({
   "api/ops/incidents.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_ops_auth();
     init_ops_events();
@@ -6814,7 +6814,7 @@ async function ingestOperationsLedgerRelease(env, input, provenance) {
 var ACTOR_KINDS, TASK_STATUSES, RELEASE_STATUSES, ACTOR_SET, TASK_STATUS_SET, RELEASE_STATUS_SET, PRIORITIES, SENSITIVE_WORDS, EMAIL, PHONE, REF, FIELD, SAFE_FIELD_EXCEPTIONS, OpsLedgerError;
 var init_ops_ledger = __esm({
   "lib/ops-ledger.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     ACTOR_KINDS = Object.freeze(["human", "codex", "worker", "github", "cloudflare"]);
     TASK_STATUSES = Object.freeze(["todo", "open", "in_progress", "blocked", "done", "completed", "cancelled"]);
     RELEASE_STATUSES = Object.freeze(["planned", "pending", "queued", "building", "active", "succeeded", "failed", "rolled_back", "cancelled"]);
@@ -7078,7 +7078,7 @@ async function onRequestPost3(context) {
 var METHODS, MAX_LIMIT, DEFAULT_LIMIT, RESOURCES, INGEST_RESOURCES, SAFE_FIELDS, SAFE_INPUT_FIELDS, INGESTORS;
 var init_staff_operations_ledger = __esm({
   "api/staff-operations-ledger.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_safe_equal();
     init_ops_ledger();
@@ -7183,7 +7183,7 @@ var init_staff_operations_ledger = __esm({
 // api/ops/ledger.js
 var init_ledger = __esm({
   "api/ops/ledger.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_staff_operations_ledger();
   }
 });
@@ -7284,7 +7284,7 @@ async function onRequestPost4(context) {
 var HEADERS, STATES, MAX_NOTE_LENGTH, MAX_FUTURE_SKEW_MS, EXTERNAL_MONITOR_PATHS;
 var init_monitor_event = __esm({
   "api/ops/monitor-event.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_auth();
     init_ops_events();
     init_ops_registry();
@@ -7299,6 +7299,59 @@ var init_monitor_event = __esm({
     __name(persistenceFailure, "persistenceFailure");
     __name(latestMonitorTimestamp, "latestMonitorTimestamp");
     __name(onRequestPost4, "onRequestPost");
+  }
+});
+
+// api/ops/quiz-intake-readiness.js
+function reply(payload, status) {
+  return new Response(JSON.stringify(payload), { status, headers: JSON_HEADERS });
+}
+async function onRequestGet5(context) {
+  const denied = requireOpsReadKey(context.request, context.env);
+  if (denied) return denied;
+  const checkedAt = (/* @__PURE__ */ new Date()).toISOString();
+  if (context.env.OWNED_QUIZ_BRIDGE_RELEASE !== "approved") {
+    return reply({ ok: false, checkedAt, error: "quiz bridge release is not approved" }, 422);
+  }
+  if (!context.env.CRM_MIRROR?.fetch || !context.env.WORKER_AUTH_SECRET) {
+    return reply({ ok: false, checkedAt, error: "quiz bridge binding or authentication is not configured" }, 422);
+  }
+  try {
+    const response3 = await context.env.CRM_MIRROR.fetch(new Request(READINESS_URL, {
+      headers: {
+        Authorization: `Bearer ${context.env.WORKER_AUTH_SECRET}`,
+        Accept: "application/json"
+      }
+    }));
+    const payload = await response3.json().catch(() => null);
+    const nurtureSafe = payload?.nurtureDispatch?.configured === true && payload?.nurtureDispatch?.shadowOnly === true && payload?.nurtureDispatch?.deliveryEnabled === false;
+    const ready = response3.ok && payload?.success === true && payload?.worker === "amari-crm-mirror" && nurtureSafe;
+    if (!ready) {
+      console.error("[quiz-intake-readiness] owned CRM readiness proof failed", response3.status);
+      return reply({ ok: false, checkedAt, error: "owned CRM readiness proof failed" }, 422);
+    }
+    return reply({
+      ok: true,
+      checkedAt,
+      worker: payload.worker,
+      intakeState: payload.state,
+      nurtureShadowOnly: true,
+      deliveryEnabled: false
+    }, 200);
+  } catch (error) {
+    console.error("[quiz-intake-readiness] service binding request failed", error instanceof Error ? error.message : String(error));
+    return reply({ ok: false, checkedAt, error: "owned CRM readiness proof failed" }, 422);
+  }
+}
+var JSON_HEADERS, READINESS_URL;
+var init_quiz_intake_readiness = __esm({
+  "api/ops/quiz-intake-readiness.js"() {
+    init_functionsRoutes_0_9462741500794678();
+    init_ops_auth();
+    JSON_HEADERS = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+    READINESS_URL = "https://amari-crm-mirror.internal/quiz-intake/readiness";
+    __name(reply, "reply");
+    __name(onRequestGet5, "onRequestGet");
   }
 });
 
@@ -7429,7 +7482,7 @@ async function finishRepairCommand(env, id3, { status, result } = {}) {
 var PREFIX, TTL_S, LEASE_S, COMMAND, APPROVAL_COMMANDS, REPAIR_MODE, AUTO_REPAIR_PATHS, APPROVAL_PATHS, CONFIRM_PATHS, REPAIR_POLICIES;
 var init_ops_repair_command = __esm({
   "lib/ops-repair-command.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_registry();
     init_ops_board_meta();
     PREFIX = "ops:repair:command:";
@@ -7498,7 +7551,7 @@ var init_ops_repair_command = __esm({
 });
 
 // api/ops/repair-command.js
-async function onRequestGet5(context) {
+async function onRequestGet6(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const url = new URL(context.request.url);
@@ -7534,12 +7587,12 @@ async function onRequestPost5(context) {
 var HEADERS2, json4;
 var init_repair_command = __esm({
   "api/ops/repair-command.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_auth();
     init_ops_repair_command();
     HEADERS2 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
     json4 = /* @__PURE__ */ __name((body, status = 200) => new Response(JSON.stringify(body), { status, headers: HEADERS2 }), "json");
-    __name(onRequestGet5, "onRequestGet");
+    __name(onRequestGet6, "onRequestGet");
     __name(onRequestPost5, "onRequestPost");
   }
 });
@@ -7551,7 +7604,7 @@ async function onRequestOptions6(context) {
     headers: corsHeaders3(context.request.headers.get("Origin") || "", "GET, OPTIONS")
   });
 }
-async function onRequestGet6(context) {
+async function onRequestGet7(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = {
     ...corsHeaders3(origin, "GET, OPTIONS"),
@@ -7599,18 +7652,18 @@ async function onRequestGet6(context) {
 }
 var init_systems = __esm({
   "api/ops/systems.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_ops_board();
     __name(onRequestOptions6, "onRequestOptions");
-    __name(onRequestGet6, "onRequestGet");
+    __name(onRequestGet7, "onRequestGet");
   }
 });
 
 // api/staff-operations-ledger/[resource].js
 var init_resource = __esm({
   "api/staff-operations-ledger/[resource].js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_staff_operations_ledger();
   }
 });
@@ -7631,7 +7684,7 @@ async function isContactRevoked(kv, contactId) {
 var REVOKE_PREFIX;
 var init_session_guard = __esm({
   "lib/session-guard.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     REVOKE_PREFIX = "auth-revoked:";
     __name(revokeKey, "revokeKey");
     __name(isContactRevoked, "isContactRevoked");
@@ -7693,7 +7746,7 @@ async function loadOwnedContact(context, headers5, { audience, requireTag, messa
 var GHL_API_BASE3, DEFAULT_MESSAGES;
 var init_owned_access = __esm({
   "lib/owned-access.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     init_session_guard();
     init_ghl();
@@ -7831,7 +7884,7 @@ async function onRequestPost6(context) {
 var GHL_API_BASE4, GHL_LOCATION_ID2, REFERRAL_SOURCE_FIELD_ID, PARTNER_CONTACT_ID_FIELD_ID, REFERRAL_TYPE_FIELD_ID, REFERRAL_FEE_STATUS_FIELD_ID, ALLOWED_ORIGINS3;
 var init_affiliate_refer = __esm({
   "api/affiliate-refer.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     GHL_API_BASE4 = "https://services.leadconnectorhq.com";
@@ -7904,7 +7957,7 @@ function renderOwnedAppointmentCalendar(identity2, generatedAt = Date.now()) {
 }
 var init_appointment_calendar = __esm({
   "lib/appointment-calendar.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(escapeIcs, "escapeIcs");
     __name(utcTimestamp, "utcTimestamp");
     __name(fold, "fold");
@@ -7998,7 +8051,7 @@ ${clean(startTime)}`)
 var TOKEN_VERSION, MAX_TTL_MS, FUTURE_IAT_SKEW_MS, ID, CAPABILITIES, EXPECTED_KEYS, clean;
 var init_appointment_manage_token = __esm({
   "lib/appointment-manage-token.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     TOKEN_VERSION = 1;
     MAX_TTL_MS = 35 * 24 * 60 * 60 * 1e3;
     FUTURE_IAT_SKEW_MS = 5 * 60 * 1e3;
@@ -8415,7 +8468,7 @@ async function scheduleAppointmentCommand(input) {
 var INTERNAL_START_INTERVAL_MINUTES, DAY_MS, MANAGEABLE_STATUSES;
 var init_staff_appointment_manage = __esm({
   "lib/staff-appointment-manage.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_datetime();
     init_app_owned_buffer();
     init_booking_slot_policy();
@@ -8540,7 +8593,7 @@ function createGhlStaffCalendarProvider(context, providerContactId) {
 var BASE, LOCATION_ID;
 var init_staff_calendar_provider_ghl = __esm({
   "lib/staff-calendar-provider-ghl.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_datetime();
     init_app_owned_buffer();
@@ -8888,7 +8941,7 @@ ${messages.filter(Boolean).join("\n")}`;
 var GOOGLE_TOKEN_URL, REFRESH_BUFFER_MS2, LEGACY_KV_ACCESS_TOKEN, LEGACY_KV_REFRESH_TOKEN, LEGACY_KV_TOKEN_EXPIRY, LEGACY_USER;
 var init_google_api = __esm({
   "lib/google-api.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_datetime();
     GOOGLE_TOKEN_URL = "https://oauth2.googleapis.com/token";
     REFRESH_BUFFER_MS2 = 5 * 60 * 1e3;
@@ -9311,7 +9364,7 @@ async function staffCalendarGrantReadiness(context, actor) {
 var PERSONAL_CALENDAR_CALLBACK_URL, AMARI_CALENDAR_CALLBACK_URL, STAFF_CALENDAR_SCOPE, STAFF_CALENDAR_STATE_TTL_SECONDS, STAFF_CALENDAR_STATE_VERSION, STAFF_CALENDAR_STATE_PREFIX, STAFF_CALENDAR_RESULT_TTL_SECONDS, WRITABLE_CALENDAR_ROLES, encoder, ACTORS;
 var init_staff_calendar_oauth = __esm({
   "lib/staff-calendar-oauth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_google_api();
     PERSONAL_CALENDAR_CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
     AMARI_CALENDAR_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
@@ -9565,7 +9618,7 @@ function createGoogleStaffCalendarProvider(context, ownedContactId) {
 var API, PROVIDER;
 var init_staff_calendar_provider_google = __esm({
   "lib/staff-calendar-provider-google.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_datetime();
     init_google_api();
     init_booking_slot_policy();
@@ -9650,7 +9703,7 @@ function requireProviderContactIdentity(identity2) {
 var WORKER_URL, TIMEOUT_MS;
 var init_staff_owned_contact_identity = __esm({
   "lib/staff-owned-contact-identity.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     WORKER_URL = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
     TIMEOUT_MS = 1e4;
     __name(clean5, "clean");
@@ -9683,7 +9736,7 @@ function createStaffCalendarProvider(context, identity2, requestedProvider = nul
 var SUPPORTED;
 var init_staff_calendar_provider = __esm({
   "lib/staff-calendar-provider.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_staff_calendar_provider_ghl();
     init_staff_calendar_provider_google();
     init_staff_owned_contact_identity();
@@ -9739,7 +9792,7 @@ function requireProviderAppointmentIdentity(identity2) {
 var WORKER_URL2, TIMEOUT_MS2;
 var init_staff_owned_appointment_identity = __esm({
   "lib/staff-owned-appointment-identity.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     WORKER_URL2 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
     TIMEOUT_MS2 = 1e4;
     __name(identityError2, "identityError");
@@ -9959,7 +10012,7 @@ function createOwnedAppointmentManageStore(context, input) {
 var WORKER_ORIGIN, COMMAND_PATH, RECOVERY_PATH, TIMEOUT_MS3;
 var init_staff_owned_appointment_store = __esm({
   "lib/staff-owned-appointment-store.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     WORKER_ORIGIN = "https://amari-crm-mirror.eben-fa2.workers.dev";
     COMMAND_PATH = "/appointments/commands";
     RECOVERY_PATH = "/appointments/recovery-requests";
@@ -10121,7 +10174,7 @@ async function executeClientAppointmentManage(context, token, action, startTime 
 var CHANGEABLE, PROVIDER_CHANGEABLE, DAY_MS2;
 var init_client_appointment_manage = __esm({
   "lib/client-appointment-manage.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_appointment_manage_token();
     init_app_owned_buffer();
     init_booking_slot_policy();
@@ -10145,7 +10198,7 @@ var init_client_appointment_manage = __esm({
 });
 
 // api/appointment-calendar.js
-async function onRequestGet7(context) {
+async function onRequestGet8(context) {
   const token = new URL(context.request.url).searchParams.get("token") || "";
   try {
     const resolved = await resolveClientAppointmentManageContext(context, token, "calendar");
@@ -10168,7 +10221,7 @@ async function onRequestGet7(context) {
 var BASE_HEADERS;
 var init_appointment_calendar2 = __esm({
   "api/appointment-calendar.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_appointment_calendar();
     init_client_appointment_manage();
     BASE_HEADERS = Object.freeze({
@@ -10176,7 +10229,7 @@ var init_appointment_calendar2 = __esm({
       "Referrer-Policy": "no-referrer",
       "X-Content-Type-Options": "nosniff"
     });
-    __name(onRequestGet7, "onRequestGet");
+    __name(onRequestGet8, "onRequestGet");
   }
 });
 
@@ -10246,7 +10299,7 @@ function normalizeAppointmentEvent(payload) {
 var APPOINTMENT_EVENT_TYPES, STATUS_TO_TYPE, APPOINTMENT_ID_KEYS, CALENDAR_ID_KEYS, CONTACT_ID_KEYS, START_AT_KEYS, STATUS_KEYS, MODIFIED_BY_KEYS, APPOINTMENT_EVENT_KIND_KEYS, APPOINTMENT_RECURRING_KEYS;
 var init_appointment_event = __esm({
   "lib/appointment-event.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_datetime();
     APPOINTMENT_EVENT_TYPES = Object.freeze({
       BOOKED: "booked",
@@ -10324,7 +10377,7 @@ async function releaseProcessedEvent(db, eventId) {
 }
 var init_processed_events = __esm({
   "lib/processed-events.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(changesOf3, "changesOf");
     __name(claimProcessedEvent, "claimProcessedEvent");
     __name(releaseProcessedEvent, "releaseProcessedEvent");
@@ -10359,7 +10412,7 @@ function emitNurtureEvent(context, event2) {
 }
 var init_engine_forward = __esm({
   "lib/engine-forward.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(forwardEventToEngine, "forwardEventToEngine");
     __name(emitNurtureEvent, "emitNurtureEvent");
   }
@@ -10390,7 +10443,7 @@ async function dispatchAppointmentEvent(context, event2) {
 var CONSUMERS;
 var init_appointment_dispatch = __esm({
   "lib/appointment-dispatch.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_engine_forward();
     CONSUMERS = [
       { name: "reminder", urlVar: "REMINDER_ENGINE_URL" },
@@ -10402,7 +10455,7 @@ var init_appointment_dispatch = __esm({
 
 // api/appointment-webhook.js
 function json5(status, obj) {
-  return new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS });
+  return new Response(JSON.stringify(obj), { status, headers: JSON_HEADERS2 });
 }
 function alert(context, summary, detail) {
   if (typeof context.waitUntil === "function") {
@@ -10504,17 +10557,17 @@ async function onRequestPost7(context) {
     return json5(500, { error: "internal error" });
   }
 }
-var JSON_HEADERS, KEY_TTL_SECONDS;
+var JSON_HEADERS2, KEY_TTL_SECONDS;
 var init_appointment_webhook = __esm({
   "api/appointment-webhook.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_appointment_event();
     init_safe_equal();
     init_processed_events();
     init_ops_alert();
     init_appointment_dispatch();
     init_ops_path_emit();
-    JSON_HEADERS = { "Content-Type": "application/json" };
+    JSON_HEADERS2 = { "Content-Type": "application/json" };
     KEY_TTL_SECONDS = 30 * 24 * 3600;
     __name(json5, "json");
     __name(alert, "alert");
@@ -10542,7 +10595,7 @@ async function onRequestOptions8(context) {
     headers: corsHeaders5(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet8(context) {
+async function onRequestGet9(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders5(origin), "Content-Type": "application/json" };
   try {
@@ -10599,7 +10652,7 @@ async function onRequestGet8(context) {
 var PT, KV_CALL_PREFIX, KV_DAILY_PREFIX, KV_LATEST_PREFIX, ALLOWED_ORIGINS4;
 var init_call_coach = __esm({
   "api/call-coach.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     PT = "America/Los_Angeles";
     KV_CALL_PREFIX = "call-coach:";
@@ -10612,7 +10665,7 @@ var init_call_coach = __esm({
     __name(corsHeaders5, "corsHeaders");
     __name(yesterdayPacific, "yesterdayPacific");
     __name(onRequestOptions8, "onRequestOptions");
-    __name(onRequestGet8, "onRequestGet");
+    __name(onRequestGet9, "onRequestGet");
   }
 });
 
@@ -10754,7 +10807,7 @@ async function onRequestPost8(context) {
 var GHL_API_BASE5, GHL_LOCATION_ID3, BOOKING_URL, ALLOWED_ORIGINS5;
 var init_client_refer = __esm({
   "api/client-refer.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     GHL_API_BASE5 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID3 = "7pIO7FHVAyBT1jKGhfQM";
@@ -10771,7 +10824,7 @@ var init_client_refer = __esm({
 });
 
 // api/comms-summary.js
-async function onRequestGet9(context) {
+async function onRequestGet10(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers5 = { "Content-Type": "application/json" };
@@ -10794,10 +10847,10 @@ async function onRequestGet9(context) {
 var KV_SUMMARY;
 var init_comms_summary = __esm({
   "api/comms-summary.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_auth();
     KV_SUMMARY = "comms:flags:summary";
-    __name(onRequestGet9, "onRequestGet");
+    __name(onRequestGet10, "onRequestGet");
   }
 });
 
@@ -10912,7 +10965,7 @@ ${validated.message}`
 var GHL_API_BASE6, GHL_LOCATION_ID4, ALLOWED_ORIGINS6, MAX_NAME, MAX_PHONE, MAX_MESSAGE;
 var init_contact_message = __esm({
   "api/contact-message.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     GHL_API_BASE6 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID4 = "7pIO7FHVAyBT1jKGhfQM";
@@ -10982,7 +11035,7 @@ async function onRequestOptions11(context) {
     headers: corsHeaders8(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet10(context) {
+async function onRequestGet11(context) {
   const origin = context.request.headers.get("Origin") || "";
   const auth = await authenticate(context);
   if (!auth) return jsonResponse({ error: "Unauthorized" }, 401, origin);
@@ -11031,7 +11084,7 @@ async function onRequestPost10(context) {
 var ALLOWED_ORIGINS7, COS_QUEUE_USERS;
 var init_cos_actions = __esm({
   "api/cos-actions.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     init_safe_equal();
     ALLOWED_ORIGINS7 = [
@@ -11044,7 +11097,7 @@ var init_cos_actions = __esm({
     __name(authenticate, "authenticate");
     __name(queueUser, "queueUser");
     __name(onRequestOptions11, "onRequestOptions");
-    __name(onRequestGet10, "onRequestGet");
+    __name(onRequestGet11, "onRequestGet");
     __name(onRequestPost10, "onRequestPost");
   }
 });
@@ -11127,7 +11180,7 @@ async function clearPinAttempts(kv, { ip, scope }) {
 var RATE_LIMITS, PIN_RATE_LIMITS, pinAttemptKey;
 var init_rate_limit = __esm({
   "lib/rate-limit.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     RATE_LIMITS = Object.freeze({
       EMAIL_COOLDOWN_SEC: 5 * 60,
       // one login email per address per 5 min (was 60s)
@@ -11267,7 +11320,7 @@ async function onRequestPost11(context) {
 var ALLOWED_ORIGINS8;
 var init_cos_auth = __esm({
   "api/cos-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_rate_limit();
     init_ops_last_run();
     ALLOWED_ORIGINS8 = [
@@ -11305,7 +11358,7 @@ function hasFoundersCircleTag(tags = []) {
 var FOUNDERS_CIRCLE_TAG;
 var init_portal_helpers = __esm({
   "lib/portal-helpers.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(getCustomField, "getCustomField");
     __name(isChecked, "isChecked");
     __name(computeHasLivingPractice, "computeHasLivingPractice");
@@ -11326,7 +11379,7 @@ function creditsOnPurchase(productId, p2) {
 var PACKAGE_TYPES, CANONICAL_SERIES_BY_GHL_VALUE, SESSION_COUNT_BY_SERIES_TYPE, GHL_PRODUCTS, LEDGER_PRODUCT_MAP, WEBHOOK_PURCHASE_MAP, PRICE_IDS, DRAW_DOWN_PRODUCT_IDS, ID_TO_PRODUCT_ID, productIdForAnyId, PURCHASE_CREDIT_MAP, PACKAGE_MAP, AUDIT_INCREMENT_MAP;
 var init_ghl_products = __esm({
   "lib/ghl-products.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     PACKAGE_TYPES = /* @__PURE__ */ new Set(["4-series", "8-series", "6-week", "12-week", "4-upgrade", "8-upgrade", "4-to-8-upgrade"]);
     CANONICAL_SERIES_BY_GHL_VALUE = Object.freeze({
       "4-session": "4-session",
@@ -11693,7 +11746,7 @@ async function hydrateOrders(fetchOrderDetail2, ordersList, options = {}) {
 var DEFAULT_CONCURRENCY;
 var init_ghl_orders = __esm({
   "lib/ghl-orders.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     DEFAULT_CONCURRENCY = 3;
     __name(hydrateOrders, "hydrateOrders");
   }
@@ -12030,7 +12083,7 @@ async function computeSessionLedger(context, contactId, options = {}) {
 var GHL_API_BASE7, GHL_LOCATION_ID5, ACTIVE_PRODUCTS, SERIES_CALENDAR_IDS, NON_SERIES_CALENDAR_IDS, ATTENDED_STATUSES;
 var init_session_ledger = __esm({
   "lib/session-ledger.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_portal_helpers();
     init_ghl_products();
@@ -12297,7 +12350,7 @@ async function geocode(location) {
 var SF_LAT, SF_LON, WEATHER_CODES;
 var init_cos_lookups = __esm({
   "lib/cos-lookups.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_google_api();
     init_ghl();
     SF_LAT = 37.78;
@@ -12703,7 +12756,7 @@ async function handleQueue(context, action) {
 var SPOTIFY_TOKEN_URL, SPOTIFY_API_BASE, REFRESH_BUFFER_MS3, KV_ACCESS_TOKEN2, KV_REFRESH_TOKEN2, KV_TOKEN_EXPIRY2;
 var init_spotify = __esm({
   "lib/spotify.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     SPOTIFY_TOKEN_URL = "https://accounts.spotify.com/api/token";
     SPOTIFY_API_BASE = "https://api.spotify.com/v1";
     REFRESH_BUFFER_MS3 = 5 * 60 * 1e3;
@@ -12767,7 +12820,7 @@ ${sections.join("\n\n---\n\n")}`;
 var ALWAYS_DOCS, ON_DEMAND_DOCS;
 var init_cos_vault = __esm({
   "lib/cos-vault.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     ALWAYS_DOCS = ["positioning", "garrett-voice", "lifecycles", "technical-reference"];
     ON_DEMAND_DOCS = [
       { name: "messaging-templates", trigger: /email|message|template|copy|write|draft|send/i },
@@ -13272,7 +13325,7 @@ ${schedules}`;
 var HISTORY_CAP, RULES_CAP, HISTORY_KEY, RULES_KEY, SF_SWEEP_KEY, SF_ADDRESS_DATASET, SF_STREET_SEGMENTS_DATASET, STREET_TYPE_ALIASES, CITY_STREET_TYPES, SWEEP_WEEKDAYS;
 var init_cos_parking = __esm({
   "lib/cos-parking.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     HISTORY_CAP = 100;
     RULES_CAP = 300;
     HISTORY_KEY = /* @__PURE__ */ __name((user) => `cos:parking-history:${user}`, "HISTORY_KEY");
@@ -13423,7 +13476,7 @@ async function replaceParkingCalendarReminder({ kv, createEvent, deleteEvent }, 
 var activeReminderKey;
 var init_cos_parking_calendar = __esm({
   "lib/cos-parking-calendar.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_cos_parking();
     activeReminderKey = /* @__PURE__ */ __name((user) => `cos:active-parking-reminder:${user}`, "activeReminderKey");
     __name(retireTrackedEvents, "retireTrackedEvents");
@@ -13592,7 +13645,7 @@ async function listFieldPartners(kv, user, { limit = 25, stage } = {}) {
 var INDEX_KEY, PARTNER_KEY, VISIT_KEY, IMAGE_KEY, MAX_INDEX_ENTRIES, MAX_IMAGES, STAGES, STAGE_RANK;
 var init_cos_field_visits = __esm({
   "lib/cos-field-visits.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     INDEX_KEY = /* @__PURE__ */ __name((user) => `cos:field-partners:${user}:index`, "INDEX_KEY");
     PARTNER_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-partner:${user}:${id3}`, "PARTNER_KEY");
     VISIT_KEY = /* @__PURE__ */ __name((user, id3) => `cos:field-visit:${user}:${id3}`, "VISIT_KEY");
@@ -14142,7 +14195,7 @@ async function streamWithTools({ apiKey, requestBody, onTextDelta, executeToolFn
 var OPENROUTER_MESSAGES_API, OPENROUTER_MODEL, LOCATION_ID2, MAX_TOOL_ROUNDS, FIELD_SESSIONS_REMAINING, FIELD_SESSIONS_COMPLETED, FIELD_SERIES_TYPE, TOOLS;
 var init_cos_anthropic = __esm({
   "lib/cos-anthropic.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_session_ledger();
     init_ghl_fields();
@@ -14332,7 +14385,7 @@ var init_cos_anthropic = __esm({
 var VOICE_STANDARD;
 var init_voice_standard = __esm({
   "lib/voice-standard.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     VOICE_STANDARD = `# The Amari voice standard
 
 You write copy that a real person would send. Not AI. Not slick. Not clipped.
@@ -14438,7 +14491,7 @@ function mechanicalTells(text6) {
 var HARD_TELLS;
 var init_slop_lint = __esm({
   "lib/slop-lint.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     HARD_TELLS = [
       // Mechanical
       { id: "em-dash", label: "em/en dash \u2014 rewrite as two sentences or a comma", re: /—|–/ },
@@ -14591,7 +14644,7 @@ async function generateOnBrand({ apiKey, userName = "Garrett", messages, maxRoun
 var CHANNELS, DEFAULT_MAX_ROUNDS;
 var init_voice_engine = __esm({
   "lib/voice-engine.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_voice_standard();
     init_cos_anthropic();
     init_slop_lint();
@@ -14623,7 +14676,7 @@ function routeAskAmariRequest({ message, previousMode } = {}) {
 var REWRITE_REQUEST, DRAFT_REQUEST, COPY_TARGET, REQUESTS_COPY, OPERATION_TARGET, SOFT_REWRITE, FACTUAL_OR_OPERATIONS_REQUEST;
 var init_ask_amari_router = __esm({
   "lib/ask-amari-router.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     REWRITE_REQUEST = /\b(?:rewrite|reword|de-?slop|polish|proofread|shorten|lengthen)\b/i;
     DRAFT_REQUEST = /\b(?:draft|write|edit)\b/i;
     COPY_TARGET = /\b(?:text|sms|email|message|subject(?: line)?|caption|ad(?: copy)?|website copy|headline|follow-?up|copy|letter|note)\b/i;
@@ -15735,7 +15788,7 @@ ${actionSummary}`;
 var LEDGER_FIELD_DEFS, ALLOWED_ORIGINS9, SKIP_WORDS;
 var init_cos_chat = __esm({
   "api/cos-chat.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     init_endpoint_guards();
     init_google_api();
@@ -16009,7 +16062,7 @@ async function onRequestPost13(context) {
 var ALLOWED_ORIGINS10;
 var init_cos_daily_sync = __esm({
   "api/cos-daily-sync.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     ALLOWED_ORIGINS10 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -16077,7 +16130,7 @@ async function onRequestPost14(context) {
 var ALLOWED_ORIGINS11;
 var init_cos_ghl_sync = __esm({
   "api/cos-ghl-sync.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     ALLOWED_ORIGINS11 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -16150,7 +16203,7 @@ async function onRequestPost15(context) {
 var AUTH_URL, CALLBACK_URL, GOOGLE_WORKSPACE_SCOPES, STATE_TTL_SECONDS, ALLOWED_ORIGINS12;
 var init_cos_google_auth = __esm({
   "api/cos-google-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     AUTH_URL = "https://accounts.google.com/o/oauth2/v2/auth";
     CALLBACK_URL = "https://www.amarimethod.com/api/cos-google-callback";
@@ -16179,7 +16232,7 @@ function redirect(url) {
     headers: { Location: url, "Cache-Control": "no-store" }
   });
 }
-async function onRequestGet11(context) {
+async function onRequestGet12(context) {
   const url = new URL(context.request.url);
   const state = url.searchParams.get("state") || "";
   const code = url.searchParams.get("code") || "";
@@ -16300,7 +16353,7 @@ async function onRequestGet11(context) {
 var TOKEN_URL, SUCCESS_URL, FAILURE_URL, STAFF_SUCCESS_URL, STAFF_FAILURE_URL;
 var init_cos_google_callback = __esm({
   "api/cos-google-callback.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_staff_calendar_oauth();
     TOKEN_URL = "https://oauth2.googleapis.com/token";
     SUCCESS_URL = "https://www.amarimethod.com/cos/?google=connected";
@@ -16309,7 +16362,7 @@ var init_cos_google_callback = __esm({
     STAFF_FAILURE_URL = "https://www.amarimethod.com/staff/operations?staffCalendar=failed";
     __name(todayKey2, "todayKey");
     __name(redirect, "redirect");
-    __name(onRequestGet11, "onRequestGet");
+    __name(onRequestGet12, "onRequestGet");
   }
 });
 
@@ -16324,7 +16377,7 @@ async function probeGoogleCalendar(context) {
   });
   if (!response3.ok) throw new Error(`Google Calendar ${response3.status} readiness probe failed`);
 }
-async function onRequestGet12(context) {
+async function onRequestGet13(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const checkedAt = (/* @__PURE__ */ new Date()).toISOString();
@@ -16370,7 +16423,7 @@ async function onRequestGet12(context) {
 var HEADERS3;
 var init_cos_health = __esm({
   "api/cos-health.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_auth();
     init_cos_anthropic();
     init_google_api();
@@ -16378,7 +16431,7 @@ var init_cos_health = __esm({
     HEADERS3 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
     __name(record, "record");
     __name(probeGoogleCalendar, "probeGoogleCalendar");
-    __name(onRequestGet12, "onRequestGet");
+    __name(onRequestGet13, "onRequestGet");
   }
 });
 
@@ -16419,7 +16472,7 @@ function onRequestOptions17(context) {
     headers: corsHeaders13(context.request.headers.get("Origin") || "")
   });
 }
-async function onRequestGet13(context) {
+async function onRequestGet14(context) {
   const origin = context.request.headers.get("Origin") || "";
   const auth = await authenticate2(context.request, context.env);
   if (!auth) return jsonResponse5({ error: "Unauthorized" }, 401, origin);
@@ -16435,7 +16488,7 @@ async function onRequestGet13(context) {
 var ALLOWED_ORIGINS13;
 var init_cos_parking_current = __esm({
   "api/cos-parking-current.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     init_cos_parking();
     ALLOWED_ORIGINS13 = ["https://www.amarimethod.com", "https://amarimethod.com"];
@@ -16443,7 +16496,7 @@ var init_cos_parking_current = __esm({
     __name(jsonResponse5, "jsonResponse");
     __name(authenticate2, "authenticate");
     __name(onRequestOptions17, "onRequestOptions");
-    __name(onRequestGet13, "onRequestGet");
+    __name(onRequestGet14, "onRequestGet");
   }
 });
 
@@ -16454,7 +16507,7 @@ async function onRequestPost16(context) {
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
-      headers: JSON_HEADERS2
+      headers: JSON_HEADERS3
     });
   }
   const startedAt = Date.now();
@@ -16471,7 +16524,7 @@ async function onRequestPost16(context) {
         status: resp.status,
         page,
         detail: errText.slice(0, 400)
-      }), { status: 422, headers: JSON_HEADERS2 });
+      }), { status: 422, headers: JSON_HEADERS3 });
     }
     const batch = await resp.json();
     if (!Array.isArray(batch) || batch.length === 0) break;
@@ -16491,31 +16544,31 @@ async function onRequestPost16(context) {
     meta
   }, null, 2), {
     status: 200,
-    headers: JSON_HEADERS2
+    headers: JSON_HEADERS3
   });
 }
-async function onRequestGet14(context) {
+async function onRequestGet15(context) {
   const { request: request2, env } = context;
   const provided = request2.headers.get("X-Service-Key") || "";
   if (!env.COS_SERVICE_KEY || provided !== env.COS_SERVICE_KEY) {
     return new Response(JSON.stringify({ error: "unauthorized" }), {
       status: 401,
-      headers: JSON_HEADERS2
+      headers: JSON_HEADERS3
     });
   }
   const meta = await getSfSweepIndexMeta(env);
   return new Response(JSON.stringify({ ok: true, meta }, null, 2), {
     status: 200,
-    headers: JSON_HEADERS2
+    headers: JSON_HEADERS3
   });
 }
 function onRequestOptions18() {
   return new Response(null, { status: 204, headers: CORS_HEADERS });
 }
-var DATASF_URL, PAGE_SIZE, MAX_PAGES, CORS_HEADERS, JSON_HEADERS2;
+var DATASF_URL, PAGE_SIZE, MAX_PAGES, CORS_HEADERS, JSON_HEADERS3;
 var init_cos_parking_seed = __esm({
   "api/cos-parking-seed.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_cos_parking();
     DATASF_URL = "https://data.sfgov.org/resource/yhqp-riqs.json";
     PAGE_SIZE = 5e3;
@@ -16525,15 +16578,15 @@ var init_cos_parking_seed = __esm({
       "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
       "Access-Control-Allow-Headers": "Content-Type, X-Service-Key"
     };
-    JSON_HEADERS2 = { "content-type": "application/json", ...CORS_HEADERS };
+    JSON_HEADERS3 = { "content-type": "application/json", ...CORS_HEADERS };
     __name(onRequestPost16, "onRequestPost");
-    __name(onRequestGet14, "onRequestGet");
+    __name(onRequestGet15, "onRequestGet");
     __name(onRequestOptions18, "onRequestOptions");
   }
 });
 
 // api/cos-spotify-auth.js
-async function onRequestGet15(context) {
+async function onRequestGet16(context) {
   const clientId = context.env.SPOTIFY_CLIENT_ID;
   if (!clientId) {
     return new Response("SPOTIFY_CLIENT_ID not configured", { status: 500 });
@@ -16551,7 +16604,7 @@ async function onRequestGet15(context) {
 var SPOTIFY_AUTH_URL, SCOPES;
 var init_cos_spotify_auth = __esm({
   "api/cos-spotify-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     SPOTIFY_AUTH_URL = "https://accounts.spotify.com/authorize";
     SCOPES = [
       "user-read-playback-state",
@@ -16562,12 +16615,12 @@ var init_cos_spotify_auth = __esm({
       "playlist-modify-private",
       "user-library-read"
     ].join(" ");
-    __name(onRequestGet15, "onRequestGet");
+    __name(onRequestGet16, "onRequestGet");
   }
 });
 
 // api/cos-spotify-callback.js
-async function onRequestGet16(context) {
+async function onRequestGet17(context) {
   const url = new URL(context.request.url);
   const code = url.searchParams.get("code");
   const error = url.searchParams.get("error");
@@ -16677,9 +16730,9 @@ function errorPage(message) {
 var SPOTIFY_TOKEN_URL2;
 var init_cos_spotify_callback = __esm({
   "api/cos-spotify-callback.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     SPOTIFY_TOKEN_URL2 = "https://accounts.spotify.com/api/token";
-    __name(onRequestGet16, "onRequestGet");
+    __name(onRequestGet17, "onRequestGet");
     __name(successPage, "successPage");
     __name(errorPage, "errorPage");
   }
@@ -16740,7 +16793,7 @@ async function onRequestPost17(context) {
 var ALLOWED_ORIGINS14;
 var init_cos_vault_sync = __esm({
   "api/cos-vault-sync.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     ALLOWED_ORIGINS14 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -16756,7 +16809,7 @@ var init_cos_vault_sync = __esm({
 function todayPacific() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: PT2 }).format(/* @__PURE__ */ new Date());
 }
-async function onRequestGet17(context) {
+async function onRequestGet18(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers5 = {
@@ -16783,12 +16836,12 @@ async function onRequestGet17(context) {
 var PT2, AUDIT_KV_PREFIX;
 var init_daily_audit = __esm({
   "api/daily-audit.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_auth();
     PT2 = "America/Los_Angeles";
     AUDIT_KV_PREFIX = "ops:daily-audit:";
     __name(todayPacific, "todayPacific");
-    __name(onRequestGet17, "onRequestGet");
+    __name(onRequestGet18, "onRequestGet");
   }
 });
 
@@ -16796,7 +16849,7 @@ var init_daily_audit = __esm({
 function todayPacific2() {
   return new Intl.DateTimeFormat("en-CA", { timeZone: PT3 }).format(/* @__PURE__ */ new Date());
 }
-async function onRequestGet18(context) {
+async function onRequestGet19(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers5 = {
@@ -16823,12 +16876,12 @@ async function onRequestGet18(context) {
 var PT3, SCAN_KV_PREFIX;
 var init_ecosystem_scan = __esm({
   "api/ecosystem-scan.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_auth();
     PT3 = "America/Los_Angeles";
     SCAN_KV_PREFIX = "ops:ecosystem-scan:";
     __name(todayPacific2, "todayPacific");
-    __name(onRequestGet18, "onRequestGet");
+    __name(onRequestGet19, "onRequestGet");
   }
 });
 
@@ -16909,7 +16962,7 @@ async function onRequestPost18(context) {
 var GHL_API_BASE8, GHL_LOCATION_ID6, ALLOWED_ORIGINS15;
 var init_elbow_study_interest = __esm({
   "api/elbow-study-interest.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     GHL_API_BASE8 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID6 = "7pIO7FHVAyBT1jKGhfQM";
@@ -16928,7 +16981,7 @@ var init_elbow_study_interest = __esm({
 var STUDIES, STUDY_CALENDAR_ID, STUDY_TAGS;
 var init_studies = __esm({
   "lib/studies.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     STUDIES = {
       "tennis-elbow": {
         slug: "tennis-elbow",
@@ -17043,7 +17096,7 @@ function wantsPublishOptIn(publishOptIn) {
 var STUDY_PUBLISH_OPT_IN_TAG;
 var init_study_consent = __esm({
   "lib/study-consent.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     STUDY_PUBLISH_OPT_IN_TAG = "study-publish-opt-in";
     __name(wantsPublishOptIn, "wantsPublishOptIn");
   }
@@ -17071,7 +17124,7 @@ function legacyStudySignupDisabledResponse(headers5, studySlug) {
 var LIVE_STUDY_SLUGS;
 var init_legacy_study_signup = __esm({
   "lib/legacy-study-signup.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     LIVE_STUDY_SLUGS = /* @__PURE__ */ new Set([
       "tennis-elbow",
       "tmj",
@@ -17198,7 +17251,7 @@ async function onRequestPost19(context) {
 var GHL_API_BASE9, GHL_LOCATION_ID7, STUDY, STUDY_NAME_FIELD_ID, ALLOWED_ORIGINS16;
 var init_elbow_study_signup = __esm({
   "api/elbow-study-signup.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -17335,7 +17388,7 @@ async function onRequestPost20(context) {
 var GHL_API_BASE10, GHL_LOCATION_ID8, STUDY2, STUDY_NAME_FIELD_ID2, ALLOWED_ORIGINS17;
 var init_foot_study_signup = __esm({
   "api/foot-study-signup.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -17368,7 +17421,7 @@ function timingSafeEqual3(a, b) {
   }
   return mismatch === 0;
 }
-async function onRequestGet19(context) {
+async function onRequestGet20(context) {
   if (context.env.GHL_TOKEN_EXPORT_ENABLED !== "true") {
     return new Response("Not found", { status: 404 });
   }
@@ -17404,10 +17457,10 @@ async function onRequestGet19(context) {
 var LOCATION_ID3;
 var init_ghl_export_tokens = __esm({
   "api/ghl-export-tokens.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     LOCATION_ID3 = "7pIO7FHVAyBT1jKGhfQM";
     __name(timingSafeEqual3, "timingSafeEqual");
-    __name(onRequestGet19, "onRequestGet");
+    __name(onRequestGet20, "onRequestGet");
   }
 });
 
@@ -17455,7 +17508,7 @@ async function appendAutomationEvent(db, r) {
 var UPGRADE_OFFER_DELAY_MS, GUARD_TAGS;
 var init_upgrade_offer = __esm({
   "lib/upgrade-offer.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     UPGRADE_OFFER_DELAY_MS = 3 * 864e5;
     GUARD_TAGS = ["ambassador-prospect", "affiliate-partner"];
     __name(changesOf4, "changesOf");
@@ -17537,7 +17590,7 @@ async function recordSeriesPurchase(context, { contactId, seriesType, classifica
 var MODE, FROM, FOUNDER_FULFILLMENT_CONFIRMATION;
 var init_purchase_confirmations = __esm({
   "lib/purchase-confirmations.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_upgrade_offer();
     init_ghl_send();
     MODE = "shadow";
@@ -17822,7 +17875,7 @@ async function mirrorPaidPosSaleToGhlInvoice(context, sale, { onInvoiceIdentifie
 var GHL_API_BASE11, LOCATION_ID4, CURRENCY;
 var init_staff_pos_invoice_bridge = __esm({
   "lib/staff-pos-invoice-bridge.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_ghl_products();
     GHL_API_BASE11 = "https://services.leadconnectorhq.com";
@@ -18132,7 +18185,7 @@ async function writePosSale(kv, sale) {
 var MAX_CART_LINES, MAX_AMOUNT_CENTS, MAX_CUSTOM_LABEL, MAX_LEGS, POS_CATALOG, POS_PAYMENT_METHODS, STRIPE_CHECKOUT_METHODS, POS_SALE_STATUSES, POS_LEG_STATUSES;
 var init_staff_pos = __esm({
   "lib/staff-pos.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     MAX_CART_LINES = 24;
     MAX_AMOUNT_CENTS = 2e6;
     MAX_CUSTOM_LABEL = 120;
@@ -18272,7 +18325,7 @@ async function issueOwnedReceipt(db, sale, { actor = "Staff POS", now, id: id3 }
 }
 var init_staff_pos_receipts = __esm({
   "lib/staff-pos-receipts.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(ownedNoEffectLine, "ownedNoEffectLine");
     __name(ownedNoEffectCart, "ownedNoEffectCart");
     __name(mapReceipt, "mapReceipt");
@@ -18659,7 +18712,7 @@ async function fulfillPaidPosSale(context, sale, { actor = "POS" } = {}) {
 var KV_TTL_SECONDS;
 var init_staff_pos_fulfill = __esm({
   "lib/staff-pos-fulfill.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_processed_events();
     init_ops_alert();
     init_ops_path_emit();
@@ -19198,7 +19251,7 @@ async function onRequestPost21(context) {
 var GHL_API_BASE12, LOCATION_ID5, KV_TTL_SECONDS2, INVOICE_PURCHASE_PRODUCTS, STAFF_POS_INVOICE_EFFECTS, FIELD_IDS2, TAGS_TO_REMOVE, DOWNSTREAM_TRIGGER_TAG;
 var init_ghl_invoice_webhook = __esm({
   "api/ghl-invoice-webhook.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_purchase_confirmations();
     init_ghl_products();
@@ -19252,7 +19305,7 @@ var init_ghl_invoice_webhook = __esm({
 function isForeignLocationToken(data, expectedLocationId = EXPECTED_LOCATION_ID) {
   return Boolean(data && data.locationId && data.locationId !== expectedLocationId);
 }
-async function onRequestGet20(context) {
+async function onRequestGet21(context) {
   try {
     const url = new URL(context.request.url);
     const code = url.searchParams.get("code");
@@ -19336,11 +19389,11 @@ async function onRequestGet20(context) {
 var GHL_TOKEN_URL2, EXPECTED_LOCATION_ID;
 var init_ghl_oauth_callback = __esm({
   "api/ghl-oauth-callback.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     GHL_TOKEN_URL2 = "https://services.leadconnectorhq.com/oauth/token";
     EXPECTED_LOCATION_ID = "7pIO7FHVAyBT1jKGhfQM";
     __name(isForeignLocationToken, "isForeignLocationToken");
-    __name(onRequestGet20, "onRequestGet");
+    __name(onRequestGet21, "onRequestGet");
   }
 });
 
@@ -19358,7 +19411,7 @@ function verifyGhlWebhookSecret(env, provided, dedicatedKey) {
 }
 var init_ghl_webhook_auth = __esm({
   "lib/ghl-webhook-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_safe_equal();
     __name(verifyGhlWebhookSecret, "verifyGhlWebhookSecret");
   }
@@ -19396,7 +19449,7 @@ function checkPackageBalance({ remaining, packageSize, attended = null }) {
 }
 var init_session_consistency = __esm({
   "lib/session-consistency.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(checkPackageBalance, "checkPackageBalance");
   }
 });
@@ -19601,7 +19654,7 @@ async function failBookingOperation(db, opKey, error, options = {}) {
 }
 var init_booking_operations = __esm({
   "lib/booking-operations.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(changesOf6, "changesOf");
     __name(normalizeRow, "normalizeRow");
     __name(sameRequest, "sameRequest");
@@ -20651,7 +20704,7 @@ async function onRequestPost22(context) {
 var GHL_API_BASE13, LOCATION_ID6, PAID_BOOKING_MAP, LEGACY_CREDITS, PRODUCT_MAP, REQUESTED_SLOT_FIELD_IDS, SLOT_ISO_RE, CHECKOUT_NOTE_SLOT_RE, FIELD_IDS3, KV_TTL_SECONDS3;
 var init_ghl_purchase_webhook = __esm({
   "api/ghl-purchase-webhook.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_ghl_products();
     init_ghl_fields();
@@ -20876,7 +20929,7 @@ async function onRequestPost23(context) {
 var GHL_API_BASE14, GHL_LOCATION_ID9, STUDY3, STUDY_NAME_FIELD_ID3, ALLOWED_ORIGINS18;
 var init_hand_study_signup = __esm({
   "api/hand-study-signup.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -20971,7 +21024,7 @@ async function readAndJudgeBeats(kv) {
 var BEAT_PREFIX, HOUR3, HEARTBEAT_JOBS, JOBS_BY_NAME;
 var init_heartbeat = __esm({
   "lib/heartbeat.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     BEAT_PREFIX = "ops:beat:";
     HOUR3 = 3600 * 1e3;
     __name(beatKey, "beatKey");
@@ -21008,12 +21061,12 @@ var init_heartbeat = __esm({
 });
 
 // api/heartbeats.js
-async function onRequestGet21(context) {
+async function onRequestGet22(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const kv = context.env.PORTAL_KV;
   if (!kv) {
-    return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: JSON_HEADERS3 });
+    return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: JSON_HEADERS4 });
   }
   const result = await readAndJudgeBeats(kv);
   try {
@@ -21021,26 +21074,26 @@ async function onRequestGet21(context) {
   } catch (err) {
     console.error("[heartbeats] self-beat write failed (non-fatal):", err?.message || err);
   }
-  return new Response(JSON.stringify(result), { status: 200, headers: JSON_HEADERS3 });
+  return new Response(JSON.stringify(result), { status: 200, headers: JSON_HEADERS4 });
 }
 async function onRequestPost24(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const kv = context.env.PORTAL_KV;
   if (!kv) {
-    return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: JSON_HEADERS3 });
+    return new Response(JSON.stringify({ error: "KV not configured" }), { status: 500, headers: JSON_HEADERS4 });
   }
   let body;
   try {
     body = await context.request.json();
   } catch {
-    return new Response(JSON.stringify({ error: "invalid JSON" }), { status: 400, headers: JSON_HEADERS3 });
+    return new Response(JSON.stringify({ error: "invalid JSON" }), { status: 400, headers: JSON_HEADERS4 });
   }
   const job = typeof body?.job === "string" ? body.job : "";
   if (!isRegisteredJob(job)) {
     return new Response(
       JSON.stringify({ error: `unknown job '${job}'`, registered: HEARTBEAT_JOBS.map((j) => j.job) }),
-      { status: 400, headers: JSON_HEADERS3 }
+      { status: 400, headers: JSON_HEADERS4 }
     );
   }
   const producedN = Number(body.producedN);
@@ -21048,16 +21101,16 @@ async function onRequestPost24(context) {
     producedN: Number.isFinite(producedN) ? producedN : 0,
     ok: body.ok !== false
   });
-  return new Response(JSON.stringify({ ok: true, beat }), { status: 200, headers: JSON_HEADERS3 });
+  return new Response(JSON.stringify({ ok: true, beat }), { status: 200, headers: JSON_HEADERS4 });
 }
-var JSON_HEADERS3;
+var JSON_HEADERS4;
 var init_heartbeats = __esm({
   "api/heartbeats.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_auth();
     init_heartbeat();
-    JSON_HEADERS3 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
-    __name(onRequestGet21, "onRequestGet");
+    JSON_HEADERS4 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
+    __name(onRequestGet22, "onRequestGet");
     __name(onRequestPost24, "onRequestPost");
   }
 });
@@ -21177,7 +21230,7 @@ async function onRequestPost25(context) {
 var GHL_API_BASE15, GHL_LOCATION_ID10, STUDY4, STUDY_NAME_FIELD_ID4, ALLOWED_ORIGINS19;
 var init_jaw_study_signup = __esm({
   "api/jaw-study-signup.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -21286,7 +21339,7 @@ async function onRequestPost26(context) {
 var GHL_API_BASE16, GHL_LOCATION_ID11, ALLOWED_ORIGINS20;
 var init_newsletter_signup = __esm({
   "api/newsletter-signup.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     GHL_API_BASE16 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID11 = "7pIO7FHVAyBT1jKGhfQM";
@@ -21322,7 +21375,7 @@ async function onRequestOptions26(context) {
     headers: corsHeaders21(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet22(context) {
+async function onRequestGet23(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders21(origin), "Content-Type": "application/json" };
   try {
@@ -21371,7 +21424,7 @@ async function onRequestGet22(context) {
 var KV_COACH_PREFIX, ALLOWED_ORIGINS21;
 var init_outreach_coach = __esm({
   "api/outreach-coach.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     KV_COACH_PREFIX = "coach:";
     ALLOWED_ORIGINS21 = [
@@ -21380,7 +21433,7 @@ var init_outreach_coach = __esm({
     ];
     __name(corsHeaders21, "corsHeaders");
     __name(onRequestOptions26, "onRequestOptions");
-    __name(onRequestGet22, "onRequestGet");
+    __name(onRequestGet23, "onRequestGet");
   }
 });
 
@@ -21587,7 +21640,7 @@ async function onRequestPost27(context) {
 var GHL_API_BASE17, GHL_LOCATION_ID12, ALLOWED_ORIGINS22;
 var init_partner_auth = __esm({
   "api/partner-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_rate_limit();
     GHL_API_BASE17 = "https://services.leadconnectorhq.com";
@@ -21622,7 +21675,7 @@ async function onRequestOptions28(context) {
     headers: corsHeaders23(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet23(context) {
+async function onRequestGet24(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders23(origin);
   headers5["Content-Type"] = "application/json";
@@ -21823,7 +21876,7 @@ async function onRequestGet23(context) {
 var GHL_API_BASE18, GHL_LOCATION_ID13, REFERRAL_SOURCE_FIELD_ID2, PARTNER_CONTACT_ID_FIELD_ID2, REFERRAL_TYPE_FIELD_ID2, REFERRAL_FEE_STATUS_FIELD_ID2, ALLOWED_ORIGINS23;
 var init_partner_data = __esm({
   "api/partner-data.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     GHL_API_BASE18 = "https://services.leadconnectorhq.com";
@@ -21838,7 +21891,7 @@ var init_partner_data = __esm({
     ];
     __name(corsHeaders23, "corsHeaders");
     __name(onRequestOptions28, "onRequestOptions");
-    __name(onRequestGet23, "onRequestGet");
+    __name(onRequestGet24, "onRequestGet");
   }
 });
 
@@ -21870,7 +21923,7 @@ async function onRequestOptions29(context) {
     headers: corsHeaders24(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet24(context) {
+async function onRequestGet25(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders24(origin);
   headers5["Content-Type"] = "application/json";
@@ -22024,7 +22077,7 @@ async function onRequestGet24(context) {
 var GHL_API_BASE19, GHL_LOCATION_ID14, REFERRAL_SOURCE_FIELD_ID3, PARTNER_CONTACT_ID_FIELD_ID3, ALLOWED_ORIGINS24;
 var init_partner_stats = __esm({
   "api/partner-stats.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     GHL_API_BASE19 = "https://services.leadconnectorhq.com";
@@ -22038,7 +22091,7 @@ var init_partner_stats = __esm({
     ];
     __name(corsHeaders24, "corsHeaders");
     __name(onRequestOptions29, "onRequestOptions");
-    __name(onRequestGet24, "onRequestGet");
+    __name(onRequestGet25, "onRequestGet");
   }
 });
 
@@ -22095,7 +22148,7 @@ async function onRequestOptions30(context) {
     headers: corsHeaders25(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet25(context) {
+async function onRequestGet26(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders25(origin);
   headers5["Content-Type"] = "application/json";
@@ -22178,7 +22231,7 @@ async function onRequestGet25(context) {
 var ALLOWED_ORIGINS25;
 var init_partner_verify = __esm({
   "api/partner-verify.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     ALLOWED_ORIGINS25 = [
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -22187,7 +22240,7 @@ var init_partner_verify = __esm({
     __name(verifyToken, "verifyToken");
     __name(createSessionToken, "createSessionToken");
     __name(onRequestOptions30, "onRequestOptions");
-    __name(onRequestGet25, "onRequestGet");
+    __name(onRequestGet26, "onRequestGet");
   }
 });
 
@@ -22416,7 +22469,7 @@ async function onRequestPost28(context) {
 var GHL_API_BASE20, GHL_LOCATION_ID15, ALLOWED_ORIGINS26;
 var init_portal_auth = __esm({
   "api/portal-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_rate_limit();
     init_ops_last_run();
@@ -22740,7 +22793,7 @@ async function onRequestPost29(context) {
 var allowedOrigin, PORTAL_FOLLOWUP_CALENDARS, SESSIONS_REMAINING_FIELD_ID;
 var init_portal_book = __esm({
   "api/portal-book.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -22885,7 +22938,7 @@ async function onRequestPost30(context) {
 var GHL_API_BASE21, ALLOWED_ORIGINS27;
 var init_portal_cancel = __esm({
   "api/portal-cancel.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     GHL_API_BASE21 = "https://services.leadconnectorhq.com";
@@ -22906,7 +22959,7 @@ function countsTowardLifetime(titleAndCalendar) {
 var NON_JOURNEY_PATTERN, NON_PACKAGE_PATTERN;
 var init_journey_classification = __esm({
   "lib/journey-classification.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     NON_JOURNEY_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation/i;
     NON_PACKAGE_PATTERN = /pain assessment|discovery call|15-minute|15 minute|consultation|partner|entrainment/i;
     __name(countsTowardLifetime, "countsTowardLifetime");
@@ -22941,7 +22994,7 @@ async function onRequestOptions34(context) {
     headers: corsHeaders28(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet26(context) {
+async function onRequestGet27(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders28(origin);
   headers5["Content-Type"] = "application/json";
@@ -23135,7 +23188,7 @@ async function onRequestGet26(context) {
 var GHL_API_BASE22, GHL_LOCATION_ID16, ALLOWED_ORIGINS28;
 var init_portal_data = __esm({
   "api/portal-data.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     init_session_ledger();
@@ -23152,7 +23205,7 @@ var init_portal_data = __esm({
     __name(corsHeaders28, "corsHeaders");
     __name(countLifetimeCompleted, "countLifetimeCompleted");
     __name(onRequestOptions34, "onRequestOptions");
-    __name(onRequestGet26, "onRequestGet");
+    __name(onRequestGet27, "onRequestGet");
   }
 });
 
@@ -23268,7 +23321,7 @@ async function onRequestPost31(context) {
 var allowedOrigin2, PAYMENT_LINK_URL, PAID_FOLLOWUP_CALENDARS;
 var init_portal_pay_followup = __esm({
   "api/portal-pay-followup.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     init_ghl_fields();
@@ -23315,7 +23368,7 @@ async function onRequestOptions36(context) {
     headers: corsHeaders29(context.request.headers.get("Origin") || "")
   });
 }
-async function onRequestGet27(context) {
+async function onRequestGet28(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders29(origin), "Content-Type": "application/json" };
   const { error, payload } = await requirePortalAuth(context, headers5);
@@ -23349,7 +23402,7 @@ async function onRequestPost32(context) {
 var ALLOWED_ORIGINS29;
 var init_portal_progress = __esm({
   "api/portal-progress.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_owned_access();
     ALLOWED_ORIGINS29 = [
       "https://www.amarimethod.com",
@@ -23359,7 +23412,7 @@ var init_portal_progress = __esm({
     __name(kvKey, "kvKey");
     __name(requirePortalAuth, "requirePortalAuth");
     __name(onRequestOptions36, "onRequestOptions");
-    __name(onRequestGet27, "onRequestGet");
+    __name(onRequestGet28, "onRequestGet");
     __name(onRequestPost32, "onRequestPost");
   }
 });
@@ -23585,7 +23638,7 @@ function renderInvoice(inv, patientName, patientPhone) {
 var PRACTICE;
 var init_reimbursement_template = __esm({
   "lib/reimbursement-template.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     PRACTICE = {
       name: "Amari Method",
       phone: "(628) 877-7673",
@@ -23628,7 +23681,7 @@ async function onRequestOptions37(context) {
     headers: corsHeaders30(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet28(context) {
+async function onRequestGet29(context) {
   const origin = context.request.headers.get("Origin") || "";
   const baseHeaders2 = corsHeaders30(origin);
   const jsonError = /* @__PURE__ */ __name((status, message) => new Response(JSON.stringify({ error: message }), {
@@ -23701,7 +23754,7 @@ async function onRequestGet28(context) {
 var GHL_API_BASE23, GHL_LOCATION_ID17, ALLOWED_ORIGINS30;
 var init_portal_reimbursement_packet = __esm({
   "api/portal-reimbursement-packet.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     init_reimbursement_template();
@@ -23714,7 +23767,7 @@ var init_portal_reimbursement_packet = __esm({
     __name(corsHeaders30, "corsHeaders");
     __name(isPaid, "isPaid");
     __name(onRequestOptions37, "onRequestOptions");
-    __name(onRequestGet28, "onRequestGet");
+    __name(onRequestGet29, "onRequestGet");
   }
 });
 
@@ -23737,7 +23790,7 @@ async function onRequestOptions38({ request: request2 }) {
   const origin = request2.headers.get("Origin") || "";
   return new Response(null, { status: 204, headers: cors4(origin) });
 }
-async function onRequestGet29(context) {
+async function onRequestGet30(context) {
   const { request: request2, env } = context;
   const origin = request2.headers.get("Origin") || "";
   const GHL_API_KEY = await getGhlToken(context);
@@ -23831,7 +23884,7 @@ async function onRequestGet29(context) {
 var allowedOrigin3;
 var init_portal_slots = __esm({
   "api/portal-slots.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_auth();
     init_look_busy();
@@ -23841,7 +23894,7 @@ var init_portal_slots = __esm({
     __name(cors4, "cors");
     __name(json8, "json");
     __name(onRequestOptions38, "onRequestOptions");
-    __name(onRequestGet29, "onRequestGet");
+    __name(onRequestGet30, "onRequestGet");
   }
 });
 
@@ -23902,7 +23955,7 @@ async function onRequestPost33(context) {
 var GHL_API_BASE24, REMINDER_PREFERENCE_FIELD_ID, VALID, ALLOWED_ORIGINS31;
 var init_portal_update_preference = __esm({
   "api/portal-update-preference.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_owned_access();
     GHL_API_BASE24 = "https://services.leadconnectorhq.com";
@@ -23981,7 +24034,7 @@ async function onRequestOptions40(context) {
     headers: corsHeaders32(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet30(context) {
+async function onRequestGet31(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders32(origin);
   headers5["Content-Type"] = "application/json";
@@ -24061,7 +24114,7 @@ async function onRequestGet30(context) {
 var ALLOWED_ORIGINS32;
 var init_portal_verify = __esm({
   "api/portal-verify.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_last_run();
     ALLOWED_ORIGINS32 = [
       "https://www.amarimethod.com",
@@ -24072,7 +24125,7 @@ var init_portal_verify = __esm({
     __name(verifyToken2, "verifyToken");
     __name(createSessionToken2, "createSessionToken");
     __name(onRequestOptions40, "onRequestOptions");
-    __name(onRequestGet30, "onRequestGet");
+    __name(onRequestGet31, "onRequestGet");
   }
 });
 
@@ -24314,7 +24367,7 @@ async function onRequestPost34(context) {
 var GHL_API_BASE25, GHL_LOCATION_ID18, REFERRAL_MILESTONE;
 var init_referral_complete = __esm({
   "api/referral-complete.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_auth();
     GHL_API_BASE25 = "https://services.leadconnectorhq.com";
@@ -24326,6 +24379,89 @@ var init_referral_complete = __esm({
     __name(addContactTag, "addContactTag");
     __name(createGhlCoupon, "createGhlCoupon");
     __name(onRequestPost34, "onRequestPost");
+  }
+});
+
+// lib/owned-quiz-intake-forward.js
+function ownedQuizIntakePayload(submission, { idempotencyKey, audience, resultsSummary }) {
+  const payload = Object.fromEntries(PAYLOAD_FIELDS.map((key) => [key, submission[key]]));
+  return {
+    idempotencyKey,
+    ...payload,
+    audience,
+    resultsSummary
+  };
+}
+async function forwardOwnedQuizIntake(env, payload, {
+  sourceMode = OWNED_QUIZ_BRIDGE_SOURCE_MODE,
+  providerQuizHistory
+} = {}) {
+  if (sourceMode === "shadow") return { ok: true, skipped: "source_shadow" };
+  if (sourceMode !== "active") return { ok: false, error: "invalid_source_mode" };
+  if (env?.OWNED_QUIZ_BRIDGE_RELEASE !== "approved") {
+    return { ok: false, error: "release_not_approved" };
+  }
+  if (!env?.CRM_MIRROR?.fetch || !env?.WORKER_AUTH_SECRET) {
+    return { ok: false, error: "owned_intake_unconfigured" };
+  }
+  if (!["present", "absent"].includes(providerQuizHistory)) {
+    return { ok: false, error: "provider_quiz_history_unverified" };
+  }
+  let response3;
+  try {
+    response3 = await env.CRM_MIRROR.fetch(new Request(INTAKE_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${env.WORKER_AUTH_SECRET}`,
+        "Content-Type": "application/json",
+        "X-Amari-Provider-Quiz-History": providerQuizHistory
+      },
+      body: JSON.stringify(payload)
+    }));
+  } catch {
+    return { ok: false, error: "owned_intake_unavailable" };
+  }
+  if (!response3.ok) {
+    return { ok: false, error: "owned_intake_rejected", status: response3.status };
+  }
+  const result = await response3.json().catch(() => null);
+  if (!result?.success || typeof result.contactId !== "string" || !/^[a-f0-9]{64}$/.test(String(result.payloadSha256 || ""))) {
+    return { ok: false, error: "owned_intake_invalid_acknowledgement" };
+  }
+  return { ok: true, deduped: result.deduped === true };
+}
+var OWNED_QUIZ_BRIDGE_SOURCE_MODE, INTAKE_URL, PAYLOAD_FIELDS;
+var init_owned_quiz_intake_forward = __esm({
+  "lib/owned-quiz-intake-forward.js"() {
+    init_functionsRoutes_0_9462741500794678();
+    OWNED_QUIZ_BRIDGE_SOURCE_MODE = "active";
+    INTAKE_URL = "https://crm-mirror.internal/contacts/quiz-intake";
+    PAYLOAD_FIELDS = Object.freeze([
+      "firstName",
+      "lastName",
+      "email",
+      "phone",
+      "patternSignature",
+      "recoveryPotentialScore",
+      "primaryPainLocation",
+      "painSeverity",
+      "painDuration",
+      "treatmentsTried",
+      "painTrigger",
+      "additionalPainAreas",
+      "painIntensity",
+      "painTiming",
+      "painType",
+      "aggravatingActivities",
+      "dailyImpact",
+      "treatmentResults",
+      "healthConditions",
+      "scores",
+      "insights",
+      "referralSource"
+    ]);
+    __name(ownedQuizIntakePayload, "ownedQuizIntakePayload");
+    __name(forwardOwnedQuizIntake, "forwardOwnedQuizIntake");
   }
 });
 
@@ -24368,6 +24504,83 @@ async function submissionKey(body) {
   const bytes = new TextEncoder().encode(JSON.stringify(body));
   const digest2 = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest2), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+function providerContact(payload) {
+  return payload?.contact || (Array.isArray(payload?.contacts) ? payload.contacts[0] : null) || null;
+}
+function populatedFieldValue(field) {
+  const value = field?.value ?? field?.fieldValue ?? field?.field_value;
+  return value != null && String(value).trim() !== "";
+}
+function hasDurableQuizHistory(contact) {
+  const tags = Array.isArray(contact?.tags) ? contact.tags : [];
+  if (tags.some((tag) => String(tag?.name ?? tag).trim().toLowerCase() === "quiz submitted")) return true;
+  if (String(contact?.source || "").trim().toLowerCase().startsWith("pain assessment quiz")) return true;
+  const fields = Array.isArray(contact?.customFields) ? contact.customFields : [];
+  return fields.some((field) => QUIZ_HISTORY_FIELD_IDS.has(String(field?.id || field?.fieldId || "")) && populatedFieldValue(field));
+}
+async function readProviderQuizHistory(email2, apiKey, request2 = fetch) {
+  const duplicateUrl = `${GHL_API_BASE26}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID19}&email=${encodeURIComponent(email2)}`;
+  try {
+    const duplicate = await request2(duplicateUrl, { headers: ghlHeaders(apiKey) });
+    if (duplicate.ok) {
+      const duplicatePayload = await duplicate.json();
+      const summary = providerContact(duplicatePayload);
+      if (summary) {
+        if (!summary.id) return "unknown";
+        const detail2 = await request2(`${GHL_API_BASE26}/contacts/${encodeURIComponent(summary.id)}`, {
+          headers: ghlHeaders(apiKey)
+        });
+        if (!detail2.ok) return "unknown";
+        const contact2 = providerContact(await detail2.json());
+        if (!contact2 || String(contact2.email || "").trim().toLowerCase() !== email2) return "unknown";
+        return hasDurableQuizHistory(contact2) ? "present" : "absent";
+      }
+      if (Object.hasOwn(duplicatePayload || {}, "contact") && duplicatePayload.contact === null) {
+        return "absent";
+      }
+    }
+    const search = await request2(`${GHL_API_BASE26}/contacts/search`, {
+      method: "POST",
+      headers: ghlHeaders(apiKey),
+      body: JSON.stringify({
+        locationId: GHL_LOCATION_ID19,
+        pageLimit: 2,
+        filters: [{ field: "email", operator: "eq", value: email2 }]
+      })
+    });
+    if (!search.ok) return "unknown";
+    const searchPayload = await search.json();
+    if (!Array.isArray(searchPayload?.contacts)) return "unknown";
+    const contacts = searchPayload.contacts;
+    if (contacts.length === 0) return "absent";
+    if (contacts.length !== 1 || !contacts[0]?.id) return "unknown";
+    const detail = await request2(`${GHL_API_BASE26}/contacts/${encodeURIComponent(contacts[0].id)}`, {
+      headers: ghlHeaders(apiKey)
+    });
+    if (!detail.ok) return "unknown";
+    const contact = providerContact(await detail.json());
+    if (!contact || String(contact.email || "").trim().toLowerCase() !== email2) return "unknown";
+    return hasDurableQuizHistory(contact) ? "present" : "absent";
+  } catch (error) {
+    console.error("[send-to-ghl] Provider Quiz history read failed:", error);
+    return "unknown";
+  }
+}
+async function releaseSubmissionProtection(kv, key) {
+  if (!kv || !key) return;
+  try {
+    await kv.delete(key);
+  } catch (error) {
+    console.error("[send-to-ghl] Failed to release submission protection:", error);
+  }
+}
+async function completeSubmissionProtection(kv, key) {
+  try {
+    await kv.put(key, "completed", { expirationTtl: IDEMPOTENCY_TTL_SECONDS });
+  } catch (error) {
+    console.error("[send-to-ghl] Failed to finalize submission protection:", error);
+  }
 }
 function normalizeQuizSubmission(body) {
   if (!body || typeof body !== "object" || Array.isArray(body)) return null;
@@ -24465,6 +24678,7 @@ async function onRequestPost35(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders33(origin);
   headers5["Content-Type"] = "application/json";
+  let submissionProtection = null;
   try {
     if (!isAllowedOrigin4(origin)) {
       return json9(headers5, { error: "Submission must come from the Amari quiz." }, 403);
@@ -24489,8 +24703,10 @@ async function onRequestPost35(context) {
       console.error("[send-to-ghl] PORTAL_KV is not configured");
       return json9(headers5, { error: "Submission protection unavailable." }, 422);
     }
+    let ownedIdempotencyKey;
     try {
-      const idempotencyKey = `quiz_submission:${await submissionKey(body)}`;
+      ownedIdempotencyKey = await submissionKey(body);
+      const idempotencyKey = `quiz_submission:${ownedIdempotencyKey}`;
       if (await kv.get(idempotencyKey)) {
         return json9(headers5, { success: true, duplicate: true }, 200);
       }
@@ -24502,17 +24718,14 @@ async function onRequestPost35(context) {
       }
       await kv.put(rateKey, String(currentCount + 1), { expirationTtl: RATE_LIMIT_TTL_SECONDS });
       await kv.put(idempotencyKey, "processing", { expirationTtl: IDEMPOTENCY_TTL_SECONDS });
+      submissionProtection = { kv, key: idempotencyKey };
     } catch (err) {
       console.error("[send-to-ghl] KV protection failed:", err);
       return json9(headers5, { error: "Submission protection unavailable." }, 422);
     }
     if (context.env.QUIZ_SUBMISSION_MODE === "verify_only") {
+      await completeSubmissionProtection(submissionProtection.kv, submissionProtection.key);
       return json9(headers5, { success: true, verificationOnly: true }, 200);
-    }
-    const GHL_API_KEY = await getGhlToken(context);
-    if (!GHL_API_KEY) {
-      console.error("[send-to-ghl] GHL_API_KEY not configured");
-      return json9(headers5, { error: "Server configuration error" }, 500);
     }
     const tags = ["quiz submitted"];
     const severity = body.painSeverity;
@@ -24539,6 +24752,37 @@ async function onRequestPost35(context) {
       audience = miles <= 75 ? "bay-area" : "remote";
       tags.push(`audience-${audience}`);
     }
+    let GHL_API_KEY;
+    try {
+      GHL_API_KEY = await getGhlToken(context);
+    } catch (error) {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
+      console.error("[send-to-ghl] GHL credential unavailable:", error);
+      return json9(headers5, { error: "Server configuration error" }, 500);
+    }
+    const providerQuizHistory = await readProviderQuizHistory(body.email, GHL_API_KEY);
+    if (providerQuizHistory === "unknown") {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
+      return json9(headers5, { error: "We could not verify your Quiz history. Please try again." }, 422);
+    }
+    const resultsSummary = buildResultsSummary(body);
+    const ownedCapture = await forwardOwnedQuizIntake(
+      context.env,
+      ownedQuizIntakePayload(body, {
+        idempotencyKey: ownedIdempotencyKey,
+        audience,
+        resultsSummary
+      }),
+      { providerQuizHistory }
+    );
+    if (!ownedCapture.ok) {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
+      console.error(`[send-to-ghl] Owned intake unavailable: ${ownedCapture.error}`);
+      return json9(headers5, { error: "Owned contact capture unavailable." }, 422);
+    }
     const referralSource = body.referralSource;
     if (referralSource) {
       tags.push(`referred-by-${referralSource.toLowerCase()}`);
@@ -24560,6 +24804,8 @@ async function onRequestPost35(context) {
     if (!upsertResponse.ok) {
       const errorText = await upsertResponse.text();
       console.error(`[send-to-ghl] GHL upsert error: ${upsertResponse.status} ${errorText}`);
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
       return new Response(
         JSON.stringify({ error: "Failed to save contact" }),
         { status: 422, headers: headers5 }
@@ -24568,10 +24814,6 @@ async function onRequestPost35(context) {
     const upsertData = await upsertResponse.json();
     const contactId = upsertData.contact?.id;
     if (contactId) {
-      emitNurtureEvent(context, { kind: "quiz.submitted", contactId });
-    }
-    if (contactId) {
-      const resultsSummary = buildResultsSummary(body);
       const customFields = [
         // Existing fields
         { id: FIELD_IDS4.painPatternSignature, field_value: String(body.patternSignature || "Unknown") },
@@ -24607,11 +24849,16 @@ async function onRequestPost35(context) {
         console.log(`[send-to-ghl] Custom fields updated for contact: ${contactId}`);
       }
     }
+    await completeSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+    submissionProtection = null;
     return new Response(
       JSON.stringify({ success: true, audience }),
       { status: 200, headers: headers5 }
     );
   } catch (err) {
+    if (submissionProtection) {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+    }
     console.error("[send-to-ghl] Unexpected error:", err);
     return new Response(
       JSON.stringify({ error: "Internal server error" }),
@@ -24619,12 +24866,12 @@ async function onRequestPost35(context) {
     );
   }
 }
-var GHL_API_BASE26, GHL_LOCATION_ID19, FIELD_IDS4, ALLOWED_ORIGINS33, TEXT_LIMITS, REFERRAL_SOURCE_RE, TURNSTILE_VERIFY_URL, RATE_LIMIT, RATE_LIMIT_TTL_SECONDS, IDEMPOTENCY_TTL_SECONDS;
+var GHL_API_BASE26, GHL_LOCATION_ID19, FIELD_IDS4, ALLOWED_ORIGINS33, TEXT_LIMITS, REFERRAL_SOURCE_RE, TURNSTILE_VERIFY_URL, RATE_LIMIT, RATE_LIMIT_TTL_SECONDS, IDEMPOTENCY_TTL_SECONDS, QUIZ_HISTORY_FIELD_IDS;
 var init_send_to_ghl = __esm({
   "api/send-to-ghl.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
-    init_engine_forward();
+    init_owned_quiz_intake_forward();
     GHL_API_BASE26 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID19 = "7pIO7FHVAyBT1jKGhfQM";
     FIELD_IDS4 = {
@@ -24674,12 +24921,22 @@ var init_send_to_ghl = __esm({
     RATE_LIMIT = 10;
     RATE_LIMIT_TTL_SECONDS = 3600;
     IDEMPOTENCY_TTL_SECONDS = 24 * 3600;
+    QUIZ_HISTORY_FIELD_IDS = /* @__PURE__ */ new Set([
+      FIELD_IDS4.painPatternSignature,
+      FIELD_IDS4.quizResultsSummary
+    ]);
     __name(corsHeaders33, "corsHeaders");
     __name(json9, "json");
     __name(isAllowedOrigin4, "isAllowedOrigin");
     __name(cleanText2, "cleanText");
     __name(verifyTurnstile, "verifyTurnstile");
     __name(submissionKey, "submissionKey");
+    __name(providerContact, "providerContact");
+    __name(populatedFieldValue, "populatedFieldValue");
+    __name(hasDurableQuizHistory, "hasDurableQuizHistory");
+    __name(readProviderQuizHistory, "readProviderQuizHistory");
+    __name(releaseSubmissionProtection, "releaseSubmissionProtection");
+    __name(completeSubmissionProtection, "completeSubmissionProtection");
     __name(normalizeQuizSubmission, "normalizeQuizSubmission");
     __name(buildResultsSummary, "buildResultsSummary");
     __name(onRequestOptions41, "onRequestOptions");
@@ -24802,7 +25059,7 @@ async function onRequestPost36(context) {
 var GHL_API_BASE27, GHL_LOCATION_ID20, STUDY5, STUDY_NAME_FIELD_ID5, ALLOWED_ORIGINS34;
 var init_shoulder_study_signup = __esm({
   "api/shoulder-study-signup.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_studies();
     init_study_consent();
@@ -24837,7 +25094,7 @@ async function read(env) {
 async function onRequestOptions43(context) {
   return new Response(null, { status: 204, headers: headers(context.request) });
 }
-async function onRequestGet31(context) {
+async function onRequestGet32(context) {
   const out = headers(context.request);
   const auth = await requireStaffAuth(context, out);
   if (auth.error) return auth.error;
@@ -24875,7 +25132,7 @@ async function onRequestPost37(context) {
 var KEY, MAX_TEXT, MAX_EVENTS2;
 var init_staff_amari_description_lab = __esm({
   "api/staff-amari-description-lab.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     KEY = "staff:amari-description-lab:v1";
     MAX_TEXT = 1600;
@@ -24884,7 +25141,7 @@ var init_staff_amari_description_lab = __esm({
     __name(clean7, "clean");
     __name(read, "read");
     __name(onRequestOptions43, "onRequestOptions");
-    __name(onRequestGet31, "onRequestGet");
+    __name(onRequestGet32, "onRequestGet");
     __name(onRequestPost37, "onRequestPost");
   }
 });
@@ -25021,7 +25278,7 @@ async function amariMailGrantReadiness(env, actor) {
 var encoder2, AMARI_MAIL_CALLBACK_URL, AMARI_MAIL_SCOPES, AMARI_MAIL_STATE_TTL_SECONDS, STAFF_MAILBOXES;
 var init_amari_mail_oauth = __esm({
   "lib/amari-mail-oauth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     encoder2 = new TextEncoder();
     AMARI_MAIL_CALLBACK_URL = "https://www.amarimethod.com/api/staff-amari-mail-callback";
     AMARI_MAIL_SCOPES = Object.freeze([
@@ -25054,7 +25311,7 @@ function json10(data, status, headers5) {
 async function onRequestOptions44(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet32(context) {
+async function onRequestGet33(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error, payload } = await requireStaffAuth(context, headers5);
@@ -25110,14 +25367,14 @@ async function onRequestPost38(context) {
 var AUTH_URL2, ALLOWED_ORIGINS35;
 var init_staff_amari_mail_auth = __esm({
   "api/staff-amari-mail-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_amari_mail_oauth();
     AUTH_URL2 = "https://accounts.google.com/o/oauth2/v2/auth";
     ALLOWED_ORIGINS35 = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(json10, "json");
     __name(onRequestOptions44, "onRequestOptions");
-    __name(onRequestGet32, "onRequestGet");
+    __name(onRequestGet33, "onRequestGet");
     __name(onRequestPost38, "onRequestPost");
   }
 });
@@ -25134,7 +25391,7 @@ function hasVerifiedSendAs(payload, requiredSender) {
   const accepted = new Set((payload?.sendAs || []).filter((identity2) => identity2?.isPrimary || String(identity2?.verificationStatus || "").toLowerCase() === "accepted").map((identity2) => String(identity2.sendAsEmail || "").trim().toLowerCase()));
   return accepted.has(requiredSender);
 }
-async function onRequestGet33(context) {
+async function onRequestGet34(context) {
   const url = new URL(context.request.url);
   const state = url.searchParams.get("state") || "";
   if (isStaffCalendarOAuthState(state)) {
@@ -25232,7 +25489,7 @@ async function onRequestGet33(context) {
 var TOKEN_URL2, PROFILE_URL, SEND_AS_URL, SUCCESS_URL2, FAILURE_URL2;
 var init_staff_amari_mail_callback = __esm({
   "api/staff-amari-mail-callback.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_amari_mail_oauth();
     init_staff_calendar_oauth();
     TOKEN_URL2 = "https://oauth2.googleapis.com/token";
@@ -25243,7 +25500,7 @@ var init_staff_amari_mail_callback = __esm({
     __name(redirect2, "redirect");
     __name(json11, "json");
     __name(hasVerifiedSendAs, "hasVerifiedSendAs");
-    __name(onRequestGet33, "onRequestGet");
+    __name(onRequestGet34, "onRequestGet");
   }
 });
 
@@ -25254,7 +25511,7 @@ async function onRequestOptions45(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS2)
   });
 }
-async function onRequestGet34(context) {
+async function onRequestGet35(context) {
   const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS2),
     "Content-Type": "application/json",
@@ -25286,13 +25543,13 @@ async function onRequestGet34(context) {
 var WORKER_URL3, TIMEOUT_MS4, METHODS2;
 var init_staff_appointment_readiness = __esm({
   "api/staff-appointment-readiness.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL3 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments/readiness";
     TIMEOUT_MS4 = 1e4;
     METHODS2 = "GET, OPTIONS";
     __name(onRequestOptions45, "onRequestOptions");
-    __name(onRequestGet34, "onRequestGet");
+    __name(onRequestGet35, "onRequestGet");
   }
 });
 
@@ -25326,7 +25583,7 @@ function flattenSlots(data) {
 var STAFF_BOOK_TYPES;
 var init_staff_book_calendars = __esm({
   "lib/staff-book-calendars.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     STAFF_BOOK_TYPES = {
       assessment: {
         calendarId: "EM6vB2mq7EAdGCbUb3j1",
@@ -25695,7 +25952,7 @@ async function onRequestPost39(context) {
 var METHODS3, FORBIDDEN_FIELDS;
 var init_staff_appointments = __esm({
   "api/staff-appointments.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_datetime();
     init_booking_slot_policy();
@@ -25732,7 +25989,7 @@ async function onRequestOptions47(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet35(context) {
+async function onRequestGet36(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -25800,11 +26057,11 @@ async function onRequestGet35(context) {
 }
 var init_staff_attestation = __esm({
   "api/staff-attestation.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
     __name(onRequestOptions47, "onRequestOptions");
-    __name(onRequestGet35, "onRequestGet");
+    __name(onRequestGet36, "onRequestGet");
   }
 });
 
@@ -25934,7 +26191,7 @@ async function onRequestPost40(context) {
 var ALLOWED_ORIGINS36;
 var init_staff_auth = __esm({
   "api/staff-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_rate_limit();
     init_endpoint_guards();
     init_ops_last_run();
@@ -25989,7 +26246,7 @@ async function onRequestPost41(context) {
 var WORKER_URL4, WORKER_TIMEOUT_MS;
 var init_staff_automation_watch_access = __esm({
   "api/staff-automation-watch-access.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL4 = "https://reminder-engine.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS = 15e3;
@@ -26098,7 +26355,7 @@ function executableFlow(workflow) {
 var MESSAGE_ACTIONS, CONTROL_ACTIONS, ACTIONS, CHANNELS2, AUDIENCES, TIMING;
 var init_workflow_definition = __esm({
   "../reminder-engine-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_assessment_paid_booking_workflow();
     __name(deepFreeze2, "deepFreeze");
     __name(requireText2, "requireText");
@@ -26118,7 +26375,7 @@ var init_workflow_definition = __esm({
 var INITIAL_IN_PERSON_WORKFLOW, INITIAL_IN_PERSON;
 var init_initial_in_person_workflow = __esm({
   "../reminder-engine-worker/src/initial-in-person-workflow.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_workflow_definition();
     INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
       id: "initial-in-person",
@@ -26151,7 +26408,7 @@ var init_initial_in_person_workflow = __esm({
 var INITIAL_VIRTUAL_WORKFLOW, INITIAL_VIRTUAL;
 var init_initial_virtual_workflow = __esm({
   "../reminder-engine-worker/src/initial-virtual-workflow.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_workflow_definition();
     INITIAL_VIRTUAL_WORKFLOW = defineWorkflow({
       id: "initial-virtual",
@@ -26187,7 +26444,7 @@ var init_initial_virtual_workflow = __esm({
 var NO_SHOW_RECOVERY_WORKFLOW, NO_SHOW_RECOVERY_RELEASE_WORKFLOW, NO_SHOW_RECOVERY;
 var init_no_show_recovery_workflow = __esm({
   "../reminder-engine-worker/src/no-show-recovery-workflow.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_workflow_definition();
     NO_SHOW_RECOVERY_WORKFLOW = defineWorkflow({
       id: "no-show-recovery",
@@ -26315,7 +26572,7 @@ var init_no_show_recovery_workflow = __esm({
 var PARTNER_INITIAL_IN_PERSON_WORKFLOW, PARTNER_INITIAL_IN_PERSON;
 var init_partner_initial_in_person_workflow = __esm({
   "../reminder-engine-worker/src/partner-initial-in-person-workflow.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_workflow_definition();
     PARTNER_INITIAL_IN_PERSON_WORKFLOW = defineWorkflow({
       id: "partner-initial-in-person",
@@ -26427,7 +26684,7 @@ var init_partner_initial_in_person_workflow = __esm({
 var DISCOVERY_CALL, ASSESSMENT_NO_SHOW, FLOWS;
 var init_config = __esm({
   "../reminder-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_initial_in_person_workflow();
     init_initial_in_person_workflow();
     init_initial_virtual_workflow();
@@ -26487,7 +26744,7 @@ var init_config = __esm({
 var DISCOVERY, DISCOVERY_AMBASSADOR, INITIAL_IN_PERSON2, INITIAL_VIRTUAL2, FOLLOWUP_IN_PERSON_PKG, FOLLOWUP_VIRTUAL_PKG, FOLLOWUP_IN_PERSON, FOLLOWUP_VIRTUAL, ENTRAINMENT, ENTRAINMENT_20, SINGLE_SESSION_50, PRODUCT_4_SESSION, PRODUCT_8_SESSION, PRODUCT_UPGRADE_4, PRODUCT_UPGRADE_8, PRODUCT_6_WEEK_PRACTICE, PRODUCT_12_WEEK_PRACTICE, TAG_WORKFLOW_2, TAG_WORKFLOW_3, deepFreeze3, FLOW_1_QUIZ, FLOW_2_POST_DISCOVERY, FLOW_3_POST_INITIAL, SEQUENCES;
 var init_config2 = __esm({
   "../nurture-engine-worker/src/config.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     DISCOVERY = "USgPsktqRcuomdUgpShL";
     DISCOVERY_AMBASSADOR = "aVE54Qf4lrbYTB0zFqXy";
     INITIAL_IN_PERSON2 = "G7OAnnJuFbMF6nQSlZVQ";
@@ -26678,7 +26935,7 @@ function flow3MessagePreview() {
 var deepFreeze4, email, FLOW_1_SPRING_STEP_BODY, FLOW_1_SKEPTICAL_BODY, FLOW_1_WHEN_READY_BODY, FLOW_1_QUIZ_TEMPLATES, FLOW_2_POST_DISCOVERY_TEMPLATES, FLOW_3_POST_INITIAL_TEMPLATES, NURTURE_TEMPLATES;
 var init_templates = __esm({
   "../nurture-engine-worker/src/templates.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     deepFreeze4 = /* @__PURE__ */ __name((value) => {
       if (!value || typeof value !== "object" || Object.isFrozen(value)) return value;
       for (const nested of Object.values(value)) deepFreeze4(nested);
@@ -26754,7 +27011,7 @@ P.S. Over the next few days, I'll share more about why your pattern keeps coming
       "f1-email-2": email(
         "flow-1-quiz",
         "Why your {{contact.primary_pain_location}} pain keeps coming back",
-        "Where it hurts isn't why it hurts.",
+        "It's not because you're doing something wrong.",
         `Hi {{contact.first_name}},
 If your {{contact.primary_pain_location}} pain keeps showing up no matter what you try, there's an important reason.
 What you've tried didn't fail you. It was aimed at the symptom, not the pattern behind it.
@@ -26769,7 +27026,7 @@ Garrett`
       "f1-email-2-chronic": email(
         "flow-1-quiz",
         "Why your chronic pain keeps coming back",
-        "Where it hurts isn't why it hurts.",
+        "It's not because you're doing something wrong.",
         `Hi {{contact.first_name}},
 If your chronic pain keeps showing up no matter what you try, there's an important reason.
 What you've tried didn't fail you. It was aimed at the symptom, not the pattern behind it.
@@ -26981,7 +27238,7 @@ Garrett`
 var COPY, AGENDA_COPY, DEFAULT_FIRST_MINUTES, SECOND_OFFSET_MS, PREP_LEAD_MS, SEND_GRACE_MS;
 var init_schedule = __esm({
   "../morning-sms-worker/src/schedule.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     COPY = Object.freeze({
       prepare: "Good morning, time to prepare for the day.",
       meeting: "Staff meeting"
@@ -27051,7 +27308,7 @@ function defineMorningSmsWorkflow(input) {
 var REQUIRED_HANDLERS, EXECUTABLE_ORDER;
 var init_workflow_definition2 = __esm({
   "../morning-sms-worker/src/workflow-definition.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     REQUIRED_HANDLERS = Object.freeze([
       "scheduled_event",
       "read_todays_appointments",
@@ -27080,7 +27337,7 @@ var init_workflow_definition2 = __esm({
 var MORNING_SMS_DEFINITION;
 var init_config3 = __esm({
   "../morning-sms-worker/src/config.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_schedule();
     init_workflow_definition2();
     MORNING_SMS_DEFINITION = Object.freeze(defineMorningSmsWorkflow({
@@ -27286,7 +27543,7 @@ function eventEvidence(event2, { terminalOutcome = null } = {}) {
 var REGISTRY_VERSION, OWNED_ONLY_GAP, PRE_REGISTRY_HISTORY_GAP, DELIVERY_GAP, DB_UNAVAILABLE_GAP, INITIAL_IN_PERSON_MESSAGE_PREVIEW, INITIAL_VIRTUAL_MESSAGE_PREVIEW, ASSESSMENT_NO_SHOW_MESSAGE_PREVIEW, FLOW_3_POST_INITIAL_MESSAGE_PREVIEW, PARTNER_INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_IN_PERSON_CUTOVER_READINESS, INITIAL_VIRTUAL_CUTOVER_READINESS, ASSESSMENT_NO_SHOW_CUTOVER_READINESS, NO_SHOW_RECOVERY_CUTOVER_READINESS, NURTURE_CUTOVER_READINESS, DEFINITIONS;
 var init_automation_registry = __esm({
   "lib/automation-registry.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_config();
     init_config2();
     init_templates();
@@ -27475,7 +27732,9 @@ var init_automation_registry = __esm({
           Object.freeze({ code: "owned_quiz_shadow_handoff_built", status: "proven", label: "Hand owned intake to native Flow 1", detail: "Quiz capture atomically creates a digest-bound outbox. The five-minute CRM sweep leases it through the authenticated NURTURE service binding and requires an exact Flow 1 acknowledgement; retries and manual review are durable, and every sequence remains shadow-only." }),
           Object.freeze({ code: "owned_quiz_retention_plan_built", status: "proven", label: "Inventory every retained quiz copy", detail: "A bounded cross-store dry run identifies expired source evidence, CRM projections, every current contact reference, and the Flow 1 enrollment, step, and immutable-event copies. Staff receives aggregate counts and a plan digest only." }),
           Object.freeze({ code: "retention_execution_policy_pending", status: "blocked", label: "Approve the privacy-safe deletion policy", detail: "No purge route or scheduler exists. The legal rule for immutable automation evidence, shared contact identity, and redaction versus deletion must be approved before any destructive execution path is built." }),
-          Object.freeze({ code: "public_quiz_bridge_pending", status: "blocked", label: "Connect the public quiz to owned intake", detail: "The sensitive server-to-server Pages payload seam is not connected or deployed; GHL remains the live intake owner until that exact boundary is separately reviewed." }),
+          Object.freeze({ code: "public_quiz_bridge_built", status: "proven", label: "Build the private public-quiz handoff", detail: "The public Pages boundary maps only the normalized quiz contract into the owned CRM through an authenticated same-account service binding, requires owned acknowledgement before the compatibility write, and cannot enroll by provider contact ID." }),
+          Object.freeze({ code: "public_quiz_bridge_release_controls_built", status: "proven", label: "Require private release controls", detail: "Reviewed source permits owned capture only when the independent release flag, private CRM service binding and Worker authentication are all present. A missing control fails before the GHL compatibility write." }),
+          Object.freeze({ code: "public_quiz_bridge_runtime_proof_pending", status: "review", label: "Prove ordinary dual capture", detail: "After the guarded Pages configuration and deployment, the next ordinary Quiz submission must be read back in owned CRM and GHL. GHL remains the live compatibility intake and nurture owner during this observation stage." }),
           Object.freeze({ code: "owned_contact_reads_built", status: "proven", label: "Read personalization from the owned CRM", detail: "Branches and copy use stable primaryPainLocation, painPatternSignature, and painDuration keys; the adapter maps transition provider attributes only at the boundary." }),
           Object.freeze({ code: "owned_template_renderer_built", status: "proven", label: "Render exact copy from Amari", detail: "All 13 current branch variants live in an immutable allowlisted catalog that rejects unknown templates and missing required merge values." }),
           Object.freeze({ code: "owned_delivery_built", status: "proven", label: "Owned submission boundary built", detail: "The server-owned Garrett Google Workspace adapter sits behind source-level shadow mode, an exact release flag, and a known-sequence JSON allowlist. An atomic pending-to-dispatching claim prevents concurrent duplicate submission and GHL is never a fallback." }),
@@ -27600,6 +27859,13 @@ function familyForDefinition(engine, key) {
   const family = FAMILIES.find((item) => item.ownedDefinitionIds.includes(id3));
   return family ? clone2(family) : null;
 }
+function familyForRuntimeFlow(engine, key) {
+  const definitionFamily = familyForDefinition(engine, key);
+  if (definitionFamily) return definitionFamily;
+  if (engine !== "reminder") return null;
+  const matches = FAMILIES.filter((item) => item.runtimeFlowKeys.includes(key));
+  return matches.length === 1 ? clone2(matches[0]) : null;
+}
 function automationInventorySummary() {
   const records = FAMILIES.flatMap((family) => family.sourceRecords);
   return {
@@ -27631,7 +27897,7 @@ function familyRegistryEvidence() {
 var AUTOMATION_INVENTORY_AS_OF, AUTOMATION_INVENTORY_SOURCE, record2, p, d, ASSESSMENT_CUTOVER_TREE, ASSESSMENT_PAID_BOOKING_CUTOVER_TREE, RAW_FAMILIES, OWNED_DEFINITIONS, FAMILIES;
 var init_automation_families = __esm({
   "lib/automation-families.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_automation_registry();
     AUTOMATION_INVENTORY_AS_OF = "2026-08-07";
     AUTOMATION_INVENTORY_SOURCE = "GHL-WORKFLOWS-MASTER.md";
@@ -28053,6 +28319,7 @@ var init_automation_families = __esm({
     __name(automationFamilies, "automationFamilies");
     __name(automationFamily, "automationFamily");
     __name(familyForDefinition, "familyForDefinition");
+    __name(familyForRuntimeFlow, "familyForRuntimeFlow");
     __name(automationInventorySummary, "automationInventorySummary");
     __name(familyRegistryEvidence, "familyRegistryEvidence");
   }
@@ -28060,7 +28327,7 @@ var init_automation_families = __esm({
 
 // lib/automation-views.js
 function familyReference(engine, key) {
-  const family = familyForDefinition(engine, key);
+  const family = familyForRuntimeFlow(engine, key);
   return family ? { key: family.key, name: family.name } : null;
 }
 function parseDetail(raw) {
@@ -28369,7 +28636,7 @@ async function failuresView(db, { sinceMs = 0, limit = 100 } = {}) {
 }
 var init_automation_views = __esm({
   "lib/automation-views.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_automation_registry();
     init_automation_families();
     __name(familyReference, "familyReference");
@@ -28403,7 +28670,7 @@ async function sha256Hex(value) {
 var FOLLOW_UP_FAMILY, NO_SHOW_MISSED_COUNT_FAMILY, FOLLOW_UP_RELIABILITY_ROUTE, NO_SHOW_COUNTER_RELIABILITY_ROUTE, RAW_RETENTION_MS, NORMALIZED_RETENTION_MS;
 var init_reliability_contract = __esm({
   "lib/reliability-contract.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     FOLLOW_UP_FAMILY = "follow-up-session-reminders";
     NO_SHOW_MISSED_COUNT_FAMILY = "no-show-missed-count";
     FOLLOW_UP_RELIABILITY_ROUTE = Object.freeze({
@@ -28584,7 +28851,7 @@ async function readReliabilitySchemaAuthority(db) {
 var RELIABILITY_SCHEMA_V1, RELIABILITY_SCHEMA_V1_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_LOCAL_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_LINEAGE_CANDIDATE, RELIABILITY_SCHEMA_V2_PRODUCTION_AUTHORITY, V2_ONLY_OBJECTS, V2_ADDITIVE_TABLES;
 var init_reliability_schema_authority = __esm({
   "lib/reliability-schema-authority.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_reliability_contract();
     RELIABILITY_SCHEMA_V1 = Object.freeze({
       version: 1,
@@ -29349,7 +29616,7 @@ async function recordEvidenceAccess(db, { actor, family, action, sourceEventId =
 var FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION, FOLLOW_UP_RECONCILIATION_RUN_KIND, FOLLOW_UP_RECONCILIATION_EVIDENCE_SCOPE, FOLLOW_UP_RECONCILIATION_MAX_WINDOW_MS, FOLLOW_UP_RECONCILIATION_MAX_COMPLETION_LAG_MS, FOLLOW_UP_RECONCILIATION_MAX_RUN_MS, FOLLOW_UP_RECONCILIATION_MAX_DETAIL_BYTES, FOLLOW_UP_RECONCILIATION_MAX_ID_ARRAY_ITEMS, RECONCILIATION_SOURCE_VERSION_RE, RECONCILIATION_RUNTIME_VERSION_RE, RELEASE_MANIFEST_ID_RE, DEPLOYMENT_ATTESTATION_ID_RE, GHL_APPOINTMENT_EVENTS_WORKFLOW_ID, GHL_SOURCE_LIMITATION, RECONCILIATION_COMPONENT_KEYS, DETAIL_KEYS, WINDOW_KEYS, COMPONENT_KEYS;
 var init_reliability_store = __esm({
   "lib/reliability-store.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_reliability_contract();
     init_reliability_schema_authority();
     FOLLOW_UP_RECONCILIATION_CONTRACT_VERSION = "follow-up-reconciliation.v1";
@@ -29667,7 +29934,7 @@ async function onRequestPost42(context) {
   const result = await response3.text();
   return new Response(result, { status: response3.status, headers: headers5 });
 }
-async function onRequestGet36(context) {
+async function onRequestGet37(context) {
   const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"),
     "Content-Type": "application/json"
@@ -29904,7 +30171,7 @@ async function onRequestGet36(context) {
 var RELIABILITY_ROUTES, VALID_CONTACT_ID, VALID_AUTOMATION_KEY, VALID_FAMILY_KEY, VALID_ENGINES, VALID_SOURCE_EVENT_ID, DEFAULT_FAILURE_WINDOW_HOURS, DEFAULT_ACTIVITY_WINDOW_HOURS, CRM_WORKER_CONTACTS_URL, CRM_WORKER_AUTOMATIONS_URL, CRM_WORKER_FAMILIES_URL, CRM_WORKER_TIMEOUT_MS, REMINDER_ENGINE_URL2;
 var init_staff_automations = __esm({
   "api/staff-automations.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_automation_views();
     init_automation_registry();
@@ -29937,7 +30204,7 @@ var init_staff_automations = __esm({
     __name(windowHours, "windowHours");
     __name(onRequestOptions50, "onRequestOptions");
     __name(onRequestPost42, "onRequestPost");
-    __name(onRequestGet36, "onRequestGet");
+    __name(onRequestGet37, "onRequestGet");
   }
 });
 
@@ -29948,7 +30215,7 @@ async function onRequestOptions51(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet37(context) {
+async function onRequestGet38(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -30105,7 +30372,7 @@ async function onRequestGet37(context) {
 var GHL_API_BASE28, GHL_LOCATION_ID21, CACHE_KEY, CACHE_TTL_SECONDS, MAX_CONTACT_PAGES, PAGE_SIZE2;
 var init_staff_balances = __esm({
   "api/staff-balances.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
@@ -30116,7 +30383,7 @@ var init_staff_balances = __esm({
     MAX_CONTACT_PAGES = 10;
     PAGE_SIZE2 = 100;
     __name(onRequestOptions51, "onRequestOptions");
-    __name(onRequestGet37, "onRequestGet");
+    __name(onRequestGet38, "onRequestGet");
   }
 });
 
@@ -30328,7 +30595,7 @@ async function onRequestPost43(context) {
 var GHL_API_BASE29, GHL_LOCATION_ID22, METHODS4, CANCELLED;
 var init_staff_book = __esm({
   "api/staff-book.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_ghl();
     init_datetime();
@@ -30403,7 +30670,7 @@ function listStaffCalendarDefinitions() {
 var GROUPS, DEFINITIONS2, STAFF_BOOKABLE_IDS;
 var init_staff_calendar_catalog = __esm({
   "lib/staff-calendar-catalog.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_booking_slot_policy();
     init_staff_book_calendars();
     GROUPS = Object.freeze([
@@ -30583,7 +30850,7 @@ async function onRequestOptions53(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS5)
   });
 }
-async function onRequestGet38(context) {
+async function onRequestGet39(context) {
   const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS5),
     "Content-Type": "application/json",
@@ -30596,12 +30863,12 @@ async function onRequestGet38(context) {
 var METHODS5;
 var init_staff_calendars = __esm({
   "api/staff-calendars.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_calendar_catalog();
     METHODS5 = "GET, OPTIONS";
     __name(onRequestOptions53, "onRequestOptions");
-    __name(onRequestGet38, "onRequestGet");
+    __name(onRequestGet39, "onRequestGet");
   }
 });
 
@@ -30649,7 +30916,7 @@ async function onRequestPost44(context) {
 var WORKER_BASE;
 var init_staff_call_coach_run = __esm({
   "api/staff-call-coach-run.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_BASE = "https://call-coach.eben-fa2.workers.dev";
     __name(onRequestOptions54, "onRequestOptions");
@@ -30753,7 +31020,7 @@ async function onRequestPost45(context) {
 var GHL_API_BASE30, AGREEMENT_VERSION;
 var init_staff_checkin = __esm({
   "api/staff-checkin.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
@@ -30859,7 +31126,7 @@ function summarizeClarity(payload, days) {
 async function onRequestOptions56(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet39(context) {
+async function onRequestGet40(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers5);
@@ -30896,7 +31163,7 @@ async function onRequestGet39(context) {
 var CLARITY_ENDPOINT, STUDY_PATH, SIGNAL_METRICS;
 var init_staff_clarity_study = __esm({
   "api/staff-clarity-study.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     CLARITY_ENDPOINT = "https://www.clarity.ms/export-data/api/v1/project-live-insights";
     STUDY_PATH = "/book/study";
@@ -30915,7 +31182,7 @@ var init_staff_clarity_study = __esm({
     __name(firstText, "firstText");
     __name(summarizeClarity, "summarizeClarity");
     __name(onRequestOptions56, "onRequestOptions");
-    __name(onRequestGet39, "onRequestGet");
+    __name(onRequestGet40, "onRequestGet");
   }
 });
 
@@ -30961,7 +31228,7 @@ async function onRequestPost46(context) {
 var WORKER_URL5;
 var init_staff_coach_one = __esm({
   "api/staff-coach-one.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL5 = "https://call-coach.eben-fa2.workers.dev/coach-one";
     __name(onRequestOptions57, "onRequestOptions");
@@ -31123,7 +31390,7 @@ function communicationPreferencesView({ user, preferences, saved, storageAvailab
 var TEAM_COMMUNICATION_PREFERENCES_VERSION, TEAM_COMMUNICATION_DEFAULT_TIMEZONE, STAFF_USERS, CHANNELS3, CADENCES, CATEGORY_DEFINITIONS, EXTERNAL_ROUTES, CURRENT_CHANNELS, CURRENT_CADENCE;
 var init_team_communication_preferences = __esm({
   "lib/team-communication-preferences.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     TEAM_COMMUNICATION_PREFERENCES_VERSION = 1;
     TEAM_COMMUNICATION_DEFAULT_TIMEZONE = "America/Los_Angeles";
     STAFF_USERS = Object.freeze(["Eben", "Garrett"]);
@@ -31237,7 +31504,7 @@ async function readRecord(kv, user) {
 async function onRequestOptions58(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, PUT, OPTIONS") });
 }
-async function onRequestGet40(context) {
+async function onRequestGet41(context) {
   const headers5 = responseHeaders2(context.request.headers.get("Origin"));
   const auth = await authenticate3(context, headers5);
   if (auth.error) return auth.error;
@@ -31292,7 +31559,7 @@ async function onRequestPut(context) {
 }
 var init_staff_communication_preferences = __esm({
   "api/staff-communication-preferences.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_team_communication_preferences();
     __name(responseHeaders2, "responseHeaders");
@@ -31300,7 +31567,7 @@ var init_staff_communication_preferences = __esm({
     __name(authenticate3, "authenticate");
     __name(readRecord, "readRecord");
     __name(onRequestOptions58, "onRequestOptions");
-    __name(onRequestGet40, "onRequestGet");
+    __name(onRequestGet41, "onRequestGet");
     __name(onRequestPut, "onRequestPut");
   }
 });
@@ -31315,7 +31582,7 @@ function preferred(a, b) {
 async function onRequestOptions59(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet41(context) {
+async function onRequestGet42(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
   try {
     const { error, payload } = await requireStaffAuth(context, headers5);
@@ -31364,14 +31631,14 @@ async function onRequestGet41(context) {
 var STAGE_RANK2;
 var init_staff_community = __esm({
   "api/staff-community.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGE_RANK2 = { host: 1, engaged_host: 2, partner: 3, workshop_opportunity: 4 };
     __name(identity, "identity");
     __name(preferred, "preferred");
     __name(onRequestOptions59, "onRequestOptions");
-    __name(onRequestGet41, "onRequestGet");
+    __name(onRequestGet42, "onRequestGet");
   }
 });
 
@@ -31390,7 +31657,7 @@ function dataUrl(buffer) {
 async function onRequestOptions60(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet42(context) {
+async function onRequestGet43(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin")), "Content-Type": "application/json" };
   try {
     const { error, payload } = await requireStaffAuth(context, headers5);
@@ -31423,12 +31690,12 @@ async function onRequestGet42(context) {
 }
 var init_staff_community_image = __esm({
   "api/staff-community-image.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_cos_field_visits();
     __name(dataUrl, "dataUrl");
     __name(onRequestOptions60, "onRequestOptions");
-    __name(onRequestGet42, "onRequestGet");
+    __name(onRequestGet43, "onRequestGet");
   }
 });
 
@@ -31484,7 +31751,7 @@ async function onRequestPost47(context) {
 var STAGES2;
 var init_staff_community_touch = __esm({
   "api/staff-community-touch.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_cos_field_visits();
     STAGES2 = /* @__PURE__ */ new Set(["host", "engaged_host", "partner", "workshop_opportunity"]);
@@ -31610,7 +31877,7 @@ async function listPaymentRecordsForContact(kv, contactId, { strict = false } = 
 var PAYMENT_STATUSES, PAYMENT_METHODS, SOURCES, NOTE_MAX, PREFIX2;
 var init_session_payment = __esm({
   "lib/session-payment.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     PAYMENT_STATUSES = Object.freeze([
       "paid",
       // confirmed paid (cash, venmo, a matched Stripe charge, …)
@@ -31652,7 +31919,7 @@ async function onRequestOptions62(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet43(context) {
+async function onRequestGet44(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -32017,7 +32284,7 @@ async function onRequestGet43(context) {
 var GHL_API_BASE31, GHL_LOCATION_ID23;
 var init_staff_contact = __esm({
   "api/staff-contact.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -32029,7 +32296,7 @@ var init_staff_contact = __esm({
     GHL_API_BASE31 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID23 = "7pIO7FHVAyBT1jKGhfQM";
     __name(onRequestOptions62, "onRequestOptions");
-    __name(onRequestGet43, "onRequestGet");
+    __name(onRequestGet44, "onRequestGet");
   }
 });
 
@@ -32040,7 +32307,7 @@ async function onRequestOptions63(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet44(context) {
+async function onRequestGet45(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -32093,14 +32360,14 @@ async function onRequestGet44(context) {
 var GHL_API_BASE32, GHL_LOCATION_ID24;
 var init_staff_contacts = __esm({
   "api/staff-contacts.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
     GHL_API_BASE32 = "https://services.leadconnectorhq.com";
     GHL_LOCATION_ID24 = "7pIO7FHVAyBT1jKGhfQM";
     __name(onRequestOptions63, "onRequestOptions");
-    __name(onRequestGet44, "onRequestGet");
+    __name(onRequestGet45, "onRequestGet");
   }
 });
 
@@ -32147,7 +32414,7 @@ function isNonReply(text6) {
   if (t.length <= 40 && CLOSER_RE.test(t)) return true;
   return false;
 }
-async function onRequestGet45(context) {
+async function onRequestGet46(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -32298,7 +32565,7 @@ async function onRequestGet45(context) {
 var GHL_API_BASE33, GHL_LOCATION_ID25, CLOSER_WORD, CLOSER_RE;
 var init_staff_conversations = __esm({
   "api/staff-conversations.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE33 = "https://services.leadconnectorhq.com";
@@ -32312,7 +32579,7 @@ var init_staff_conversations = __esm({
     CLOSER_WORD = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE = new RegExp(`^(?:${CLOSER_WORD}[\\s!.,]*)+$`, "i");
     __name(isNonReply, "isNonReply");
-    __name(onRequestGet45, "onRequestGet");
+    __name(onRequestGet46, "onRequestGet");
   }
 });
 
@@ -32383,7 +32650,7 @@ async function onRequestPost48(context) {
 var WORKER_URL6, WORKER_TIMEOUT_MS2;
 var init_staff_crm_mirror_access = __esm({
   "api/staff-crm-mirror-access.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL6 = "https://amari-crm-mirror.eben-fa2.workers.dev/dashboard-access-link";
     WORKER_TIMEOUT_MS2 = 15e3;
@@ -32406,7 +32673,7 @@ async function onRequestOptions66(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS6)
   });
 }
-async function onRequestGet46(context) {
+async function onRequestGet47(context) {
   const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS6),
     "Content-Type": "application/json",
@@ -32459,7 +32726,7 @@ async function onRequestGet46(context) {
 var WORKER_ORIGIN2, TIMEOUT_MS5, METHODS6, CONTACT_ID2;
 var init_staff_crm_pilot = __esm({
   "api/staff-crm-pilot.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_ORIGIN2 = "https://amari-crm-mirror.eben-fa2.workers.dev";
     TIMEOUT_MS5 = 15e3;
@@ -32468,7 +32735,7 @@ var init_staff_crm_pilot = __esm({
     __name(json15, "json");
     __name(boundedLimit2, "boundedLimit");
     __name(onRequestOptions66, "onRequestOptions");
-    __name(onRequestGet46, "onRequestGet");
+    __name(onRequestGet47, "onRequestGet");
   }
 });
 
@@ -32556,7 +32823,7 @@ function staffScheduleSummaries(schedule) {
 var WORKER_URL7, TIMEOUT_MS6;
 var init_staff_owned_appointment_schedule = __esm({
   "lib/staff-owned-appointment-schedule.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_datetime();
     WORKER_URL7 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
     TIMEOUT_MS6 = 1e4;
@@ -32573,7 +32840,7 @@ async function onRequestOptions67(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet47(context) {
+async function onRequestGet48(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -32782,7 +33049,7 @@ async function onRequestGet47(context) {
 var GHL_API_BASE34, GHL_LOCATION_ID26, GHL_GARRETT_USER_ID2;
 var init_staff_data = __esm({
   "api/staff-data.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_portal_helpers();
     init_session_ledger();
@@ -32795,7 +33062,7 @@ var init_staff_data = __esm({
     GHL_LOCATION_ID26 = "7pIO7FHVAyBT1jKGhfQM";
     GHL_GARRETT_USER_ID2 = "P5b0oSTaVYfULDjZ6YyG";
     __name(onRequestOptions67, "onRequestOptions");
-    __name(onRequestGet47, "onRequestGet");
+    __name(onRequestGet48, "onRequestGet");
   }
 });
 
@@ -32884,7 +33151,7 @@ function sessionsDoneCount(record3) {
 var SESSION_COUNT, BODY_PART_VALUES, MAX_TEXT2, MAX_WEEKS, MAX_INSTRUMENT_ITEMS, MAX_ITEM_ID, ITEM_ID_RE, STUDY_SESSIONS_DONE_FIELD_ID;
 var init_study_capture = __esm({
   "lib/study-capture.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_studies();
     SESSION_COUNT = 3;
     BODY_PART_VALUES = /* @__PURE__ */ new Set(["left", "right", "both"]);
@@ -32915,7 +33182,7 @@ async function onRequestOptions68({ request: request2 }) {
     headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet48(context) {
+async function onRequestGet49(context) {
   const { request: request2, env } = context;
   const origin = request2.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
@@ -32969,14 +33236,14 @@ async function onRequestPost49(context) {
 var GHL_API_BASE35, STUDY_SLUG;
 var init_staff_elbow_study = __esm({
   "api/staff-elbow-study.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
     GHL_API_BASE35 = "https://services.leadconnectorhq.com";
     STUDY_SLUG = "tennis-elbow";
     __name(onRequestOptions68, "onRequestOptions");
-    __name(onRequestGet48, "onRequestGet");
+    __name(onRequestGet49, "onRequestGet");
     __name(onRequestPost49, "onRequestPost");
   }
 });
@@ -33049,7 +33316,7 @@ function isOpsErrKey(key) {
 }
 var init_staff_exceptions = __esm({
   "lib/staff-exceptions.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(humanizeOpsError, "humanizeOpsError");
     __name(sourceLabel, "sourceLabel");
     __name(unique, "unique");
@@ -33064,7 +33331,7 @@ async function onRequestOptions69(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"), METHODS7)
   });
 }
-async function onRequestGet49(context) {
+async function onRequestGet50(context) {
   const headers5 = {
     ...corsHeaders3(context.request.headers.get("Origin"), METHODS7),
     "Content-Type": "application/json"
@@ -33105,13 +33372,13 @@ async function onRequestPost50(context) {
 var METHODS7;
 var init_staff_exceptions2 = __esm({
   "api/staff-exceptions.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_ops_alert();
     init_staff_exceptions();
     METHODS7 = "GET, POST, OPTIONS";
     __name(onRequestOptions69, "onRequestOptions");
-    __name(onRequestGet49, "onRequestGet");
+    __name(onRequestGet50, "onRequestGet");
     __name(onRequestPost50, "onRequestPost");
   }
 });
@@ -33285,7 +33552,7 @@ async function onRequestOptions70({ request: request2 }) {
     headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet50(context) {
+async function onRequestGet51(context) {
   const { request: request2, env } = context;
   const headers5 = { ...corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error } = await requireStaffAuth(context, headers5);
@@ -33465,7 +33732,7 @@ async function onRequestPost51(context) {
 var GHL_API_BASE36, GHL_LOCATION_ID27, STUDY_NAME_FIELD_ID6, STUDY_SESSIONS_DONE_FIELD_ID2, FIELD_STUDY_TABLE_TAG, INDEX_KEY2, MAX_INDEX, MAX_TEXT3, FIELD_STUDIES;
 var init_staff_field_study = __esm({
   "api/staff-field-study.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_ghl();
     init_studies();
@@ -33509,7 +33776,7 @@ var init_staff_field_study = __esm({
     __name(summarize, "summarize");
     __name(json16, "json");
     __name(onRequestOptions70, "onRequestOptions");
-    __name(onRequestGet50, "onRequestGet");
+    __name(onRequestGet51, "onRequestGet");
     __name(onRequestPost51, "onRequestPost");
   }
 });
@@ -33630,7 +33897,7 @@ async function onRequestPost52(context) {
 var GHL_API_BASE37, GHL_LOCATION_ID28, ANTHROPIC_API, ANTHROPIC_VERSION, MODEL, SYSTEM;
 var init_staff_followup_brief = __esm({
   "api/staff-followup-brief.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE37 = "https://services.leadconnectorhq.com";
@@ -33702,7 +33969,7 @@ async function proxy(context, method) {
     clearTimeout(timer);
   }
 }
-async function onRequestGet51(context) {
+async function onRequestGet52(context) {
   return proxy(context, "GET");
 }
 async function onRequestPost53(context) {
@@ -33711,14 +33978,14 @@ async function onRequestPost53(context) {
 var WORKER_URL8, WORKER_TIMEOUT_MS3;
 var init_staff_followups = __esm({
   "api/staff-followups.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL8 = "https://amari-crm-mirror.eben-fa2.workers.dev/owned-followups";
     WORKER_TIMEOUT_MS3 = 15e3;
     __name(responseHeaders3, "responseHeaders");
     __name(onRequestOptions72, "onRequestOptions");
     __name(proxy, "proxy");
-    __name(onRequestGet51, "onRequestGet");
+    __name(onRequestGet52, "onRequestGet");
     __name(onRequestPost53, "onRequestPost");
   }
 });
@@ -33773,7 +34040,7 @@ async function onRequestPost54(context) {
 var GHL_API_BASE38;
 var init_staff_founders_circle = __esm({
   "api/staff-founders-circle.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_portal_helpers();
     init_endpoint_guards();
@@ -33790,7 +34057,7 @@ async function onRequestOptions74(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet52(context) {
+async function onRequestGet53(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -33820,11 +34087,11 @@ async function onRequestGet52(context) {
 var KV_KEY;
 var init_staff_funnel = __esm({
   "api/staff-funnel.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     KV_KEY = "funnel:latest";
     __name(onRequestOptions74, "onRequestOptions");
-    __name(onRequestGet52, "onRequestGet");
+    __name(onRequestGet53, "onRequestGet");
   }
 });
 
@@ -33885,7 +34152,7 @@ async function onRequestPost55(context) {
 var WORKER_URL9, WORKER_TIMEOUT_MS4;
 var init_staff_funnel_refresh = __esm({
   "api/staff-funnel-refresh.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL9 = "https://funnel-refresh.eben-fa2.workers.dev/refresh";
     WORKER_TIMEOUT_MS4 = 9e4;
@@ -33905,7 +34172,7 @@ function responseHeaders4(context) {
 async function onRequestOptions76(context) {
   return new Response(null, { status: 204, headers: responseHeaders4(context) });
 }
-async function onRequestGet53(context) {
+async function onRequestGet54(context) {
   const headers5 = responseHeaders4(context);
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
@@ -33941,14 +34208,14 @@ async function onRequestGet53(context) {
 var WORKER_URL10, WORKER_TIMEOUT_MS5, STAFF_ACTORS;
 var init_staff_gmail_reply_readiness = __esm({
   "api/staff-gmail-reply-readiness.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL10 = "https://amari-crm-mirror.eben-fa2.workers.dev/gmail/reply-readiness";
     WORKER_TIMEOUT_MS5 = 1e4;
     STAFF_ACTORS = /* @__PURE__ */ new Set(["Eben", "Garrett"]);
     __name(responseHeaders4, "responseHeaders");
     __name(onRequestOptions76, "onRequestOptions");
-    __name(onRequestGet53, "onRequestGet");
+    __name(onRequestGet54, "onRequestGet");
   }
 });
 
@@ -33959,7 +34226,7 @@ function json17(data, status, headers5) {
 async function onRequestOptions77(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet54(context) {
+async function onRequestGet55(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin") || "", "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
@@ -34000,14 +34267,14 @@ async function onRequestPost56(context) {
 var AUTH_URL3, ALLOWED_ORIGINS37;
 var init_staff_google_calendar_auth = __esm({
   "api/staff-google-calendar-auth.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_calendar_oauth();
     AUTH_URL3 = "https://accounts.google.com/o/oauth2/v2/auth";
     ALLOWED_ORIGINS37 = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(json17, "json");
     __name(onRequestOptions77, "onRequestOptions");
-    __name(onRequestGet54, "onRequestGet");
+    __name(onRequestGet55, "onRequestGet");
     __name(onRequestPost56, "onRequestPost");
   }
 });
@@ -34067,7 +34334,7 @@ async function maybeSendLpOnboarding(context, { contactId, seriesType, newRemain
 var MODE2, LP_ONBOARDING_EMAIL;
 var init_lp_onboarding = __esm({
   "lib/lp-onboarding.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_upgrade_offer();
     init_ghl_send();
     MODE2 = "shadow";
@@ -34122,7 +34389,7 @@ async function writeOwnedAppointmentPayment(context, record3) {
 var WORKER_URL11, TIMEOUT_MS7;
 var init_staff_owned_appointment_payment = __esm({
   "lib/staff-owned-appointment-payment.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     WORKER_URL11 = "https://amari-crm-mirror.eben-fa2.workers.dev/appointments";
     TIMEOUT_MS7 = 1e4;
     __name(writeOwnedAppointmentPayment, "writeOwnedAppointmentPayment");
@@ -34153,7 +34420,7 @@ async function isDebited(db, appointmentId) {
 }
 var init_attendance_claim = __esm({
   "lib/attendance-claim.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(changesOf9, "changesOf");
     __name(claimDebit, "claimDebit");
     __name(releaseDebit, "releaseDebit");
@@ -34524,7 +34791,7 @@ async function onRequestPost57(context) {
 var GHL_API_BASE39, GHL_LOCATION_ID29, FIELD_IDS5, ENTRAINMENT_CALENDAR_ID, FOLLOWUP_CALENDAR_IDS, PAIR_WINDOW_MS, DISCOVERY_CALENDAR_IDS;
 var init_staff_mark_attended = __esm({
   "api/staff-mark-attended.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_upgrade_offer();
     init_lp_onboarding();
@@ -34793,7 +35060,7 @@ async function getMediaAssetRecord(db, assetId) {
 var MAX_FILE_BYTES, MAX_NAME_LENGTH, MAX_DESCRIPTION_LENGTH, WEBSITE_USAGES, CURATION_STATUSES, STAFF_MEDIA_TYPES;
 var init_staff_media = __esm({
   "lib/staff-media.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     MAX_FILE_BYTES = 95 * 1024 * 1024;
     MAX_NAME_LENGTH = 160;
     MAX_DESCRIPTION_LENGTH = 600;
@@ -34846,7 +35113,7 @@ function safeStatus(cause) {
 async function onRequestOptions79(context) {
   return new Response(null, { status: 204, headers: responseHeaders5(context) });
 }
-async function onRequestGet55(context) {
+async function onRequestGet56(context) {
   const headers5 = responseHeaders5(context);
   const auth = await requireStaffAuth(context, headers5);
   if (auth.error) return auth.error;
@@ -34884,14 +35151,14 @@ async function onRequestPost58(context) {
 }
 var init_staff_media2 = __esm({
   "api/staff-media.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_media();
     __name(responseHeaders5, "responseHeaders");
     __name(json18, "json");
     __name(safeStatus, "safeStatus");
     __name(onRequestOptions79, "onRequestOptions");
-    __name(onRequestGet55, "onRequestGet");
+    __name(onRequestGet56, "onRequestGet");
     __name(onRequestPost58, "onRequestPost");
   }
 });
@@ -34955,7 +35222,7 @@ async function serve(context, headOnly = false) {
 async function onRequestOptions80(context) {
   return new Response(null, { status: 204, headers: baseHeaders(context) });
 }
-async function onRequestGet56(context) {
+async function onRequestGet57(context) {
   return serve(context, false);
 }
 async function onRequestHead(context) {
@@ -34963,7 +35230,7 @@ async function onRequestHead(context) {
 }
 var init_staff_media_file = __esm({
   "api/staff-media-file.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_media();
     __name(baseHeaders, "baseHeaders");
@@ -34971,7 +35238,7 @@ var init_staff_media_file = __esm({
     __name(parseRange, "parseRange");
     __name(serve, "serve");
     __name(onRequestOptions80, "onRequestOptions");
-    __name(onRequestGet56, "onRequestGet");
+    __name(onRequestGet57, "onRequestGet");
     __name(onRequestHead, "onRequestHead");
   }
 });
@@ -35043,7 +35310,7 @@ async function onRequestPost59(context) {
 }
 var init_staff_media_upload = __esm({
   "api/staff-media-upload.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_media();
     __name(responseHeaders6, "responseHeaders");
@@ -35134,7 +35401,7 @@ async function onRequestPost60(context) {
 var GHL_API_BASE40, GHL_LOCATION_ID30;
 var init_staff_not_a_fit = __esm({
   "api/staff-not-a-fit.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE40 = "https://services.leadconnectorhq.com";
@@ -35151,7 +35418,7 @@ function retiredStaffNoteResponse(headers5 = {}) {
 var RETIRED_STAFF_NOTE;
 var init_staff_note_retirement = __esm({
   "lib/staff-note-retirement.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     RETIRED_STAFF_NOTE = Object.freeze({
       error: "Staff note writes moved to Amari CRM",
       code: "staff_note_path_retired",
@@ -35177,7 +35444,7 @@ async function rejectRetiredStaffNote(context) {
 var onRequestPost61, onRequestPut2;
 var init_staff_note = __esm({
   "api/staff-note.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_note_retirement();
     init_staff_note_retirement();
@@ -35195,7 +35462,7 @@ async function onRequestOptions84(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS")
   });
 }
-async function onRequestGet57(context) {
+async function onRequestGet58(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
   try {
@@ -35236,11 +35503,11 @@ async function onRequestGet57(context) {
 var KV_KEY2;
 var init_staff_outreach_cards = __esm({
   "api/staff-outreach-cards.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     KV_KEY2 = "outreach-snapshot:current";
     __name(onRequestOptions84, "onRequestOptions");
-    __name(onRequestGet57, "onRequestGet");
+    __name(onRequestGet58, "onRequestGet");
   }
 });
 
@@ -35325,7 +35592,7 @@ async function onRequestPost62(context) {
 var KV_KEY3, ALLOWED_ORIGINS38;
 var init_staff_outreach_upload = __esm({
   "api/staff-outreach-upload.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_heartbeat();
     KV_KEY3 = "outreach-snapshot:current";
     ALLOWED_ORIGINS38 = [
@@ -35460,7 +35727,7 @@ function makeStripeClient(secretKey, fetchImpl = fetch) {
 var AMOUNT_TO_SESSIONS, STRIPE_MAX_PAGES;
 var init_stripe_charges = __esm({
   "lib/stripe-charges.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     AMOUNT_TO_SESSIONS = Object.freeze({
       5400: { sessions: 24, label: "The 12-Week Amari Practice" },
       5500: { sessions: 24, label: "The 12-Week Amari Practice" },
@@ -35513,7 +35780,7 @@ function computeOwedStatus({ sessionsPurchased, unknownCount, unknownMax = 0, at
 var ATTENDED, LEGACY_MIN;
 var init_session_owed = __esm({
   "lib/session-owed.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_session_ledger();
     init_datetime();
     ATTENDED = /* @__PURE__ */ new Set(["showed", "completed"]);
@@ -35533,7 +35800,7 @@ function settledReason(contactId) {
 var SETTLED_CONTACT_IDS;
 var init_owed_settled = __esm({
   "lib/owed-settled.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     SETTLED_CONTACT_IDS = /* @__PURE__ */ new Map([
       ["zjewEnCWTi7Q7aY8hHYD", "Igor Khizver \u2014 Garrett comped the session"],
       ["brfGSo7wRyF7MIJT8SmM", "Jon Holsbach \u2014 initial session comped, wasn't a fit"],
@@ -35541,7 +35808,9 @@ var init_owed_settled = __esm({
       ["hwkgCO2p9DniemD0CoeC", "Sean Riordan \u2014 paid off-platform (not via Stripe)"],
       ["Rxx5ILygOjE2qSyj1Oyq", "Mirko Buchwald \u2014 paid off-platform (not via Stripe)"],
       ["LxD8tZwqP11YVuHEfoqj", "Noah Pinaire \u2014 paid off-platform (not via Stripe)"],
-      ["umT57oFIilMRwanGhf84", "Tae-woo Kim \u2014 paid via Stripe; remainder settled off-platform"]
+      ["umT57oFIilMRwanGhf84", "Tae-woo Kim \u2014 paid via Stripe; remainder settled off-platform"],
+      ["S8ygFQr8yUoLwc6Ll8eq", "Jenn Kadri \u2014 completed 8-session package is paid and settled"],
+      ["kHPv1Zxz62HGcFIA26pG", "Leanne Gluck \u2014 paid $720 package is attached to her duplicate GHL/Stripe identity"]
     ]);
     __name(isSettled, "isSettled");
     __name(settledReason, "settledReason");
@@ -35552,7 +35821,7 @@ var init_owed_settled = __esm({
 async function onRequestOptions86(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet58(context) {
+async function onRequestGet59(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -35662,7 +35931,7 @@ async function onRequestGet58(context) {
 var GHL_API_BASE41;
 var init_staff_owed = __esm({
   "api/staff-owed.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_datetime();
     init_stripe_charges();
@@ -35672,7 +35941,7 @@ var init_staff_owed = __esm({
     init_endpoint_guards();
     GHL_API_BASE41 = "https://services.leadconnectorhq.com";
     __name(onRequestOptions86, "onRequestOptions");
-    __name(onRequestGet58, "onRequestGet");
+    __name(onRequestGet59, "onRequestGet");
   }
 });
 
@@ -35695,7 +35964,7 @@ function clientNameFromTitle(title) {
 }
 var init_owed_list = __esm({
   "lib/owed-list.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(clientNameFromTitle, "clientNameFromTitle");
   }
 });
@@ -35704,7 +35973,7 @@ var init_owed_list = __esm({
 async function onRequestOptions87(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin")) });
 }
-async function onRequestGet59(context) {
+async function onRequestGet60(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -35749,7 +36018,7 @@ async function onRequestGet59(context) {
 var GHL_API_BASE42, GHL_LOCATION_ID31, ROSTER_WINDOW_DAYS, ATTENDED2;
 var init_staff_owed_list = __esm({
   "api/staff-owed-list.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_datetime();
     init_session_ledger();
@@ -35760,7 +36029,7 @@ var init_staff_owed_list = __esm({
     ROSTER_WINDOW_DAYS = 540;
     ATTENDED2 = /* @__PURE__ */ new Set(["showed", "completed"]);
     __name(onRequestOptions87, "onRequestOptions");
-    __name(onRequestGet59, "onRequestGet");
+    __name(onRequestGet60, "onRequestGet");
   }
 });
 
@@ -35775,7 +36044,7 @@ function headers2(origin) {
 async function onRequestOptions88(context) {
   return new Response(null, { status: 204, headers: headers2(context.request.headers.get("Origin")) });
 }
-async function onRequestGet60(context) {
+async function onRequestGet61(context) {
   const responseHeaders10 = headers2(context.request.headers.get("Origin"));
   const { error } = await requireStaffAuth(context, responseHeaders10);
   if (error) return error;
@@ -35813,13 +36082,13 @@ async function onRequestGet60(context) {
 var WORKER_URL12, TIMEOUT_MS8;
 var init_staff_owned_contacts = __esm({
   "api/staff-owned-contacts.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL12 = "https://amari-crm-mirror.eben-fa2.workers.dev/contacts";
     TIMEOUT_MS8 = 1e4;
     __name(headers2, "headers");
     __name(onRequestOptions88, "onRequestOptions");
-    __name(onRequestGet60, "onRequestGet");
+    __name(onRequestGet61, "onRequestGet");
   }
 });
 
@@ -35871,7 +36140,7 @@ async function onRequestOptions89(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet61(context) {
+async function onRequestGet62(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -35983,7 +36252,7 @@ async function onRequestGet61(context) {
 var GHL_API_BASE43, GHL_LOCATION_ID32, MAX_EVENTS3, NUMERIC_TYPE_MAP;
 var init_staff_partner_activity = __esm({
   "api/staff-partner-activity.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE43 = "https://services.leadconnectorhq.com";
@@ -36007,7 +36276,7 @@ var init_staff_partner_activity = __esm({
     __name(callOutcomeLabel, "callOutcomeLabel");
     __name(mapMessageType, "mapMessageType");
     __name(onRequestOptions89, "onRequestOptions");
-    __name(onRequestGet61, "onRequestGet");
+    __name(onRequestGet62, "onRequestGet");
   }
 });
 
@@ -36146,7 +36415,7 @@ async function onRequestPost63(context) {
 var GHL_API_BASE44, FIELD_IDS6, VALID_SIGNALS, SIGNAL_TO_STAGE, TOUCH_SIGNALS, SIGNAL_NOTE_LABEL;
 var init_staff_partner_outcome = __esm({
   "api/staff-partner-outcome.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_staff_note_retirement();
     init_ghl();
     init_endpoint_guards();
@@ -43117,7 +43386,7 @@ async function getPartnerSheetCache(context) {
 var SPREADSHEET_ID, CACHE_KEY2, REFRESH_AFTER_MS, RANGES;
 var init_partner_sheet = __esm({
   "lib/partner-sheet.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_partner_sheet_cache();
     init_google_api();
     SPREADSHEET_ID = "1uYsTyyMu9NUefscLKORUglNXrhq_ylcUMZr4Ml-nMiw";
@@ -43287,7 +43556,7 @@ function buildCard(dossier, now = Date.now()) {
 var CLOSER_WORD2, CLOSER_RE2, DECLINE_RE, CONNECT_CALL_SEC, ORG_WORDS, UNTEXTABLE, PLACEHOLDER_EMAIL_RE, LINKEDIN_SOURCE_RE, PHONE_UNVERIFIED_NOTE, DAY_MS3;
 var init_build_card = __esm({
   "lib/build-card.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     CLOSER_WORD2 = "(?:i'?m good|all good|we'?re good|likewise|thanks|thank you|thx|ty|no thanks|got it|sounds good|will do|cheers|np)";
     CLOSER_RE2 = new RegExp(`^(?:${CLOSER_WORD2}[\\s!.,]*)+$`, "i");
     __name(isNonReply2, "isNonReply");
@@ -43730,7 +43999,7 @@ async function onRequestOptions91(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet62(context) {
+async function onRequestGet63(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -43892,7 +44161,7 @@ async function onRequestGet62(context) {
 var GHL_API_BASE45, GHL_LOCATION_ID33, FIELD_IDS7, CATEGORY_TAGS, BROAD_PARTNER_TAGS, ALL_PARTNER_TAGS, ALL_STAGES, VM_FOLLOWUP_DAYS, TALKED_FOLLOWUP_DAYS, LINK_FOLLOWUP_DAYS, OFFPLATFORM_FOLLOWUP_DAYS, NOANSWER_RETRY_DAYS, QUIET_NUDGE_DAYS, END_OF_ROPE_TOUCHES, FRESH_TOUCH_SIGNALS, KNOWN_SIGNALS, FORCED_CALL_LINES;
 var init_staff_partner_prospects = __esm({
   "api/staff-partner-prospects.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_partner_sheet();
     init_build_card();
@@ -44006,7 +44275,7 @@ var init_staff_partner_prospects = __esm({
     __name(toProspect, "toProspect");
     __name(fetchByTag, "fetchByTag");
     __name(onRequestOptions91, "onRequestOptions");
-    __name(onRequestGet62, "onRequestGet");
+    __name(onRequestGet63, "onRequestGet");
   }
 });
 
@@ -44070,7 +44339,7 @@ function rewardForPracticePurchase({ referralAt, purchasedAt, sessionCount }) {
 var PARTNER_REWARD_WINDOW_MS, CHARGEBACK_HOLD_MS, REWARD_CENTS, PARTNER_SESSION_ENTITLEMENT, LEGACY_REWARD_LABELS, asObject, dateValue, eventTime;
 var init_partner_reward_ledger = __esm({
   "lib/partner-reward-ledger.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     PARTNER_REWARD_WINDOW_MS = 90 * 24 * 60 * 60 * 1e3;
     CHARGEBACK_HOLD_MS = 30 * 24 * 60 * 60 * 1e3;
     REWARD_CENTS = Object.freeze({ 12: 25e3, 24: 5e4 });
@@ -44103,7 +44372,7 @@ function insert(db, rewardId, actor, type, detail) {
 async function onRequestOptions92(context) {
   return new Response(null, { status: 204, headers: headers3(context) });
 }
-async function onRequestGet63(context) {
+async function onRequestGet64(context) {
   const out = headers3(context);
   const auth = await requireStaffAuth(context, out);
   if (auth.error) return auth.error;
@@ -44182,7 +44451,7 @@ async function onRequestPost64(context) {
 var ID2, iso;
 var init_staff_partner_rewards = __esm({
   "api/staff-partner-rewards.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_partner_reward_ledger();
     ID2 = /^[A-Za-z0-9_-]{1,80}$/;
@@ -44194,7 +44463,7 @@ var init_staff_partner_rewards = __esm({
     __name(event, "event");
     __name(insert, "insert");
     __name(onRequestOptions92, "onRequestOptions");
-    __name(onRequestGet63, "onRequestGet");
+    __name(onRequestGet64, "onRequestGet");
     __name(onRequestPost64, "onRequestPost");
   }
 });
@@ -44256,7 +44525,7 @@ async function onRequestPost65(context) {
 var GHL_API_BASE46, OUTREACH_VERIFIED_FIELD_ID;
 var init_staff_partner_toggle_verified = __esm({
   "api/staff-partner-toggle-verified.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE46 = "https://services.leadconnectorhq.com";
@@ -44371,7 +44640,7 @@ async function onRequestPost66(context) {
 var GHL_API_BASE47, EDITABLE_FIELDS;
 var init_staff_partner_update_field = __esm({
   "api/staff-partner-update-field.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE47 = "https://services.leadconnectorhq.com";
@@ -44467,7 +44736,7 @@ async function onRequestPost67(context) {
 var GHL_API_BASE48, VERIFIED_TAG, OUTREACH_VERIFIED_FIELD_ID2;
 var init_staff_partner_verify = __esm({
   "api/staff-partner-verify.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     GHL_API_BASE48 = "https://services.leadconnectorhq.com";
@@ -44705,7 +44974,7 @@ async function onRequestOptions96(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet64(context) {
+async function onRequestGet65(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   const { error, payload: tokenPayload } = await requireStaffAuth(context, headers5);
@@ -44797,7 +45066,7 @@ async function onRequestGet64(context) {
 var GHL_API_BASE49, GHL_LOCATION_ID34, PIPELINE_READ_TIMEOUT_MS, CONTACT_PAGE_LIMIT, CONTACT_PAGE_CAP, EXCLUDED_EMAILS, FIELD_IDS8, SIX_MONTHS_MS, OUTREACH_TAGS, SESSION_CALENDARS, PACKAGE_CALENDAR_IDS;
 var init_staff_pipeline = __esm({
   "api/staff-pipeline.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
@@ -44875,7 +45144,7 @@ var init_staff_pipeline = __esm({
     __name(fetchStripePurchaseHistory, "fetchStripePurchaseHistory");
     __name(buildCohortMetrics, "buildCohortMetrics");
     __name(onRequestOptions96, "onRequestOptions");
-    __name(onRequestGet64, "onRequestGet");
+    __name(onRequestGet65, "onRequestGet");
   }
 });
 
@@ -45123,7 +45392,7 @@ function posCatalogFromProducts(products) {
 var MAX_NAME2, MAX_DESCRIPTION, MAX_REASON, MAX_AMOUNT_CENTS2, CATEGORIES, BUILT_IN_META;
 var init_staff_products = __esm({
   "lib/staff-products.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_staff_pos();
     init_staff_pos_invoice_bridge();
     init_ghl_products();
@@ -45440,7 +45709,7 @@ async function verifyStripeWebhookSignature(rawBody, signatureHeader, webhookSec
 var STRIPE_API;
 var init_stripe_api = __esm({
   "lib/stripe-api.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     STRIPE_API = "https://api.stripe.com/v1";
     __name(encodeForm, "encodeForm");
     __name(stripeRequest, "stripeRequest");
@@ -45506,7 +45775,7 @@ async function rememberCustomer(env, contactId, customerId) {
 async function onRequestOptions97(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS") });
 }
-async function onRequestGet65(context) {
+async function onRequestGet66(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers5);
@@ -45801,7 +46070,7 @@ async function onRequestPost68(context) {
 var POS_PAYMENT_ACTIONS;
 var init_staff_pos_sales = __esm({
   "api/staff-pos-sales.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_pos();
     init_staff_pos_fulfill();
@@ -45822,7 +46091,7 @@ var init_staff_pos_sales = __esm({
     __name(storedCustomerId, "storedCustomerId");
     __name(rememberCustomer, "rememberCustomer");
     __name(onRequestOptions97, "onRequestOptions");
-    __name(onRequestGet65, "onRequestGet");
+    __name(onRequestGet66, "onRequestGet");
     __name(ensureSale, "ensureSale");
     __name(openStripeLegs, "openStripeLegs");
     __name(chargeSavedCardLeg, "chargeSavedCardLeg");
@@ -45868,7 +46137,7 @@ function publicCoverage(coverage) {
 async function onRequestOptions98(context) {
   return new Response(null, { status: 204, headers: responseHeaders7(context, "GET, POST, OPTIONS") });
 }
-async function onRequestGet66(context) {
+async function onRequestGet67(context) {
   const headers5 = responseHeaders7(context, "GET, POST, OPTIONS");
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
@@ -45900,7 +46169,7 @@ async function onRequestPost69(context) {
 }
 var init_staff_products2 = __esm({
   "api/staff-products.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_products();
     __name(responseHeaders7, "responseHeaders");
@@ -45908,7 +46177,7 @@ var init_staff_products2 = __esm({
     __name(publicProduct, "publicProduct");
     __name(publicCoverage, "publicCoverage");
     __name(onRequestOptions98, "onRequestOptions");
-    __name(onRequestGet66, "onRequestGet");
+    __name(onRequestGet67, "onRequestGet");
     __name(onRequestPost69, "onRequestPost");
   }
 });
@@ -45956,7 +46225,7 @@ async function onRequestPost70(context) {
 var WORKER_URL13;
 var init_staff_refresh_activity = __esm({
   "api/staff-refresh-activity.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     WORKER_URL13 = "https://partner-activity-refresh.eben-fa2.workers.dev/run";
     __name(onRequestOptions99, "onRequestOptions");
@@ -45999,7 +46268,7 @@ async function onRequestPost71(context) {
 var KV_KEY4;
 var init_staff_reply_dismiss = __esm({
   "api/staff-reply-dismiss.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     KV_KEY4 = "reply:dismissed";
     __name(onRequestOptions100, "onRequestOptions");
@@ -46086,7 +46355,7 @@ async function getStaffRevenue(secretKey, { now = /* @__PURE__ */ new Date(), mo
 var TIME_ZONE, MONTH_COUNT, STRIPE_PAGE_LIMIT;
 var init_staff_revenue = __esm({
   "lib/staff-revenue.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     TIME_ZONE = "America/Los_Angeles";
     MONTH_COUNT = 6;
     STRIPE_PAGE_LIMIT = 20;
@@ -46106,7 +46375,7 @@ async function onRequestOptions101(context) {
     headers: corsHeaders3(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet67(context) {
+async function onRequestGet68(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin), "Content-Type": "application/json" };
   try {
@@ -46128,11 +46397,11 @@ async function onRequestGet67(context) {
 }
 var init_staff_revenue2 = __esm({
   "api/staff-revenue.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_staff_revenue();
     __name(onRequestOptions101, "onRequestOptions");
-    __name(onRequestGet67, "onRequestGet");
+    __name(onRequestGet68, "onRequestGet");
   }
 });
 
@@ -46198,7 +46467,7 @@ async function onRequestPost72(context) {
 var GHL_API_BASE50, MODULE_FIELDS, BODY_FIELDS, YOGA_BLOCK_FIELD;
 var init_staff_save_progress = __esm({
   "api/staff-save-progress.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
@@ -46311,7 +46580,7 @@ async function onRequestPost73(context) {
 var GHL_API_BASE51, MAX_SUBJECT, MAX_BODY, DEDUPE_TTL_S, VALID_CONTACT_ID2, BAD_CHARS2, VALID_EMAIL;
 var init_staff_send_email = __esm({
   "api/staff-send-email.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
@@ -46430,7 +46699,7 @@ async function onRequestPost74(context) {
 var GHL_API_BASE52, BASE_URL, PAY_LINK_PRODUCTS;
 var init_staff_send_paylink = __esm({
   "api/staff-send-paylink.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
@@ -46591,7 +46860,7 @@ ${charge.receipt_url}`;
 var GHL_API_BASE53, METHODS8;
 var init_staff_send_receipt = __esm({
   "api/staff-send-receipt.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_ghl();
     init_stripe_charges();
@@ -46693,7 +46962,7 @@ async function onRequestPost76(context) {
 var GHL_API_BASE54, PRACTICE_SMS_FROM_NUMBER, MAX_LEN, DEDUPE_TTL_S2, VALID_CONTACT_ID3, BAD_CHARS3;
 var init_staff_send_text = __esm({
   "api/staff-send-text.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
@@ -46816,7 +47085,7 @@ async function onRequestPost77(context) {
 var GHL_API_BASE55, GHL_LOCATION_ID35, TOOLKIT_MESSAGE;
 var init_staff_send_toolkit = __esm({
   "api/staff-send-toolkit.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     init_staff_owned_contact_identity();
@@ -46841,7 +47110,7 @@ async function authenticatedResponse(context) {
 async function onRequestOptions108(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, POST, DELETE, OPTIONS") });
 }
-async function onRequestGet68(context) {
+async function onRequestGet69(context) {
   const result = await authenticatedResponse(context);
   if (result instanceof Response) return result;
   return new Response(JSON.stringify({ authenticated: true, user: result.payload.user }), { status: 200, headers: result.headers });
@@ -46860,7 +47129,7 @@ async function onRequestDelete(context) {
 var MAX_AGE_SECONDS, sessionCookie, responseHeaders8, bearerToken;
 var init_staff_session = __esm({
   "api/staff-session.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     MAX_AGE_SECONDS = 30 * 24 * 60 * 60;
     sessionCookie = /* @__PURE__ */ __name((value, maxAge = MAX_AGE_SECONDS) => `${STAFF_SESSION_COOKIE}=${value}; Path=/; Max-Age=${maxAge}; HttpOnly; Secure; SameSite=Strict`, "sessionCookie");
@@ -46868,7 +47137,7 @@ var init_staff_session = __esm({
     bearerToken = /* @__PURE__ */ __name((request2) => request2.headers.get("Authorization")?.startsWith("Bearer ") ? request2.headers.get("Authorization").slice(7) : null, "bearerToken");
     __name(authenticatedResponse, "authenticatedResponse");
     __name(onRequestOptions108, "onRequestOptions");
-    __name(onRequestGet68, "onRequestGet");
+    __name(onRequestGet69, "onRequestGet");
     __name(onRequestPost78, "onRequestPost");
     __name(onRequestDelete, "onRequestDelete");
   }
@@ -46885,7 +47154,7 @@ async function readCards(env) {
 async function writeCards(env, cards) {
   await env.PORTAL_KV.put(CARDS_KEY, JSON.stringify({ cards, updatedAt: (/* @__PURE__ */ new Date()).toISOString() }));
 }
-async function onRequestGet69(context) {
+async function onRequestGet70(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
@@ -46944,7 +47213,7 @@ async function onRequestPost79(context) {
 var CARDS_KEY, MAX_CARDS, MAX_LEN2, CATEGORIES2;
 var init_staff_sharpen = __esm({
   "api/staff-sharpen.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     CARDS_KEY = "staff:sharpen-cards";
     MAX_CARDS = 200;
@@ -46953,7 +47222,7 @@ var init_staff_sharpen = __esm({
     __name(onRequestOptions109, "onRequestOptions");
     __name(readCards, "readCards");
     __name(writeCards, "writeCards");
-    __name(onRequestGet69, "onRequestGet");
+    __name(onRequestGet70, "onRequestGet");
     __name(onRequestPost79, "onRequestPost");
   }
 });
@@ -46982,7 +47251,7 @@ async function rememberCustomer2(env, contactId, customerId) {
 async function onRequestOptions110(context) {
   return new Response(null, { status: 204, headers: corsHeaders3(context.request.headers.get("Origin"), "GET, OPTIONS") });
 }
-async function onRequestGet70(context) {
+async function onRequestGet71(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json", "Cache-Control": "no-store" };
   const { error } = await requireStaffAuth(context, headers5);
@@ -47028,7 +47297,7 @@ async function onRequestGet70(context) {
 }
 var init_staff_stripe_cards = __esm({
   "api/staff-stripe-cards.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_stripe_api();
     init_ops_last_run();
@@ -47036,7 +47305,7 @@ var init_staff_stripe_cards = __esm({
     __name(storedCustomerId2, "storedCustomerId");
     __name(rememberCustomer2, "rememberCustomer");
     __name(onRequestOptions110, "onRequestOptions");
-    __name(onRequestGet70, "onRequestGet");
+    __name(onRequestGet71, "onRequestGet");
   }
 });
 
@@ -47047,7 +47316,7 @@ async function onRequestOptions111({ request: request2 }) {
     headers: corsHeaders3(request2.headers.get("Origin") || "", "GET, POST, OPTIONS")
   });
 }
-async function onRequestGet71(context) {
+async function onRequestGet72(context) {
   const { request: request2, env } = context;
   const origin = request2.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, POST, OPTIONS"), "Content-Type": "application/json" };
@@ -47109,13 +47378,13 @@ async function onRequestPost80(context) {
 var GHL_API_BASE56;
 var init_staff_study = __esm({
   "api/staff-study.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_ghl();
     init_study_capture();
     GHL_API_BASE56 = "https://services.leadconnectorhq.com";
     __name(onRequestOptions111, "onRequestOptions");
-    __name(onRequestGet71, "onRequestGet");
+    __name(onRequestGet72, "onRequestGet");
     __name(onRequestPost80, "onRequestPost");
   }
 });
@@ -47138,7 +47407,7 @@ async function writeState(env, state) {
 function publicView(state) {
   return { goal: state.goal, rule: state.rule, tasks: state.tasks };
 }
-async function onRequestGet72(context) {
+async function onRequestGet73(context) {
   const headers5 = { ...corsHeaders3(context.request.headers.get("Origin"), "GET, POST, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers5);
   if (error) return error;
@@ -47202,7 +47471,7 @@ async function onRequestPost81(context) {
 var TASKS_KEY, MAX_TASKS, MAX_TEXT_LEN, DEFAULT_GOAL, DEFAULT_RULE;
 var init_staff_tasks = __esm({
   "api/staff-tasks.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     TASKS_KEY = "staff:garrett-tasks";
     MAX_TASKS = 50;
@@ -47213,7 +47482,7 @@ var init_staff_tasks = __esm({
     __name(readState, "readState");
     __name(writeState, "writeState");
     __name(publicView, "publicView");
-    __name(onRequestGet72, "onRequestGet");
+    __name(onRequestGet73, "onRequestGet");
     __name(onRequestPost81, "onRequestPost");
   }
 });
@@ -47260,7 +47529,7 @@ async function onRequestPost82(context) {
 var GHL_API_BASE57, FIELD_ID_SESSION_PREPAID;
 var init_staff_toggle_prepaid = __esm({
   "api/staff-toggle-prepaid.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_endpoint_guards();
     init_ghl_fields();
@@ -47278,7 +47547,7 @@ async function onRequestOptions114() {
     headers: { "Access-Control-Allow-Methods": "GET, OPTIONS" }
   });
 }
-async function onRequestGet73(context) {
+async function onRequestGet74(context) {
   const headers5 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
   const CF_ACCOUNT_ID = context.env.CF_STREAM_ACCOUNT_ID;
   const CF_STREAM_TOKEN = context.env.CF_STREAM_TOKEN;
@@ -47369,10 +47638,10 @@ async function onRequestGet73(context) {
 var TEST_UID;
 var init_stream_health = __esm({
   "api/stream-health.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     TEST_UID = "9072ff146ba6434f9463ae78c6616e3d";
     __name(onRequestOptions114, "onRequestOptions");
-    __name(onRequestGet73, "onRequestGet");
+    __name(onRequestGet74, "onRequestGet");
   }
 });
 
@@ -47392,7 +47661,7 @@ async function onRequestOptions115(context) {
     headers: corsHeaders37(context.request.headers.get("Origin"))
   });
 }
-async function onRequestGet74(context) {
+async function onRequestGet75(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = corsHeaders37(origin);
   headers5["Content-Type"] = "application/json";
@@ -47509,7 +47778,7 @@ async function onRequestGet74(context) {
 var GHL_API_BASE58, GHL_LOCATION_ID36, ALLOWED_ORIGINS39, TOKEN_TTL_SECONDS;
 var init_stream_token = __esm({
   "api/stream-token.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_auth();
     init_portal_helpers();
@@ -47523,7 +47792,7 @@ var init_stream_token = __esm({
     TOKEN_TTL_SECONDS = 60 * 60;
     __name(corsHeaders37, "corsHeaders");
     __name(onRequestOptions115, "onRequestOptions");
-    __name(onRequestGet74, "onRequestGet");
+    __name(onRequestGet75, "onRequestGet");
   }
 });
 
@@ -47670,7 +47939,7 @@ async function onRequestPost83(context) {
 }
 var init_stripe_pos_webhook = __esm({
   "api/stripe-pos-webhook.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_processed_events();
     init_staff_pos_fulfill();
     init_staff_pos();
@@ -47718,7 +47987,7 @@ async function ensureStudyBookingConfirmedMarker(context, contactId) {
 var GHL_API_BASE59, STUDY_BOOKING_CONFIRMED_MARKER;
 var init_study_enrollment_marker = __esm({
   "lib/study-enrollment-marker.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     GHL_API_BASE59 = "https://services.leadconnectorhq.com";
     STUDY_BOOKING_CONFIRMED_MARKER = "study-booking-confirmed-before-enrollment";
@@ -47831,7 +48100,7 @@ function resolveStudyBookingRuntime(context, options = {}) {
 var PRODUCTION_ORIGINS, PREVIEW_HOST_SUFFIX, StudyBookingRuntimeError;
 var init_study_booking_runtime = __esm({
   "lib/study-booking-runtime.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     PRODUCTION_ORIGINS = /* @__PURE__ */ new Set([
       "https://www.amarimethod.com",
       "https://amarimethod.com"
@@ -47941,7 +48210,7 @@ function validateStudyBooking(input) {
 var STUDY_NAME_FIELD_ID7, STUDY_BOOKING_KIND, VISIT_QUALIFICATION, LIVE_STUDY_BOOKINGS;
 var init_study_booking = __esm({
   "lib/study-booking.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_studies();
     init_study_consent();
     STUDY_NAME_FIELD_ID7 = "1xhxStKyEN47shwjOKC0";
@@ -48261,7 +48530,7 @@ async function onRequestOptions116(context) {
     headers: headers4(context)
   });
 }
-async function onRequestGet75(context) {
+async function onRequestGet76(context) {
   let runtime;
   try {
     runtime = resolveStudyBookingRuntime(context);
@@ -48526,7 +48795,7 @@ async function onRequestPost84(context) {
 var GHL_API_BASE60, GHL_LOCATION_ID37, APPOINTMENT_ENDPOINT, RetryableFlowError, ManualReviewError;
 var init_study_book_v2 = __esm({
   "api/study-book-v2.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ghl();
     init_studies();
     init_datetime();
@@ -48581,7 +48850,7 @@ var init_study_book_v2 = __esm({
     __name(deferEvidence, "deferEvidence");
     __name(markOperationFailure, "markOperationFailure");
     __name(onRequestOptions116, "onRequestOptions");
-    __name(onRequestGet75, "onRequestGet");
+    __name(onRequestGet76, "onRequestGet");
     __name(onRequestPost84, "onRequestPost");
   }
 });
@@ -48611,7 +48880,7 @@ async function onRequestPost85({ request: request2 }) {
 var ORIGINS;
 var init_study_book = __esm({
   "api/study-book.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_study_book_v2();
     ORIGINS = /* @__PURE__ */ new Set(["https://www.amarimethod.com", "https://amarimethod.com"]);
     __name(responseHeaders9, "responseHeaders");
@@ -48662,7 +48931,7 @@ async function checkDailyAudit(kv) {
   const n = Array.isArray(rec.issues) ? rec.issues.length : "?";
   return { label: "Daily audit", state: "green", note: `present for ${ds} (${n} issues)` };
 }
-async function onRequestGet76(context) {
+async function onRequestGet77(context) {
   const denied = requireOpsReadKey(context.request, context.env);
   if (denied) return denied;
   const headers5 = { "Content-Type": "application/json", "Cache-Control": "no-store" };
@@ -48702,7 +48971,7 @@ async function onRequestGet76(context) {
 var HOUR4;
 var init_system_health = __esm({
   "api/system-health.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_auth();
     HOUR4 = 3600 * 1e3;
     __name(ageHours3, "ageHours");
@@ -48710,7 +48979,7 @@ var init_system_health = __esm({
     __name(judgeWorker, "judgeWorker");
     __name(checkToken, "checkToken");
     __name(checkDailyAudit, "checkDailyAudit");
-    __name(onRequestGet76, "onRequestGet");
+    __name(onRequestGet77, "onRequestGet");
   }
 });
 
@@ -48768,7 +49037,7 @@ async function onRequestPost86(context) {
     return new Response(JSON.stringify({ error: "The writer hit a problem. Try again." }), { status: 500, headers: headers5 });
   }
 }
-async function onRequestGet77(context) {
+async function onRequestGet78(context) {
   const origin = context.request.headers.get("Origin") || "";
   const headers5 = { ...corsHeaders3(origin, "GET, OPTIONS"), "Content-Type": "application/json" };
   const { error, payload } = await requireStaffAuth(context, headers5);
@@ -48782,13 +49051,13 @@ async function onRequestGet77(context) {
 var HISTORY_CAP2;
 var init_voice_write = __esm({
   "api/voice-write.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_endpoint_guards();
     init_voice_engine();
     HISTORY_CAP2 = 25;
     __name(onRequestOptions117, "onRequestOptions");
     __name(onRequestPost86, "onRequestPost");
-    __name(onRequestGet77, "onRequestGet");
+    __name(onRequestGet78, "onRequestGet");
   }
 });
 
@@ -48840,7 +49109,7 @@ async function executeClientNoShowRecoveryRequest(context, token, nowMs = Date.n
 var RECOVERABLE_AUTHORITY, RECOVERABLE_SYNC, clean10;
 var init_client_no_show_recovery = __esm({
   "lib/client-no-show-recovery.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_appointment_manage_token();
     init_staff_owned_appointment_identity();
     init_staff_owned_appointment_store();
@@ -48891,7 +49160,7 @@ function unavailable(error) {
   const status = [400, 401, 403, 404, 409, 413, 503].includes(Number(error?.status)) ? Number(error.status) : 503;
   return response2(frame('<h1>This link is unavailable.</h1><p class="summary">The appointment may have changed, passed, or already been managed. Please email <a href="mailto:hello@amarimethod.com">hello@amarimethod.com</a> if you need help.</p>', "Link unavailable"), status);
 }
-async function onRequestGet78(context) {
+async function onRequestGet79(context) {
   const url = new URL(context.request.url);
   const token = url.searchParams.get("token") || "";
   const action = url.searchParams.get("action") || "";
@@ -48946,7 +49215,7 @@ async function onRequestPost87(context) {
 var HEADERS4;
 var init_manage = __esm({
   "appointment/manage.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_client_appointment_manage();
     init_client_no_show_recovery();
     HEADERS4 = Object.freeze({
@@ -48963,7 +49232,7 @@ var init_manage = __esm({
     __name(dateTime, "dateTime");
     __name(appointmentFacts, "appointmentFacts");
     __name(unavailable, "unavailable");
-    __name(onRequestGet78, "onRequestGet");
+    __name(onRequestGet79, "onRequestGet");
     __name(onRequestPost87, "onRequestPost");
   }
 });
@@ -48993,7 +49262,7 @@ async function onRequest(context) {
 }
 var init_path = __esm({
   "portal/[[path]].js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(onRequest, "onRequest");
   }
 });
@@ -49019,7 +49288,7 @@ async function onRequest2(context) {
 }
 var init_path2 = __esm({
   "staff/[[path]].js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     __name(isStaticFile, "isStaticFile");
     __name(onRequest2, "onRequest");
   }
@@ -49050,7 +49319,7 @@ function opsEmbedBootScript() {
 var OPS_SURFACE_URLS, OPS_SURFACE_NAV_CSS;
 var init_ops_surface_nav = __esm({
   "lib/ops-surface-nav.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     OPS_SURFACE_URLS = Object.freeze({
       systems: "https://www.amarimethod.com/ops",
       crmMirror: "https://amari-crm-mirror.eben-fa2.workers.dev/",
@@ -49090,7 +49359,7 @@ var init_ops_surface_nav = __esm({
 });
 
 // ops.js
-async function onRequestGet79() {
+async function onRequestGet80() {
   const html = OPS_HTML.replace("/*__OPS_SURFACE_NAV_CSS__*/", OPS_SURFACE_NAV_CSS).replace("__OPS_SURFACE_NAV__", opsSurfaceNavHtml("systems")).replace("__OPS_EMBED_BOOT__", opsEmbedBootScript());
   return new Response(html, {
     status: 200,
@@ -49104,9 +49373,9 @@ async function onRequestGet79() {
 var OPS_HTML;
 var init_ops = __esm({
   "ops.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_ops_surface_nav();
-    __name(onRequestGet79, "onRequestGet");
+    __name(onRequestGet80, "onRequestGet");
     OPS_HTML = `<!doctype html>
 <html lang="en">
 <head>
@@ -50135,7 +50404,7 @@ async function onRequest3(context) {
 var PUBLIC_STAFF_PATHS;
 var init_middleware = __esm({
   "_middleware.js"() {
-    init_functionsRoutes_0_18121058202988283();
+    init_functionsRoutes_0_9462741500794678();
     init_auth();
     init_endpoint_guards();
     PUBLIC_STAFF_PATHS = /* @__PURE__ */ new Set(["/staff/login", "/staff/access"]);
@@ -50146,10 +50415,10 @@ var init_middleware = __esm({
   }
 });
 
-// ../.wrangler/tmp/pages-V1dvXm/functionsRoutes-0.18121058202988283.mjs
+// ../.wrangler/tmp/pages-SGtq8h/functionsRoutes-0.9462741500794678.mjs
 var routes;
-var init_functionsRoutes_0_18121058202988283 = __esm({
-  "../.wrangler/tmp/pages-V1dvXm/functionsRoutes-0.18121058202988283.mjs"() {
+var init_functionsRoutes_0_9462741500794678 = __esm({
+  "../.wrangler/tmp/pages-SGtq8h/functionsRoutes-0.9462741500794678.mjs"() {
     init_create_checkout();
     init_create_checkout();
     init_public_slots();
@@ -50163,6 +50432,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
     init_ledger();
     init_ledger();
     init_monitor_event();
+    init_quiz_intake_readiness();
     init_repair_command();
     init_repair_command();
     init_systems();
@@ -50540,11 +50810,18 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         modules: [onRequestPost4]
       },
       {
-        routePath: "/api/ops/repair-command",
+        routePath: "/api/ops/quiz-intake-readiness",
         mountPath: "/api/ops",
         method: "GET",
         middlewares: [],
         modules: [onRequestGet5]
+      },
+      {
+        routePath: "/api/ops/repair-command",
+        mountPath: "/api/ops",
+        method: "GET",
+        middlewares: [],
+        modules: [onRequestGet6]
       },
       {
         routePath: "/api/ops/repair-command",
@@ -50558,7 +50835,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api/ops",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet6]
+        modules: [onRequestGet7]
       },
       {
         routePath: "/api/ops/systems",
@@ -50600,7 +50877,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet7]
+        modules: [onRequestGet8]
       },
       {
         routePath: "/api/appointment-webhook",
@@ -50614,7 +50891,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet8]
+        modules: [onRequestGet9]
       },
       {
         routePath: "/api/call-coach",
@@ -50642,7 +50919,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet9]
+        modules: [onRequestGet10]
       },
       {
         routePath: "/api/contact-message",
@@ -50663,7 +50940,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet10]
+        modules: [onRequestGet11]
       },
       {
         routePath: "/api/cos-actions",
@@ -50754,21 +51031,21 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet11]
+        modules: [onRequestGet12]
       },
       {
         routePath: "/api/cos-health",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet12]
+        modules: [onRequestGet13]
       },
       {
         routePath: "/api/cos-parking-current",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet13]
+        modules: [onRequestGet14]
       },
       {
         routePath: "/api/cos-parking-current",
@@ -50782,7 +51059,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet14]
+        modules: [onRequestGet15]
       },
       {
         routePath: "/api/cos-parking-seed",
@@ -50803,14 +51080,14 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet15]
+        modules: [onRequestGet16]
       },
       {
         routePath: "/api/cos-spotify-callback",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet16]
+        modules: [onRequestGet17]
       },
       {
         routePath: "/api/cos-vault-sync",
@@ -50831,14 +51108,14 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet17]
+        modules: [onRequestGet18]
       },
       {
         routePath: "/api/ecosystem-scan",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet18]
+        modules: [onRequestGet19]
       },
       {
         routePath: "/api/elbow-study-interest",
@@ -50887,7 +51164,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet19]
+        modules: [onRequestGet20]
       },
       {
         routePath: "/api/ghl-invoice-webhook",
@@ -50901,7 +51178,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet20]
+        modules: [onRequestGet21]
       },
       {
         routePath: "/api/ghl-purchase-webhook",
@@ -50929,7 +51206,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet21]
+        modules: [onRequestGet22]
       },
       {
         routePath: "/api/heartbeats",
@@ -50971,7 +51248,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet22]
+        modules: [onRequestGet23]
       },
       {
         routePath: "/api/outreach-coach",
@@ -50999,7 +51276,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet23]
+        modules: [onRequestGet24]
       },
       {
         routePath: "/api/partner-data",
@@ -51013,7 +51290,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet24]
+        modules: [onRequestGet25]
       },
       {
         routePath: "/api/partner-stats",
@@ -51027,7 +51304,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet25]
+        modules: [onRequestGet26]
       },
       {
         routePath: "/api/partner-verify",
@@ -51083,7 +51360,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet26]
+        modules: [onRequestGet27]
       },
       {
         routePath: "/api/portal-data",
@@ -51111,7 +51388,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet27]
+        modules: [onRequestGet28]
       },
       {
         routePath: "/api/portal-progress",
@@ -51132,7 +51409,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet28]
+        modules: [onRequestGet29]
       },
       {
         routePath: "/api/portal-reimbursement-packet",
@@ -51146,7 +51423,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet29]
+        modules: [onRequestGet30]
       },
       {
         routePath: "/api/portal-slots",
@@ -51174,7 +51451,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet30]
+        modules: [onRequestGet31]
       },
       {
         routePath: "/api/portal-verify",
@@ -51223,7 +51500,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet31]
+        modules: [onRequestGet32]
       },
       {
         routePath: "/api/staff-amari-description-lab",
@@ -51244,7 +51521,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet32]
+        modules: [onRequestGet33]
       },
       {
         routePath: "/api/staff-amari-mail-auth",
@@ -51265,14 +51542,14 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet33]
+        modules: [onRequestGet34]
       },
       {
         routePath: "/api/staff-appointment-readiness",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet34]
+        modules: [onRequestGet35]
       },
       {
         routePath: "/api/staff-appointment-readiness",
@@ -51300,7 +51577,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet35]
+        modules: [onRequestGet36]
       },
       {
         routePath: "/api/staff-attestation",
@@ -51342,7 +51619,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet36]
+        modules: [onRequestGet37]
       },
       {
         routePath: "/api/staff-automations",
@@ -51363,7 +51640,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet37]
+        modules: [onRequestGet38]
       },
       {
         routePath: "/api/staff-balances",
@@ -51391,7 +51668,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet38]
+        modules: [onRequestGet39]
       },
       {
         routePath: "/api/staff-calendars",
@@ -51433,7 +51710,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet39]
+        modules: [onRequestGet40]
       },
       {
         routePath: "/api/staff-clarity-study",
@@ -51461,7 +51738,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet40]
+        modules: [onRequestGet41]
       },
       {
         routePath: "/api/staff-communication-preferences",
@@ -51482,7 +51759,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet41]
+        modules: [onRequestGet42]
       },
       {
         routePath: "/api/staff-community",
@@ -51496,7 +51773,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet42]
+        modules: [onRequestGet43]
       },
       {
         routePath: "/api/staff-community-image",
@@ -51524,7 +51801,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet43]
+        modules: [onRequestGet44]
       },
       {
         routePath: "/api/staff-contact",
@@ -51538,7 +51815,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet44]
+        modules: [onRequestGet45]
       },
       {
         routePath: "/api/staff-contacts",
@@ -51552,7 +51829,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet45]
+        modules: [onRequestGet46]
       },
       {
         routePath: "/api/staff-conversations",
@@ -51580,7 +51857,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet46]
+        modules: [onRequestGet47]
       },
       {
         routePath: "/api/staff-crm-pilot",
@@ -51594,7 +51871,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet47]
+        modules: [onRequestGet48]
       },
       {
         routePath: "/api/staff-data",
@@ -51608,7 +51885,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet48]
+        modules: [onRequestGet49]
       },
       {
         routePath: "/api/staff-elbow-study",
@@ -51629,7 +51906,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet49]
+        modules: [onRequestGet50]
       },
       {
         routePath: "/api/staff-exceptions",
@@ -51650,7 +51927,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet50]
+        modules: [onRequestGet51]
       },
       {
         routePath: "/api/staff-field-study",
@@ -51685,7 +51962,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet51]
+        modules: [onRequestGet52]
       },
       {
         routePath: "/api/staff-followups",
@@ -51720,7 +51997,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet52]
+        modules: [onRequestGet53]
       },
       {
         routePath: "/api/staff-funnel",
@@ -51748,7 +52025,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet53]
+        modules: [onRequestGet54]
       },
       {
         routePath: "/api/staff-gmail-reply-readiness",
@@ -51762,7 +52039,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet54]
+        modules: [onRequestGet55]
       },
       {
         routePath: "/api/staff-google-calendar-auth",
@@ -51797,7 +52074,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet55]
+        modules: [onRequestGet56]
       },
       {
         routePath: "/api/staff-media",
@@ -51818,7 +52095,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet56]
+        modules: [onRequestGet57]
       },
       {
         routePath: "/api/staff-media-file",
@@ -51909,7 +52186,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet57]
+        modules: [onRequestGet58]
       },
       {
         routePath: "/api/staff-outreach-cards",
@@ -51937,7 +52214,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet58]
+        modules: [onRequestGet59]
       },
       {
         routePath: "/api/staff-owed",
@@ -51951,7 +52228,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet59]
+        modules: [onRequestGet60]
       },
       {
         routePath: "/api/staff-owed-list",
@@ -51965,7 +52242,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet60]
+        modules: [onRequestGet61]
       },
       {
         routePath: "/api/staff-owned-contacts",
@@ -51979,7 +52256,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet61]
+        modules: [onRequestGet62]
       },
       {
         routePath: "/api/staff-partner-activity",
@@ -52007,7 +52284,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet62]
+        modules: [onRequestGet63]
       },
       {
         routePath: "/api/staff-partner-prospects",
@@ -52021,7 +52298,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet63]
+        modules: [onRequestGet64]
       },
       {
         routePath: "/api/staff-partner-rewards",
@@ -52084,7 +52361,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet64]
+        modules: [onRequestGet65]
       },
       {
         routePath: "/api/staff-pipeline",
@@ -52098,7 +52375,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet65]
+        modules: [onRequestGet66]
       },
       {
         routePath: "/api/staff-pos-sales",
@@ -52119,7 +52396,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet66]
+        modules: [onRequestGet67]
       },
       {
         routePath: "/api/staff-products",
@@ -52168,7 +52445,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet67]
+        modules: [onRequestGet68]
       },
       {
         routePath: "/api/staff-revenue",
@@ -52273,7 +52550,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet68]
+        modules: [onRequestGet69]
       },
       {
         routePath: "/api/staff-session",
@@ -52294,7 +52571,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet69]
+        modules: [onRequestGet70]
       },
       {
         routePath: "/api/staff-sharpen",
@@ -52315,7 +52592,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet70]
+        modules: [onRequestGet71]
       },
       {
         routePath: "/api/staff-stripe-cards",
@@ -52329,7 +52606,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet71]
+        modules: [onRequestGet72]
       },
       {
         routePath: "/api/staff-study",
@@ -52350,7 +52627,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet72]
+        modules: [onRequestGet73]
       },
       {
         routePath: "/api/staff-tasks",
@@ -52385,7 +52662,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet73]
+        modules: [onRequestGet74]
       },
       {
         routePath: "/api/stream-health",
@@ -52399,7 +52676,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet74]
+        modules: [onRequestGet75]
       },
       {
         routePath: "/api/stream-token",
@@ -52420,7 +52697,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet75]
+        modules: [onRequestGet76]
       },
       {
         routePath: "/api/study-book",
@@ -52441,7 +52718,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet75]
+        modules: [onRequestGet76]
       },
       {
         routePath: "/api/study-book-v2",
@@ -52462,14 +52739,14 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet76]
+        modules: [onRequestGet77]
       },
       {
         routePath: "/api/voice-write",
         mountPath: "/api",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet77]
+        modules: [onRequestGet78]
       },
       {
         routePath: "/api/voice-write",
@@ -52490,7 +52767,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/appointment",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet78]
+        modules: [onRequestGet79]
       },
       {
         routePath: "/appointment/manage",
@@ -52518,7 +52795,7 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
         mountPath: "/",
         method: "GET",
         middlewares: [],
-        modules: [onRequestGet79]
+        modules: [onRequestGet80]
       },
       {
         routePath: "/",
@@ -52531,11 +52808,11 @@ var init_functionsRoutes_0_18121058202988283 = __esm({
   }
 });
 
-// ../../../../../../../private/tmp/amari-staff-crm-npm-cache/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
-init_functionsRoutes_0_18121058202988283();
+// ../../../../../../../../private/tmp/npm-cache-flow1/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+init_functionsRoutes_0_9462741500794678();
 
-// ../../../../../../../private/tmp/amari-staff-crm-npm-cache/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
-init_functionsRoutes_0_18121058202988283();
+// ../../../../../../../../private/tmp/npm-cache-flow1/_npx/38f3295754dfa028/node_modules/path-to-regexp/dist.es2015/index.js
+init_functionsRoutes_0_9462741500794678();
 function lexer(str) {
   var tokens = [];
   var i = 0;
@@ -52861,7 +53138,7 @@ function pathToRegexp(path, keys, options) {
 }
 __name(pathToRegexp, "pathToRegexp");
 
-// ../../../../../../../private/tmp/amari-staff-crm-npm-cache/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
+// ../../../../../../../../private/tmp/npm-cache-flow1/_npx/38f3295754dfa028/node_modules/wrangler/templates/pages-template-worker.ts
 var escapeRegex = /[.+?^${}()|[\]\\]/g;
 function* executeRequest(request2) {
   const requestPath = new URL(request2.url).pathname;

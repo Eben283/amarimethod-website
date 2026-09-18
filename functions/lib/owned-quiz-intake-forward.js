@@ -30,6 +30,7 @@ export function ownedQuizIntakePayload(submission, { idempotencyKey, audience, r
 // exist in the Pages runtime.
 export async function forwardOwnedQuizIntake(env, payload, {
   sourceMode = OWNED_QUIZ_BRIDGE_SOURCE_MODE,
+  providerQuizHistory,
 } = {}) {
   if (sourceMode === "shadow") return { ok: true, skipped: "source_shadow" };
   if (sourceMode !== "active") return { ok: false, error: "invalid_source_mode" };
@@ -40,6 +41,9 @@ export async function forwardOwnedQuizIntake(env, payload, {
     return { ok: false, error: "owned_intake_unconfigured" };
   }
 
+  if (!["present", "absent"].includes(providerQuizHistory)) {
+    return { ok: false, error: "provider_quiz_history_unverified" };
+  }
   let response;
   try {
     response = await env.CRM_MIRROR.fetch(new Request(INTAKE_URL, {
@@ -47,6 +51,7 @@ export async function forwardOwnedQuizIntake(env, payload, {
       headers: {
         Authorization: `Bearer ${env.WORKER_AUTH_SECRET}`,
         "Content-Type": "application/json",
+        "X-Amari-Provider-Quiz-History": providerQuizHistory,
       },
       body: JSON.stringify(payload),
     }));

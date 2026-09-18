@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { normalizeQuizSubmission, onRequestPost } from "./send-to-ghl.js";
+import { normalizeQuizSubmission, onRequestPost, readProviderQuizHistory } from "./send-to-ghl.js";
 
 function validSubmission(overrides = {}) {
   return {
@@ -65,6 +65,43 @@ function turnstileSuccess() {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("quiz submission boundary", () => {
+  it("classifies durable provider Quiz history from tags, source, or populated Quiz fields", async () => {
+    const request = vi.fn(async (url) => {
+      if (String(url).includes("/contacts/search/duplicate")) {
+        return Response.json({ contact: { id: "ghl-1", email: "ari@example.test" } });
+      }
+      if (String(url).endsWith("/contacts/ghl-1")) {
+        return Response.json({ contact: {
+          id: "ghl-1",
+          email: "ari@example.test",
+          tags: [],
+          source: "Other",
+          customFields: [{ id: "fE6XF0OEaq09v6clDhzq", value: "Quiz Results" }],
+        } });
+      }
+      throw new Error(`unexpected request: ${url}`);
+    });
+
+    await expect(readProviderQuizHistory("ari@example.test", "ghl-secret", request))
+      .resolves.toBe("present");
+  });
+
+  it("returns absent only after a conclusive provider lookup and unknown on provider failure", async () => {
+    const absent = vi.fn(async () => Response.json({ contact: null }));
+    await expect(readProviderQuizHistory("ari@example.test", "ghl-secret", absent))
+      .resolves.toBe("absent");
+
+    const unavailable = vi.fn(async () => new Response("offline", { status: 503 }));
+    await expect(readProviderQuizHistory("ari@example.test", "ghl-secret", unavailable))
+      .resolves.toBe("unknown");
+
+    const malformed = vi.fn(async (url) => String(url).includes("/contacts/search/duplicate")
+      ? Response.json({})
+      : Response.json({ unexpected: [] }));
+    await expect(readProviderQuizHistory("ari@example.test", "ghl-secret", malformed))
+      .resolves.toBe("unknown");
+  });
+
   it("normalizes the valid browser payload without changing its lifecycle fields", () => {
     expect(normalizeQuizSubmission(validSubmission({
       email: " Ari@Example.TEST ",
@@ -177,6 +214,41 @@ describe("quiz submission boundary", () => {
     expect(fetchSpy.mock.calls.some(([url]) => String(url).includes("services.leadconnectorhq.com"))).toBe(false);
   });
 
+  it("fails closed before owned capture or GHL writes when provider Quiz history is unavailable", async () => {
+    const values = new Map();
+    const kv = protectionKV({
+      get: vi.fn(async (key) => values.get(key) || null),
+      put: vi.fn(async (key, value) => { values.set(key, value); }),
+      delete: vi.fn(async (key) => { values.delete(key); }),
+    });
+    const fetchSpy = vi.fn(async (url) => {
+      if (String(url).includes("siteverify")) return turnstileSuccess();
+      if (String(url).includes("services.leadconnectorhq.com/contacts/")) {
+        return new Response("unavailable", { status: 503 });
+      }
+      throw new Error(`unexpected request: ${url}`);
+    });
+    const ownedFetch = vi.fn();
+    vi.stubGlobal("fetch", fetchSpy);
+
+    const response = await onRequestPost(context(validSubmission({ turnstileToken: "valid" }), {}, {
+      TURNSTILE_SECRET_KEY: "test-secret",
+      PORTAL_KV: kv,
+      GHL_API_KEY: "ghl-secret",
+      OWNED_QUIZ_BRIDGE_RELEASE: "approved",
+      CRM_MIRROR: { fetch: ownedFetch },
+      WORKER_AUTH_SECRET: "worker-secret",
+    }));
+
+    expect(response.status).toBe(422);
+    await expect(response.json()).resolves.toEqual({
+      error: "We could not verify your Quiz history. Please try again.",
+    });
+    expect(ownedFetch).not.toHaveBeenCalled();
+    expect(fetchSpy.mock.calls.some(([url]) => String(url).endsWith("/contacts/upsert"))).toBe(false);
+    expect(kv.delete).toHaveBeenCalledWith(expect.stringMatching(/^quiz_submission:/));
+  });
+
   it("keeps GHL as the compatibility write while completing the public idempotency record", async () => {
     const values = new Map();
     const callOrder = [];
@@ -193,6 +265,10 @@ describe("quiz submission boundary", () => {
       if (String(url).endsWith("/contacts/upsert")) {
         callOrder.push("ghl-upsert");
         return Response.json({ contact: { id: "ghl-contact-1" } });
+      }
+      if (String(url).includes("/contacts/search/duplicate")) {
+        callOrder.push("ghl-history");
+        return Response.json({ contact: null });
       }
       if (String(url).endsWith("/contacts/ghl-contact-1")) {
         callOrder.push("ghl-fields");
@@ -225,9 +301,12 @@ describe("quiz submission boundary", () => {
 
     expect(response.status).toBe(200);
     await expect(response.json()).resolves.toEqual({ success: true, audience: "bay-area" });
-    expect(fetchSpy).toHaveBeenCalledTimes(3);
+    expect(fetchSpy).toHaveBeenCalledTimes(4);
     expect(ownedFetch).toHaveBeenCalledTimes(1);
-    expect(callOrder).toEqual(["turnstile", "owned", "ghl-upsert", "ghl-fields"]);
+    expect(callOrder).toEqual(["turnstile", "ghl-history", "owned", "ghl-upsert", "ghl-fields"]);
+    const ownedRequest = ownedFetch.mock.calls[0][0];
+    expect(ownedRequest.headers.get("X-Amari-Provider-Quiz-History")).toBe("absent");
+    expect(await ownedRequest.json()).not.toHaveProperty("providerQuizHistory");
     expect([...values.entries()]).toEqual(expect.arrayContaining([
       [expect.stringMatching(/^quiz_submission:/), "completed"],
     ]));
@@ -243,7 +322,8 @@ describe("quiz submission boundary", () => {
     });
     const fetchSpy = vi.fn(async (url) => {
       if (String(url).includes("siteverify")) return turnstileSuccess();
-      throw new Error(`GHL must not run: ${url}`);
+      if (String(url).includes("/contacts/search/duplicate")) return Response.json({ contact: null });
+      throw new Error(`GHL write must not run: ${url}`);
     });
     vi.stubGlobal("fetch", fetchSpy);
 
@@ -258,7 +338,7 @@ describe("quiz submission boundary", () => {
 
     expect(response.status).toBe(422);
     await expect(response.json()).resolves.toEqual({ error: "Owned contact capture unavailable." });
-    expect(fetchSpy).toHaveBeenCalledTimes(1);
+    expect(fetchSpy).toHaveBeenCalledTimes(2);
     expect(kv.delete).toHaveBeenCalledWith(expect.stringMatching(/^quiz_submission:/));
     expect([...values.keys()].some((key) => key.startsWith("quiz_submission:"))).toBe(false);
   });

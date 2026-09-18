@@ -61,14 +61,17 @@ describe("owned public quiz intake bridge", () => {
     await expect(forwardOwnedQuizIntake({
       WORKER_AUTH_SECRET: "secret",
       CRM_MIRROR: { fetch },
-    }, payload())).resolves.toEqual({ ok: false, error: "release_not_approved" });
+    }, payload(), { providerQuizHistory: "absent" }))
+      .resolves.toEqual({ ok: false, error: "release_not_approved" });
     expect(fetch).not.toHaveBeenCalled();
   });
 
   it("requires the independent release flag, private binding, and Worker auth", async () => {
-    await expect(forwardOwnedQuizIntake({}, payload()))
+    await expect(forwardOwnedQuizIntake({}, payload(), { providerQuizHistory: "absent" }))
       .resolves.toEqual({ ok: false, error: "release_not_approved" });
-    await expect(forwardOwnedQuizIntake({ OWNED_QUIZ_BRIDGE_RELEASE: "approved" }, payload()))
+    await expect(forwardOwnedQuizIntake(
+      { OWNED_QUIZ_BRIDGE_RELEASE: "approved" }, payload(), { providerQuizHistory: "absent" },
+    ))
       .resolves.toEqual({ ok: false, error: "owned_intake_unconfigured" });
   });
 
@@ -76,6 +79,7 @@ describe("owned public quiz intake bridge", () => {
     const fetch = vi.fn(async (request) => {
       expect(request.url).toBe("https://crm-mirror.internal/contacts/quiz-intake");
       expect(request.headers.get("Authorization")).toBe("Bearer private-secret");
+      expect(request.headers.get("X-Amari-Provider-Quiz-History")).toBe("present");
       expect(await request.json()).toEqual(payload());
       return Response.json({
         success: true,
@@ -88,7 +92,7 @@ describe("owned public quiz intake bridge", () => {
       OWNED_QUIZ_BRIDGE_RELEASE: "approved",
       WORKER_AUTH_SECRET: "private-secret",
       CRM_MIRROR: { fetch },
-    }, payload())).resolves.toEqual({ ok: true, deduped: false });
+    }, payload(), { providerQuizHistory: "present" })).resolves.toEqual({ ok: true, deduped: false });
     expect(fetch).toHaveBeenCalledTimes(1);
   });
 
@@ -98,11 +102,17 @@ describe("owned public quiz intake bridge", () => {
       WORKER_AUTH_SECRET: "secret",
       CRM_MIRROR: { fetch },
     });
-    await expect(forwardOwnedQuizIntake(env(async () => { throw new Error("offline"); }), payload()))
+    await expect(forwardOwnedQuizIntake(
+      env(async () => { throw new Error("offline"); }), payload(), { providerQuizHistory: "absent" },
+    ))
       .resolves.toEqual({ ok: false, error: "owned_intake_unavailable" });
-    await expect(forwardOwnedQuizIntake(env(async () => new Response("no", { status: 409 })), payload()))
+    await expect(forwardOwnedQuizIntake(
+      env(async () => new Response("no", { status: 409 })), payload(), { providerQuizHistory: "absent" },
+    ))
       .resolves.toEqual({ ok: false, error: "owned_intake_rejected", status: 409 });
-    await expect(forwardOwnedQuizIntake(env(async () => Response.json({ success: true })), payload()))
+    await expect(forwardOwnedQuizIntake(
+      env(async () => Response.json({ success: true })), payload(), { providerQuizHistory: "absent" },
+    ))
       .resolves.toEqual({ ok: false, error: "owned_intake_invalid_acknowledgement" });
   });
 });
