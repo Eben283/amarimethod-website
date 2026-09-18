@@ -15,20 +15,24 @@ Status: **exit gate open**. Staff Communication is current for its existing proj
 1. The conversation reader requested only call, SMS, and email. GHL also exposes Facebook, Google Business Messages, Instagram, WhatsApp, and five activity record types through this endpoint.
 2. The Staff projection drops provider fields including original type identifiers, participants, content type, source/user/provider IDs, error metadata, call duration metadata, and email routing metadata.
 3. Per-conversation reads retain only the newest 20 messages and do not paginate older history.
-4. The manual message export omits email unless email is requested separately, is capped at eight 50-record pages, and restarts from the beginning on the next invocation because its cursor expires.
+4. The projection path does not yet materialize the newly complete raw history into Staff; raw-history capture and Staff projection remain separate bounded phases.
 5. Call recording, voicemail media, and transcription endpoints are not mirrored.
 6. There is no account-level source-versus-owned reconciliation, export/restore proof, or approved ordinary-traffic observation window.
 
-## Foundation in this branch
+## Live foundation
 
-Migration `0035_ghl_communication_source_archive.sql` adds a revision-preserving raw GHL source archive. Signed webhooks, recent and historical conversation reads, and manual message export write the exact provider JSON before Staff normalization or contact matching. The conversation reader requests all twelve types currently documented by GHL. Unsupported and unmatched records remain archived even when Staff cannot render them.
+Migration `0035_ghl_communication_source_archive.sql` provides a revision-preserving raw GHL source archive. Signed webhooks plus recent and historical conversation reads write the exact provider JSON before Staff normalization or contact matching. The conversation reader requests all twelve types currently documented by GHL. Unsupported and unmatched records remain archived even when Staff cannot render them.
 
-This foundation is additive and does not activate sending or write to GHL. It must be installed through its protected schema workflow before the Worker is deployed.
+PRs #649/#651/#652 installed and verified the schema and released the archive-aware Worker on 2026-09-18. This foundation is additive and does not activate sending or write to GHL.
+
+## Resumable history backfill in this branch
+
+The account-level export now uses independent non-email and email streams because GHL excludes email from the default response. Each stream consumes the provider's short-lived cursor only inside one invocation, while durable progress is stored as a bounded 30-day date window. Completed windows move backward to a fixed floor; capped windows resume immediately below the oldest archived row with a one-millisecond overlap. Raw archive writes are idempotent, so boundary overlap cannot duplicate source revisions. One bounded scheduled lane advances both streams without projecting the same historical page into Staff inside that invocation.
 
 ## Remaining release gates
 
-- Deploy the additive archive migration, then deploy the archive-aware Worker in that order.
-- Build complete, resumable non-email and email history backfills.
+- Deploy and observe the resumable non-email and email history backfills.
+- Project the complete source archive into Staff with explicit unsupported-type visibility.
 - Mirror call media/transcripts and all required provider metadata.
 - Extend Staff rendering for every relied-on channel and activity type.
 - Reconcile counts, IDs, revisions, attachments, ordering, and sampled contacts against GHL with zero unexplained gaps.

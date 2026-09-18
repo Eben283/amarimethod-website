@@ -15,7 +15,6 @@ import {
   upsertStripeInvoice,
   upsertCommunicationEvent,
   upsertCommunicationThread,
-  ensureCommunicationThread,
   deleteGhlEmailContainerEvent,
   upsertGhlCommunicationSourceRecord,
 } from "./repository.js";
@@ -39,13 +38,15 @@ export const RECENT_CONVERSATION_LIMIT = 10;
 export const RECENT_MESSAGE_LIMIT = 20;
 export const SCHEDULED_RECENT_CONVERSATION_LIMIT = 3;
 export const SCHEDULED_HISTORICAL_CONVERSATION_LIMIT = 3;
+export const MESSAGE_EXPORT_WINDOW_DAYS = 30;
+export const MESSAGE_EXPORT_FLOOR = "2020-01-01T00:00:00.000Z";
 // The five-minute cron rotates bounded lanes. Running every provider and both
 // conversation sweeps in one invocation exceeded the platform's execution
 // boundary and starved every later source. Each core provider is still read at
 // least every fifteen minutes, within the 45-minute freshness contract.
 export const SCHEDULED_SYNC_LANES = Object.freeze([
   Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl", "consents"]),
-  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "stripe", "stripe-invoices", "consents"]),
+  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "stripe", "stripe-invoices", "ghl-message-export", "consents"]),
   Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"]),
 ]);
 
@@ -224,32 +225,91 @@ export async function syncGhlConversations(env, limit, now) {
   return outcome;
 }
 
-// Historical export uses a short-lived cursor. Consume bounded pages in one
-// invocation; never persist the cursor for a later cron run.
-export async function backfillGhlMessageExport(env, { pages = 8, pageSize = 50 } = {}, now) {
-  const runId = await beginSyncRun(env.CRM_DB, "ghl", "message-export", now);
+const MESSAGE_EXPORT_CHANNELS = Object.freeze([
+  Object.freeze({ key: "non-email", channel: null }),
+  Object.freeze({ key: "email", channel: "Email" }),
+]);
+
+function messageExportState(value, fallbackEndDate) {
+  if (value === "done") return { done: true, endDate: null };
+  if (typeof value === "string" && value) {
+    try {
+      const parsed = JSON.parse(value);
+      if (typeof parsed?.endDate === "string" && Number.isFinite(Date.parse(parsed.endDate))) {
+        return { done: false, endDate: new Date(parsed.endDate).toISOString() };
+      }
+    } catch {
+      // Invalid legacy state restarts from the current boundary. Raw archive
+      // writes are idempotent, so re-reading is safer than skipping history.
+    }
+  }
+  return { done: false, endDate: fallbackEndDate };
+}
+
+function sourceOccurredAt(raw) {
+  const value = raw?.dateAdded || raw?.createdAt || raw?.date || raw?.updatedAt;
+  const parsed = typeof value === "number" ? value : Date.parse(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+async function backfillGhlMessageExportChannel(env, { key, channel }, { pages, pageSize }, now) {
+  const cursorKey = `ghl-message-export:${key}`;
+  const state = messageExportState(await getSyncCursor(env.CRM_DB, cursorKey), now);
+  if (state.done) return { ...result("succeeded"), cursorAfter: "done", sourceRecordsArchived: 0 };
+
+  const floorMs = Date.parse(MESSAGE_EXPORT_FLOOR);
+  const rangeEndMs = Date.parse(state.endDate);
+  if (!Number.isFinite(rangeEndMs)) throw new Error(`invalid ${key} message-export boundary`);
+  if (rangeEndMs <= floorMs) {
+    await setSyncCursor(env.CRM_DB, cursorKey, "done", now);
+    return { ...result("succeeded"), cursorAfter: "done", sourceRecordsArchived: 0 };
+  }
+
+  const rangeStartMs = Math.max(floorMs, rangeEndMs - MESSAGE_EXPORT_WINDOW_DAYS * 24 * 60 * 60 * 1000);
+  const rangeStart = new Date(rangeStartMs).toISOString();
+  const rangeEnd = new Date(rangeEndMs).toISOString();
+  const runId = await beginSyncRun(env.CRM_DB, "ghl", `message-export:${key}:${rangeEnd}`, now);
   const outcome = result();
   let cursor = null;
+  let oldestOccurredMs = null;
   try {
     for (let page = 0; page < pages; page += 1) {
-      const response = await fetchGhlMessageExport(env, cursor, pageSize);
+      const response = await fetchGhlMessageExport(env, {
+        cursor,
+        limit: pageSize,
+        channel,
+        startDate: rangeStart,
+        endDate: rangeEnd,
+      });
       for (const rawMessage of response.messages) {
         outcome.recordsRead += 1;
-        outcome.sourceRecordsArchived = (outcome.sourceRecordsArchived || 0)
-          + (await upsertGhlCommunicationSourceRecord(env.CRM_DB, rawMessage, now) ? 1 : 0);
-        const message = normalizeGhlMessage(rawMessage, rawMessage.conversationId, rawMessage.contactId);
-        if (!message) { outcome.recordsSkipped += 1; continue; }
-        const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);
-        if (!contactId) { outcome.recordsSkipped += 1; continue; }
-        const threadId = await ensureCommunicationThread(env.CRM_DB, message, contactId, now);
-        await upsertCommunicationEvent(env.CRM_DB, message, threadId, contactId, now);
-        outcome.recordsWritten += 1;
+        const occurredAt = sourceOccurredAt(rawMessage);
+        if (occurredAt != null && (oldestOccurredMs == null || occurredAt < oldestOccurredMs)) oldestOccurredMs = occurredAt;
+        if (await upsertGhlCommunicationSourceRecord(env.CRM_DB, rawMessage, now)) {
+          outcome.recordsWritten += 1;
+          outcome.sourceRecordsArchived = (outcome.sourceRecordsArchived || 0) + 1;
+        } else {
+          outcome.recordsSkipped += 1;
+        }
       }
       cursor = response.nextCursor;
       if (!cursor || !response.messages.length) break;
     }
-    outcome.cursorAfter = cursor ? "more-history" : null;
-    outcome.status = cursor ? "partial" : "succeeded";
+    if (cursor) {
+      if (oldestOccurredMs == null) throw new Error(`${key} message export cannot advance without a source timestamp`);
+      const nextEndMs = oldestOccurredMs + 1;
+      // Never step past an unresolved timestamp collision. If every bounded
+      // page ends on the same millisecond as the previous boundary, stopping
+      // is safer than skipping unseen provider rows at that timestamp.
+      if (nextEndMs <= floorMs || nextEndMs >= rangeEndMs) throw new Error(`${key} message export did not advance`);
+      outcome.cursorAfter = JSON.stringify({ endDate: new Date(nextEndMs).toISOString() });
+    } else if (rangeStartMs <= floorMs) {
+      outcome.cursorAfter = "done";
+    } else {
+      outcome.cursorAfter = JSON.stringify({ endDate: rangeStart });
+    }
+    outcome.status = outcome.cursorAfter === "done" ? "succeeded" : "partial";
+    await setSyncCursor(env.CRM_DB, cursorKey, outcome.cursorAfter, now);
   } catch (error) {
     outcome.status = "failed";
     outcome.failureDetail = error instanceof Error ? error.message : String(error);
@@ -257,6 +317,24 @@ export async function backfillGhlMessageExport(env, { pages = 8, pageSize = 50 }
   await finishSyncRun(env.CRM_DB, runId, outcome, now);
   if (outcome.status === "failed") throw new Error(outcome.failureDetail);
   return outcome;
+}
+
+// GHL's export cursor expires after two minutes, so it is consumed only inside
+// one invocation. Durable progress is a bounded date window per channel. Email
+// must be requested separately because the provider omits it from the default
+// export. This phase archives exact source JSON only; projection into Staff is
+// a separate bounded pass so a large historical page cannot exceed D1 limits.
+export async function backfillGhlMessageExport(env, { pages = 8, pageSize = 50 } = {}, now) {
+  const outcomes = [];
+  for (const channel of MESSAGE_EXPORT_CHANNELS) {
+    outcomes.push(await backfillGhlMessageExportChannel(env, channel, { pages, pageSize }, now));
+  }
+  const recordsRead = outcomes.reduce((total, item) => total + item.recordsRead, 0);
+  const recordsWritten = outcomes.reduce((total, item) => total + item.recordsWritten, 0);
+  const recordsSkipped = outcomes.reduce((total, item) => total + item.recordsSkipped, 0);
+  const sourceRecordsArchived = outcomes.reduce((total, item) => total + (item.sourceRecordsArchived || 0), 0);
+  const status = outcomes.every((item) => item.status === "succeeded") ? "succeeded" : "partial";
+  return { status, recordsRead, recordsWritten, recordsSkipped, sourceRecordsArchived, cursorAfter: outcomes.map((item) => item.cursorAfter) };
 }
 
 // Historic client records have no location-wide GHL API feed. Walk the existing
@@ -490,6 +568,7 @@ export async function runScheduledSync(env, now) {
     "stripe-invoices": [syncStripeInvoices, SCHEDULED_STRIPE_LIMIT],
     "ghl-conversations-recent": [syncRecentGhlConversations, SCHEDULED_RECENT_CONVERSATION_LIMIT],
     "ghl-conversations": [syncGhlConversations, SCHEDULED_HISTORICAL_CONVERSATION_LIMIT],
+    "ghl-message-export": [(runtime) => backfillGhlMessageExport(runtime, { pages: 4, pageSize: 50 }, now), 0],
     "ghl-client-records": [backfillGhlClientRecords, 3],
     "consents": [syncNativeBookingConsents, 0],
   };

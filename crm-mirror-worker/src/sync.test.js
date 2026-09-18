@@ -77,17 +77,19 @@ vi.mock("./owned-email-dispatch.js", () => ({
   dispatchOwnedEmails: mocks.dispatchOwnedEmails,
 }));
 
-import { backfillGhlClientRecords, runScheduledSync, SCHEDULED_SYNC_LANES, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
+import { backfillGhlClientRecords, backfillGhlMessageExport, runScheduledSync, SCHEDULED_SYNC_LANES, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  mocks.getSyncCursor.mockReset().mockResolvedValue(null);
+  mocks.fetchGhlMessageExport.mockReset();
 });
 
 describe("scheduled provider fairness", () => {
   it("rotates bounded lanes while retaining recent communication freshness", () => {
     expect(SCHEDULED_SYNC_LANES).toEqual([
       ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl", "consents"],
-      ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "stripe", "stripe-invoices", "consents"],
+      ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "stripe", "stripe-invoices", "ghl-message-export", "consents"],
       ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"],
     ]);
   });
@@ -110,6 +112,10 @@ describe("scheduled provider fairness", () => {
       calls.push(cursor == null ? "ghl-conversations-recent" : "ghl-conversations");
       return { conversations: [], nextCursor: null };
     });
+    mocks.fetchGhlMessageExport.mockImplementation(async (_env, options) => {
+      calls.push(options.channel === "Email" ? "ghl-message-export-email" : "ghl-message-export-non-email");
+      return { messages: [], nextCursor: null };
+    });
     // Give the paginated conversation sweep a durable non-null cursor so the
     // test can distinguish it from the deliberately fresh recent window.
     mocks.getSyncCursor.mockImplementation(async (_db, key) => key === "ghl-conversations" ? "2026-08-20T00:00:00.000Z" : null);
@@ -119,7 +125,7 @@ describe("scheduled provider fairness", () => {
 
     calls.length = 0;
     await runScheduledSync({ CRM_DB: {}, AUTOMATION_DB: {} }, "2026-08-29T08:20:00.000Z");
-    expect(calls).toEqual(["ghl-conversations-recent", "stripe", "stripe-invoices"]);
+    expect(calls).toEqual(["ghl-conversations-recent", "stripe", "stripe-invoices", "ghl-message-export-non-email", "ghl-message-export-email"]);
 
     calls.length = 0;
     await runScheduledSync({ CRM_DB: {}, AUTOMATION_DB: {} }, "2026-08-29T08:25:00.000Z");
@@ -131,6 +137,83 @@ describe("scheduled provider fairness", () => {
     mocks.fetchGhlConversationsPage.mockReset();
     mocks.getSyncCursor.mockReset().mockResolvedValue(null);
 
+  });
+});
+
+describe("resumable GHL message export backfill", () => {
+  it("walks separate non-email and email windows backward without persisting GHL's expiring cursor", async () => {
+    mocks.getSyncCursor.mockImplementation(async (_db, key) => key === "ghl-message-export:non-email"
+      ? JSON.stringify({ endDate: "2026-09-01T00:00:00.000Z" })
+      : JSON.stringify({ endDate: "2026-08-15T00:00:00.000Z" }));
+    mocks.fetchGhlMessageExport
+      .mockResolvedValueOnce({ messages: [{ id: "sms_1", messageType: "TYPE_SMS", dateAdded: "2026-08-20T12:00:00.000Z" }], nextCursor: null })
+      .mockResolvedValueOnce({ messages: [{ id: "email_1", messageType: "TYPE_EMAIL", dateAdded: "2026-08-02T12:00:00.000Z" }], nextCursor: null });
+
+    const outcome = await backfillGhlMessageExport({ CRM_DB: {} }, { pages: 4, pageSize: 50 }, "2026-09-18T17:30:00.000Z");
+
+    expect(mocks.fetchGhlMessageExport).toHaveBeenNthCalledWith(1, { CRM_DB: {} }, expect.objectContaining({
+      channel: null,
+      startDate: "2026-08-02T00:00:00.000Z",
+      endDate: "2026-09-01T00:00:00.000Z",
+      cursor: null,
+    }));
+    expect(mocks.fetchGhlMessageExport).toHaveBeenNthCalledWith(2, { CRM_DB: {} }, expect.objectContaining({
+      channel: "Email",
+      startDate: "2026-07-16T00:00:00.000Z",
+      endDate: "2026-08-15T00:00:00.000Z",
+      cursor: null,
+    }));
+    expect(mocks.setSyncCursor).toHaveBeenCalledWith({}, "ghl-message-export:non-email", JSON.stringify({ endDate: "2026-08-02T00:00:00.000Z" }), "2026-09-18T17:30:00.000Z");
+    expect(mocks.setSyncCursor).toHaveBeenCalledWith({}, "ghl-message-export:email", JSON.stringify({ endDate: "2026-07-16T00:00:00.000Z" }), "2026-09-18T17:30:00.000Z");
+    expect(mocks.upsertGhlCommunicationSourceRecord).toHaveBeenCalledTimes(2);
+    expect(mocks.upsertCommunicationEvent).not.toHaveBeenCalled();
+    expect(outcome).toMatchObject({ status: "partial", recordsRead: 2, recordsWritten: 2 });
+  });
+
+  it("continues below the oldest archived row when a bounded window still has another page", async () => {
+    mocks.getSyncCursor.mockImplementation(async (_db, key) => key === "ghl-message-export:email" ? "done" : null);
+    mocks.fetchGhlMessageExport.mockResolvedValueOnce({
+      messages: [
+        { id: "sms_1", messageType: "TYPE_SMS", dateAdded: "2026-09-18T16:00:00.000Z" },
+        { id: "sms_2", messageType: "TYPE_SMS", dateAdded: "2026-09-17T12:00:00.000Z" },
+      ],
+      nextCursor: "expires-soon",
+    });
+
+    const outcome = await backfillGhlMessageExport({ CRM_DB: {} }, { pages: 1, pageSize: 50 }, "2026-09-18T17:30:00.000Z");
+
+    expect(mocks.setSyncCursor).toHaveBeenCalledWith({}, "ghl-message-export:non-email", JSON.stringify({ endDate: "2026-09-17T12:00:00.001Z" }), "2026-09-18T17:30:00.000Z");
+    expect(outcome.status).toBe("partial");
+  });
+
+  it("fails closed instead of skipping rows when a capped export cannot move below its saved boundary", async () => {
+    mocks.getSyncCursor.mockImplementation(async (_db, key) => key === "ghl-message-export:email"
+      ? "done"
+      : JSON.stringify({ endDate: "2026-09-17T12:00:00.001Z" }));
+    mocks.fetchGhlMessageExport.mockResolvedValueOnce({
+      messages: [{ id: "sms_same_time", messageType: "TYPE_SMS", dateAdded: "2026-09-17T12:00:00.000Z" }],
+      nextCursor: "expires-soon",
+    });
+
+    await expect(backfillGhlMessageExport({ CRM_DB: {} }, { pages: 1, pageSize: 50 }, "2026-09-18T17:30:00.000Z"))
+      .rejects.toThrow("non-email message export did not advance");
+    expect(mocks.setSyncCursor).not.toHaveBeenCalled();
+  });
+
+  it("marks both streams complete after their final floor-bounded windows", async () => {
+    mocks.getSyncCursor.mockResolvedValue(JSON.stringify({ endDate: "2020-01-15T00:00:00.000Z" }));
+    mocks.fetchGhlMessageExport.mockResolvedValue({ messages: [], nextCursor: null });
+
+    const outcome = await backfillGhlMessageExport({ CRM_DB: {} }, { pages: 4, pageSize: 50 }, "2026-09-18T17:30:00.000Z");
+
+    expect(mocks.fetchGhlMessageExport).toHaveBeenCalledTimes(2);
+    expect(mocks.fetchGhlMessageExport).toHaveBeenNthCalledWith(1, { CRM_DB: {} }, expect.objectContaining({
+      startDate: "2020-01-01T00:00:00.000Z",
+      endDate: "2020-01-15T00:00:00.000Z",
+    }));
+    expect(mocks.setSyncCursor).toHaveBeenCalledWith({}, "ghl-message-export:non-email", "done", "2026-09-18T17:30:00.000Z");
+    expect(mocks.setSyncCursor).toHaveBeenCalledWith({}, "ghl-message-export:email", "done", "2026-09-18T17:30:00.000Z");
+    expect(outcome).toMatchObject({ status: "succeeded", cursorAfter: ["done", "done"] });
   });
 });
 
