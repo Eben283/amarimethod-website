@@ -13,6 +13,7 @@ import {
   fetchGhlConversationsPage,
   fetchGhlEmail,
   fetchGhlMessage,
+  fetchGhlMessageExport,
   resolveGhlAttachmentUrl,
   fetchStripeCustomer,
   fetchStripeInvoicesPage,
@@ -91,6 +92,24 @@ describe("GHL contact pagination", () => {
     await fetchGhlConversationsPage(env, first.nextCursor, 2);
     url = new URL(fetch.mock.calls.at(-1)[0]);
     expect(url.searchParams.get("startAfterDate")).toBe(first.nextCursor);
+  });
+
+  it("requests bounded resumable message-export windows and isolates email", async () => {
+    fetch.mockResolvedValueOnce(Response.json({ messages: [], nextCursor: null, total: 0 }));
+
+    await fetchGhlMessageExport(env, {
+      channel: "Email",
+      startDate: "2026-08-01T00:00:00.000Z",
+      endDate: "2026-09-01T00:00:00.000Z",
+      limit: 50,
+    });
+
+    const url = new URL(fetch.mock.calls.at(-1)[0]);
+    expect(url.searchParams.get("channel")).toBe("Email");
+    expect(url.searchParams.get("startDate")).toBe("2026-08-01T00:00:00.000Z");
+    expect(url.searchParams.get("endDate")).toBe("2026-09-01T00:00:00.000Z");
+    expect(url.searchParams.get("sortBy")).toBe("createdAt");
+    expect(url.searchParams.get("sortOrder")).toBe("desc");
   });
 
   it("restarts instead of sending a legacy synthetic page number to GHL", async () => {

@@ -41,7 +41,7 @@ Migration `0033_client_desk_conversation_dispositions.sql` separates a Staff mem
 
 Migration `0034_communication_attachments.sql` preserves bounded GHL attachment locators separately from message text. Client Desk returns only opaque attachment IDs, resolves private GHL file links server-side, rejects unsafe types and oversized files, and streams approved files with private no-store headers. Existing mirrored conversations are backfilled on their next bounded GHL refresh. This migration does not activate Gmail sending or native Gmail inbound synchronization.
 
-Migration `0035_ghl_communication_source_archive.sql` adds a lossless, revision-preserving archive of every GHL communication object observed through signed webhooks, bounded conversation reads, and manual message export. It is intentionally independent of Staff's contact and timeline projection, so an unsupported channel or unmatched contact is retained. This is a source-preservation foundation, not a GHL exit claim: complete email/non-email historical backfill, recording and transcription storage, rendered parity for every channel, reconciliation, and an observation window remain required.
+Migration `0035_ghl_communication_source_archive.sql` adds a lossless, revision-preserving archive of every GHL communication object observed through signed webhooks, bounded conversation reads, and message export. It is intentionally independent of Staff's contact and timeline projection, so an unsupported channel or unmatched contact is retained. The scheduled export uses separate email and non-email streams, consumes GHL's short-lived cursor only within one invocation, and persists bounded 30-day date progress while walking backward to a conservative 2020 floor. The floor must still be reconciled against the account's actual source-history start before exit. This is a source-preservation foundation, not a GHL exit claim: archive projection, recording and transcription storage, rendered parity for every channel, reconciliation, and an observation window remain required.
 
 Stripe charges that cannot be linked to a mirrored GHL contact are retained as unlinked purchase candidates. Package balance is deliberately **not** written to `session_ledger_entries` yet: a full ledger backfill must reconcile purchases against explicit attendance and refunds, rather than guessing from a mutable GHL field.
 
@@ -64,7 +64,7 @@ The dedicated `amari-crm-mirror` D1 database is bound in `wrangler.jsonc`; its i
 `/status` reports separate GHL and Stripe health states, treating a paginated GHL pass as healthy while it advances through the cursor; a source is stale after 45 minutes.
 
 The five-minute sweep first drains bounded owned appointment lifecycle evidence, shadow quiz-nurture handoff, and the source-disabled Staff email lane before reading the newest three GHL conversations. It then rotates one bounded
-provider lane: current GHL contacts/appointments, Stripe charges/invoices, or
+provider lane: current GHL contacts/appointments; Stripe charges/invoices plus separate archive-only GHL email and non-email history windows; or
 historical GHL conversation/client enrichment. Every core source is therefore
 attempted at least once per fifteen minutes, inside the 45-minute freshness
 contract, without combining hundreds of provider/database subrequests into one

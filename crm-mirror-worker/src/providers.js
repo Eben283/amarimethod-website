@@ -311,9 +311,23 @@ export async function resolveGhlAttachmentUrl(env, locator) {
   return result.toString();
 }
 
-export async function fetchGhlMessageExport(env, cursor = null, limit = 50) {
-  const params = new URLSearchParams({ locationId: env.GHL_LOCATION_ID, limit: String(Math.min(100, Math.max(10, limit))) });
+export async function fetchGhlMessageExport(env, {
+  cursor = null,
+  limit = 50,
+  channel = null,
+  startDate = null,
+  endDate = null,
+} = {}) {
+  const params = new URLSearchParams({
+    locationId: env.GHL_LOCATION_ID,
+    limit: String(Math.min(100, Math.max(10, limit))),
+    sortBy: "createdAt",
+    sortOrder: "desc",
+  });
   if (cursor) params.set("cursor", cursor);
+  if (channel) params.set("channel", channel);
+  if (startDate) params.set("startDate", startDate);
+  if (endDate) params.set("endDate", endDate);
   const payload = await ghlGet(env, `/conversations/messages/export?${params}`);
   return { messages: Array.isArray(payload.messages) ? payload.messages : [], nextCursor: typeof payload.nextCursor === "string" ? payload.nextCursor : null };
 }
