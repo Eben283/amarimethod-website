@@ -9,6 +9,7 @@ import {
   fetchGhlContactNotes,
   fetchGhlContactTasks,
   fetchGhlContactsPage,
+  fetchGhlConversationMessages,
   fetchGhlConversationsPage,
   fetchGhlEmail,
   fetchGhlMessage,
@@ -123,6 +124,17 @@ describe("GHL contact pagination", () => {
 
     await expect(fetchGhlEmail(env, "email_1")).resolves.toMatchObject({ id: "email_1", messageType: "TYPE_EMAIL", direction: "inbound", body: "Reply" });
     expect(new URL(fetch.mock.calls.at(-1)[0]).pathname).toBe("/conversations/messages/email/email_1");
+  });
+
+  it("explicitly requests call records with SMS and email conversation history", async () => {
+    fetch.mockResolvedValueOnce(Response.json({ messages: { messages: [] } }));
+
+    await expect(fetchGhlConversationMessages(env, "conversation_1", 20)).resolves.toEqual([]);
+
+    const url = new URL(fetch.mock.calls.at(-1)[0]);
+    expect(url.pathname).toBe("/conversations/conversation_1/messages");
+    expect(url.searchParams.get("limit")).toBe("20");
+    expect(url.searchParams.get("type")).toBe("TYPE_CALL,TYPE_SMS,TYPE_EMAIL");
   });
 
   it("treats deleted GHL contacts as absent for completeness cleanup", async () => {
