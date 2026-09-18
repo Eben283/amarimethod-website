@@ -126,7 +126,7 @@ describe("GHL contact pagination", () => {
     expect(new URL(fetch.mock.calls.at(-1)[0]).pathname).toBe("/conversations/messages/email/email_1");
   });
 
-  it("explicitly requests call records with SMS and email conversation history", async () => {
+  it("explicitly requests every GHL conversation history type", async () => {
     fetch.mockResolvedValueOnce(Response.json({ messages: { messages: [] } }));
 
     await expect(fetchGhlConversationMessages(env, "conversation_1", 20)).resolves.toEqual([]);
@@ -134,7 +134,10 @@ describe("GHL contact pagination", () => {
     const url = new URL(fetch.mock.calls.at(-1)[0]);
     expect(url.pathname).toBe("/conversations/conversation_1/messages");
     expect(url.searchParams.get("limit")).toBe("20");
-    expect(url.searchParams.get("type")).toBe("TYPE_CALL,TYPE_SMS,TYPE_EMAIL");
+    expect(url.searchParams.get("type")).toBe([
+      "TYPE_CALL", "TYPE_SMS", "TYPE_EMAIL", "TYPE_FACEBOOK", "TYPE_GMB", "TYPE_INSTAGRAM", "TYPE_WHATSAPP",
+      "TYPE_ACTIVITY_APPOINTMENT", "TYPE_ACTIVITY_CONTACT", "TYPE_ACTIVITY_INVOICE", "TYPE_ACTIVITY_PAYMENT", "TYPE_ACTIVITY_OPPORTUNITY",
+    ].join(","));
   });
 
   it("treats deleted GHL contacts as absent for completeness cleanup", async () => {

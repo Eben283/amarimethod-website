@@ -1,5 +1,44 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, deleteGhlEmailContainerEvent, dropAbsentGhlContacts, ledgerCutoverReview, mirrorReadiness, paymentAccessState, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlAppointment, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, deleteGhlEmailContainerEvent, dropAbsentGhlContacts, ledgerCutoverReview, mirrorReadiness, paymentAccessState, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlAppointment, upsertGhlCommunicationSourceRecord, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+
+describe("GHL communication source archive", () => {
+  it("stores the exact source payload and updates only last-seen evidence on repeat reads", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => ({
+        bind: (...values) => ({ run: async () => { writes.push({ sql, values }); } }),
+      }),
+    };
+    const raw = {
+      id: "message_social_1",
+      conversationId: "thread_1",
+      contactId: "contact_1",
+      type: "TYPE_INSTAGRAM",
+      direction: "inbound",
+      status: "delivered",
+      dateAdded: "2026-09-18T10:00:00.000Z",
+      body: "Exact provider payload",
+      meta: { instagram: { pageId: "page_1" } },
+    };
+
+    await upsertGhlCommunicationSourceRecord(db, raw, "2026-09-18T10:01:00.000Z");
+
+    expect(writes).toHaveLength(1);
+    expect(writes[0].sql).toContain("INSERT INTO ghl_communication_source_records");
+    expect(writes[0].sql).toContain("first_seen_at = ghl_communication_source_records.first_seen_at");
+    expect(writes[0].values.slice(0, 8)).toEqual([
+      "message_social_1", "thread_1", "contact_1", "TYPE_INSTAGRAM", "inbound", "delivered",
+      "2026-09-18T10:00:00.000Z", JSON.stringify(raw),
+    ]);
+    expect(writes[0].values[8]).toMatch(/^[a-f0-9]{64}$/);
+    expect(writes[0].values.slice(9)).toEqual(["2026-09-18T10:01:00.000Z", "2026-09-18T10:01:00.000Z"]);
+  });
+
+  it("refuses a provider row that has no stable message identity", async () => {
+    await expect(upsertGhlCommunicationSourceRecord({ prepare: () => { throw new Error("should not write"); } }, { body: "missing id" }, "2026-09-18T10:01:00.000Z"))
+      .resolves.toBe(false);
+  });
+});
 
 describe("GHL email aggregate cleanup", () => {
   it("deletes only the exact mutable GHL container row", async () => {

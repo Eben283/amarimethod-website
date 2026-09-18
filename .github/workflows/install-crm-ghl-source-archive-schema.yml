@@ -1,0 +1,80 @@
+name: install CRM GHL source archive schema
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: crm-production-schema
+  cancel-in-progress: false
+
+jobs:
+  install:
+    name: verify and install migration 0035
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: '.node-version'
+          cache: npm
+      - run: npm ci
+      - name: Refuse stale source or a broadened migration set
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin main
+          test "$GITHUB_SHA" = "$(git rev-parse origin/main)"
+          test "$(find crm-mirror-worker/migrations -maxdepth 1 -type f -name '*.sql' -print | sort | tail -n 1)" = "crm-mirror-worker/migrations/0035_ghl_communication_source_archive.sql"
+          npm run check:crm-mirror-release
+      - name: Verify production schema boundary
+        id: boundary
+        working-directory: crm-mirror-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          before="$(mktemp)"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT id, name FROM d1_migrations ORDER BY id DESC LIMIT 1" --json > "$before"
+          table_state="$(mktemp)"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT name FROM sqlite_schema WHERE name IN ('ghl_communication_source_records','idx_ghl_communication_source_event','idx_ghl_communication_source_thread','idx_ghl_communication_source_contact','idx_ghl_communication_source_type') ORDER BY name" --json > "$table_state"
+          node -e 'const fs=require("node:fs");const rows=(path)=>{const p=JSON.parse(fs.readFileSync(path,"utf8"));return p?.[0]?.results||p?.result?.[0]?.results||[]};const ledger=rows(process.argv[1]);const names=rows(process.argv[2]).map(r=>r.name).sort();const expected=["ghl_communication_source_records","idx_ghl_communication_source_contact","idx_ghl_communication_source_event","idx_ghl_communication_source_thread","idx_ghl_communication_source_type"].sort();if(ledger.length!==1)process.exit(1);if(ledger[0].name==="0034_communication_attachments.sql"&&names.length===0){fs.appendFileSync(process.env.GITHUB_OUTPUT,"action=apply\n");process.exit(0)}if(ledger[0].name==="0035_ghl_communication_source_archive.sql"&&JSON.stringify(names)===JSON.stringify(expected)){fs.appendFileSync(process.env.GITHUB_OUTPUT,"action=verify\n");process.exit(0)}process.exit(1)' "$before" "$table_state"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
+          WRANGLER_SEND_METRICS: 'false'
+          WRANGLER_WRITE_LOGS: 'false'
+      - name: Apply only migration 0035
+        if: steps.boundary.outputs.action == 'apply'
+        working-directory: crm-mirror-worker
+        run: npx --yes wrangler@4.125.0 d1 migrations apply amari-crm-mirror --config wrangler.jsonc --remote
+        env:
+          CI: 'true'
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
+          WRANGLER_SEND_METRICS: 'false'
+          WRANGLER_WRITE_LOGS: 'false'
+      - name: Verify exact installed schema and database integrity
+        working-directory: crm-mirror-worker
+        shell: bash
+        run: |
+          set -euo pipefail
+          ledger="$(mktemp)"
+          schema="$(mktemp)"
+          integrity="$(mktemp)"
+          foreign_keys="$(mktemp)"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT id, name FROM d1_migrations ORDER BY id DESC LIMIT 1" --json > "$ledger"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "SELECT type, name, tbl_name FROM sqlite_schema WHERE name IN ('ghl_communication_source_records','idx_ghl_communication_source_event','idx_ghl_communication_source_thread','idx_ghl_communication_source_contact','idx_ghl_communication_source_type') ORDER BY name" --json > "$schema"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "PRAGMA integrity_check" --json > "$integrity"
+          npx --yes wrangler@4.125.0 d1 execute amari-crm-mirror --config wrangler.jsonc --remote --command "PRAGMA foreign_key_check('ghl_communication_source_records')" --json > "$foreign_keys"
+          node -e 'const fs=require("node:fs");const fail=(code)=>{console.error(code);process.exit(1)};const rows=(path)=>{const p=JSON.parse(fs.readFileSync(path,"utf8"));return p?.[0]?.results||p?.result?.[0]?.results||[]};const ledger=rows(process.argv[1]);const schema=rows(process.argv[2]);const integrity=rows(process.argv[3]);const foreignKeys=rows(process.argv[4]);if(ledger.length!==1||ledger[0].name!=="0035_ghl_communication_source_archive.sql")fail("source_archive_ledger_verification_failed");const expected=["ghl_communication_source_records","idx_ghl_communication_source_contact","idx_ghl_communication_source_event","idx_ghl_communication_source_thread","idx_ghl_communication_source_type"].sort();if(JSON.stringify(schema.map(r=>r.name).sort())!==JSON.stringify(expected))fail("source_archive_catalog_names_failed");if(schema.some(r=>r.tbl_name!=="ghl_communication_source_records")||schema.find(r=>r.name==="ghl_communication_source_records")?.type!=="table"||schema.filter(r=>r.name!=="ghl_communication_source_records").some(r=>r.type!=="index"))fail("source_archive_catalog_types_failed");if(integrity.length!==1||Object.values(integrity[0])[0]!=="ok")fail("database_integrity_failed");if(foreignKeys.length!==0)fail("source_archive_foreign_keys_failed")' "$ledger" "$schema" "$integrity" "$foreign_keys"
+        env:
+          CLOUDFLARE_ACCOUNT_ID: fa2b6f2441129b259dd5dea74045721b
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_D1_TOKEN }}
+          WRANGLER_SEND_METRICS: 'false'
+          WRANGLER_WRITE_LOGS: 'false'

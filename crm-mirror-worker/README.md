@@ -41,6 +41,8 @@ Migration `0033_client_desk_conversation_dispositions.sql` separates a Staff mem
 
 Migration `0034_communication_attachments.sql` preserves bounded GHL attachment locators separately from message text. Client Desk returns only opaque attachment IDs, resolves private GHL file links server-side, rejects unsafe types and oversized files, and streams approved files with private no-store headers. Existing mirrored conversations are backfilled on their next bounded GHL refresh. This migration does not activate Gmail sending or native Gmail inbound synchronization.
 
+Migration `0035_ghl_communication_source_archive.sql` adds a lossless, revision-preserving archive of every GHL communication object observed through signed webhooks, bounded conversation reads, and manual message export. It is intentionally independent of Staff's contact and timeline projection, so an unsupported channel or unmatched contact is retained. This is a source-preservation foundation, not a GHL exit claim: complete email/non-email historical backfill, recording and transcription storage, rendered parity for every channel, reconciliation, and an observation window remain required.
+
 Stripe charges that cannot be linked to a mirrored GHL contact are retained as unlinked purchase candidates. Package balance is deliberately **not** written to `session_ledger_entries` yet: a full ledger backfill must reconcile purchases against explicit attendance and refunds, rather than guessing from a mutable GHL field.
 
 An email candidate is evidence for staff review, not a purchase link. The importer never turns it into `purchases.contact_id`, never posts a ledger entry, and never sends a message.

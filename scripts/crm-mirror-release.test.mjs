@@ -29,6 +29,21 @@ test('installs attachment schema through a separate exact migration gate', () =>
   assert.doesNotMatch(workflow, /deploy:worker|owned-email|gmail/i);
 });
 
+test('installs the GHL source archive through its own exact migration gate', () => {
+  const workflow = readFileSync(new URL('../.github/workflows/install-crm-ghl-source-archive-schema.yml', import.meta.url), 'utf8');
+  assert.match(workflow, /environment: production/);
+  assert.match(workflow, /secrets\.CLOUDFLARE_D1_TOKEN/);
+  assert.doesNotMatch(workflow, /secrets\.CLOUDFLARE_API_TOKEN/);
+  assert.match(workflow, /0034_communication_attachments\.sql/);
+  assert.match(workflow, /0035_ghl_communication_source_archive\.sql/);
+  assert.match(workflow, /action=apply/);
+  assert.match(workflow, /action=verify/);
+  assert.match(workflow, /if: steps\.boundary\.outputs\.action == 'apply'/);
+  assert.match(workflow, /PRAGMA integrity_check/);
+  assert.match(workflow, /PRAGMA foreign_key_check\('ghl_communication_source_records'\)/);
+  assert.doesNotMatch(workflow, /deploy:worker|owned-email|gmail/i);
+});
+
 test('release source retains both owned lifecycle service bindings', () => {
   const config = JSON.parse(readFileSync(new URL('../crm-mirror-worker/wrangler.jsonc', import.meta.url), 'utf8'));
   const services = Object.fromEntries((config.services || []).map((entry) => [entry.binding, entry.service]));

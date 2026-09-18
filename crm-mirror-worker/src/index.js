@@ -49,6 +49,7 @@ import {
   upsertClientNote,
   upsertClientTask,
   recordConsentObservation,
+  upsertGhlCommunicationSourceRecord,
 } from "./repository.js";
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask } from "./normalizers.js";
 import { fetchGhlContact, withGhlProviderInvocation } from "./providers.js";
@@ -137,6 +138,12 @@ async function processGhlWebhook(request, env) {
   const data = payload.data && typeof payload.data === "object" ? payload.data : payload;
   const now = new Date().toISOString();
   const webhookId = String(payload.webhookId || await webhookFallbackId(payload, data, rawBody));
+  if (payload.type === "InboundMessage" || payload.type === "OutboundMessage") {
+    await upsertGhlCommunicationSourceRecord(env.CRM_DB, data, now, {
+      threadExternalId: data.conversationId || null,
+      contactExternalId: data.contactId || null,
+    });
+  }
   const message = (payload.type === "InboundMessage" || payload.type === "OutboundMessage")
     ? normalizeGhlMessage(data, data.conversationId, data.contactId) : null;
   const finish = async (status, body, projected) => {

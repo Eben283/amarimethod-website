@@ -215,6 +215,57 @@ export async function upsertCommunicationThread(db, thread, contactId, now) {
   return threadId;
 }
 
+function sourceValue(raw, names) {
+  for (const name of names) {
+    if (raw?.[name] !== undefined && raw?.[name] !== null && String(raw[name]).trim()) return String(raw[name]);
+  }
+  return null;
+}
+
+async function sha256Hex(value) {
+  const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
+  return [...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+// Preserve the provider object before attempting Staff's narrower projection.
+// The payload hash is part of the key so a later mutable provider response does
+// not erase an earlier observed revision of the same GHL message ID.
+export async function upsertGhlCommunicationSourceRecord(db, raw, now, context = {}) {
+  const providerEventId = sourceValue(raw, ["id", "messageId", "emailMessageId"]);
+  if (!providerEventId) return false;
+  const payloadJson = JSON.stringify(raw);
+  const payloadSha256 = await sha256Hex(payloadJson);
+  await db.prepare(
+    `INSERT INTO ghl_communication_source_records
+     (provider_event_id, provider_thread_id, contact_external_id, message_type, direction,
+      delivery_status, occurred_at, payload_json, payload_sha256, first_seen_at, last_seen_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(provider_event_id, payload_sha256) DO UPDATE SET
+       provider_thread_id = excluded.provider_thread_id,
+       contact_external_id = excluded.contact_external_id,
+       message_type = excluded.message_type,
+       direction = excluded.direction,
+       delivery_status = excluded.delivery_status,
+       occurred_at = excluded.occurred_at,
+       payload_json = excluded.payload_json,
+       first_seen_at = ghl_communication_source_records.first_seen_at,
+       last_seen_at = excluded.last_seen_at`,
+  ).bind(
+    providerEventId,
+    sourceValue(raw, ["conversationId"]) || context.threadExternalId || null,
+    sourceValue(raw, ["contactId"]) || context.contactExternalId || null,
+    sourceValue(raw, ["messageType", "type"]),
+    sourceValue(raw, ["direction"]),
+    sourceValue(raw, ["status"]),
+    sourceValue(raw, ["dateAdded", "createdAt", "date", "updatedAt"]),
+    payloadJson,
+    payloadSha256,
+    now,
+    now,
+  ).run();
+  return true;
+}
+
 export async function upsertCommunicationEvent(db, event, threadId, contactId, now) {
   const existing = await db.prepare("SELECT id FROM communication_events WHERE provider = 'ghl' AND provider_event_id = ?").bind(event.externalId).first();
   const eventId = existing?.id || id();

@@ -62,6 +62,7 @@ export const CONTACT_NON_FK_REFERENCE_COVERAGE = Object.freeze([
   ["appointment_lifecycle_dispatches", "provider_contact_id", "exact"],
   ["appointment_projection_events", "provider_contact_id", "exact"],
   ["ghl_webhook_events", "contact_external_id", "exact"],
+  ["ghl_communication_source_records", "contact_external_id", "exact"],
   ["gmail_evidence_reviews", "candidate_contact_ids_json", "json_array"],
   ["operational_events", "detail_json", "json_contact_id"],
 ].map((entry) => Object.freeze(entry)));
