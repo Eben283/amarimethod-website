@@ -17,6 +17,8 @@ import {
   upsertCommunicationThread,
   deleteGhlEmailContainerEvent,
   upsertGhlCommunicationSourceRecord,
+  listUnprojectedGhlCommunicationSourceRecords,
+  projectHistoricalGhlCommunicationEvent,
 } from "./repository.js";
 import { nativeBookingConsentObservations, normalizeGhlAppointment, normalizeGhlContact, normalizeGhlConversation, normalizeGhlMessage, normalizeGhlNote, normalizeGhlTask, normalizeStripeCharge, normalizeStripeInvoice, normalizedEmail } from "./normalizers.js";
 import { fetchGhlAppointmentsForContact, fetchGhlContact, fetchGhlContactNotes, fetchGhlContactTasks, fetchGhlContactsPage, fetchGhlConversationMessages, fetchGhlConversationsPage, fetchGhlEmail, fetchGhlMessage, fetchGhlMessageExport, fetchStripeChargesPage, fetchStripeCustomer, fetchStripeInvoicesPage } from "./providers.js";
@@ -47,7 +49,7 @@ export const MESSAGE_EXPORT_FLOOR = "2020-01-01T00:00:00.000Z";
 export const SCHEDULED_SYNC_LANES = Object.freeze([
   Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl", "consents"]),
   Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "stripe", "stripe-invoices", "ghl-message-export", "consents"]),
-  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"]),
+  Object.freeze(["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl-message-projection", "ghl-conversations", "ghl-client-records", "consents"]),
 ]);
 
 function newestMessage(messages) {
@@ -337,6 +339,34 @@ export async function backfillGhlMessageExport(env, { pages = 8, pageSize = 50 }
   return { status, recordsRead, recordsWritten, recordsSkipped, sourceRecordsArchived, cursorAfter: outcomes.map((item) => item.cursorAfter) };
 }
 
+// Project only the bounded set of exact source rows Staff does not yet have.
+// This pass performs no provider reads and never changes unread counts; it can
+// therefore follow the high-volume archive import without coupling their
+// failure or execution limits.
+export async function projectGhlMessageArchive(env, limit = 50, now) {
+  const runId = await beginSyncRun(env.CRM_DB, "ghl", "message-projection", now);
+  const outcome = result();
+  try {
+    const rows = await listUnprojectedGhlCommunicationSourceRecords(env.CRM_DB, limit);
+    for (const rawMessage of rows) {
+      outcome.recordsRead += 1;
+      const message = normalizeGhlMessage(rawMessage, rawMessage.conversationId, rawMessage.contactId);
+      if (!message) { outcome.recordsSkipped += 1; continue; }
+      const contactId = await findContactIdByGhlId(env.CRM_DB, message.contactExternalId);
+      if (!contactId) { outcome.recordsSkipped += 1; continue; }
+      await projectHistoricalGhlCommunicationEvent(env.CRM_DB, message, contactId, now);
+      outcome.recordsWritten += 1;
+    }
+    outcome.status = rows.length >= limit ? "partial" : "succeeded";
+  } catch (error) {
+    outcome.status = "failed";
+    outcome.failureDetail = error instanceof Error ? error.message : String(error);
+  }
+  await finishSyncRun(env.CRM_DB, runId, outcome, now);
+  if (outcome.status === "failed") throw new Error(outcome.failureDetail);
+  return outcome;
+}
+
 // Historic client records have no location-wide GHL API feed. Walk the existing
 // owned contact↔GHL links in small, durable pages and re-read only that contact's
 // source state, notes, and tasks. It writes solely to CRM_DB; it never changes
@@ -569,6 +599,7 @@ export async function runScheduledSync(env, now) {
     "ghl-conversations-recent": [syncRecentGhlConversations, SCHEDULED_RECENT_CONVERSATION_LIMIT],
     "ghl-conversations": [syncGhlConversations, SCHEDULED_HISTORICAL_CONVERSATION_LIMIT],
     "ghl-message-export": [(runtime) => backfillGhlMessageExport(runtime, { pages: 4, pageSize: 50 }, now), 0],
+    "ghl-message-projection": [projectGhlMessageArchive, 50],
     "ghl-client-records": [backfillGhlClientRecords, 3],
     "consents": [syncNativeBookingConsents, 0],
   };

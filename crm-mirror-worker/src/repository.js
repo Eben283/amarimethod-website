@@ -266,6 +266,62 @@ export async function upsertGhlCommunicationSourceRecord(db, raw, now, context =
   return true;
 }
 
+// Return only source rows that Staff can render as first-class communication
+// events and has not projected yet. The latest payload revision wins, while
+// unsupported GHL activity objects remain losslessly retained in the source
+// archive for their own purpose-built projection.
+export async function listUnprojectedGhlCommunicationSourceRecords(db, limit) {
+  const result = await db.prepare(
+    `WITH latest AS (
+       SELECT source.*,
+              ROW_NUMBER() OVER (
+                PARTITION BY provider_event_id
+                ORDER BY last_seen_at DESC, payload_sha256 DESC
+              ) AS revision_rank
+       FROM ghl_communication_source_records source
+     )
+     SELECT provider_event_id, provider_thread_id, contact_external_id, payload_json
+     FROM latest
+     WHERE revision_rank = 1
+       AND (
+         UPPER(COALESCE(message_type, '')) LIKE '%EMAIL%'
+         OR UPPER(COALESCE(message_type, '')) LIKE '%SMS%'
+         OR UPPER(COALESCE(message_type, '')) LIKE '%CALL%'
+         OR message_type IN ('1', '2', '3', '4', '6', '7', '8', '9', '13', '14', '20', '21', '22')
+       )
+       AND NOT EXISTS (
+         SELECT 1
+         FROM communication_events event
+         WHERE event.provider = 'ghl'
+           AND event.provider_event_id = latest.provider_event_id
+       )
+       AND EXISTS (
+         SELECT 1
+         FROM external_records contact_link
+         WHERE contact_link.provider = 'ghl'
+           AND contact_link.object_type = 'contact'
+           AND contact_link.external_id = latest.contact_external_id
+           AND contact_link.contact_id IS NOT NULL
+       )
+       ORDER BY occurred_at DESC, provider_event_id DESC
+     LIMIT ?`,
+  ).bind(Math.min(Math.max(1, Number(limit) || 1), 100)).all();
+  return (result.results || []).flatMap((row) => {
+    try {
+      const payload = JSON.parse(row.payload_json);
+      if (!payload || typeof payload !== "object" || Array.isArray(payload)) return [];
+      return [{
+        ...payload,
+        id: payload.id || payload.messageId || payload.emailMessageId || row.provider_event_id,
+        conversationId: payload.conversationId || row.provider_thread_id,
+        contactId: payload.contactId || row.contact_external_id,
+      }];
+    } catch {
+      return [];
+    }
+  });
+}
+
 export async function upsertCommunicationEvent(db, event, threadId, contactId, now) {
   const existing = await db.prepare("SELECT id FROM communication_events WHERE provider = 'ghl' AND provider_event_id = ?").bind(event.externalId).first();
   const eventId = existing?.id || id();
@@ -306,7 +362,39 @@ export async function ensureCommunicationThread(db, event, contactId, now) {
   const existing = await db.prepare("SELECT id FROM communication_threads WHERE provider = 'ghl' AND provider_thread_id = ?").bind(event.threadExternalId).first();
   if (existing) return existing.id;
   const threadId = id();
-  await db.prepare(`INSERT INTO communication_threads (id, contact_id, provider, provider_thread_id, channel, last_event_at, last_preview, last_direction, unread_inbound_count, created_at, updated_at) VALUES (?, ?, 'ghl', ?, ?, ?, ?, ?, 0, ?, ?)`).bind(threadId, contactId, event.threadExternalId, event.channel, event.occurredAt, event.body, event.direction, now, now).run();
+  const threadChannel = event.channel === "call" ? "mixed" : event.channel;
+  await db.prepare(`INSERT INTO communication_threads (id, contact_id, provider, provider_thread_id, channel, last_event_at, last_preview, last_direction, unread_inbound_count, created_at, updated_at) VALUES (?, ?, 'ghl', ?, ?, ?, ?, ?, 0, ?, ?)`).bind(threadId, contactId, event.threadExternalId, threadChannel, event.occurredAt, event.body, event.direction, now, now).run();
+  return threadId;
+}
+
+// Project an archived provider event without manufacturing unread work. Older
+// history may fill the timeline, but it must never move the thread preview or
+// activity timestamp backward.
+export async function projectHistoricalGhlCommunicationEvent(db, event, contactId, now) {
+  const threadId = await ensureCommunicationThread(db, event, contactId, now);
+  await upsertCommunicationEvent(db, event, threadId, contactId, now);
+  const threadChannel = event.channel === "call" ? "mixed" : event.channel;
+  await db.prepare(
+    `UPDATE communication_threads
+     SET contact_id = ?,
+         channel = CASE WHEN channel = ? THEN channel ELSE 'mixed' END,
+         last_event_at = CASE WHEN last_event_at IS NULL OR datetime(?) >= datetime(last_event_at) THEN ? ELSE last_event_at END,
+         last_preview = CASE WHEN last_event_at IS NULL OR datetime(?) >= datetime(last_event_at) THEN ? ELSE last_preview END,
+         last_direction = CASE WHEN last_event_at IS NULL OR datetime(?) >= datetime(last_event_at) THEN ? ELSE last_direction END,
+         updated_at = ?
+     WHERE id = ?`,
+  ).bind(
+    contactId,
+    threadChannel,
+    event.occurredAt,
+    event.occurredAt,
+    event.occurredAt,
+    event.body,
+    event.occurredAt,
+    event.direction,
+    now,
+    threadId,
+  ).run();
   return threadId;
 }
 
