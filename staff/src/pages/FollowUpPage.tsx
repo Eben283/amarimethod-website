@@ -44,10 +44,6 @@ const communicationUrl = (contactId: string) =>
 // no longer computes it — it reads `p.derived`. (Was duplicated here; removed
 // 2026-06-14 to kill the two-copies drift.)
 
-// Daily proactive worklist size. Target ~15 calls/day; 30 gives Garrett options
-// without surfacing the whole backlog (hundreds) as an overwhelming wall.
-const ACT_NOW_CAP = 30;
-
 const SNOOZE_OPTIONS = [
   { value: '3', label: '3 days' },
   { value: '7', label: '1 week' },
@@ -395,8 +391,7 @@ export default function FollowUpPage() {
     // "Discovery" = a business/venue we have no named person to reach ("call the front
     // desk and ask who handles partnerships"). Eben deprioritized these hard (2026-06-21):
     // a known-person outreach task always beats a cold no-contact venue. Sink them far below
-    // the act-now cap so they don't crowd out real prospects. They stay in the data
-    // (reachable via search), just off the daily worklist.
+    // real prospects while keeping every due opportunity visible in the ordered list.
     const DISCOVERY_PENALTY = 1000;
     const score = (d: Derived, weight: number) =>
       d.urgency + weight + warmthBonus(d.warmth) -
@@ -415,11 +410,7 @@ export default function FollowUpPage() {
         if (priority !== 0) return priority;
         const d = score(b.d, b.weight ?? 0) - score(a.d, a.weight ?? 0);
         return d !== 0 ? d : a.p.contactId.localeCompare(b.p.contactId);
-      })
-      // Cap the proactive list at a day's worth. Target is ~15 calls/day; 30 gives
-      // options without the full backlog (hundreds) becoming a wall. The rest
-      // stays in the data, not the screen.
-      .slice(0, ACT_NOW_CAP);
+      });
   }, [conversationError, derived, needsReplyIds, todayDow, handledIds]);
 
   const actItems = useMemo<ProspectItem[]>(() => [...prospectActNow], [prospectActNow]);
