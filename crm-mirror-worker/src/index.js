@@ -866,7 +866,10 @@ export default {
           return json(400, { error: "invalid_request", detail: error instanceof Error ? error.message : String(error) });
         }
         try {
-          const result = await upsertOwnedQuizIntake(env.CRM_DB, payload, new Date().toISOString());
+          const providerQuizHistory = request.headers.get("X-Amari-Provider-Quiz-History");
+          const result = await upsertOwnedQuizIntake(env.CRM_DB, payload, new Date().toISOString(), {
+            providerQuizHistory,
+          });
           return json(result.deduped ? 200 : 201, { success: true, ...result });
         } catch (error) {
           if (error instanceof OwnedQuizIntakeError) {

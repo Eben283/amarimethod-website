@@ -192,6 +192,55 @@ describe("owned quiz intake", () => {
     db.sqlite.close();
   });
 
+  it("suppresses nurture when provider history proves a retake before the GHL tag reaches the owned mirror", async () => {
+    const db = d1Database();
+    db.sqlite.prepare(`
+      INSERT INTO contacts
+        (id, first_name, last_name, display_name, email_normalized, created_at, updated_at)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
+    `).run("legacy-quiz", "Ari", "Example", "Ari Example", "ari@example.test",
+      "2026-08-01T00:00:00.000Z", "2026-08-01T00:00:00.000Z");
+
+    const result = await upsertOwnedQuizIntake(db, valid(), "2026-09-01T16:00:00.000Z", {
+      providerQuizHistory: "present",
+    });
+
+    expect(result.contactId).toBe("legacy-quiz");
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM contact_tags WHERE source = 'ghl'").get().count).toBe(0);
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_intake_submissions").get().count).toBe(1);
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_nurture_dispatches").get().count).toBe(0);
+    expect(JSON.parse(db.sqlite.prepare(
+      "SELECT normalized_json FROM quiz_intake_submissions",
+    ).get().normalized_json).providerQuizHistory).toBe("present");
+    db.sqlite.close();
+  });
+
+  it("rejects unverified provider history rather than silently suppressing nurture", async () => {
+    const db = d1Database();
+    await expect(upsertOwnedQuizIntake(db, valid(), "2026-09-01T16:00:00.000Z", {
+      providerQuizHistory: "unknown",
+    })).rejects.toMatchObject({ code: "invalid_provider_quiz_history", status: 400 });
+
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_intake_submissions").get().count).toBe(0);
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_nurture_dispatches").get().count).toBe(0);
+    db.sqlite.close();
+  });
+
+  it("treats any earlier owned quiz submission as lifetime nurture history", async () => {
+    const db = d1Database();
+    const first = await upsertOwnedQuizIntake(db, valid(), "2026-09-01T16:00:00.000Z", {
+      providerQuizHistory: "present",
+    });
+    await upsertOwnedQuizIntake(db, valid({
+      idempotencyKey: "b".repeat(64),
+    }), "2026-09-02T16:00:00.000Z", { providerQuizHistory: "absent" });
+
+    expect(first.contactId).toMatch(/^contact_email_/);
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_intake_submissions").get().count).toBe(2);
+    expect(db.sqlite.prepare("SELECT COUNT(*) AS count FROM quiz_nurture_dispatches").get().count).toBe(0);
+    db.sqlite.close();
+  });
+
   it("queues only the first of two distinct quiz submissions for the same contact", async () => {
     const db = d1Database();
     const first = await upsertOwnedQuizIntake(db, valid(), "2026-09-01T16:00:00.000Z");

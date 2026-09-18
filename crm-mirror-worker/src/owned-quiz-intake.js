@@ -139,7 +139,6 @@ export function normalizeOwnedQuizIntake(input) {
     throw new OwnedQuizIntakeError("painSeverity is invalid");
   }
   normalized.painSeverity = input.painSeverity;
-
   if (input.scores !== null) {
     if (!input.scores || typeof input.scores !== "object" || Array.isArray(input.scores)) {
       throw new OwnedQuizIntakeError("scores are invalid");
@@ -185,11 +184,19 @@ function quizTags(input) {
   return [...new Set(tags)];
 }
 
-export async function upsertOwnedQuizIntake(db, rawInput, now = new Date().toISOString()) {
+export async function upsertOwnedQuizIntake(db, rawInput, now = new Date().toISOString(), options = {}) {
   if (!db) throw new OwnedQuizIntakeError("owned CRM is unavailable", "owned_crm_unavailable", 503);
   const input = normalizeOwnedQuizIntake(rawInput);
-  const normalizedJson = canonicalJson(input);
-  const payloadSha256 = await sha256(normalizedJson);
+  const providerQuizHistory = options.providerQuizHistory ?? null;
+  if (providerQuizHistory !== null && !["present", "absent"].includes(providerQuizHistory)) {
+    throw new OwnedQuizIntakeError("provider Quiz history is invalid", "invalid_provider_quiz_history");
+  }
+  const normalizedJson = canonicalJson(providerQuizHistory === null
+    ? input
+    : { ...input, providerQuizHistory });
+  // Provider history is server-derived evidence, not part of the browser submission identity.
+  // Keep the idempotency digest stable when that evidence changes between retries.
+  const payloadSha256 = await sha256(canonicalJson(input));
   const previous = await db.prepare(
     "SELECT contact_id, payload_sha256 FROM quiz_intake_submissions WHERE idempotency_key = ?",
   ).bind(input.idempotencyKey).first();
@@ -197,7 +204,11 @@ export async function upsertOwnedQuizIntake(db, rawInput, now = new Date().toISO
     if (previous.payload_sha256 !== payloadSha256) {
       throw new OwnedQuizIntakeError("idempotency key was reused", "idempotency_conflict", 409);
     }
-    return Object.freeze({ contactId: previous.contact_id, deduped: true, payloadSha256 });
+    return Object.freeze({
+      contactId: previous.contact_id,
+      deduped: true,
+      payloadSha256: previous.payload_sha256,
+    });
   }
 
   const matches = await db.prepare(`
@@ -220,17 +231,21 @@ export async function upsertOwnedQuizIntake(db, rawInput, now = new Date().toISO
   const nurtureEventJson = JSON.stringify({ kind: "quiz.submitted", contactId });
   const nurtureEventSha256 = await sha256(nurtureEventJson);
   // Flow 1 does not allow re-entry. Preserve that behavior across the transition:
-  // an imported/provider quiz tag or an earlier owned dispatch means this submission updates
-  // the latest quiz facts without restarting the six-email sequence. The contact-derived ID
-  // plus INSERT OR IGNORE also closes a concurrent first-submission race without rejecting the
-  // second immutable intake record.
+  // Provider history, an imported quiz tag, or any earlier owned submission/dispatch means this
+  // submission updates the latest quiz facts without restarting the six-email sequence. A missing
+  // provider header preserves the pre-change behavior during a staggered rollout. The contact-
+  // derived ID plus INSERT OR IGNORE also closes a concurrent first-submission race without
+  // rejecting the second immutable intake record.
   const priorNurture = await db.prepare(`
     SELECT 1 AS present FROM contact_tags
      WHERE contact_id = ? AND lower(trim(tag)) = 'quiz submitted'
     UNION ALL
+    SELECT 1 AS present FROM quiz_intake_submissions WHERE contact_id = ?
+    UNION ALL
     SELECT 1 AS present FROM quiz_nurture_dispatches WHERE contact_id = ?
     LIMIT 1
-  `).bind(contactId, contactId).first();
+  `).bind(contactId, contactId, contactId).first();
+  const queueNurture = providerQuizHistory !== "present" && !priorNurture;
   const nurtureDispatchId = `quiz_nurture_contact_${(await sha256(contactId)).slice(0, 32)}`;
   const attributes = ATTRIBUTE_FIELDS
     .map(([key, inputKey]) => [key, input[inputKey]])
@@ -267,7 +282,7 @@ export async function upsertOwnedQuizIntake(db, rawInput, now = new Date().toISO
       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `).bind(submissionId, input.idempotencyKey, contactId, payloadSha256, normalizedJson,
       now, retentionUntil, now),
-    ...(!priorNurture ? [db.prepare(`
+    ...(queueNurture ? [db.prepare(`
       INSERT OR IGNORE INTO quiz_nurture_dispatches
         (id, submission_id, contact_id, event_json, payload_sha256, state,
          attempts, lease_until, created_at, updated_at)
