@@ -63,6 +63,10 @@ const TURNSTILE_VERIFY_URL = "https://challenges.cloudflare.com/turnstile/v0/sit
 const RATE_LIMIT = 10;
 const RATE_LIMIT_TTL_SECONDS = 3600;
 const IDEMPOTENCY_TTL_SECONDS = 24 * 3600;
+const QUIZ_HISTORY_FIELD_IDS = new Set([
+  FIELD_IDS.painPatternSignature,
+  FIELD_IDS.quizResultsSummary,
+]);
 
 function corsHeaders(origin) {
   const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
@@ -107,6 +111,78 @@ async function submissionKey(body) {
   const bytes = new TextEncoder().encode(JSON.stringify(body));
   const digest = await crypto.subtle.digest("SHA-256", bytes);
   return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function providerContact(payload) {
+  return payload?.contact || (Array.isArray(payload?.contacts) ? payload.contacts[0] : null) || null;
+}
+
+function populatedFieldValue(field) {
+  const value = field?.value ?? field?.fieldValue ?? field?.field_value;
+  return value != null && String(value).trim() !== "";
+}
+
+function hasDurableQuizHistory(contact) {
+  const tags = Array.isArray(contact?.tags) ? contact.tags : [];
+  if (tags.some((tag) => String(tag?.name ?? tag).trim().toLowerCase() === "quiz submitted")) return true;
+  if (String(contact?.source || "").trim().toLowerCase().startsWith("pain assessment quiz")) return true;
+  const fields = Array.isArray(contact?.customFields) ? contact.customFields : [];
+  return fields.some((field) => QUIZ_HISTORY_FIELD_IDS.has(String(field?.id || field?.fieldId || ""))
+    && populatedFieldValue(field));
+}
+
+// Flow 1 has lifetime no-reentry semantics. Read the provider before adding the current Quiz tag
+// so legacy submissions remain visible even when the owned tag mirror is stale. Unknown evidence
+// fails safe downstream by suppressing nurture rather than risking a duplicate sequence.
+export async function readProviderQuizHistory(email, apiKey, request = fetch) {
+  const duplicateUrl = `${GHL_API_BASE}/contacts/search/duplicate?locationId=${GHL_LOCATION_ID}`
+    + `&email=${encodeURIComponent(email)}`;
+  try {
+    const duplicate = await request(duplicateUrl, { headers: ghlHeaders(apiKey) });
+    if (duplicate.ok) {
+      const duplicatePayload = await duplicate.json();
+      const summary = providerContact(duplicatePayload);
+      if (summary) {
+        if (!summary.id) return "unknown";
+        const detail = await request(`${GHL_API_BASE}/contacts/${encodeURIComponent(summary.id)}`, {
+          headers: ghlHeaders(apiKey),
+        });
+        if (!detail.ok) return "unknown";
+        const contact = providerContact(await detail.json());
+        if (!contact || String(contact.email || "").trim().toLowerCase() !== email) return "unknown";
+        return hasDurableQuizHistory(contact) ? "present" : "absent";
+      }
+      if (Object.hasOwn(duplicatePayload || {}, "contact") && duplicatePayload.contact === null) {
+        return "absent";
+      }
+    }
+
+    const search = await request(`${GHL_API_BASE}/contacts/search`, {
+      method: "POST",
+      headers: ghlHeaders(apiKey),
+      body: JSON.stringify({
+        locationId: GHL_LOCATION_ID,
+        pageLimit: 2,
+        filters: [{ field: "email", operator: "eq", value: email }],
+      }),
+    });
+    if (!search.ok) return "unknown";
+    const searchPayload = await search.json();
+    if (!Array.isArray(searchPayload?.contacts)) return "unknown";
+    const contacts = searchPayload.contacts;
+    if (contacts.length === 0) return "absent";
+    if (contacts.length !== 1 || !contacts[0]?.id) return "unknown";
+    const detail = await request(`${GHL_API_BASE}/contacts/${encodeURIComponent(contacts[0].id)}`, {
+      headers: ghlHeaders(apiKey),
+    });
+    if (!detail.ok) return "unknown";
+    const contact = providerContact(await detail.json());
+    if (!contact || String(contact.email || "").trim().toLowerCase() !== email) return "unknown";
+    return hasDurableQuizHistory(contact) ? "present" : "absent";
+  } catch (error) {
+    console.error("[send-to-ghl] Provider Quiz history read failed:", error);
+    return "unknown";
+  }
 }
 
 async function releaseSubmissionProtection(kv, key) {
@@ -354,6 +430,21 @@ export async function onRequestPost(context) {
       tags.push(`audience-${audience}`);
     }
 
+    let GHL_API_KEY;
+    try {
+      GHL_API_KEY = await getGhlToken(context);
+    } catch (error) {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
+      console.error("[send-to-ghl] GHL credential unavailable:", error);
+      return json(headers, { error: "Server configuration error" }, 500);
+    }
+    const providerQuizHistory = await readProviderQuizHistory(body.email, GHL_API_KEY);
+    if (providerQuizHistory === "unknown") {
+      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
+      submissionProtection = null;
+      return json(headers, { error: "We could not verify your Quiz history. Please try again." }, 422);
+    }
     const resultsSummary = buildResultsSummary(body);
     const ownedCapture = await forwardOwnedQuizIntake(
       context.env,
@@ -362,6 +453,7 @@ export async function onRequestPost(context) {
         audience,
         resultsSummary,
       }),
+      { providerQuizHistory },
     );
     if (!ownedCapture.ok) {
       await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
@@ -370,16 +462,9 @@ export async function onRequestPost(context) {
       return json(headers, { error: "Owned contact capture unavailable." }, 422);
     }
 
-    // GHL stays the compatibility owner until the separately gated cutover.
-    // Release-gated owned capture must succeed first so GHL can never become
-    // the sole durable identity again.
-    const GHL_API_KEY = await getGhlToken(context);
-    if (!GHL_API_KEY) {
-      await releaseSubmissionProtection(submissionProtection.kv, submissionProtection.key);
-      submissionProtection = null;
-      console.error("[send-to-ghl] GHL_API_KEY not configured");
-      return json(headers, { error: "Server configuration error" }, 500);
-    }
+    // GHL stays the compatibility owner until the separately gated cutover. The provider read
+    // above is inert; release-gated owned capture still succeeds before any provider write so GHL
+    // can never become the sole durable identity again.
 
     // Referral tracking
     const referralSource = body.referralSource;

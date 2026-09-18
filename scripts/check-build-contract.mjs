@@ -79,9 +79,17 @@ assert.match(
   "owned quiz intake must require the private CRM binding and Worker auth",
 );
 const ownedCaptureIndex = publicQuizHandler.indexOf("forwardOwnedQuizIntake(");
-const ghlCompatibilityIndex = publicQuizHandler.indexOf("getGhlToken(context)");
+const providerHistoryIndex = publicQuizHandler.indexOf("readProviderQuizHistory(body.email, GHL_API_KEY)");
+const ghlCompatibilityIndex = publicQuizHandler.indexOf(
+  "const upsertResponse = await fetch(`${GHL_API_BASE}/contacts/upsert`",
+);
 assert.notEqual(ownedCaptureIndex, -1, "the public quiz must call owned intake");
-assert.notEqual(ghlCompatibilityIndex, -1, "the temporary GHL compatibility write must remain");
+assert.notEqual(providerHistoryIndex, -1, "the public quiz must read provider history before tagging");
+assert.notEqual(ghlCompatibilityIndex, -1, "the temporary GHL compatibility upsert must remain");
+assert.ok(
+  providerHistoryIndex < ownedCaptureIndex,
+  "provider Quiz history must be classified before owned capture",
+);
 assert.ok(
   ownedCaptureIndex < ghlCompatibilityIndex,
   "owned quiz capture must precede the temporary GHL compatibility write",
