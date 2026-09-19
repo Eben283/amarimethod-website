@@ -286,41 +286,6 @@ export const OPS_HTML = `<!doctype html>
   .change-box .t { font-weight: 600; margin-bottom: 4px; }
   .change-box .d { color: var(--muted); font-size: 13px; line-height: 1.45; }
 
-  .fix-box {
-    margin: 18px 0 8px; padding: 14px 16px;
-    border-left: 2px solid var(--accent);
-    background: linear-gradient(90deg, var(--accent-dim), transparent 92%);
-    border-radius: 0 8px 8px 0;
-  }
-  .fix-box .t { font-weight: 600; letter-spacing: -0.01em; }
-  .fix-box .d { color: var(--muted); font-size: 13px; margin-top: 6px; line-height: 1.45; }
-  .fix-box .meta {
-    margin-top: 8px; font-family: var(--mono); font-size: 11px;
-    letter-spacing: 0.04em; color: var(--faint);
-  }
-  .fix-box a { color: var(--accent); text-decoration: none; }
-  .fix-box a:hover { text-decoration: underline; }
-  .fix-actions { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-top: 12px; }
-  .fix-btn {
-    font: 600 13px/1 var(--sans); color: var(--on-bright);
-    background: var(--accent); border: 0; border-radius: 6px;
-    padding: 10px 14px; cursor: pointer;
-  }
-  .fix-btn:hover { filter: brightness(1.06); }
-  .fix-btn:disabled { opacity: 0.55; cursor: default; filter: none; }
-  .fix-btn.ghost {
-    background: transparent; color: var(--accent);
-    border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
-  }
-  .fix-msg { font-size: 13px; color: var(--muted); }
-  .fix-msg.err { color: var(--bad); }
-  .sys .fix-chip {
-    display: inline-block; margin-left: 6px;
-    font-family: var(--mono); font-size: 9.5px; font-weight: 600;
-    letter-spacing: 0.06em; text-transform: uppercase;
-    color: var(--accent); vertical-align: 1px;
-  }
-
   .back {
     display: inline-flex; align-items: center; gap: 6px;
     background: none; border: 0; color: var(--muted);
@@ -553,112 +518,6 @@ export const OPS_HTML = `<!doctype html>
     );
   }
 
-  function fixStatusLabel(job) {
-    if (!job) return "";
-    var st = String(job.status || "");
-    if (st === "shadow") return "shadow · would launch";
-    if (st === "prompt_ready") return "prompt ready — paste into Cursor";
-    if (st === "launching") return "launching agent…";
-    if (st === "launched" || st === "running") return "agent launched";
-    if (st === "error") return "fixer error";
-    return st;
-  }
-
-  function fixPanelHtml(data) {
-    if (!data || !data.autoFix) return "";
-    var job = data.fix || null;
-    var html = '<div class="fix-box" id="fixPanel">';
-    html += '<div class="t">Fix</div>';
-    if (job) {
-      html += '<div class="d">' + esc(fixStatusLabel(job));
-      if (job.note) html += " — " + esc(job.note);
-      html += "</div>";
-      if (job.agentUrl && job.status !== "prompt_ready") {
-        html += '<div class="d"><a href="' + esc(job.agentUrl) + '" target="_blank" rel="noopener">Open agent</a></div>';
-      }
-      if (job.error) html += '<div class="d" style="color:var(--bad)">' + esc(job.error) + "</div>";
-      if (job.launchedAt) {
-        html += '<div class="meta">' + esc(fmt(job.launchedAt));
-        if (job.mode) html += " · mode " + esc(job.mode);
-        html += "</div>";
-      }
-    } else {
-      html += '<div class="d">Press Fix when you want a bounded repair — change surface only. Nothing launches until you press.</div>';
-    }
-    html += '<div class="fix-actions">';
-    html += '<button type="button" class="fix-btn" id="requestFix"' +
-      (job && (job.status === "launching" || job.status === "launched" || job.status === "running") ? " disabled" : "") +
-      ">Fix</button>";
-    html += '<span class="fix-msg" id="fixMsg"></span>';
-    html += "</div>";
-    html += '<div id="fixPromptWrap" hidden style="margin-top:12px">';
-    html += '<div class="d" style="margin-bottom:8px">Copy into a new <a href="https://cursor.com/agents" target="_blank" rel="noopener">Cursor Cloud Agent</a> (repo: amarimethod-website).</div>';
-    html += '<textarea id="fixPrompt" readonly rows="8" style="width:100%;font:12px/1.4 var(--mono);padding:10px;border:1px solid var(--line);border-radius:6px;background:var(--bg2);color:var(--ink);resize:vertical"></textarea>';
-    html += '<div class="fix-actions"><button type="button" class="fix-btn ghost" id="copyFixPrompt">Copy prompt</button></div>';
-    html += "</div></div>";
-    return html;
-  }
-
-  function showFixPrompt(prompt) {
-    var wrap = document.getElementById("fixPromptWrap");
-    var ta = document.getElementById("fixPrompt");
-    if (!wrap || !ta || !prompt) return;
-    ta.value = prompt;
-    wrap.hidden = false;
-  }
-
-  async function requestFix(pathId) {
-    var btn = document.getElementById("requestFix");
-    var msg = document.getElementById("fixMsg");
-    if (btn) btn.disabled = true;
-    if (msg) { msg.className = "fix-msg"; msg.textContent = "Preparing fix…"; }
-    try {
-      var res = await fetch("/api/ops/fix", {
-        method: "POST",
-        headers: { "Content-Type": "application/json", Accept: "application/json" },
-        body: JSON.stringify({ action: "fix", pathId: pathId }),
-      });
-      var body = await res.json().catch(function () { return {}; });
-      if (!res.ok || !body.ok) {
-        var reason = body.error || body.reason || "failed";
-        if (reason === "cooldown" || reason === "already-running") {
-          if (msg) msg.textContent = "Already in flight.";
-          if (body.job && body.job.agentUrl) {
-            msg.innerHTML = 'Already in flight — <a href="' + esc(body.job.agentUrl) + '" target="_blank" rel="noopener">open agent</a>.';
-          }
-        } else if (reason === "not-fixable") {
-          if (msg) { msg.className = "fix-msg err"; msg.textContent = "This path is not fixable from here."; }
-        } else {
-          if (msg) { msg.className = "fix-msg err"; msg.textContent = String(reason); }
-        }
-        if (btn && reason !== "cooldown") btn.disabled = false;
-        return;
-      }
-      if (body.promptReady && body.prompt) {
-        if (msg) msg.textContent = "Prompt ready — copy into Cursor.";
-        showFixPrompt(body.prompt);
-        if (btn) btn.disabled = false;
-        return;
-      }
-      if (body.job && body.job.agentUrl) {
-        if (msg) {
-          msg.innerHTML = 'Agent launched — <a href="' + esc(body.job.agentUrl) + '" target="_blank" rel="noopener">open</a>.';
-        }
-        return;
-      }
-      if (body.shadowed) {
-        if (msg) msg.textContent = "Shadow mode — would launch (no Cursor key on server yet).";
-        if (body.prompt) showFixPrompt(body.prompt);
-        if (btn) btn.disabled = false;
-        return;
-      }
-      if (msg) msg.textContent = "Fix started.";
-    } catch (e) {
-      if (msg) { msg.className = "fix-msg err"; msg.textContent = "Could not start fix."; }
-      if (btn) btn.disabled = false;
-    }
-  }
-
   function hopMark(status) {
     if (status === "ok") return "ok";
     if (status === "fail") return "fail";
@@ -721,10 +580,7 @@ export const OPS_HTML = `<!doctype html>
       : (data.overall === "green" ? "Hot paths quiet" : "Watching…");
     setOverall(attention ? "sick" : (data.overall || "idle"), overallNote);
     var foot = document.getElementById("opsFoot");
-    if (foot) {
-      var fm = data.fixMode || "shadow";
-      foot.textContent = "Alerts on flip · Fix " + fm + " · Pacific time";
-    }
+    if (foot) foot.textContent = "Alerts on flip · Pacific time";
 
     if (!data.configured) {
       homeBanner.hidden = false;
@@ -773,12 +629,9 @@ export const OPS_HTML = `<!doctype html>
       var html = '<div class="section-head"><h2>' + esc(title) + "</h2><small>" + esc(hint || "") + "</small></div>";
       rows.forEach(function (s) {
         var st = rowState(s);
-        var fixChip = s.fix
-          ? '<span class="fix-chip">' + esc(fixStatusLabel(s.fix)) + "</span>"
-          : "";
         html += '<button type="button" class="sys ' + esc(st) + '" data-path="' + esc(s.id) + '">' +
           '<span class="dot ' + esc(st) + '"></span>' +
-          '<span><div class="label">' + esc(s.label) + fixChip + "</div>" +
+          '<span><div class="label">' + esc(s.label) + "</div>" +
           '<div class="meta">' + esc(s.note || s.severity || "") + "</div></span>" +
           '<span class="state ' + esc(st) + '">' + esc(stateLabel(st)) + "</span></button>";
       });
@@ -831,7 +684,6 @@ export const OPS_HTML = `<!doctype html>
       html += '<p class="why">On-demand only — no auto Whisper/LLM sweep. Staff: POST /api/staff-call-coach-run (or /coach-one per contact). Ops watches readiness, not last-run freshness.</p>';
     }
     html += changeSurfaceHtml(data.changeSurface);
-    html += fixPanelHtml(data);
     html += "</div>";
 
     if (data.incidents && data.incidents.length) {
@@ -904,31 +756,6 @@ export const OPS_HTML = `<!doctype html>
     document.getElementById("backHome").addEventListener("click", function () {
       location.hash = "";
     });
-    var fixBtn = document.getElementById("requestFix");
-    if (fixBtn) {
-      fixBtn.addEventListener("click", function () { requestFix(pathId); });
-    }
-    var copyBtn = document.getElementById("copyFixPrompt");
-    if (copyBtn) {
-      copyBtn.addEventListener("click", function () {
-        var ta = document.getElementById("fixPrompt");
-        if (!ta || !ta.value) return;
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(ta.value).then(function () {
-            copyBtn.textContent = "Copied";
-            setTimeout(function () { copyBtn.textContent = "Copy prompt"; }, 1500);
-          });
-        } else {
-          ta.select();
-          document.execCommand("copy");
-          copyBtn.textContent = "Copied";
-          setTimeout(function () { copyBtn.textContent = "Copy prompt"; }, 1500);
-        }
-      });
-    }
-    if (data.fix && data.fix.status === "prompt_ready" && data.fix.prompt) {
-      showFixPrompt(data.fix.prompt);
-    }
     pathView.querySelectorAll("[data-person-id]").forEach(function (btn) {
       btn.addEventListener("click", function () {
         var kind = btn.getAttribute("data-person-kind") || "contact";

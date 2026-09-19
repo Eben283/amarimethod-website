@@ -17,7 +17,6 @@ export const WORKERS = Object.freeze({
   'ghl-token-refresh': 'ghl-token-worker',
   'morning-sms': 'morning-sms-worker',
   'nurture-engine': 'nurture-engine-worker',
-  'ops-fixer': 'ops-fix-worker',
   'partner-activity-refresh': 'partner-activity-refresh-worker',
   'reminder-engine': 'reminder-engine-worker',
   'series-reconcile': 'series-reconcile-worker',
