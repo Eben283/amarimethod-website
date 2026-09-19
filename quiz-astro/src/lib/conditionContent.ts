@@ -459,14 +459,13 @@ const T_KATIE: MatchedTestimonial = {
   attribution: 'Runner recovery',
 };
 
-// Body-agnostic fallback for areas where no specific homepage testimonial
-// applies (elbows, wrists/hands). The quote doesn't reference any body
-// part, so attribution stays generic. Sourced from index.html homepage
-// testimonials (Marisol · Teacher).
-const T_MARISOL: MatchedTestimonial = {
-  quote: 'I follow his protocol every day. 8 months no pain.',
-  name: 'Marisol',
-  attribution: 'Teacher',
+// Body-agnostic fallback for areas where no location-specific testimonial
+// applies (elbows, wrists/hands). Michaela's exact excerpt does not name a
+// body part, so the quiz can use it without implying a location-specific result.
+const T_MICHAELA: MatchedTestimonial = {
+  quote: 'I\'m noticing many new sensations. It\'s like making new friends with my own body.',
+  name: 'Michaela',
+  attribution: 'Leg pain',
 };
 
 const TESTIMONIAL_BY_LOCATION: Record<string, MatchedTestimonial> = {
@@ -480,8 +479,8 @@ const TESTIMONIAL_BY_LOCATION: Record<string, MatchedTestimonial> = {
   'knees':        T_KATIE,
   'knee':         T_KATIE,
   'ankles-feet':  T_KATIE,    // running/lower-extremity story applies
-  'wrists-hands': T_MARISOL,  // body-agnostic; quote doesn't tie to a location
-  'elbows':       T_MARISOL,  // ditto
+  'wrists-hands': T_MICHAELA, // body-agnostic; quote doesn't tie to a location
+  'elbows':       T_MICHAELA, // ditto
 };
 
 // Maps every Q0 pain location slug → matched protocol intro
