@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, deleteGhlEmailContainerEvent, dropAbsentGhlContacts, ledgerCutoverReview, mirrorReadiness, paymentAccessState, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlAppointment, upsertGhlCommunicationSourceRecord, upsertGhlContact, upsertStripeCharge } from "./repository.js";
+import { activeClientOperations, classifyPurchase, clientDeskContacts, communicationsInbox, consentReviewQueue, contactProfile, decideLedgerCutoverCandidate, deleteGhlEmailContainerEvent, dropAbsentGhlContacts, ledgerCutoverReview, listUnprojectedGhlCommunicationSourceRecords, mirrorReadiness, paymentAccessState, projectHistoricalGhlCommunicationEvent, readinessCompletenessForProvider, reconciliationReview, reconciliationStatus, searchContacts, syncHealthForRuns, upsertGhlAppointment, upsertGhlCommunicationSourceRecord, upsertGhlContact, upsertStripeCharge } from "./repository.js";
 
 describe("GHL communication source archive", () => {
   it("stores the exact source payload and updates only last-seen evidence on repeat reads", async () => {
@@ -37,6 +37,68 @@ describe("GHL communication source archive", () => {
   it("refuses a provider row that has no stable message identity", async () => {
     await expect(upsertGhlCommunicationSourceRecord({ prepare: () => { throw new Error("should not write"); } }, { body: "missing id" }, "2026-09-18T10:01:00.000Z"))
       .resolves.toBe(false);
+  });
+
+  it("returns only the latest supported source objects that Staff has not projected", async () => {
+    const queries = [];
+    const db = {
+      prepare: (sql) => ({
+        bind: (...values) => ({
+          all: async () => {
+            queries.push({ sql, values });
+            return { results: [{
+              provider_event_id: "email_1",
+              provider_thread_id: "thread_1",
+              contact_external_id: "contact_1",
+              payload_json: JSON.stringify({ messageType: "TYPE_EMAIL", body: "Archived" }),
+            }] };
+          },
+        }),
+      }),
+    };
+
+    await expect(listUnprojectedGhlCommunicationSourceRecords(db, 500)).resolves.toEqual([{
+      id: "email_1",
+      conversationId: "thread_1",
+      contactId: "contact_1",
+      messageType: "TYPE_EMAIL",
+      body: "Archived",
+    }]);
+    expect(queries[0].sql).toContain("ROW_NUMBER() OVER");
+    expect(queries[0].sql).toContain("NOT EXISTS");
+    expect(queries[0].sql).toContain("FROM external_records contact_link");
+    expect(queries[0].values).toEqual([100]);
+  });
+
+  it("projects historical events without incrementing unread or moving a thread backward", async () => {
+    const writes = [];
+    const db = {
+      prepare: (sql) => ({
+        bind: (...values) => ({
+          first: async () => sql.includes("FROM communication_threads") ? { id: "thread_owned" } : null,
+          run: async () => { writes.push({ sql, values }); return { success: true }; },
+        }),
+      }),
+      batch: async (statements) => { await Promise.all(statements.map((statement) => statement.run())); },
+    };
+
+    await expect(projectHistoricalGhlCommunicationEvent(db, {
+      externalId: "email_1",
+      threadExternalId: "thread_1",
+      channel: "email",
+      direction: "outbound",
+      deliveryStatus: "sent",
+      subject: "Subject",
+      body: "Archived",
+      occurredAt: "2026-08-01T12:00:00.000Z",
+      senderLabel: null,
+      attachments: [],
+    }, "contact_owned", "2026-09-18T18:20:00.000Z")).resolves.toBe("thread_owned");
+
+    const threadUpdate = writes.find((write) => write.sql.includes("UPDATE communication_threads"));
+    expect(threadUpdate.sql).toContain("datetime(?) >= datetime(last_event_at)");
+    expect(threadUpdate.sql).not.toContain("unread_inbound_count");
+    expect(writes.some((write) => write.sql.includes("INSERT INTO communication_events"))).toBe(true);
   });
 });
 

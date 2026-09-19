@@ -25,14 +25,14 @@ Migration `0035_ghl_communication_source_archive.sql` provides a revision-preser
 
 PRs #649/#651/#652 installed and verified the schema and released the archive-aware Worker on 2026-09-18. This foundation is additive and does not activate sending or write to GHL.
 
-## Resumable history backfill in this branch
+## Resumable history backfill
 
-The account-level export now uses independent non-email and email streams because GHL excludes email from the default response. Each stream consumes the provider's short-lived cursor only inside one invocation, while durable progress is stored as a bounded 30-day date window. Completed windows move backward to a fixed floor; capped windows resume immediately below the oldest archived row with a one-millisecond overlap. Raw archive writes are idempotent, so boundary overlap cannot duplicate source revisions. One bounded scheduled lane advances both streams without projecting the same historical page into Staff inside that invocation.
+The account-level export now uses independent non-email and email streams because GHL excludes email from the default response. Each stream consumes the provider's short-lived cursor only inside one invocation, while durable progress is stored as a bounded 30-day date window. Completed windows move backward to a fixed floor; capped windows resume immediately below the oldest archived row with a one-millisecond overlap. Raw archive writes are idempotent, so boundary overlap cannot duplicate source revisions. One bounded scheduled lane advances both streams. A separate scheduled pass projects supported archived events missing from Staff, only for already-linked contacts; historical rows neither manufacture unread work nor move the latest-message summary backward.
 
 ## Remaining release gates
 
-- Deploy and observe the resumable non-email and email history backfills.
-- Project the complete source archive into Staff with explicit unsupported-type visibility.
+- Continue observing the resumable non-email and email history backfills through completion.
+- Add explicit Staff visibility for archived GHL activity types that are not email, SMS, or calls.
 - Mirror call media/transcripts and all required provider metadata.
 - Extend Staff rendering for every relied-on channel and activity type.
 - Reconcile counts, IDs, revisions, attachments, ordering, and sampled contacts against GHL with zero unexplained gaps.

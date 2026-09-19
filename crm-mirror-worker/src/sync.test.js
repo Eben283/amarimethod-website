@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   upsertCommunicationEvent: vi.fn(),
   upsertCommunicationThread: vi.fn(),
   upsertGhlCommunicationSourceRecord: vi.fn(async () => true),
+  listUnprojectedGhlCommunicationSourceRecords: vi.fn(async () => []),
+  projectHistoricalGhlCommunicationEvent: vi.fn(async () => "thread_1"),
   ensureCommunicationThread: vi.fn(),
   deleteGhlEmailContainerEvent: vi.fn(async () => 0),
   fetchGhlAppointmentsForContact: vi.fn(),
@@ -49,6 +51,8 @@ vi.mock("./repository.js", () => ({
   upsertStripeCharge: mocks.upsertStripeCharge, upsertStripeInvoice: mocks.upsertStripeInvoice, upsertCommunicationEvent: mocks.upsertCommunicationEvent,
   upsertCommunicationThread: mocks.upsertCommunicationThread, ensureCommunicationThread: mocks.ensureCommunicationThread,
   upsertGhlCommunicationSourceRecord: mocks.upsertGhlCommunicationSourceRecord,
+  listUnprojectedGhlCommunicationSourceRecords: mocks.listUnprojectedGhlCommunicationSourceRecords,
+  projectHistoricalGhlCommunicationEvent: mocks.projectHistoricalGhlCommunicationEvent,
   deleteGhlEmailContainerEvent: mocks.deleteGhlEmailContainerEvent,
 }));
 vi.mock("./providers.js", () => ({
@@ -77,12 +81,13 @@ vi.mock("./owned-email-dispatch.js", () => ({
   dispatchOwnedEmails: mocks.dispatchOwnedEmails,
 }));
 
-import { backfillGhlClientRecords, backfillGhlMessageExport, runScheduledSync, SCHEDULED_SYNC_LANES, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
+import { backfillGhlClientRecords, backfillGhlMessageExport, projectGhlMessageArchive, runScheduledSync, SCHEDULED_SYNC_LANES, syncGhlConversations, syncRecentGhlConversations, syncStripeInvoices } from "./sync.js";
 
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.getSyncCursor.mockReset().mockResolvedValue(null);
   mocks.fetchGhlMessageExport.mockReset();
+  mocks.listUnprojectedGhlCommunicationSourceRecords.mockReset().mockResolvedValue([]);
 });
 
 describe("scheduled provider fairness", () => {
@@ -90,7 +95,7 @@ describe("scheduled provider fairness", () => {
     expect(SCHEDULED_SYNC_LANES).toEqual([
       ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl", "consents"],
       ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "stripe", "stripe-invoices", "ghl-message-export", "consents"],
-      ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl-conversations", "ghl-client-records", "consents"],
+      ["owned-appointment-lifecycles", "owned-quiz-nurture", "owned-email-dispatch", "ghl-conversations-recent", "ghl-message-projection", "ghl-conversations", "ghl-client-records", "consents"],
     ]);
   });
 
@@ -137,6 +142,36 @@ describe("scheduled provider fairness", () => {
     mocks.fetchGhlConversationsPage.mockReset();
     mocks.getSyncCursor.mockReset().mockResolvedValue(null);
 
+  });
+});
+
+describe("GHL source archive projection", () => {
+  it("projects supported archived history without changing provider state", async () => {
+    mocks.listUnprojectedGhlCommunicationSourceRecords.mockResolvedValue([
+      { id: "email_1", conversationId: "thread_1", threadExternalId: "thread_1", contactId: "contact_1", contactExternalId: "contact_1", channel: "email", type: "TYPE_EMAIL", dateAdded: "2026-08-01T12:00:00.000Z", occurredAt: "2026-08-01T12:00:00.000Z", body: "Archived workflow email" },
+    ]);
+    mocks.findContactIdByGhlId.mockResolvedValue("owned_contact_1");
+
+    await expect(projectGhlMessageArchive({ CRM_DB: {} }, 50, "2026-09-18T18:20:00.000Z"))
+      .resolves.toMatchObject({ status: "succeeded", recordsRead: 1, recordsWritten: 1, recordsSkipped: 0 });
+    expect(mocks.projectHistoricalGhlCommunicationEvent).toHaveBeenCalledWith(
+      {},
+      expect.objectContaining({ id: "email_1", conversationId: "thread_1", contactId: "contact_1" }),
+      "owned_contact_1",
+      "2026-09-18T18:20:00.000Z",
+    );
+    expect(mocks.fetchGhlMessageExport).not.toHaveBeenCalled();
+  });
+
+  it("leaves an unmatched contact retryable instead of inventing a Staff record", async () => {
+    mocks.listUnprojectedGhlCommunicationSourceRecords.mockResolvedValue([
+      { id: "sms_1", conversationId: "thread_1", threadExternalId: "thread_1", contactId: "unknown_contact", contactExternalId: "unknown_contact", channel: "sms", type: "TYPE_SMS", dateAdded: "2026-08-01T12:00:00.000Z", occurredAt: "2026-08-01T12:00:00.000Z", body: "Unknown" },
+    ]);
+    mocks.findContactIdByGhlId.mockResolvedValue(null);
+
+    await expect(projectGhlMessageArchive({ CRM_DB: {} }, 50, "2026-09-18T18:20:00.000Z"))
+      .resolves.toMatchObject({ status: "succeeded", recordsRead: 1, recordsWritten: 0, recordsSkipped: 1 });
+    expect(mocks.projectHistoricalGhlCommunicationEvent).not.toHaveBeenCalled();
   });
 });
 
