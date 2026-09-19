@@ -1,5 +1,5 @@
 // Amari Ops board assembly — registry + open incidents + live infra signals.
-// Read path for /api/ops/systems. Attaches fix eligibility/jobs; launch is via /api/ops/fix + worker.
+// Read path for /api/ops/systems.
 // Never fake-green unwatched rows.
 //
 // Row roles (ops-board-meta): hot = pay/book early warning; quiet = messaging;
@@ -25,7 +25,6 @@ import {
   OPS_ROW_STATE,
 } from "./ops-board-meta.js";
 import { OPS_LAST_RUN_KEYS, OPS_READY_KEYS } from "./ops-last-run.js";
-import { isAutoFixable, listActiveFixJobs } from "./ops-fix.js";
 
 const HOUR = 3600 * 1000;
 const ERR_LOOKBACK_H = 72;
@@ -457,23 +456,10 @@ export async function buildSystemsBoard(env) {
       ? "green"
       : "unknown";
 
-  // Attach fix eligibility + any active fixer jobs (Cursor agents).
-  for (const s of systems) {
-    s.autoFix = isAutoFixable(s.id);
-  }
-  const fixJobs = await listActiveFixJobs(
-    env,
-    systems.filter((s) => s.autoFix).map((s) => s.id),
-  );
-  for (const s of systems) {
-    if (fixJobs[s.id]) s.fix = fixJobs[s.id];
-  }
-
   return {
     overall,
     attentionCount: attention.length,
     hotStrip: buildHotStrip(systems, openIncidents),
-    fixMode: String(env?.OPS_FIX_MODE || "shadow").toLowerCase(),
     generatedAt: new Date().toISOString(),
     configured: !!env?.AUTOMATION_DB,
     trail: {
@@ -481,7 +467,6 @@ export async function buildSystemsBoard(env) {
       meta,
     },
     systems,
-    fixes: fixJobs,
   };
 }
 
@@ -643,9 +628,6 @@ export async function buildPathDetail(env, pathId) {
     events,
     relatedErrors,
     changeSurface: metaRow.changeSurface,
-    autoFix: isAutoFixable(pathId),
-    fix: (await listActiveFixJobs(env, [pathId]))[pathId] || null,
-    fixMode: String(env?.OPS_FIX_MODE || "shadow").toLowerCase(),
     generatedAt: new Date().toISOString(),
     configured: !!env?.AUTOMATION_DB,
   };

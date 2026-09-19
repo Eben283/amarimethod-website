@@ -174,20 +174,17 @@ Board rows beyond money paths — heartbeats in `PORTAL_KV`, judged by `function
 | `stripe` | `stripe:status:ready`, `ops:stripe-pos-webhook:lastRun` | `staff-stripe-cards`, `stripe-pos-webhook` |
 | `morning_sms` | `ops:morning-sms:lastRun` | `morning-sms-worker` |
 
-### Amari Ops Fix layer
+### Amari Ops repair commands
 
-Bounded Cursor cloud agents for board attention — so code issues get a draft PR without babysitting.
+Policy-gated commands for the local Codex repair runner. The command queue is separate from incident monitoring: completing a repair command does not resolve an incident. Only the independent monitor may do that.
 
 | Piece | Path |
 |-------|------|
-| Launch + queue logic | `functions/lib/ops-fix.js` |
-| API (`request` / `sweep` / `launch`) | `functions/api/ops/fix.js` |
-| Cron worker (*/15) | `ops-fix-worker/` |
-| Eligibility (`autoFix`) | `functions/lib/ops-board-meta.js` |
+| Command policy + durable queue | `functions/lib/ops-repair-command.js` |
+| Protected command bridge | `functions/api/ops/repair-command.js` |
+| Change surfaces and blast radius | `functions/lib/ops-board-meta.js` |
 
-Modes (`OPS_FIX_MODE`): `off` · `shadow` (default, KV would-launch only) · `auto` (needs `CURSOR_API_KEY`). Public `/ops` can **queue** only; cron/worker auth launches. Secrets/config failures stay human — agent stops and reports.
-
-**Fix button (manual):** on a fixable path, press **Fix**. If `CURSOR_API_KEY` is set on Pages, launches a Cursor agent immediately (even when cron is shadow). If not, returns a copy-paste prompt for [cursor.com/agents](https://cursor.com/agents). Nothing auto-launches until you press.
+The protected bridge uses the Operations read key. Each registered surface has an explicit policy tier. Code-only operational repairs may be claimed by the local runner, while higher-risk surfaces require diagnosis, approval, or confirmation before execution.
 
 ### Amari Ops flip alerts (SMS + email)
 

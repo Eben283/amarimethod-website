@@ -10,7 +10,6 @@ export const OPS_BOARD_ROLE = Object.freeze({
 /** @type {Readonly<Record<string, {role:string, changeSurface:{touch:string, blastRadius:string[], talkHint:string}}>>} */
 export const OPS_BOARD_META = Object.freeze({
   assessment_paid_book: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "Purchase webhook → read requested_session_* → create appointment (ops-assessment + ghl-purchase-webhook).",
@@ -19,7 +18,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   intro_paid_book: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "create-checkout intro + purchase-webhook native paid book (ops-path-emit).",
@@ -28,7 +26,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   portal_followup_paid_book: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "portal-pay-followup slot save + purchase-webhook follow-up product book.",
@@ -37,7 +34,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   discovery_free_book: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "book/create-checkout free booking branch.",
@@ -46,7 +42,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   portal_package_book: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "portal-book auth + ledger gate + GHL appointment create.",
@@ -55,7 +50,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   staff_book: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "staff-book appointment create.",
@@ -64,7 +58,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   order_package_credit: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "ghl-purchase-webhook field PUT + purchase-cluster seam.",
@@ -73,7 +66,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   invoice_package_credit: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "ghl-invoice-webhook PUT + tag delta.",
@@ -82,7 +74,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   pos_card_fulfill: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "stripe-pos-webhook + staff-pos-fulfill GHL write.",
@@ -91,7 +82,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   appointment_webhook: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "appointment-webhook ingest → reminder/nurture dispatch.",
@@ -100,7 +90,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   partner_welcome_message: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.QUIET,
     changeSurface: {
       touch: "Partner welcome / please-book — exit or skip when appointment already exists (GHL or owned).",
@@ -109,7 +98,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   comms_coherence: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.QUIET,
     changeSurface: {
       touch: "comms-coherence-worker OpenRouter flags.",
@@ -118,7 +106,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   reminder_engine: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.QUIET,
     changeSurface: {
       touch: "reminder-engine-worker sweep + enroll.",
@@ -127,7 +114,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   nurture_engine: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.QUIET,
     changeSurface: {
       touch: "nurture-engine-worker sweep + enroll/exit.",
@@ -136,7 +122,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   morning_sms: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.QUIET,
     changeSurface: {
       touch: "morning-sms-worker cron → GHL conversations SMS.",
@@ -145,7 +130,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   chief_of_staff: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.MAP,
     changeSurface: {
       touch: "cos-auth + cos-chat (OpenRouter) + dist/cos SPA.",
@@ -194,7 +178,6 @@ export const OPS_BOARD_META = Object.freeze({
     },
   },
   public_slots: {
-    autoFix: true,
     role: OPS_BOARD_ROLE.HOT,
     changeSurface: {
       touch: "book/public-slots → GHL free-slots + look-busy + slot policy.",
@@ -216,7 +199,6 @@ export const OPS_BOARD_META = Object.freeze({
 export function boardMetaFor(pathId) {
   return (
     OPS_BOARD_META[pathId] || {
-      autoFix: false,
       role: OPS_BOARD_ROLE.MAP,
       changeSurface: {
         touch: "Infra dependency — connection / blast-radius only.",

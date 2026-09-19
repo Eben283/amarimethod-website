@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import test from "node:test";
 
 // Only authored production code and email copy. Fixtures deliberately contain
 // corrupt text; deployed artifacts are rebuilt from their corresponding sources.
 const paths = execFileSync("git", ["ls-files", "-z"], { encoding: "utf8" }).split("\0")
+  .filter((path) => path && existsSync(path))
   .filter((path) => /^(functions\/|[^/]+-worker\/src\/|emails\/|email-copy\/|staff\/src\/lib\/.*(?:follow-?up|email))/.test(path)
     && /\.(?:[cm]?[jt]sx?|json|html|md)$/.test(path)
     && !/\.(?:test|spec)\./.test(path));

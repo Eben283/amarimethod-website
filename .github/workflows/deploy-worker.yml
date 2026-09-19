@@ -19,7 +19,6 @@ on:
           - ghl-token-refresh
           - morning-sms
           - nurture-engine
-          - ops-fixer
           - partner-activity-refresh
           - reminder-engine
           - series-reconcile
