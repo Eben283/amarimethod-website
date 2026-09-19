@@ -1,4 +1,5 @@
 import type { ContactDetail } from '../types/staff';
+import { isSystemNote, plainTextNoteBody } from '../../../shared/staff-note-policy.js';
 
 interface Props {
   client: ContactDetail;
@@ -40,8 +41,9 @@ export function buildSessionBrief(client: ContactDetail): string {
     ? `Tried: ${quiz.treatmentsTried}${quiz.treatmentResults ? ` — ${quiz.treatmentResults.toLowerCase()}` : ''}`
     : null;
 
-  const lastNote = client.notes[0];
-  const noteStr = lastNote ? `Last note: "${truncate(lastNote.body, 80)}"` : null;
+  const lastNote = client.notes.find((note) => !isSystemNote(note.body));
+  const noteBody = lastNote ? plainTextNoteBody(lastNote.body) : '';
+  const noteStr = noteBody ? `Last note: "${truncate(noteBody, 80)}"` : null;
 
   const parts: string[] = [];
   const roleStr = isPartner ? 'Referral partner' : '';

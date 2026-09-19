@@ -11,10 +11,26 @@ const SYSTEM_NOTE_PATTERNS = [
   /^user.?agent:/i,
   /captured at:/i,
   /^next: customer redirected/i,
+  /^test manual-enrollment(?: appointment)?\b/i,
 ];
 
+export function plainTextNoteBody(body) {
+  const text = typeof body === 'string' ? body : '';
+  return text
+    .replace(/<br\s*\/?>/gi, ' ')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;|&#160;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/&lt;/gi, '<')
+    .replace(/&gt;/gi, '>')
+    .replace(/&quot;|&#34;/gi, '"')
+    .replace(/&#39;|&apos;/gi, "'")
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 export function isSystemNote(body) {
-  const text = typeof body === 'string' ? body.trim() : '';
+  const text = plainTextNoteBody(body);
   return SYSTEM_NOTE_PATTERNS.some((pattern) => pattern.test(text));
 }
 
